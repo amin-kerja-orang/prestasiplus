@@ -1,0 +1,1894 @@
+{
+ "screen": "S12",
+ "key": "S12-master-notes",
+ "route": "/admin/master-notes",
+ "name": "Master Notes — Admin Review",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.673Z",
+ "notes": "user-portal layout (not the admin shell)",
+ "shell": "SHU",
+ "summary": {
+  "total": 88,
+  "visibleDefault": 6,
+  "conditional": 78,
+  "hiddenOnly": 4,
+  "mobileOnly": 2,
+  "desktopOnly": 1,
+  "byKind": {
+   "text": 56,
+   "heading": 1,
+   "filter": 3,
+   "empty-state": 1,
+   "badge": 3,
+   "button": 9,
+   "pagination": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (tab=flagged, empty)",
+   "file": "_raw/M04/S12-master-notes__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/master-notes",
+   "finalUrl": "/admin/master-notes",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "tab-all-page-2__1280",
+   "description": "tab=all page 2",
+   "file": "_raw/M04/S12-master-notes__tab-all-page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/master-notes?tab=all&page=2",
+   "finalUrl": "/admin/master-notes?tab=all&page=2",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=15",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 15
+   }
+  },
+  {
+   "label": "tab-all__1280",
+   "description": "tab=all (525 notes)",
+   "file": "_raw/M04/S12-master-notes__tab-all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/master-notes?tab=all",
+   "finalUrl": "/admin/master-notes?tab=all",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=15",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 15
+   }
+  },
+  {
+   "label": "tab-approved__1280",
+   "description": "tab=approved (empty)",
+   "file": "_raw/M04/S12-master-notes__tab-approved__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/master-notes?tab=approved",
+   "finalUrl": "/admin/master-notes?tab=approved",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "tab=all @375",
+   "file": "_raw/M04/S12-master-notes__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/master-notes?tab=all",
+   "finalUrl": "/admin/master-notes?tab=all",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=15",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 15
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "tab=all @768",
+   "file": "_raw/M04/S12-master-notes__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/master-notes?tab=all",
+   "finalUrl": "/admin/master-notes?tab=all",
+   "httpStatus": 200,
+   "title": "Master Notes — Admin Review",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { document.querySelectorAll('main .row[data-id]').forEach(function (r) { r.setAttribute('data-card', ''); }); return 'notes rows=' + document.querySelectorAll('main .row[data-id]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "notes rows=15",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 15
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#2",
+    "script#5"
+   ]
+  },
+  {
+   "text": ".actions button",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Done",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/admin/master-notes/",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S12-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Master Notes — Admin Review",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Self-healing nota AI: 0 flagged · 0 teacher-approved · 525 total. Review yang flagged untuk improve quality.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-006",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Flagged Review",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=flagged",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=flagged",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-007",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Teacher Approved",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=approved",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=approved",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-008",
+   "kind": "filter",
+   "tag": "a",
+   "text": "Semua",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "tab-approved__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-009",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada nota dalam tab ini.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "tab-approved__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "122411 · Fizik · Fizik Tingkatan 5 · gpt-4o-mini · 730 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-011",
+   "kind": "text",
+   "tag": "strong",
+   "text": "question_id:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-012",
+   "kind": "text",
+   "tag": "strong",
+   "text": "subject:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-013",
+   "kind": "text",
+   "tag": "strong",
+   "text": "chapter:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-014",
+   "kind": "text",
+   "tag": "strong",
+   "text": "model:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-015",
+   "kind": "text",
+   "tag": "strong",
+   "text": "tokens:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "conf 85",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah yang berlaku dalam litar apabila berlaku litar pintas (short circuit)?",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-018",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab anda fikir litar berfungsi seperti biasa tetapi sebenarnya litar pintas menyebabkan arus yang sangat besar mengalir. Dalam litar elektrik, apabila terdapat litar pintas, rintangan menjadi sangat rendah, menyebabkan arus meningkat secara mendadak. Contohnya, jika anda mempun…",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang arus dalam litar pintas.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-021",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Trap:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-022",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Approve",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-023",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Regenerate",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-024",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Clear Flag",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "560001 · Matematik · Fungsi dan Persamaan Kuadratik · gpt-4o-mini · 812 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-026",
+   "kind": "text",
+   "tag": "strong",
+   "text": "question_id:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-027",
+   "kind": "text",
+   "tag": "strong",
+   "text": "subject:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-028",
+   "kind": "text",
+   "tag": "strong",
+   "text": "chapter:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-029",
+   "kind": "text",
+   "tag": "strong",
+   "text": "model:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-030",
+   "kind": "text",
+   "tag": "strong",
+   "text": "tokens:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-031",
+   "kind": "badge",
+   "tag": "span",
+   "text": "conf 85",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "Fungsi kuadratik f(x) = x² - 6x + 5 diubah kepada f(x) = x² - 6x + 9. Apakah perubahan yang berlaku pada graf?",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-033",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab perubahan dalam fungsi kuadratik hanya melibatkan perpindahan secara mendatar atau menegak, tetapi sebenarnya ia melibatkan perubahan pada nilai pemalar dalam fungsi. Dalam kes ini, f(x) = x² - 6x + 5 diubah kepada f(x) = x² - 6x + 9. Ini menunjukkan bahawa graf beralih ke …",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang perpindahan graf kuadratik yang melibatkan nilai pemalar.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-036",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Trap:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-037",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Approve",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-038",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Regenerate",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Clear Flag",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "559916 · Matematik · Kebarangkalian Peristiwa Bergabung · gpt-4o-mini · 790 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-041",
+   "kind": "text",
+   "tag": "strong",
+   "text": "question_id:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-042",
+   "kind": "text",
+   "tag": "strong",
+   "text": "subject:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-043",
+   "kind": "text",
+   "tag": "strong",
+   "text": "chapter:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-044",
+   "kind": "text",
+   "tag": "strong",
+   "text": "model:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-045",
+   "kind": "text",
+   "tag": "strong",
+   "text": "tokens:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-046",
+   "kind": "badge",
+   "tag": "span",
+   "text": "conf 85",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Adakah peristiwa berikut saling eksklusif atau tidak saling eksklusif: memilih murid yang pemain bola sepak atau pemain badminton?",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-048",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab anda berfikir bahawa peristiwa saling eksklusif bermakna tidak boleh berlaku serentak, tetapi sebenarnya peristiwa tersebut boleh berlaku bersama. Dalam kes ini, memilih murid yang pemain bola sepak atau pemain badminton tidak semestinya saling eksklusif kerana seorang muri…",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang definisi peristiwa saling eksklusif.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-051",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Trap:",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Approve",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-053",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Regenerate",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-054",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Clear Flag",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-055",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "tab-all-page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-056",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=2",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-058",
+   "kind": "text",
+   "tag": "span",
+   "text": "16",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "30",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "525",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-061",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "&laquo; Previous",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-062",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "1",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-064",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=3",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 3",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-065",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=4",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-066",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=5",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 5",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-067",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=6",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 6",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-068",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=7",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 7",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-069",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=8",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 8",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-070",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=9",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 9",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-071",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=10",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 10",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-073",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "34",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=34",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=34",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 34",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-074",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "35",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=35",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=35",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Go to page 35",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280",
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-075",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/master-notes?tab=all&page=3",
+   "absHref": "https://prestasiplus.my/admin/master-notes?tab=all&page=3",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-all-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-076",
+   "kind": "text",
+   "tag": "div",
+   "text": "129732 · Bahasa Inggeris · — · gpt-4o-mini · 1313 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-077",
+   "kind": "text",
+   "tag": "div",
+   "text": "Refer to the texts. How Technology Helps Build Self-Confidence A - Jordan, Gamer and Streamer I used to be shy and found it hard to talk to strangers. Things changed when I started streaming video g...",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab anda berfikir bahawa semua teks tentang teknologi dan keyakinan diri adalah sama, tetapi sebenarnya setiap teks mempunyai fokus yang berbeza. Dalam kes Anika, dia menggunakan teknologi untuk mengekspresikan kreativiti melalui pembuatan video. Contoh: 'I started making video…",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-079",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang fokus setiap teks yang berkaitan dengan teknologi dan keyakinan diri.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "129650 · Bahasa Inggeris · — · gpt-4o-mini · 1194 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-081",
+   "kind": "text",
+   "tag": "div",
+   "text": "Refer to the passage. For the first time in my life, I felt like I wanted to escape my own body. I felt helpless and invisible. When I was with others at the meet, the noise from the crowd faded into...",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-082",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab anda mungkin berfikir bahawa perasaan marah dan kekeliruan adalah reaksi yang biasa dalam situasi sukar, tetapi sebenarnya, dalam konteks ini, narator merasakan kesedihan dan rasa cemburu. Pada akhir pertemuan renang, walaupun dia berinteraksi dengan rakan-rakannya, dia mer…",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-083",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang emosi yang dirasai dalam situasi yang sukar.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "129614 · Bahasa Inggeris · — · gpt-4o-mini · 1359 ·",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "Refer to the passage. Fast fashion refers to the rapid production of inexpensive clothing that follows the latest trends. These clothes are usually made in large quantities, sold cheaply, and replace...",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-086",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mungkin anda keliru sebab anda berfikir bahawa kain semula jadi seperti kapas tidak memberi kesan kepada alam sekitar, tetapi sebenarnya kapas juga mempunyai kos alam sekitar yang serius. Walaupun kapas boleh terurai, ia memerlukan banyak air dan bergantung kepada racun perosak serta baja yang boleh…",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-087",
+   "kind": "text",
+   "tag": "div",
+   "text": "Salah faham tentang kelebihan kain semula jadi berbanding kain sintetik.",
+   "landmark": "main",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-all__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S12-088",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Master Notes — Admin Review",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "tab-all__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  }
+ ]
+}

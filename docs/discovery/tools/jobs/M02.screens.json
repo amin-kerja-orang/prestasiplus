@@ -1,0 +1,237 @@
+{
+  "normalizeIds": true,
+  "dataRows": [
+    "^selectSchool[(]s[)]$",
+    "^selectStdSchool[(]s[)]$",
+    "^addLinkedStudent[(]s[)]$",
+    "^addStudent[(]s[)]$",
+    "^removeStudent[(]idx[)]$",
+    "^removeLinkedStudent[(]idx[)]$"
+  ],
+  "screens": {
+    "S1": {
+      "key": "S1-users",
+      "route": "/admin/users",
+      "title": "Pengurusan Pengguna",
+      "shell": "SHA"
+    },
+    "S2": {
+      "key": "S2-users-create",
+      "route": "/admin/users/create",
+      "title": "Tambah Pengguna",
+      "shell": "SHA"
+    },
+    "S3": {
+      "key": "S3-users-edit",
+      "route": "/admin/users/{id}/edit",
+      "title": "Edit Pengguna",
+      "shell": "SHA"
+    },
+    "S4": {
+      "key": "S4-bulk-import",
+      "route": "/admin/users/bulk-import",
+      "title": "Import Pengguna Pukal",
+      "shell": "SHA"
+    },
+    "S5": {
+      "key": "S5-import-students",
+      "route": "/admin/import-students",
+      "title": "Import Pelajar (ID Delima)",
+      "shell": "SHA"
+    },
+    "S6": {
+      "key": "S6-comp-students",
+      "route": "/admin/comp-students",
+      "title": "Pelajar Komplimen",
+      "shell": "SHA"
+    },
+    "S7": {
+      "key": "S7-comp-create",
+      "route": "/admin/comp-students/create",
+      "title": "Daftar Pelajar Komplimen",
+      "shell": "SHA"
+    },
+    "S8": {
+      "key": "S8-comp-show",
+      "route": "/admin/comp-students/{id}",
+      "title": "Pelajar Komplimen - <name>",
+      "shell": "SHA"
+    },
+    "S9": {
+      "key": "S9-schools",
+      "route": "/admin/schools",
+      "title": "Urus Sekolah",
+      "shell": "SHA"
+    },
+    "S10": {
+      "key": "S10-schools-create",
+      "route": "/admin/schools/create",
+      "title": "Tambah Sekolah",
+      "shell": "SHA"
+    },
+    "S11": {
+      "key": "S11-schools-edit",
+      "route": "/admin/schools/{id}/edit",
+      "title": "Edit Sekolah",
+      "shell": "SHA"
+    },
+    "S12": {
+      "key": "S12-subscriptions",
+      "route": "/admin/school-subscriptions",
+      "title": "Langganan Sekolah",
+      "shell": "SHA"
+    },
+    "S13": {
+      "key": "S13-subscriptions-create",
+      "route": "/admin/school-subscriptions/create",
+      "title": "Langganan Baru",
+      "shell": "SHA"
+    },
+    "S14": {
+      "key": "S14-subscription-show",
+      "route": "/admin/school-subscriptions/{id}",
+      "title": "Langganan <school>",
+      "shell": "SHA"
+    },
+    "S15": {
+      "key": "S15-renewal-invoice",
+      "route": "/admin/school-subscriptions/{id}/renewal-invoice",
+      "title": "Invoice Pembaharuan - <school>",
+      "shell": "none (standalone print page)"
+    },
+    "S16": {
+      "key": "S16-user-packages",
+      "route": "/admin/users/{id}/packages",
+      "title": "Assign Pakej SPM - <name>",
+      "shell": "SHA"
+    }
+  },
+  "shells": {
+    "SHA": {
+      "key": "SHA-admin-shell",
+      "title": "Admin panel shell as seen on the M02 screens",
+      "owner": "global UI (docs/discovery/00-global-ui.md) / M23",
+      "note": "Layout chrome, not M02 content. Already documented in 00-global-ui.md; inventoried because it wraps M02 screens; links classified in _crawl.json."
+    }
+  },
+  "extraModuleRules": [
+    [
+      "^/admin$",
+      "M17",
+      "admin dashboard"
+    ],
+    [
+      "^/$",
+      "public-landing (out of scope)",
+      "landing page"
+    ],
+    [
+      "^/(login|register|logout|password)(/|$)",
+      "M01",
+      "auth"
+    ],
+    [
+      "^/profile(/|$)",
+      "M01",
+      "profile"
+    ],
+    [
+      "^/tetapan$",
+      "M01",
+      "tetapan"
+    ],
+    [
+      "^/settings$",
+      "M01",
+      "404 route"
+    ],
+    [
+      "^/notifikasi(/|$)",
+      "M01+M22",
+      "notifications (shared)"
+    ],
+    [
+      "^/api/schools/search$",
+      "M02",
+      "school lookup API"
+    ],
+    [
+      "^/api/students/search$",
+      "M02",
+      "student lookup API (auth)"
+    ],
+    [
+      "^/api/jpn(/.*)?$",
+      "M02",
+      "JPN / PPD lookup API"
+    ],
+    [
+      "^/admin/api/schools/",
+      "M02",
+      "school quota / students API"
+    ],
+    [
+      "^/admin/users(/|$)",
+      "M02",
+      "users"
+    ],
+    [
+      "^/admin/comp-students(/|$)",
+      "M02",
+      "complimentary students"
+    ],
+    [
+      "^/admin/schools(/|$)",
+      "M02",
+      "schools"
+    ],
+    [
+      "^/admin/school-subscriptions(/|$)",
+      "M02 (+M19 finance)",
+      "school subscriptions"
+    ],
+    [
+      "^/admin/import-students(/|$)",
+      "M02",
+      "DELIMa student import"
+    ],
+    [
+      "^/sponsor/register$",
+      "M21",
+      "sponsor self-registration"
+    ],
+    [
+      "^/chatbot/",
+      "M22",
+      "chatbot widget endpoints"
+    ],
+    [
+      "^/fcm/token$",
+      "M22",
+      "push token registration"
+    ],
+    [
+      "^/(api/)?tournament(/|$)",
+      "M16",
+      "tournament"
+    ],
+    [
+      "^/admin/server-status$",
+      "M23",
+      "admin header server status"
+    ],
+    [
+      "^/dashboard$",
+      "M05",
+      "user dashboard"
+    ],
+    [
+      "^/ppd$",
+      "M02",
+      "fragment of /api/jpn/{id}/ppd (JS string concat)"
+    ]
+  ],
+  "collapseKeys": [
+    "^hidden-field[|]input[|]ids[[][]][|]"
+  ]
+}

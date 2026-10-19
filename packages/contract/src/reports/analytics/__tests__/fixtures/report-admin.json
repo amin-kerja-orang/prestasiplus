@@ -1,0 +1,139 @@
+{
+  "range": 30,
+  "classroomId": null,
+  "options": {
+    "classes": []
+  },
+  "population": {
+    "total": 0,
+    "loggedIn": 0,
+    "practised": 0
+  },
+  "activity": {
+    "total": 0,
+    "byType": {
+      "kuiz": 0,
+      "struktur": 0,
+      "latihTubi": 0,
+      "trackingA": 0,
+      "battle": 0,
+      "permainan": 0
+    }
+  },
+  "score": {
+    "overall": null,
+    "byType": {
+      "kuiz": null,
+      "struktur": null,
+      "latihTubi": null,
+      "trackingA": null,
+      "battle": null
+    }
+  },
+  "trend": [
+    {
+      "date": "27/08",
+      "count": 0
+    },
+    {
+      "date": "28/08",
+      "count": 0
+    },
+    {
+      "date": "29/08",
+      "count": 0
+    },
+    {
+      "date": "30/08",
+      "count": 0
+    },
+    {
+      "date": "31/08",
+      "count": 0
+    },
+    {
+      "date": "01/09",
+      "count": 0
+    },
+    {
+      "date": "02/09",
+      "count": 0
+    },
+    {
+      "date": "03/09",
+      "count": 0
+    },
+    {
+      "date": "04/09",
+      "count": 0
+    },
+    {
+      "date": "05/09",
+      "count": 0
+    },
+    {
+      "date": "06/09",
+      "count": 0
+    },
+    {
+      "date": "07/09",
+      "count": 0
+    },
+    {
+      "date": "08/09",
+      "count": 0
+    },
+    {
+      "date": "09/09",
+      "count": 0
+    },
+    {
+      "date": "10/09",
+      "count": 0
+    },
+    {
+      "date": "11/09",
+      "count": 0
+    },
+    {
+      "date": "12/09",
+      "count": 0
+    },
+    {
+      "date": "13/09",
+      "count": 0
+    },
+    {
+      "date": "14/09",
+      "count": 0
+    },
+    {
+      "date": "15/09",
+      "count": 0
+    },
+    {
+      "date": "16/09",
+      "count": 0
+    },
+    {
+      "date": "17/09",
+      "count": 0
+    },
+    {
+      "date": "18/09",
+      "count": 0
+    },
+    {
+      "date": "19/09",
+      "count": 0
+    },
+    {
+      "date": "20/09",
+      "count": 0
+    }
+  ],
+  "notLoggedIn": [],
+  "notPractised": [],
+  "notPractisedAll": [],
+  "mostActive": []
+}

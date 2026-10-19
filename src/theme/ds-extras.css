@@ -1,0 +1,145 @@
+/* Composite support rules that cannot be expressed as utilities in strict files (exempt from the
+   DS lint like tokens.css): rich-text typography (DsProse) and the print sheet (DsPrintSheet).
+   Tokens only; no new colours. */
+
+[data-ds='prose'] {
+  color: var(--ui-text);
+  font-size: var(--text-body);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+[data-ds='prose'] > * + * {
+  margin-top: 1rem;
+}
+[data-ds='prose'] h2 {
+  font-family: var(--font-display, inherit);
+  font-size: var(--text-heading);
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+  margin-top: 2rem;
+}
+[data-ds='prose'] h3 {
+  font-size: var(--text-subheading);
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+  margin-top: 1.5rem;
+}
+[data-ds='prose'] ul,
+[data-ds='prose'] ol {
+  padding-inline-start: 1.5rem;
+}
+[data-ds='prose'] ul {
+  list-style: disc;
+}
+[data-ds='prose'] ol {
+  list-style: decimal;
+}
+[data-ds='prose'] li + li {
+  margin-top: 0.25rem;
+}
+[data-ds='prose'] blockquote {
+  background: var(--ui-bg-elevated);
+  border-radius: var(--ds-r-card);
+  padding: 0.75rem 1rem;
+  color: var(--ui-text-toned);
+}
+[data-ds='prose'] img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ds-r-card);
+}
+[data-ds='prose'] a {
+  color: var(--ds-primary-t);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+[data-ds='prose'] strong {
+  color: var(--ui-text-highlighted);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  [data-ds='print-sheet'],
+  [data-ds='print-sheet'] * {
+    visibility: visible;
+  }
+  [data-ds='print-sheet'] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+  }
+}
+
+/* Staff: clickable cards lift on hover (layers, not lines). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-personality='staff'] a[class~='rounded-card'],
+  [data-personality='staff'] button[class~='rounded-card'] {
+    transition:
+      transform 160ms var(--ds-ease-out),
+      box-shadow 160ms var(--ds-ease-out);
+  }
+  [data-personality='staff'] a[class~='rounded-card']:hover,
+  [data-personality='staff'] button[class~='rounded-card']:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ds-shadow-lift);
+  }
+}
+
+/* Staff portal: thin, quiet scrollbars (no arrow buttons) on every scroll area. */
+[data-portal='pentadbiran'] ::-webkit-scrollbar,
+[data-portal='pembelajaran'] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-portal='pentadbiran'] ::-webkit-scrollbar-thumb,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-thumb {
+  background: var(--ui-bg-accented);
+}
+[data-portal='pentadbiran'] ::-webkit-scrollbar-track,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-portal='pentadbiran'] ::-webkit-scrollbar-button,
+[data-portal='pembelajaran'] ::-webkit-scrollbar-button {
+  display: none;
+}
+@supports not selector(::-webkit-scrollbar) {
+  [data-portal='pentadbiran'] *,
+  [data-portal='pembelajaran'] * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-bg-accented) transparent;
+  }
+}
+
+/* KPI strip: staggered rise entry (60ms per tile). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-ds='stat-row'] > li:nth-child(2) > [data-ds='stat-tile'] {
+    animation-delay: 60ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(3) > [data-ds='stat-tile'] {
+    animation-delay: 120ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(4) > [data-ds='stat-tile'] {
+    animation-delay: 180ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(5) > [data-ds='stat-tile'] {
+    animation-delay: 240ms;
+  }
+  [data-ds='stat-row'] > li:nth-child(6) > [data-ds='stat-tile'] {
+    animation-delay: 300ms;
+  }
+}
+
+/* Keyboard focus for anything interactive that a component did not style itself (DS tiles, rows,
+   pills, custom buttons). Zero specificity (:where) so every component rule still wins; the colour
+   is the live primary, which is AA against the surfaces in all four personality x mode scopes. */
+[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}

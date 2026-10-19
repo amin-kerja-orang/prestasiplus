@@ -1,0 +1,1363 @@
+{
+ "screen": "S30",
+ "key": "S30-artikel-cipta",
+ "route": "/guru/artikel/cipta",
+ "name": "Tulis Artikel Baru",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:31.186Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 57,
+  "visibleDefault": 45,
+  "conditional": 0,
+  "hiddenOnly": 12,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 22,
+   "link": 1,
+   "heading": 3,
+   "form": 1,
+   "hidden-field": 2,
+   "card": 6,
+   "label": 7,
+   "input": 6,
+   "clickable": 2,
+   "button": 3,
+   "select": 2,
+   "textarea": 1,
+   "image": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "write article",
+   "file": "_raw/M10/S30-artikel-cipta__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/artikel/cipta",
+   "finalUrl": "/guru/artikel/cipta",
+   "httpStatus": 200,
+   "title": "Tulis Artikel Baru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "write article @375",
+   "file": "_raw/M10/S30-artikel-cipta__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/artikel/cipta",
+   "finalUrl": "/guru/artikel/cipta",
+   "httpStatus": 200,
+   "title": "Tulis Artikel Baru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "write article @768",
+   "file": "_raw/M10/S30-artikel-cipta__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/artikel/cipta",
+   "finalUrl": "/guru/artikel/cipta",
+   "httpStatus": 200,
+   "title": "Tulis Artikel Baru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "articleForm",
+   "xData": "articleForm()",
+   "keys": [],
+   "liveState": {
+    "files": "array(0)",
+    "isDragging": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ preview: null }",
+   "keys": [
+    "preview"
+   ],
+   "liveState": {
+    "preview": null
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Gambar Utama",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "Mula menulis artikel anda di sini...",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Maksimum 5 fail sahaja.",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Muat naik video tidak dibenarkan di PRESTASIPLUS.\\nSila gunakan pautan YouTube sahaja untuk berkongsi video.",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S30-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-004",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel",
+   "absHref": "https://prestasiplus.my/guru/artikel",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Tulis Artikel Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kongsi ilmu dan pengalaman anda dengan komuniti PRESTASIPLUS",
+   "landmark": "main",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-007",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/artikel",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "title",
+    "content",
+    "youtube_url",
+    "category",
+    "grade_level",
+    "excerpt",
+    "featured_image"
+   ],
+   "landmark": "main",
+   "section": "Tulis Artikel Baru",
+   "alpine": {
+    "@submit": "syncContent()"
+   },
+   "domId": "articleForm",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-008",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tajuk Artikel *",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Artikel *",
+   "for": "title",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk Artikel *",
+   "placeholder": "Contoh: 5 Tips Belajar Matematik yang Menyeronokkan",
+   "required": true,
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "domId": "title",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kandungan Artikel *",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kandungan Artikel *",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-014",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "content",
+   "label": "Kandungan Artikel *",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "domId": "content-hidden",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "Video YouTube (opsional)",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Video YouTube (opsional)",
+   "for": "youtube_url",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎬",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sila gunakan pautan YouTube sahaja untuk berkongsi video pembelajaran.",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-019",
+   "kind": "text",
+   "tag": "strong",
+   "text": "PRESTASIPLUS tidak membenarkan muat naik video.",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-020",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "youtube_url",
+   "label": "Video YouTube (opsional)",
+   "placeholder": "https://www.youtube.com/watch?v=xxxxxxx",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "domId": "youtube_url",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Contoh: https://www.youtube.com/watch?v=abc123 atau https://youtu.be/abc123",
+   "icon": "fa-info-circle",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-022",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lampiran Fail",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Lampiran Fail",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "PDF, Word, Excel, PowerPoint",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "PDF",
+   "icon": "fa-file-pdf",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "Word",
+   "icon": "fa-file-word",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "Excel",
+   "icon": "fa-file-excel",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "PPT",
+   "icon": "fa-file-powerpoint",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "— sila gunakan ruangan YouTube di atas untuk video.",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-030",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Video tidak dibenarkan",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-031",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "📎 Seret & Lepas fail di sini atau klik untuk pilih fail Maks: 20MB setiap fail • Maks 5 fail",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "alpine": {
+    "@click": "$refs.fileInput.click()",
+    "@dragover.prevent": "isDragging = true",
+    "@dragleave.prevent": "isDragging = false",
+    "@drop.prevent": "handleDrop($event)"
+   },
+   "domId": "dropZone",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-032",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "label": "Lampiran Fail",
+   "accept": ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx",
+   "multiple": true,
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "alpine": {
+    "x-ref": "fileInput",
+    "@change": "handleFileSelect($event)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-033",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Label (opsional)",
+   "section": "Tulis Artikel Baru",
+   "alpine": {
+    ":name": "'attachment_labels[' + index + ']'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(file, index) in files"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-034",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Tulis Artikel Baru",
+   "alpine": {
+    "@click": "removeFile(index)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(file, index) in files"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tetapan",
+   "landmark": "form#articleForm",
+   "section": "Tulis Artikel Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-036",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tetapan",
+   "landmark": "form#articleForm",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori *",
+   "for": "category",
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-038",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "label": "Kategori *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih..."
+    },
+    {
+     "value": "TIPS_BELAJAR",
+     "text": "Tips Belajar"
+    },
+    {
+     "value": "BERITA",
+     "text": "Berita"
+    },
+    {
+     "value": "MOTIVASI",
+     "text": "Motivasi"
+    },
+    {
+     "value": "PANDUAN_IBU_BAPA",
+     "text": "Panduan Ibu Bapa"
+    },
+    {
+     "value": "PANDUAN_GURU",
+     "text": "Panduan Guru"
+    },
+    {
+     "value": "KEJAYAAN",
+     "text": "Kejayaan"
+    },
+    {
+     "value": "UMUM",
+     "text": "Umum"
+    }
+   ],
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "domId": "category",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap *",
+   "for": "grade_level",
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-040",
+   "kind": "select",
+   "tag": "select",
+   "name": "grade_level",
+   "label": "Tahap *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih..."
+    },
+    {
+     "value": "SEMUA",
+     "text": "Semua Darjah"
+    },
+    {
+     "value": "DARJAH_1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "DARJAH_2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "DARJAH_3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "DARJAH_4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "DARJAH_5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "DARJAH_6",
+     "text": "Darjah 6"
+    }
+   ],
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "domId": "grade_level",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-041",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ringkasan",
+   "for": "excerpt",
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-042",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "excerpt",
+   "label": "Ringkasan",
+   "placeholder": "Ringkasan singkat...",
+   "maxlength": "500",
+   "rows": "3",
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "domId": "excerpt",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-043",
+   "kind": "card",
+   "tag": "div",
+   "text": "Gambar Utama",
+   "landmark": "form#articleForm",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-044",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Gambar Utama",
+   "landmark": "form#articleForm",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-045",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "🖼️ Klik untuk pilih gambar JPEG, PNG, WebP • Maks 2MB",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "alpine": {
+    "x-show": "!preview",
+    "@click": "$refs.imageInput.click()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "!preview"
+  },
+  {
+   "id": "EL-M10-S30-046",
+   "kind": "image",
+   "tag": "img",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "alpine": {
+    ":src": "preview"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "preview"
+  },
+  {
+   "id": "EL-M10-S30-047",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/guru/artikel",
+   "iconOnly": true,
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "alpine": {
+    "@click": "preview = null; $refs.imageInput.value = ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "preview"
+  },
+  {
+   "id": "EL-M10-S30-048",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "featured_image",
+   "accept": "image/*",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "alpine": {
+    "x-ref": "imageInput",
+    "@change": "if($event.target.files[0]) { const reader = new FileReader(); reader.onload = e => preview = e.target.result; reader.readAsDataURL($event.target.files[0]); }"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "💡",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tips Menulis Artikel",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-051",
+   "kind": "text",
+   "tag": "li",
+   "text": "• Gunakan tajuk yang menarik perhatian",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-052",
+   "kind": "text",
+   "tag": "li",
+   "text": "• Sertakan gambar untuk menarik minat",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-053",
+   "kind": "text",
+   "tag": "li",
+   "text": "• Lampirkan bahan rujukan (PDF/dokumen)",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-054",
+   "kind": "text",
+   "tag": "li",
+   "text": "• Tambah pautan video YouTube!",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Artikel",
+   "icon": "fa-paper-plane",
+   "form": "https://prestasiplus.my/guru/artikel",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "Akan disemak admin sebelum diterbitkan",
+   "icon": "fa-shield-alt",
+   "landmark": "form#articleForm",
+   "section": "Gambar Utama",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S30-057",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "attachments[]",
+   "multiple": true,
+   "landmark": "main",
+   "section": "Gambar Utama",
+   "domId": "attachments-input",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  }
+ ]
+}

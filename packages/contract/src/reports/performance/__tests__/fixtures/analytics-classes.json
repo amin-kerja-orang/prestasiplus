@@ -1,0 +1,129 @@
+{
+  "options": {
+    "classes": [
+      {
+        "id": 2001,
+        "name": "5 MARIKH - Kimia"
+      },
+      {
+        "id": 2002,
+        "name": "5 MARIKH - Sejarah"
+      }
+    ],
+    "subjects": [
+      {
+        "id": 10,
+        "name": "Kimia"
+      }
+    ],
+    "selected": {
+      "classroomId": 2001,
+      "subjectId": 10,
+      "riskLevel": ""
+    }
+  },
+  "summary": {
+    "students": 8,
+    "accuracy": 41.8,
+    "atRisk": 4,
+    "good": 1
+  },
+  "rows": [
+    {
+      "userId": 3001,
+      "name": "Murid Demo 01",
+      "accuracy": 88.9,
+      "answered": 9,
+      "trend": "stable",
+      "projection": {
+        "low": "A-",
+        "high": "A+"
+      },
+      "riskLevel": "low"
+    },
+    {
+      "userId": 3002,
+      "name": "Murid Demo 02",
+      "accuracy": 50,
+      "answered": 10,
+      "trend": "stable",
+      "projection": {
+        "low": "E",
+        "high": "B"
+      },
+      "riskLevel": "medium"
+    },
+    {
+      "userId": 3003,
+      "name": "Murid Demo 03",
+      "accuracy": 37.5,
+      "answered": 8,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "D"
+      },
+      "riskLevel": "medium"
+    },
+    {
+      "userId": 3004,
+      "name": "Murid Demo 04",
+      "accuracy": 37.5,
+      "answered": 8,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "D"
+      },
+      "riskLevel": "high"
+    },
+    {
+      "userId": 3005,
+      "name": "Murid Demo 05",
+      "accuracy": 37.5,
+      "answered": 8,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "D"
+      },
+      "riskLevel": "medium"
+    },
+    {
+      "userId": 3006,
+      "name": "Murid Demo 06",
+      "accuracy": 37.5,
+      "answered": 8,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "D"
+      },
+      "riskLevel": "high"
+    },
+    {
+      "userId": 3007,
+      "name": "Murid Demo 07",
+      "accuracy": 33.3,
+      "answered": 9,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "E"
+      },
+      "riskLevel": "critical"
+    },
+    {
+      "userId": 3008,
+      "name": "Murid Demo 08",
+      "accuracy": 12.5,
+      "answered": 8,
+      "trend": "stable",
+      "projection": {
+        "low": "G",
+        "high": "G"
+      },
+      "riskLevel": "critical"
+    }
+  ]
+}

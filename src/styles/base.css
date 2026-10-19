@@ -1,0 +1,24 @@
+/* Base element styles (00-global-ui.md §3.1/§4.1, live layout <style>).
+ *
+ * Live body: `class="font-body antialiased"`, Inter, text slate-700. The shell background is a
+ * utility applied by each layout's root (`bg-app-admin`, `bg-app-user`, `bg-auth`,
+ * `bg-error-page`), so this file stays shell-neutral.
+ * Live layouts also set h1–h6 to Outfit / slate-800. Pages that differ (auth headings gray-800,
+ * the 404 page's system font) override with utilities, which win over the base layer.
+ */
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* `:where(:not(...))` keeps specificity at (0,0,1) and skips v2 portals (`data-personality`,
+     tokens.css), whose headings use the display font and `--ui-text-highlighted` (V2-T03). */
+  :where(h1, h2, h3, h4, h5, h6):where(:not([data-personality] *)) {
+    font-family: var(--font-heading);
+    color: var(--color-text-strong);
+  }
+}

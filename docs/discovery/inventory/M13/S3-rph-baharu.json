@@ -1,0 +1,1018 @@
+{
+ "screen": "S3",
+ "key": "S3-rph-baharu",
+ "route": "/cikgu/rph/baharu",
+ "name": "Jana RPH Baharu",
+ "module": "M13",
+ "generatedAt": "2026-09-25T11:25:10.931Z",
+ "notes": "new route; form POST /cikgu/rph (AI generation, never submitted)",
+ "shell": "SHU",
+ "summary": {
+  "total": 35,
+  "visibleDefault": 31,
+  "conditional": 0,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 10,
+   "link": 2,
+   "card": 1,
+   "heading": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 9,
+   "input": 7,
+   "select": 1,
+   "textarea": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "no classroom linked → manual form (\"Sistem belum jumpa kelas…\")",
+   "file": "_raw/M13/S3-rph-baharu__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/rph/baharu",
+   "finalUrl": "/cikgu/rph/baharu",
+   "httpStatus": 200,
+   "title": "Jana RPH Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "classroom-param__1280",
+   "description": "?classroom_id=1 (ignored for admin; same form)",
+   "file": "_raw/M13/S3-rph-baharu__classroom-param__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/rph/baharu?classroom_id=1",
+   "finalUrl": "/cikgu/rph/baharu?classroom_id=1",
+   "httpStatus": 200,
+   "title": "Jana RPH Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "validity__1280",
+   "description": "form.reportValidity() on the empty form (native bubbles; never submitted)",
+   "file": "_raw/M13/S3-rph-baharu__validity__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/rph/baharu",
+   "finalUrl": "/cikgu/rph/baharu",
+   "httpStatus": 200,
+   "title": "Jana RPH Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var f = document.getElementById('rph-create-form'); var bad = Array.from(f.elements).filter(function (e) { return e.willValidate && !e.checkValidity(); }).map(function (e) { return e.name + ': ' + e.validationMessage; }); f.reportValidity(); return 'invalid=' + JSON.stringify(bad) + ' novalidate=' + f.noValidate; })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "invalid=[\"subject_name: Please fill out this field.\",\"level: Please select an item in the list.\",\"tajuk: Please fill out this field.\"] novalidate=false",
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M13/S3-rph-baharu__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/cikgu/rph/baharu",
+   "finalUrl": "/cikgu/rph/baharu",
+   "httpStatus": 200,
+   "title": "Jana RPH Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M13/S3-rph-baharu__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/cikgu/rph/baharu",
+   "finalUrl": "/cikgu/rph/baharu",
+   "httpStatus": 200,
+   "title": "Jana RPH Baharu",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "Cikgu Alesa sedang jana RPH…",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M13-S3-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Senarai RPH",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-005",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jana RPH dengan Cikgu Alesa",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-006",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Jana RPH dengan Cikgu Alesa",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sistem belum jumpa kelas yang dikaitkan dengan akaun Cikgu. Sila isi manual.",
+   "landmark": "main",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-008",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/cikgu/rph",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "subject_name",
+    "level",
+    "tajuk",
+    "class_name",
+    "lesson_date",
+    "duration_minutes",
+    "time_slot",
+    "tema",
+    "pengajaran_keperluan"
+   ],
+   "landmark": "main",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "domId": "rph-create-form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-009",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek *",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "subject_name",
+   "label": "Subjek *",
+   "placeholder": "cth: Matematik, Sains, Bahasa Melayu",
+   "required": true,
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "domId": "subject_name",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan / Tahun * — Pilih — Darjah 1 Darjah 2 Darjah 3 Darjah 4 Darjah 5 Darjah 6 Tingkatan 1 Tingkatan 2 Tingkatan 3 Tingkatan 4 Tingkatan 5",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-013",
+   "kind": "select",
+   "tag": "select",
+   "name": "level",
+   "label": "Tingkatan / Tahun * — Pilih — Darjah 1 Darjah 2 Darjah 3 Darjah 4 Darjah 5 Darjah 6 Tingkatan 1 Tingkatan 2 Tingkatan 3 Tingkatan 4 Tingkatan 5",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "— Pilih —"
+    },
+    {
+     "value": "D1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "D2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "D3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "D4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "D5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "D6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "T1",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "T2",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "T3",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "T4",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "T5",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "domId": "level",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Pengajaran *",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "tajuk",
+   "label": "Tajuk Pengajaran *",
+   "placeholder": "cth: Pecahan Setara, Sel Sebagai Unit Asas Hidupan, Persamaan Kuadratik",
+   "required": true,
+   "maxlength": "200",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kelas",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "class_name",
+   "label": "Kelas",
+   "placeholder": "cth: 4 Bestari",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "domId": "class_name",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-019",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "lesson_date",
+   "label": "Tarikh",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tempoh (minit)",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "duration_minutes",
+   "label": "Tempoh (minit)",
+   "min": "15",
+   "max": "240",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Masa Slot",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "time_slot",
+   "label": "Masa Slot",
+   "placeholder": "cth: 8.00-9.00 pagi",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tema (opsyenal)",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "tema",
+   "label": "Tema (opsyenal)",
+   "placeholder": "cth: Nombor & Operasi",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Keperluan Khas (opsyenal)",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-027",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "pengajaran_keperluan",
+   "label": "Keperluan Khas (opsyenal)",
+   "placeholder": "cth: Kelas mixed-ability. Atau: 5 minit set induksi je sebab masa pendek.",
+   "maxlength": "500",
+   "rows": "2",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-028",
+   "kind": "text",
+   "tag": "strong",
+   "text": "📌 Apa yang Cikgu Alesa akan jana:",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-029",
+   "kind": "text",
+   "tag": "li",
+   "text": "Standard Kandungan + Standard Pembelajaran (cite DSKP)",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-030",
+   "kind": "text",
+   "tag": "li",
+   "text": "2-4 Objektif Pembelajaran spesifik & boleh diukur",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-031",
+   "kind": "text",
+   "tag": "li",
+   "text": "Aktiviti PdPc penuh: Set Induksi → Aktiviti 1-3 → Penutup",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-032",
+   "kind": "text",
+   "tag": "li",
+   "text": "BBM, EMK, dan PBD Assessment plan",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-033",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Jana RPH dengan Cikgu Alesa",
+   "icon": "fa-robot",
+   "form": "https://prestasiplus.my/cikgu/rph",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "domId": "submit-btn",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S3-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "⏱️ Proses ambil masa 10-30 saat. Sila tunggu.",
+   "landmark": "form#rph-create-form",
+   "section": "Jana RPH dengan Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "classroom-param__1280",
+    "validity__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

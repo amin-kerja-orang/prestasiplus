@@ -1,0 +1,158 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "screens": {
+    "S1": {
+      "key": "S1-prestasi-sekolah",
+      "route": "/prestasi (→ /prestasi/sekolah)",
+      "title": "Dashboard Sekolah",
+      "shell": "SHU"
+    },
+    "S2": {
+      "key": "S2-prestasi-tingkatan-pilih",
+      "route": "/prestasi/tingkatan",
+      "title": "Pilih Tingkatan — Prestasi",
+      "shell": "SHU"
+    },
+    "S3": {
+      "key": "S3-prestasi-tingkatan",
+      "route": "/prestasi/tingkatan/{t4|t5}",
+      "title": "Tingkatan {n} — Dashboard Tingkatan",
+      "shell": "SHU"
+    },
+    "S4": {
+      "key": "S4-prestasi-kelas-pilih",
+      "route": "/prestasi/kelas",
+      "title": "Pilih Kelas — Prestasi (Dashboard Kelas)",
+      "shell": "SHU",
+      "notes": "TRACKER lists /prestasi/kelas under M11; captured here because S1/S3 link to it"
+    },
+    "S5": {
+      "key": "S5-prestasi-kelas",
+      "route": "/prestasi/kelas/{id}",
+      "title": "{kelas} — Dashboard Kelas",
+      "shell": "SHU",
+      "notes": "recommended owner M11 (class performance)"
+    },
+    "S6": {
+      "key": "S6-prestasi-360",
+      "route": "/prestasi/{userId}",
+      "title": "Prestasi 360 — {nama} — PRESTASIPLUS",
+      "shell": "SHU"
+    },
+    "S7": {
+      "key": "S7-analitik-pelajar",
+      "route": "/analitik/pelajar",
+      "title": "Analitik Pembelajaran (Analitik Adaptif)",
+      "shell": "SHU"
+    },
+    "S8": {
+      "key": "S8-analitik-kelas",
+      "route": "/analitik/kelas",
+      "title": "Analitik Kelas",
+      "shell": "SHU",
+      "notes": "teacher-side adaptive analytics; recommended owner M11"
+    },
+    "S9": {
+      "key": "S9-analisa-item-sekolah",
+      "route": "/analisa-item/sekolah",
+      "title": "Analisa Item Sekolah",
+      "shell": "SHU"
+    },
+    "S10": {
+      "key": "S10-analisa-item-kelas-pilih",
+      "route": "/analisa-item/kelas",
+      "title": "Analisa Item — Papan Guru (Pilih Kelas)",
+      "shell": "SHU"
+    },
+    "S11": {
+      "key": "S11-analisa-item-kelas",
+      "route": "/analisa-item/kelas/{id}",
+      "title": "Analisa Item — Papan Guru",
+      "shell": "SHU"
+    },
+    "S12": {
+      "key": "S12-headcount",
+      "route": "/headcount",
+      "title": "Headcount",
+      "shell": "SHU"
+    },
+    "S13": {
+      "key": "S13-headcount-dashboard",
+      "route": "/headcount/dashboard",
+      "title": "Dashboard Headcount",
+      "shell": "SHU"
+    },
+    "S14": {
+      "key": "S14-headcount-create",
+      "route": "/headcount/create",
+      "title": "Buat Headcount Baru",
+      "shell": "SHU"
+    },
+    "S15": {
+      "key": "S15-headcount-pelajar",
+      "route": "/headcount/student/{id}",
+      "title": "Headcount {nama}",
+      "shell": "SHU"
+    },
+    "S16": {
+      "key": "S16-timeline",
+      "route": "/timeline",
+      "title": "Timeline Saya",
+      "shell": "SHU"
+    },
+    "S17": {
+      "key": "S17-timeline-create",
+      "route": "/timeline/create",
+      "title": "Tambah Post - Timeline",
+      "shell": "SHU"
+    },
+    "S18": {
+      "key": "S18-profil-awam",
+      "route": "/pelajar/{id}",
+      "title": "{nama} — Pelajar PRESTASIPLUS (public profile)",
+      "shell": "none (standalone public layout)"
+    },
+    "S19": {
+      "key": "S19-ranking",
+      "route": "/ranking",
+      "title": "Kedudukan {Nasional|negeri}",
+      "shell": "SHU"
+    },
+    "S20": {
+      "key": "S20-leaderboard",
+      "route": "/leaderboard",
+      "title": "Papan Pendahulu",
+      "shell": "SHU"
+    },
+    "S21": {
+      "key": "S21-laporan-mingguan",
+      "route": "/laporan-mingguan",
+      "title": "403 - Akses Ditolak (admin account)",
+      "shell": "none (error page)"
+    },
+    "S22": {
+      "key": "S22-headcount-ringkasan",
+      "route": "/headcount/{id}/summary",
+      "title": "Ringkasan Kelas (headcount config summary)",
+      "shell": "SHU",
+      "notes": "added in audit top-up"
+    },
+    "S23": {
+      "key": "S23-headcount-kelas",
+      "route": "/headcount/{id}",
+      "title": "Headcount {subjek} (config table)",
+      "shell": "SHU",
+      "notes": "added in audit top-up"
+    }
+  },
+  "shells": {
+    "SHU": {
+      "key": "SHU-user-shell",
+      "title": "User-portal shell",
+      "owner": "00-global-ui.md",
+      "note": "layout chrome of S1–S17, S19, S20, S22, S23"
+    }
+  }
+}

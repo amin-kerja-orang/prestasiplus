@@ -1,0 +1,1630 @@
+{
+ "screen": "S13",
+ "key": "S13-subscriptions-create",
+ "route": "/admin/school-subscriptions/create",
+ "name": "Langganan Baru",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.407Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 52,
+  "visibleDefault": 24,
+  "conditional": 14,
+  "hiddenOnly": 14,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 1,
+   "heading": 1,
+   "form": 1,
+   "hidden-field": 2,
+   "label": 12,
+   "button": 5,
+   "input": 4,
+   "empty-state": 2,
+   "radio": 6,
+   "text": 16,
+   "textarea": 1,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (tier basic)",
+   "file": "_raw/M02/S13-subscriptions-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "full-package-t4__1280",
+   "description": "tier full + package T4 selected",
+   "file": "_raw/M02/S13-subscriptions-create__full-package-t4__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main label:has(input[name=package_tier][value=full])"
+    },
+    {
+     "click": "main label:has(input[name=school_package_id][value=\"1\"])"
+    },
+    {
+     "wait": 400
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "package-t5__1280",
+   "description": "package T5 selected",
+   "file": "_raw/M02/S13-subscriptions-create__package-t5__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main label:has(input[name=school_package_id][value=\"2\"])"
+    },
+    {
+     "wait": 400
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-search-empty__1280",
+   "description": "school search no result",
+   "file": "_raw/M02/S13-subscriptions-create__school-search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=query]"
+    },
+    {
+     "type": [
+      "main input[x-model=query]",
+      "zzqxv"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-search__1280",
+   "description": "school search results",
+   "file": "_raw/M02/S13-subscriptions-create__school-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=query]"
+    },
+    {
+     "type": [
+      "main input[x-model=query]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=5 strings=5 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "school-selected__1280",
+   "description": "school picked",
+   "file": "_raw/M02/S13-subscriptions-create__school-selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main input[x-model=query]"
+    },
+    {
+     "type": [
+      "main input[x-model=query]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=1 strings=1 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "tier-full__1280",
+   "description": "tier = full (Penuh)",
+   "file": "_raw/M02/S13-subscriptions-create__tier-full__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main label:has(input[name=package_tier][value=full])"
+    },
+    {
+     "wait": 400
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S13-subscriptions-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S13-subscriptions-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/school-subscriptions/create",
+   "finalUrl": "/admin/school-subscriptions/create",
+   "httpStatus": 200,
+   "title": "Langganan Baru - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "subscriptionForm",
+   "xData": "subscriptionForm(JSON.parse('[{\\u0022id\\u0022:1,\\u0022name\\u0022:\\u0022Pakej SPM Tingkatan 4\\u0022,\\u0022slug\\u0022:\\u0022spm-t4\\u0022,\\u0022education_level\\u0022:\\u0022spm\\u0022,\\u0022form_level\\u0022:\\u0022t4\\u0022,\\u0022price_annual\\u0022:\\u002230.00\\u0022,\\u0022is_active\\u0022:true,\\u0022max_renewals\\u0022:1,\\u0022created_at\\u0022:\\u00222026-02-20T03:28:42.000000Z\\u0022,\\u0022updated_at\\u0022:…",
+   "keys": [
+    "u0022",
+    "T03",
+    "T15",
+    "T17"
+   ],
+   "liveState": {
+    "selectedPackageId": "",
+    "studentQuota": 100,
+    "packageTier": "basic",
+    "packages": "array(4)",
+    "selectedPackage": null
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Langganan Sekolah Baru",
+   "seenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "schoolPicker",
+   "xData": "schoolPicker({ currentId: null, currentName: '<name>' })",
+   "keys": [
+    "currentId",
+    "currentName"
+   ],
+   "liveState": {
+    "query": "",
+    "results": "array(0)",
+    "showResults": false,
+    "loading": false,
+    "selectedId": null,
+    "selectedName": "string(6)",
+    "selectedMeta": ""
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Borang Langganan Baru",
+   "seenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/api/schools/search?q=",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/schools/search?q=&limit=1&id=",
+   "sources": [
+    "script#3"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S13-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "Borang Langganan Baru",
+   "landmark": "main",
+   "section": "Langganan Sekolah Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-002",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Borang Langganan Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-003",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/school-subscriptions",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "school_id",
+    "package_tier",
+    "package_tier",
+    "school_package_id",
+    "school_package_id",
+    "school_package_id",
+    "school_package_id",
+    "student_quota",
+    "payment_reference",
+    "payment_notes"
+   ],
+   "landmark": "main",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-004",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-005",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sekolah *",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "label": "Sekolah *",
+   "required": true,
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    ":value": "selectedId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-007",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "iconOnly": true,
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "@click": "clearSelection()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedId"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-008",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip nama atau kod sekolah...",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "query",
+    "@input.debounce.300ms": "search()",
+    "@focus": "showResults = results.length > 0"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedId"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-009",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "iconOnly": true,
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in results"
+   ],
+   "dataRow": true,
+   "repeatCount": 2,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S13-010",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search-minus",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-show": "showResults && results.length === 0 && query.length >= 2 && !loading"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!selectedId"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-011",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Sekolah *",
+   "placeholder": "Taip nama atau kod sekolah...",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "query",
+    "@input.debounce.300ms": "search()",
+    "@focus": "showResults = results.length > 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-012",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada sekolah dijumpai",
+   "icon": "fa-search-minus",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-show": "showResults && results.length === 0 && query.length >= 2 && !loading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search-empty__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showResults && results.length === 0 && query.length >= 2 && !loading"
+  },
+  {
+   "id": "EL-M02-S13-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Pakej *",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pemantauan 500 soalan/bulan · PERCUMA 1 bulan (demo/trial)",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-015",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "package_tier",
+   "label": "Pemantauan 500 soalan/bulan · PERCUMA 1 bulan (demo/trial)",
+   "optionValue": "basic",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "packageTier"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penuh Tanpa had · RM30/pelajar 1 tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-017",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "package_tier",
+   "label": "Penuh Tanpa had · RM30/pelajar 1 tahun",
+   "optionValue": "full",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "packageTier"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "full-package-t4__1280",
+    "tier-full__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan *",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "T4 Pakej SPM Tingkatan 4 2 tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-020",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "school_package_id",
+   "label": "T4 Pakej SPM Tingkatan 4 2 tahun",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "selectedPackageId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "full-package-t4__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "T5 Pakej SPM Tingkatan 5 1 tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-022",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "school_package_id",
+   "label": "T5 Pakej SPM Tingkatan 5 1 tahun",
+   "optionValue": "2",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "selectedPackageId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "package-t5__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "D1_D6 Pakej Rendah (Darjah 1-6) 6 tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-024",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "school_package_id",
+   "label": "D1_D6 Pakej Rendah (Darjah 1-6) 6 tahun",
+   "optionValue": "3",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "selectedPackageId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S13-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "T1_T3 Pakej Menengah Rendah (Tingkatan 1-3) 3 tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-026",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "school_package_id",
+   "label": "T1_T3 Pakej Menengah Rendah (Tingkatan 1-3) 3 tahun",
+   "optionValue": "4",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "selectedPackageId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S13-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bilangan Pelajar *",
+   "for": "student_quota",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-028",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "student_quota",
+   "label": "Bilangan Pelajar *",
+   "required": true,
+   "min": "1",
+   "max": "2000",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-model": "studentQuota"
+   },
+   "domId": "student_quota",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "pelajar × RM/tahun",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "100",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "studentQuota"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "30.00",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "selectedPackage?.price_annual || 30"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "3,000.00",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "(studentQuota * (selectedPackage?.price_annual || 30)).toLocaleString('en-MY', {minimumFractionDigits: 2})"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah tahun:",
+   "section": "Borang Langganan Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedPackage?.max_renewals > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "RM",
+   "section": "Borang Langganan Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=selectedPackage?.max_renewals > 0"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pakej Pemantauan: · 500 soalan/bulan/pelajar · 1 bulan",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "full-package-t4__1280",
+    "tier-full__1280"
+   ],
+   "showWhen": "packageTier === 'basic' && studentQuota > 0"
+  },
+  {
+   "id": "EL-M02-S13-037",
+   "kind": "text",
+   "tag": "strong",
+   "text": "PERCUMA",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "full-package-t4__1280",
+    "tier-full__1280"
+   ],
+   "showWhen": "packageTier === 'basic' && studentQuota > 0"
+  },
+  {
+   "id": "EL-M02-S13-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "full-package-t4__1280",
+    "tier-full__1280"
+   ],
+   "showWhen": "packageTier === 'basic' && studentQuota > 0"
+  },
+  {
+   "id": "EL-M02-S13-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Rujukan Pembayaran",
+   "for": "payment_reference",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-040",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "payment_reference",
+   "label": "Rujukan Pembayaran",
+   "placeholder": "cth: Bank transfer ref, nombor resit",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "domId": "payment_reference",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-041",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nota",
+   "for": "payment_notes",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-042",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "payment_notes",
+   "label": "Nota",
+   "placeholder": "Nota tambahan (opsional)",
+   "rows": "3",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "domId": "payment_notes",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-043",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/admin/school-subscriptions",
+   "absHref": "https://prestasiplus.my/admin/school-subscriptions",
+   "icon": "fa-arrow-left",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cipta Langganan",
+   "icon": "fa-check",
+   "form": "https://prestasiplus.my/admin/school-subscriptions",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "full-package-t4__1280",
+    "package-t5__1280",
+    "school-search-empty__1280",
+    "school-search__1280",
+    "school-selected__1280",
+    "tier-full__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah tahun:",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "2",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "selectedPackage.max_renewals + 1"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-047",
+   "kind": "text",
+   "tag": "strong",
+   "text": "RM",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "6,000.00",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "(studentQuota * (selectedPackage?.price_annual || 30) * (selectedPackage.max_renewals + 1)).toLocaleString('en-MY', {minimumFractionDigits: 2})"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "full-package-t4__1280"
+   ],
+   "showWhen": "packageTier === 'full' && studentQuota > 0 && selectedPackage"
+  },
+  {
+   "id": "EL-M02-S13-049",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<name> BBD4051 — PPD HULU LANGAT, Selangor",
+   "form": "https://prestasiplus.my/admin/school-subscriptions",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-search__1280"
+   ],
+   "showWhen": "showResults && results.length > 0",
+   "dataRow": true,
+   "repeatCount": 5,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S13-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "<name>",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "selectedName"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "BBD4051 — PPD HULU LANGAT, Selangor",
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "x-text": "selectedMeta"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  },
+  {
+   "id": "EL-M02-S13-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "form": "https://prestasiplus.my/admin/school-subscriptions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Langganan Baru",
+   "alpine": {
+    "@click": "clearSelection()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "school-selected__1280"
+   ]
+  }
+ ]
+}

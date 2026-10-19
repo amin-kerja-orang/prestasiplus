@@ -1,0 +1,4194 @@
+{
+ "screen": "S10",
+ "key": "S10-jpn-dashboard",
+ "route": "/jpn/dashboard",
+ "name": "Dashboard JPN | PRESTASIPLUS",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:48.537Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 215,
+  "visibleDefault": 194,
+  "conditional": 18,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 144,
+   "link": 8,
+   "card": 16,
+   "heading": 9,
+   "input": 1,
+   "select": 1,
+   "button": 25,
+   "table": 6,
+   "empty-state": 5
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "JPN dashboard (admin → Johor)",
+   "file": "_raw/M18/S10-jpn-dashboard__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "district__1280",
+   "description": "district filter select \"PPD KLUANG\" (client-side)",
+   "file": "_raw/M18/S10-jpn-dashboard__district__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "#district-filter-select",
+      "PPD KLUANG"
+     ]
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "search-empty__1280",
+   "description": "search with no match",
+   "file": "_raw/M18/S10-jpn-dashboard__search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "type": [
+      "#school-search-input",
+      "zzzz"
+     ]
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "search__1280",
+   "description": "typed \"KLUANG\" in the client-side school search",
+   "file": "_raw/M18/S10-jpn-dashboard__search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "type": [
+      "#school-search-input",
+      "KLUANG"
+     ]
+    },
+    {
+     "wait": 600
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "JPN dashboard (admin → Johor) @375",
+   "file": "_raw/M18/S10-jpn-dashboard__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "JPN dashboard (admin → Johor) @768",
+   "file": "_raw/M18/S10-jpn-dashboard__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/jpn/dashboard",
+   "finalUrl": "/jpn/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard JPN | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 4774,
+    "main div[title^=\"20\"]": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard JPN",
+   "seenIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "<span class=\"text-xs text-slate-400\">Tiada sekolah dijumpai</span>",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "<span class=\"text-xs text-slate-500\">Menunjukkan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "<div class=\"flex items-center gap-1\">",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "<button data-page=\"",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "class=\"px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "\"><i class=\"fas fa-chevron-left\"></i></button>",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "<span class=\"px-1 text-xs text-slate-400\">\\u2026</span>",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "\" class=\"w-8 h-8 rounded-lg text-xs font-bold transition-colors",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer\"",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "\"><i class=\"fas fa-chevron-right\"></i></button>",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "sekolah dijumpai",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M18-S10-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Papan Pemuka",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Dashboard JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "Dashboard JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Dashboard JPN",
+   "landmark": "main",
+   "section": "Dashboard JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Johor",
+   "landmark": "main",
+   "section": "Dashboard JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-008",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Johor",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "JPN",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dashboard Agregat Jabatan Pendidikan Negeri",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,189",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah Sekolah",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Sekolah",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,189",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah Pelajar",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Pelajar",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "GPS Purata",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "GPS Purata",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "2.49",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "A-",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pelajar Berisiko Merah",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Berisiko Merah",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-028",
+   "kind": "text",
+   "tag": "p",
+   "text": "100% daripada 135 pelajar",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-029",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ketepatan Keseluruhan",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan Keseluruhan",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "71.6%",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-032",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kombo Aktif",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kombo Aktif",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "81",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "daripada 135 pelajar",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-036",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tapis & Cari",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "school-filter-bar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tapis & Cari",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-038",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Cari nama sekolah...",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "school-search-input",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-039",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Daerah (PPD)"
+    },
+    {
+     "value": "PPD BATU PAHAT",
+     "text": "PPD BATU PAHAT"
+    },
+    {
+     "value": "PPD JOHOR BAHRU",
+     "text": "PPD JOHOR BAHRU"
+    },
+    {
+     "value": "PPD KLUANG",
+     "text": "PPD KLUANG"
+    },
+    {
+     "value": "PPD KOTA TINGGI",
+     "text": "PPD KOTA TINGGI"
+    },
+    {
+     "value": "PPD KULAI",
+     "text": "PPD KULAI"
+    },
+    {
+     "value": "PPD MERSING",
+     "text": "PPD MERSING"
+    },
+    {
+     "value": "PPD MUAR",
+     "text": "PPD MUAR"
+    },
+    {
+     "value": "PPD PASIR GUDANG",
+     "text": "PPD PASIR GUDANG"
+    },
+    {
+     "value": "PPD PONTIAN",
+     "text": "PPD PONTIAN"
+    },
+    {
+     "value": "PPD SEGAMAT",
+     "text": "PPD SEGAMAT"
+    },
+    {
+     "value": "PPD TANGKAK",
+     "text": "PPD TANGKAK"
+    }
+   ],
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "district-filter-select",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-040",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Reset",
+   "icon": "fa-times",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "filter-reset-btn",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280",
+    "search-empty__1280",
+    "search__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-041",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "landmark": "main",
+   "section": "Johor",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-042",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ringkasan prestasi semua Pejabat Pendidikan Daerah dalam negeri Johor",
+   "landmark": "main",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-044",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Daerah",
+    "Sekolah",
+    "Pelajar",
+    "MerahRisiko Merah",
+    "Ketepatan"
+   ],
+   "rowCount": 11,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "PPD BATU PAHAT",
+     "href": "https://prestasiplus.my/jpn/daerah/PPD%20BATU%20PAHAT"
+    }
+   ],
+   "landmark": "main",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-045",
+   "kind": "link",
+   "tag": "a",
+   "text": "PPD BATU PAHAT",
+   "href": "https://prestasiplus.my/jpn/daerah/PPD%20BATU%20PAHAT",
+   "absHref": "https://prestasiplus.my/jpn/daerah/PPD%20BATU%20PAHAT",
+   "landmark": "table",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "PPD JOHOR BAHRU",
+   "href": "https://prestasiplus.my/jpn/daerah/PPD%20JOHOR%20BAHRU",
+   "absHref": "https://prestasiplus.my/jpn/daerah/PPD%20JOHOR%20BAHRU",
+   "landmark": "table",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-047",
+   "kind": "link",
+   "tag": "a",
+   "text": "PPD KLUANG",
+   "href": "https://prestasiplus.my/jpn/daerah/PPD%20KLUANG",
+   "absHref": "https://prestasiplus.my/jpn/daerah/PPD%20KLUANG",
+   "landmark": "table",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Klik nama daerah untuk lihat dashboard PPD terperinci",
+   "icon": "fa-info-circle",
+   "landmark": "main",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-049",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi GPS — Perbandingan Sekolah",
+   "landmark": "main",
+   "section": "Perbandingan Daerah (PPD) — Seluruh Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-050",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Prestasi GPS — Perbandingan Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kedudukan sekolah mengikut Gred Purata Sekolah (GPS) — lebih rendah lebih baik",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-052",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "GPS",
+    "Gred",
+    "Pelajar"
+   ],
+   "rowCount": 1189,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+     "href": "https://prestasiplus.my/jpn/sekolah/8880"
+    }
+   ],
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–20 daripada 1189 sekolah",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-054",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "disabled": true,
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "1",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-056",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "2",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "…",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-058",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "60",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-060",
+   "kind": "card",
+   "tag": "div",
+   "text": "Amaran Awal — Taburan Risiko",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-061",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Amaran Awal — Taburan Risiko",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Taburan risiko pelajar merentasi sekolah dalam negeri",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-064",
+   "kind": "text",
+   "tag": "p",
+   "text": "On Track",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-065",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-067",
+   "kind": "text",
+   "tag": "p",
+   "text": "Perlu Perhatian",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-068",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-069",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berisiko Tinggi",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-071",
+   "kind": "text",
+   "tag": "p",
+   "text": "100%",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-072",
+   "kind": "text",
+   "tag": "p",
+   "text": "Taburan Risiko Keseluruhan Negeri",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-073",
+   "kind": "text",
+   "tag": "div",
+   "text": "100%",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "Hijau: 0",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kuning: 0",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "Merah: 135",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-077",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "Pelajar",
+    "Hijau",
+    "Kuning",
+    "Merah"
+   ],
+   "rowCount": 7,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-078",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–7 daripada 7 sekolah",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-079",
+   "kind": "card",
+   "tag": "div",
+   "text": "Analisa Item — Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-080",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Analisa Item — Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan jawapan merentasi semua subjek dalam negeri",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-083",
+   "kind": "text",
+   "tag": "span",
+   "text": "70.7%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-084",
+   "kind": "text",
+   "tag": "span",
+   "text": "31 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-085",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,154 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-086",
+   "kind": "text",
+   "tag": "span",
+   "text": "649 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-088",
+   "kind": "text",
+   "tag": "span",
+   "text": "70.9%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-089",
+   "kind": "text",
+   "tag": "span",
+   "text": "29 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-090",
+   "kind": "text",
+   "tag": "span",
+   "text": "1,094 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "539 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-092",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "71.1%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-094",
+   "kind": "text",
+   "tag": "span",
+   "text": "32 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-095",
+   "kind": "text",
+   "tag": "span",
+   "text": "545 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-096",
+   "kind": "text",
+   "tag": "span",
+   "text": "634 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-097",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-098",
+   "kind": "text",
+   "tag": "span",
+   "text": "71.9%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-099",
+   "kind": "text",
+   "tag": "span",
+   "text": "29 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-100",
+   "kind": "text",
+   "tag": "span",
+   "text": "851 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-101",
+   "kind": "text",
+   "tag": "span",
+   "text": "539 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-102",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-103",
+   "kind": "text",
+   "tag": "span",
+   "text": "72.6%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-104",
+   "kind": "text",
+   "tag": "span",
+   "text": "37 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-105",
+   "kind": "text",
+   "tag": "span",
+   "text": "828 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-106",
+   "kind": "text",
+   "tag": "span",
+   "text": "631 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-107",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-108",
+   "kind": "text",
+   "tag": "span",
+   "text": "92.3%",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-109",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 pelajar",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "50 soalan",
+   "icon": "fa-list-check",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-111",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-112",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kombo Latihan — Gambaran Negeri",
+   "landmark": "main",
+   "section": "Analisa Item — Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-113",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Kombo Latihan — Gambaran Negeri",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-114",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penglibatan harian pelajar merentasi sekolah dalam negeri",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "81",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kombo Aktif",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-117",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-118",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Pelajar",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-119",
+   "kind": "text",
+   "tag": "p",
+   "text": "7.2",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-120",
+   "kind": "text",
+   "tag": "p",
+   "text": "Purata Kombo",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-121",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-122",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berlatih Hari Ini",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-123",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "Pelajar",
+    "AktifKombo Aktif",
+    "PurataPurata Kombo"
+   ],
+   "rowCount": 1189,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-124",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–20 daripada 1189 sekolah",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-125",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "disabled": true,
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-126",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "1",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-127",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "2",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "…",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-129",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "60",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-130",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-131",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap Penguasaan — Taburan Negeri",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-132",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tahap Penguasaan — Taburan Negeri",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-133",
+   "kind": "text",
+   "tag": "p",
+   "text": "Taburan tahap penguasaan pelajar merentasi negeri",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-134",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pemula",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "14",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-136",
+   "kind": "text",
+   "tag": "span",
+   "text": "(116.7%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mula Belajar",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "20",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "(166.7%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "4",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-142",
+   "kind": "text",
+   "tag": "span",
+   "text": "(33.3%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-143",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tekun",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-144",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mahir",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-147",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-148",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-149",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pakar Muda",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-150",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-152",
+   "kind": "text",
+   "tag": "span",
+   "text": "Cemerlang",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-153",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-154",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-155",
+   "kind": "text",
+   "tag": "span",
+   "text": "Master",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-156",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-158",
+   "kind": "text",
+   "tag": "span",
+   "text": "Grandmaster",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-159",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-160",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-161",
+   "kind": "text",
+   "tag": "span",
+   "text": "Legend",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-162",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mythical",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-165",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-166",
+   "kind": "text",
+   "tag": "span",
+   "text": "(0%)",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-167",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "Pelajar",
+    "TahapPurata Tahap"
+   ],
+   "rowCount": 1189,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-168",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–20 daripada 1189 sekolah",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-169",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "disabled": true,
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-170",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "1",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-171",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "2",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-172",
+   "kind": "text",
+   "tag": "span",
+   "text": "…",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-173",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "60",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-174",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-175",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pembetulan — Gambaran Negeri",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-176",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Pembetulan — Gambaran Negeri",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-177",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kadar pembetulan pelajar untuk September 2026",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-178",
+   "kind": "text",
+   "tag": "p",
+   "text": "135",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-179",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Pelajar",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-180",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-181",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Pembetulan",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-182",
+   "kind": "text",
+   "tag": "p",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-183",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kadar Purata",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-184",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "Pelajar",
+    "PembetulanTelah Membuat Pembetulan"
+   ],
+   "rowCount": 1189,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-185",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–20 daripada 1189 sekolah",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-186",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "disabled": true,
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-187",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "1",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-188",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "2",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-189",
+   "kind": "text",
+   "tag": "span",
+   "text": "…",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-190",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "60",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-191",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-192",
+   "kind": "card",
+   "tag": "div",
+   "text": "Laporan Terperinci",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-193",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Laporan Terperinci",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-194",
+   "kind": "text",
+   "tag": "p",
+   "text": "Akses laporan mendalam untuk setiap modul",
+   "landmark": "main",
+   "section": "Laporan Terperinci",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-195",
+   "kind": "link",
+   "tag": "a",
+   "text": "Statistik Penggunaan",
+   "href": "https://prestasiplus.my/jpn/statistik-penggunaan",
+   "absHref": "https://prestasiplus.my/jpn/statistik-penggunaan",
+   "icon": "fa-chart-pie",
+   "landmark": "main",
+   "section": "Laporan Terperinci",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-196",
+   "kind": "link",
+   "tag": "a",
+   "text": "Amaran Awal",
+   "href": "https://prestasiplus.my/amaran/jpn",
+   "absHref": "https://prestasiplus.my/amaran/jpn",
+   "icon": "fa-bell",
+   "landmark": "main",
+   "section": "Laporan Terperinci",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-197",
+   "kind": "link",
+   "tag": "a",
+   "text": "Analisa Item",
+   "href": "https://prestasiplus.my/analisa-item/jpn",
+   "absHref": "https://prestasiplus.my/analisa-item/jpn",
+   "icon": "fa-chart-bar",
+   "landmark": "main",
+   "section": "Laporan Terperinci",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-198",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kombo Harian",
+   "href": "https://prestasiplus.my/kombo/jpn",
+   "absHref": "https://prestasiplus.my/kombo/jpn",
+   "icon": "fa-fire",
+   "landmark": "main",
+   "section": "Laporan Terperinci",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "district__1280",
+    "search-empty__1280",
+    "search__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-199",
+   "kind": "text",
+   "tag": "div",
+   "text": "479 sekolah dijumpai",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "filter-result-count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-200",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "6",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-201",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "6",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-202",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "6",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-203",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "6",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "district__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-204",
+   "kind": "text",
+   "tag": "div",
+   "text": "0 sekolah dijumpai",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "filter-result-count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-205",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-206",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-207",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-208",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-209",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-210",
+   "kind": "text",
+   "tag": "div",
+   "text": "43 sekolah dijumpai",
+   "landmark": "main",
+   "section": "Johor",
+   "domId": "filter-result-count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-211",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–10 daripada 10 sekolah",
+   "landmark": "main",
+   "section": "Prestasi GPS — Perbandingan Sekolah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-212",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–3 daripada 3 sekolah",
+   "landmark": "main",
+   "section": "Amaran Awal — Taburan Risiko",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-213",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–10 daripada 10 sekolah",
+   "landmark": "main",
+   "section": "Kombo Latihan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-214",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–10 daripada 10 sekolah",
+   "landmark": "main",
+   "section": "Tahap Penguasaan — Taburan Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S10-215",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunjukkan 1–10 daripada 10 sekolah",
+   "landmark": "main",
+   "section": "Pembetulan — Gambaran Negeri",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "search__1280"
+   ]
+  }
+ ]
+}

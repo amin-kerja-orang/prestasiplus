@@ -1,0 +1,1167 @@
+{
+ "screen": "S5",
+ "key": "S5-ppd-benchmark",
+ "route": "/ppd/benchmark-sekolah",
+ "name": "Benchmark Sekolah — PPD KLUANG",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:48.094Z",
+ "notes": "GET form ?subject_id",
+ "shell": "SHU",
+ "summary": {
+  "total": 41,
+  "visibleDefault": 30,
+  "conditional": 8,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 19,
+   "link": 8,
+   "card": 4,
+   "heading": 3,
+   "form": 1,
+   "label": 1,
+   "select": 1,
+   "button": 1,
+   "table": 1,
+   "badge": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "all subjects",
+   "file": "_raw/M18/S5-ppd-benchmark__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/ppd/benchmark-sekolah",
+   "finalUrl": "/ppd/benchmark-sekolah",
+   "httpStatus": 200,
+   "title": "Benchmark Sekolah — PPD KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 116,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "subject-3__1280",
+   "description": "subject_id=3 Matematik (Teras) (GET by URL)",
+   "file": "_raw/M18/S5-ppd-benchmark__subject-3__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/ppd/benchmark-sekolah?subject_id=3",
+   "finalUrl": "/ppd/benchmark-sekolah?subject_id=3",
+   "httpStatus": 200,
+   "title": "Benchmark Sekolah — PPD KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 116,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "subject-bogus__1280",
+   "description": "unknown subject_id (GET by URL)",
+   "file": "_raw/M18/S5-ppd-benchmark__subject-bogus__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/ppd/benchmark-sekolah?subject_id=99999",
+   "finalUrl": "/ppd/benchmark-sekolah?subject_id=99999",
+   "httpStatus": 200,
+   "title": "Benchmark Sekolah — PPD KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 116,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "all subjects @375",
+   "file": "_raw/M18/S5-ppd-benchmark__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/ppd/benchmark-sekolah",
+   "finalUrl": "/ppd/benchmark-sekolah",
+   "httpStatus": 200,
+   "title": "Benchmark Sekolah — PPD KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 116,
+    "main div[title^=\"20\"]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "all subjects @768",
+   "file": "_raw/M18/S5-ppd-benchmark__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/ppd/benchmark-sekolah",
+   "finalUrl": "/ppd/benchmark-sekolah",
+   "httpStatus": 200,
+   "title": "Benchmark Sekolah — PPD KLUANG",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(tag);\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 116,
+    "main div[title^=\"20\"]": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Benchmark Sekolah Daerah",
+   "seenIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  },
+  {
+   "url": "/ppd/export-laporan",
+   "sources": [
+    "attr:onclick@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M18-S5-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard PPD",
+   "href": "https://prestasiplus.my/ppd/dashboard",
+   "absHref": "https://prestasiplus.my/ppd/dashboard",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Benchmark Sekolah",
+   "landmark": "main",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "PPD KLUANG",
+   "landmark": "main",
+   "section": "Benchmark Sekolah Daerah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-008",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "PPD KLUANG",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "Johor",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Perbandingan prestasi semua sekolah dalam daerah",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "116",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "0.6%",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Purata Ketepatan",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Purata Aktif",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tapis Mata Pelajaran",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-018",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "method": "GET",
+   "fields": [
+    "subject_id"
+   ],
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tapis Mata Pelajaran",
+   "landmark": "form",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-020",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Tapis Mata Pelajaran",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Mata Pelajaran"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris (Teras)"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu (Teras)"
+    },
+    {
+     "value": "3",
+     "text": "Matematik (Teras)"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam (Teras)"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral (Teras)"
+    },
+    {
+     "value": "4",
+     "text": "Sains (Teras)"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah (Teras)"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-021",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-filter",
+   "form": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "landmark": "form",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "Skor Komposit = (% Aktif × 0.4) + (Purata Ketepatan × 0.3) + (Soalan/Pelajar × 0.3, ternormal) — Lebih tinggi lebih baik.",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-023",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kedudukan Sekolah",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-024",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kedudukan Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-025",
+   "kind": "link",
+   "tag": "a",
+   "text": "Eksport CSV",
+   "href": "https://prestasiplus.my/ppd/benchmark-sekolah?",
+   "absHref": "https://prestasiplus.my/ppd/benchmark-sekolah?",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "alpine": {
+    "onclick": "window.location='https://prestasiplus.my/ppd/export-laporan' + '?district=PPD+KLUANG&state=Johor&format=csv'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-026",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Sekolah",
+    "Pelajar",
+    "Aktif",
+    "% Aktif",
+    "Ketepatan",
+    "Soalan Dijawab",
+    "Skor"
+   ],
+   "rowCount": 116,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG",
+     "href": "https://prestasiplus.my/ppd/sekolah/8765"
+    }
+   ],
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-027",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG",
+   "href": "https://prestasiplus.my/ppd/sekolah/8765",
+   "absHref": "https://prestasiplus.my/ppd/sekolah/8765",
+   "landmark": "table",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "73.1%",
+   "landmark": "table",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-029",
+   "kind": "link",
+   "tag": "a",
+   "text": "KOLEJ VOKASIONAL KLUANG",
+   "href": "https://prestasiplus.my/ppd/sekolah/8953",
+   "absHref": "https://prestasiplus.my/ppd/sekolah/8953",
+   "landmark": "table",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-030",
+   "kind": "link",
+   "tag": "a",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) CHIAN BEE",
+   "href": "https://prestasiplus.my/ppd/sekolah/3156",
+   "absHref": "https://prestasiplus.my/ppd/sekolah/3156",
+   "landmark": "table",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tempat 1 — Emas",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tempat 2 — Perak",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tempat 3 — Gangsa",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "subject-3__1280",
+    "subject-bogus__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "0.7%",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-035",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kosongkan",
+   "href": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "absHref": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "icon": "fa-times",
+   "landmark": "form",
+   "section": "PPD KLUANG",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280",
+    "subject-bogus__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-036",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kedudukan Sekolah — Matematik",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-037",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kedudukan Sekolah — Matematik",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Eksport CSV",
+   "href": "https://prestasiplus.my/ppd/benchmark-sekolah?subject_id=3",
+   "absHref": "https://prestasiplus.my/ppd/benchmark-sekolah?subject_id=3",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah — Matematik",
+   "alpine": {
+    "onclick": "window.location='https://prestasiplus.my/ppd/export-laporan' + '?district=PPD+KLUANG&state=Johor&format=csv'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-039",
+   "kind": "badge",
+   "tag": "span",
+   "text": "76.3%",
+   "landmark": "table",
+   "section": "Kedudukan Sekolah — Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-3__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "PPD KLUANG",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-bogus__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S5-041",
+   "kind": "link",
+   "tag": "a",
+   "text": "Eksport CSV",
+   "href": "https://prestasiplus.my/ppd/benchmark-sekolah?subject_id=99999",
+   "absHref": "https://prestasiplus.my/ppd/benchmark-sekolah?subject_id=99999",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kedudukan Sekolah",
+   "alpine": {
+    "onclick": "window.location='https://prestasiplus.my/ppd/export-laporan' + '?district=PPD+KLUANG&state=Johor&format=csv'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-bogus__1280"
+   ]
+  }
+ ]
+}

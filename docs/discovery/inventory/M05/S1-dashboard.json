@@ -1,0 +1,6137 @@
+{
+ "screen": "S1",
+ "key": "S1-dashboard",
+ "route": "/dashboard",
+ "name": "Dashboard (user-portal home)",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.456Z",
+ "notes": "first 4 of 31 subject cards, 3 of 31 subject-stat cards, 2 of 5 recent questions inventoried (repeat); full lists in narrative appendix",
+ "shell": "SHU",
+ "summary": {
+  "total": 323,
+  "visibleDefault": 291,
+  "conditional": 14,
+  "hiddenOnly": 18,
+  "mobileOnly": 0,
+  "desktopOnly": 8,
+  "byKind": {
+   "text": 195,
+   "heading": 18,
+   "link": 35,
+   "card": 21,
+   "badge": 33,
+   "toggle": 6,
+   "button": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (slide 1/5, counters settled)",
+   "file": "_raw/M05/S1-dashboard__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/dashboard",
+   "finalUrl": "/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .subject-card": 31,
+    "main .subject-stat-card": 31,
+    "main .question-item": 5
+   }
+  },
+  {
+   "label": "slide2-expanded__1280",
+   "description": "carousel next → slide 2/5 + \"Baca Selanjutnya\" expanded",
+   "file": "_raw/M05/S1-dashboard__slide2-expanded__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/dashboard",
+   "finalUrl": "/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main [x-data=\"bannerCarousel(5)\"] button[\\@click=\"next()\"]"
+    },
+    {
+     "wait": 700
+    },
+    {
+     "eval": "(() => { const b=[...document.querySelectorAll('main [x-data=\"bannerCarousel(5)\"] button')].filter(x=>x.offsetParent && /Baca Selanjutnya/.test(x.textContent))[0]; if(b){b.click(); return 'expanded';} return 'no btn'; })()"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "expanded",
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .subject-card": 31,
+    "main .subject-stat-card": 31,
+    "main .question-item": 5
+   }
+  },
+  {
+   "label": "slide5__1280",
+   "description": "carousel dot 5 → slide 5/5",
+   "file": "_raw/M05/S1-dashboard__slide5__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/dashboard",
+   "finalUrl": "/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main [x-data=\"bannerCarousel(5)\"] button[\\@click=\"goTo(4)\"]"
+    },
+    {
+     "wait": 700
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .subject-card": 31,
+    "main .subject-stat-card": 31,
+    "main .question-item": 5
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M05/S1-dashboard__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/dashboard",
+   "finalUrl": "/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .subject-card": 31,
+    "main .subject-stat-card": 31,
+    "main .question-item": 5
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M05/S1-dashboard__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/dashboard",
+   "finalUrl": "/dashboard",
+   "httpStatus": 200,
+   "title": "Dashboard - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .subject-card": 31,
+    "main .subject-stat-card": 31,
+    "main .question-item": 5
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "dashboard",
+   "xData": "dashboard()",
+   "keys": [],
+   "liveState": {},
+   "visible": true,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "bannerCarousel",
+   "xData": "bannerCarousel(5)",
+   "keys": [],
+   "liveState": {
+    "current": 0,
+    "total": 5,
+    "interval": 2,
+    "paused": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ expanded: false }",
+   "keys": [
+    "expanded"
+   ],
+   "liveState": {
+    "expanded": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ count: 0 }",
+   "keys": [
+    "count"
+   ],
+   "liveState": {
+    "count": 256
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Kombo 1 hari akan putus!",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "dailyQuestWidget",
+   "xData": "dailyQuestWidget()",
+   "keys": [],
+   "liveState": {
+    "showReward": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Kombo 1 hari akan putus!",
+   "seenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "🎉 PRESTASIPLUS Dashboard - DUOLINGO MEETS KAHOOT MODE ACTIVATED! 🚀",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Tutup",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Baca Selanjutnya",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S1-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Selamat Petang, Admin PRESTASI+ 👋",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jom teruskan latihan hari ini! 🚀",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Percubaan Percuma",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "Baki 0 / 50 soalan",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "Langgan Sekarang",
+   "href": "https://prestasiplus.my/pricing",
+   "absHref": "https://prestasiplus.my/pricing",
+   "icon": "fa-rocket",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "HERO",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-show": "current === 0",
+    "x-transition:enter": "transition ease-out duration-400",
+    "x-transition:enter-start": "opacity-0 translate-x-6",
+    "x-transition:enter-end": "opacity-100 translate-x-0",
+    "x-transition:leave": "transition ease-in duration-200 absolute inset-0",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0 -translate-x-6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "HERO",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat Datang ke PRESTASIPLUS",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform pembelajaran interaktif untuk pelajar sekolah. Jom mula belajar hari ini!",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-014",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Baca Selanjutnya",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-015",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "prev()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-016",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "next()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "showWhen": "current === 0"
+  },
+  {
+   "id": "EL-M05-S1-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "FEATURE",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-show": "current === 1",
+    "x-transition:enter": "transition ease-out duration-400",
+    "x-transition:enter-start": "opacity-0 translate-x-6",
+    "x-transition:enter-end": "opacity-100 translate-x-0",
+    "x-transition:leave": "transition ease-in duration-200 absolute inset-0",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0 -translate-x-6"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-018",
+   "kind": "badge",
+   "tag": "span",
+   "text": "FEATURE",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,000+ Soalan Latihan Tersedia!",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Latih diri dengan ribuan soalan Matematik, Sains, BM dan BI. Kumpul coins dan naik ranking!",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-021",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Baca Selanjutnya",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-022",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "prev()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-023",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "next()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 1"
+  },
+  {
+   "id": "EL-M05-S1-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "PROMOTIONAL",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-show": "current === 2",
+    "x-transition:enter": "transition ease-out duration-400",
+    "x-transition:enter-start": "opacity-0 translate-x-6",
+    "x-transition:enter-end": "opacity-100 translate-x-0",
+    "x-transition:leave": "transition ease-in duration-200 absolute inset-0",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0 -translate-x-6"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-025",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PROMOTIONAL",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cabaran Mingguan: Siapa Paling Rajin?",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sertai cabaran mingguan dan lihat nama kamu di papan pendahulu. Streak 7 hari = bonus coins!",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-028",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Baca Selanjutnya",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "prev()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-030",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "next()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 2"
+  },
+  {
+   "id": "EL-M05-S1-031",
+   "kind": "card",
+   "tag": "div",
+   "text": "ANNOUNCEMENT",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-show": "current === 3",
+    "x-transition:enter": "transition ease-out duration-400",
+    "x-transition:enter-start": "opacity-0 translate-x-6",
+    "x-transition:enter-end": "opacity-100 translate-x-0",
+    "x-transition:leave": "transition ease-in duration-200 absolute inset-0",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0 -translate-x-6"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-032",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ANNOUNCEMENT",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tips untuk Ibu Bapa: Bimbing Anak Belajar",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Panduan untuk ibu bapa membantu anak-anak cemerlang dalam pelajaran. Klik untuk baca lebih lanjut.",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-035",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Baca Selanjutnya",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-036",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "prev()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-037",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "next()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 3"
+  },
+  {
+   "id": "EL-M05-S1-038",
+   "kind": "card",
+   "tag": "div",
+   "text": "FEATURE",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-show": "current === 4",
+    "x-transition:enter": "transition ease-out duration-400",
+    "x-transition:enter-start": "opacity-0 translate-x-6",
+    "x-transition:enter-end": "opacity-100 translate-x-0",
+    "x-transition:leave": "transition ease-in duration-200 absolute inset-0",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0 -translate-x-6"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-039",
+   "kind": "badge",
+   "tag": "span",
+   "text": "FEATURE",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kumpul Badge & Tunjukkan Kehebatan!",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "15 badge istimewa menanti! Jawab soalan, kekalkan streak, dan jadi juara kelas.",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-042",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Baca Selanjutnya",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-043",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "prev()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-chevron-right",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "next()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "current === 4"
+  },
+  {
+   "id": "EL-M05-S1-045",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "goTo(0)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-046",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "goTo(1)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-047",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "goTo(2)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-048",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "goTo(3)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-049",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "goTo(4)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 / 5",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "x-text": "(current + 1) + ' / 5'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚠️",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-052",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kombo 1 hari akan putus!",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jangan lepaskan! Buat sekurang-kurangnya 1 latihan hari ini.",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-play",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "256",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-057",
+   "kind": "text",
+   "tag": "div",
+   "text": "Syiling Kamu",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "8",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mata (Lvl 2)",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-061",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-063",
+   "kind": "text",
+   "tag": "div",
+   "text": "Hari Berturut",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-064",
+   "kind": "text",
+   "tag": "div",
+   "text": "📋",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sesi Minggu Ini",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-067",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "%",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-071",
+   "kind": "card",
+   "tag": "div",
+   "text": "📱 Misi Harian",
+   "landmark": "main",
+   "section": "Kombo 1 hari akan putus!",
+   "alpine": {
+    "x-data": "dailyQuestWidget()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-072",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📱 Misi Harian",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-073",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selesaikan semua misi → buka Peti Harian! 🎁",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Progres",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-077",
+   "kind": "text",
+   "tag": "span",
+   "text": "10",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rajin Berlatih",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-080",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Mudah",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-081",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selesaikan 3 kuiz hari ini",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/3",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-083",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "+15",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-086",
+   "kind": "text",
+   "tag": "span",
+   "text": "Si Tepat",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-087",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-088",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dapat 80% ketepatan dalam mana-mana kuiz",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-089",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/80",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-090",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-091",
+   "kind": "text",
+   "tag": "div",
+   "text": "+20",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-092",
+   "kind": "text",
+   "tag": "div",
+   "text": "🗺️",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penjelajah Topik",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-094",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-095",
+   "kind": "text",
+   "tag": "p",
+   "text": "Latih 3 topik berbeza hari ini",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-096",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/3",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-097",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-098",
+   "kind": "text",
+   "tag": "div",
+   "text": "+25",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-099",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚡",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-100",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kilat Matematik",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-101",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sukar",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-102",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawab 10 soalan dengan betul",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-103",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/10",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-104",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-105",
+   "kind": "text",
+   "tag": "div",
+   "text": "+30",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-106",
+   "kind": "text",
+   "tag": "div",
+   "text": "🌟",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-107",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mula Hari Ini",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-108",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Mudah",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-109",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selesaikan 1 sesi latihan hari ini",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/1",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-111",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-112",
+   "kind": "text",
+   "tag": "div",
+   "text": "+10",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-113",
+   "kind": "text",
+   "tag": "div",
+   "text": "✅",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-114",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jawab 5 Betul",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-115",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Mudah",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawab 5 soalan dengan betul",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-117",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/5",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-118",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-119",
+   "kind": "text",
+   "tag": "div",
+   "text": "+12",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-120",
+   "kind": "text",
+   "tag": "div",
+   "text": "⏱️",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-121",
+   "kind": "text",
+   "tag": "span",
+   "text": "Latihan 10 Minit",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-122",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-123",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berlatih sekurang-kurangnya 10 minit hari ini",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-124",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/10",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-125",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-126",
+   "kind": "text",
+   "tag": "div",
+   "text": "+20",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-127",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kombo 2 Hari",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-129",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-130",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kekalkan kombo latihan selama 2 hari berturut-turut",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-131",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/2",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-132",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-133",
+   "kind": "text",
+   "tag": "div",
+   "text": "+25",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-134",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan 90%",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-136",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sukar",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-137",
+   "kind": "text",
+   "tag": "p",
+   "text": "Capai ketepatan 90% dalam sesi latihan",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/90",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-139",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-140",
+   "kind": "text",
+   "tag": "div",
+   "text": "+35",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-141",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚡",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-142",
+   "kind": "text",
+   "tag": "span",
+   "text": "Cabaran Kilat",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-143",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sukar",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-144",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawab 20 soalan betul dalam satu sesi",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/20",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-146",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-147",
+   "kind": "text",
+   "tag": "div",
+   "text": "+40",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-148",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎁",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-149",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selesaikan 10 lagi misi untuk buka peti! 🔒",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-150",
+   "kind": "text",
+   "tag": "div",
+   "text": "🏆",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-151",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum Ada Lencana Lagi!",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-152",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jom kumpul lencana pertama dengan menjawab soalan! 🚀",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-153",
+   "kind": "link",
+   "tag": "a",
+   "text": "🚀 Mula Latihan",
+   "href": "/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-154",
+   "kind": "link",
+   "tag": "a",
+   "text": "🔄 Soalan Aku Salah 72",
+   "href": "/practice/revision",
+   "absHref": "https://prestasiplus.my/practice/revision",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-155",
+   "kind": "badge",
+   "tag": "span",
+   "text": "72",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-156",
+   "kind": "link",
+   "tag": "a",
+   "text": "📈 Kemajuan",
+   "href": "/practice/progress",
+   "absHref": "https://prestasiplus.my/practice/progress",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-157",
+   "kind": "link",
+   "tag": "a",
+   "text": "📊 Sejarah Latihan",
+   "href": "/practice/history",
+   "absHref": "https://prestasiplus.my/practice/history",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-158",
+   "kind": "link",
+   "tag": "a",
+   "text": "🏅 Papan Pendahulu",
+   "href": "/leaderboard",
+   "absHref": "https://prestasiplus.my/leaderboard",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-159",
+   "kind": "link",
+   "tag": "a",
+   "text": "Panel Admin",
+   "href": "/admin",
+   "absHref": "https://prestasiplus.my/admin",
+   "icon": "fa-shield-alt",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-160",
+   "kind": "card",
+   "tag": "div",
+   "text": "📚 Artikel Untuk Kamu",
+   "landmark": "main",
+   "section": "📱 Misi Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-161",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📚 Artikel Untuk Kamu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-162",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Semua",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-arrow-right",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-163",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tips Belajar AI Ini Apa Sebenarnya? Jom Fahami Bersama! 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/ai-ini-apa-sebenarnya-jom-fahami-bersama",
+   "absHref": "https://prestasiplus.my/artikel/ai-ini-apa-sebenarnya-jom-fahami-bersama",
+   "icon": "fa-newspaper",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-164",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-165",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tips Belajar 5 Tips Belajar Matematik yang Menyeronokkan 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/5-tips-belajar-matematik",
+   "absHref": "https://prestasiplus.my/artikel/5-tips-belajar-matematik",
+   "icon": "fa-newspaper",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-166",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-167",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tips Belajar Cara Baca Buku Cerita dalam Bahasa Inggeris 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/cara-baca-buku-cerita-bahasa-inggeris",
+   "absHref": "https://prestasiplus.my/artikel/cara-baca-buku-cerita-bahasa-inggeris",
+   "icon": "fa-newspaper",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-168",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-169",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tips Belajar Sains Menyeronokkan: Eksperimen Mudah di Rumah 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/sains-menyeronokkan-eksperimen-di-rumah",
+   "absHref": "https://prestasiplus.my/artikel/sains-menyeronokkan-eksperimen-di-rumah",
+   "icon": "fa-newspaper",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-170",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-171",
+   "kind": "link",
+   "tag": "a",
+   "text": "Panduan Ibu Bapa Panduan Ibu Bapa: Jadual Belajar untuk Anak 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/panduan-ibu-bapa-jadual-belajar",
+   "absHref": "https://prestasiplus.my/artikel/panduan-ibu-bapa-jadual-belajar",
+   "icon": "fa-newspaper",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-172",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Panduan Ibu Bapa",
+   "landmark": "main",
+   "section": "📚 Artikel Untuk Kamu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-173",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📖 Subjek Tersedia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-174",
+   "kind": "badge",
+   "tag": "span",
+   "text": "31 subjek",
+   "landmark": "main",
+   "section": "📖 Subjek Tersedia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-175",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "📖 Subjek Tersedia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-176",
+   "kind": "text",
+   "tag": "span",
+   "text": "11688 soalan",
+   "landmark": "main",
+   "section": "📖 Subjek Tersedia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-177",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-178",
+   "kind": "text",
+   "tag": "p",
+   "text": "Malay Language",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-179",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ Subjek Teras",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-180",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan 🚀",
+   "href": "/practice?subject=BM",
+   "absHref": "https://prestasiplus.my/practice?subject=BM",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-181",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-182",
+   "kind": "text",
+   "tag": "span",
+   "text": "8039 soalan",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-183",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-184",
+   "kind": "text",
+   "tag": "p",
+   "text": "English Language",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-185",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ Subjek Teras",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-186",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan 🚀",
+   "href": "/practice?subject=BI",
+   "absHref": "https://prestasiplus.my/practice?subject=BI",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-187",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-188",
+   "kind": "text",
+   "tag": "span",
+   "text": "13872 soalan",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-189",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-190",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mathematics",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-191",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ Subjek Teras",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-192",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan 🚀",
+   "href": "/practice?subject=MATH",
+   "absHref": "https://prestasiplus.my/practice?subject=MATH",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-193",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-194",
+   "kind": "text",
+   "tag": "span",
+   "text": "12165 soalan",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-195",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-196",
+   "kind": "text",
+   "tag": "p",
+   "text": "Science",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-197",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ Subjek Teras",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-198",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan 🚀",
+   "href": "/practice?subject=SCI",
+   "absHref": "https://prestasiplus.my/practice?subject=SCI",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-199",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📊 Statistik Platform",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-200",
+   "kind": "text",
+   "tag": "div",
+   "text": "📚",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-201",
+   "kind": "text",
+   "tag": "span",
+   "text": "130152",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-202",
+   "kind": "text",
+   "tag": "div",
+   "text": "Total Soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-203",
+   "kind": "text",
+   "tag": "div",
+   "text": "📖",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-204",
+   "kind": "text",
+   "tag": "span",
+   "text": "31",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-205",
+   "kind": "text",
+   "tag": "div",
+   "text": "Subjek Aktif",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-206",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-207",
+   "kind": "text",
+   "tag": "span",
+   "text": "11",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-208",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tahap Pendidikan",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-209",
+   "kind": "text",
+   "tag": "div",
+   "text": "✅",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-210",
+   "kind": "text",
+   "tag": "span",
+   "text": "129752",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "alpine": {
+    "x-text": "count"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-211",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan Approved",
+   "landmark": "main",
+   "section": "📊 Statistik Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-212",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "🎓 Tahap Pendidikan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-213",
+   "kind": "card",
+   "tag": "div",
+   "text": "🏫 Sekolah Rendah (KSSR)",
+   "landmark": "main",
+   "section": "🎓 Tahap Pendidikan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-214",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "🏫 Sekolah Rendah (KSSR)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-215",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 1 (11396)",
+   "href": "/practice?level=D1",
+   "absHref": "https://prestasiplus.my/practice?level=D1",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-216",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 2 (10245)",
+   "href": "/practice?level=D2",
+   "absHref": "https://prestasiplus.my/practice?level=D2",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-217",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 3 (5776)",
+   "href": "/practice?level=D3",
+   "absHref": "https://prestasiplus.my/practice?level=D3",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-218",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 4 (4787)",
+   "href": "/practice?level=D4",
+   "absHref": "https://prestasiplus.my/practice?level=D4",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-219",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 5 (3874)",
+   "href": "/practice?level=D5",
+   "absHref": "https://prestasiplus.my/practice?level=D5",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-220",
+   "kind": "link",
+   "tag": "a",
+   "text": "Darjah 6 (4464)",
+   "href": "/practice?level=D6",
+   "absHref": "https://prestasiplus.my/practice?level=D6",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-221",
+   "kind": "card",
+   "tag": "div",
+   "text": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "landmark": "main",
+   "section": "🏫 Sekolah Rendah (KSSR)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-222",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-223",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tingkatan 1 (19455)",
+   "href": "/practice?level=T1",
+   "absHref": "https://prestasiplus.my/practice?level=T1",
+   "landmark": "main",
+   "section": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-224",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tingkatan 2 (15700)",
+   "href": "/practice?level=T2",
+   "absHref": "https://prestasiplus.my/practice?level=T2",
+   "landmark": "main",
+   "section": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-225",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tingkatan 3 (13800)",
+   "href": "/practice?level=T3",
+   "absHref": "https://prestasiplus.my/practice?level=T3",
+   "landmark": "main",
+   "section": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-226",
+   "kind": "card",
+   "tag": "div",
+   "text": "🎓 Sekolah Menengah Atas (KSSM)",
+   "landmark": "main",
+   "section": "🎒 Sekolah Menengah Rendah (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-227",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "🎓 Sekolah Menengah Atas (KSSM)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-228",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tingkatan 4 (19113)",
+   "href": "/practice?level=T4",
+   "absHref": "https://prestasiplus.my/practice?level=T4",
+   "landmark": "main",
+   "section": "🎓 Sekolah Menengah Atas (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-229",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tingkatan 5 (20770)",
+   "href": "/practice?level=T5",
+   "absHref": "https://prestasiplus.my/practice?level=T5",
+   "landmark": "main",
+   "section": "🎓 Sekolah Menengah Atas (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-230",
+   "kind": "card",
+   "tag": "div",
+   "text": "⚡ Soalan Terkini",
+   "landmark": "main",
+   "section": "🎓 Sekolah Menengah Atas (KSSM)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-231",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "⚡ Soalan Terkini",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-232",
+   "kind": "text",
+   "tag": "span",
+   "text": "📝",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-233",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-234",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-235",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-236",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-237",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-238",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-239",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topup Sains T5 Bab 9 item 1: Apakah maksud satelit buatan? Pilih jawapan yang paling tepat.",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-240",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-241",
+   "kind": "text",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-242",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-243",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-244",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-245",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-246",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-247",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-248",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topup Sains T5 Bab 9 item 2: Mengapakah satelit komunikasi diletakkan pada orbit tertentu? Pilih jaw...",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-249",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-250",
+   "kind": "text",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-251",
+   "kind": "card",
+   "tag": "div",
+   "text": "📈 Tahap Kesukaran",
+   "landmark": "main",
+   "section": "⚡ Soalan Terkini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-252",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📈 Tahap Kesukaran",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-253",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-254",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sangat Mudah",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-255",
+   "kind": "badge",
+   "tag": "span",
+   "text": "39694",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-256",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-257",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-258",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mudah",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-259",
+   "kind": "badge",
+   "tag": "span",
+   "text": "47138",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-260",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-261",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-262",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-263",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-264",
+   "kind": "badge",
+   "tag": "span",
+   "text": "33720",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-265",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-266",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-267",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-268",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-269",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sukar",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-270",
+   "kind": "badge",
+   "tag": "span",
+   "text": "9600",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-271",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-272",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-273",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-274",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-275",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-276",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sangat Sukar",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-277",
+   "kind": "badge",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-278",
+   "kind": "text",
+   "tag": "div",
+   "text": "130152",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-279",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Keseluruhan",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-280",
+   "kind": "card",
+   "tag": "div",
+   "text": "📊 Statistik Subjek",
+   "landmark": "main",
+   "section": "📈 Tahap Kesukaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-281",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📊 Statistik Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-282",
+   "kind": "card",
+   "tag": "div",
+   "text": "15414 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-283",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-284",
+   "kind": "text",
+   "tag": "div",
+   "text": "15414 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-285",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kesukaran:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-286",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-287",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-288",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-289",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-290",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-291",
+   "kind": "text",
+   "tag": "span",
+   "text": "Digunakan:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-292",
+   "kind": "text",
+   "tag": "span",
+   "text": "0x",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-293",
+   "kind": "card",
+   "tag": "div",
+   "text": "13872 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-294",
+   "kind": "text",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-295",
+   "kind": "text",
+   "tag": "div",
+   "text": "13872 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-296",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kesukaran:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-297",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-298",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-299",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-300",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-301",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-302",
+   "kind": "text",
+   "tag": "span",
+   "text": "Digunakan:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-303",
+   "kind": "text",
+   "tag": "span",
+   "text": "0x",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-304",
+   "kind": "card",
+   "tag": "div",
+   "text": "12165 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-305",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-306",
+   "kind": "text",
+   "tag": "div",
+   "text": "12165 soalan",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-307",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kesukaran:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-308",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-309",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-310",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-311",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-312",
+   "kind": "text",
+   "tag": "span",
+   "text": "⭐",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-313",
+   "kind": "text",
+   "tag": "span",
+   "text": "Digunakan:",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-314",
+   "kind": "text",
+   "tag": "span",
+   "text": "0x",
+   "landmark": "main",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-315",
+   "kind": "card",
+   "tag": "div",
+   "text": "Artikel Terkini",
+   "landmark": "aside",
+   "section": "📊 Statistik Subjek",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-316",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Artikel Terkini",
+   "landmark": "aside",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-317",
+   "kind": "link",
+   "tag": "a",
+   "text": "AI Ini Apa Sebenarnya? Jom Fahami Bersama! 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/ai-ini-apa-sebenarnya-jom-fahami-bersama",
+   "absHref": "https://prestasiplus.my/artikel/ai-ini-apa-sebenarnya-jom-fahami-bersama",
+   "icon": "fa-newspaper",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-318",
+   "kind": "link",
+   "tag": "a",
+   "text": "5 Tips Belajar Matematik yang Menyeronokkan 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/5-tips-belajar-matematik",
+   "absHref": "https://prestasiplus.my/artikel/5-tips-belajar-matematik",
+   "icon": "fa-newspaper",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-319",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cara Baca Buku Cerita dalam Bahasa Inggeris 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/cara-baca-buku-cerita-bahasa-inggeris",
+   "absHref": "https://prestasiplus.my/artikel/cara-baca-buku-cerita-bahasa-inggeris",
+   "icon": "fa-newspaper",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-320",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sains Menyeronokkan: Eksperimen Mudah di Rumah 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/sains-menyeronokkan-eksperimen-di-rumah",
+   "absHref": "https://prestasiplus.my/artikel/sains-menyeronokkan-eksperimen-di-rumah",
+   "icon": "fa-newspaper",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-321",
+   "kind": "link",
+   "tag": "a",
+   "text": "Panduan Ibu Bapa: Jadual Belajar untuk Anak 7 bulan yang lepas",
+   "href": "https://prestasiplus.my/artikel/panduan-ibu-bapa-jadual-belajar",
+   "absHref": "https://prestasiplus.my/artikel/panduan-ibu-bapa-jadual-belajar",
+   "icon": "fa-newspaper",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-322",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat Semua Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-arrow-right",
+   "landmark": "aside",
+   "section": "Artikel Terkini",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "slide2-expanded__1280",
+    "slide5__1280"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S1-323",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tutup",
+   "icon": "fa-chevron-down",
+   "landmark": "main",
+   "section": "Selamat Petang, Admin PRESTASI+ 👋",
+   "alpine": {
+    "@click": "expanded = !expanded"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "slide2-expanded__1280"
+   ],
+   "showWhen": "current === 1"
+  }
+ ]
+}

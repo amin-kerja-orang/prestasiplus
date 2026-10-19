@@ -1,0 +1,129 @@
+# PrestaPlus v2 containers. Guide: docs/ops/containers.md
+#   cp .env.example .env     (optional; defaults work for the prototype)
+#   docker compose build
+#   docker compose up -d     -> http://localhost:5192
+#   docker compose down
+# The older docker-compose.preview.yml (host-built dist-preview, port 5191) still works unchanged.
+name: pretasiplus
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-demo}
+        VITE_API_MODE: ${VITE_API_MODE:-mock}
+        VITE_TEST_HOOKS: ${VITE_TEST_HOOKS:-false}
+        VITE_PROTOTYPE_SCOPE: ${VITE_PROTOTYPE_SCOPE:-on}
+        VITE_MOCK_LATENCY_MS: ${VITE_MOCK_LATENCY_MS:-400}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: pretasiplus-frontend:local
+    container_name: pretasiplus-frontend
+    ports:
+      - '${FRONTEND_PORT:-5192}:8080'
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: 'no'
+
+  # ---- NestJS API (BE-01). Guide: docs/ops/containers.md ----
+  # No host port by default (the frontend nginx proxies /api to api:3000 from BE-32).
+  # For local tooling add an uncommitted compose.override.yaml with ports: ['127.0.0.1:3000:3000'].
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    image: pretasiplus-api:local
+    container_name: pretasiplus-api
+    env_file:
+      - path: .env.api              # secrets: DATABASE_URL, session secret; never committed
+        required: false             # optional so `docker compose config -q` passes in CI
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - '3000'
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+
+  # ---- One-shot schema migration (BE-03). Runs `prisma migrate deploy` and exits before the api starts. ----
+  # Built from the Dockerfile `build` stage because the Prisma CLI is a devDependency (not in the runtime image).
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: build
+    image: pretasiplus-api-migrate:local
+    container_name: pretasiplus-migrate
+    working_dir: /app
+    command: ['npm', 'run', 'be:db:migrate']
+    user: node
+    env_file:
+      - path: .env.api              # needs DATABASE_URL; never committed
+        required: false
+    environment:
+      NODE_ENV: production
+      HOME: /tmp
+      npm_config_cache: /tmp/.npm
+      npm_config_update_notifier: 'false'
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+
+  # ---- PostgreSQL (BE-02). No host port: 5432/5433 are used by other stacks. ----
+  # Optional loopback port for local tooling: see compose.override.example.yaml.
+  db:
+    image: postgres:16-alpine
+    container_name: pretasiplus-db
+    env_file:
+      - path: .env.db               # POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD; never committed
+        required: false             # optional so `docker compose config -q` passes in CI
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    tmpfs:
+      - /tmp
+      - /run/postgresql:uid=70,gid=70,mode=0755   # postgres uid/gid in the alpine image
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    # The entrypoint starts as root to fix volume ownership, then drops to postgres.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    restart: 'no'
+
+volumes:
+  pgdata:

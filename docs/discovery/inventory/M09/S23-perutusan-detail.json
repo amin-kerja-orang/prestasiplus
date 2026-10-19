@@ -1,0 +1,1524 @@
+{
+ "screen": "S23",
+ "key": "S23-perutusan-detail",
+ "route": "/perutusan/{id}",
+ "name": "Perutusan (detail)",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.211Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 79,
+  "visibleDefault": 62,
+  "conditional": 7,
+  "hiddenOnly": 10,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 52,
+   "link": 4,
+   "card": 2,
+   "badge": 1,
+   "heading": 3,
+   "form": 4,
+   "hidden-field": 7,
+   "button": 4,
+   "input": 1,
+   "textarea": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "#4 (cached; pinned, public, YouTube embed)",
+   "file": "_raw/M09/S23-perutusan-detail__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/4",
+   "finalUrl": "/perutusan/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var seen = {}, out = []; document.querySelectorAll('main span, main div, main a, main h1, main h2, main p').forEach(function (e) { var t = (e.childElementCount ? [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.nodeValue).join('') : e.textContent).replace(/\\s+/g, ' ').trim(); if (!t || t.length > 40) return; var c = e.getAttribute('class') || ''; if (!/rounded-full|rounded-md|rounded-lg|badge|^h[12]$/.test(c + ' ' + e.tagName.toLowerCase()) && !/^H[12]$/.test(e.tagName)) return; var cs = getComputedStyle(e); var k = t + '|' + cs.backgroundColor + '|' + cs.color; if (seen[k]) return; seen[k] = 1; out.push(t.slice(0, 30) + ' {bg:' + cs.backgroundColor + (cs.backgroundImage !== 'none' ? ' ' + cs.backgroundImage.slice(0, 70) : '') + ' fg:' + cs.color + '}'); }); return out.slice(0, 45).join(' ; '); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=1 replaced=1 leaks=0",
+    "Pengetua {bg:oklab(0.623 -0.0378409 -0.210628 / 0.2) fg:oklch(0.882 0.059 254.128)}",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id -> 404",
+   "file": "_raw/M09/S23-perutusan-detail__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/perutusan/99999",
+   "finalUrl": "/perutusan/99999",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "cached @375",
+   "file": "_raw/M09/S23-perutusan-detail__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/perutusan/4",
+   "finalUrl": "/perutusan/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main *')].filter(e => { var s = getComputedStyle(e).overflowX; return (s === 'auto' || s === 'scroll') && e.scrollWidth > e.clientWidth + 2; }).map(e => e.tagName + '.' + (e.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + e.scrollWidth + '>' + e.clientWidth).join(' ; ') || 'no inner h-scroll')()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=1 replaced=1 leaks=0",
+    "no inner h-scroll",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "cached @768",
+   "file": "_raw/M09/S23-perutusan-detail__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/perutusan/4",
+   "finalUrl": "/perutusan/4",
+   "httpStatus": 200,
+   "title": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=1 replaced=1 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Perutusan",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M09-S23-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Perutusan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke senarai",
+   "href": "https://prestasiplus.my/perutusan",
+   "absHref": "https://prestasiplus.my/perutusan",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-005",
+   "kind": "card",
+   "tag": "div",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "AD",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-008",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Pengetua",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sekolah",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "17 Mar 2026, 11:23PM",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "Awam",
+   "icon": "fa-globe",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "Disematkan",
+   "icon": "fa-thumbtack",
+   "landmark": "main",
+   "section": "Perutusan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-013",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "✦ ✦ ✦",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dengan Nama Allah Yang Maha Pemurah Lagi Maha Penyayang",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat Hari Raya Aidilfitri",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "1 Syawal 1447H / 2026M",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "✦ ✦ ✦",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ucapan Perutusan Hari Raya Aidilfitri 2026",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daripada Pihak Pengurusan Sekolah",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada Warga Guru dan Pelajar Yang Dihormati",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Assalamualaikum Warahmatullahi Wabarakatuh dan Salam Sejahtera,",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "Alhamdulillah, segala puji bagi Allah SWT kerana dengan limpah kurnia-Nya, kita masih diberi peluang untuk menyambut tibanya dalam keadaan sihat dan sejahtera.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-025",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Hari Raya Aidilfitri 1447H",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pihak sekolah dengan penuh rasa syukur dan kerendahan hati merakamkan ucapan kepada seluruh warga guru, kakitangan, pelajar, serta ibu bapa dan penjaga yang dihormati sekalian.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-027",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Selamat Hari Raya Aidilfitri, Maaf Zahir dan Batin",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-028",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bulan Ramadan yang baru sahaja kita tempuhi adalah sebuah madrasah yang agung — mendidik kita erti . Semoga amalan-amalan mulia yang telah kita tanam sepanjang bulan yang penuh barakah itu, terus subur dalam kehidupan kita seharian.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-029",
+   "kind": "text",
+   "tag": "strong",
+   "text": "kesabaran, keikhlasan, dan ketaqwaan",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada para yang dihormati — terima kasih di atas pengorbanan, dedikasi, dan amanah yang terus kalian tunaikan dalam mendidik generasi masa hadapan bangsa. Jasa kalian adalah pelita ilmu yang takkan padam.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-031",
+   "kind": "text",
+   "tag": "strong",
+   "text": "guru dan kakitangan",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kepada para yang dikasihi — jadikanlah Syawal ini sebagai titik permulaan baharu. Tingkatkan semangat belajar, jaga adab, dan teruskan perjuangan menuntut ilmu dengan penuh kesungguhan. Ingatlah, setiap kejayaan yang kalian raih adalah sumbangan kalian kepada keluarga, bangsa, dan agama.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-033",
+   "kind": "text",
+   "tag": "strong",
+   "text": "pelajar",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Marilah kita manfaatkan perayaan mulia ini sebagai peluang untuk , memohon kemaafan sesama kita, dan memperbaharui niat untuk terus menjadi insan yang lebih baik.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "mempererat silaturrahim",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekali lagi,",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-037",
+   "kind": "text",
+   "tag": "em",
+   "text": "\"Selamat Hari Raya Aidilfitri — Maaf Zahir dan Batin.\"",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-038",
+   "kind": "text",
+   "tag": "em",
+   "text": "\"Semoga Allah SWT menerima segala amal ibadah kita,",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-039",
+   "kind": "text",
+   "tag": "em",
+   "text": "melimpahkan rahmat dan keberkatan-Nya ke atas kita semua,",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-040",
+   "kind": "text",
+   "tag": "em",
+   "text": "dan menjadikan kita golongan yang sentiasa bersyukur.\"",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Aamiin Ya Rabbal 'Alamin.",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "Hormat daripada,",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pihak Pengurusan Sekolah",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "SMK Bandar Seri Putra",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syawal 1447H / 2026M",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "🌙 ⭐",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-047",
+   "kind": "text",
+   "tag": "p",
+   "text": "Takbir Bergema, Hati Bersatu",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-048",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/perutusan/4/react",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "type"
+   ],
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-049",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-050",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "type",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "👍 Suka 1",
+   "form": "https://prestasiplus.my/perutusan/4/react",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-052",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/perutusan/4/react",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "type"
+   ],
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-053",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-054",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "type",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "❤️ Cinta",
+   "form": "https://prestasiplus.my/perutusan/4/react",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-056",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/perutusan/4/react",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "type"
+   ],
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-057",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-058",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "type",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-059",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🙏 Terima Kasih",
+   "form": "https://prestasiplus.my/perutusan/4/react",
+   "landmark": "form",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 baca",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 komen",
+   "icon": "fa-comment",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pautan Awam (boleh kongsi tanpa login)",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-063",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "readonly": true,
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "alpine": {
+    "onclick": "this.select(); navigator.clipboard.writeText(this.value);"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kongsi ke WhatsApp",
+   "href": "https://wa.me/?text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+SMK+Bandar+Seri+Putra+%E2%80%94+Baca+di+PrestasiPlus%3A+https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "absHref": "https://wa.me/?text=Video+Ucapan+Selamat+Hari+Raya+Dari+Pihak+Pengurusan+SMK+Bandar+Seri+Putra+%E2%80%94+Baca+di+PrestasiPlus%3A+https%3A%2F%2Fprestasiplus.my%2Fperutusan%2Fawam%2F4",
+   "target": "_blank",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-065",
+   "kind": "card",
+   "tag": "div",
+   "text": "Komen",
+   "landmark": "main",
+   "section": "Video Ucapan Selamat Hari Raya Dari Pihak Pengurusan SMK Bandar Seri Putra",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-066",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Komen",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-067",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/perutusan/4/comment",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "body"
+   ],
+   "landmark": "main",
+   "section": "Komen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-068",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Komen",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-069",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "body",
+   "placeholder": "Tulis komen anda...",
+   "required": true,
+   "maxlength": "1000",
+   "rows": "3",
+   "landmark": "form",
+   "section": "Komen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "Komen akan disemak sebelum dipaparkan",
+   "landmark": "form",
+   "section": "Komen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-071",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar",
+   "form": "https://prestasiplus.my/perutusan/4/comment",
+   "landmark": "form",
+   "section": "Komen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-072",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada komen",
+   "landmark": "main",
+   "section": "Komen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-073",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-075",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-076",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-077",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S23-079",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  }
+ ]
+}

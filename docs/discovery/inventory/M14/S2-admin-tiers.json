@@ -1,0 +1,3433 @@
+{
+ "screen": "S2",
+ "key": "S2-admin-tiers",
+ "route": "/admin/gamification/tiers",
+ "name": "Tier Config",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.206Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 204,
+  "visibleDefault": 187,
+  "conditional": 0,
+  "hiddenOnly": 17,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 3,
+   "text": 50,
+   "card": 2,
+   "form": 9,
+   "hidden-field": 17,
+   "label": 42,
+   "input": 72,
+   "button": 9
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (4 tiers + Tambah Tier Baru)",
+   "file": "_raw/M14/S2-admin-tiers__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamification/tiers",
+   "finalUrl": "/admin/gamification/tiers",
+   "httpStatus": 200,
+   "title": "Tier Config",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (4 tiers + Tambah Tier Baru) @375",
+   "file": "_raw/M14/S2-admin-tiers__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/gamification/tiers",
+   "finalUrl": "/admin/gamification/tiers",
+   "httpStatus": 200,
+   "title": "Tier Config",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default (4 tiers + Tambah Tier Baru) @768",
+   "file": "_raw/M14/S2-admin-tiers__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/gamification/tiers",
+   "finalUrl": "/admin/gamification/tiers",
+   "httpStatus": 200,
+   "title": "Tier Config",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S2-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "👑 Tier Configuration",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Urus tier sistem gamifikasi — termasuk ganjaran Syiling per soalan",
+   "landmark": "main",
+   "section": "👑 Tier Configuration",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-003",
+   "kind": "card",
+   "tag": "div",
+   "text": "Senarai Tier",
+   "landmark": "main",
+   "section": "👑 Tier Configuration",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-004",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Senarai Tier",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/1",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "label_ms",
+    "icon",
+    "color",
+    "min_syiling",
+    "conversion_rate",
+    "sort_order",
+    "quiz_reward_l1",
+    "quiz_reward_l2",
+    "quiz_reward_l3",
+    "quiz_reward_l4",
+    "quiz_reward_l5",
+    "pksk_reward_correct",
+    "board_game_reward_correct",
+    "board_game_reward_win",
+    "perks"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-007",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥉",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Label BM",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-010",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "label_ms",
+   "label": "Label BM",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-011",
+   "kind": "label",
+   "tag": "label",
+   "text": "Icon",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-012",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Icon",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-014",
+   "kind": "input",
+   "tag": "input",
+   "type": "color",
+   "name": "color",
+   "label": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Min Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-016",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "min_syiling",
+   "label": "Min Syiling",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kadar",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-018",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "conversion_rate",
+   "label": "Kadar",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Urutan",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-020",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "sort_order",
+   "label": "Urutan",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-021",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/1",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "📝 Latih Tubi — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-024",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l1",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l2",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "L3",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-028",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l3",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "L4",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-030",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l4",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "L5",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-032",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l5",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "🛡️ PKSK — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-034",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "pksk_reward_correct",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan PKSK (tiada level)",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎲 Papan Bijak — Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-038",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_correct",
+   "label": "Jawab Betul",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Menang",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-040",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_win",
+   "label": "Menang",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-041",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "perks",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-042",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/1/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-043",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🔴 Nyahaktif",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/1/toggle",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-045",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/2",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "label_ms",
+    "icon",
+    "color",
+    "min_syiling",
+    "conversion_rate",
+    "sort_order",
+    "quiz_reward_l1",
+    "quiz_reward_l2",
+    "quiz_reward_l3",
+    "quiz_reward_l4",
+    "quiz_reward_l5",
+    "pksk_reward_correct",
+    "board_game_reward_correct",
+    "board_game_reward_win",
+    "perks"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-046",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-047",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥈",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-049",
+   "kind": "label",
+   "tag": "label",
+   "text": "Label BM",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-050",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "label_ms",
+   "label": "Label BM",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-051",
+   "kind": "label",
+   "tag": "label",
+   "text": "Icon",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-052",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Icon",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-053",
+   "kind": "label",
+   "tag": "label",
+   "text": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-054",
+   "kind": "input",
+   "tag": "input",
+   "type": "color",
+   "name": "color",
+   "label": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-055",
+   "kind": "label",
+   "tag": "label",
+   "text": "Min Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-056",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "min_syiling",
+   "label": "Min Syiling",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-057",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kadar",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-058",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "conversion_rate",
+   "label": "Kadar",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-059",
+   "kind": "label",
+   "tag": "label",
+   "text": "Urutan",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-060",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "sort_order",
+   "label": "Urutan",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/2",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "📝 Latih Tubi — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-063",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-064",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l1",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-066",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l2",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-067",
+   "kind": "text",
+   "tag": "div",
+   "text": "L3",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-068",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l3",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-069",
+   "kind": "text",
+   "tag": "div",
+   "text": "L4",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-070",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l4",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-071",
+   "kind": "text",
+   "tag": "div",
+   "text": "L5",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-072",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l5",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-073",
+   "kind": "text",
+   "tag": "p",
+   "text": "🛡️ PKSK — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-074",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "pksk_reward_correct",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-075",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan PKSK (tiada level)",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-076",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎲 Papan Bijak — Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-077",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-078",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_correct",
+   "label": "Jawab Betul",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-079",
+   "kind": "label",
+   "tag": "label",
+   "text": "Menang",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-080",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_win",
+   "label": "Menang",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-081",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "perks",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-082",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/2/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-083",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-084",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🔴 Nyahaktif",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/2/toggle",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-085",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/3",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "label_ms",
+    "icon",
+    "color",
+    "min_syiling",
+    "conversion_rate",
+    "sort_order",
+    "quiz_reward_l1",
+    "quiz_reward_l2",
+    "quiz_reward_l3",
+    "quiz_reward_l4",
+    "quiz_reward_l5",
+    "pksk_reward_correct",
+    "board_game_reward_correct",
+    "board_game_reward_win",
+    "perks"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-086",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-087",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-088",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥇",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-089",
+   "kind": "label",
+   "tag": "label",
+   "text": "Label BM",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-090",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "label_ms",
+   "label": "Label BM",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-091",
+   "kind": "label",
+   "tag": "label",
+   "text": "Icon",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-092",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Icon",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-093",
+   "kind": "label",
+   "tag": "label",
+   "text": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-094",
+   "kind": "input",
+   "tag": "input",
+   "type": "color",
+   "name": "color",
+   "label": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-095",
+   "kind": "label",
+   "tag": "label",
+   "text": "Min Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-096",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "min_syiling",
+   "label": "Min Syiling",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-097",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kadar",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-098",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "conversion_rate",
+   "label": "Kadar",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-099",
+   "kind": "label",
+   "tag": "label",
+   "text": "Urutan",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-100",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "sort_order",
+   "label": "Urutan",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-101",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/3",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-102",
+   "kind": "text",
+   "tag": "p",
+   "text": "📝 Latih Tubi — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-103",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-104",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l1",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-105",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-106",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l2",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-107",
+   "kind": "text",
+   "tag": "div",
+   "text": "L3",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-108",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l3",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-109",
+   "kind": "text",
+   "tag": "div",
+   "text": "L4",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-110",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l4",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-111",
+   "kind": "text",
+   "tag": "div",
+   "text": "L5",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-112",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l5",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-113",
+   "kind": "text",
+   "tag": "p",
+   "text": "🛡️ PKSK — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-114",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "pksk_reward_correct",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan PKSK (tiada level)",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎲 Papan Bijak — Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-117",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-118",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_correct",
+   "label": "Jawab Betul",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-119",
+   "kind": "label",
+   "tag": "label",
+   "text": "Menang",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-120",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_win",
+   "label": "Menang",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-121",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "perks",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-122",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/3/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-123",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-124",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🔴 Nyahaktif",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/3/toggle",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-125",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/4",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "label_ms",
+    "icon",
+    "color",
+    "min_syiling",
+    "conversion_rate",
+    "sort_order",
+    "quiz_reward_l1",
+    "quiz_reward_l2",
+    "quiz_reward_l3",
+    "quiz_reward_l4",
+    "quiz_reward_l5",
+    "pksk_reward_correct",
+    "board_game_reward_correct",
+    "board_game_reward_win",
+    "perks"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-126",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-127",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-128",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-129",
+   "kind": "label",
+   "tag": "label",
+   "text": "Label BM",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-130",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "label_ms",
+   "label": "Label BM",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-131",
+   "kind": "label",
+   "tag": "label",
+   "text": "Icon",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-132",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Icon",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-133",
+   "kind": "label",
+   "tag": "label",
+   "text": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-134",
+   "kind": "input",
+   "tag": "input",
+   "type": "color",
+   "name": "color",
+   "label": "Warna",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-135",
+   "kind": "label",
+   "tag": "label",
+   "text": "Min Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-136",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "min_syiling",
+   "label": "Min Syiling",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-137",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kadar",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-138",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "conversion_rate",
+   "label": "Kadar",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-139",
+   "kind": "label",
+   "tag": "label",
+   "text": "Urutan",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-140",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "sort_order",
+   "label": "Urutan",
+   "required": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-141",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/4",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-142",
+   "kind": "text",
+   "tag": "p",
+   "text": "📝 Latih Tubi — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-143",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-144",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l1",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-145",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-146",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l2",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-147",
+   "kind": "text",
+   "tag": "div",
+   "text": "L3",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-148",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l3",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-149",
+   "kind": "text",
+   "tag": "div",
+   "text": "L4",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-150",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l4",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-151",
+   "kind": "text",
+   "tag": "div",
+   "text": "L5",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-152",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l5",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-153",
+   "kind": "text",
+   "tag": "p",
+   "text": "🛡️ PKSK — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-154",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "pksk_reward_correct",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-155",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan PKSK (tiada level)",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-156",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎲 Papan Bijak — Syiling",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-157",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawab Betul",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-158",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_correct",
+   "label": "Jawab Betul",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-159",
+   "kind": "label",
+   "tag": "label",
+   "text": "Menang",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-160",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_win",
+   "label": "Menang",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-161",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "perks",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-162",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers/4/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-163",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-164",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🔴 Nyahaktif",
+   "form": "https://prestasiplus.my/admin/gamification/tiers/4/toggle",
+   "landmark": "form",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-165",
+   "kind": "card",
+   "tag": "div",
+   "text": "➕ Tambah Tier Baru",
+   "landmark": "main",
+   "section": "Senarai Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-166",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "➕ Tambah Tier Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-167",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamification/tiers",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "tier_name",
+    "label_ms",
+    "icon",
+    "color",
+    "min_syiling",
+    "conversion_rate",
+    "sort_order",
+    "perks",
+    "quiz_reward_l1",
+    "quiz_reward_l2",
+    "quiz_reward_l3",
+    "quiz_reward_l4",
+    "quiz_reward_l5",
+    "pksk_reward_correct",
+    "board_game_reward_correct",
+    "board_game_reward_win"
+   ],
+   "landmark": "main",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-168",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-169",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Tier (eng)",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-170",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "tier_name",
+   "label": "Nama Tier (eng)",
+   "placeholder": "diamond",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-171",
+   "kind": "label",
+   "tag": "label",
+   "text": "Label BM",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-172",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "label_ms",
+   "label": "Label BM",
+   "placeholder": "Berlian",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-173",
+   "kind": "label",
+   "tag": "label",
+   "text": "Icon",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-174",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Icon",
+   "placeholder": "💎",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-175",
+   "kind": "label",
+   "tag": "label",
+   "text": "Warna",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-176",
+   "kind": "input",
+   "tag": "input",
+   "type": "color",
+   "name": "color",
+   "label": "Warna",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-177",
+   "kind": "label",
+   "tag": "label",
+   "text": "Min Syiling",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-178",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "min_syiling",
+   "label": "Min Syiling",
+   "placeholder": "10000",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-179",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kadar Penukaran",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-180",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "conversion_rate",
+   "label": "Kadar Penukaran",
+   "placeholder": "15",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-181",
+   "kind": "label",
+   "tag": "label",
+   "text": "Urutan",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-182",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "sort_order",
+   "label": "Urutan",
+   "required": true,
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-183",
+   "kind": "label",
+   "tag": "label",
+   "text": "Perks",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-184",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "perks",
+   "label": "Perks",
+   "placeholder": "Bonus 2x XP",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-185",
+   "kind": "text",
+   "tag": "p",
+   "text": "📝 Latih Tubi — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-186",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-187",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l1",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-188",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-189",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l2",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-190",
+   "kind": "text",
+   "tag": "div",
+   "text": "L3",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-191",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l3",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-192",
+   "kind": "text",
+   "tag": "div",
+   "text": "L4",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-193",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l4",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-194",
+   "kind": "text",
+   "tag": "div",
+   "text": "L5",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-195",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "quiz_reward_l5",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-196",
+   "kind": "text",
+   "tag": "p",
+   "text": "🛡️ PKSK — Syiling per Jawab Betul",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-197",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "pksk_reward_correct",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-198",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan PKSK (tiada level)",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-199",
+   "kind": "text",
+   "tag": "p",
+   "text": "🎲 Papan Bijak — Syiling",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-200",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawab Betul",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-201",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_correct",
+   "label": "Jawab Betul",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-202",
+   "kind": "label",
+   "tag": "label",
+   "text": "Menang",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-203",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "board_game_reward_win",
+   "label": "Menang",
+   "required": true,
+   "min": "0",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S2-204",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tambah Tier",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/admin/gamification/tiers",
+   "landmark": "form",
+   "section": "➕ Tambah Tier Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

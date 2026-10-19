@@ -1,0 +1,649 @@
+{
+ "screen": "S16",
+ "key": "S16-user-packages",
+ "route": "/admin/users/{id}/packages",
+ "name": "Assign Pakej SPM - <name>",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.461Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 33,
+  "visibleDefault": 27,
+  "conditional": 0,
+  "hiddenOnly": 6,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 3,
+   "heading": 3,
+   "text": 6,
+   "badge": 5,
+   "form": 2,
+   "hidden-field": 6,
+   "label": 2,
+   "input": 2,
+   "button": 2,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "school admin: assign SPM packages (T4/T5)",
+   "file": "_raw/M02/S16-user-packages__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/%7Bid%7D/packages",
+   "finalUrl": "/admin/users/%7Bid%7D/packages",
+   "httpStatus": 200,
+   "title": "Assign Pakej SPM - <name>",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=1 attrs=5 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S16-user-packages__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/users/%7Bid%7D/packages",
+   "finalUrl": "/admin/users/%7Bid%7D/packages",
+   "httpStatus": 200,
+   "title": "Assign Pakej SPM - <name>",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=1 attrs=5 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S16-user-packages__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/users/%7Bid%7D/packages",
+   "finalUrl": "/admin/users/%7Bid%7D/packages",
+   "httpStatus": 200,
+   "title": "Assign Pakej SPM - <name>",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=1 attrs=5 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S16-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "landmark": "main",
+   "section": "Assign Pakej SPM",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-002",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "SMK · Selangor · PPD HULU LANGAT",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-004",
+   "kind": "badge",
+   "tag": "span",
+   "text": "<name>",
+   "icon": "fa-user",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-005",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Admin Sekolah",
+   "icon": "fa-shield-alt",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-006",
+   "kind": "badge",
+   "tag": "span",
+   "text": "BEA4628",
+   "icon": "fa-barcode",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "T4",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "T4",
+   "landmark": "main",
+   "section": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-009",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pakej Tingkatan 4",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "RM 30/pelajar · 2 tahun",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Belum Ditetapkan",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-012",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/users/{id}/packages",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "form_level",
+    "package_id",
+    "student_quota"
+   ],
+   "landmark": "main",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-013",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "label": "Kuota Pelajar T4",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-014",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "form_level",
+   "label": "Kuota Pelajar T4",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-015",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "package_id",
+   "label": "Kuota Pelajar T4",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kuota Pelajar T4",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "student_quota",
+   "label": "Kuota Pelajar T4",
+   "placeholder": "Cth: 150",
+   "required": true,
+   "min": "1",
+   "max": "5000",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-018",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tetapkan Pakej T4",
+   "icon": "fa-plus-circle",
+   "form": "https://prestasiplus.my/admin/users/{id}/packages",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "T5",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 4",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pakej Tingkatan 5",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "RM 30/pelajar · 1 tahun",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-023",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Belum Ditetapkan",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-024",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/users/{id}/packages",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "form_level",
+    "package_id",
+    "student_quota"
+   ],
+   "landmark": "main",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-025",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "label": "Kuota Pelajar T5",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-026",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "form_level",
+   "label": "Kuota Pelajar T5",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-027",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "package_id",
+   "label": "Kuota Pelajar T5",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kuota Pelajar T5",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-029",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "student_quota",
+   "label": "Kuota Pelajar T5",
+   "placeholder": "Cth: 120",
+   "required": true,
+   "min": "1",
+   "max": "5000",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "776 pelajar T5 sedia ada dalam sistem",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-031",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tetapkan Pakej T5",
+   "icon": "fa-plus-circle",
+   "form": "https://prestasiplus.my/admin/users/{id}/packages",
+   "landmark": "form",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-032",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Senarai",
+   "href": "https://prestasiplus.my/admin/users?role=school_admin",
+   "absHref": "https://prestasiplus.my/admin/users?role=school_admin",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S16-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit Pengguna",
+   "href": "https://prestasiplus.my/admin/users/{id}/edit",
+   "absHref": "https://prestasiplus.my/admin/users/%7Bid%7D/edit",
+   "icon": "fa-edit",
+   "landmark": "main",
+   "section": "Pakej Tingkatan 5",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

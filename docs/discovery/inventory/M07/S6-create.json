@@ -1,0 +1,2179 @@
+{
+ "screen": "S6",
+ "key": "S6-create",
+ "route": "/admin/pksk/questions/create",
+ "name": "Tambah Soalan PKSK",
+ "module": "M07",
+ "generatedAt": "2026-09-25T08:47:17.623Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 57,
+  "visibleDefault": 34,
+  "conditional": 18,
+  "hiddenOnly": 5,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "form": 1,
+   "hidden-field": 1,
+   "card": 3,
+   "heading": 3,
+   "label": 13,
+   "select": 4,
+   "textarea": 2,
+   "input": 7,
+   "checkbox": 7,
+   "button": 9,
+   "badge": 6,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (no Bahagian: all 15 domains, 4 options, Betul hidden)",
+   "file": "_raw/M07/S6-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=bahagian,pksk_domain_id,question_text,options[0][text],options[1][text],options[2][text],options[3][text] domain= opts=/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "bahagian-a__1280",
+   "description": "Bahagian A (domain list = 1; note \"(Tiada jawapan betul/salah)\")",
+   "file": "_raw/M07/S6-create__bahagian-a__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "A"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=pksk_domain_id,question_text,options[0][text],options[1][text],options[2][text],options[3][text] domain= opts=/1",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "bahagian-b__1280",
+   "description": "Bahagian B (13 domains; \"Betul\" checkboxes shown)",
+   "file": "_raw/M07/S6-create__bahagian-b__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "B"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=pksk_domain_id,question_text,options[0][text],options[1][text],options[2][text],options[3][text] domain= opts=/2/3/4/5/6/7/8/9/10/11/12/13/14",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "bahagian-c__1280",
+   "description": "Bahagian C (options card hidden; hidden required inputs keep form invalid)",
+   "file": "_raw/M07/S6-create__bahagian-c__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "C"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "select": [
+      "main select[name=pksk_domain_id]",
+      "15"
+     ]
+    },
+    {
+     "fill": [
+      "main textarea[name=question_text]",
+      "x"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=options[0][text],options[1][text],options[2][text],options[3][text] domain=15 opts=/15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "domain-reset__1280",
+   "description": "Bahagian B, domain Sains, then Bahagian A (domain select back to placeholder)",
+   "file": "_raw/M07/S6-create__domain-reset__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "B"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "select": [
+      "main select[name=pksk_domain_id]",
+      "3"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "A"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=pksk_domain_id,question_text,options[0][text],options[1][text],options[2][text],options[3][text] domain= opts=/1",
+    "m07mask: 1",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "max-options__1280",
+   "description": "Bahagian B + 2x \"Tambah Pilihan\" (6 options, add button hidden)",
+   "file": "_raw/M07/S6-create__max-options__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "B"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "click": "main button:has-text(\"Tambah Pilihan\")"
+    },
+    {
+     "wait": 200
+    },
+    {
+     "click": "main button:has-text(\"Tambah Pilihan\")"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=pksk_domain_id,question_text,options[0][text],options[1][text],options[2][text],options[3][text],options[4][text],options[5][text] domain= opts=/2/3/4/5/6/7/8/9/10/11/12/13/14",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "min-options__1280",
+   "description": "two options removed (2 left, remove buttons hidden)",
+   "file": "_raw/M07/S6-create__min-options__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "click": "main form button:has(.fa-times)"
+    },
+    {
+     "wait": 200
+    },
+    {
+     "click": "main form button:has(.fa-times)"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return 'valid=' + f.checkValidity() + ' invalid=' + [...f.querySelectorAll(':invalid')].map(e => e.name).join(',') + ' domain=' + f.pksk_domain_id.value + ' opts=' + [...f.pksk_domain_id.options].map(o => o.value).join('/'); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "valid=false invalid=bahagian,pksk_domain_id,question_text,options[0][text],options[1][text] domain= opts=/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "bahagian-b__375",
+   "description": "Bahagian B @375",
+   "file": "_raw/M07/S6-create__bahagian-b__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=bahagian]",
+      "B"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M07/S6-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M07/S6-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/pksk/questions/create",
+   "finalUrl": "/admin/pksk/questions/create",
+   "httpStatus": 200,
+   "title": "Tambah Soalan PKSK - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main select option[x-text=\"d.name\"]').forEach(function (o) { o.removeAttribute('x-text'); o.setAttribute('data-x-text', 'd.name'); n++; }); if (!/\\/admin\\/pksk\\/access/.test(location.pathname)) return 'm07mask: ' + n; document.querySelectorAll('main tbody tr').forEach(function (tr) { var td = tr.querySelectorAll('td'); if (td.length < 7) return; var d = td[0].querySelectorAll('div'); if (d[0]) { d[0].textContent = '<person>'; n++; } if (d[1]) { d[1].textContent = '<email>'; n++; } if (td[2].textContent.trim() !== '-') { td[2].textContent = '<person>'; n++; } }); return 'm07mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m07mask: 15",
+    "m07mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=1 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "questionForm",
+   "xData": "questionForm()",
+   "keys": [],
+   "liveState": {
+    "bahagian": "",
+    "domainId": "",
+    "allDomains": "array(15)",
+    "filteredDomains": "array(15)",
+    "options": "array(4)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Tambah Soalan PKSK",
+   "seenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Soft Skills Intelligence",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Mathematics",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Science",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "English Language",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Malaysian History",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Geography",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Cultural Heritage",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Sports \\u0026 Achievements",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Malaysian Landmarks",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Environment",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Technology \\u0026 IT",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Malaysian Economy",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Innovation \\u0026 Inventors",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Global Issues",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Writing Articulation",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#2"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M07-S6-001",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/pksk/questions",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "bahagian",
+    "pksk_domain_id",
+    "pksk_target_level",
+    "question_text",
+    "difficulty_level",
+    "explanation",
+    "options[0][text]",
+    "options[0][is_correct]",
+    "options[1][text]",
+    "options[1][is_correct]",
+    "options[2][text]",
+    "options[2][is_correct]",
+    "options[3][text]",
+    "options[3][is_correct]"
+   ],
+   "landmark": "main",
+   "section": "Tambah Soalan PKSK",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-002",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Tambah Soalan PKSK",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-003",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahagian & Domain",
+   "landmark": "form",
+   "section": "Tambah Soalan PKSK",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-004",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahagian & Domain",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-005",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bahagian",
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-006",
+   "kind": "select",
+   "tag": "select",
+   "name": "bahagian",
+   "label": "Bahagian",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih --"
+    },
+    {
+     "value": "A",
+     "text": "A - Kecerdasan Insaniah"
+    },
+    {
+     "value": "B",
+     "text": "B - Kecerdasan Intelek"
+    },
+    {
+     "value": "C",
+     "text": "C - Artikulasi Penulisan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "alpine": {
+    "x-model": "bahagian",
+    "@change": "filterDomains()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-007",
+   "kind": "label",
+   "tag": "label",
+   "text": "Domain",
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-008",
+   "kind": "select",
+   "tag": "select",
+   "name": "pksk_domain_id",
+   "label": "Domain",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih domain --"
+    },
+    {
+     "value": "1",
+     "text": "Kecerdasan Insaniah"
+    },
+    {
+     "value": "2",
+     "text": "Matematik"
+    },
+    {
+     "value": "3",
+     "text": "Sains"
+    },
+    {
+     "value": "4",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah Malaysia"
+    },
+    {
+     "value": "6",
+     "text": "Geografi"
+    },
+    {
+     "value": "7",
+     "text": "Kebudayaan Kaum"
+    },
+    {
+     "value": "8",
+     "text": "Sukan & Pencapaian"
+    },
+    {
+     "value": "9",
+     "text": "Mercu Tanda Malaysia"
+    },
+    {
+     "value": "10",
+     "text": "Alam Sekitar"
+    },
+    {
+     "value": "11",
+     "text": "Teknologi & IT"
+    },
+    {
+     "value": "12",
+     "text": "Ekonomi Malaysia"
+    },
+    {
+     "value": "13",
+     "text": "Inovasi & Pencipta"
+    },
+    {
+     "value": "14",
+     "text": "Isu Global"
+    },
+    {
+     "value": "15",
+     "text": "Artikulasi Penulisan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "alpine": {
+    "x-model": "domainId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sasaran",
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-010",
+   "kind": "select",
+   "tag": "select",
+   "name": "pksk_target_level",
+   "label": "Sasaran",
+   "required": true,
+   "options": [
+    {
+     "value": "T1",
+     "text": "Tingkatan 1 (Darjah 6)"
+    },
+    {
+     "value": "T4",
+     "text": "Tingkatan 4 (Tingkatan 3)"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-011",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan",
+   "landmark": "form",
+   "section": "Bahagian & Domain",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-012",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Soalan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Teks Soalan",
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-014",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "question_text",
+   "label": "Teks Soalan",
+   "placeholder": "Tulis soalan di sini...",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Kesukaran (1-5)",
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "difficulty_level",
+   "label": "Tahap Kesukaran (1-5)",
+   "required": true,
+   "options": [
+    {
+     "value": "1",
+     "text": "1 - Sangat Mudah"
+    },
+    {
+     "value": "2",
+     "text": "2 - Mudah"
+    },
+    {
+     "value": "3",
+     "text": "3 - Sederhana"
+    },
+    {
+     "value": "4",
+     "text": "4 - Sukar"
+    },
+    {
+     "value": "5",
+     "text": "5 - Sangat Sukar"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penjelasan (Opsional)",
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-018",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "explanation",
+   "label": "Penjelasan (Opsional)",
+   "placeholder": "Penjelasan jawapan...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "landmark": "form",
+   "section": "Soalan",
+   "alpine": {
+    "x-show": "bahagian !== 'C'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-020",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(opt, idx) in options"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(opt, idx) in options"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-023",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "optionValue": "1",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(opt, idx) in options"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-024",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(opt, idx) in options"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-025",
+   "kind": "badge",
+   "tag": "span",
+   "text": "A",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[0][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "min-options__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-028",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[0][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "min-options__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280",
+    "min-options__1280"
+   ],
+   "showWhen": "options.length > 2"
+  },
+  {
+   "id": "EL-M07-S6-030",
+   "kind": "badge",
+   "tag": "span",
+   "text": "B",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-031",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[1][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "min-options__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-033",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[1][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "min-options__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-034",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280",
+    "min-options__1280"
+   ],
+   "showWhen": "options.length > 2"
+  },
+  {
+   "id": "EL-M07-S6-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "C",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-036",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[2][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-038",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[2][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "options.length > 2"
+  },
+  {
+   "id": "EL-M07-S6-040",
+   "kind": "badge",
+   "tag": "span",
+   "text": "D",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-041",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[3][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-042",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-043",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[3][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "bahagian-b__1280",
+    "max-options__1280",
+    "bahagian-b__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280"
+   ],
+   "showWhen": "options.length > 2"
+  },
+  {
+   "id": "EL-M07-S6-045",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Tambah Pilihan",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "addOption()",
+    "x-show": "options.length < 6"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "domain-reset__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "bahagian-c__1280",
+    "max-options__1280"
+   ],
+   "showWhen": "options.length < 6"
+  },
+  {
+   "id": "EL-M07-S6-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/admin/pksk/questions",
+   "absHref": "https://prestasiplus.my/admin/pksk/questions",
+   "icon": "fa-arrow-left",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-047",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Soalan",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bahagian-a__1280",
+    "bahagian-b__1280",
+    "bahagian-c__1280",
+    "domain-reset__1280",
+    "max-options__1280",
+    "min-options__1280",
+    "bahagian-b__375",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M07-S6-048",
+   "kind": "badge",
+   "tag": "span",
+   "text": "E",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-049",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[4][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-050",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-051",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[4][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "options.length > 2"
+  },
+  {
+   "id": "EL-M07-S6-053",
+   "kind": "badge",
+   "tag": "span",
+   "text": "F",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-text": "String.fromCharCode(65 + idx)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-054",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "options[5][text]",
+   "placeholder": "Teks pilihan",
+   "required": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][text]'",
+    "x-model": "opt.text"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian !== 'C'"
+  },
+  {
+   "id": "EL-M07-S6-055",
+   "kind": "label",
+   "tag": "label",
+   "text": "Betul",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "x-show": "bahagian === 'B'"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian === 'B'"
+  },
+  {
+   "id": "EL-M07-S6-056",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "options[5][is_correct]",
+   "label": "Betul",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    ":name": "'options['+idx+'][is_correct]'",
+    "x-model": "opt.is_correct"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "bahagian === 'B'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M07-S6-057",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/pksk/questions",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Pilihan Jawapan (Tiada jawapan betul/salah)",
+   "alpine": {
+    "@click": "removeOption(idx)",
+    "x-show": "options.length > 2"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "max-options__1280"
+   ],
+   "showWhen": "options.length > 2"
+  }
+ ]
+}

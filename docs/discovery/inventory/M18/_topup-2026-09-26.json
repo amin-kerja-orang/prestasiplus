@@ -1,0 +1,3905 @@
+{
+ "meta": {
+  "capturedAt": "2026-09-26T06:42:55.379Z",
+  "capturedBy": "independent audit agent, browser lane 1, admin account, read-only (non-GET requests aborted by a context route guard; probe verified)",
+  "purpose": "AUD-M18-11 top-up for AUD-M18-03, -04, -06 (docs/qa/audit/M18-audit.md)",
+  "privacy": "No names, IC numbers, e-mails or phone numbers. Pupils are ranked rows in page order (rank = position in the live table), never identified. Name, IC, e-mail and qualification columns were not read. Question stems are public M04 content.",
+  "schools": [
+   8880,
+   8765,
+   2710,
+   3160,
+   2700,
+   8772,
+   8767,
+   7780,
+   1
+  ]
+ },
+ "schools": {
+  "1": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 16,
+    "aktifHariIni": 0,
+    "purataKombo": 4.9,
+    "komboTertinggi": 10,
+    "pelajarAktifKombo": 14,
+    "classes": [
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 6.8,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 6.8,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 6.8,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 6.8,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 4,
+      "maxKombo": 4,
+      "aktif": 2
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 4,
+      "maxKombo": 4,
+      "aktif": 2
+     },
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 3.5,
+      "maxKombo": 5,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 3.5,
+      "maxKombo": 5,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 3,
+      "maxKombo": 4,
+      "aktif": 2
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 3,
+      "maxKombo": 4,
+      "aktif": 2
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 10,
+      "terbaik": 19,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 10,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 9,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 9,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 8,
+      "terbaik": 12,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 5,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 5,
+      "terbaik": 11,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 5,
+      "terbaik": 7,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 4,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 4,
+      "terbaik": 9,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 16,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     16,
+     0,
+     0,
+     16
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 14,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 15,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 16,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     }
+    ]
+   },
+   "s9": {
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 16 pelajar",
+      "pupils": 16,
+      "belumGuna": 16,
+      "withSessions": []
+     }
+    ]
+   }
+  },
+  "2700": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 14,
+    "aktifHariIni": 0,
+    "purataKombo": 6.8,
+    "komboTertinggi": 15,
+    "pelajarAktifKombo": 12,
+    "classes": [
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 7.8,
+      "maxKombo": 14,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 7.8,
+      "maxKombo": 14,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 5,
+      "purataKombo": 5.6,
+      "maxKombo": 14,
+      "aktif": 5
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 5,
+      "purataKombo": 5.6,
+      "maxKombo": 14,
+      "aktif": 5
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 5,
+      "maxKombo": 7,
+      "aktif": 2
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 5,
+      "maxKombo": 7,
+      "aktif": 2
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 5,
+      "maxKombo": 13,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 5,
+      "maxKombo": 13,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 3.7,
+      "maxKombo": 4,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 3.7,
+      "maxKombo": 4,
+      "aktif": 3
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 15,
+      "terbaik": 22,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 14,
+      "terbaik": 22,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 13,
+      "terbaik": 23,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 13,
+      "terbaik": 22,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 12,
+      "terbaik": 21,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 7,
+      "terbaik": 15,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 4,
+      "terbaik": 11,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 4,
+      "terbaik": 7,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 4,
+      "terbaik": 5,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 3,
+      "terbaik": 13,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 14,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     14,
+     0,
+     0,
+     14
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 88.6,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 28.6%",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 14,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     }
+    ]
+   },
+   "s9": {
+    "monthly": [
+     {
+      "bulan": "Feb 2026",
+      "soalanDijawab": 14,
+      "soalanBetul": 4,
+      "pelajarAktif": 1,
+      "accuracy": "28.6%"
+     }
+    ],
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 14 pelajar",
+      "pupils": 14,
+      "belumGuna": 13,
+      "withSessions": [
+       {
+        "rank": 12,
+        "status": "Tidak Aktif",
+        "sesi": 1,
+        "soalan": 14,
+        "accuracy": "28.6%",
+        "terakhirAktif": "13/02/2026"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "2710": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 4,
+    "aktifHariIni": 0,
+    "purataKombo": 7.5,
+    "komboTertinggi": 15,
+    "pelajarAktifKombo": 4,
+    "classes": [
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 13,
+      "maxKombo": 13,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 13,
+      "maxKombo": 13,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 13,
+      "maxKombo": 13,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 13,
+      "maxKombo": 13,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 1,
+      "maxKombo": 1,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 1,
+      "maxKombo": 1,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 1,
+      "maxKombo": 1,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 1,
+      "maxKombo": 1,
+      "aktif": 1
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 15,
+      "terbaik": 19,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 13,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 1,
+      "terbaik": 5,
+      "jumlahHari": 13
+     },
+     {
+      "rank": 4,
+      "kombo": 1,
+      "terbaik": 1,
+      "jumlahHari": 4
+     }
+    ],
+    "calendarDaysWithCorrect": [
+     {
+      "date": "2026-02-19",
+      "betul": 20
+     },
+     {
+      "date": "2026-05-11",
+      "betul": 25
+     },
+     {
+      "date": "2026-05-19",
+      "betul": 1
+     }
+    ]
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 4,
+    "soalanDijawab": 119,
+    "ketepatan": "38.7%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [
+     {
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "soalan": 40,
+      "ketepatan": "35.0%",
+      "salah": 26
+     },
+     {
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "soalan": 79,
+      "ketepatan": "40.5%",
+      "salah": 47
+     }
+    ],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     4,
+     0,
+     0,
+     4
+    ],
+    "weakness": [
+     {
+      "subjek": "Bahasa Melayu",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Sejarah",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Fizik",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Geografi",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Sains Komputer",
+      "text": "1/1 pelajar lemah (100%)"
+     }
+    ],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-05-21",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 97,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Purata tahap: L1"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "-",
+      "skor": 86.8,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 21.8%",
+      "penglibatan": "Terakhir aktif: 2026-05-19",
+      "penguasaan": "Purata tahap: L1.5"
+     }
+    ]
+   },
+   "s9": {
+    "monthly": [
+     {
+      "bulan": "May 2026",
+      "soalanDijawab": 84,
+      "soalanBetul": 26,
+      "pelajarAktif": 1,
+      "accuracy": "31%"
+     }
+    ],
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 4 pelajar",
+      "pupils": 4,
+      "belumGuna": 3,
+      "withSessions": [
+       {
+        "rank": 1,
+        "status": "Tidak Aktif",
+        "sesi": 4,
+        "soalan": 84,
+        "accuracy": "21.8%",
+        "terakhirAktif": "19/05/2026"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "3160": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 12,
+    "aktifHariIni": 0,
+    "purataKombo": 9.3,
+    "komboTertinggi": 15,
+    "pelajarAktifKombo": 12,
+    "classes": [
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 14.3,
+      "maxKombo": 15,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 14.3,
+      "maxKombo": 15,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 12.5,
+      "maxKombo": 15,
+      "aktif": 2
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 12.5,
+      "maxKombo": 15,
+      "aktif": 2
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 5,
+      "purataKombo": 9.2,
+      "maxKombo": 13,
+      "aktif": 5
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 5,
+      "purataKombo": 9.2,
+      "maxKombo": 13,
+      "aktif": 5
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 8.7,
+      "maxKombo": 15,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 8.7,
+      "maxKombo": 15,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 8,
+      "maxKombo": 15,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 8,
+      "maxKombo": 15,
+      "aktif": 3
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 15,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 15,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 15,
+      "terbaik": 15,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 13,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 10,
+      "terbaik": 19,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 10,
+      "terbaik": 17,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 9,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 7,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 7,
+      "terbaik": 8,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 6,
+      "terbaik": 8,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 12,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     12,
+     0,
+     0,
+     12
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     }
+    ]
+   },
+   "s9": {
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 12 pelajar",
+      "pupils": 12,
+      "belumGuna": 12,
+      "withSessions": []
+     }
+    ]
+   }
+  },
+  "7780": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 17,
+    "aktifHariIni": 0,
+    "purataKombo": 7,
+    "komboTertinggi": 15,
+    "pelajarAktifKombo": 15,
+    "classes": [
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 8,
+      "maxKombo": 8,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 8,
+      "maxKombo": 8,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 7,
+      "maxKombo": 14,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 7,
+      "maxKombo": 14,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 5,
+      "purataKombo": 6.2,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 5,
+      "purataKombo": 6.2,
+      "maxKombo": 10,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 6,
+      "maxKombo": 14,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 6,
+      "maxKombo": 14,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 5.3,
+      "maxKombo": 8,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 5.3,
+      "maxKombo": 8,
+      "aktif": 3
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 15,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 14,
+      "terbaik": 23,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 12,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 12,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 10,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 9,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 8,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 8,
+      "terbaik": 9,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 7,
+      "terbaik": 15,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 7,
+      "terbaik": 11,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 17,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     17,
+     0,
+     0,
+     17
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 14,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 15,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 16,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 17,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     }
+    ]
+   },
+   "s9": {
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 17 pelajar",
+      "pupils": 17,
+      "belumGuna": 17,
+      "withSessions": []
+     }
+    ]
+   }
+  },
+  "8765": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 21,
+    "aktifHariIni": 0,
+    "purataKombo": 8.2,
+    "komboTertinggi": 14,
+    "pelajarAktifKombo": 18,
+    "classes": [
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 8,
+      "purataKombo": 9.5,
+      "maxKombo": 14,
+      "aktif": 8
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 8,
+      "purataKombo": 9.5,
+      "maxKombo": 14,
+      "aktif": 8
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 8.8,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 8.8,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 9,
+      "purataKombo": 8.7,
+      "maxKombo": 14,
+      "aktif": 8
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 9,
+      "purataKombo": 8.7,
+      "maxKombo": 14,
+      "aktif": 8
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 4,
+      "purataKombo": 8.3,
+      "maxKombo": 12,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 4,
+      "purataKombo": 8.3,
+      "maxKombo": 12,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 2.3,
+      "maxKombo": 7,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 2.3,
+      "maxKombo": 7,
+      "aktif": 1
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 14,
+      "terbaik": 24,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 14,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 14,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 13,
+      "terbaik": 23,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 13,
+      "terbaik": 19,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 13,
+      "terbaik": 17,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 12,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 11,
+      "terbaik": 13,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 10,
+      "terbaik": 13,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 9,
+      "terbaik": 19,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": [
+     {
+      "date": "2026-01-23",
+      "betul": 1
+     },
+     {
+      "date": "2026-02-01",
+      "betul": 1
+     },
+     {
+      "date": "2026-02-20",
+      "betul": 17
+     },
+     {
+      "date": "2026-02-22",
+      "betul": 15
+     },
+     {
+      "date": "2026-02-23",
+      "betul": 13
+     },
+     {
+      "date": "2026-02-24",
+      "betul": 15
+     },
+     {
+      "date": "2026-02-27",
+      "betul": 9
+     },
+     {
+      "date": "2026-03-02",
+      "betul": 12
+     },
+     {
+      "date": "2026-03-03",
+      "betul": 14
+     },
+     {
+      "date": "2026-03-11",
+      "betul": 17
+     },
+     {
+      "date": "2026-03-14",
+      "betul": 10
+     },
+     {
+      "date": "2026-03-15",
+      "betul": 17
+     },
+     {
+      "date": "2026-03-17",
+      "betul": 14
+     },
+     {
+      "date": "2026-03-18",
+      "betul": 9
+     },
+     {
+      "date": "2026-03-19",
+      "betul": 8
+     },
+     {
+      "date": "2026-03-21",
+      "betul": 14
+     }
+    ]
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 21,
+    "soalanDijawab": 222,
+    "ketepatan": "83.8%",
+    "profilKesukaran": "5 | 0 | 1 | Mudah | Sederhana | Sukar",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [
+     {
+      "subjek": "Matematik",
+      "pelajar": 6,
+      "soalan": 60,
+      "ketepatan": "77.3%",
+      "salah": 17
+     },
+     {
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "soalan": 43,
+      "ketepatan": "83.7%",
+      "salah": 7
+     },
+     {
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "soalan": 52,
+      "ketepatan": "84.6%",
+      "salah": 8
+     },
+     {
+      "subjek": "Pendidikan Islam",
+      "pelajar": 1,
+      "soalan": 50,
+      "ketepatan": "92.3%",
+      "salah": 4
+     }
+    ],
+    "cards": {
+     "pills": [
+      "Semua (6)",
+      "Matematik (4)",
+      "Pendidikan Islam (2)"
+     ],
+     "profilKesukaran": {
+      "Mudah": 5,
+      "Sederhana": 0,
+      "Sukar": 1
+     },
+     "default": [
+      {
+       "rank": 1,
+       "icon": "fa-frown",
+       "stem": "Satu garis lurus melalui titik (1, 3) dan (4, 9). Cari kecerunan garis itu.",
+       "subjek": "Matematik",
+       "topik": "Asas Nombor",
+       "label": "Sukar",
+       "pctSalah": "84.6%",
+       "pelajarCuba": 6,
+       "pctTerlibat": "28.6%",
+       "pelajarSalah": 6
+      },
+      {
+       "rank": 2,
+       "icon": "fa-smile",
+       "stem": "Titik (1, 5) memenuhi ketaksamaan y ≤ 3x + 4. Betul atau salah?",
+       "subjek": "Matematik",
+       "topik": "Fungsi dan Persamaan Kuadratik",
+       "label": "Mudah",
+       "pctSalah": "0.0%",
+       "pelajarCuba": 1,
+       "pctTerlibat": "4.8%",
+       "pelajarSalah": null
+      },
+      {
+       "rank": 3,
+       "icon": "fa-smile",
+       "stem": "Graf berpemberat: A-B=5, A-C=8, B-C=3, B-D=7, C-D=4. Laluan terpendek A ke D ialah:",
+       "subjek": "Matematik",
+       "topik": "Fungsi dan Persamaan Kuadratik",
+       "label": "Mudah",
+       "pctSalah": "0.0%",
+       "pelajarCuba": 1,
+       "pctTerlibat": "4.8%",
+       "pelajarSalah": null
+      },
+      {
+       "rank": 4,
+       "icon": "fa-smile",
+       "stem": "Bagaimanakah seorang Muslim boleh membina kecemerlangan diri berdasarkan iktibar daripada tamadun Islam?",
+       "subjek": "Pendidikan Islam",
+       "topik": "Pendidikan Islam Tingkatan 4 / Pendidikan Islam Tingkatan 4",
+       "label": "Mudah",
+       "pctSalah": "0.0%",
+       "pelajarCuba": 1,
+       "pctTerlibat": "4.8%",
+       "pelajarSalah": null
+      },
+      {
+       "rank": 5,
+       "icon": "fa-smile",
+       "stem": "Hukum menguruskan jenazah (memandikan, mengkafankan, menyembahyangkan, mengebumikan) ialah:",
+       "subjek": "Pendidikan Islam",
+       "topik": "Pendidikan Islam Tingkatan 5 / Ciri-ciri Mukmin Cemerlang",
+       "label": "Mudah",
+       "pctSalah": "0.0%",
+       "pelajarCuba": 1,
+       "pctTerlibat": "4.8%",
+       "pelajarSalah": null
+      },
+      {
+       "rank": 6,
+       "icon": "fa-smile",
+       "stem": "Apakah negasi bagi penyataan majmuk \"p ∨ q\" (p ATAU q)?",
+       "subjek": "Matematik",
+       "topik": "Fungsi dan Persamaan Kuadratik",
+       "label": "Mudah",
+       "pctSalah": "0.0%",
+       "pelajarCuba": 1,
+       "pctTerlibat": "4.8%",
+       "pelajarSalah": null
+      }
+     ],
+     "tingkatanT4": {
+      "sameSixQuestionsAndPills": true,
+      "differences": "card 1 label Sukar 84.6% 6 cuba, pctTerlibat 42.9%; cards 2-6 pctTerlibat 7.1% (denominator 14)"
+     },
+     "tingkatanT5": {
+      "sameSixQuestionsAndPills": true,
+      "differences": "card 1 icon fa-meh, label Sederhana, 50.0% salah, 2 pelajar cuba, 28.6% terlibat, 2 pelajar salah; cards 2-6 pctTerlibat 14.3% (denominator 7)"
+     }
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     21,
+     0,
+     0,
+     21
+    ],
+    "weakness": [
+     {
+      "subjek": "Fizik",
+      "text": "5/5 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Biologi",
+      "text": "3/3 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Matematik",
+      "text": "6/6 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Sejarah",
+      "text": "3/3 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Kimia",
+      "text": "5/5 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Perniagaan",
+      "text": "2/2 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Matematik Tambahan",
+      "text": "2/2 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Sains Komputer",
+      "text": "3/3 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Geografi",
+      "text": "1/1 pelajar lemah (100%)"
+     }
+    ],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 99.4,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Purata tahap: L0.2"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 98,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Purata tahap: L0.7"
+     },
+     {
+      "rank": 14,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 98,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Purata tahap: L0.7"
+     },
+     {
+      "rank": 15,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 97,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Purata tahap: L1"
+     },
+     {
+      "rank": 16,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 97,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Purata tahap: L1"
+     },
+     {
+      "rank": 17,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 97,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Purata tahap: L1"
+     },
+     {
+      "rank": 18,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 95.5,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Purata tahap: L1.5"
+     },
+     {
+      "rank": 19,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 20,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 72.2,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 64%",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Purata tahap: L0.8"
+     },
+     {
+      "rank": 21,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 67,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 82.6%",
+      "penglibatan": "Terakhir aktif: 2026-03-21",
+      "penguasaan": "Tiada data"
+     }
+    ]
+   },
+   "s9": {
+    "monthly": [
+     {
+      "bulan": "Jan 2026",
+      "soalanDijawab": 15,
+      "soalanBetul": 9,
+      "pelajarAktif": 1,
+      "accuracy": "60%"
+     },
+     {
+      "bulan": "Feb 2026",
+      "soalanDijawab": 159,
+      "soalanBetul": 111,
+      "pelajarAktif": 2,
+      "accuracy": "69.8%"
+     },
+     {
+      "bulan": "Mar 2026",
+      "soalanDijawab": 125,
+      "soalanBetul": 115,
+      "pelajarAktif": 1,
+      "accuracy": "92%"
+     },
+     {
+      "bulan": "Apr 2026",
+      "soalanDijawab": 10,
+      "soalanBetul": 7,
+      "pelajarAktif": 1,
+      "accuracy": "70%"
+     }
+    ],
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 21 pelajar",
+      "pupils": 21,
+      "belumGuna": 19,
+      "withSessions": [
+       {
+        "rank": 4,
+        "status": "Tidak Aktif",
+        "sesi": 4,
+        "soalan": 60,
+        "accuracy": "64%",
+        "terakhirAktif": "07/04/2026"
+       },
+       {
+        "rank": 14,
+        "status": "Tidak Aktif",
+        "sesi": 17,
+        "soalan": 249,
+        "accuracy": "82.6%",
+        "terakhirAktif": "21/03/2026"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "8767": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 13,
+    "aktifHariIni": 0,
+    "purataKombo": 5.3,
+    "komboTertinggi": 14,
+    "pelajarAktifKombo": 11,
+    "classes": [
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 6.3,
+      "maxKombo": 12,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 6.3,
+      "maxKombo": 12,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 5.7,
+      "maxKombo": 12,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 5.7,
+      "maxKombo": 12,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 5,
+      "purataKombo": 4.4,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 5,
+      "purataKombo": 4.4,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 3,
+      "maxKombo": 3,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 3,
+      "maxKombo": 3,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 1,
+      "maxKombo": 2,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 1,
+      "maxKombo": 2,
+      "aktif": 1
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 14,
+      "terbaik": 21,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 13,
+      "terbaik": 18,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 12,
+      "terbaik": 17,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 10,
+      "terbaik": 12,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 4,
+      "terbaik": 8,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 3,
+      "terbaik": 7,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 3,
+      "terbaik": 7,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 3,
+      "terbaik": 6,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 3,
+      "terbaik": 3,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 2,
+      "terbaik": 7,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 13,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     13,
+     0,
+     0,
+     13
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 4 4 Bestari - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     }
+    ]
+   },
+   "s9": {
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 13 pelajar",
+      "pupils": 13,
+      "belumGuna": 13,
+      "withSessions": []
+     }
+    ]
+   }
+  },
+  "8772": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 12,
+    "aktifHariIni": 0,
+    "purataKombo": 6.4,
+    "komboTertinggi": 14,
+    "pelajarAktifKombo": 10,
+    "classes": [
+     {
+      "kelas": "4 Dedikasi - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 9.3,
+      "maxKombo": 13,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Dedikasi - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 9.3,
+      "maxKombo": 13,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 6,
+      "purataKombo": 5.2,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "5 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 6,
+      "purataKombo": 5.2,
+      "maxKombo": 13,
+      "aktif": 4
+     },
+     {
+      "kelas": "4 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 1,
+      "purataKombo": 4,
+      "maxKombo": 4,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 1,
+      "purataKombo": 4,
+      "maxKombo": 4,
+      "aktif": 1
+     },
+     {
+      "kelas": "4 Cemerlang - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 3,
+      "purataKombo": 3.3,
+      "maxKombo": 5,
+      "aktif": 3
+     },
+     {
+      "kelas": "4 Cemerlang - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 3,
+      "purataKombo": 3.3,
+      "maxKombo": 5,
+      "aktif": 3
+     },
+     {
+      "kelas": "5 Bestari - SEJ",
+      "subjek": "Sejarah",
+      "pelajar": 2,
+      "purataKombo": 1.5,
+      "maxKombo": 3,
+      "aktif": 1
+     },
+     {
+      "kelas": "5 Bestari - BM",
+      "subjek": "Bahasa Melayu",
+      "pelajar": 2,
+      "purataKombo": 1.5,
+      "maxKombo": 3,
+      "aktif": 1
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 14,
+      "terbaik": 24,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 13,
+      "terbaik": 23,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 11,
+      "terbaik": 11,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 10,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 9,
+      "terbaik": 9,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 6,
+      "terbaik": 15,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 5,
+      "terbaik": 11,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 4,
+      "terbaik": 6,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 3,
+      "terbaik": 8,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 2,
+      "terbaik": 11,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": []
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 12,
+    "soalanDijawab": 0,
+    "ketepatan": "0.0%",
+    "profilKesukaran": "Tiada data",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [],
+    "cards": {
+     "count": 0
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     12,
+     0,
+     0,
+     12
+    ],
+    "weakness": [],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "Tingkatan 4 4 Dedikasi - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "Tingkatan 4 4 Cemerlang - BM",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "Tingkatan 5 5 Cemerlang - BM",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "Tingkatan 5 5 Bestari - BM",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     }
+    ]
+   },
+   "s9": {
+    "pupilGroups": [
+     {
+      "group": "Tiada Kelas 12 pelajar",
+      "pupils": 12,
+      "belumGuna": 12,
+      "withSessions": []
+     }
+    ]
+   }
+  },
+  "8880": {
+   "s29": {
+    "status": 200,
+    "jumlahPelajar": 59,
+    "aktifHariIni": 0,
+    "purataKombo": 6.4,
+    "komboTertinggi": 13,
+    "pelajarAktifKombo": 14,
+    "classes": [
+     {
+      "kelas": "5 Simulasi",
+      "subjek": null,
+      "pelajar": 15,
+      "purataKombo": 0,
+      "maxKombo": 0,
+      "aktif": 0
+     },
+     {
+      "kelas": "5 Delima",
+      "subjek": "Sains",
+      "pelajar": 15,
+      "purataKombo": 0,
+      "maxKombo": 0,
+      "aktif": 0
+     },
+     {
+      "kelas": "5 Sinar",
+      "subjek": "Fizik",
+      "pelajar": 15,
+      "purataKombo": 0,
+      "maxKombo": 0,
+      "aktif": 0
+     },
+     {
+      "kelas": "4 Simulasi",
+      "subjek": null,
+      "pelajar": 15,
+      "purataKombo": 0,
+      "maxKombo": 0,
+      "aktif": 0
+     }
+    ],
+    "top10": [
+     {
+      "rank": 1,
+      "kombo": 13,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 2,
+      "kombo": 13,
+      "terbaik": 13,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 3,
+      "kombo": 12,
+      "terbaik": 20,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 4,
+      "kombo": 11,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 5,
+      "kombo": 8,
+      "terbaik": 14,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 6,
+      "kombo": 8,
+      "terbaik": 10,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 7,
+      "kombo": 7,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 8,
+      "kombo": 6,
+      "terbaik": 16,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 9,
+      "kombo": 6,
+      "terbaik": 12,
+      "jumlahHari": 0
+     },
+     {
+      "rank": 10,
+      "kombo": 4,
+      "terbaik": 8,
+      "jumlahHari": 0
+     }
+    ],
+    "calendarDaysWithCorrect": [
+     {
+      "date": "2026-02-20",
+      "betul": 6
+     },
+     {
+      "date": "2026-02-25",
+      "betul": 60
+     },
+     {
+      "date": "2026-02-26",
+      "betul": 192
+     },
+     {
+      "date": "2026-02-27",
+      "betul": 254
+     },
+     {
+      "date": "2026-02-28",
+      "betul": 242
+     },
+     {
+      "date": "2026-03-01",
+      "betul": 210
+     },
+     {
+      "date": "2026-03-02",
+      "betul": 195
+     },
+     {
+      "date": "2026-03-03",
+      "betul": 304
+     },
+     {
+      "date": "2026-03-04",
+      "betul": 208
+     },
+     {
+      "date": "2026-03-05",
+      "betul": 258
+     },
+     {
+      "date": "2026-03-06",
+      "betul": 246
+     },
+     {
+      "date": "2026-03-07",
+      "betul": 291
+     },
+     {
+      "date": "2026-03-08",
+      "betul": 209
+     },
+     {
+      "date": "2026-03-09",
+      "betul": 266
+     },
+     {
+      "date": "2026-03-10",
+      "betul": 208
+     },
+     {
+      "date": "2026-03-11",
+      "betul": 282
+     },
+     {
+      "date": "2026-03-12",
+      "betul": 258
+     },
+     {
+      "date": "2026-03-13",
+      "betul": 244
+     },
+     {
+      "date": "2026-03-14",
+      "betul": 281
+     },
+     {
+      "date": "2026-03-15",
+      "betul": 252
+     },
+     {
+      "date": "2026-03-16",
+      "betul": 241
+     },
+     {
+      "date": "2026-03-17",
+      "betul": 266
+     },
+     {
+      "date": "2026-03-18",
+      "betul": 198
+     },
+     {
+      "date": "2026-03-19",
+      "betul": 160
+     },
+     {
+      "date": "2026-03-20",
+      "betul": 169
+     },
+     {
+      "date": "2026-03-21",
+      "betul": 316
+     },
+     {
+      "date": "2026-03-22",
+      "betul": 287
+     },
+     {
+      "date": "2026-03-23",
+      "betul": 273
+     },
+     {
+      "date": "2026-03-24",
+      "betul": 226
+     },
+     {
+      "date": "2026-03-25",
+      "betul": 233
+     },
+     {
+      "date": "2026-03-26",
+      "betul": 259
+     },
+     {
+      "date": "2026-03-27",
+      "betul": 206
+     },
+     {
+      "date": "2026-04-07",
+      "betul": 7
+     }
+    ]
+   },
+   "s30": {
+    "status": 200,
+    "pelajar": 59,
+    "soalanDijawab": 10194,
+    "ketepatan": "71.7%",
+    "profilKesukaran": "0 | 0 | 20 | Mudah | Sederhana | Sukar",
+    "gps": [
+     "3.45",
+     "Baik",
+     "Berdasarkan 744 entri headcount"
+    ],
+    "subjects": [
+     {
+      "subjek": "Sains",
+      "pelajar": 29,
+      "soalan": 1094,
+      "ketepatan": "70.9%",
+      "salah": 539
+     },
+     {
+      "subjek": "Sejarah",
+      "pelajar": 29,
+      "soalan": 1109,
+      "ketepatan": "71.0%",
+      "salah": 615
+     },
+     {
+      "subjek": "Bahasa Inggeris",
+      "pelajar": 29,
+      "soalan": 851,
+      "ketepatan": "71.9%",
+      "salah": 539
+     },
+     {
+      "subjek": "Bahasa Melayu",
+      "pelajar": 30,
+      "soalan": 507,
+      "ketepatan": "72.0%",
+      "salah": 580
+     },
+     {
+      "subjek": "Matematik",
+      "pelajar": 31,
+      "soalan": 817,
+      "ketepatan": "72.4%",
+      "salah": 614
+     }
+    ],
+    "cards": {
+     "note": "unchanged from _snapshot-2026-09-26.json (20 cards, all \"Sukar\", \"100.0% salah\")",
+     "count": 20
+    }
+   },
+   "s22": {
+    "status": 200,
+    "tiles": [
+     59,
+     0,
+     0,
+     59
+    ],
+    "weakness": [
+     {
+      "subjek": "Bahasa Melayu",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Bahasa Inggeris",
+      "text": "1/1 pelajar lemah (100%)"
+     },
+     {
+      "subjek": "Matematik",
+      "text": "1/1 pelajar lemah (100%)"
+     }
+    ],
+    "pupilsRanked": [
+     {
+      "rank": 1,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-05-19",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 2,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 3,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 4,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 5,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 6,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 7,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-28",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 8,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 9,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 10,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 11,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 12,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 13,
+      "tingkatanKelas": "-",
+      "skor": 100,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data",
+      "penglibatan": "Terakhir aktif: 2026-02-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 14,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 84.4,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 38.9%",
+      "penglibatan": "Terakhir aktif: 2026-03-17",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 15,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 83.6,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 41.1%",
+      "penglibatan": "Terakhir aktif: 2026-03-21",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 16,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 17,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 18,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 19,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 20,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 21,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 22,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 23,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 24,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 25,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 26,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 27,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 28,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 29,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 30,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 31,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 32,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 33,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 34,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 35,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 36,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 37,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 38,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 39,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 40,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 41,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 42,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 43,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 44,
+      "tingkatanKelas": "Tingkatan 4 4 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 45,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 46,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 47,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 48,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 49,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 50,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 51,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 52,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 53,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 54,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 55,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 56,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 57,
+      "tingkatanKelas": "-",
+      "skor": 80,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Tiada data latihan",
+      "penglibatan": "Tiada aktiviti",
+      "penguasaan": "Tiada data penguasaan"
+     },
+     {
+      "rank": 58,
+      "tingkatanKelas": "Tingkatan 5 5 Simulasi",
+      "skor": 66.8,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 83.1%",
+      "penglibatan": "Terakhir aktif: 2026-03-26",
+      "penguasaan": "Tiada data"
+     },
+     {
+      "rank": 59,
+      "tingkatanKelas": "-",
+      "skor": 64,
+      "status": "Berisiko Tinggi",
+      "ketepatan": "Purata ketepatan: 90%",
+      "penglibatan": "Terakhir aktif: 2026-02-27",
+      "penguasaan": "Tiada data"
+     }
+    ]
+   },
+   "s9": {
+    "monthly": [
+     {
+      "bulan": "Feb 2026",
+      "soalanDijawab": 124,
+      "soalanBetul": 84,
+      "pelajarAktif": 3,
+      "accuracy": "67.7%"
+     },
+     {
+      "bulan": "Mar 2026",
+      "soalanDijawab": 551,
+      "soalanBetul": 401,
+      "pelajarAktif": 3,
+      "accuracy": "72.8%"
+     }
+    ],
+    "perClass": [
+     {
+      "kelas": "4 Simulasi",
+      "jumlah": 15,
+      "sudahGuna": 0,
+      "belumGuna": 15,
+      "accuracy": "—"
+     },
+     {
+      "kelas": "5 Simulasi",
+      "jumlah": 15,
+      "sudahGuna": 3,
+      "belumGuna": 12,
+      "accuracy": "54.3%"
+     }
+    ],
+    "pupilGroups": [
+     {
+      "group": "4 Simulasi 15 pelajar 0 guna 15 belum",
+      "pupils": 15,
+      "belumGuna": 15,
+      "withSessions": []
+     },
+     {
+      "group": "5 Simulasi 15 pelajar 3 guna 12 belum",
+      "pupils": 15,
+      "belumGuna": 12,
+      "withSessions": [
+       {
+        "rank": 3,
+        "status": "Tidak Aktif",
+        "sesi": 8,
+        "soalan": 97,
+        "accuracy": "38.9%",
+        "terakhirAktif": "17/03/2026"
+       },
+       {
+        "rank": 12,
+        "status": "Tidak Aktif",
+        "sesi": 7,
+        "soalan": 78,
+        "accuracy": "41.1%",
+        "terakhirAktif": "21/03/2026"
+       },
+       {
+        "rank": 14,
+        "status": "Tidak Aktif",
+        "sesi": 44,
+        "soalan": 490,
+        "accuracy": "83.1%",
+        "terakhirAktif": "26/03/2026"
+       }
+      ]
+     },
+     {
+      "group": "Tiada Kelas 28 pelajar",
+      "pupils": 28,
+      "belumGuna": 27,
+      "withSessions": [
+       {
+        "rank": 8,
+        "status": "Tidak Aktif",
+        "sesi": 1,
+        "soalan": 10,
+        "accuracy": "90%",
+        "terakhirAktif": "22/02/2026"
+       }
+      ]
+     }
+    ],
+    "teachers": [
+     {
+      "rank": 1,
+      "subjek": "Bahasa Melayu, Fizik",
+      "kelas": "-"
+     },
+     {
+      "rank": 2,
+      "subjek": "-",
+      "kelas": "-"
+     }
+    ]
+   }
+  }
+ },
+ "s6HeatMapRowsWithValues": [
+  "SEKOLAH BAHASA INGGE... BAHASA MELAY... MATEMATIK PENDIDIKAN I... PENDIDIKAN M... SAINS SEJARAH PURATA",
+  "SEKOLAH JENIS KEBANGSAAN (CINA) CHONG HWA I 0% — — — — — — —",
+  "SEKOLAH KEBANGSAAN SERI KENCANA — 0% 0% — — — 0% —",
+  "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG — 60.3% 76.3% 92.2% — — 72.3% 75.3%",
+  "SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN — — — — — 0% 0% —",
+  "PURATA DAERAH — 60.3% 76.3% 92.2% — — 72.3%"
+ ],
+ "s5BySubject8765": [
+  {
+   "subjectId": 2,
+   "subject": "Bahasa Inggeris (Teras)",
+   "headerPurataKetepatan": "0%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "—",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 0.6
+   }
+  },
+  {
+   "subjectId": 1,
+   "subject": "Bahasa Melayu (Teras)",
+   "headerPurataKetepatan": "0.5%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "60.3%",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 18.7
+   }
+  },
+  {
+   "subjectId": 3,
+   "subject": "Matematik (Teras)",
+   "headerPurataKetepatan": "0.7%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "76.3%",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 23.5
+   }
+  },
+  {
+   "subjectId": 6,
+   "subject": "Pendidikan Islam (Teras)",
+   "headerPurataKetepatan": "0.8%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "92.2%",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 28.3
+   }
+  },
+  {
+   "subjectId": 7,
+   "subject": "Pendidikan Moral (Teras)",
+   "headerPurataKetepatan": "0%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "—",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 0.6
+   }
+  },
+  {
+   "subjectId": 4,
+   "subject": "Sains (Teras)",
+   "headerPurataKetepatan": "0%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "—",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 0.6
+   }
+  },
+  {
+   "subjectId": 5,
+   "subject": "Sejarah (Teras)",
+   "headerPurataKetepatan": "0.6%",
+   "row8765": {
+    "pelajar": 21,
+    "aktif": 0,
+    "pctAktif": "0%",
+    "ketepatan": "72.3%",
+    "soalanDijawab": "222",
+    "perPelajar": 10.6,
+    "skor": 22.3
+   }
+  }
+ ]
+}

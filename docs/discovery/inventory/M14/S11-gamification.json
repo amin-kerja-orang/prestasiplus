@@ -1,0 +1,2167 @@
+{
+ "screen": "S11",
+ "key": "S11-gamification",
+ "route": "/gamification",
+ "name": "Gamifikasi Dashboard",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.469Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 133,
+  "visibleDefault": 130,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 103,
+   "badge": 6,
+   "heading": 1,
+   "link": 6,
+   "card": 17
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (admin wallet 256 syiling, Gangsa, Level 2)",
+   "file": "_raw/M14/S11-gamification__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification",
+   "finalUrl": "/gamification",
+   "httpStatus": 200,
+   "title": "Gamifikasi Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (admin wallet 256 syiling, Gangsa, Level 2) @375",
+   "file": "_raw/M14/S11-gamification__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/gamification",
+   "finalUrl": "/gamification",
+   "httpStatus": 200,
+   "title": "Gamifikasi Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default (admin wallet 256 syiling, Gangsa, Level 2) @768",
+   "file": "_raw/M14/S11-gamification__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/gamification",
+   "finalUrl": "/gamification",
+   "httpStatus": 200,
+   "title": "Gamifikasi Dashboard",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S11-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-004",
+   "kind": "badge",
+   "tag": "div",
+   "text": "🥉",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-005",
+   "kind": "badge",
+   "tag": "div",
+   "text": "📚 Permulaan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-006",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Gangsa Tier",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Level 2",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "256",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Syiling 💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "Token 🎫",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "⬆️ Naik ke",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-013",
+   "kind": "text",
+   "tag": "b",
+   "text": "Perak",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "51.2%",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Perlu 244 syiling lagi",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-016",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tukar Token",
+   "href": "https://prestasiplus.my/gamification/convert",
+   "absHref": "https://prestasiplus.my/gamification/convert",
+   "icon": "fa-exchange-alt",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-017",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cabaran Harian",
+   "href": "https://prestasiplus.my/gamification/challenges",
+   "absHref": "https://prestasiplus.my/gamification/challenges",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-018",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedai Hadiah",
+   "href": "https://prestasiplus.my/gamification/rewards",
+   "absHref": "https://prestasiplus.my/gamification/rewards",
+   "icon": "fa-gift",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "+0 hari ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "256",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "Baki Syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "+0 hari ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-023",
+   "kind": "card",
+   "tag": "div",
+   "text": "50 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "Baki Token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-026",
+   "kind": "text",
+   "tag": "div",
+   "text": "50 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "8/110 XP",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "Level",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "8/110 XP",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-031",
+   "kind": "card",
+   "tag": "div",
+   "text": "+0 minggu ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "256",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "+0 minggu ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lihat semua →",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Cabaran Hari Ini",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-037",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat semua →",
+   "href": "https://prestasiplus.my/gamification/challenges",
+   "absHref": "https://prestasiplus.my/gamification/challenges",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-038",
+   "kind": "card",
+   "tag": "div",
+   "text": "Rajin Berlatih",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rajin Berlatih",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-041",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Mudah",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selesaikan 3 kuiz hari ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/3",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "+15 💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Si Tepat",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "Si Tepat",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-048",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dapat 80% ketepatan dalam mana-mana kuiz",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/80",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "+20 💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-052",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penjelajah Topik",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-053",
+   "kind": "text",
+   "tag": "div",
+   "text": "🗺️",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penjelajah Topik",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-055",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latih 3 topik berbeza hari ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/3",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-058",
+   "kind": "text",
+   "tag": "span",
+   "text": "+25 💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-059",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kilat Matematik",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚡",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kilat Matematik",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-062",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sukar",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-063",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawab 10 soalan dengan betul",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-064",
+   "kind": "text",
+   "tag": "span",
+   "text": "0/10",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "+30 💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-066",
+   "kind": "card",
+   "tag": "div",
+   "text": "Semua →",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-067",
+   "kind": "text",
+   "tag": "div",
+   "text": "Transaksi Terkini",
+   "icon": "fa-history",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua →",
+   "href": "https://prestasiplus.my/gamification/history",
+   "absHref": "https://prestasiplus.my/gamification/history",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-069",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "Cabaran selesai: Penjelajah Topik",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-071",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-072",
+   "kind": "text",
+   "tag": "div",
+   "text": "+25",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-073",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Streak activity (spm)",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-075",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-076",
+   "kind": "text",
+   "tag": "div",
+   "text": "+7",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-077",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM Tahun Lepas: 1 betul — 20%",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-079",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "+3",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-081",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-082",
+   "kind": "text",
+   "tag": "div",
+   "text": "Cabaran selesai: Cabaran Kilat",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-083",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "+40",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-086",
+   "kind": "text",
+   "tag": "div",
+   "text": "Cabaran selesai: Rajin Berlatih",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-087",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-088",
+   "kind": "text",
+   "tag": "div",
+   "text": "+15",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-089",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-090",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latih Tubi SPM: 11 betul — 32.35%",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-091",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-092",
+   "kind": "text",
+   "tag": "div",
+   "text": "+22",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-093",
+   "kind": "card",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-094",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tahap Penguasaan Subjek",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-095",
+   "kind": "text",
+   "tag": "div",
+   "text": "L2",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-096",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-097",
+   "kind": "text",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-098",
+   "kind": "text",
+   "tag": "span",
+   "text": "46 betul / 50",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-099",
+   "kind": "text",
+   "tag": "span",
+   "text": "48.94% tepat · 1.05x bonus",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-100",
+   "kind": "text",
+   "tag": "div",
+   "text": "L1",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-101",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-102",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mula Belajar",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-103",
+   "kind": "text",
+   "tag": "span",
+   "text": "14 betul / 25",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-104",
+   "kind": "text",
+   "tag": "span",
+   "text": "35% tepat",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-105",
+   "kind": "card",
+   "tag": "div",
+   "text": "Gangsa",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-106",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sistem Tier",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-107",
+   "kind": "card",
+   "tag": "div",
+   "text": "Gangsa",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-108",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥉",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-109",
+   "kind": "text",
+   "tag": "div",
+   "text": "Gangsa",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-110",
+   "kind": "text",
+   "tag": "div",
+   "text": "0+ syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-111",
+   "kind": "text",
+   "tag": "div",
+   "text": "50 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-112",
+   "kind": "text",
+   "tag": "div",
+   "text": "✨ ANDA DI SINI",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-113",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perak",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-114",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥈",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-115",
+   "kind": "text",
+   "tag": "div",
+   "text": "Perak",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-116",
+   "kind": "text",
+   "tag": "div",
+   "text": "500+ syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-117",
+   "kind": "text",
+   "tag": "div",
+   "text": "40 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-118",
+   "kind": "card",
+   "tag": "div",
+   "text": "Emas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-119",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥇",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-120",
+   "kind": "text",
+   "tag": "div",
+   "text": "Emas",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-121",
+   "kind": "text",
+   "tag": "div",
+   "text": "2,000+ syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-122",
+   "kind": "text",
+   "tag": "div",
+   "text": "30 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-123",
+   "kind": "card",
+   "tag": "div",
+   "text": "Platinum",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-124",
+   "kind": "text",
+   "tag": "div",
+   "text": "💎",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-125",
+   "kind": "text",
+   "tag": "div",
+   "text": "Platinum",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-126",
+   "kind": "text",
+   "tag": "div",
+   "text": "5,000+ syiling",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-127",
+   "kind": "text",
+   "tag": "div",
+   "text": "20 syiling = 1 token",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-128",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pelajar",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-129",
+   "kind": "text",
+   "tag": "div",
+   "text": "Gelaran Seterusnya",
+   "icon": "fa-medal",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-130",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-131",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-132",
+   "kind": "text",
+   "tag": "div",
+   "text": "Perlu 44 syiling lagi untuk gelaran ini",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S11-133",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kad Kongsi Kongsi pencapaian anda di WhatsApp!",
+   "href": "https://prestasiplus.my/gamification/kad-kongsi",
+   "absHref": "https://prestasiplus.my/gamification/kad-kongsi",
+   "icon": "fa-share-nodes",
+   "landmark": "main",
+   "section": "Gangsa Tier",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

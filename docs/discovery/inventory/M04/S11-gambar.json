@@ -1,0 +1,3185 @@
+{
+ "screen": "S11",
+ "key": "S11-gambar",
+ "route": "/admin/soalan-gambar",
+ "name": "Soalan Perlu Gambar Rajah - Admin",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.606Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 145,
+  "visibleDefault": 96,
+  "conditional": 42,
+  "hiddenOnly": 7,
+  "mobileOnly": 4,
+  "desktopOnly": 36,
+  "byKind": {
+   "card": 15,
+   "text": 63,
+   "badge": 10,
+   "form": 7,
+   "select": 2,
+   "button": 7,
+   "heading": 4,
+   "hidden-field": 6,
+   "input": 3,
+   "pagination": 28
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (MCQ + Struktur lists, page 1)",
+   "file": "_raw/M04/S11-gambar__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar",
+   "finalUrl": "/admin/soalan-gambar",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 60",
+    "gambar-prep: schools=10221 cards=40",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 40
+   }
+  },
+  {
+   "label": "all-done__1280",
+   "description": "subject with nothing to fix (empty state)",
+   "file": "_raw/M04/S11-gambar__all-done__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar?subject_id=19",
+   "finalUrl": "/admin/soalan-gambar?subject_id=19",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "gambar-prep: schools=10221 cards=0",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "few__1280",
+   "description": "subject with 5 MCQ and no Struktur (Struktur section omitted)",
+   "file": "_raw/M04/S11-gambar__few__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar?subject_id=18",
+   "finalUrl": "/admin/soalan-gambar?subject_id=18",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "gambar-prep: schools=10221 cards=5",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 5
+   }
+  },
+  {
+   "label": "mcq-page-2__1280",
+   "description": "mcq_page=2",
+   "file": "_raw/M04/S11-gambar__mcq-page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar?mcq_page=2",
+   "finalUrl": "/admin/soalan-gambar?mcq_page=2",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 60",
+    "gambar-prep: schools=10221 cards=40",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 40
+   }
+  },
+  {
+   "label": "str-page-2__1280",
+   "description": "str_page=2",
+   "file": "_raw/M04/S11-gambar__str-page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar?str_page=2",
+   "finalUrl": "/admin/soalan-gambar?str_page=2",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 60",
+    "gambar-prep: schools=10221 cards=40",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 40
+   }
+  },
+  {
+   "label": "subject-9__1280",
+   "description": "subject_id=9 (Fizik)",
+   "file": "_raw/M04/S11-gambar__subject-9__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/soalan-gambar?subject_id=9",
+   "finalUrl": "/admin/soalan-gambar?subject_id=9",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 26",
+    "gambar-prep: schools=10221 cards=26",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 26
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S11-gambar__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/soalan-gambar",
+   "finalUrl": "/admin/soalan-gambar",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 60",
+    "gambar-prep: schools=10221 cards=40",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 40
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M04/S11-gambar__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/soalan-gambar",
+   "finalUrl": "/admin/soalan-gambar",
+   "httpStatus": 200,
+   "title": "Soalan Perlu Gambar Rajah - <name>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var s = document.querySelector('main select[name=school_id]'); var n = s ? s.options.length : 0; if (s) { s.setAttribute('data-total-options', n); Array.from(s.options).slice(25).forEach(function (o) { o.remove(); }); } document.querySelectorAll('main form[action$=\"/dismiss\"]').forEach(function (f) { var c = f; while (c.parentElement && c.parentElement.children.length < 3 && c.parentElement.tagName !== 'MAIN') c = c.parentElement; c.setAttribute('data-card', ''); }); return 'gambar-prep: schools=' + n + ' cards=' + document.querySelectorAll('[data-card]').length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 60",
+    "gambar-prep: schools=10221 cards=40",
+    "sanitized: cells=0 strings=1 attrs=2 texts=3 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 40
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S11-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "MCQ Perlu Gambar",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "6,144",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "MCQ Perlu Gambar",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Struktur Perlu Gambar",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "522",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Struktur Perlu Gambar",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "6,666",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "MCQ Perlu Gambar Mengikut Mata Pelajaran",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "MCQ Perlu Gambar Mengikut Mata Pelajaran",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Biologi: 1,587",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-013",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Kimia: 1,077",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-014",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fizik: 718",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sains: 662",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Ekonomi: 570",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-017",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Prinsip Perakaunan: 393",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-018",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik: 336",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-019",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Geografi: 320",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan: 249",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Pendidikan Moral: 60",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-022",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "subject_id",
+    "school_id"
+   ],
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-023",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Mata Pelajaran"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-024",
+   "kind": "select",
+   "tag": "select",
+   "name": "school_id",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Sekolah"
+    },
+    {
+     "value": "10124",
+     "text": "KOLEJ D PATINGGI ABANG HJ ABDILLAH"
+    },
+    {
+     "value": "8300",
+     "text": "KOLEJ ISLAM SULTAN ALAM SHAH"
+    },
+    {
+     "value": "7935",
+     "text": "KOLEJ MELAYU KUALA KANGSAR"
+    },
+    {
+     "value": "9080",
+     "text": "KOLEJ SULTAN ABDUL HAMID"
+    },
+    {
+     "value": "8180",
+     "text": "KOLEJ TINGKATAN ENAM BANDAR UTAMA"
+    },
+    {
+     "value": "9821",
+     "text": "KOLEJ TINGKATAN ENAM DATUK PENGIRAN GALPAM"
+    },
+    {
+     "value": "9734",
+     "text": "KOLEJ TINGKATAN ENAM DESA MAHKOTA"
+    },
+    {
+     "value": "9411",
+     "text": "KOLEJ TINGKATAN ENAM DESA MURNI"
+    },
+    {
+     "value": "9469",
+     "text": "KOLEJ TINGKATAN ENAM HAJI ZAINUL ABIDIN"
+    },
+    {
+     "value": "9618",
+     "text": "KOLEJ TINGKATAN ENAM HULU TERENGGANU"
+    },
+    {
+     "value": "9885",
+     "text": "KOLEJ TINGKATAN ENAM KOTA KINABALU"
+    },
+    {
+     "value": "9044",
+     "text": "KOLEJ TINGKATAN ENAM KULIM"
+    },
+    {
+     "value": "8215",
+     "text": "KOLEJ TINGKATAN ENAM PETALING JAYA"
+    },
+    {
+     "value": "8831",
+     "text": "KOLEJ TINGKATAN ENAM PONTIAN"
+    },
+    {
+     "value": "9683",
+     "text": "KOLEJ TINGKATAN ENAM PUDU JAYA"
+    },
+    {
+     "value": "10118",
+     "text": "KOLEJ TINGKATAN ENAM SARATOK"
+    },
+    {
+     "value": "7924",
+     "text": "KOLEJ TINGKATAN ENAM SERI IPOH"
+    },
+    {
+     "value": "7922",
+     "text": "KOLEJ TINGKATAN ENAM SERI PUTERA"
+    },
+    {
+     "value": "8168",
+     "text": "KOLEJ TINGKATAN ENAM SHAH ALAM"
+    },
+    {
+     "value": "8037",
+     "text": "KOLEJ TINGKATAN ENAM SRI ISTANA"
+    },
+    {
+     "value": "8242",
+     "text": "KOLEJ TINGKATAN ENAM SULTAN ABDUL AZIZ"
+    },
+    {
+     "value": "8991",
+     "text": "KOLEJ TINGKATAN ENAM SULTAN SALLEHUDDIN"
+    },
+    {
+     "value": "7786",
+     "text": "KOLEJ TINGKATAN ENAM TAPAH"
+    },
+    {
+     "value": "9852",
+     "text": "KOLEJ TINGKATAN ENAM TAWAU"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-025",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-filter",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "all-done__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-026",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "MCQ (6144)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "#563393",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "oleh <person>",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Seorang petani mendapati bahawa pokok getahnya menunjukkan kadar transpirasi yang sangat rendah pada waktu tengah hari yang panas dan kering. Apakah mekanisme yang paling mungkin menyebabkan keadaan ini?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "T5-BT-BIO---BIOLOGI.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-033",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/563393/upload",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "image"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-034",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-035",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "image",
+   "required": true,
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-036",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-upload",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/563393/upload",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-037",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/563393/dismiss",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-038",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Dismiss",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/563393/dismiss",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "#562177",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "oleh <person>",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daniel melihat iklan pelaburan dalam talian yang menjanjikan keuntungan luar biasa dalam sehari. Apakah tindakan bijak?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "T5-BT-PM---PENDIDIKAN-MORAL-MPAK.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-046",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/562177/upload",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "image"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-047",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-048",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "image",
+   "required": true,
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-049",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-upload",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/562177/upload",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-050",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/562177/dismiss",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-051",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Dismiss",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/562177/dismiss",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-053",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "#561050",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "oleh <person>",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "Apabila objek diletakkan pada jarak 5 cm dari kanta cembung dengan panjang fokus 8 cm, apakah ciri imej yang terbentuk berdasarkan gambar rajah sinar?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "T5-BT-SN---SAINS.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-059",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/561050/upload",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "image"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-060",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-061",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "image",
+   "required": true,
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-062",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-upload",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/561050/upload",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-063",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/soalan-gambar/mcq/561050/dismiss",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-064",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Dismiss",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/admin/soalan-gambar/mcq/561050/dismiss",
+   "landmark": "form",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "few__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-066",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-067",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-068",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "20",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "6144",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-073",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-074",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=3",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-075",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=4",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-076",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=5",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-077",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=6",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-078",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=7",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-079",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=8",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-080",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=9",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-081",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=10",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-083",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "307",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=307",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=307",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 307",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-084",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "308",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=308",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=308",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Go to page 308",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-085",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "subject-9__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-086",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Struktur (522)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-088",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-089",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-090",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "20",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-092",
+   "kind": "text",
+   "tag": "span",
+   "text": "522",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-094",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-095",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=3",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-096",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=4",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-097",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=5",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-098",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=6",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-099",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=7",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-100",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=8",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-101",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=9",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-102",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=10",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-103",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-104",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "26",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=26",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=26",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 26",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-105",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "27",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=27",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=27",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Go to page 27",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-106",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "mcq-page-2__1280",
+    "str-page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-107",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan sudah lengkap dengan gambar rajah!",
+   "landmark": "main",
+   "section": "Soalan Perlu Gambar Rajah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "all-done__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-108",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "MCQ (5)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-109",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-111",
+   "kind": "text",
+   "tag": "p",
+   "text": "Merujuk latihan pembelajaran Unit 1, pilih ejaan Arab yang betul bagi “poster-poster”.",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-112",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Arab Tingkatan 3.pdf ms.2",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-113",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-114",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berdasarkan kosa kata Unit 1, pilih ejaan Arab yang betul bagi “poster-poster”.",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-116",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Arab Tingkatan 3.pdf ms.2",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-117",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-118",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-119",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berdasarkan kosa kata Unit 1, dalam aktiviti lisan, murid hendak menyatakan “poster-poster”. Pilih perkataan Arab yang tepat.",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-120",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Arab Tingkatan 3.pdf ms.2",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (5)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "few__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-121",
+   "kind": "text",
+   "tag": "p",
+   "text": "Seorang remaja perempuan berumur 14 tahun mempunyai BMI 16.5 kg/m². Apakah tafsiran yang betul berdasarkan carta BMI untuk remaja?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-122",
+   "kind": "text",
+   "tag": "p",
+   "text": "T4-BT-SN---SAINS.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-123",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-124",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-125",
+   "kind": "text",
+   "tag": "p",
+   "text": "Seorang murid lelaki berumur 15 tahun mempunyai BMI 17.2 kg/m². Apakah interpretasi yang betul berdasarkan carta BMI untuk remaja?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-126",
+   "kind": "text",
+   "tag": "p",
+   "text": "T4-BT-SN---SAINS.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-127",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-129",
+   "kind": "text",
+   "tag": "p",
+   "text": "Graf jarak-masa menunjukkan perjalanan seorang pejalan kaki yang bergerak 3 km dalam 20 minit, kemudian berhenti 10 minit, dan akhirnya bergerak 2 km dalam 15 minit. Berapakah jumlah masa perjalanan itu?",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-130",
+   "kind": "text",
+   "tag": "p",
+   "text": "T4-BT-MAT---MATEMATIK.pdf ms.1",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (6144)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-131",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=1",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?mcq_page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "MCQ (6144)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "mcq-page-2__1280",
+    "str-page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-132",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar?str_page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Struktur (522)",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "mcq-page-2__1280",
+    "str-page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-133",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-134",
+   "kind": "text",
+   "tag": "span",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-135",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rajah 28 menunjukkan seorang lelaki melangkah masuk ke sebuah pasar raya dan pintu terbuka secara automatik apabila lelaki itu menghampiri pintu tersebut. Antara berikut, proses manakah yang menyebabkan pintu pasar raya tersebut dapat mengesan kehadiran lelaki itu?",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-136",
+   "kind": "text",
+   "tag": "p",
+   "text": "SET 1-FIZIK K1 PAHANG(JUJ)-2025.pdf ms.29",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-137",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-139",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jadual 2 menunjukkan maklumat berkaitan reputan satu bahan radioaktif dengan aktiviti awal 2000 bilangan per minit dan separuh hayat 10 hari. Berapakah aktiviti bahan radioaktif tersebut selepas 30 hari?",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-140",
+   "kind": "text",
+   "tag": "p",
+   "text": "SET 1-FIZIK K1 PAHANG(JUJ)-2025.pdf ms.28",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-141",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-142",
+   "kind": "text",
+   "tag": "span",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-143",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rajah 27 menunjukkan sebuah litar yang mengandungi satu diod dan satu mentol. Apabila suis dihidupkan, mentol tidak menyala. Apakah yang perlu dilakukan untuk menyalakan mentol?",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-144",
+   "kind": "text",
+   "tag": "p",
+   "text": "SET 1-FIZIK K1 PAHANG(JUJ)-2025.pdf ms.28",
+   "icon": "fa-file-pdf",
+   "landmark": "main",
+   "section": "MCQ (718)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S11-145",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Struktur (6)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-9__1280"
+   ]
+  }
+ ]
+}

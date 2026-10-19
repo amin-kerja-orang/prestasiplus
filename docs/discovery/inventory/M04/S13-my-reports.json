@@ -1,0 +1,543 @@
+{
+ "screen": "S13",
+ "key": "S13-my-reports",
+ "route": "/laporan-soalan",
+ "name": "Laporan Soalan Saya",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.705Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 18,
+  "visibleDefault": 15,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 15,
+   "card": 2,
+   "heading": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (admin has sent no reports → empty state)",
+   "file": "_raw/M04/S13-my-reports__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S13-my-reports__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M04/S13-my-reports__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Laporan Soalan Saya",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S13-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Laporan Soalan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Laporan Soalan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Laporan Soalan Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "Menunggu",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "Disemak",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Diperbaiki",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ditolak",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tiada Laporan",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "📋",
+   "landmark": "main",
+   "section": "Laporan Soalan Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-017",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tiada Laporan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S13-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda belum menghantar sebarang laporan soalan.",
+   "landmark": "main",
+   "section": "Tiada Laporan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

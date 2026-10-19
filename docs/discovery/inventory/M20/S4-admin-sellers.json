@@ -1,0 +1,766 @@
+{
+ "screen": "S4",
+ "key": "S4-admin-sellers",
+ "route": "/admin/marketplace/sellers",
+ "name": "Urus Penjual - Admin PRESTASIPLUS",
+ "module": "M20",
+ "generatedAt": "2026-09-26T20:59:26.059Z",
+ "notes": "GET ?status; stat cards; ban form (never submitted)",
+ "shell": "SHA",
+ "summary": {
+  "total": 29,
+  "visibleDefault": 24,
+  "conditional": 4,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 8,
+   "text": 11,
+   "form": 2,
+   "select": 1,
+   "button": 2,
+   "heading": 1,
+   "badge": 1,
+   "link": 1,
+   "hidden-field": 1,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "sellers (1 seller; stat cards)",
+   "file": "_raw/M20/S4-admin-sellers__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers",
+   "finalUrl": "/admin/marketplace/sellers",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "status-active__1280",
+   "description": "status=active",
+   "file": "_raw/M20/S4-admin-sellers__status-active__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers?status=active",
+   "finalUrl": "/admin/marketplace/sellers?status=active",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "status-banned__1280",
+   "description": "status=banned → empty",
+   "file": "_raw/M20/S4-admin-sellers__status-banned__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers?status=banned",
+   "finalUrl": "/admin/marketplace/sellers?status=banned",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "status-pending__1280",
+   "description": "status=pending → empty",
+   "file": "_raw/M20/S4-admin-sellers__status-pending__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers?status=pending",
+   "finalUrl": "/admin/marketplace/sellers?status=pending",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "status-suspended__1280",
+   "description": "status=suspended → empty",
+   "file": "_raw/M20/S4-admin-sellers__status-suspended__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers?status=suspended",
+   "finalUrl": "/admin/marketplace/sellers?status=suspended",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M20/S4-admin-sellers__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers",
+   "finalUrl": "/admin/marketplace/sellers",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M20/S4-admin-sellers__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/marketplace/sellers",
+   "finalUrl": "/admin/marketplace/sellers",
+   "httpStatus": 200,
+   "title": "Urus Penjual - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Haramkan penjual ini?",
+   "sources": [
+    "attr:onsubmit@form"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M20-S4-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunggu Pengesahan",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Penjual",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Verified",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-013",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "status"
+   ],
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-014",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Status"
+    },
+    {
+     "value": "pending",
+     "text": "Pending"
+    },
+    {
+     "value": "active",
+     "text": "Aktif"
+    },
+    {
+     "value": "suspended",
+     "text": "Digantung"
+    },
+    {
+     "value": "banned",
+     "text": "Diharamkan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-015",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-filter",
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "J",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "J",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-018",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "JomBelajar Official",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Admin PRESTASI+ · <digits:10>",
+   "landmark": "main",
+   "section": "JomBelajar Official",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "JomBelajar Official",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "10 produk",
+   "landmark": "main",
+   "section": "JomBelajar Official",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-022",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/marketplace/sellers/1",
+   "absHref": "https://prestasiplus.my/admin/marketplace/sellers/1",
+   "icon": "fa-eye",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "JomBelajar Official",
+   "title": "Lihat Detail",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-023",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/sellers/1/ban",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "JomBelajar Official",
+   "alpine": {
+    "onsubmit": "return confirm('Haramkan penjual ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "JomBelajar Official",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-025",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-ban",
+   "form": "https://prestasiplus.my/admin/marketplace/sellers/1/ban",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "JomBelajar Official",
+   "title": "Haramkan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-026",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-028",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S4-029",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada penjual dijumpai",
+   "landmark": "main",
+   "section": "Marketplace - Penjual",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "status-banned__1280",
+    "status-pending__1280",
+    "status-suspended__1280"
+   ]
+  }
+ ]
+}

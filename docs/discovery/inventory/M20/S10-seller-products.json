@@ -1,0 +1,1075 @@
+{
+ "screen": "S10",
+ "key": "S10-seller-products",
+ "route": "/seller/produk",
+ "name": "Produk Saya - PRESTASIPLUS Marketplace",
+ "module": "M20",
+ "generatedAt": "2026-09-26T20:59:26.799Z",
+ "notes": "delete forms (never submitted)",
+ "shell": "SHU",
+ "summary": {
+  "total": 46,
+  "visibleDefault": 32,
+  "conditional": 5,
+  "hiddenOnly": 9,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 14,
+   "link": 6,
+   "card": 4,
+   "image": 3,
+   "heading": 4,
+   "badge": 3,
+   "form": 3,
+   "hidden-field": 6,
+   "button": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "my products (10)",
+   "file": "_raw/M20/S10-seller-products__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk",
+   "finalUrl": "/seller/produk",
+   "httpStatus": 200,
+   "title": "Produk Saya - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "?page=2 → empty \"Belum Ada Produk\"",
+   "file": "_raw/M20/S10-seller-products__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/seller/produk?page=2",
+   "finalUrl": "/seller/produk?page=2",
+   "httpStatus": 200,
+   "title": "Produk Saya - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M20/S10-seller-products__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/seller/produk",
+   "finalUrl": "/seller/produk",
+   "httpStatus": 200,
+   "title": "Produk Saya - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M20/S10-seller-products__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/seller/produk",
+   "finalUrl": "/seller/produk",
+   "httpStatus": 200,
+   "title": "Produk Saya - PRESTASIPLUS Marketplace",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 4",
+    "sanitized: cells=2 strings=2 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Produk Saya",
+   "seenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Padam produk ini?",
+   "sources": [
+    "attr:onsubmit@form"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M20-S10-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Produk Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Produk Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Produk Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/seller/dashboard",
+   "absHref": "https://prestasiplus.my/seller/dashboard",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Produk",
+   "href": "https://prestasiplus.my/seller/produk/tambah",
+   "absHref": "https://prestasiplus.my/seller/produk/tambah",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Beg Sekolah Anti-Air Premium",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-007",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_2_698a630bb9768.jpg",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-008",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Beg Sekolah Anti-Air Premium",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 89.90",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "33",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-013",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/seller/produk/1/edit",
+   "absHref": "https://prestasiplus.my/seller/produk/1/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-014",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/seller/produk/1",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-015",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-016",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-017",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/seller/produk/1",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-019",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/2/img_1_698a630ce9798.jpg",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-020",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 45.00",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "14",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-024",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-025",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/seller/produk/2/edit",
+   "absHref": "https://prestasiplus.my/seller/produk/2/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-026",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/seller/produk/2",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-027",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-028",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/seller/produk/2",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-030",
+   "kind": "card",
+   "tag": "div",
+   "text": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-031",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/3/img_1_698a630e193a0.jpg",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-032",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 15.00",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "13",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-036",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-037",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/seller/produk/3/edit",
+   "absHref": "https://prestasiplus.my/seller/produk/3/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-038",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/seller/produk/3",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-039",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-040",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-041",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/seller/produk/3",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "Belum Ada Produk",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "📦",
+   "landmark": "main",
+   "section": "Produk Saya",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-044",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Belum Ada Produk",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tambah produk pertama anda sekarang!",
+   "landmark": "main",
+   "section": "Belum Ada Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S10-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Produk",
+   "href": "https://prestasiplus.my/seller/produk/tambah",
+   "absHref": "https://prestasiplus.my/seller/produk/tambah",
+   "icon": "fa-plus-circle",
+   "landmark": "main",
+   "section": "Belum Ada Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  }
+ ]
+}

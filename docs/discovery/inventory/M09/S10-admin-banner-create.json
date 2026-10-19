@@ -1,0 +1,981 @@
+{
+ "screen": "S10",
+ "key": "S10-admin-banner-create",
+ "route": "/admin/banners/create",
+ "name": "Tambah Banner",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.001Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 30,
+  "visibleDefault": 28,
+  "conditional": 1,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 2,
+   "card": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 10,
+   "input": 6,
+   "textarea": 1,
+   "text": 3,
+   "select": 3,
+   "checkbox": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (link_type none, external_url hidden)",
+   "file": "_raw/M09/S10-admin-banner-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "novalidate=false valid=false invalid(2)=title,banner_type",
+    "banner_type=\"\"(Pilih jenis banner) ; link_type=\"none\"(Tiada Pautan) ; target_audience=\"all\"(Semua) ; is_active:1=true",
+    "Kembali ke Senarai@281,111 166x24 ; Batal@939,1191 78x44 ; Simpan Banner@1030,1191 186x44 | docW=1265",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "article__1280",
+   "description": "link_type=article (no extra field)",
+   "file": "_raw/M09/S10-admin-banner-create__article__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "select": [
+      "main select[name=\"link_type\"]",
+      "article"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main select')].filter(s => s.name).map(s => s.name + '=' + JSON.stringify(s.value) + (s.selectedIndex >= 0 ? '(' + s.options[s.selectedIndex].text.trim() + ')' : '')).concat([...document.querySelectorAll('main input[type=checkbox],main input[type=radio]')].filter(c => c.name).map(c => c.name + ':' + c.value + '=' + c.checked)).join(' ; '))()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "banner_type=\"\"(Pilih jenis banner) ; link_type=\"article\"(Artikel) ; target_audience=\"all\"(Semua) ; is_active:1=true",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "external-back__1280",
+   "description": "external typed, then back to none (value kept, field hidden)",
+   "file": "_raw/M09/S10-admin-banner-create__external-back__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "select": [
+      "main select[name=\"link_type\"]",
+      "external"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "fill": [
+      "main input[name=external_url]",
+      "https://example.com/x"
+     ]
+    },
+    {
+     "select": [
+      "main select[name=\"link_type\"]",
+      "none"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "'external_url=' + document.querySelector('main input[name=external_url]').value"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "external_url=https://example.com/x",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "external__1280",
+   "description": "link_type=external -> \"https://example.com\" field shown",
+   "file": "_raw/M09/S10-admin-banner-create__external__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "select": [
+      "main select[name=\"link_type\"]",
+      "external"
+     ]
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var f = [...document.querySelectorAll('main form')].find(x => (x.method || '').toLowerCase() === 'post' && !x.querySelector('input[name=_method][value=DELETE]')); if (!f) return 'no post form'; var inv = [...f.querySelectorAll(':invalid')].filter(e => e.name).map(e => e.name); return 'novalidate=' + f.noValidate + ' valid=' + f.checkValidity() + ' invalid(' + inv.length + ')=' + inv.slice(0, 12).join(','); })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "novalidate=false valid=false invalid(2)=title,banner_type",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M09/S10-admin-banner-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Kembali ke Senarai@9,70 166x24 ; Batal@63,1138 78x44 ; Simpan Banner@153,1138 186x44 | docW=360",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M09/S10-admin-banner-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/banners/create",
+   "finalUrl": "/admin/banners/create",
+   "httpStatus": 200,
+   "title": "Tambah Banner - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => [...document.querySelectorAll('main a, main button')].filter(b => /^(Batal|Kembali|Simpan|Kemaskini|Terbitkan|Hantar|Tapis|Cari|Reset|Tambah)/.test(b.textContent.trim())).map(b => { var r = b.getBoundingClientRect(); return b.textContent.trim().replace(/\\s+/g, ' ').slice(0, 26) + '@' + Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height); }).join(' ; ') + ' | docW=' + document.documentElement.scrollWidth)()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "Kembali ke Senarai@19,111 166x24 ; Batal@434,1191 78x44 ; Simpan Banner@524,1191 186x44 | docW=753",
+    "m09mask: names=0 replaced=0 leaks=0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{ linkType: 'none' }",
+   "keys": [
+    "linkType"
+   ],
+   "liveState": {
+    "linkType": "none"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Tambah Banner Baru",
+   "seenIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M09-S10-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Senarai",
+   "href": "https://prestasiplus.my/admin/banners",
+   "absHref": "https://prestasiplus.my/admin/banners",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-002",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tajuk Banner *",
+   "landmark": "main",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-003",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/banners",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "title",
+    "description",
+    "image_url",
+    "banner_type",
+    "link_type",
+    "external_url",
+    "target_audience",
+    "display_order",
+    "start_date",
+    "end_date",
+    "is_active"
+   ],
+   "landmark": "main",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-004",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-005",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Banner *",
+   "for": "title",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-006",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk Banner *",
+   "placeholder": "cth: Promosi SPM 2024",
+   "required": true,
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "title",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-007",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "for": "description",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-008",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan",
+   "placeholder": "Penerangan ringkas tentang banner",
+   "rows": "3",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "description",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "URL Gambar",
+   "for": "image_url",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-010",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "image_url",
+   "label": "URL Gambar",
+   "placeholder": "https://example.com/image.jpg",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "image_url",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masukkan URL gambar banner",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Banner *",
+   "for": "banner_type",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-013",
+   "kind": "select",
+   "tag": "select",
+   "name": "banner_type",
+   "label": "Jenis Banner *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih jenis banner"
+    },
+    {
+     "value": "hero",
+     "text": "Hero"
+    },
+    {
+     "value": "promo",
+     "text": "Promo"
+    },
+    {
+     "value": "announcement",
+     "text": "Pengumuman"
+    },
+    {
+     "value": "event",
+     "text": "Acara"
+    }
+   ],
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "banner_type",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Pautan",
+   "for": "link_type",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-015",
+   "kind": "select",
+   "tag": "select",
+   "name": "link_type",
+   "label": "Jenis Pautan",
+   "options": [
+    {
+     "value": "none",
+     "text": "Tiada Pautan"
+    },
+    {
+     "value": "subject",
+     "text": "Subjek"
+    },
+    {
+     "value": "quiz",
+     "text": "Kuiz"
+    },
+    {
+     "value": "article",
+     "text": "Artikel"
+    },
+    {
+     "value": "external",
+     "text": "Pautan Luar"
+    }
+   ],
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "alpine": {
+    "x-model": "linkType"
+   },
+   "domId": "link_type",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-016",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "external_url",
+   "placeholder": "https://example.com",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "external__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "linkType === 'external'"
+  },
+  {
+   "id": "EL-M09-S10-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sasaran Penonton *",
+   "for": "target_audience",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-018",
+   "kind": "select",
+   "tag": "select",
+   "name": "target_audience",
+   "label": "Sasaran Penonton *",
+   "required": true,
+   "options": [
+    {
+     "value": "all",
+     "text": "Semua"
+    },
+    {
+     "value": "student",
+     "text": "Pelajar"
+    },
+    {
+     "value": "teacher",
+     "text": "Guru"
+    },
+    {
+     "value": "admin",
+     "text": "Admin"
+    }
+   ],
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "target_audience",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Susunan Paparan",
+   "for": "display_order",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-020",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "display_order",
+   "label": "Susunan Paparan",
+   "min": "0",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "display_order",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Nombor lebih kecil akan dipaparkan dahulu",
+   "icon": "fa-sort",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh Mula",
+   "for": "start_date",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "start_date",
+   "label": "Tarikh Mula",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "start_date",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh Tamat",
+   "for": "end_date",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "end_date",
+   "label": "Tarikh Tamat",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "domId": "end_date",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Banner Aktif",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-027",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Banner Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-028",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tandakan untuk memaparkan banner",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-029",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/banners",
+   "absHref": "https://prestasiplus.my/admin/banners",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M09-S10-030",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Banner",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/banners",
+   "landmark": "form",
+   "section": "Tambah Banner Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "article__1280",
+    "external-back__1280",
+    "external__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

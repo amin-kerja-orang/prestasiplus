@@ -1,0 +1,921 @@
+{
+ "screen": "S1",
+ "key": "S1-login",
+ "route": "/login",
+ "name": "Log Masuk",
+ "module": "M01",
+ "generatedAt": "2026-09-25T05:07:36.935Z",
+ "shell": "none (auth layout)",
+ "summary": {
+  "total": 47,
+  "visibleDefault": 43,
+  "conditional": 1,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 13,
+  "byKind": {
+   "text": 28,
+   "card": 2,
+   "heading": 1,
+   "image": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 3,
+   "input": 2,
+   "toggle": 1,
+   "checkbox": 1,
+   "link": 4,
+   "button": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M01/S1-login__default__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/login",
+   "finalUrl": "/login",
+   "httpStatus": 200,
+   "title": "Log Masuk - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "pw-visible+loading__1280",
+   "description": "password visible + loading",
+   "file": "_raw/M01/S1-login__pw-visible+loading__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/login",
+   "finalUrl": "/login",
+   "httpStatus": 200,
+   "title": "Log Masuk - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "button[\\@click*=showPassword]"
+    },
+    {
+     "eval": "(()=>{const f=document.querySelector('[x-data*=loading]');if(!f) return 'no loading comp';f._x_dataStack[0].loading=true;return 'loading=true (simulated)'})()"
+    }
+   ],
+   "actionLog": [
+    "loading=true (simulated)"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "logged-in-admin__1280",
+   "description": "opened while logged in (admin)",
+   "file": "_raw/M01/S1-login__logged-in-admin__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/login",
+   "finalUrl": "/login",
+   "httpStatus": 200,
+   "title": "Log Masuk - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M01/S1-login__default__375.json",
+   "width": 375,
+   "session": "guest",
+   "url": "/login",
+   "finalUrl": "/login",
+   "httpStatus": 200,
+   "title": "Log Masuk - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{ loading: false }",
+   "keys": [
+    "loading"
+   ],
+   "liveState": {
+    "loading": false
+   },
+   "visible": true,
+   "region": "page",
+   "seenIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showPassword: false }",
+   "keys": [
+    "showPassword"
+   ],
+   "liveState": {
+    "showPassword": false
+   },
+   "visible": true,
+   "region": "page",
+   "section": "Selamat Kembali! 👋",
+   "seenIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  }
+ ],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M01-S1-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "📚",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "✏️",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "⭐",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎨",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚀",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "💡",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-009",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Teruskan pembelajaran anda dengan lebih 128,989 soalan latihan dalam 31 subjek berbeza!",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "🏆",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pencapaian Terbuka",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kumpul lencana dan skor tertinggi",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "📈",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jejak Kemajuan",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lihat statistik pembelajaran anda",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latihan Tersusun",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dari mudah hingga mencabar",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "Alamat Email",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-021",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform Latih Tubi Nasional 🇲🇾",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-023",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/login",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "email",
+    "password",
+    "remember"
+   ],
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    "@submit": "loading = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Alamat Email",
+   "for": "email",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "Alamat Email",
+   "placeholder": "nama@email.com",
+   "required": true,
+   "autocomplete": "email",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "domId": "email",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan",
+   "for": "password",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-028",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password",
+   "label": "Kata Laluan",
+   "placeholder": "••••••••",
+   "required": true,
+   "autocomplete": "current-password",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    ":type": "showPassword ? 'text' : 'password'"
+   },
+   "domId": "password",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-029",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye",
+   "form": "https://prestasiplus.my/login",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    "@click": "showPassword = !showPassword"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-030",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "remember",
+   "label": "Ingat saya",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "domId": "remember",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M01-S1-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ingat saya",
+   "for": "remember",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-032",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lupa kata laluan?",
+   "href": "https://prestasiplus.my/password/reset",
+   "absHref": "https://prestasiplus.my/password/reset",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset melalui No IC",
+   "href": "https://prestasiplus.my/password/reset-ic",
+   "absHref": "https://prestasiplus.my/password/reset-ic",
+   "icon": "fa-id-card",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-034",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Log Masuk",
+   "icon": "fa-sign-in-alt",
+   "form": "https://prestasiplus.my/login",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "Log Masuk",
+   "icon": "fa-sign-in-alt",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!loading"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sedang Memasuki...",
+   "icon": "fa-circle-notch",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=loading"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada akaun?",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Sekarang 🚀",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-arrow-left",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "❓",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "128,989+ Soalan",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "📚",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "31 Subjek",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎓",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "11 Tahap",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.",
+   "section": "Selamat Kembali! 👋",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "pw-visible+loading__1280",
+    "logged-in-admin__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S1-047",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Sedang Memasuki...",
+   "icon": "fa-circle-notch",
+   "disabled": true,
+   "form": "https://prestasiplus.my/login",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "pw-visible+loading__1280"
+   ]
+  }
+ ]
+}

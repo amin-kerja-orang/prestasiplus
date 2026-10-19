@@ -1,0 +1,6126 @@
+{
+ "screen": "S27",
+ "key": "S27-tuisyen-panduan",
+ "route": "/pusat-tuisyen/panduan",
+ "name": "Panduan Pengguna (same page)",
+ "module": "M09",
+ "generatedAt": "2026-09-25T11:01:18.281Z",
+ "shell": "none",
+ "summary": {
+  "total": 359,
+  "visibleDefault": 80,
+  "conditional": 43,
+  "hiddenOnly": 236,
+  "mobileOnly": 1,
+  "desktopOnly": 3,
+  "byKind": {
+   "link": 13,
+   "image": 3,
+   "toggle": 2,
+   "text": 169,
+   "heading": 69,
+   "clickable": 26,
+   "card": 68,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 3,
+   "input": 2,
+   "checkbox": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (identical to /panduan)",
+   "file": "_raw/M09/S27-tuisyen-panduan__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pusat-tuisyen/panduan",
+   "finalUrl": "/pusat-tuisyen/panduan",
+   "httpStatus": 200,
+   "title": "Panduan Pengguna — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "guest__1280",
+   "description": "guest -> /login (guest)",
+   "file": "_raw/M09/S27-tuisyen-panduan__guest__1280.json",
+   "width": 1280,
+   "session": "guest",
+   "url": "/login",
+   "finalUrl": "/login",
+   "httpStatus": 200,
+   "title": "Log Masuk - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M09/S27-tuisyen-panduan__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/pusat-tuisyen/panduan",
+   "finalUrl": "/pusat-tuisyen/panduan",
+   "httpStatus": 200,
+   "title": "Panduan Pengguna — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    },
+    {
+     "eval": "(() => { var KEEP = /^(Admin PRESTASI\\+|Admin|admin|PRESTASIPLUS|Sekolah|Pengetua)$/; var names = new Set(); var add = function (s) { s = (s || '').replace(/\\s+/g, ' ').trim(); if (s.length >= 3 && !KEEP.test(s) && !/^<.*>$/.test(s)) names.add(s); }; document.querySelectorAll('main *, body > div *').forEach(function (el) { if (el.children.length) return; var t = (el.textContent || '').trim(); if (!/^[A-Z]{1,2}$/.test(t)) return; var c = (el.getAttribute('class') || '') + ' ' + ((el.parentElement && el.parentElement.getAttribute('class')) || ''); if (!/rounded-full|rounded-xl|rounded-lg|avatar/.test(c)) return; var host = /rounded|avatar/.test(el.getAttribute('class') || '') ? el : el.parentElement; var n = host.nextElementSibling; if (!n) return; var leaf = n.children.length ? [...n.querySelectorAll('*')].find(function (x) { return !x.children.length && (x.textContent || '').trim(); }) : n; if (leaf) add(leaf.textContent); }); var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { var m = t.nodeValue.match(/Oleh:\\s*(.+)$/); if (m) add(m[1]); } document.querySelectorAll('main i.fa-user').forEach(function (i) { var p = i.parentElement; add(p.textContent); }); var list = Array.from(names).sort(function (a, b) { return b.length - a.length; }); var n = 0; var TEACH = /\\b(Cikgu|Chekgu|Teacher)\\s+(?!Alesa\\b|Suara\\b|AI\\b)[A-Z][A-Za-z']+(\\s*\\([^)]*\\))?/g; function scrub(s) { var o = s; list.forEach(function (x) { if (o.indexOf(x) >= 0) o = o.split(x).join('<person>'); var e = encodeURIComponent(x).replace(/%20/g, '+'); if (o.indexOf(e) >= 0) o = o.split(e).join('%3Cperson%3E'); }); o = o.replace(TEACH, '$1 <name>'); return o; } var w2 = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT), t2; while ((t2 = w2.nextNode())) { var ns = scrub(t2.nodeValue); if (ns !== t2.nodeValue) { t2.nodeValue = ns; n++; } } document.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; if (a.name === 'class' || a.name === 'style') continue; var nv = scrub(a.value); if (nv !== a.value) { el.setAttribute(a.name, nv); n++; } } }); document.querySelectorAll('input,textarea').forEach(function (i) { if (i.value && scrub(i.value) !== i.value) { i.value = scrub(i.value); n++; } }); document.querySelectorAll('template').forEach(function (tp) { tp.content.querySelectorAll('*').forEach(function (el) { for (var j = 0; j < el.attributes.length; j++) { var a = el.attributes[j]; var nv = scrub(a.value); if (nv !== a.value) el.setAttribute(a.name, nv); } }); }); document.title = scrub(document.title); try { var prev = window.__m09names || []; Object.defineProperty(window, '__m09names', { value: prev.concat(list), configurable: true, enumerable: false }); } catch (e) {} var html = document.documentElement.outerHTML; var leaks = (window.__m09names || []).filter(function (x) { return html.indexOf(x) >= 0; }).length; return 'm09mask: names=' + list.length + ' replaced=' + n + ' leaks=' + leaks; })()"
+    }
+   ],
+   "actionLog": [
+    "m09mask: names=0 replaced=0 leaks=0",
+    "m09mask: names=0 replaced=0 leaks=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "nav",
+   "xData": "{ mobileOpen: false }",
+   "keys": [
+    "mobileOpen"
+   ],
+   "liveState": {
+    "mobileOpen": false
+   },
+   "visible": true,
+   "region": "content",
+   "seenIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "panduanApp",
+   "xData": "panduanApp()",
+   "keys": [],
+   "liveState": {
+    "activeRole": "pelajar",
+    "roles": "array(5)"
+   },
+   "visible": true,
+   "region": "content",
+   "seenIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ open: false }",
+   "keys": [
+    "open"
+   ],
+   "liveState": {
+    "open": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Soalan Lazim Pelajar",
+   "seenIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ loading: false }",
+   "keys": [
+    "loading"
+   ],
+   "liveState": {
+    "loading": false
+   },
+   "visible": true,
+   "region": "content",
+   "seenIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showPassword: false }",
+   "keys": [
+    "showPassword"
+   ],
+   "liveState": {
+    "showPassword": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Selamat Kembali! 👋",
+   "seenIn": [
+    "guest__1280"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Pelajar",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Darjah 1 – Tingkatan 5",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Guru",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Guru Mata Pelajaran",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Ibu Bapa",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Pemantauan Anak",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Admin Sekolah",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Pengetua / GPK",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "PPD / JPN",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Pegawai Daerah / Negeri",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M09-S27-001",
+   "kind": "link",
+   "tag": "a",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "iconOnly": true,
+   "landmark": "nav",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-002",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "nav",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-home",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-newspaper",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-th-large",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-006",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-bars",
+   "iconOnly": true,
+   "landmark": "nav",
+   "alpine": {
+    "@click": "mobileOpen = !mobileOpen"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-home",
+   "landmark": "nav",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mobileOpen"
+  },
+  {
+   "id": "EL-M09-S27-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-newspaper",
+   "landmark": "nav",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mobileOpen"
+  },
+  {
+   "id": "EL-M09-S27-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-th-large",
+   "landmark": "nav",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "mobileOpen"
+  },
+  {
+   "id": "EL-M09-S27-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "📖",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-011",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Panduan Pengguna PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih peranan anda untuk mula. Semua maklumat di hujung jari!",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-013",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(role, idx) in roles"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-014",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👨‍🎓 Pelajar Darjah 1 – Tingkatan 5",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-015",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👩‍🏫 Guru Guru Mata Pelajaran",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-016",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "👪 Ibu Bapa Pemantauan Anak",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-017",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "🏫 Admin Sekolah Pengetua / GPK",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-018",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "📊 PPD / JPN Pegawai Daerah / Negeri",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "alpine": {
+    "@click": "setRole(role.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Daftar Akaun Pelajar",
+   "section": "Panduan Pengguna PRESTASIPLUS",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-020",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cara Daftar Akaun Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "Buka Laman Web",
+   "section": "Cara Daftar Akaun Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Cara Daftar Akaun Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-023",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Buka Laman Web",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-024",
+   "kind": "text",
+   "tag": "p",
+   "text": "Layari menggunakan pelayar web (Chrome/Safari).",
+   "section": "Buka Laman Web",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-025",
+   "kind": "text",
+   "tag": "strong",
+   "text": "prestasiplus.my",
+   "section": "Buka Laman Web",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-026",
+   "kind": "card",
+   "tag": "div",
+   "text": "Klik \"Daftar\"",
+   "section": "Buka Laman Web",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "section": "Buka Laman Web",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-028",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Klik \"Daftar\"",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Di halaman utama, klik butang atau minta guru daftarkan anda.",
+   "section": "Klik \"Daftar\"",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-030",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Daftar Percuma\"",
+   "section": "Klik \"Daftar\"",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-031",
+   "kind": "card",
+   "tag": "div",
+   "text": "Isi Maklumat",
+   "section": "Klik \"Daftar\"",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "3",
+   "section": "Klik \"Daftar\"",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-033",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Isi Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masukkan , dan pilih tingkatan/darjah anda.",
+   "section": "Isi Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-035",
+   "kind": "text",
+   "tag": "strong",
+   "text": "nama penuh, e-mel, kata laluan",
+   "section": "Isi Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-036",
+   "kind": "card",
+   "tag": "div",
+   "text": "Masuk Kelas",
+   "section": "Isi Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "4",
+   "section": "Isi Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-038",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Masuk Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Minta daripada guru anda dan masukkan untuk sertai kelas.",
+   "section": "Masuk Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-040",
+   "kind": "text",
+   "tag": "strong",
+   "text": "kod kelas",
+   "section": "Masuk Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-041",
+   "kind": "card",
+   "tag": "div",
+   "text": "Siap! Mula Berlatih",
+   "section": "Masuk Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "✓",
+   "section": "Masuk Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-043",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Siap! Mula Berlatih",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda kini boleh mula latih tubi, kumpul kombo, dan naik ranking!",
+   "section": "Siap! Mula Berlatih",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Apa Yang Boleh Anda Buat",
+   "section": "Siap! Mula Berlatih",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-046",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Apa Yang Boleh Anda Buat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-047",
+   "kind": "card",
+   "tag": "div",
+   "text": "Latih Tubi",
+   "section": "Apa Yang Boleh Anda Buat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "section": "Apa Yang Boleh Anda Buat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-049",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Latih Tubi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-050",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawab soalan mengikut subjek dan topik. Semakin banyak latihan, semakin pandai!",
+   "section": "Latih Tubi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-051",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kombo Harian",
+   "section": "Latih Tubi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "section": "Latih Tubi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-053",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kombo Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "Latih tubi setiap hari untuk kekalkan kombo anda. Jangan putus!",
+   "section": "Kombo Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-055",
+   "kind": "card",
+   "tag": "div",
+   "text": "Battle",
+   "section": "Kombo Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚔️",
+   "section": "Kombo Harian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-057",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Battle",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cabaran masa nyata — lawan kawan atau pelajar lain secara langsung!",
+   "section": "Battle",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-059",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi 360",
+   "section": "Battle",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Battle",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-061",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prestasi 360",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Lihat kemajuan anda: ketepatan, subjek kuat/lemah, dan cadangan latihan.",
+   "section": "Prestasi 360",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-063",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ranking & Lencana",
+   "section": "Prestasi 360",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-064",
+   "kind": "text",
+   "tag": "div",
+   "text": "🏆",
+   "section": "Prestasi 360",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guest__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-065",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ranking & Lencana",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "Naik ranking sekolah dan kumpul lencana pencapaian!",
+   "section": "Ranking & Lencana",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-067",
+   "kind": "card",
+   "tag": "div",
+   "text": "Koin & Ganjaran",
+   "section": "Ranking & Lencana",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-068",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "section": "Ranking & Lencana",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-069",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Koin & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-070",
+   "kind": "text",
+   "tag": "p",
+   "text": "Setiap latihan beri koin. Kumpul dan tukar dengan ganjaran menarik.",
+   "section": "Koin & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-071",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim Pelajar",
+   "section": "Koin & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-072",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-073",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Macam mana nak reset kata laluan?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pergi ke halaman login, klik \"Lupa Kata Laluan\", masukkan e-mel anda, dan ikut arahan dalam e-mel yang dihantar.",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-075",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Saya tak ada e-mel. Boleh daftar?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-076",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ya! Minta guru anda daftarkan akaun untuk anda melalui panel guru. Guru boleh import senarai pelajar.",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-077",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Apa itu Kombo?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kombo bermaksud hari berturut-turut anda berlatih. Jika anda berlatih setiap hari tanpa putus, kombo akan bertambah. Putus sehari = mula dari 0!",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-079",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Boleh tukar kelas?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "Minta guru baru anda tambahkan anda ke kelas baharu. Anda boleh berada dalam lebih dari satu kelas.",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-081",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Macam mana nak naikkan ketepatan?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "showWhen": "activeRole === 'pelajar'"
+  },
+  {
+   "id": "EL-M09-S27-082",
+   "kind": "text",
+   "tag": "div",
+   "text": "Fokus pada topik yang lemah (lihat di Prestasi 360), ulang latihan topik tersebut. Kualiti lebih penting dari kuantiti!",
+   "section": "Soalan Lazim Pelajar",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-083",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Daftar Akaun Guru",
+   "section": "Soalan Lazim Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-084",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cara Daftar Akaun Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-085",
+   "kind": "card",
+   "tag": "div",
+   "text": "Daftar di prestasiplus.my",
+   "section": "Cara Daftar Akaun Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-086",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Cara Daftar Akaun Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-087",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-088",
+   "kind": "text",
+   "tag": "p",
+   "text": "Klik , pilih peranan , dan isi nama, e-mel, serta kata laluan.",
+   "section": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-089",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Daftar\"",
+   "section": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-090",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Guru\"",
+   "section": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-091",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pilih Sekolah",
+   "section": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-092",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "section": "Daftar di prestasiplus.my",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-093",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pilih Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-094",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cari dan pilih sekolah anda dari senarai. Jika tiada, hubungi admin untuk tambah.",
+   "section": "Pilih Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-095",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cipta Kelas",
+   "section": "Pilih Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-096",
+   "kind": "text",
+   "tag": "div",
+   "text": "3",
+   "section": "Pilih Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-097",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-098",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pergi ke , klik . Masukkan nama kelas, subjek, dan tingkatan.",
+   "section": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-099",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Kelas Saya\"",
+   "section": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-100",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Cipta Kelas\"",
+   "section": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-101",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kongsi Kod Kelas",
+   "section": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-102",
+   "kind": "text",
+   "tag": "div",
+   "text": "4",
+   "section": "Cipta Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-103",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kongsi Kod Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-104",
+   "kind": "text",
+   "tag": "p",
+   "text": "Setiap kelas ada (contoh: LZ0942). Beri kod ini kepada pelajar untuk sertai kelas.",
+   "section": "Kongsi Kod Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-105",
+   "kind": "text",
+   "tag": "strong",
+   "text": "kod unik",
+   "section": "Kongsi Kod Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-106",
+   "kind": "card",
+   "tag": "div",
+   "text": "Siap!",
+   "section": "Kongsi Kod Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-107",
+   "kind": "text",
+   "tag": "div",
+   "text": "✓",
+   "section": "Kongsi Kod Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-108",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-109",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kini anda boleh mula pantau prestasi pelajar dan urus kelas anda.",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-110",
+   "kind": "card",
+   "tag": "div",
+   "text": "Alat-Alat Guru",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-111",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Alat-Alat Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-112",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kelas Saya",
+   "section": "Alat-Alat Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-113",
+   "kind": "text",
+   "tag": "div",
+   "text": "📋",
+   "section": "Alat-Alat Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-114",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kelas Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cipta kelas, tambah/import pelajar, tengok senarai dan status aktiviti setiap pelajar.",
+   "section": "Kelas Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-116",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi Kelas",
+   "section": "Kelas Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-117",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Kelas Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-118",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prestasi Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-119",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dashboard kelas — purata ketepatan, ranking murid, trend prestasi 30 hari.",
+   "section": "Prestasi Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-120",
+   "kind": "card",
+   "tag": "div",
+   "text": "Headcount",
+   "section": "Prestasi Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-121",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-122",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Headcount",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-123",
+   "kind": "text",
+   "tag": "p",
+   "text": "Set sasaran peperiksaan (TOV, OTR, ETR), jejak kemajuan dalam format rasmi KPM.",
+   "section": "Headcount",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-124",
+   "kind": "card",
+   "tag": "div",
+   "text": "Amaran Awal",
+   "section": "Headcount",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-125",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚠️",
+   "section": "Headcount",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-126",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-127",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kenal pasti murid berisiko berdasarkan skor risiko — ketepatan, penglibatan, penguasaan.",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-128",
+   "kind": "card",
+   "tag": "div",
+   "text": "Log Intervensi",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-129",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-130",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-131",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rekod tindakan untuk pelajar berisiko — kaunseling, kelas tambahan, hubungi ibu bapa.",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-132",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kombo Kelas",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-133",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "section": "Log Intervensi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-134",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kombo Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-135",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pantau pelajar dormant (3+ hari tak aktif) dan lihat kombo setiap murid.",
+   "section": "Kombo Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-136",
+   "kind": "card",
+   "tag": "div",
+   "text": "Analisa Item",
+   "section": "Kombo Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-137",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔬",
+   "section": "Kombo Kelas",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-138",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Analisa Item",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-139",
+   "kind": "text",
+   "tag": "p",
+   "text": "Analisis soalan yang paling salah dijawab, topik yang perlu ditekankan.",
+   "section": "Analisa Item",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-140",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sumbang Soalan",
+   "section": "Analisa Item",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-141",
+   "kind": "text",
+   "tag": "div",
+   "text": "✏️",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-142",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sumbang Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-143",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sumbang soalan dari Databank atau cipta soalan baharu untuk murid anda.",
+   "section": "Sumbang Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-144",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim Guru",
+   "section": "Sumbang Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-145",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-146",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Macam mana nak import pelajar secara pukal?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-147",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pergi ke Kelas Saya → pilih kelas → klik \"Import Pelajar\". Muat naik fail CSV dengan nama dan e-mel pelajar.",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-148",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Boleh saya ada lebih dari satu kelas?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-149",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ya! Anda boleh cipta berapa kelas pun — setiap kelas ada kod unik sendiri.",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-150",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Apa itu Headcount?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-151",
+   "kind": "text",
+   "tag": "div",
+   "text": "Headcount adalah format rasmi KPM untuk menjejak sasaran peperiksaan. Anda set TOV, OTR, dan ETR untuk setiap murid.",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-152",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Macam mana nak tengok murid yang tak aktif?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-153",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pergi ke Kombo → pilih kelas anda. Bahagian \"Pelajar Dormant\" akan tunjuk murid yang tak berlatih 3+ hari.",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-154",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Bagaimana Log Intervensi berfungsi?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'guru'"
+  },
+  {
+   "id": "EL-M09-S27-155",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dari Amaran Awal → klik \"Intervensi\" di sebelah nama murid → rekod jenis tindakan, tarikh, dan catatan.",
+   "section": "Soalan Lazim Guru",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-156",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Daftar Akaun Ibu Bapa",
+   "section": "Soalan Lazim Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-157",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cara Daftar Akaun Ibu Bapa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-158",
+   "kind": "card",
+   "tag": "div",
+   "text": "Daftar Akaun",
+   "section": "Cara Daftar Akaun Ibu Bapa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-159",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Cara Daftar Akaun Ibu Bapa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-160",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-161",
+   "kind": "text",
+   "tag": "p",
+   "text": "Layari , klik , dan pilih peranan .",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-162",
+   "kind": "text",
+   "tag": "strong",
+   "text": "prestasiplus.my",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-163",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Daftar\"",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-164",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Ibu Bapa\"",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-165",
+   "kind": "card",
+   "tag": "div",
+   "text": "Link Anak Anda",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-166",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "section": "Daftar Akaun",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-167",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Link Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-168",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selepas daftar, pergi ke profil dan masukkan untuk menghubungkan akaun.",
+   "section": "Link Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-169",
+   "kind": "text",
+   "tag": "strong",
+   "text": "e-mel anak",
+   "section": "Link Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-170",
+   "kind": "card",
+   "tag": "div",
+   "text": "Anak Terima Permintaan",
+   "section": "Link Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-171",
+   "kind": "text",
+   "tag": "div",
+   "text": "3",
+   "section": "Link Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-172",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Anak Terima Permintaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-173",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anak anda perlu permintaan penghubungan dari akaun mereka.",
+   "section": "Anak Terima Permintaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-174",
+   "kind": "text",
+   "tag": "strong",
+   "text": "menerima",
+   "section": "Anak Terima Permintaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-175",
+   "kind": "card",
+   "tag": "div",
+   "text": "Siap! Pantau Anak Anda",
+   "section": "Anak Terima Permintaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-176",
+   "kind": "text",
+   "tag": "div",
+   "text": "✓",
+   "section": "Anak Terima Permintaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-177",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Siap! Pantau Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-178",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda kini boleh lihat Prestasi 360 anak — ketepatan, aktiviti harian, dan cadangan.",
+   "section": "Siap! Pantau Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-179",
+   "kind": "card",
+   "tag": "div",
+   "text": "Apa Yang Ibu Bapa Boleh Lihat",
+   "section": "Siap! Pantau Anak Anda",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-180",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Apa Yang Ibu Bapa Boleh Lihat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-181",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi 360 Anak",
+   "section": "Apa Yang Ibu Bapa Boleh Lihat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-182",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Apa Yang Ibu Bapa Boleh Lihat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-183",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prestasi 360 Anak",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-184",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan keseluruhan, sesi latihan, koin, dan kombo harian anak anda.",
+   "section": "Prestasi 360 Anak",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-185",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penguasaan Subjek",
+   "section": "Prestasi 360 Anak",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-186",
+   "kind": "text",
+   "tag": "div",
+   "text": "📚",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-187",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Penguasaan Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-188",
+   "kind": "text",
+   "tag": "p",
+   "text": "Lihat subjek kuat dan lemah, peratusan ketepatan setiap subjek.",
+   "section": "Penguasaan Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-189",
+   "kind": "card",
+   "tag": "div",
+   "text": "Peta Aktiviti",
+   "section": "Penguasaan Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-190",
+   "kind": "text",
+   "tag": "div",
+   "text": "📅",
+   "section": "Penguasaan Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-191",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Peta Aktiviti",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-192",
+   "kind": "text",
+   "tag": "p",
+   "text": "Heatmap 90 hari — hari mana anak rajin berlatih dan skip.",
+   "section": "Peta Aktiviti",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-193",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cadangan Pintar",
+   "section": "Peta Aktiviti",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-194",
+   "kind": "text",
+   "tag": "div",
+   "text": "💡",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-195",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Cadangan Pintar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-196",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sistem beri cadangan subjek/topik yang anak patut fokuskan.",
+   "section": "Cadangan Pintar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-197",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim Ibu Bapa",
+   "section": "Cadangan Pintar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-198",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim Ibu Bapa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-199",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Boleh pantau lebih dari seorang anak?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-200",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ya! Anda boleh link beberapa akaun anak dan pilih mana satu untuk dilihat.",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-201",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Saya tak nampak data anak?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-202",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pastikan anak sudah menerima permintaan link dari akaun mereka.",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-203",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Adakah guru boleh lihat bahawa saya pantau?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ibubapa'"
+  },
+  {
+   "id": "EL-M09-S27-204",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tidak. Data anda peribadi. Guru hanya nampak data prestasi anak sahaja.",
+   "section": "Soalan Lazim Ibu Bapa",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-205",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Mula Sebagai Admin Sekolah",
+   "section": "Soalan Lazim Ibu Bapa",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-206",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cara Mula Sebagai Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-207",
+   "kind": "card",
+   "tag": "div",
+   "text": "Hubungi Admin PRESTASIPLUS",
+   "section": "Cara Mula Sebagai Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-208",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Cara Mula Sebagai Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-209",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-210",
+   "kind": "text",
+   "tag": "p",
+   "text": "Akaun Admin Sekolah perlu didaftarkan oleh pentadbir sistem. Hubungi kami untuk setup.",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-211",
+   "kind": "card",
+   "tag": "div",
+   "text": "Daftar Guru",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-212",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-213",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-214",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dari panel admin, pergi ke → .",
+   "section": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-215",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Senarai Guru\"",
+   "section": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-216",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Cipta Pengguna\"",
+   "section": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-217",
+   "kind": "card",
+   "tag": "div",
+   "text": "Import Pelajar",
+   "section": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-218",
+   "kind": "text",
+   "tag": "div",
+   "text": "3",
+   "section": "Daftar Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-219",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-220",
+   "kind": "text",
+   "tag": "p",
+   "text": "Gunakan untuk muat naik senarai pelajar secara pukal menggunakan CSV.",
+   "section": "Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-221",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Import Pelajar\"",
+   "section": "Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-222",
+   "kind": "card",
+   "tag": "div",
+   "text": "Siap!",
+   "section": "Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-223",
+   "kind": "text",
+   "tag": "div",
+   "text": "✓",
+   "section": "Import Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-224",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-225",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah kini aktif. Guru boleh cipta kelas dan pelajar boleh mula berlatih.",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-226",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fungsi Admin Sekolah",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-227",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Fungsi Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-228",
+   "kind": "card",
+   "tag": "div",
+   "text": "Urus Guru",
+   "section": "Fungsi Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-229",
+   "kind": "text",
+   "tag": "div",
+   "text": "👨‍🏫",
+   "section": "Fungsi Admin Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-230",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Urus Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-231",
+   "kind": "text",
+   "tag": "p",
+   "text": "Daftar guru, edit profil, aktif/nyahaktif akaun guru.",
+   "section": "Urus Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-232",
+   "kind": "card",
+   "tag": "div",
+   "text": "Urus Pelajar",
+   "section": "Urus Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-233",
+   "kind": "text",
+   "tag": "div",
+   "text": "👨‍🎓",
+   "section": "Urus Guru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-234",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Urus Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-235",
+   "kind": "text",
+   "tag": "p",
+   "text": "Import pelajar pukal, edit maklumat, pantau senarai seluruh sekolah.",
+   "section": "Urus Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-236",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi Sekolah",
+   "section": "Urus Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-237",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Urus Pelajar",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-238",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Prestasi Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-239",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dashboard seluruh sekolah — prestasi mengikut kelas, subjek, tingkatan.",
+   "section": "Prestasi Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-240",
+   "kind": "card",
+   "tag": "div",
+   "text": "Amaran Awal",
+   "section": "Prestasi Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-241",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚠️",
+   "section": "Prestasi Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-242",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-243",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ringkasan risiko seluruh sekolah, senarai pelajar berisiko.",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-244",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ringkasan Eksekutif",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-245",
+   "kind": "text",
+   "tag": "div",
+   "text": "📑",
+   "section": "Amaran Awal",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-246",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-247",
+   "kind": "text",
+   "tag": "p",
+   "text": "Laporan 1 halaman boleh dicetak — KPI, taburan risiko, pecahan subjek.",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-248",
+   "kind": "card",
+   "tag": "div",
+   "text": "Statistik Penggunaan",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-249",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-250",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Statistik Penggunaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-251",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar aktif, sesi latihan, soalan dijawab — gambaran engagement.",
+   "section": "Statistik Penggunaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-252",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim Admin",
+   "section": "Statistik Penggunaan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-253",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim Admin",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-254",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Format CSV untuk import pelajar?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-255",
+   "kind": "text",
+   "tag": "div",
+   "text": "CSV perlu ada lajur: name, email, grade (T4, T5, D1-D6). Baris pertama adalah header. E-mel mesti unik.",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-256",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Boleh reset kata laluan guru/pelajar?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-257",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ya! Dari senarai guru/pelajar, klik nama pengguna, kemudian \"Reset Kata Laluan\".",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-258",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Macam mana nak cetak Ringkasan Eksekutif?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'admin'"
+  },
+  {
+   "id": "EL-M09-S27-259",
+   "kind": "text",
+   "tag": "div",
+   "text": "Amaran Awal → Ringkasan Eksekutif → Cetak / PDF.",
+   "section": "Soalan Lazim Admin",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-260",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Mula Sebagai PPD / JPN",
+   "section": "Soalan Lazim Admin",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-261",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Cara Mula Sebagai PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-262",
+   "kind": "card",
+   "tag": "div",
+   "text": "Hubungi Admin PRESTASIPLUS",
+   "section": "Cara Mula Sebagai PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-263",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "section": "Cara Mula Sebagai PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-264",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-265",
+   "kind": "text",
+   "tag": "p",
+   "text": "Akaun PPD/JPN didaftarkan oleh pentadbir sistem. Nyatakan daerah dan negeri anda.",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-266",
+   "kind": "card",
+   "tag": "div",
+   "text": "Login & Akses Dashboard",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-267",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "section": "Hubungi Admin PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-268",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Login & Akses Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-269",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selepas akaun aktif, login dan akses menu untuk data daerah/negeri.",
+   "section": "Login & Akses Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-270",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Amaran Awal",
+   "section": "Login & Akses Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-271",
+   "kind": "card",
+   "tag": "div",
+   "text": "Siap!",
+   "section": "Login & Akses Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-272",
+   "kind": "text",
+   "tag": "div",
+   "text": "✓",
+   "section": "Login & Akses Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-273",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-274",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda kini boleh pantau data risiko seluruh daerah atau negeri anda.",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-275",
+   "kind": "card",
+   "tag": "div",
+   "text": "Fungsi PPD / JPN",
+   "section": "Siap!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-276",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Fungsi PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-277",
+   "kind": "card",
+   "tag": "div",
+   "text": "Dashboard Daerah (PPD)",
+   "section": "Fungsi PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-278",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "section": "Fungsi PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-279",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Dashboard Daerah (PPD)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-280",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ringkasan semua sekolah dalam daerah — taburan risiko, ranking sekolah.",
+   "section": "Dashboard Daerah (PPD)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-281",
+   "kind": "card",
+   "tag": "div",
+   "text": "Dashboard Negeri (JPN)",
+   "section": "Dashboard Daerah (PPD)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-282",
+   "kind": "text",
+   "tag": "div",
+   "text": "🗺️",
+   "section": "Dashboard Daerah (PPD)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-283",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Dashboard Negeri (JPN)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-284",
+   "kind": "text",
+   "tag": "p",
+   "text": "Gambaran seluruh negeri — perbandingan daerah dan sekolah.",
+   "section": "Dashboard Negeri (JPN)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-285",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ringkasan Eksekutif",
+   "section": "Dashboard Negeri (JPN)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-286",
+   "kind": "text",
+   "tag": "div",
+   "text": "📑",
+   "section": "Dashboard Negeri (JPN)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-287",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-288",
+   "kind": "text",
+   "tag": "p",
+   "text": "Laporan 1 halaman untuk mesyuarat — KPI, taburan risiko. Boleh cetak/PDF.",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-289",
+   "kind": "card",
+   "tag": "div",
+   "text": "Muat Turun CSV",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-290",
+   "kind": "text",
+   "tag": "div",
+   "text": "📥",
+   "section": "Ringkasan Eksekutif",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-291",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Muat Turun CSV",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-292",
+   "kind": "text",
+   "tag": "p",
+   "text": "Export data risiko dalam CSV untuk analisis lanjut.",
+   "section": "Muat Turun CSV",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-293",
+   "kind": "card",
+   "tag": "div",
+   "text": "Direktori Sekolah",
+   "section": "Muat Turun CSV",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-294",
+   "kind": "text",
+   "tag": "div",
+   "text": "🏫",
+   "section": "Muat Turun CSV",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-295",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Direktori Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-296",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cari dan lihat data mana-mana sekolah dalam kawasan anda.",
+   "section": "Direktori Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-297",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kombo & Penglibatan",
+   "section": "Direktori Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-298",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "section": "Direktori Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-299",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kombo & Penglibatan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-300",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pantau kadar penglibatan — purata kombo, pelajar aktif vs dormant.",
+   "section": "Kombo & Penglibatan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-301",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Lazim PPD / JPN",
+   "section": "Kombo & Penglibatan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-302",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan Lazim PPD / JPN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-303",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Data dari mana?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-304",
+   "kind": "text",
+   "tag": "div",
+   "text": "Semua data dijana automatik dari aktiviti latih tubi pelajar. Tiada input manual diperlukan.",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-305",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Berapa kerap data dikemas kini?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-306",
+   "kind": "text",
+   "tag": "div",
+   "text": "Data dikemas kini secara masa nyata. Setiap kali pelajar selesai latihan, data terus dikira.",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-307",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Boleh muat turun laporan?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-308",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ya! Gunakan \"Muat Turun CSV\" atau \"Ringkasan Eksekutif\" untuk cetak PDF.",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-309",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Saya nampak 0 pelajar. Kenapa?",
+   "icon": "fa-chevron-down",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "activeRole === 'ppd'"
+  },
+  {
+   "id": "EL-M09-S27-310",
+   "kind": "text",
+   "tag": "div",
+   "text": "Belum ada sekolah dalam daerah/negeri anda yang aktif menggunakan platform.",
+   "section": "Soalan Lazim PPD / JPN",
+   "alpine": {
+    "x-show": "open",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M09-S27-311",
+   "kind": "text",
+   "tag": "div",
+   "text": "💬",
+   "section": "Soalan Lazim PPD / JPN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-312",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-313",
+   "kind": "text",
+   "tag": "p",
+   "text": "Hubungi pasukan sokongan kami untuk sebarang pertanyaan.",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-314",
+   "kind": "link",
+   "tag": "a",
+   "text": "E-mel Kami",
+   "href": "mailto:support@prestasiplus.my",
+   "absHref": "mailto:support@prestasiplus.my",
+   "icon": "fa-envelope",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-315",
+   "kind": "link",
+   "tag": "a",
+   "text": "WhatsApp",
+   "href": "https://wa.me/60123456789",
+   "absHref": "https://wa.me/60123456789",
+   "target": "_blank",
+   "icon": "fa-whatsapp",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-316",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 🇲🇾",
+   "landmark": "footer",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-317",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "footer",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-318",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform Latih Tubi Nasional",
+   "landmark": "footer",
+   "section": "Perlukan Bantuan Lanjut?",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-319",
+   "kind": "text",
+   "tag": "div",
+   "text": "⭐",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-320",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎨",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-321",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚀",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-322",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-323",
+   "kind": "card",
+   "tag": "div",
+   "text": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-324",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-325",
+   "kind": "text",
+   "tag": "p",
+   "text": "Teruskan pembelajaran anda dengan lebih 128,989 soalan latihan dalam 31 subjek berbeza!",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-326",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pencapaian Terbuka",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-327",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kumpul lencana dan skor tertinggi",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-328",
+   "kind": "text",
+   "tag": "div",
+   "text": "📈",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-329",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jejak Kemajuan",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-330",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lihat statistik pembelajaran anda",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-331",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latihan Tersusun",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-332",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dari mudah hingga mencabar",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-333",
+   "kind": "card",
+   "tag": "div",
+   "text": "Alamat Email",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-334",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-335",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform Latih Tubi Nasional 🇲🇾",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-336",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/login",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "email",
+    "password",
+    "remember"
+   ],
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    "@submit": "loading = true"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-337",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-338",
+   "kind": "label",
+   "tag": "label",
+   "text": "Alamat Email",
+   "for": "email",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-339",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "Alamat Email",
+   "placeholder": "nama@email.com",
+   "required": true,
+   "autocomplete": "email",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "domId": "email",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-340",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan",
+   "for": "password",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-341",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password",
+   "label": "Kata Laluan",
+   "placeholder": "••••••••",
+   "required": true,
+   "autocomplete": "current-password",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    ":type": "showPassword ? 'text' : 'password'"
+   },
+   "domId": "password",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-342",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-eye",
+   "form": "https://prestasiplus.my/login",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    "@click": "showPassword = !showPassword"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-343",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "remember",
+   "label": "Ingat saya",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "domId": "remember",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M09-S27-344",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ingat saya",
+   "for": "remember",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-345",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lupa kata laluan?",
+   "href": "https://prestasiplus.my/password/reset",
+   "absHref": "https://prestasiplus.my/password/reset",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-346",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset melalui No IC",
+   "href": "https://prestasiplus.my/password/reset-ic",
+   "absHref": "https://prestasiplus.my/password/reset-ic",
+   "icon": "fa-id-card",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-347",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Log Masuk",
+   "icon": "fa-sign-in-alt",
+   "form": "https://prestasiplus.my/login",
+   "landmark": "form",
+   "section": "Selamat Kembali! 👋",
+   "alpine": {
+    ":disabled": "loading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-348",
+   "kind": "text",
+   "tag": "span",
+   "text": "Log Masuk",
+   "icon": "fa-sign-in-alt",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "template:x-if=!loading"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-349",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sedang Memasuki...",
+   "icon": "fa-circle-notch",
+   "section": "Selamat Kembali! 👋",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "guest__1280"
+   ],
+   "hiddenBy": [
+    "template:x-if=loading"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-350",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada akaun?",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-351",
+   "kind": "link",
+   "tag": "a",
+   "text": "Daftar Sekarang 🚀",
+   "href": "https://prestasiplus.my/register",
+   "absHref": "https://prestasiplus.my/register",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-352",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Laman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "icon": "fa-arrow-left",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-353",
+   "kind": "text",
+   "tag": "span",
+   "text": "❓",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-354",
+   "kind": "text",
+   "tag": "span",
+   "text": "128,989+ Soalan",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-355",
+   "kind": "text",
+   "tag": "span",
+   "text": "📚",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-356",
+   "kind": "text",
+   "tag": "span",
+   "text": "31 Subjek",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-357",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎓",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-358",
+   "kind": "text",
+   "tag": "span",
+   "text": "11 Tahap",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  },
+  {
+   "id": "EL-M09-S27-359",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.",
+   "section": "Selamat Kembali! 👋",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "guest__1280"
+   ]
+  }
+ ]
+}

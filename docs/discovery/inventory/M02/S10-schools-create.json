@@ -1,0 +1,559 @@
+{
+ "screen": "S10",
+ "key": "S10-schools-create",
+ "route": "/admin/schools/create",
+ "name": "Tambah Sekolah",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.336Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 21,
+  "visibleDefault": 18,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 2,
+   "form": 1,
+   "hidden-field": 2,
+   "label": 7,
+   "input": 4,
+   "select": 2,
+   "checkbox": 1,
+   "text": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M02/S10-schools-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/schools/create",
+   "finalUrl": "/admin/schools/create",
+   "httpStatus": 200,
+   "title": "Tambah Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S10-schools-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/schools/create",
+   "finalUrl": "/admin/schools/create",
+   "httpStatus": 200,
+   "title": "Tambah Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M02/S10-schools-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/schools/create",
+   "finalUrl": "/admin/schools/create",
+   "httpStatus": 200,
+   "title": "Tambah Sekolah - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S10-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Senarai Sekolah",
+   "href": "https://prestasiplus.my/admin/schools",
+   "absHref": "https://prestasiplus.my/admin/schools",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-002",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/schools",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "name",
+    "code",
+    "type",
+    "state",
+    "district",
+    "city",
+    "is_active",
+    "is_active"
+   ],
+   "landmark": "main",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-003",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-004",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Sekolah *",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-005",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Sekolah *",
+   "placeholder": "cth: SK TAMAN KLUANG BARU",
+   "required": true,
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-006",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kod Sekolah *",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-007",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "code",
+   "label": "Kod Sekolah *",
+   "placeholder": "cth: JBA1234",
+   "required": true,
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis *",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-009",
+   "kind": "select",
+   "tag": "select",
+   "name": "type",
+   "label": "Jenis *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih jenis"
+    },
+    {
+     "value": "SK",
+     "text": "SK"
+    },
+    {
+     "value": "SMK",
+     "text": "SMK"
+    },
+    {
+     "value": "SJK(C)",
+     "text": "SJK(C)"
+    },
+    {
+     "value": "SJK(T)",
+     "text": "SJK(T)"
+    },
+    {
+     "value": "MRSM",
+     "text": "MRSM"
+    },
+    {
+     "value": "SBP",
+     "text": "SBP"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Negeri *",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-011",
+   "kind": "select",
+   "tag": "select",
+   "name": "state",
+   "label": "Negeri *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih negeri"
+    },
+    {
+     "value": "Johor",
+     "text": "Johor"
+    },
+    {
+     "value": "Kedah",
+     "text": "Kedah"
+    },
+    {
+     "value": "Kelantan",
+     "text": "Kelantan"
+    },
+    {
+     "value": "Kuala Lumpur",
+     "text": "Kuala Lumpur"
+    },
+    {
+     "value": "Labuan",
+     "text": "Labuan"
+    },
+    {
+     "value": "Melaka",
+     "text": "Melaka"
+    },
+    {
+     "value": "Negeri Sembilan",
+     "text": "Negeri Sembilan"
+    },
+    {
+     "value": "Pahang",
+     "text": "Pahang"
+    },
+    {
+     "value": "Perak",
+     "text": "Perak"
+    },
+    {
+     "value": "Perlis",
+     "text": "Perlis"
+    },
+    {
+     "value": "Pulau Pinang",
+     "text": "Pulau Pinang"
+    },
+    {
+     "value": "Putrajaya",
+     "text": "Putrajaya"
+    },
+    {
+     "value": "Sabah",
+     "text": "Sabah"
+    },
+    {
+     "value": "Sarawak",
+     "text": "Sarawak"
+    },
+    {
+     "value": "Selangor",
+     "text": "Selangor"
+    },
+    {
+     "value": "Terengganu",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Daerah",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-013",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "district",
+   "label": "Daerah",
+   "placeholder": "cth: KLUANG",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bandar",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "city",
+   "label": "Bandar",
+   "placeholder": "cth: KLUANG",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-016",
+   "kind": "label",
+   "tag": "label",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-017",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "is_active",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-018",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "optionValue": "1",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sekolah Aktif",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-020",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/schools",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S10-021",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/schools",
+   "absHref": "https://prestasiplus.my/admin/schools",
+   "landmark": "form.card",
+   "section": "Tambah Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

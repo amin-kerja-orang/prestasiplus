@@ -1,0 +1,483 @@
+{
+ "screen": "S16",
+ "key": "S16-timeline",
+ "route": "/timeline",
+ "name": "Timeline Saya",
+ "module": "M08",
+ "generatedAt": "2026-09-25T10:25:47.148Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 12,
+  "visibleDefault": 9,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 6,
+   "heading": 2,
+   "link": 3,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "empty timeline + public profile link",
+   "file": "_raw/M08/S16-timeline__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/timeline",
+   "finalUrl": "/timeline",
+   "httpStatus": 200,
+   "title": "Timeline Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "empty timeline + public profile link @375",
+   "file": "_raw/M08/S16-timeline__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/timeline",
+   "finalUrl": "/timeline",
+   "httpStatus": 200,
+   "title": "Timeline Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "empty timeline + public profile link @768",
+   "file": "_raw/M08/S16-timeline__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/timeline",
+   "finalUrl": "/timeline",
+   "httpStatus": 200,
+   "title": "Timeline Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Timeline Saya",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "<i class='fas fa-check'></i>",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  },
+  {
+   "text": "<i class='fas fa-copy'></i>",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  },
+  {
+   "url": "/pelajar/3",
+   "sources": [
+    "attr:onclick@button"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M08-S16-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Timeline Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Timeline Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Timeline Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-004",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "📸 Timeline Saya",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kongsi sijil, pencapaian, aktiviti & cerita anda",
+   "landmark": "main",
+   "section": "📸 Timeline Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Post",
+   "href": "https://prestasiplus.my/timeline/create",
+   "absHref": "https://prestasiplus.my/timeline/create",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "📸 Timeline Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-007",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Timeline Kosong",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mula kongsi pencapaian, sijil, dan cerita anda untuk ditunjukkan pada profil awam anda!",
+   "landmark": "main",
+   "section": "Timeline Kosong",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Post Pertama",
+   "href": "https://prestasiplus.my/timeline/create",
+   "absHref": "https://prestasiplus.my/timeline/create",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Timeline Kosong",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Profil Awam Anda",
+   "landmark": "main",
+   "section": "Timeline Kosong",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "https://prestasiplus.my/pelajar/3",
+   "href": "https://prestasiplus.my/pelajar/3",
+   "absHref": "https://prestasiplus.my/pelajar/3",
+   "target": "_blank",
+   "landmark": "main",
+   "section": "Timeline Kosong",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S16-012",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-copy",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Timeline Kosong",
+   "alpine": {
+    "onclick": "navigator.clipboard.writeText('https://prestasiplus.my/pelajar/3'); this.innerHTML='<i class=\\'fas fa-check\\'></i>'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy\\'></i>', 2000)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

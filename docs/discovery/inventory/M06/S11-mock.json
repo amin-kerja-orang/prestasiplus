@@ -1,0 +1,711 @@
+{
+ "screen": "S11",
+ "key": "S11-mock",
+ "route": "/spm-mock",
+ "name": "SPM Mock Exam",
+ "module": "M06",
+ "generatedAt": "2026-09-25T08:07:43.800Z",
+ "notes": "rendered in the admin-panel layout for the admin account",
+ "shell": "SHA",
+ "summary": {
+  "total": 31,
+  "visibleDefault": 30,
+  "conditional": 0,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 5,
+   "text": 10,
+   "link": 3,
+   "badge": 4,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 2,
+   "select": 2,
+   "button": 1,
+   "card": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (maestro card, form, 2 previous mocks)",
+   "file": "_raw/M06/S11-mock__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm-mock",
+   "finalUrl": "/spm-mock",
+   "httpStatus": 200,
+   "title": "SPM Mock Exam",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "selected__1280",
+   "description": "subject Matematik + Paper 2 selected (NOT submitted)",
+   "file": "_raw/M06/S11-mock__selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/spm-mock",
+   "finalUrl": "/spm-mock",
+   "httpStatus": 200,
+   "title": "SPM Mock Exam",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=subject]",
+      "Matematik"
+     ]
+    },
+    {
+     "select": [
+      "main select[name=paper_number]",
+      "2"
+     ]
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M06/S11-mock__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/spm-mock",
+   "finalUrl": "/spm-mock",
+   "httpStatus": 200,
+   "title": "SPM Mock Exam",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M06/S11-mock__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/spm-mock",
+   "finalUrl": "/spm-mock",
+   "httpStatus": 200,
+   "title": "SPM Mock Exam",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('.duta-card').forEach(function (c) { var h = c.querySelector('.name'); if (h) { h.textContent = '<person>'; n++; } var a = c.querySelector('.av-img'); if (a) { if (a.tagName === 'IMG') { a.removeAttribute('src'); a.setAttribute('alt', '<person>'); } else a.textContent = '<in>'; n++; } }); document.querySelectorAll('a[href*=\"/bilik-duta/\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/\\/bilik-duta\\/[^/?#]+/, '/bilik-duta/{slug}')); n++; }); document.querySelectorAll('main i.fa-user-pen').forEach(function (i) { var p = i.parentElement; p.textContent = ''; p.appendChild(i); p.appendChild(document.createTextNode(' <person> · <school>')); n++; }); return 'm06mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m06mask: 4",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .grid > .card": 0,
+    "main .q-review": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M06-S11-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "📝 SPM Mock Exam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.",
+   "landmark": "main",
+   "section": "📝 SPM Mock Exam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "⭐ Maestro SPM Untuk Anda",
+   "landmark": "main",
+   "section": "📝 SPM Mock Exam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cikgu pakar yg dah bantu pelajar score A+ — tonton video mereka sebelum mula mock.",
+   "landmark": "main",
+   "section": "📝 SPM Mock Exam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "<in> <person> Maestro Matematik · 22 tahun ajar pelajar B40 capai cita-cita. 🥇 Duta Bintang 📚 Matematik 📍 Johor ⭐ 4.92",
+   "href": "https://prestasiplus.my/bilik-duta/{slug}",
+   "absHref": "https://prestasiplus.my/bilik-duta/%7Bslug%7D",
+   "landmark": "main",
+   "section": "📝 SPM Mock Exam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-006",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "<person>",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-007",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🥇 Duta Bintang",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-008",
+   "kind": "badge",
+   "tag": "span",
+   "text": "📚 Matematik",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-009",
+   "kind": "badge",
+   "tag": "span",
+   "text": "📍 Johor",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-010",
+   "kind": "badge",
+   "tag": "span",
+   "text": "⭐ 4.92",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚠️ Pastikan masa anda cukup. Setelah klik \"Mula\", timer akan jalan dan tak boleh stop. Kalau pause, score akan jejas.",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-012",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Persediaan sebelum mula:",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-013",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/spm-mock/jana",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "subject",
+    "paper_number"
+   ],
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-014",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "<person>",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek",
+   "landmark": "form",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject",
+   "label": "Subjek",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih subjek"
+    },
+    {
+     "value": "Bahasa Melayu",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "English",
+     "text": "English"
+    },
+    {
+     "value": "Matematik",
+     "text": "Matematik"
+    },
+    {
+     "value": "Matematik Tambahan",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "Fizik",
+     "text": "Fizik"
+    },
+    {
+     "value": "Kimia",
+     "text": "Kimia"
+    },
+    {
+     "value": "Biologi",
+     "text": "Biologi"
+    },
+    {
+     "value": "Sains",
+     "text": "Sains"
+    },
+    {
+     "value": "Sejarah",
+     "text": "Sejarah"
+    },
+    {
+     "value": "Pendidikan Islam",
+     "text": "Pendidikan Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Paper",
+   "landmark": "form",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-018",
+   "kind": "select",
+   "tag": "select",
+   "name": "paper_number",
+   "label": "Paper",
+   "required": true,
+   "options": [
+    {
+     "value": "1",
+     "text": "Paper 1 (Objektif)"
+    },
+    {
+     "value": "2",
+     "text": "Paper 2 (Esei/Struktur)"
+    }
+   ],
+   "landmark": "form",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-019",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "🎯 Jana Mock SPM",
+   "form": "https://prestasiplus.my/spm-mock/jana",
+   "landmark": "form",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-020",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "📚 Mock Sebelum Ini",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah · Paper 1",
+   "landmark": "main",
+   "section": "📚 Mock Sebelum Ini",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-022",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sejarah · Paper 1",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "2 bulan yang lepas ·",
+   "landmark": "main",
+   "section": "Sejarah · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "Belum submit",
+   "landmark": "main",
+   "section": "Sejarah · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "Belum",
+   "landmark": "main",
+   "section": "Sejarah · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-026",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sambung →",
+   "href": "https://prestasiplus.my/spm-mock/317",
+   "absHref": "https://prestasiplus.my/spm-mock/317",
+   "landmark": "main",
+   "section": "Sejarah · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu · Paper 1",
+   "landmark": "main",
+   "section": "Sejarah · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-028",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu · Paper 1",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "4 bulan yang lepas · Score: 0/30 (0.00%)",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "G",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M06-S11-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat →",
+   "href": "https://prestasiplus.my/spm-mock/16/result",
+   "absHref": "https://prestasiplus.my/spm-mock/16/result",
+   "landmark": "main",
+   "section": "Bahasa Melayu · Paper 1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "selected__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

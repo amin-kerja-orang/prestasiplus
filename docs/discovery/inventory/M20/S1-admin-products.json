@@ -1,0 +1,1898 @@
+{
+ "screen": "S1",
+ "key": "S1-admin-products",
+ "route": "/admin/marketplace/products",
+ "name": "Urus Produk - Admin PRESTASIPLUS",
+ "module": "M20",
+ "generatedAt": "2026-09-26T20:59:25.740Z",
+ "notes": "GET ?q&category&status&page; per-row toggle (POST …/toggle) and delete (POST _method=DELETE, confirm) forms never submitted",
+ "shell": "SHA",
+ "summary": {
+  "total": 81,
+  "visibleDefault": 52,
+  "conditional": 20,
+  "hiddenOnly": 9,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 21,
+   "link": 11,
+   "form": 7,
+   "input": 1,
+   "select": 2,
+   "button": 7,
+   "card": 7,
+   "image": 3,
+   "heading": 7,
+   "badge": 6,
+   "hidden-field": 9
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "list (10 products; no filter)",
+   "file": "_raw/M20/S1-admin-products__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products",
+   "finalUrl": "/admin/marketplace/products",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  },
+  {
+   "label": "cat-2__1280",
+   "description": "category=2 Buku & Rujukan",
+   "file": "_raw/M20/S1-admin-products__cat-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?category=2",
+   "finalUrl": "/admin/marketplace/products?category=2",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 3
+   }
+  },
+  {
+   "label": "cat-6__1280",
+   "description": "category=6 Lain-lain",
+   "file": "_raw/M20/S1-admin-products__cat-6__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?category=6",
+   "finalUrl": "/admin/marketplace/products?category=6",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "?page=2",
+   "file": "_raw/M20/S1-admin-products__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?page=2",
+   "finalUrl": "/admin/marketplace/products?page=2",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 0
+   }
+  },
+  {
+   "label": "q-match__1280",
+   "description": "q=Beg (search match)",
+   "file": "_raw/M20/S1-admin-products__q-match__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?q=Beg",
+   "finalUrl": "/admin/marketplace/products?q=Beg",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 1
+   }
+  },
+  {
+   "label": "q-none__1280",
+   "description": "q with no match → empty state",
+   "file": "_raw/M20/S1-admin-products__q-none__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?q=zzqxv",
+   "finalUrl": "/admin/marketplace/products?q=zzqxv",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 0
+   }
+  },
+  {
+   "label": "status-active__1280",
+   "description": "status=active",
+   "file": "_raw/M20/S1-admin-products__status-active__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?status=active",
+   "finalUrl": "/admin/marketplace/products?status=active",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  },
+  {
+   "label": "status-draft__1280",
+   "description": "status=draft → empty",
+   "file": "_raw/M20/S1-admin-products__status-draft__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?status=draft",
+   "finalUrl": "/admin/marketplace/products?status=draft",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 0
+   }
+  },
+  {
+   "label": "status-rejected__1280",
+   "description": "status=rejected → empty",
+   "file": "_raw/M20/S1-admin-products__status-rejected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/marketplace/products?status=rejected",
+   "finalUrl": "/admin/marketplace/products?status=rejected",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M20/S1-admin-products__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/marketplace/products",
+   "finalUrl": "/admin/marketplace/products",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M20/S1-admin-products__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/marketplace/products",
+   "finalUrl": "/admin/marketplace/products",
+   "httpStatus": 200,
+   "title": "Urus Produk - Admin PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm20n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{7,10}\\d)/;\n    var LBL = /^(e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|whatsapp|no\\.? ?whatsapp|ic|no\\.? ?(ic|k\\/?p|mykad)|bank|nama bank|no\\.? ?akaun|akaun bank|nombor akaun|pemegang akaun|alamat|ssm|no\\.? ?ssm)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|A\\/L|A\\/P)\\b/.test(t) && t.length < 90) tag(el);\n      if (LBL.test(t) && !el.closest('th,thead,label,button,nav,aside,header,a')) {\n        var v = el.nextElementSibling || (el.parentElement && el.parentElement.nextElementSibling);\n        if (v && !v.querySelector('input,select,textarea,button,form')) tag(v);\n      }\n    });\n    // phone text nodes that share a leaf with a label (\"WhatsApp: 60…\") — replace only the number in place\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|whatsapp|email|emel|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && i.value) { i.setAttribute('data-m20', 'masked'); i.value = ''; i.setAttribute('value', ''); n++; } });\n    document.querySelectorAll('a[href*=\"wa.me\"], a[href*=\"api.whatsapp\"], a[href^=\"tel:\"], a[href^=\"mailto:\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|phone=|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)|uploads\\/(sellers|documents|ic)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm20mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m20mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-3 > div.card": 10
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Padam produk ini?",
+   "sources": [
+    "attr:onsubmit@form"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M20-S1-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "10 produk dijumpai",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-002",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Produk",
+   "href": "https://prestasiplus.my/admin/marketplace/products/create",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products/create",
+   "icon": "fa-plus-circle",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-003",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [
+    "q",
+    "category",
+    "status"
+   ],
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-004",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "q",
+   "placeholder": "Cari produk...",
+   "landmark": "form.card",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-005",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Kategori"
+    },
+    {
+     "value": "1",
+     "text": "Peralatan Sekolah"
+    },
+    {
+     "value": "2",
+     "text": "Buku & Rujukan"
+    },
+    {
+     "value": "3",
+     "text": "Uniform & Pakaian"
+    },
+    {
+     "value": "4",
+     "text": "Stationery"
+    },
+    {
+     "value": "5",
+     "text": "Digital & E-Book"
+    },
+    {
+     "value": "6",
+     "text": "Lain-lain"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-006",
+   "kind": "select",
+   "tag": "select",
+   "name": "status",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Status"
+    },
+    {
+     "value": "active",
+     "text": "Aktif"
+    },
+    {
+     "value": "draft",
+     "text": "Draf"
+    },
+    {
+     "value": "rejected",
+     "text": "Ditolak"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-007",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-filter",
+   "form": "(no action)",
+   "landmark": "form.card",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "page-2__1280",
+    "q-match__1280",
+    "q-none__1280",
+    "status-active__1280",
+    "status-draft__1280",
+    "status-rejected__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Beg Sekolah Anti-Air Premium",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-009",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/1/img_2_698a630bb9768.jpg",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-010",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Beg Sekolah Anti-Air Premium",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 89.90",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "JomBelajar Official",
+   "icon": "fa-store",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "33",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Baru",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-017",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+   "absHref": "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-018",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/1/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-019",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-020",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-pause",
+   "form": "https://prestasiplus.my/admin/marketplace/products/1/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-021",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/marketplace/products/1/edit",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products/1/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/1",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-025",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/admin/marketplace/products/1",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "title": "Padam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "cat-6__1280",
+    "q-match__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-026",
+   "kind": "card",
+   "tag": "div",
+   "text": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-027",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/2/img_1_698a630ce9798.jpg",
+   "landmark": "main",
+   "section": "Beg Sekolah Anti-Air Premium",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-028",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 45.00",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "JomBelajar Official",
+   "icon": "fa-store",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "14",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-033",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Baru",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-034",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-035",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/set-buku-latihan-matematik-tahun-6-5-buku-PAjPe",
+   "absHref": "https://prestasiplus.my/marketplace/set-buku-latihan-matematik-tahun-6-5-buku-PAjPe",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-036",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/2/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-037",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-038",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-pause",
+   "form": "https://prestasiplus.my/admin/marketplace/products/2/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-039",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/marketplace/products/2/edit",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products/2/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-040",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/2",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-041",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-042",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-043",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/admin/marketplace/products/2",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "title": "Padam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-044",
+   "kind": "card",
+   "tag": "div",
+   "text": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-045",
+   "kind": "image",
+   "tag": "img",
+   "src": "/uploads/products/3/img_1_698a630e193a0.jpg",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-046",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 15.00",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "JomBelajar Official",
+   "icon": "fa-store",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "13",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-051",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Terpakai",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-052",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Active",
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-053",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/uniform-sekolah-baju-putih-lengan-panjang-saiz-m-hE8Jf",
+   "absHref": "https://prestasiplus.my/marketplace/uniform-sekolah-baju-putih-lengan-panjang-saiz-m-hE8Jf",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-054",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/3/toggle",
+   "method": "POST",
+   "fields": [
+    "_token"
+   ],
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-055",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-056",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-pause",
+   "form": "https://prestasiplus.my/admin/marketplace/products/3/toggle",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "title": "Nyahaktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-057",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/marketplace/products/3/edit",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products/3/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-058",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/marketplace/products/3",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "alpine": {
+    "onsubmit": "return confirm('Padam produk ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-059",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-060",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/admin/marketplace/products/3",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M)",
+   "title": "Padam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "cat-2__1280",
+    "status-active__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "3 produk dijumpai",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-063",
+   "kind": "card",
+   "tag": "div",
+   "text": "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)",
+   "landmark": "main",
+   "section": "Set Buku Latihan Matematik Tahun 6 (5 Buku)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-064",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 19.90",
+   "landmark": "main",
+   "section": "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-066",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+   "absHref": "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-067",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kamus Dewan Edisi Keempat (Terpakai)",
+   "landmark": "main",
+   "section": "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-068",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Kamus Dewan Edisi Keempat (Terpakai)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 25.00",
+   "landmark": "main",
+   "section": "Kamus Dewan Edisi Keempat (Terpakai)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-070",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+   "absHref": "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Kamus Dewan Edisi Keempat (Terpakai)",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 produk dijumpai",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-6__1280",
+    "q-match__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-072",
+   "kind": "card",
+   "tag": "div",
+   "text": "Botol Air 750ml BPA Free (Biru)",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-6__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-073",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Botol Air 750ml BPA Free (Biru)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-6__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "RM 18.90",
+   "landmark": "main",
+   "section": "Botol Air 750ml BPA Free (Biru)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-6__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-075",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/marketplace/botol-air-750ml-bpa-free-biru-KEz9H",
+   "absHref": "https://prestasiplus.my/marketplace/botol-air-750ml-bpa-free-biru-KEz9H",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Botol Air 750ml BPA Free (Biru)",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "cat-6__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-076",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tiada Produk",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280",
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-077",
+   "kind": "text",
+   "tag": "div",
+   "text": "📦",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280",
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-078",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tiada Produk",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280",
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-079",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tambah produk pertama sekarang!",
+   "landmark": "main",
+   "section": "Tiada Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280",
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Produk",
+   "href": "https://prestasiplus.my/admin/marketplace/products/create",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products/create",
+   "icon": "fa-plus-circle",
+   "landmark": "main",
+   "section": "Tiada Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280",
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  },
+  {
+   "id": "EL-M20-S1-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 produk dijumpai",
+   "landmark": "main",
+   "section": "Marketplace - Produk",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "q-none__1280",
+    "status-draft__1280",
+    "status-rejected__1280"
+   ]
+  }
+ ]
+}

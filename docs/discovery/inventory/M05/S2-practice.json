@@ -1,0 +1,813 @@
+{
+ "screen": "S2",
+ "key": "S2-practice",
+ "route": "/practice",
+ "name": "Latih Tubi",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.497Z",
+ "notes": "first 3 of 31 subject cards inventoried; ?subject= ?level= ?topic_id= ignored",
+ "shell": "SHU",
+ "summary": {
+  "total": 25,
+  "visibleDefault": 22,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "heading": 5,
+   "link": 4,
+   "card": 6,
+   "badge": 3,
+   "button": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "subject list (31 cards) + chapter-mode banner",
+   "file": "_raw/M05/S2-practice__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice",
+   "finalUrl": "/practice",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  },
+  {
+   "label": "level-param__1280",
+   "description": "?level=T4 from dashboard level pill (parameter ignored)",
+   "file": "_raw/M05/S2-practice__level-param__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice?level=T4",
+   "finalUrl": "/practice?level=T4",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  },
+  {
+   "label": "subject-param__1280",
+   "description": "?subject=MATH from dashboard card (parameter ignored → same page)",
+   "file": "_raw/M05/S2-practice__subject-param__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice?subject=MATH",
+   "finalUrl": "/practice?subject=MATH",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  },
+  {
+   "label": "topic-param__1280",
+   "description": "?topic_id=7 from Peta Belajar island (parameter ignored)",
+   "file": "_raw/M05/S2-practice__topic-param__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice?topic_id=7",
+   "finalUrl": "/practice?topic_id=7",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "subject list @375",
+   "file": "_raw/M05/S2-practice__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/practice",
+   "finalUrl": "/practice",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "subject list @768",
+   "file": "_raw/M05/S2-practice__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/practice",
+   "finalUrl": "/practice",
+   "httpStatus": 200,
+   "title": "Latih Tubi - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main a[href^=\"/practice/\"].block.group": 31
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Latih Tubi",
+   "seenIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S2-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Latih Tubi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Latih Tubi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Latih Tubi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Latih Tubi 🎯",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih subjek dan mula berlatih!",
+   "landmark": "main",
+   "section": "Latih Tubi 🎯",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mode Baru Soalan by Chapter Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap. Mula",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-arrow-right",
+   "landmark": "main",
+   "section": "Latih Tubi 🎯",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-007",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan by Chapter",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Teras Bahasa Melayu Malay Language 11,688 soalan Mula Latihan",
+   "href": "/practice/BM",
+   "absHref": "https://prestasiplus.my/practice/BM",
+   "icon": "fa-book-open",
+   "landmark": "main",
+   "section": "Soalan by Chapter",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Soalan by Chapter",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Soalan by Chapter",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Soalan by Chapter",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-012",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-013",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Mula Latihan",
+   "icon": "fa-play-circle",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "Teras Bahasa Inggeris English Language 8,039 soalan Mula Latihan",
+   "href": "/practice/BI",
+   "absHref": "https://prestasiplus.my/practice/BI",
+   "icon": "fa-globe",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-017",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-018",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-019",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Mula Latihan",
+   "icon": "fa-play-circle",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-020",
+   "kind": "link",
+   "tag": "a",
+   "text": "Teras Matematik Mathematics 13,872 soalan Mula Latihan",
+   "href": "/practice/MATH",
+   "absHref": "https://prestasiplus.my/practice/MATH",
+   "icon": "fa-calculator",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-022",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teras",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-023",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Teras",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-024",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S2-025",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Mula Latihan",
+   "icon": "fa-play-circle",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "level-param__1280",
+    "subject-param__1280",
+    "topic-param__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

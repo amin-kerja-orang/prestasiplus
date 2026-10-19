@@ -1,0 +1,6 @@
+/* v2 fonts, self-hosted (design system section 7). Bricolage Grotesque = display and numerals,
+   Plus Jakarta Sans = body and UI. Variable files, wght axis; `unicode-range` makes the browser
+   download a subset only when a glyph needs it, so legacy pages (Inter/Outfit) fetch nothing new.
+   Applied only inside `[data-personality]` (tokens.css); legacy pages keep Inter/Outfit. */
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
+@import '@fontsource-variable/plus-jakarta-sans/wght.css';

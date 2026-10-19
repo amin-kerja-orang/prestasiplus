@@ -1,0 +1,14 @@
+{
+  "_comment": "CM-7: `:ui` fragments that the Nuxt UI theme defaults (src/theme/ui.config.ts, src/theme/ui/components.ts) already apply. Per component tag: slot -> class tokens that are redundant. `when` restricts the entry to elements carrying that static attribute. Only entries whose token is set by the default (not merely similar) belong here.",
+  "map": {
+    "UTabs": { "list": { "tokens": ["overflow-x-auto"], "why": "tabs.slots.list" } },
+    "URadioGroup": {
+      "item": { "tokens": ["bg-elevated"], "when": { "variant": "card" }, "why": "radioGroup compound variant card" }
+    },
+    "UProgress": { "base": { "tokens": ["bg-elevated", "rounded-full"], "why": "progress.slots.base + Nuxt UI base" } },
+    "UDashboardNavbar": {
+      "root": { "tokens": ["h-16", "bg-default", "shadow-bar"], "why": "dashboardNavbar.slots.root" }
+    },
+    "UDashboardSidebar": { "root": { "tokens": ["bg-default"], "why": "dashboardSidebar.slots.root" } }
+  }
+}

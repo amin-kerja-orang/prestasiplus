@@ -1,0 +1,457 @@
+{
+ "screen": "S21",
+ "key": "S21-guru-kedai",
+ "route": "/guru/gamifikasi/kedai",
+ "name": "Kedai Hadiah Guru",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.865Z",
+ "notes": "new route",
+ "shell": "SHU",
+ "summary": {
+  "total": 12,
+  "visibleDefault": 9,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 8,
+   "heading": 2,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (Tiada Hadiah Tersedia)",
+   "file": "_raw/M14/S21-guru-kedai__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/gamifikasi/kedai",
+   "finalUrl": "/guru/gamifikasi/kedai",
+   "httpStatus": 200,
+   "title": "Kedai Hadiah Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (Tiada Hadiah Tersedia) @375",
+   "file": "_raw/M14/S21-guru-kedai__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/gamifikasi/kedai",
+   "finalUrl": "/guru/gamifikasi/kedai",
+   "httpStatus": 200,
+   "title": "Kedai Hadiah Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default (Tiada Hadiah Tersedia) @768",
+   "file": "_raw/M14/S21-guru-kedai__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/gamifikasi/kedai",
+   "finalUrl": "/guru/gamifikasi/kedai",
+   "httpStatus": 200,
+   "title": "Kedai Hadiah Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Kedai Hadiah",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S21-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Kedai Hadiah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Kedai Hadiah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Kedai Hadiah",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "🎁 Kedai Hadiah Guru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tebus syiling anda untuk hadiah menarik!",
+   "landmark": "main",
+   "section": "🎁 Kedai Hadiah Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "🎁 Kedai Hadiah Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Baki Syiling",
+   "landmark": "main",
+   "section": "🎁 Kedai Hadiah Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/guru/gamifikasi",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi",
+   "icon": "fa-coins",
+   "landmark": "main",
+   "section": "🎁 Kedai Hadiah Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎁",
+   "landmark": "main",
+   "section": "🎁 Kedai Hadiah Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-010",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tiada Hadiah Tersedia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Admin akan menambah hadiah tidak lama lagi. Tunggu ya!",
+   "landmark": "main",
+   "section": "Tiada Hadiah Tersedia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S21-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard Gamifikasi",
+   "href": "https://prestasiplus.my/guru/gamifikasi",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Tiada Hadiah Tersedia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,127 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sample",
+    "version": "1"
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "paths": {
+    "/things": {
+      "get": {
+        "operationId": "listThings",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThingList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createThing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thing"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/things/count": {
+      "get": {
+        "operationId": "countThings",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["total"],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Thing": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "published", "archived"]
+          },
+          "title": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "ThingInput": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["draft", "published", "archived"]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ThingList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Thing"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7596 @@
+{
+ "module": "M20",
+ "generatedAt": "2026-09-26T20:59:27.164Z",
+ "total": 403,
+ "urls": [
+  {
+   "url": "/logout",
+   "module": "M01",
+   "via": "TRACKER /logout",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Log Keluar"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint",
+    "link"
+   ],
+   "foundOn": [
+    "S10",
+    "S10(shell)",
+    "S11",
+    "S11(shell)",
+    "S12",
+    "S12(shell)",
+    "S6",
+    "S6(shell)",
+    "S7",
+    "S7(shell)",
+    "S8",
+    "S8(shell)",
+    "S9",
+    "S9(shell)"
+   ],
+   "texts": [
+    "99+",
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/profile",
+   "module": "M01",
+   "via": "TRACKER /profile",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Profil Saya"
+   ]
+  },
+  {
+   "url": "/settings",
+   "module": "M01",
+   "via": "TRACKER /settings",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Tetapan"
+   ]
+  },
+  {
+   "url": "/tetapan",
+   "module": "M01",
+   "via": "TRACKER /tetapan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Tetapan Peribadi"
+   ]
+  },
+  {
+   "url": "/admin/comp-students",
+   "module": "M02",
+   "via": "TRACKER /admin/comp-students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Pelajar Komplimen"
+   ]
+  },
+  {
+   "url": "/admin/import-students",
+   "module": "M02",
+   "via": "TRACKER /admin/import-students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Import Pelajar"
+   ]
+  },
+  {
+   "url": "/admin/school-subscriptions",
+   "module": "M02",
+   "via": "TRACKER /admin/school-subscriptions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Langganan Sekolah"
+   ]
+  },
+  {
+   "url": "/admin/schools",
+   "module": "M02",
+   "via": "TRACKER /admin/schools",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Sekolah"
+   ]
+  },
+  {
+   "url": "/admin/users",
+   "module": "M02",
+   "via": "TRACKER /admin/users",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Senarai Pengguna",
+    "Pengguna"
+   ]
+  },
+  {
+   "url": "/admin/users/bulk-import",
+   "module": "M02",
+   "via": "TRACKER /admin/users/bulk-import",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Import Pengguna"
+   ]
+  },
+  {
+   "url": "/admin/curriculum",
+   "module": "M03",
+   "via": "TRACKER /admin/curriculum",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Kurikulum"
+   ]
+  },
+  {
+   "url": "/admin/education-levels",
+   "module": "M03",
+   "via": "TRACKER /admin/education-levels",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tahap Pendidikan"
+   ]
+  },
+  {
+   "url": "/admin/subjects",
+   "module": "M03",
+   "via": "TRACKER /admin/subjects",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Subjek"
+   ]
+  },
+  {
+   "url": "/admin/subjects/create",
+   "module": "M03",
+   "via": "TRACKER /admin/subjects",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/peta-belajar",
+   "module": "M03",
+   "via": "TRACKER /peta-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Peta Belajar"
+   ]
+  },
+  {
+   "url": "/topics",
+   "module": "M03",
+   "via": "TRACKER /topics",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Topik"
+   ]
+  },
+  {
+   "url": "/admin/master-notes",
+   "module": "M04",
+   "via": "TRACKER /admin/master-notes",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Semakan Nota Master"
+   ]
+  },
+  {
+   "url": "/admin/question-reports",
+   "module": "M04",
+   "via": "TRACKER /admin/question-reports",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan Soalan"
+   ]
+  },
+  {
+   "url": "/admin/question-submissions",
+   "module": "M04",
+   "via": "TRACKER /admin/question-submissions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kertas Soalan Guru"
+   ]
+  },
+  {
+   "url": "/admin/questions",
+   "module": "M04",
+   "via": "TRACKER /admin/questions",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Senarai Soalan",
+    "Soalan"
+   ]
+  },
+  {
+   "url": "/admin/questions/create",
+   "module": "M04",
+   "via": "TRACKER /admin/questions",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/questions/import",
+   "module": "M04",
+   "via": "TRACKER /admin/questions/import",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Import CSV"
+   ]
+  },
+  {
+   "url": "/admin/questions/quality",
+   "module": "M04",
+   "via": "TRACKER /admin/questions/quality",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Kualiti Soalan"
+   ]
+  },
+  {
+   "url": "/admin/soalan-gambar",
+   "module": "M04",
+   "via": "TRACKER /admin/soalan-gambar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Gambar Rajah 6,144"
+   ]
+  },
+  {
+   "url": "/admin/structured-questions",
+   "module": "M04",
+   "via": "TRACKER /admin/structured-questions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/laporan-soalan",
+   "module": "M04",
+   "via": "TRACKER /laporan-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Laporan Soalan"
+   ]
+  },
+  {
+   "url": "/dashboard",
+   "module": "M05",
+   "via": "TRACKER /dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Ke Dashboard",
+    "Student View",
+    "Dashboard",
+    "Home"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/latihan-berstruktur",
+   "module": "M05",
+   "via": "TRACKER /latihan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/misi-harian",
+   "module": "M05",
+   "via": "TRACKER /misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/pembetulan",
+   "module": "M05",
+   "via": "TRACKER /pembetulan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Pembetulan"
+   ]
+  },
+  {
+   "url": "/penguasaan",
+   "module": "M05",
+   "via": "TRACKER /penguasaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Penguasaan"
+   ]
+  },
+  {
+   "url": "/practice",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": [
+    "Latih Tubi"
+   ]
+  },
+  {
+   "url": "/practice?level=D1",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=D2",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=D3",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=D4",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=D5",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=D6",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=T1",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=T2",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=T3",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=T4",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?level=T5",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=ADDMATH",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=AKAUN",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BA",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BC",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BIO",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BM",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=BT",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=CHEM",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=EKON",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=GEO",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=JAWI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=MATH",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=MUZ",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PERNIAGA",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PHY",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PJK",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PM",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PN",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PPW",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PQS",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PSI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=PSV",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=RBT",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=SCI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=SEJ",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=SK",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=SRT",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=SS",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice?subject=TI",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice/chapter",
+   "module": "M05",
+   "via": "TRACKER /practice/chapter",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Soalan by Chapter"
+   ]
+  },
+  {
+   "url": "/practice/history",
+   "module": "M05",
+   "via": "TRACKER /practice/history",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice/progress",
+   "module": "M05",
+   "via": "TRACKER /practice/progress",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/practice/revision",
+   "module": "M05",
+   "via": "TRACKER /practice/revision",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/remedial/saya",
+   "module": "M05",
+   "via": "TRACKER /remedial/saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Remedial"
+   ]
+  },
+  {
+   "url": "/target-spm",
+   "module": "M05",
+   "via": "TRACKER /target-spm",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Target SPM"
+   ]
+  },
+  {
+   "url": "/pusat-ai/spm",
+   "module": "M06",
+   "via": "TRACKER /pusat-ai/spm",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "SPM Walkthrough"
+   ]
+  },
+  {
+   "url": "/spm-mock",
+   "module": "M06",
+   "via": "TRACKER /spm-mock",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "SPM Mock Exam"
+   ]
+  },
+  {
+   "url": "/spm/latih-tubi",
+   "module": "M06",
+   "via": "TRACKER /spm/latih-tubi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Latih Tubi"
+   ]
+  },
+  {
+   "url": "/spm/ramalan",
+   "module": "M06",
+   "via": "TRACKER /spm/ramalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tracking A"
+   ]
+  },
+  {
+   "url": "/spm/subjektif",
+   "module": "M06",
+   "via": "TRACKER /spm/subjektif",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Subjektif"
+   ]
+  },
+  {
+   "url": "/spm/tahun-lepas",
+   "module": "M06",
+   "via": "TRACKER /spm/tahun-lepas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Databank Soalan"
+   ]
+  },
+  {
+   "url": "/admin/pksk/access",
+   "module": "M07",
+   "via": "TRACKER /admin/pksk/access",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "PKSK Akses"
+   ]
+  },
+  {
+   "url": "/admin/pksk/questions",
+   "module": "M07",
+   "via": "TRACKER /admin/pksk/questions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "PKSK Soalan"
+   ]
+  },
+  {
+   "url": "/analisa-item",
+   "module": "M08",
+   "via": "TRACKER /analisa-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Analisa Item"
+   ]
+  },
+  {
+   "url": "/analitik/pelajar",
+   "module": "M08",
+   "via": "TRACKER /analitik/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Analitik Adaptif"
+   ]
+  },
+  {
+   "url": "/headcount",
+   "module": "M08",
+   "via": "TRACKER /headcount",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Headcount"
+   ]
+  },
+  {
+   "url": "/laporan-mingguan",
+   "module": "M08",
+   "via": "TRACKER /laporan-mingguan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/leaderboard",
+   "module": "M08",
+   "via": "TRACKER /leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/prestasi",
+   "module": "M08",
+   "via": "TRACKER /prestasi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/prestasi/kelas",
+   "module": "M08",
+   "via": "TRACKER /prestasi/{userId}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/ranking",
+   "module": "M08",
+   "via": "TRACKER /ranking",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kedudukan"
+   ]
+  },
+  {
+   "url": "/timeline",
+   "module": "M08",
+   "via": "TRACKER /timeline",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Timeline Saya"
+   ]
+  },
+  {
+   "url": "/admin/articles",
+   "module": "M09",
+   "via": "TRACKER /admin/articles",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Artikel"
+   ]
+  },
+  {
+   "url": "/admin/audio-kbat",
+   "module": "M09",
+   "via": "TRACKER /admin/audio-kbat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Audio KBAT"
+   ]
+  },
+  {
+   "url": "/admin/banners",
+   "module": "M09",
+   "via": "TRACKER /admin/banners",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Banner"
+   ]
+  },
+  {
+   "url": "/admin/notes",
+   "module": "M09",
+   "via": "TRACKER /admin/notes",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Nota"
+   ]
+  },
+  {
+   "url": "/admin/tools/screenshots",
+   "module": "M09",
+   "via": "TRACKER /admin/tools/screenshots",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Upload Screenshot"
+   ]
+  },
+  {
+   "url": "/artikel",
+   "module": "M09",
+   "via": "TRACKER /artikel",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": [
+    "Artikel"
+   ]
+  },
+  {
+   "url": "/artikel/5-tips-belajar-matematik",
+   "module": "M09",
+   "via": "TRACKER /artikel/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/artikel/ai-ini-apa-sebenarnya-jom-fahami-bersama",
+   "module": "M09",
+   "via": "TRACKER /artikel/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/artikel/cara-baca-buku-cerita-bahasa-inggeris",
+   "module": "M09",
+   "via": "TRACKER /artikel/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/artikel/panduan-ibu-bapa-jadual-belajar",
+   "module": "M09",
+   "via": "TRACKER /artikel/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/artikel/sains-menyeronokkan-eksperimen-di-rumah",
+   "module": "M09",
+   "via": "TRACKER /artikel/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/audio-kbat",
+   "module": "M09",
+   "via": "TRACKER /audio-kbat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Audio KBAT"
+   ]
+  },
+  {
+   "url": "/panduan",
+   "module": "M09",
+   "via": "TRACKER /panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/perutusan",
+   "module": "M09",
+   "via": "TRACKER /perutusan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Perutusan"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/panduan",
+   "module": "M09",
+   "via": "TRACKER /pusat-tuisyen/panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/guru/artikel",
+   "module": "M10",
+   "via": "TRACKER /guru/artikel",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Sumbang Artikel"
+   ]
+  },
+  {
+   "url": "/guru/broadcast",
+   "module": "M10",
+   "via": "TRACKER /guru/broadcast",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Broadcast"
+   ]
+  },
+  {
+   "url": "/guru/databank",
+   "module": "M10",
+   "via": "TRACKER /guru/databank",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Databank Soalan"
+   ]
+  },
+  {
+   "url": "/guru/jadual-belajar",
+   "module": "M10",
+   "via": "TRACKER /guru/jadual-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Jadual Belajar"
+   ]
+  },
+  {
+   "url": "/guru/kehadiran-digital",
+   "module": "M10",
+   "via": "TRACKER /guru/kehadiran-digital",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kehadiran Digital"
+   ]
+  },
+  {
+   "url": "/guru/kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kelas Guru",
+    "Kelas Saya"
+   ]
+  },
+  {
+   "url": "/guru/live-kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/live-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kelas Live"
+   ]
+  },
+  {
+   "url": "/guru/misi-harian",
+   "module": "M10",
+   "via": "TRACKER /guru/misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/guru/pelajar",
+   "module": "M10",
+   "via": "TRACKER /guru/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Pelajar Saya"
+   ]
+  },
+  {
+   "url": "/guru/set-soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/set-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Set Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Sumbang Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan-berstruktur",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/guru/soalan-guru",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-guru",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Soalan & Rujukan"
+   ]
+  },
+  {
+   "url": "/kelas-saya",
+   "module": "M10",
+   "via": "TRACKER /kelas-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kelas Saya",
+    "Kelas Saya BARU"
+   ]
+  },
+  {
+   "url": "/set-soalan-saya",
+   "module": "M10",
+   "via": "TRACKER /set-soalan-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Set Soalan Guru"
+   ]
+  },
+  {
+   "url": "/admin/monitoring",
+   "module": "M11",
+   "via": "TRACKER /admin/monitoring*",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Monitoring"
+   ]
+  },
+  {
+   "url": "/guru/analisis-item",
+   "module": "M11",
+   "via": "TRACKER /guru/analisis-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Analisis Item"
+   ]
+  },
+  {
+   "url": "/guru/laporan",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Laporan"
+   ]
+  },
+  {
+   "url": "/guru/laporan-mingguan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan-mingguan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/guru/monitoring",
+   "module": "M11",
+   "via": "TRACKER /guru/monitoring",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Monitoring"
+   ]
+  },
+  {
+   "url": "/guru/perbandingan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/perbandingan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Perbandingan Kelas"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Overview",
+    "Kirkpatrick"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/behavior",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T3: Tingkah Laku"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/chain",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Rantaian Impak"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/interventions",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Intervensi"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/learning",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T2: Pembelajaran"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/reaction",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T1: Reaksi"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/results",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T4: Hasil"
+   ]
+  },
+  {
+   "url": "/admin/laporan",
+   "module": "M12",
+   "via": "TRACKER /admin/laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan",
+    "Laporan Aktiviti"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Ringkasan"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/behavior",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "T3: Tingkah Laku"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/chain",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Rantaian Impak"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/interventions",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Intervensi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/learning",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "T2: Pembelajaran"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/reaction",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "T1: Reaksi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/results",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "T4: Hasil"
+   ]
+  },
+  {
+   "url": "/cikgu/essay",
+   "module": "M13",
+   "via": "TRACKER /cikgu/essay",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Semak Karangan (Cikgu Alesa)",
+    "Mark Karangan"
+   ]
+  },
+  {
+   "url": "/cikgu/pbd",
+   "module": "M13",
+   "via": "TRACKER /cikgu/pbd",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "PBD (Cikgu Alesa)",
+    "PBD Auto-Tag"
+   ]
+  },
+  {
+   "url": "/cikgu/rph",
+   "module": "M13",
+   "via": "TRACKER /cikgu/rph",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "RPH (Cikgu Alesa)",
+    "RPH (Rancangan Harian)",
+    "RPH"
+   ]
+  },
+  {
+   "url": "/admin/gamification",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Overview"
+   ]
+  },
+  {
+   "url": "/admin/gamification/challenges",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/challenges",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Cabaran"
+   ]
+  },
+  {
+   "url": "/admin/gamification/students",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Pelajar"
+   ]
+  },
+  {
+   "url": "/admin/gamification/tiers",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/tiers",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tier Config"
+   ]
+  },
+  {
+   "url": "/admin/gamification/transactions",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/transactions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Transaksi"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/guru",
+   "module": "M14",
+   "via": "TRACKER /admin/gamifikasi/guru",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Gamifikasi Guru"
+   ]
+  },
+  {
+   "url": "/admin/reward-control",
+   "module": "M14",
+   "via": "TRACKER /admin/reward-control",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Kawalan Reward"
+   ]
+  },
+  {
+   "url": "/gamification",
+   "module": "M14",
+   "via": "TRACKER /gamification",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Syiling & Token 🏆",
+    "Syiling & Token"
+   ]
+  },
+  {
+   "url": "/gamification/achievements",
+   "module": "M14",
+   "via": "TRACKER /gamification/achievements",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Pencapaian"
+   ]
+  },
+  {
+   "url": "/gamification/challenges",
+   "module": "M14",
+   "via": "TRACKER /gamification/challenges",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Cabaran Harian"
+   ]
+  },
+  {
+   "url": "/gamification/convert",
+   "module": "M14",
+   "via": "TRACKER /gamification/convert",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Tukar Token"
+   ]
+  },
+  {
+   "url": "/gamification/leaderboard",
+   "module": "M14",
+   "via": "TRACKER /gamification/leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Papan Pendahulu"
+   ]
+  },
+  {
+   "url": "/gamification/referral",
+   "module": "M14",
+   "via": "TRACKER /gamification/referral",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Rujuk Kawan"
+   ]
+  },
+  {
+   "url": "/guru/gamifikasi",
+   "module": "M14",
+   "via": "TRACKER /guru/gamifikasi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Syiling & Ganjaran"
+   ]
+  },
+  {
+   "url": "/admin/hadiah",
+   "module": "M15",
+   "via": "rewards shop admin 'Kedai Hadiah' (M15, coins, not the marketplace)",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kedai Hadiah",
+    "Admin Tebusan",
+    "Urus Hadiah"
+   ]
+  },
+  {
+   "url": "/cabutan",
+   "module": "M15",
+   "via": "TRACKER /cabutan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Cabutan Bertuah 🎟️"
+   ]
+  },
+  {
+   "url": "/cikgu/kelulusan-hadiah",
+   "module": "M15",
+   "via": "TRACKER /cikgu/kelulusan-hadiah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kelulusan Hadiah"
+   ]
+  },
+  {
+   "url": "/gamification/mystery-box",
+   "module": "M15",
+   "via": "TRACKER /gamification/mystery-box",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kotak Misteri"
+   ]
+  },
+  {
+   "url": "/gamification/rewards",
+   "module": "M15",
+   "via": "student rewards shop 'Kedai Hadiah' (M15)",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kedai Hadiah"
+   ]
+  },
+  {
+   "url": "/admin",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "https://prestasiplus.my/dashboard",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Dashboard",
+    "Ke Admin Panel",
+    "Dashboard - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/export/questions",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/export/schools",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/export/users",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/permainan",
+   "module": "M16",
+   "via": "TRACKER /admin/permainan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tetapan Permainan"
+   ]
+  },
+  {
+   "url": "/admin/server-status",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5"
+   ],
+   "texts": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/amaran",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Amaran Awal"
+   ]
+  },
+  {
+   "url": "/api/tournament/active",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/battle",
+   "module": "M16",
+   "via": "TRACKER /battle",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Battle Live"
+   ]
+  },
+  {
+   "url": "/battle/leaderboard",
+   "module": "M16",
+   "via": "TRACKER /battle/leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Leaderboard"
+   ]
+  },
+  {
+   "url": "/battle/ranking-sekolah",
+   "module": "M16",
+   "via": "TRACKER /battle/ranking-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Ranking Sekolah"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#4",
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#4",
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#4",
+    "script#5"
+   ]
+  },
+  {
+   "url": "/cikgu",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Cikgu Alesa Chat AI",
+    "Cikgu Alesa AI"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/guru",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Dashboard Guru"
+   ]
+  },
+  {
+   "url": "/kombo",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Streak / Kombo",
+    "Kombo"
+   ]
+  },
+  {
+   "url": "/latih-tubi",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S12",
+    "S3",
+    "S5",
+    "S7",
+    "S8",
+    "https://prestasiplus.my/admin/marketplace/products/999999/edit",
+    "https://prestasiplus.my/admin/marketplace/sellers/999999",
+    "https://prestasiplus.my/admin/marketplace",
+    "https://prestasiplus.my/admin/marketplace/orders",
+    "https://prestasiplus.my/admin/marketplace/categories",
+    "https://prestasiplus.my/admin/marketplace/reviews",
+    "https://prestasiplus.my/admin/marketplace/sellers/create",
+    "https://prestasiplus.my/admin/marketplace/sellers/1/edit",
+    "https://prestasiplus.my/marketplace/tiada-produk-zzqxv",
+    "https://prestasiplus.my/marketplace/penjual/999999",
+    "https://prestasiplus.my/marketplace/jual",
+    "https://prestasiplus.my/marketplace/daftar-penjual",
+    "https://prestasiplus.my/marketplace/penjual/daftar",
+    "https://prestasiplus.my/marketplace/saya",
+    "https://prestasiplus.my/marketplace/produk-saya",
+    "https://prestasiplus.my/marketplace/pesanan",
+    "https://prestasiplus.my/marketplace/orders",
+    "https://prestasiplus.my/marketplace/cart",
+    "https://prestasiplus.my/marketplace/create",
+    "https://prestasiplus.my/marketplace/sell",
+    "https://prestasiplus.my/marketplace/seller/register",
+    "https://prestasiplus.my/seller",
+    "https://prestasiplus.my/seller/register",
+    "https://prestasiplus.my/seller/produk/999999/edit",
+    "https://prestasiplus.my/seller/profil",
+    "https://prestasiplus.my/seller/profile",
+    "https://prestasiplus.my/seller/kedai",
+    "https://prestasiplus.my/seller/tetapan",
+    "https://prestasiplus.my/seller/pesanan",
+    "https://prestasiplus.my/seller/orders",
+    "https://prestasiplus.my/seller/ulasan",
+    "https://prestasiplus.my/seller/dokumen",
+    "https://prestasiplus.my/penjual",
+    "https://prestasiplus.my/penjual/dashboard",
+    "https://prestasiplus.my/penjual/produk"
+   ],
+   "texts": [
+    "Mula Latihan"
+   ]
+  },
+  {
+   "url": "/liga",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Liga Pertandingan"
+   ]
+  },
+  {
+   "url": "/permainan",
+   "module": "M16",
+   "via": "TRACKER /permainan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Permainan 🎮",
+    "Game"
+   ]
+  },
+  {
+   "url": "/pksk",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "PKSK PRO"
+   ]
+  },
+  {
+   "url": "/sekolah-bersaing",
+   "module": "M16",
+   "via": "TRACKER /sekolah-bersaing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Sekolah Bersaing",
+    "Sekolah Bersaing NEW"
+   ]
+  },
+  {
+   "url": "/spm",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "SPM SPM",
+    "SPM"
+   ]
+  },
+  {
+   "url": "/tournament",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Tournament"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S6",
+    "S7",
+    "S8",
+    "S9"
+   ],
+   "texts": [
+    "attr::href@a"
+   ]
+  },
+  {
+   "url": "/video",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Video"
+   ]
+  },
+  {
+   "url": "/admin/analytics",
+   "module": "M17",
+   "via": "TRACKER /admin/analytics",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": [
+    "Analitik"
+   ]
+  },
+  {
+   "url": "/admin/command-center",
+   "module": "M17",
+   "via": "TRACKER /admin/command-center",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/admin/command-center/daily-activity",
+   "module": "M17",
+   "via": "TRACKER /admin/command-center/daily-activity",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Aktiviti Harian"
+   ]
+  },
+  {
+   "url": "/admin/laporan-eksekutif",
+   "module": "M17",
+   "via": "TRACKER /admin/laporan-eksekutif",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan Eksekutif"
+   ]
+  },
+  {
+   "url": "/admin/performance",
+   "module": "M17",
+   "via": "TRACKER /admin/performance",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Performance"
+   ]
+  },
+  {
+   "url": "/guru/command-center",
+   "module": "M17",
+   "via": "TRACKER /guru/command-center/*",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/jpn/dashboard",
+   "module": "M18",
+   "via": "TRACKER /jpn/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Dashboard JPN"
+   ]
+  },
+  {
+   "url": "/jpn/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan JPN",
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/jpn/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/ppd/benchmark-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/benchmark-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Benchmark Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/command-center",
+   "module": "M18",
+   "via": "TRACKER /ppd/command-center",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/ppd/dashboard",
+   "module": "M18",
+   "via": "TRACKER /ppd/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Dashboard PPD"
+   ]
+  },
+  {
+   "url": "/ppd/export-laporan",
+   "module": "M18",
+   "via": "TRACKER /ppd/export-laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Export Laporan"
+   ]
+  },
+  {
+   "url": "/ppd/leaderboard-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/leaderboard-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Leaderboard Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/peta-haba",
+   "module": "M18",
+   "via": "TRACKER /ppd/peta-haba",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Peta Haba"
+   ]
+  },
+  {
+   "url": "/ppd/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/ppd/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Statistik PPD",
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/admin/billing",
+   "module": "M19",
+   "via": "TRACKER /admin/billing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Billing Dashboard"
+   ]
+  },
+  {
+   "url": "/admin/dunning",
+   "module": "M19",
+   "via": "TRACKER /admin/dunning",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Dunning Log"
+   ]
+  },
+  {
+   "url": "/admin/export/payments",
+   "module": "M19",
+   "via": "TRACKER /admin/export/payments",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments",
+   "module": "M19",
+   "via": "payments (M19; marketplace has no online payment)",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Pembayaran"
+   ]
+  },
+  {
+   "url": "/billing/invoices",
+   "module": "M19",
+   "via": "TRACKER /billing/invoices",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Invois Saya"
+   ]
+  },
+  {
+   "url": "/pricing",
+   "module": "M19",
+   "via": "subscription packages (M19)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "https://prestasiplus.my/dashboard"
+   ],
+   "texts": [
+    "Pakej 💎"
+   ]
+  },
+  {
+   "url": "/admin/marketplace",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/categories",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/orders",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/products",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "form POST",
+    "link",
+    "visited",
+    "probe",
+    "crawl-link",
+    "form POST create multipart (not submitted)"
+   ],
+   "foundOn": [
+    "S1",
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2",
+    "S2(shell)",
+    "S3",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "M20-crawl",
+    "https://prestasiplus.my/admin/marketplace/products/create",
+    "https://prestasiplus.my/admin/marketplace/products/1/edit",
+    "M20 page code"
+   ],
+   "texts": [
+    "Produk",
+    "Urus Produk - Admin PRESTASIPLUS",
+    "Kembali ke Senarai Produk",
+    "_token,seller_id,name,category_id,price,original_price,descr"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/products?category=2",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?category=6",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?page=2",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/products?q=Beg",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?q=zzqxv",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?status=active",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?status=draft",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products?status=rejected",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Urus Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/{id}",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE (confirm Padam produk ini?) / PUT update (not submitted)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/{id}/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST toggle active / Nyahaktif (not submitted)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/1",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "visited",
+    "form POST",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/admin/marketplace/products/1/edit",
+    "M20-crawl"
+   ],
+   "texts": [
+    "_token,_method",
+    "_token,_method,name,category_id,price,original_price,descrip",
+    "An Error Occurred: Method Not Allowed",
+    "_token,_method,name,category_id,price,original_price,description,condition,stock_status,status,shipping_method,shipping_fee,location"
+   ],
+   "httpStatus": 405
+  },
+  {
+   "url": "/admin/marketplace/products/1/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Edit",
+    "Edit Produk - Admin PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/products/1/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/10",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/10/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/10/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/2",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/2/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/2/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/3",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method",
+    "_token,_method,name,category_id,price,original_price,descrip"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/3/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit",
+    "Edit Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/3/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/4",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/4/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/4/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/5",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method",
+    "_token,_method,name,category_id,price,original_price,descrip"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/5/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit",
+    "Edit Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/5/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/6",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/6/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/6/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/7",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/7/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/7/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/8",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/8/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/8/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/9",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form PUT",
+    "form POST"
+   ],
+   "foundOn": [
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token,_method,name,category_id,price,original_price,descrip",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/9/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "Edit Produk - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/9/toggle",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/999999/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S3",
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/products/create",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/admin/marketplace/products?page=2",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Tambah Produk",
+    "Tambah Produk - Admin PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/products/image/{id}",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE image (confirm Padam gambar ini?; not submitted)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/products/image/11",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/12",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/13",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/14",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/19",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/2",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products/1/edit"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/20",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/21",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/3",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products/1/edit"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/37",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/38",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/39",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/4",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S3",
+    "https://prestasiplus.my/admin/marketplace/products/1/edit"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/products/image/40",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE"
+   ],
+   "foundOn": [
+    "S3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/reviews",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/sellers",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4",
+    "S4(shell)",
+    "S5",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)",
+    "M20-crawl",
+    "https://prestasiplus.my/admin/marketplace/sellers/1"
+   ],
+   "texts": [
+    "Penjual",
+    "Urus Penjual - Admin PRESTASIPLUS",
+    "Kembali ke Senarai Penjual",
+    "Urus Penjual"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/sellers?status=active",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S4"
+   ],
+   "texts": [
+    "Urus Penjual - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers?status=banned",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S4"
+   ],
+   "texts": [
+    "Urus Penjual - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers?status=pending",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S4"
+   ],
+   "texts": [
+    "Urus Penjual - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers?status=suspended",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S4"
+   ],
+   "texts": [
+    "Urus Penjual - Admin PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers/{id}/ban",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST ban (confirm Haramkan penjual ini?; not submitted)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/marketplace/sellers/1",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S4",
+    "S5",
+    "https://prestasiplus.my/admin/marketplace/sellers",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Lihat Detail",
+    "Semak Penjual - JomBelajar Official"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/marketplace/sellers/1/ban",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "S4",
+    "S5",
+    "https://prestasiplus.my/admin/marketplace/sellers",
+    "https://prestasiplus.my/admin/marketplace/sellers/1"
+   ],
+   "texts": [
+    "_token"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers/1/edit",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/sellers/999999",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S5",
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/sellers/create",
+   "module": "M20",
+   "via": "admin marketplace: products list / create / edit / toggle / delete / image delete, sellers list / review / ban (found by crawl; writes never submitted); guessed routes probed → 404 / 405",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "form GET",
+    "link",
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6",
+    "S6(shell)",
+    "S7",
+    "S7(shell)",
+    "S8",
+    "S8(shell)",
+    "S9(shell)",
+    "M20-crawl",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2",
+    "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+    "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+    "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Marketplace",
+    "q,category,condition,sort",
+    "Semua",
+    "Marketplace - PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace?category=buku-rujukan",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Buku & Rujukan",
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace?category=digital",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Digital & E-Book"
+   ]
+  },
+  {
+   "url": "/marketplace?category=lain-lain",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Lain-lain",
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace?category=peralatan-sekolah",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Peralatan Sekolah"
+   ]
+  },
+  {
+   "url": "/marketplace?category=stationery",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Stationery"
+   ]
+  },
+  {
+   "url": "/marketplace?category=uniform-pakaian",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "filter-link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace?page=2"
+   ],
+   "texts": [
+    "Uniform & Pakaian"
+   ]
+  },
+  {
+   "url": "/marketplace?condition=used",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S6"
+   ],
+   "texts": [
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace?page=2",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "Marketplace - PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace?q=zzqxv",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S6"
+   ],
+   "texts": [
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace?sort=popular",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S6"
+   ],
+   "texts": [
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace?sort=price_low",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S6"
+   ],
+   "texts": [
+    "Marketplace - PRESTASIPLUS"
+   ]
+  },
+  {
+   "url": "/marketplace/{slug}/whatsapp",
+   "module": "M20",
+   "via": "product 'Hubungi Penjual di WhatsApp' → GET that counts a click and redirects to wa.me (never opened; guard blocks it)",
+   "inTracker": false,
+   "kinds": [
+    "GET click counter + redirect to wa.me (never opened; guard blocks it)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "S7",
+    "S8",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "M20-crawl",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "-31% Beg Sekolah Anti-Air Premium JomBelajar Official RM 89.",
+    "Beg Sekolah Anti-Air Premium - Marketplace PRESTASIPLUS",
+    "Beg Sekolah Anti-Air Premium RM 89.90 RM 129.90"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace/beg-sekolah-anti-air-premium-vH1Fj/whatsapp",
+   "module": "M20",
+   "via": "product 'Hubungi Penjual di WhatsApp' → GET that counts a click and redirects to wa.me (never opened; guard blocks it)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S7",
+    "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj"
+   ],
+   "texts": [
+    "Hubungi Penjual di WhatsApp"
+   ]
+  },
+  {
+   "url": "/marketplace/botol-air-750ml-bpa-free-biru-KEz9H",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "-24% Botol Air 750ml BPA Free (Biru) JomBelajar Official RM "
+   ]
+  },
+  {
+   "url": "/marketplace/cart",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/create",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/daftar-penjual",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "S7",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+    "M20-crawl",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) JomBelajar Offic",
+    "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) - Marketplace PR",
+    "E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) RM 19.90"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84/whatsapp",
+   "module": "M20",
+   "via": "product 'Hubungi Penjual di WhatsApp' → GET that counts a click and redirects to wa.me (never opened; guard blocks it)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S7",
+    "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84"
+   ],
+   "texts": [
+    "Hubungi Penjual di WhatsApp"
+   ]
+  },
+  {
+   "url": "/marketplace/jual",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "S7",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "M20-crawl",
+    "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "-63% Terpakai Kamus Dewan Edisi Keempat (Terpakai) JomBelaja",
+    "Kamus Dewan Edisi Keempat (Terpakai) RM 25.00",
+    "Kamus Dewan Edisi Keempat (Terpakai) - Marketplace PRESTASIP"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV/whatsapp",
+   "module": "M20",
+   "via": "product 'Hubungi Penjual di WhatsApp' → GET that counts a click and redirects to wa.me (never opened; guard blocks it)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S7",
+    "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV"
+   ],
+   "texts": [
+    "Hubungi Penjual di WhatsApp"
+   ]
+  },
+  {
+   "url": "/marketplace/kasut-sekolah-hitam-bata-saiz-5-jvPNC",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "-56% Terpakai Kasut Sekolah Hitam BATA (Saiz 5) JomBelajar O"
+   ]
+  },
+  {
+   "url": "/marketplace/kotak-pensel-3-tingkat-disney-frozen-strUX",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S7",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Kotak Pensel 3 Tingkat Disney Frozen RM 22.90"
+   ]
+  },
+  {
+   "url": "/marketplace/orders",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/penjual/1",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S7",
+    "S8",
+    "S9",
+    "https://prestasiplus.my/marketplace/beg-sekolah-anti-air-premium-vH1Fj",
+    "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+    "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+    "M20-crawl",
+    "https://prestasiplus.my/seller/dashboard",
+    "https://prestasiplus.my/seller/daftar"
+   ],
+   "texts": [
+    "J JomBelajar Official ☆☆☆☆☆ 10 produk",
+    "JomBelajar Official - Marketplace PRESTASIPLUS",
+    "Lihat Kedai Saya"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/marketplace/penjual/999999",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S8",
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/penjual/daftar",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/pesanan",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/produk-saya",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/saya",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/sell",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/seller/register",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/set-buku-latihan-matematik-tahun-6-5-buku-PAjPe",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "S7",
+    "S8",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/kamus-dewan-edisi-keempat-terpakai-8axTV",
+    "https://prestasiplus.my/marketplace/e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "-31% Set Buku Latihan Matematik Tahun 6 (5 Buku) JomBelajar ",
+    "Set Buku Latihan Matematik Tahun 6 (5 Buku) RM 45.00",
+    "Set Buku Latihan Matematik Tahun 6 (5 Buku) RM 45.00 RM 65.0"
+   ]
+  },
+  {
+   "url": "/marketplace/set-pembaris-t-square-jangka-lukis-matematik-36YYY",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "-34% Set Pembaris T-Square + Jangka Lukis Matematik JomBelaj"
+   ]
+  },
+  {
+   "url": "/marketplace/set-pensel-warna-faber-castell-48-warna-jj9F5",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/marketplace/tiada-produk-zzqxv",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S7",
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/marketplace/uniform-sekolah-baju-putih-lengan-panjang-saiz-m-hE8Jf",
+   "module": "M20",
+   "via": "buyer marketplace, product page /marketplace/{slug}, public shop /marketplace/penjual/{id}",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S6",
+    "S8",
+    "https://prestasiplus.my/admin/marketplace/products",
+    "https://prestasiplus.my/marketplace",
+    "https://prestasiplus.my/marketplace/penjual/1"
+   ],
+   "texts": [
+    "Lihat",
+    "-57% Terpakai Uniform Sekolah Baju Putih Lengan Panjang (Sai",
+    "Uniform Sekolah Baju Putih Lengan Panjang (Saiz M) RM 15.00 "
+   ]
+  },
+  {
+   "url": "/penjual",
+   "module": "M20",
+   "via": "guessed seller route → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/penjual/dashboard",
+   "module": "M20",
+   "via": "guessed seller route → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/penjual/produk",
+   "module": "M20",
+   "via": "guessed seller route → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller",
+   "module": "M20",
+   "via": "guessed seller root → 404",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/daftar",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "Kedai Saya - PRESTASIPLUS Marketplace"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/dashboard",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10",
+    "S9",
+    "M20-crawl",
+    "https://prestasiplus.my/seller/produk",
+    "https://prestasiplus.my/seller/produk?page=2"
+   ],
+   "texts": [
+    "Kedai Saya - PRESTASIPLUS Marketplace",
+    "Dashboard"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/dokumen",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/kedai",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/orders",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/pesanan",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/produk",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST",
+    "link",
+    "visited",
+    "crawl-link",
+    "probe",
+    "form POST create multipart (not submitted)"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S12",
+    "S9",
+    "https://prestasiplus.my/seller/dashboard",
+    "https://prestasiplus.my/seller/daftar",
+    "M20-crawl",
+    "https://prestasiplus.my/seller/produk/tambah",
+    "https://prestasiplus.my/seller/produk/1/edit",
+    "M20 page code"
+   ],
+   "texts": [
+    "Senarai Produk",
+    "Produk Saya - PRESTASIPLUS Marketplace",
+    "Kembali",
+    "_token,name,category_id,price,original_price,description,con"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/produk?page=2",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S10",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Produk Saya - PRESTASIPLUS Marketplace"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/produk/{id}",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form PUT update / DELETE (confirm Padam produk ini?; not submitted; GET = 405)"
+   ],
+   "foundOn": [
+    "M20 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/1",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "visited",
+    "form POST",
+    "probe"
+   ],
+   "foundOn": [
+    "S10",
+    "S12",
+    "https://prestasiplus.my/seller/produk",
+    "https://prestasiplus.my/seller/produk/1/edit",
+    "M20-crawl"
+   ],
+   "texts": [
+    "_token,_method",
+    "_token,_method,name,category_id,price,original_price,descrip",
+    "An Error Occurred: Method Not Allowed",
+    "_token,_method,name,category_id,price,original_price,description,condition,stock_status,images[]"
+   ],
+   "httpStatus": 405
+  },
+  {
+   "url": "/seller/produk/1/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S10",
+    "S12",
+    "https://prestasiplus.my/seller/produk",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Edit Produk - PRESTASIPLUS Marketplace"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/produk/10",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/10/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/2",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S10",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/2/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/3",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form DELETE",
+    "form POST"
+   ],
+   "foundOn": [
+    "S10",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/3/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S10",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/4",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/4/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/5",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/5/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/6",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/6/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/7",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form PUT",
+    "form POST"
+   ],
+   "foundOn": [
+    "S12",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method,name,category_id,price,original_price,descrip",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/7/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S12",
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "Edit Produk - PRESTASIPLUS Marketplace"
+   ]
+  },
+  {
+   "url": "/seller/produk/8",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/8/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/9",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/seller/produk/9/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "https://prestasiplus.my/seller/produk"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/seller/produk/999999/edit",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S12",
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/produk/tambah",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S10",
+    "S11",
+    "S9",
+    "https://prestasiplus.my/seller/dashboard",
+    "https://prestasiplus.my/seller/daftar",
+    "https://prestasiplus.my/seller/produk",
+    "https://prestasiplus.my/seller/produk?page=2",
+    "M20-crawl"
+   ],
+   "texts": [
+    "Tambah Produk",
+    "Tambah Produk - PRESTASIPLUS Marketplace"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/seller/profil",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/profile",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/register",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/tetapan",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/seller/ulasan",
+   "module": "M20",
+   "via": "seller portal: /seller/dashboard, /seller/produk, /seller/produk/tambah, /seller/produk/{id}/edit (+ /seller/daftar → redirect; guessed routes → 404)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M20-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/anak-angkat",
+   "module": "M21",
+   "via": "TRACKER /admin/anak-angkat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Anak Angkat"
+   ]
+  },
+  {
+   "url": "/admin/anak-angkat/permohonan",
+   "module": "M21",
+   "via": "TRACKER /admin/anak-angkat/permohonan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Permohonan"
+   ]
+  },
+  {
+   "url": "/admin/sponsors",
+   "module": "M21",
+   "via": "TRACKER /admin/sponsors",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Penajaan",
+    "Penaja"
+   ]
+  },
+  {
+   "url": "/mohon-keluarga-angkat",
+   "module": "M21",
+   "via": "TRACKER /mohon-keluarga-angkat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Mohon Keluarga Angkat"
+   ]
+  },
+  {
+   "url": "/admin/chatbot",
+   "module": "M22",
+   "via": "TRACKER /admin/chatbot",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Chatbot"
+   ]
+  },
+  {
+   "url": "/admin/notifications",
+   "module": "M22",
+   "via": "TRACKER /admin/notifications",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Push Notifikasi"
+   ]
+  },
+  {
+   "url": "/admin/tiket",
+   "module": "M22",
+   "via": "TRACKER /admin/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Urus Tiket 2"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/tiket",
+   "module": "M22",
+   "via": "TRACKER /pusat-tuisyen/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Tiket Bantuan"
+   ]
+  },
+  {
+   "url": "/admin/audit-log",
+   "module": "M23",
+   "via": "TRACKER /admin/audit-log",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Audit Log"
+   ]
+  },
+  {
+   "url": "/admin/audit-logs",
+   "module": "M23",
+   "via": "TRACKER /admin/audit-logs",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Log Audit"
+   ]
+  },
+  {
+   "url": "/admin/settings",
+   "module": "M23",
+   "via": "TRACKER /admin/settings",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tetapan"
+   ]
+  },
+  {
+   "url": "/admin/duta-applications",
+   "module": "M24",
+   "via": "TRACKER /admin/duta-applications",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Permohonan Duta"
+   ]
+  },
+  {
+   "url": "/akademi-duta",
+   "module": "M24",
+   "via": "TRACKER /akademi-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Akademi Duta"
+   ]
+  },
+  {
+   "url": "/bilik-duta",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Bilik Duta",
+    "Bilik Duta DEV"
+   ]
+  },
+  {
+   "url": "/bilik-duta/kem",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kem & Bootcamp"
+   ]
+  },
+  {
+   "url": "/duta-dashboard",
+   "module": "M24",
+   "via": "TRACKER /duta-dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Duta Dashboard"
+   ]
+  },
+  {
+   "url": "/jemput-duta",
+   "module": "M24",
+   "via": "TRACKER /jemput-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Jemput Duta"
+   ]
+  },
+  {
+   "url": "/pusat-ai/aktiviti",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/aktiviti",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Aktiviti Advisor"
+   ]
+  },
+  {
+   "url": "/pusat-ai/doa",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/doa",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Doa & Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/kamus",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/kamus",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Kamus AI"
+   ]
+  },
+  {
+   "url": "/pusat-ai/parent-whisperer",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/parent-whisperer",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Parent Whisperer"
+   ]
+  },
+  {
+   "url": "/pusat-ai/pendamping",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/pendamping",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Pendamping Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/whiteboard",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/whiteboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Whiteboard → Quiz"
+   ]
+  },
+  {
+   "url": "/cikgu-suara",
+   "module": "M26",
+   "via": "TRACKER /cikgu-suara",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Cikgu Suara"
+   ]
+  },
+  {
+   "url": "/cita-cita",
+   "module": "M26",
+   "via": "TRACKER /cita-cita",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Cita-Cita Hijrah"
+   ]
+  },
+  {
+   "url": "/profil-cerah",
+   "module": "M26",
+   "via": "TRACKER /profil-cerah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Profil Cerah"
+   ]
+  },
+  {
+   "url": "/wellbeing/alerts",
+   "module": "M26",
+   "via": "TRACKER /wellbeing/alerts",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S10(shell)",
+    "S11(shell)",
+    "S12(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "S8(shell)",
+    "S9(shell)"
+   ],
+   "texts": [
+    "Wellbeing Alerts"
+   ]
+  },
+  {
+   "url": "/",
+   "module": "unknown",
+   "via": "",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S12",
+    "S3",
+    "S5",
+    "S7",
+    "S8",
+    "https://prestasiplus.my/admin/marketplace/products/999999/edit",
+    "https://prestasiplus.my/admin/marketplace/sellers/999999",
+    "https://prestasiplus.my/admin/marketplace",
+    "https://prestasiplus.my/admin/marketplace/orders",
+    "https://prestasiplus.my/admin/marketplace/categories",
+    "https://prestasiplus.my/admin/marketplace/reviews",
+    "https://prestasiplus.my/admin/marketplace/sellers/create",
+    "https://prestasiplus.my/admin/marketplace/sellers/1/edit",
+    "https://prestasiplus.my/marketplace/tiada-produk-zzqxv",
+    "https://prestasiplus.my/marketplace/penjual/999999",
+    "https://prestasiplus.my/marketplace/jual",
+    "https://prestasiplus.my/marketplace/daftar-penjual",
+    "https://prestasiplus.my/marketplace/penjual/daftar",
+    "https://prestasiplus.my/marketplace/saya",
+    "https://prestasiplus.my/marketplace/produk-saya",
+    "https://prestasiplus.my/marketplace/pesanan",
+    "https://prestasiplus.my/marketplace/orders",
+    "https://prestasiplus.my/marketplace/cart",
+    "https://prestasiplus.my/marketplace/create",
+    "https://prestasiplus.my/marketplace/sell",
+    "https://prestasiplus.my/marketplace/seller/register",
+    "https://prestasiplus.my/seller",
+    "https://prestasiplus.my/seller/register",
+    "https://prestasiplus.my/seller/produk/999999/edit",
+    "https://prestasiplus.my/seller/profil",
+    "https://prestasiplus.my/seller/profile",
+    "https://prestasiplus.my/seller/kedai",
+    "https://prestasiplus.my/seller/tetapan",
+    "https://prestasiplus.my/seller/pesanan",
+    "https://prestasiplus.my/seller/orders",
+    "https://prestasiplus.my/seller/ulasan",
+    "https://prestasiplus.my/seller/dokumen",
+    "https://prestasiplus.my/penjual",
+    "https://prestasiplus.my/penjual/dashboard",
+    "https://prestasiplus.my/penjual/produk"
+   ],
+   "texts": [
+    "Halaman Utama"
+   ]
+  }
+ ],
+ "supplement": "tools/jobs/M20-crawl-post.js: probes (with httpStatus) + in-page links of the structural crawl (capped at 150 links per page)"
+}

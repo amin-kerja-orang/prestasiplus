@@ -1,0 +1,1362 @@
+{
+ "screen": "S28",
+ "key": "S28-sekolah-bersaing",
+ "route": "/sekolah-bersaing",
+ "name": "Sekolah Bersaing — Leaderboard Mingguan",
+ "module": "M16",
+ "generatedAt": "2026-09-26T04:58:29.490Z",
+ "notes": "renders in the admin layout (header 'Dashboard')",
+ "shell": "SHA",
+ "summary": {
+  "total": 68,
+  "visibleDefault": 57,
+  "conditional": 11,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 22,
+  "byKind": {
+   "heading": 2,
+   "text": 64,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "week of 21 Sep 2026, 49 schools",
+   "file": "_raw/M16/S28-sekolah-bersaing__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sekolah-bersaing",
+   "finalUrl": "/sekolah-bersaing",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 51",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 46
+   }
+  },
+  {
+   "label": "query-ignored__1280",
+   "description": "?week=2026-09-14 → week of 14 Sep 2026 (48 schools; state label kept from the first run, the query is NOT ignored)",
+   "file": "_raw/M16/S28-sekolah-bersaing__query-ignored__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sekolah-bersaing?week=2026-09-14",
+   "finalUrl": "/sekolah-bersaing?week=2026-09-14",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 50",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 45
+   }
+  },
+  {
+   "label": "week-bogus__1280",
+   "description": "?week=bogus → HTTP 500",
+   "file": "_raw/M16/S28-sekolah-bersaing__week-bogus__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sekolah-bersaing?week=bogus",
+   "finalUrl": "/sekolah-bersaing?week=bogus",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "week-empty__1280",
+   "description": "week with no generated data → \"Data minggu ini belum dijana…\"",
+   "file": "_raw/M16/S28-sekolah-bersaing__week-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sekolah-bersaing?week=2025-01-06",
+   "finalUrl": "/sekolah-bersaing?week=2025-01-06",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 0
+   }
+  },
+  {
+   "label": "week-past__1280",
+   "description": "?week=2026-09-07 → that week (48 schools); no week navigation in the UI",
+   "file": "_raw/M16/S28-sekolah-bersaing__week-past__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/sekolah-bersaing?week=2026-09-07",
+   "finalUrl": "/sekolah-bersaing?week=2026-09-07",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 50",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 45
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M16/S28-sekolah-bersaing__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/sekolah-bersaing",
+   "finalUrl": "/sekolah-bersaing",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 51",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 46
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M16/S28-sekolah-bersaing__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/sekolah-bersaing",
+   "finalUrl": "/sekolah-bersaing",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 51",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 46
+   }
+  },
+  {
+   "label": "week-empty__375",
+   "description": "week with no generated data @375",
+   "file": "_raw/M16/S28-sekolah-bersaing__week-empty__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/sekolah-bersaing?week=2025-01-06",
+   "finalUrl": "/sekolah-bersaing?week=2025-01-06",
+   "httpStatus": 200,
+   "title": "Sekolah Bersaing — Leaderboard Mingguan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .lb-row:not(.head):not(.gold):not(.silver):not(.bronze)": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M16-S28-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "🏆 Sekolah Bersaing",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-empty__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768",
+    "week-empty__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-empty__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768",
+    "week-empty__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "Minggu · sekolah dalam pertandingan",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-004",
+   "kind": "text",
+   "tag": "strong",
+   "text": "21 Sep 2026",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-005",
+   "kind": "text",
+   "tag": "strong",
+   "text": "49",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "#",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sekolah",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "% Aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Streak Avg",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "Nota/Pelajar",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥇",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kelantan",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-015",
+   "kind": "text",
+   "tag": "small",
+   "text": "aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥 15.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-017",
+   "kind": "text",
+   "tag": "small",
+   "text": "hari",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-019",
+   "kind": "text",
+   "tag": "small",
+   "text": "per 10",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥈",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "Johor",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-024",
+   "kind": "text",
+   "tag": "small",
+   "text": "aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥 9.3",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-026",
+   "kind": "text",
+   "tag": "small",
+   "text": "hari",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-028",
+   "kind": "text",
+   "tag": "small",
+   "text": "per 10",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "🥉",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sabah",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-033",
+   "kind": "text",
+   "tag": "small",
+   "text": "aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥 8.6",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-035",
+   "kind": "text",
+   "tag": "small",
+   "text": "hari",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-037",
+   "kind": "text",
+   "tag": "small",
+   "text": "per 10",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "#4",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sabah",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-042",
+   "kind": "text",
+   "tag": "small",
+   "text": "aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥 8.4",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-044",
+   "kind": "text",
+   "tag": "small",
+   "text": "hari",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-046",
+   "kind": "text",
+   "tag": "small",
+   "text": "per 10",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "#5",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selangor",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-051",
+   "kind": "text",
+   "tag": "small",
+   "text": "aktif",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥 8.2",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-053",
+   "kind": "text",
+   "tag": "small",
+   "text": "hari",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-055",
+   "kind": "text",
+   "tag": "small",
+   "text": "per 10",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "💡 Share ranking ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai \"Sekolah anonim\".",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-057",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Untuk Cikgu Besar / PIBG:",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "query-ignored__1280",
+    "week-past__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-058",
+   "kind": "text",
+   "tag": "strong",
+   "text": "14 Sep 2026",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "query-ignored__1280"
+   ]
+  },
+  {
+   "id": "EL-M16-S28-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "500",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚙️",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-061",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cuba Semula",
+   "href": "javascript:location.reload()",
+   "absHref": "javascript:location.reload()",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-bogus__1280"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "📊 Data minggu ini belum dijana.",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "conditional",
+   "visibleIn": [
+    "week-empty__1280",
+    "week-empty__375"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-067",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "conditional",
+   "visibleIn": [
+    "week-empty__1280",
+    "week-empty__375"
+   ],
+   "addedInAuditTopUp": true
+  },
+  {
+   "id": "EL-M16-S28-068",
+   "kind": "text",
+   "tag": "strong",
+   "text": "07 Sep 2026",
+   "landmark": "main",
+   "section": "🏆 Sekolah Bersaing",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "week-past__1280"
+   ],
+   "addedInAuditTopUp": true
+  }
+ ]
+}

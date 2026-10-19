@@ -1,0 +1,789 @@
+{
+ "screen": "S1",
+ "key": "S1-cikgu-chat",
+ "route": "/cikgu",
+ "name": "Cikgu Alesa",
+ "module": "M13",
+ "generatedAt": "2026-09-25T11:25:10.884Z",
+ "notes": "AI chat; ?ask= prefills the input; ?action=mark_essay&… (essay handoff) is ignored",
+ "shell": "SHU",
+ "summary": {
+  "total": 16,
+  "visibleDefault": 12,
+  "conditional": 0,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 8,
+   "heading": 1,
+   "label": 1,
+   "checkbox": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "button": 2,
+   "input": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (greeting only; voice mode off; empty thread)",
+   "file": "_raw/M13/S1-cikgu__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu",
+   "finalUrl": "/cikgu",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "ask-prefill__1280",
+   "description": "?ask= prefill (input filled + focused; nothing sent)",
+   "file": "_raw/M13/S1-cikgu__ask-prefill__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu?ask=Terangkan%20pecahan%20setara",
+   "finalUrl": "/cikgu?ask=Terangkan%20pecahan%20setara",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { return 'input=' + document.getElementById('cikgu-input').value + ' focused=' + (document.activeElement && document.activeElement.id); })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "input=Terangkan pecahan setara focused=cikgu-input",
+    "m13mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "essay-handoff__1280",
+   "description": "arrived from S5 \"Hantar ke Cikgu Alesa\" (?action=mark_essay&rubric=…); /cikgu ignores the params and sessionStorage — input stays empty",
+   "file": "_raw/M13/S1-cikgu__essay-handoff__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu?action=mark_essay&rubric=sejarah_essay&subject=Sejarah&level=T4&student=%3Cnama%3E&title=Contoh+Tajuk",
+   "finalUrl": "/cikgu?action=mark_essay&rubric=sejarah_essay&subject=Sejarah&level=T4&student=%3Cnama%3E&title=Contoh+Tajuk",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "#rubric_key",
+      "sejarah_essay"
+     ]
+    },
+    {
+     "fill": [
+      "#subject_name",
+      "Sejarah"
+     ]
+    },
+    {
+     "fill": [
+      "#level",
+      "T4"
+     ]
+    },
+    {
+     "fill": [
+      "#student_name",
+      "Contoh"
+     ]
+    },
+    {
+     "fill": [
+      "#essay_title",
+      "Contoh Tajuk"
+     ]
+    },
+    {
+     "fill": [
+      "#essay_text",
+      "Ini ialah teks contoh untuk ujian sahaja dan bukan karangan sebenar oleh mana-mana pelajar."
+     ]
+    },
+    {
+     "click": "button[onclick=\"submitToChat()\"]"
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "eval": "(() => { return 'url=' + location.pathname + location.search.replace(/student=[^&]*/, 'student=<nama>') + ' input=[' + document.getElementById('cikgu-input').value + '] pendingLen=' + (sessionStorage.getItem('cikgu_pending_essay') || '').length; })()"
+    },
+    {
+     "eval": "(() => { sessionStorage.removeItem('cikgu_pending_essay'); return 'pending essay removed'; })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "url=/cikgu?action=mark_essay&rubric=sejarah_essay&subject=Sejarah&level=T4&student=<nama>&title=Contoh+Tajuk input=[] pendingLen=91",
+    "pending essay removed",
+    "m13mask: 2",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "voice-on__1280",
+   "description": "voice-mode checkbox shown checked (DOM property only; no change event, localStorage untouched)",
+   "file": "_raw/M13/S1-cikgu__voice-on__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu",
+   "finalUrl": "/cikgu",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var c = document.getElementById('cikgu-voice-mode'); c.checked = true; return 'checked=' + c.checked + ' mic.disabled=' + document.getElementById('cikgu-mic').disabled + ' SR=' + !!(window.SpeechRecognition || window.webkitSpeechRecognition); })()"
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "checked=true mic.disabled=false SR=true",
+    "m13mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M13/S1-cikgu__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/cikgu",
+   "finalUrl": "/cikgu",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": "408px > 375px",
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M13/S1-cikgu__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/cikgu",
+   "finalUrl": "/cikgu",
+   "httpStatus": 200,
+   "title": "Cikgu Alesa",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 1",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#3",
+    "script#7"
+   ]
+  },
+  {
+   "text": "Browser tidak sokong voice — guna Chrome/Edge",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Maaf, tak dengar.",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Mendengar...",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": ".chat-messages, #chat-messages",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cikgu-msg cikgu-msg-",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Cikgu Alesa",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Anda",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Cikgu Alesa sedang berfikir…",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Cikgu Alesa tak boleh respon. Cuba lagi.",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Quota habis untuk hari ni.",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(tiada respon)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Ralat sambungan. Cuba lagi sebentar.",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#7"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/cikgu/send",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#7"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#7"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#7"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M13-S1-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "CA",
+   "landmark": "header",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Cikgu Alesa",
+   "landmark": "header",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Guru maya · Powered by <nama> · <nama> · <nama> + 50K+ soalan DSKP",
+   "landmark": "header",
+   "section": "Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-007",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Cikgu Alesa:",
+   "landmark": "section#cikgu-history",
+   "section": "Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "Hai! Saya Cikgu Alesa. Apa nak belajar hari ni? Cuba tanya pasal subjek tertentu, atau minta latihan soalan.",
+   "landmark": "section#cikgu-history",
+   "section": "Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-009",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎙️ Voice Mode:",
+   "landmark": "main",
+   "section": "Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Cikgu jawab dengan suara (auto)",
+   "landmark": "main",
+   "section": "Cikgu Alesa",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-011",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Cikgu jawab dengan suara (auto)",
+   "landmark": "main",
+   "section": "Cikgu Alesa",
+   "domId": "cikgu-voice-mode",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ],
+   "checkedIn": [
+    "voice-on__1280"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-012",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [],
+   "landmark": "main",
+   "section": "Cikgu Alesa",
+   "domId": "cikgu-form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-013",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form#cikgu-form",
+   "section": "Cikgu Alesa",
+   "domId": "cikgu-thread-id",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-014",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "🎤",
+   "form": "(no action)",
+   "landmark": "form#cikgu-form",
+   "section": "Cikgu Alesa",
+   "title": "Tekan dan tahan untuk cakap",
+   "domId": "cikgu-mic",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-015",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Taip atau tekan 🎤 untuk cakap…",
+   "required": true,
+   "maxlength": "4000",
+   "landmark": "form#cikgu-form",
+   "section": "Cikgu Alesa",
+   "domId": "cikgu-input",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M13-S1-016",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar",
+   "form": "(no action)",
+   "landmark": "form#cikgu-form",
+   "section": "Cikgu Alesa",
+   "domId": "cikgu-send",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "ask-prefill__1280",
+    "essay-handoff__1280",
+    "voice-on__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

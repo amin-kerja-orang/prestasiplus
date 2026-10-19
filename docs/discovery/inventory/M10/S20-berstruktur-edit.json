@@ -1,0 +1,4779 @@
+{
+ "screen": "S20",
+ "key": "S20-berstruktur-edit",
+ "route": "/guru/soalan-berstruktur/{id}/edit",
+ "name": "Edit Soalan Berstruktur - PRESTASIPLUS",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:30.920Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 169,
+  "visibleDefault": 51,
+  "conditional": 74,
+  "hiddenOnly": 44,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 16,
+   "link": 1,
+   "heading": 3,
+   "form": 1,
+   "hidden-field": 7,
+   "card": 4,
+   "label": 23,
+   "select": 14,
+   "radio": 1,
+   "toggle": 2,
+   "button": 77,
+   "textarea": 5,
+   "input": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "edit structured question (preloaded)",
+   "file": "_raw/M10/S20-berstruktur-edit__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-berstruktur/4454/edit",
+   "finalUrl": "/guru/soalan-berstruktur/4454/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return Array.from(f.querySelectorAll('select')).map(function (s) { return s.name + '=' + (s.value || '∅'); }).join(' '); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 1",
+    "subject_id=23 education_level_id=11 kbat_level=3 chapter_id=∅ topic_id=∅ script_type=rumi question_template=∅ education_level_filter=∅ classroom_id=∅ subs[0][answer_type]=text subs[0][rubrics][0][konstruk]=F",
+    "m10mask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=4 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "symbols__1280",
+   "description": "symbols open",
+   "file": "_raw/M10/S20-berstruktur-edit__symbols__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-berstruktur/4454/edit",
+   "finalUrl": "/guru/soalan-berstruktur/4454/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click=\"showSymbols = !showSymbols\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 1",
+    "m10mask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=4 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "edit structured question (preloaded) @375",
+   "file": "_raw/M10/S20-berstruktur-edit__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/soalan-berstruktur/4454/edit",
+   "finalUrl": "/guru/soalan-berstruktur/4454/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": "414px > 375px",
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return Array.from(f.querySelectorAll('select')).map(function (s) { return s.name + '=' + (s.value || '∅'); }).join(' '); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 1",
+    "subject_id=23 education_level_id=11 kbat_level=3 chapter_id=∅ topic_id=∅ script_type=rumi question_template=∅ education_level_filter=∅ classroom_id=∅ subs[0][answer_type]=text subs[0][rubrics][0][konstruk]=F",
+    "m10mask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=4 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "edit structured question (preloaded) @768",
+   "file": "_raw/M10/S20-berstruktur-edit__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/soalan-berstruktur/4454/edit",
+   "finalUrl": "/guru/soalan-berstruktur/4454/edit",
+   "httpStatus": 200,
+   "title": "Edit Soalan Berstruktur - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { var f = document.querySelector('main form'); return Array.from(f.querySelectorAll('select')).map(function (s) { return s.name + '=' + (s.value || '∅'); }).join(' '); })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 1",
+    "subject_id=23 education_level_id=11 kbat_level=3 chapter_id=∅ topic_id=∅ script_type=rumi question_template=∅ education_level_filter=∅ classroom_id=∅ subs[0][answer_type]=text subs[0][rubrics][0][konstruk]=F",
+    "m10mask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=4 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "structuredEditForm",
+   "xData": "structuredEditForm()",
+   "keys": [],
+   "liveState": {
+    "subjectId": "string(2)",
+    "levelId": "string(2)",
+    "chapters": "array(7)",
+    "chapterId": "string(4)",
+    "topics": "array(1)",
+    "topicId": "",
+    "scriptType": "rumi",
+    "textDirection": "ltr",
+    "visibility": "public",
+    "subs": "array(1)",
+    "totalMarks": 8
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showSymbols: false }",
+   "keys": [
+    "showSymbols"
+   ],
+   "liveState": {
+    "showSymbols": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Maklumat Soalan",
+   "seenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#6"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Terangkan kepentingan menyediakan rancangan perniagaan kepada usahawan.\\n [8 markah]\\nNegeri Sembilan\\nNo (8b)",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Terangkan kepentingan menyediakan rancangan perniagaan kepada usahawan.\\n\\nJAWAPAN\\n\\nMeyakinkan pihak pelabur \\/ bank\\nKemampuan menjelaskan hutang \\/ senarai anggaran kos \\/ keuntungan yang relevan \\/ sesuai\\n\\nMerancang keperluan sumber perniagaan\\nSumber manusia \\/ sumber fizikal \\/ sumber pembi…",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#6"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Bab",
+   "sources": [
+    "attr:x-text@option"
+   ]
+  },
+  {
+   "text": "Tutup Simbol",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Simbol & Aksara Khas",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Jumlah markah:",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/guru/api/chapters?subject_id=",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/guru/api/topics?chapter_id=",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#6"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#6"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#6"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S20-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-004",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "absHref": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Edit Soalan Berstruktur",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Perniagaan · Tingkatan 5",
+   "landmark": "main",
+   "section": "Edit Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-007",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "_method",
+    "subject_id",
+    "education_level_id",
+    "kbat_level",
+    "chapter_id",
+    "topic_id",
+    "script_type",
+    "text_direction",
+    "question_template",
+    "visibility",
+    "education_level_filter",
+    "classroom_id",
+    "stimulus_text",
+    "stimulus_image",
+    "subs[0][part_label]",
+    "subs[0][question_text]",
+    "subs[0][answer_type]",
+    "subs[0][marks]",
+    "subs[0][expected_numeric]",
+    "subs[0][numeric_tolerance]",
+    "subs[0][rubrics][0][konstruk]",
+    "subs[0][rubrics][0][keyword]",
+    "subs[0][rubrics][0][marks]",
+    "subs[0][model_answer]",
+    "subs[0][parent_sub_id]",
+    "_token",
+    "_method",
+    "publish"
+   ],
+   "landmark": "main",
+   "section": "Edit Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-008",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Edit Soalan Berstruktur",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-009",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Edit Soalan Berstruktur",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat Soalan",
+   "landmark": "form",
+   "section": "Edit Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-011",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Maklumat Soalan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-013",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek *",
+   "required": true,
+   "options": [
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "subjectId",
+    "x-on:change": "loadChapters()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-015",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tingkatan *",
+   "required": true,
+   "options": [
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "levelId",
+    "x-on:change": "loadChapters()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aras KBAT *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-017",
+   "kind": "select",
+   "tag": "select",
+   "name": "kbat_level",
+   "label": "Aras KBAT *",
+   "required": true,
+   "options": [
+    {
+     "value": "1",
+     "text": "1. Mengingat (LOTS)"
+    },
+    {
+     "value": "2",
+     "text": "2. Memahami (LOTS)"
+    },
+    {
+     "value": "3",
+     "text": "3. Mengaplikasi (MOTS)"
+    },
+    {
+     "value": "4",
+     "text": "4. Menganalisis (HOTS)"
+    },
+    {
+     "value": "5",
+     "text": "5. Menilai (HOTS)"
+    },
+    {
+     "value": "6",
+     "text": "6. Mencipta (HOTS)"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-018",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bab",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-019",
+   "kind": "select",
+   "tag": "select",
+   "name": "chapter_id",
+   "label": "Bab",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Bab --"
+    },
+    {
+     "value": "258",
+     "text": "Bab 1: Pengurusan dan Kepimpinan"
+    },
+    {
+     "value": "259",
+     "text": "Bab 2: Kewangan Perniagaan"
+    },
+    {
+     "value": "260",
+     "text": "Bab 3: Pemasaran (Lanjutan)"
+    },
+    {
+     "value": "261",
+     "text": "Bab 4: Perniagaan Antarabangsa"
+    },
+    {
+     "value": "262",
+     "text": "Bab 5: Etika dan Tanggungjawab Sosial"
+    },
+    {
+     "value": "1280",
+     "text": "Bab 6: Persediaan Memulakan Perniagaan"
+    },
+    {
+     "value": "1281",
+     "text": "Bab 7: <name>"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "chapterId",
+    "x-on:change": "loadTopics()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Topik",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-021",
+   "kind": "select",
+   "tag": "select",
+   "name": "topic_id",
+   "label": "Topik",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Topik --"
+    },
+    {
+     "value": "2448",
+     "text": "<name>"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "topicId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Tulisan",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-023",
+   "kind": "select",
+   "tag": "select",
+   "name": "script_type",
+   "label": "Jenis Tulisan",
+   "options": [
+    {
+     "value": "rumi",
+     "text": "Rumi (Latin)"
+    },
+    {
+     "value": "arab",
+     "text": "Arab"
+    },
+    {
+     "value": "jawi",
+     "text": "Jawi"
+    },
+    {
+     "value": "mixed",
+     "text": "Campuran"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "scriptType",
+    "@change": "updateDirection()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "text_direction",
+   "label": "Jenis Tulisan",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    ":value": "textDirection"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Template",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-026",
+   "kind": "select",
+   "tag": "select",
+   "name": "question_template",
+   "label": "Template",
+   "options": [
+    {
+     "value": "",
+     "text": "Tiada"
+    },
+    {
+     "value": "eksperimen",
+     "text": "Eksperimen Sains"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Visibility *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Public",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-029",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "visibility",
+   "label": "Public",
+   "optionValue": "public",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "x-model": "visibility"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-030",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_filter",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Tingkatan --"
+    },
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "visibility === 'tingkatan'"
+  },
+  {
+   "id": "EL-M10-S20-031",
+   "kind": "select",
+   "tag": "select",
+   "name": "classroom_id",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Kelas --"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "visibility === 'class'"
+  },
+  {
+   "id": "EL-M10-S20-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Stimulus *",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-033",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "text": "Simbol & Aksara Khas",
+   "icon": "fa-superscript",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@click": "showSymbols = !showSymbols"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "Asas",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-035",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "×",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '×')"
+   },
+   "title": "×",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-036",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "÷",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '÷')"
+   },
+   "title": "÷",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-037",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "±",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '±')"
+   },
+   "title": "±",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-038",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "≠",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '≠')"
+   },
+   "title": "≠",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "≥",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '≥')"
+   },
+   "title": "≥",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-040",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "≤",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '≤')"
+   },
+   "title": "≤",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-041",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "≈",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '≈')"
+   },
+   "title": "≈",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-042",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "≡",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '≡')"
+   },
+   "title": "≡",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-043",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∝",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∝')"
+   },
+   "title": "∝",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-044",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "°",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '°')"
+   },
+   "title": "°",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-045",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "%",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '%')"
+   },
+   "title": "%",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kuasa",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-047",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⁰",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⁰')"
+   },
+   "title": "⁰",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-048",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "¹",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '¹')"
+   },
+   "title": "¹",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-049",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "²",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '²')"
+   },
+   "title": "²",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-050",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "³",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '³')"
+   },
+   "title": "³",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⁴",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⁴')"
+   },
+   "title": "⁴",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⁵",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⁵')"
+   },
+   "title": "⁵",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-053",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "ⁿ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'ⁿ')"
+   },
+   "title": "ⁿ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-054",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⁻",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⁻')"
+   },
+   "title": "⁻",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-055",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⁺",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⁺')"
+   },
+   "title": "⁺",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-056",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "½",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '½')"
+   },
+   "title": "½",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-057",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "¼",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '¼')"
+   },
+   "title": "¼",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-058",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "¾",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '¾')"
+   },
+   "title": "¾",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "Subskrip",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-060",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "₀",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '₀')"
+   },
+   "title": "₀",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "₁",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '₁')"
+   },
+   "title": "₁",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-062",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "₂",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '₂')"
+   },
+   "title": "₂",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-063",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "₃",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '₃')"
+   },
+   "title": "₃",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-064",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "₄",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '₄')"
+   },
+   "title": "₄",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-065",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "ₙ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'ₙ')"
+   },
+   "title": "ₙ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-066",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "ₓ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'ₓ')"
+   },
+   "title": "ₓ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-068",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "√",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '√')"
+   },
+   "title": "√",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-069",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "π",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'π')"
+   },
+   "title": "π",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-070",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∞",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∞')"
+   },
+   "title": "∞",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-071",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∠",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∠')"
+   },
+   "title": "∠",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-072",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∥",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∥')"
+   },
+   "title": "∥",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-073",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⊥",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⊥')"
+   },
+   "title": "⊥",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-074",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∴",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∴')"
+   },
+   "title": "∴",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-075",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∵",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∵')"
+   },
+   "title": "∵",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-076",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∈",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∈')"
+   },
+   "title": "∈",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-077",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∉",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∉')"
+   },
+   "title": "∉",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-078",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⊂",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⊂')"
+   },
+   "title": "⊂",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-079",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∪",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∪')"
+   },
+   "title": "∪",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-080",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∩",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∩')"
+   },
+   "title": "∩",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-081",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∫",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∫')"
+   },
+   "title": "∫",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-082",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∂",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∂')"
+   },
+   "title": "∂",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-083",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "∑",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '∑')"
+   },
+   "title": "∑",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-084",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Δ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'Δ')"
+   },
+   "title": "Δ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-085",
+   "kind": "text",
+   "tag": "span",
+   "text": "Anak Panah",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-086",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "→",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '→')"
+   },
+   "title": "→",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-087",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "←",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '←')"
+   },
+   "title": "←",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-088",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "↔",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '↔')"
+   },
+   "title": "↔",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-089",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "↑",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '↑')"
+   },
+   "title": "↑",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-090",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "↓",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '↓')"
+   },
+   "title": "↓",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-091",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⟶",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⟶')"
+   },
+   "title": "⟶",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-092",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "⇌",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '⇌')"
+   },
+   "title": "⇌",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "Greek",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-094",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "α",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'α')"
+   },
+   "title": "α",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-095",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "β",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'β')"
+   },
+   "title": "β",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-096",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "γ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'γ')"
+   },
+   "title": "γ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-097",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "θ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'θ')"
+   },
+   "title": "θ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-098",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "λ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'λ')"
+   },
+   "title": "λ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-099",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "μ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'μ')"
+   },
+   "title": "μ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-100",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "φ",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'φ')"
+   },
+   "title": "φ",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-101",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Ω",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', 'Ω')"
+   },
+   "title": "Ω",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-102",
+   "kind": "text",
+   "tag": "span",
+   "text": "Umum",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-103",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "✓",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '✓')"
+   },
+   "title": "✓",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-104",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "✗",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '✗')"
+   },
+   "title": "✗",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-105",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "•",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '•')"
+   },
+   "title": "•",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-106",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "─",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "onclick": "insertSymbol('stimulus_text', '─')"
+   },
+   "title": "─",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showSymbols"
+  },
+  {
+   "id": "EL-M10-S20-107",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "stimulus_text",
+   "label": "Stimulus *",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    ":dir": "textDirection"
+   },
+   "domId": "stimulus_text",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-108",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar Stimulus",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-109",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "stimulus_image",
+   "label": "Gambar Stimulus",
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-110",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sub-Soalan",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-111",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sub-Soalan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-112",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jumlah markah: 8m",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-text": "'Jumlah markah: ' + totalMarks + 'm'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-113",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Tambah",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "addSub()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-114",
+   "kind": "card",
+   "tag": "div",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-115",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][part_label]'",
+    "x-model": "sub.part_label"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-116",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-trash",
+   "iconOnly": true,
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "removeSub(sIdx)",
+    "x-show": "subs.length > 1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-117",
+   "kind": "textarea",
+   "tag": "textarea",
+   "required": true,
+   "rows": "2",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][question_text]'",
+    "x-model": "sub.question_text"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-118",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-119",
+   "kind": "select",
+   "tag": "select",
+   "label": "Jenis",
+   "options": [
+    {
+     "value": "text",
+     "text": "Teks"
+    },
+    {
+     "value": "numeric",
+     "text": "Numerik"
+    }
+   ],
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][answer_type]'",
+    "x-model": "sub.answer_type"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-120",
+   "kind": "label",
+   "tag": "label",
+   "text": "Markah",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-121",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "label": "Markah",
+   "min": "1",
+   "max": "50",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][marks]'",
+    "x-model.number": "sub.marks"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-122",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawapan",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-123",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "label": "Jawapan",
+   "step": "0.0001",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][expected_numeric]'",
+    "x-model": "sub.expected_numeric"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-124",
+   "kind": "label",
+   "tag": "label",
+   "text": "Toleransi",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-125",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "label": "Toleransi",
+   "step": "0.01",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][numeric_tolerance]'",
+    "x-model": "sub.numeric_tolerance"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-126",
+   "kind": "label",
+   "tag": "label",
+   "text": "Rubrik Skema",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-127",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Tambah",
+   "icon": "fa-plus",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "addRubric(sIdx)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-128",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "F",
+     "text": "F"
+    },
+    {
+     "value": "P",
+     "text": "P"
+    },
+    {
+     "value": "C",
+     "text": "C"
+    },
+    {
+     "value": "H",
+     "text": "H"
+    },
+    {
+     "value": "R",
+     "text": "R"
+    },
+    {
+     "value": "L",
+     "text": "L"
+    },
+    {
+     "value": "J",
+     "text": "J"
+    }
+   ],
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][konstruk]'",
+    "x-model": "rub.konstruk"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-129",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][keyword]'",
+    "x-model": "rub.keyword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-130",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "min": "1",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][marks]'",
+    "x-model.number": "rub.marks"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-131",
+   "kind": "text",
+   "tag": "span",
+   "text": "m",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-132",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "removeRubric(sIdx, rIdx)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-133",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jalan Kerja",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-134",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Jalan Kerja",
+   "rows": "2",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][model_answer]'",
+    "x-model": "sub.model_answer"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(sub, sIdx) in subs"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-135",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][parent_sub_id]'",
+    "x-model": "sub.parent_sub_id"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-136",
+   "kind": "card",
+   "tag": "div",
+   "text": "(a)",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "(a)",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-text": "'(' + sub.part_label + ')'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-138",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "subs[0][part_label]",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][part_label]'",
+    "x-model": "sub.part_label"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-139",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "removeSub(sIdx)",
+    "x-show": "subs.length > 1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "subs.length > 1"
+  },
+  {
+   "id": "EL-M10-S20-140",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "subs[0][question_text]",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][question_text]'",
+    "x-model": "sub.question_text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-141",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-142",
+   "kind": "select",
+   "tag": "select",
+   "name": "subs[0][answer_type]",
+   "label": "Jenis",
+   "options": [
+    {
+     "value": "text",
+     "text": "Teks"
+    },
+    {
+     "value": "numeric",
+     "text": "Numerik"
+    }
+   ],
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][answer_type]'",
+    "x-model": "sub.answer_type"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-143",
+   "kind": "label",
+   "tag": "label",
+   "text": "Markah",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-144",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "subs[0][marks]",
+   "label": "Markah",
+   "min": "1",
+   "max": "50",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][marks]'",
+    "x-model.number": "sub.marks"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-145",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawapan",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "sub.answer_type === 'numeric'"
+  },
+  {
+   "id": "EL-M10-S20-146",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "subs[0][expected_numeric]",
+   "label": "Jawapan",
+   "step": "0.0001",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][expected_numeric]'",
+    "x-model": "sub.expected_numeric"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "sub.answer_type === 'numeric'"
+  },
+  {
+   "id": "EL-M10-S20-147",
+   "kind": "label",
+   "tag": "label",
+   "text": "Toleransi",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "sub.answer_type === 'numeric'"
+  },
+  {
+   "id": "EL-M10-S20-148",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "subs[0][numeric_tolerance]",
+   "label": "Toleransi",
+   "step": "0.01",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][numeric_tolerance]'",
+    "x-model": "sub.numeric_tolerance"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "sub.answer_type === 'numeric'"
+  },
+  {
+   "id": "EL-M10-S20-149",
+   "kind": "label",
+   "tag": "label",
+   "text": "Rubrik Skema",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-150",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Tambah",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "addRubric(sIdx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-151",
+   "kind": "select",
+   "tag": "select",
+   "options": [
+    {
+     "value": "F",
+     "text": "F"
+    },
+    {
+     "value": "P",
+     "text": "P"
+    },
+    {
+     "value": "C",
+     "text": "C"
+    },
+    {
+     "value": "H",
+     "text": "H"
+    },
+    {
+     "value": "R",
+     "text": "R"
+    },
+    {
+     "value": "L",
+     "text": "L"
+    },
+    {
+     "value": "J",
+     "text": "J"
+    }
+   ],
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][konstruk]'",
+    "x-model": "rub.konstruk"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-152",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][keyword]'",
+    "x-model": "rub.keyword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-153",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "min": "1",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][marks]'",
+    "x-model.number": "rub.marks"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-154",
+   "kind": "text",
+   "tag": "span",
+   "text": "m",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-155",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "removeRubric(sIdx, rIdx)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(rub, rIdx) in sub.rubrics"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-156",
+   "kind": "select",
+   "tag": "select",
+   "name": "subs[0][rubrics][0][konstruk]",
+   "options": [
+    {
+     "value": "F",
+     "text": "F"
+    },
+    {
+     "value": "P",
+     "text": "P"
+    },
+    {
+     "value": "C",
+     "text": "C"
+    },
+    {
+     "value": "H",
+     "text": "H"
+    },
+    {
+     "value": "R",
+     "text": "R"
+    },
+    {
+     "value": "L",
+     "text": "L"
+    },
+    {
+     "value": "J",
+     "text": "J"
+    }
+   ],
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][konstruk]'",
+    "x-model": "rub.konstruk"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-157",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "subs[0][rubrics][0][keyword]",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][keyword]'",
+    "x-model": "rub.keyword"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-158",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "subs[0][rubrics][0][marks]",
+   "min": "1",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][rubrics]['+rIdx+'][marks]'",
+    "x-model.number": "rub.marks"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-159",
+   "kind": "text",
+   "tag": "span",
+   "text": "m",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-160",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    "x-on:click": "removeRubric(sIdx, rIdx)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "showWhen": "sub.answer_type === 'text'"
+  },
+  {
+   "id": "EL-M10-S20-161",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jalan Kerja",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-162",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "subs[0][model_answer]",
+   "label": "Jalan Kerja",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][model_answer]'",
+    "x-model": "sub.model_answer"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-163",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "subs[0][parent_sub_id]",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "alpine": {
+    ":name": "'subs['+sIdx+'][parent_sub_id]'",
+    "x-model": "sub.parent_sub_id"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-164",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-165",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-166",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Padam",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-167",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Draf",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-168",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan & Terbitkan",
+   "icon": "fa-paper-plane",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Sub-Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "symbols__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S20-169",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "button",
+   "text": "Tutup Simbol",
+   "icon": "fa-superscript",
+   "form": "https://prestasiplus.my/guru/soalan-berstruktur/4454",
+   "landmark": "form",
+   "section": "Maklumat Soalan",
+   "alpine": {
+    "@click": "showSymbols = !showSymbols"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "symbols__1280"
+   ]
+  }
+ ]
+}

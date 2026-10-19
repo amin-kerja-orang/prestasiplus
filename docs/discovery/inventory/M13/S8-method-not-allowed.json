@@ -1,0 +1,109 @@
+{
+ "screen": "S8",
+ "key": "S8-method-not-allowed",
+ "route": "/cikgu/send",
+ "name": "An Error Occurred: Method Not Allowed",
+ "module": "M13",
+ "generatedAt": "2026-09-25T11:25:11.008Z",
+ "notes": "GET on the POST-only endpoints",
+ "shell": "none (framework error page)",
+ "summary": {
+  "total": 3,
+  "visibleDefault": 3,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 2,
+   "text": 1
+  }
+ },
+ "states": [
+  {
+   "label": "send__1280",
+   "description": "GET /cikgu/send → 405 (also /cikgu/pbd/rollup, /cikgu/pbd/bulk-approve)",
+   "file": "_raw/M13/S8-method-not-allowed__send__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/cikgu/send",
+   "finalUrl": "/cikgu/send",
+   "httpStatus": 405,
+   "title": "An Error Occurred: Method Not Allowed",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "send__375",
+   "description": "405 @375",
+   "file": "_raw/M13/S8-method-not-allowed__send__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/cikgu/send",
+   "finalUrl": "/cikgu/send",
+   "httpStatus": 405,
+   "title": "An Error Occurred: Method Not Allowed",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    document.querySelectorAll('.cikgu-alesa-shell header p').forEach(function (p) {\n      var t = p.textContent, i = t.indexOf('Powered by '), j = t.indexOf(' + ');\n      if (i >= 0 && j > i) {\n        var names = t.slice(i + 11, j).split(' · ').map(function () { return '<nama>'; });\n        p.textContent = t.slice(0, i + 11) + names.join(' · ') + t.slice(j); n++;\n      }\n    });\n    // essay handoff query string may carry a student name (dummy here) → mask it in the location too\n    if (/[?&]student=/.test(location.search)) { history.replaceState(null, '', location.href.replace(/([?&]student=)[^&]*/, '$1<nama>')); n++; }\n    return 'm13mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m13mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M13-S8-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Oops! An Error Occurred",
+   "status": "visible-default",
+   "visibleIn": [
+    "send__1280",
+    "send__375"
+   ]
+  },
+  {
+   "id": "EL-M13-S8-002",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "The server returned a \"405 Method Not Allowed\".",
+   "status": "visible-default",
+   "visibleIn": [
+    "send__1280",
+    "send__375"
+   ]
+  },
+  {
+   "id": "EL-M13-S8-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Something is broken. Please let us know what you were doing when this error occurred. We will fix it as soon as possible. Sorry for any inconvenience caused.",
+   "section": "The server returned a \"405 Method Not Allowed\".",
+   "status": "visible-default",
+   "visibleIn": [
+    "send__1280",
+    "send__375"
+   ]
+  }
+ ]
+}

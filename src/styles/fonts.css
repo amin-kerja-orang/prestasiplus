@@ -1,0 +1,8 @@
+/* Self-hosted fonts (ADR-0003, overview §8.2 rule 7). Imported once, from main.css.
+   Live loads these from Google Fonts: Inter (body), Outfit (headings), Scheherazade New
+   (Arabic/Jawi text, 400/700). The variable Inter/Outfit files cover every live weight
+   (Inter 300–700, Outfit 400–800). The 404 page uses the system font (`font-sans`), as live. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/outfit';
+@import '@fontsource/scheherazade-new/400.css';
+@import '@fontsource/scheherazade-new/700.css';

@@ -1,0 +1,1938 @@
+{
+ "screen": "S8",
+ "key": "S8-structured",
+ "route": "/admin/structured-questions",
+ "name": "Soalan Berstruktur",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.463Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 81,
+  "visibleDefault": 64,
+  "conditional": 16,
+  "hiddenOnly": 1,
+  "mobileOnly": 2,
+  "desktopOnly": 21,
+  "byKind": {
+   "heading": 1,
+   "text": 17,
+   "link": 5,
+   "card": 4,
+   "badge": 30,
+   "form": 1,
+   "label": 3,
+   "select": 3,
+   "button": 1,
+   "table": 1,
+   "pagination": 15
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M04/S8-structured__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions",
+   "finalUrl": "/admin/structured-questions",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 25",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "empty__1280",
+   "description": "subject with no structured questions (empty state)",
+   "file": "_raw/M04/S8-structured__empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions?subject_id=18",
+   "finalUrl": "/admin/structured-questions?subject_id=18",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 1,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "kbat-5__1280",
+   "description": "kbat_level=5",
+   "file": "_raw/M04/S8-structured__kbat-5__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions?kbat_level=5",
+   "finalUrl": "/admin/structured-questions?kbat_level=5",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "page=2",
+   "file": "_raw/M04/S8-structured__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions?page=2",
+   "finalUrl": "/admin/structured-questions?page=2",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 25",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "subject-2__1280",
+   "description": "subject_id=2 + Tingkatan 5",
+   "file": "_raw/M04/S8-structured__subject-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions?subject_id=2&education_level_id=11",
+   "finalUrl": "/admin/structured-questions?subject_id=2&education_level_id=11",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S8-structured__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/structured-questions",
+   "finalUrl": "/admin/structured-questions",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 25",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M04/S8-structured__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/structured-questions",
+   "finalUrl": "/admin/structured-questions",
+   "httpStatus": 200,
+   "title": "Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 25",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 25,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S8-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Soalan Berstruktur",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Semua soalan berstruktur SPM dalam sistem",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tambah Soalan",
+   "href": "https://prestasiplus.my/guru/soalan-berstruktur/cipta",
+   "absHref": "https://prestasiplus.my/guru/soalan-berstruktur/cipta",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "4,064",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "4,064",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Soalan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "4,064",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "4,064",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Published",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "774",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "Agihan Mengikut Subjek",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Bahasa Inggeris: 774",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-013",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Bahasa Melayu: 560",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-014",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Biologi: 219",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Ekonomi: 42",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Fizik: 246",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-017",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Geografi: 21",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-018",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Kimia: 232",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-019",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik: 299",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Matematik Tambahan: 256",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan: 763",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-022",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Prinsip Perakaunan: 76",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-023",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sains: 204",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-024",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sains Komputer: 22",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-025",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sejarah: 328",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-026",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tasawwur Islam: 22",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-027",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/structured-questions",
+   "method": "GET",
+   "fields": [
+    "subject_id",
+    "education_level_id",
+    "kbat_level"
+   ],
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-029",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Subjek"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tingkatan",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-031",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tingkatan",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua"
+    },
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "KBAT",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-033",
+   "kind": "select",
+   "tag": "select",
+   "name": "kbat_level",
+   "label": "KBAT",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua KBAT"
+    },
+    {
+     "value": "2",
+     "text": "Memahami (L2)"
+    },
+    {
+     "value": "3",
+     "text": "Mengaplikasi (L3)"
+    },
+    {
+     "value": "4",
+     "text": "Menganalisis (L4)"
+    },
+    {
+     "value": "5",
+     "text": "Menilai/Mencipta (L5)"
+    }
+   ],
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-034",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cari",
+   "icon": "fa-search",
+   "form": "https://prestasiplus.my/admin/structured-questions",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "#",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-036",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Stimulus / Soalan",
+    "Subjek",
+    "Tgk",
+    "KBAT",
+    "Markah",
+    "Sub-Q",
+    "Aksi"
+   ],
+   "rowCount": 25,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "Lihat",
+     "href": "https://prestasiplus.my/admin/structured-questions/4454",
+     "icon": "fa-eye"
+    }
+   ],
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "empty__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-038",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L3",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/structured-questions/4454",
+   "absHref": "https://prestasiplus.my/admin/structured-questions/4454",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-040",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-041",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L3",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-042",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/structured-questions/4455",
+   "absHref": "https://prestasiplus.my/admin/structured-questions/4455",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-043",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-044",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L3",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-045",
+   "kind": "link",
+   "tag": "a",
+   "text": "Lihat",
+   "href": "https://prestasiplus.my/admin/structured-questions/4456",
+   "absHref": "https://prestasiplus.my/admin/structured-questions/4456",
+   "icon": "fa-eye",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-047",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "25",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "4064",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-053",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-054",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=3",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-055",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=4",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-056",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=5",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-057",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=6",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-058",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=7",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-059",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=8",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-060",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=9",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-061",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=10",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-063",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "162",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=162",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=162",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 162",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-064",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "163",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=163",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=163",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Go to page 163",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-065",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "kbat-5__1280",
+    "page-2__1280",
+    "subject-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-066",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunjukkan 1–25 daripada 4,064 soalan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-067",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset",
+   "href": "https://prestasiplus.my/admin/structured-questions",
+   "absHref": "https://prestasiplus.my/admin/structured-questions",
+   "landmark": "form",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280",
+    "kbat-5__1280",
+    "subject-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-068",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunjukkan – daripada 0 soalan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-069",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tasawwur Islam",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-070",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L5",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-071",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tasawwur Islam",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-072",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L5",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-073",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tasawwur Islam",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-074",
+   "kind": "badge",
+   "tag": "span",
+   "text": "L5",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-075",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunjukkan 1–25 daripada 483 soalan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "kbat-5__1280",
+    "subject-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-076",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=1",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-077",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/structured-questions?page=3",
+   "absHref": "https://prestasiplus.my/admin/structured-questions?page=3",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Soalan Berstruktur",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-078",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunjukkan 26–50 daripada 4,064 soalan",
+   "landmark": "main",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-079",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-080",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S8-081",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "table",
+   "section": "Soalan Berstruktur",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-2__1280"
+   ]
+  }
+ ]
+}

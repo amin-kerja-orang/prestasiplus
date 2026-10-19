@@ -1,0 +1,4420 @@
+{
+ "screen": "S6",
+ "key": "S6-admin-guru",
+ "route": "/admin/gamifikasi/guru",
+ "name": "Gamifikasi Guru — Admin",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.345Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 179,
+  "visibleDefault": 38,
+  "conditional": 32,
+  "hiddenOnly": 109,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 6,
+   "text": 16,
+   "link": 2,
+   "badge": 9,
+   "heading": 2,
+   "table": 1,
+   "toggle": 9,
+   "form": 9,
+   "hidden-field": 17,
+   "label": 49,
+   "input": 38,
+   "checkbox": 9,
+   "button": 9,
+   "select": 1,
+   "textarea": 1,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (8 lencana, Katalog Ganjaran empty)",
+   "file": "_raw/M14/S6-admin-guru__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "badge-edit__1280",
+   "description": "lencana row 1 \"Edit\" (Alpine editing=true)",
+   "file": "_raw/M14/S6-admin-guru__badge-edit__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main tbody[x-data] button\"); if (!e) return 'missing main tbody[x-data] button'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "ganjaran-form__1280",
+   "description": "\"Tambah Ganjaran\" form open (Alpine showForm)",
+   "file": "_raw/M14/S6-admin-guru__ganjaran-form__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main [x-data*=\\\"showForm\\\"] > button\"); if (!e) return 'missing main [x-data*=\"showForm\"] > button'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (8 lencana, Katalog Ganjaran empty) @375",
+   "file": "_raw/M14/S6-admin-guru__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default (8 lencana, Katalog Ganjaran empty) @768",
+   "file": "_raw/M14/S6-admin-guru__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "ganjaran-form__375",
+   "description": "\"Tambah Ganjaran\" form open @375",
+   "file": "_raw/M14/S6-admin-guru__ganjaran-form__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/gamifikasi/guru",
+   "finalUrl": "/admin/gamifikasi/guru",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru — Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main [x-data*=\\\"showForm\\\"] > button\"); if (!e) return 'missing main [x-data*=\"showForm\"] > button'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 2"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "tbody",
+   "xData": "{ editing: false }",
+   "keys": [
+    "editing"
+   ],
+   "liveState": {
+    "editing": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Lencana Guru (8)",
+   "seenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showForm: false }",
+   "keys": [
+    "showForm"
+   ],
+   "liveState": {
+    "showForm": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Katalog Ganjaran (0)",
+   "seenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S6-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-003",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Ganjaran",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aktif",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "8",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "8",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lencana",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tebusan Pending",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tebusan Hadiah",
+   "href": "https://prestasiplus.my/admin/gamifikasi/guru/tebusan",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tebusan",
+   "icon": "fa-receipt",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tebus Tunai 2",
+   "href": "https://prestasiplus.my/admin/gamifikasi/guru/tunai",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru/tunai",
+   "icon": "fa-money-bill-wave",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lencana Guru (8)",
+   "landmark": "main",
+   "section": "Gamifikasi Guru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-017",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Lencana Guru (8)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-018",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Lencana",
+    "Ikon",
+    "Threshold",
+    "Bonus",
+    "Status",
+    "Tindakan"
+   ],
+   "rowCount": 16,
+   "firstRowActions": [
+    {
+     "tag": "button",
+     "text": "Edit",
+     "icon": "fa-edit"
+    }
+   ],
+   "landmark": "main",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penyumbang Baru",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-020",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-021",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/1",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-024",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-028",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-029",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-030",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-032",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-033",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-035",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "badge-edit__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penyumbang Aktif",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-038",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-039",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/2",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-040",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-041",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-042",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-043",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-044",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-045",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-046",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-047",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-048",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-049",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-050",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-051",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-052",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/2",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penyumbang Dedikasi",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-054",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-055",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-056",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/3",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-057",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-058",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-059",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-060",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-061",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-062",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-063",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-064",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-065",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-066",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-067",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-068",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-069",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/3",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penyumbang Cemerlang",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-071",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-072",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-073",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/4",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-074",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-075",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-076",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-077",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-078",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-079",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-080",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-081",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-082",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-083",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-084",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-085",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-086",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/4",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penyumbang Terbilang",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-088",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-089",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-090",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/5",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-091",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-092",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-093",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-094",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-095",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-096",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-097",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-098",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-099",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-100",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-101",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-102",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-103",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/5",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-104",
+   "kind": "text",
+   "tag": "span",
+   "text": "Legenda Soalan",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-105",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-106",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-107",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/6",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-108",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-109",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-110",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-111",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-112",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-113",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-114",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-115",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-116",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-117",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-118",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-119",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-120",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/6",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-121",
+   "kind": "text",
+   "tag": "span",
+   "text": "Guru Maestro",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-122",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-123",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-124",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/7",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-125",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-126",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-127",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-128",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-129",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-130",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-131",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-132",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-133",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-134",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-135",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-136",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-137",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/7",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "Legenda Terulung",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!editing"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-139",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Aktif",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-140",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Edit",
+   "icon": "fa-edit",
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "alpine": {
+    "@click": "editing = !editing"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-141",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/8",
+   "method": "POST",
+   "spoofedMethod": "PUT",
+   "fields": [
+    "_token",
+    "_method",
+    "name",
+    "icon",
+    "threshold",
+    "bonus_coins",
+    "is_active"
+   ],
+   "landmark": "table",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-142",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-143",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-144",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-145",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-146",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-147",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "icon",
+   "label": "Ikon CSS",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-148",
+   "kind": "label",
+   "tag": "label",
+   "text": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-149",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "threshold",
+   "label": "Threshold",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-150",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-151",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "bonus_coins",
+   "label": "Bonus Syiling",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-152",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-153",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-154",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/lencana/8",
+   "landmark": "form",
+   "section": "Lencana Guru (8)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "editing"
+  },
+  {
+   "id": "EL-M14-S6-155",
+   "kind": "card",
+   "tag": "div",
+   "text": "Katalog Ganjaran (0)",
+   "landmark": "main",
+   "section": "Lencana Guru (8)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-156",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Katalog Ganjaran (0)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-157",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tambah Ganjaran",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Katalog Ganjaran (0)",
+   "alpine": {
+    "@click": "showForm = !showForm"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-158",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/gamifikasi/guru/ganjaran",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "name",
+    "category",
+    "cost_coins",
+    "stock",
+    "max_per_user",
+    "max_per_month",
+    "description",
+    "image",
+    "is_active"
+   ],
+   "landmark": "main",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-159",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-160",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama *",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-161",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama *",
+   "required": true,
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-162",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori *",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-163",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "label": "Kategori *",
+   "options": [
+    {
+     "value": "general",
+     "text": "Am"
+    },
+    {
+     "value": "digital",
+     "text": "Digital"
+    },
+    {
+     "value": "physical",
+     "text": "Fizikal"
+    },
+    {
+     "value": "voucher",
+     "text": "Baucar"
+    }
+   ],
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-164",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kos Syiling *",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-165",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "cost_coins",
+   "label": "Kos Syiling *",
+   "required": true,
+   "min": "1",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-166",
+   "kind": "label",
+   "tag": "label",
+   "text": "Stok (kosong = tiada had)",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-167",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "stock",
+   "label": "Stok (kosong = tiada had)",
+   "min": "0",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-168",
+   "kind": "label",
+   "tag": "label",
+   "text": "Had/Pengguna",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-169",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "max_per_user",
+   "label": "Had/Pengguna",
+   "min": "1",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-170",
+   "kind": "label",
+   "tag": "label",
+   "text": "Had/Bulan",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-171",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "max_per_month",
+   "label": "Had/Bulan",
+   "min": "1",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-172",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-173",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-174",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambar",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-175",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "image",
+   "label": "Gambar",
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-176",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktif",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-177",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktif",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm",
+   "checkedIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S6-178",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan",
+   "form": "https://prestasiplus.my/admin/gamifikasi/guru/ganjaran",
+   "landmark": "form",
+   "section": "Katalog Ganjaran (0)",
+   "status": "conditional",
+   "visibleIn": [
+    "ganjaran-form__1280",
+    "ganjaran-form__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showForm"
+  },
+  {
+   "id": "EL-M14-S6-179",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada ganjaran. Tambah ganjaran pertama!",
+   "landmark": "main",
+   "section": "Katalog Ganjaran (0)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "badge-edit__1280",
+    "ganjaran-form__1280",
+    "default__375",
+    "default__768",
+    "ganjaran-form__375"
+   ]
+  }
+ ]
+}

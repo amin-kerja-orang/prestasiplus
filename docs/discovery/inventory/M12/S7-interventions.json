@@ -1,0 +1,1388 @@
+{
+ "screen": "S7",
+ "key": "S7-interventions",
+ "route": "/admin/kirkpatrick/interventions",
+ "name": "Intervensi — Kirkpatrick",
+ "module": "M12",
+ "generatedAt": "2026-09-25T11:27:07.595Z",
+ "notes": "twin /guru/kirkpatrick/interventions identical; create form collapsed and unreachable (Alpine error); GET /interventions/{id} = 405",
+ "shell": "SHA",
+ "summary": {
+  "total": 49,
+  "visibleDefault": 25,
+  "conditional": 23,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 6,
+   "card": 6,
+   "text": 10,
+   "dropdown-trigger": 1,
+   "heading": 4,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 9,
+   "input": 4,
+   "select": 3,
+   "textarea": 2,
+   "button": 1,
+   "empty-state": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default: 0 interventions, form collapsed",
+   "file": "_raw/M12/S7-interventions__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "forced-open__1280",
+   "description": "FORCED reveal of the collapsed form (DOM only; not reachable on live)",
+   "file": "_raw/M12/S7-interventions__forced-open__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var d = document.querySelector('main [x-show=\"open\"]'); if (!d) return 'missing'; d.hidden = false; d.removeAttribute('style'); d.style.display = 'block'; return 'FORCED open (not reachable on live)'; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "FORCED open (not reachable on live)",
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guru__1280",
+   "description": "teacher route",
+   "file": "_raw/M12/S7-interventions__guru__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kirkpatrick/interventions",
+   "finalUrl": "/guru/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "method-405__1280",
+   "description": "GET /admin/kirkpatrick/interventions/{id} → 405 Method Not Allowed",
+   "file": "_raw/M12/S7-interventions__method-405__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions/1",
+   "finalUrl": "/admin/kirkpatrick/interventions/1",
+   "httpStatus": 405,
+   "title": "An Error Occurred: Method Not Allowed",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "toggle__1280",
+   "description": "\"Rekod Intervensi Baru\" clicked: stays collapsed (Alpine error)",
+   "file": "_raw/M12/S7-interventions__toggle__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main button:has-text(\"Rekod Intervensi Baru\")"
+    },
+    {
+     "wait": 800
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M12/S7-interventions__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M12/S7-interventions__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "forced-open__375",
+   "description": "FORCED reveal (layout only) @375",
+   "file": "_raw/M12/S7-interventions__forced-open__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/interventions",
+   "finalUrl": "/admin/kirkpatrick/interventions",
+   "httpStatus": 200,
+   "title": "Intervensi — Kirkpatrick",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var d = document.querySelector('main [x-show=\"open\"]'); if (!d) return 'missing'; d.hidden = false; d.removeAttribute('style'); d.style.display = 'block'; return 'FORCED open (not reachable on live)'; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "FORCED open (not reachable on live)",
+    "m12mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "xData": "{ open:  }",
+   "keys": [
+    "open"
+   ],
+   "liveState": {},
+   "visible": true,
+   "region": "content",
+   "section": "Intervensi Pelajar",
+   "seenIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M12-S7-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Overview",
+   "href": "https://prestasiplus.my/admin/kirkpatrick",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick",
+   "icon": "fa-th-large",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-002",
+   "kind": "link",
+   "tag": "a",
+   "text": "T1: Reaksi",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/reaction",
+   "icon": "fa-smile",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/learning",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Intervensi",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/interventions",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/interventions",
+   "icon": "fa-hand-holding-medical",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Intervensi",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menunggu Semakan",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Meningkat",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menurun",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Rekod Intervensi Baru",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "alpine": {
+    "x-data": "{ open:  }"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-020",
+   "kind": "dropdown-trigger",
+   "tag": "button",
+   "type": "submit",
+   "text": "Rekod Intervensi Baru",
+   "icon": "fa-plus-circle",
+   "landmark": "main",
+   "section": "Intervensi Pelajar",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Rekod Intervensi Baru",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/kirkpatrick/interventions",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "student_id",
+    "alert_type",
+    "action_date",
+    "alert_description",
+    "action_taken",
+    "before_accuracy",
+    "before_mood",
+    "after_accuracy",
+    "after_mood"
+   ],
+   "landmark": "main",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pelajar (ID)",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "student_id",
+   "label": "Pelajar (ID)",
+   "placeholder": "ID pelajar",
+   "required": true,
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis Amaran",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-027",
+   "kind": "select",
+   "tag": "select",
+   "name": "alert_type",
+   "label": "Jenis Amaran",
+   "required": true,
+   "options": [
+    {
+     "value": "mood",
+     "text": "Mood / Kesejahteraan"
+    },
+    {
+     "value": "inactive",
+     "text": "Tidak Aktif"
+    },
+    {
+     "value": "declining",
+     "text": "Prestasi Menurun"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-028",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh Tindakan",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-029",
+   "kind": "input",
+   "tag": "input",
+   "type": "date",
+   "name": "action_date",
+   "label": "Tarikh Tindakan",
+   "required": true,
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-030",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan Amaran",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-031",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "alert_description",
+   "label": "Penerangan Amaran",
+   "placeholder": "Contoh: Pelajar tidak aktif selama 2 minggu",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-032",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tindakan Diambil",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-033",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "action_taken",
+   "label": "Tindakan Diambil",
+   "placeholder": "Contoh: Hubungi pelajar melalui guru kelas",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-034",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ketepatan Sebelum (%)",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-035",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "before_accuracy",
+   "label": "Ketepatan Sebelum (%)",
+   "placeholder": "0.0",
+   "step": "0.1",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-036",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mood Sebelum",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-037",
+   "kind": "select",
+   "tag": "select",
+   "name": "before_mood",
+   "label": "Mood Sebelum",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih --"
+    },
+    {
+     "value": "happy",
+     "text": "Gembira"
+    },
+    {
+     "value": "okay",
+     "text": "Okay"
+    },
+    {
+     "value": "sad",
+     "text": "Sedih"
+    },
+    {
+     "value": "stressed",
+     "text": "Tertekan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ketepatan Selepas (%)",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-039",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "after_accuracy",
+   "label": "Ketepatan Selepas (%)",
+   "placeholder": "Isi selepas semakan",
+   "step": "0.1",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-040",
+   "kind": "label",
+   "tag": "label",
+   "text": "Mood Selepas",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-041",
+   "kind": "select",
+   "tag": "select",
+   "name": "after_mood",
+   "label": "Mood Selepas",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih --"
+    },
+    {
+     "value": "happy",
+     "text": "Gembira"
+    },
+    {
+     "value": "okay",
+     "text": "Okay"
+    },
+    {
+     "value": "sad",
+     "text": "Sedih"
+    },
+    {
+     "value": "stressed",
+     "text": "Tertekan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-042",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Intervensi",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/admin/kirkpatrick/interventions",
+   "landmark": "form",
+   "section": "Rekod Intervensi Baru",
+   "status": "conditional",
+   "visibleIn": [
+    "forced-open__1280",
+    "forced-open__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M12-S7-043",
+   "kind": "card",
+   "tag": "div",
+   "text": "Senarai Intervensi",
+   "landmark": "main",
+   "section": "Rekod Intervensi Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-044",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Senarai Intervensi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-045",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada intervensi direkodkan lagi.",
+   "landmark": "main",
+   "section": "Senarai Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "Klik \"Ambil Tindakan\" pada amaran di halaman Tingkah Laku untuk mula.",
+   "landmark": "main",
+   "section": "Senarai Intervensi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "forced-open__1280",
+    "guru__1280",
+    "toggle__1280",
+    "default__375",
+    "default__768",
+    "forced-open__375"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-047",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Oops! An Error Occurred",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "method-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-048",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "method-405__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S7-049",
+   "kind": "text",
+   "tag": "p",
+   "text": "Something is broken. Please let us know what you were doing when this error occurred. We will fix it as soon as possible. Sorry for any inconvenience caused.",
+   "section": "The server returned a \"405 Method Not Allowed\".",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "method-405__1280"
+   ]
+  }
+ ]
+}

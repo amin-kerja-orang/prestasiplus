@@ -1,0 +1,942 @@
+{
+ "screen": "S25",
+ "key": "S25-liga",
+ "route": "/liga",
+ "name": "Liga Pertandingan",
+ "module": "M16",
+ "generatedAt": "2026-09-26T04:58:29.329Z",
+ "notes": "tabs Liga Saya / Liga Terbuka; join-by-code modal",
+ "shell": "SHU",
+ "summary": {
+  "total": 21,
+  "visibleDefault": 7,
+  "conditional": 10,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 6,
+   "link": 2,
+   "button": 3,
+   "card": 1,
+   "tab": 2,
+   "heading": 2,
+   "badge": 1,
+   "modal": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "input": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "tab Liga Saya (0) — empty",
+   "file": "_raw/M16/S25-liga__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "join-modal__1280",
+   "description": "Sertai dengan Kod modal",
+   "file": "_raw/M16/S25-liga__join-modal__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"showJoinModal = true\\\"]\"); if (!e) return 'missing main button[\\@click=\"showJoinModal = true\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "join-validity__1280",
+   "description": "join modal + reportValidity() (required code)",
+   "file": "_raw/M16/S25-liga__join-validity__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"showJoinModal = true\\\"]\"); if (!e) return 'missing main button[\\@click=\"showJoinModal = true\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var f = document.querySelector(\"main form[action$=\\\"/liga/sertai\\\"]\"); if (!f) return 'no form'; return 'reportValidity=' + f.reportValidity(); })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "reportValidity=false",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "open__1280",
+   "description": "tab Liga Terbuka (1)",
+   "file": "_raw/M16/S25-liga__open__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"tab = 'open'\\\"]\"); if (!e) return 'missing main button[\\@click=\"tab = open\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M16/S25-liga__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M16/S25-liga__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "join-modal__375",
+   "description": "join modal @375",
+   "file": "_raw/M16/S25-liga__join-modal__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/liga",
+   "finalUrl": "/liga",
+   "httpStatus": 200,
+   "title": "Liga Pertandingan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"showJoinModal = true\\\"]\"); if (!e) return 'missing main button[\\@click=\"showJoinModal = true\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function T(s) { return String(s || '').replace(/\\s+/g, ' ').trim(); }\n    function setOwnText(el, v) { var done = false; Array.from(el.childNodes).forEach(function (c) { if (c.nodeType === 3 && T(c.nodeValue)) { c.nodeValue = done ? '' : v; done = true; } }); if (!done) el.textContent = v; n++; }\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    // lobby \"Pendahulu\" lists (perang-fakta, benteng-ilmu, perlumbaan-matematik, kuiz-relay, teka-silang-kata)\n    main.querySelectorAll('h2').forEach(function (h) {\n      if (!/Pendahulu/.test(h.textContent)) return;\n      var box = h.nextElementSibling; if (!box) return;\n      box.querySelectorAll(':scope > div > span:first-child').forEach(function (s) { var t = T(s.textContent), m = t.match(/^(🥇|🥈|🥉|\\d+\\.)\\s/); s.textContent = (m ? m[1] + ' ' : '') + '<name>'; n++; });\n    });\n    // Papan Bijak \"Top 10 Juara\" table: initials circle + name\n    main.querySelectorAll('table tbody tr td:nth-child(2)').forEach(function (td) {\n      if (!/papan-bijak/.test(location.pathname)) return;\n      td.querySelectorAll('div > div').forEach(function (d) { if (/width: ?32px/.test(d.getAttribute('style') || '')) { d.textContent = '··'; n++; } });\n      td.querySelectorAll('span').forEach(function (s) { s.textContent = '<name>'; n++; });\n    });\n    // Pertandingan Mingguan ranking names\n    if (/pertandingan/.test(location.pathname)) main.querySelectorAll('p.font-bold.text-sm.truncate').forEach(function (p) { setOwnText(p, '<name>'); });\n    // school detail: \"Battle Terkini\" player names; school name header\n    if (/\\/battle\\/ranking-sekolah\\/\\d+/.test(location.pathname)) {\n      main.querySelectorAll('.space-y-2 > div > span.font-semibold').forEach(function (s) { s.textContent = '<name>'; n++; });\n      main.querySelectorAll('h2').forEach(function (h) { h.textContent = '<school>'; n++; });\n      document.title = '<school>'; n++;\n    }\n    // liga detail: creator\n    main.querySelectorAll('p').forEach(function (p) { if (/Dicipta oleh/.test(p.textContent)) { p.textContent = T(p.textContent).replace(/Dicipta oleh .*? ·/, 'Dicipta oleh <name> ·'); n++; } });\n    // battle \"Cabar Kawan\" results / invitations / incoming challenger (only placeholders are ever injected, masked anyway)\n    main.querySelectorAll('[x-text=\"user.name\"], [x-text=\"user.school\"], [x-text=\"inv.sender_name\"], [x-text=\"inv.sender_school\"], [x-text=\"incomingChallenger.name\"], [x-text=\"incomingChallenger.school\"], [x-text=\"challengerTargetName\"]').forEach(function (e) { e.classList.add('m16n'); n++; });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names (public institutions → token) in text, attributes and <title>\n    var SCH = /\\b(SEKOLAH [A-Z(][A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    if (SCH.test(document.title)) { document.title = document.title.replace(SCH, '<school>'); n++; }\n    return 'm16mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m16mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Liga Pertandingan",
+   "seenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ tab: 'my', showJoinModal: false, inviteCode: '' }",
+   "keys": [
+    "tab",
+    "showJoinModal",
+    "inviteCode"
+   ],
+   "liveState": {
+    "tab": "my",
+    "showJoinModal": false,
+    "inviteCode": ""
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Liga Pertandingan",
+   "seenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M16-S25-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Liga Pertandingan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Liga Pertandingan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Liga Pertandingan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cipta Liga Baru",
+   "href": "https://prestasiplus.my/liga/cipta",
+   "absHref": "https://prestasiplus.my/liga/cipta",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-005",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Sertai dengan Kod",
+   "icon": "fa-ticket",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "alpine": {
+    "@click": "showJoinModal = true"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Liga Saya (0)",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-007",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Liga Saya (0)",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "alpine": {
+    "@click": "tab = 'my'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-008",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Liga Terbuka (1)",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "alpine": {
+    "@click": "tab = 'open'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum menyertai mana-mana liga",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "open__1280"
+   ],
+   "showWhen": "tab === 'my'"
+  },
+  {
+   "id": "EL-M16-S25-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cipta liga baru atau sertai menggunakan kod jemputan",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "open__1280"
+   ],
+   "showWhen": "tab === 'my'"
+  },
+  {
+   "id": "EL-M16-S25-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "Liga Sejarah 2026 5ST Akan Datang School Persahabatan Sejarah 31/03 - 01/04/2026 3 sekolah Lihat →",
+   "href": "https://prestasiplus.my/liga/1",
+   "absHref": "https://prestasiplus.my/liga/1",
+   "icon": "fa-bullseye",
+   "landmark": "main",
+   "section": "Liga Pertandingan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "open__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'open'"
+  },
+  {
+   "id": "EL-M16-S25-012",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Liga Sejarah 2026 5ST",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "open__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'open'"
+  },
+  {
+   "id": "EL-M16-S25-013",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Akan Datang",
+   "landmark": "main",
+   "section": "Liga Sejarah 2026 5ST",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "open__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab === 'open'"
+  },
+  {
+   "id": "EL-M16-S25-014",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Sertai Liga",
+   "landmark": "main",
+   "section": "Liga Sejarah 2026 5ST",
+   "alpine": {
+    "x-show": "showJoinModal",
+    "@click.self": "showJoinModal = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-015",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/liga/sertai",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "invite_code"
+   ],
+   "landmark": "main",
+   "section": "Liga Sejarah 2026 5ST",
+   "alpine": {
+    "@click.stop": ""
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-016",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Liga Sejarah 2026 5ST",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "join-modal__1280",
+    "join-validity__1280",
+    "open__1280",
+    "default__375",
+    "default__768",
+    "join-modal__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M16-S25-017",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Sertai Liga",
+   "landmark": "form",
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Masukkan kod jemputan 8 aksara yang diberikan oleh penganjur.",
+   "landmark": "form",
+   "section": "Sertai Liga",
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-019",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "invite_code",
+   "placeholder": "cth: AB12CD34",
+   "required": true,
+   "maxlength": "8",
+   "landmark": "form",
+   "section": "Sertai Liga",
+   "alpine": {
+    "x-model": "inviteCode"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-020",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Batal",
+   "form": "https://prestasiplus.my/liga/sertai",
+   "landmark": "form",
+   "section": "Sertai Liga",
+   "alpine": {
+    "@click": "showJoinModal = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  },
+  {
+   "id": "EL-M16-S25-021",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Sertai",
+   "form": "https://prestasiplus.my/liga/sertai",
+   "landmark": "form",
+   "section": "Sertai Liga",
+   "status": "conditional",
+   "visibleIn": [
+    "join-modal__1280",
+    "join-validity__1280",
+    "join-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "open__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showJoinModal"
+  }
+ ]
+}

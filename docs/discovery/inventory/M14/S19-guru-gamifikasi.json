@@ -1,0 +1,1188 @@
+{
+ "screen": "S19",
+ "key": "S19-guru-gamifikasi",
+ "route": "/guru/gamifikasi",
+ "name": "Gamifikasi Guru",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.783Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 63,
+  "visibleDefault": 60,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 48,
+   "card": 7,
+   "heading": 3,
+   "empty-state": 1,
+   "link": 4
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (admin teacher wallet 92,683; 7/8 lencana)",
+   "file": "_raw/M14/S19-guru-gamifikasi__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/gamifikasi",
+   "finalUrl": "/guru/gamifikasi",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div.bg-emerald-50": 17,
+    "main .space-y-2 > div.bg-red-50": 1
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default (admin teacher wallet 92,683; 7/8 lencana) @375",
+   "file": "_raw/M14/S19-guru-gamifikasi__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/gamifikasi",
+   "finalUrl": "/guru/gamifikasi",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div.bg-emerald-50": 17,
+    "main .space-y-2 > div.bg-red-50": 1
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default (admin teacher wallet 92,683; 7/8 lencana) @768",
+   "file": "_raw/M14/S19-guru-gamifikasi__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/gamifikasi",
+   "finalUrl": "/guru/gamifikasi",
+   "httpStatus": 200,
+   "title": "Gamifikasi Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div.bg-emerald-50": 17,
+    "main .space-y-2 > div.bg-red-50": 1
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Syiling & Ganjaran",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S19-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Syiling & Ganjaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Syiling & Ganjaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Syiling & Ganjaran",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Baki Syiling",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Diperolehi",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "20,719",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "20,719",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan Disumbang",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "7/8",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "7/8",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lencana",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lencana Pencapaian",
+   "landmark": "main",
+   "section": "Syiling & Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-017",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Lencana Pencapaian",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penyumbang Baru",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "10 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "+100 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-021",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penyumbang Aktif",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "100 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "+500 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penyumbang Dedikasi",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "500 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-026",
+   "kind": "text",
+   "tag": "div",
+   "text": "+2,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penyumbang Cemerlang",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,000 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "+5,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penyumbang Terbilang",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "2,500 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "+10,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "Legenda Soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "5,000 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "+25,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Guru Maestro",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "10,000 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "+50,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "Legenda Terulung",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "50,000 soalan",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "+250,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "Seterusnya: Legenda Terulung",
+   "icon": "fa-crown",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "20,719 / 50,000",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "29,281 soalan lagi untuk bonus 250,000 syiling",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Katalog Ganjaran",
+   "landmark": "main",
+   "section": "Lencana Pencapaian",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-046",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Katalog Ganjaran",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-047",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada ganjaran tersedia buat masa ini",
+   "landmark": "main",
+   "section": "Katalog Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Admin akan menambah ganjaran tidak lama lagi!",
+   "landmark": "main",
+   "section": "Katalog Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-049",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah Transaksi",
+   "landmark": "main",
+   "section": "Katalog Ganjaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-050",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sejarah Transaksi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM Tahun Lepas - 0% ketepatan",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "19 May 2026, 03:49",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-053",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aktiviti harian: spm",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "19 May 2026, 03:26",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "+7",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-057",
+   "kind": "text",
+   "tag": "div",
+   "text": "SPM Tahun Lepas - 20% ketepatan",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "19 May 2026, 03:26",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "+1",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tebus Tunai",
+   "href": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "icon": "fa-money-bill-wave",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-061",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedai Hadiah",
+   "href": "https://prestasiplus.my/guru/gamifikasi/kedai",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi/kedai",
+   "icon": "fa-gift",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "Papan Pendahulu",
+   "href": "https://prestasiplus.my/guru/gamifikasi/leaderboard",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi/leaderboard",
+   "icon": "fa-ranking-star",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S19-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sumbang Soalan (+10 syiling)",
+   "href": "https://prestasiplus.my/guru/soalan/cipta",
+   "absHref": "https://prestasiplus.my/guru/soalan/cipta",
+   "icon": "fa-plus",
+   "landmark": "main",
+   "section": "Sejarah Transaksi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

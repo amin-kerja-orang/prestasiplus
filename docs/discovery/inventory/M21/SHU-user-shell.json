@@ -1,0 +1,7770 @@
+{
+ "screen": "SHU",
+ "key": "SHU-user-shell",
+ "name": "User-portal shell (S6)",
+ "owner": "00-global-ui.md",
+ "note": "Layout chrome, not M21 content. User menu group '💎 KILLER FEATURES' holds 'Mohon Keluarga Angkat'.",
+ "summary": {
+  "total": 372,
+  "visibleDefault": 152,
+  "conditional": 15,
+  "hiddenOnly": 205,
+  "mobileOnly": 15,
+  "desktopOnly": 148
+ },
+ "states": [
+  "S6:default__1280",
+  "S6:example-2__1280",
+  "S6:default__375",
+  "S6:default__768"
+ ],
+ "elements": [
+  {
+   "id": "EL-M21-SHU-001",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "iconOnly": true,
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-002",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform Latih Tubi Nasional",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-home",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Target SPM",
+   "href": "https://prestasiplus.my/target-spm",
+   "absHref": "https://prestasiplus.my/target-spm",
+   "icon": "fa-bullseye",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Misi Harian",
+   "href": "https://prestasiplus.my/misi-harian",
+   "absHref": "https://prestasiplus.my/misi-harian",
+   "icon": "fa-rocket",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-007",
+   "kind": "link",
+   "tag": "a",
+   "text": "Remedial",
+   "href": "https://prestasiplus.my/remedial/saya",
+   "absHref": "https://prestasiplus.my/remedial/saya",
+   "icon": "fa-flask",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "SPM",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-009",
+   "kind": "link",
+   "tag": "a",
+   "text": "SPM SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-graduation-cap",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-010",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SPM",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-011",
+   "kind": "link",
+   "tag": "a",
+   "text": "Headcount",
+   "href": "https://prestasiplus.my/headcount",
+   "absHref": "https://prestasiplus.my/headcount",
+   "icon": "fa-chart-line",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prestasi",
+   "href": "https://prestasiplus.my/prestasi",
+   "absHref": "https://prestasiplus.my/prestasi",
+   "icon": "fa-chart-bar",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-013",
+   "kind": "link",
+   "tag": "a",
+   "text": "Analitik Adaptif",
+   "href": "https://prestasiplus.my/analitik/pelajar",
+   "absHref": "https://prestasiplus.my/analitik/pelajar",
+   "icon": "fa-brain",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-014",
+   "kind": "link",
+   "tag": "a",
+   "text": "Analisa Item",
+   "href": "https://prestasiplus.my/analisa-item",
+   "absHref": "https://prestasiplus.my/analisa-item",
+   "icon": "fa-magnifying-glass-chart",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-015",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kombo",
+   "href": "https://prestasiplus.my/kombo",
+   "absHref": "https://prestasiplus.my/kombo",
+   "icon": "fa-fire",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-016",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan Mingguan",
+   "href": "https://prestasiplus.my/laporan-mingguan",
+   "absHref": "https://prestasiplus.my/laporan-mingguan",
+   "icon": "fa-file-lines",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pusat AI",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-018",
+   "kind": "badge",
+   "tag": "span",
+   "text": "NEW",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "🤖 Cikgu Alesa AI",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-020",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cikgu Alesa Chat AI",
+   "href": "https://prestasiplus.my/cikgu",
+   "absHref": "https://prestasiplus.my/cikgu",
+   "icon": "fa-robot",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "AI",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "✨ Visi & Pertandingan",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sekolah Bersaing NEW",
+   "href": "https://prestasiplus.my/sekolah-bersaing",
+   "absHref": "https://prestasiplus.my/sekolah-bersaing",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-024",
+   "kind": "badge",
+   "tag": "span",
+   "text": "NEW",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-025",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tetapan Peribadi",
+   "href": "https://prestasiplus.my/tetapan",
+   "absHref": "https://prestasiplus.my/tetapan",
+   "icon": "fa-cog",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "🏆 Bilik Duta · 🔒 PREVIEW",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-027",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bilik Duta DEV",
+   "href": "https://prestasiplus.my/bilik-duta",
+   "absHref": "https://prestasiplus.my/bilik-duta",
+   "icon": "fa-crown",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "DEV",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "🤖 AI Pintar (Pelajar)",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-030",
+   "kind": "link",
+   "tag": "a",
+   "text": "Wellbeing Alerts",
+   "href": "https://prestasiplus.my/wellbeing/alerts",
+   "absHref": "https://prestasiplus.my/wellbeing/alerts",
+   "icon": "fa-triangle-exclamation",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-031",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kamus AI",
+   "href": "https://prestasiplus.my/pusat-ai/kamus",
+   "absHref": "https://prestasiplus.my/pusat-ai/kamus",
+   "icon": "fa-book-open",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-032",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendamping Motivasi",
+   "href": "https://prestasiplus.my/pusat-ai/pendamping",
+   "absHref": "https://prestasiplus.my/pusat-ai/pendamping",
+   "icon": "fa-heart",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Doa & Motivasi",
+   "href": "https://prestasiplus.my/pusat-ai/doa",
+   "absHref": "https://prestasiplus.my/pusat-ai/doa",
+   "icon": "fa-mosque",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎯 AI Pintar (Guru)",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-035",
+   "kind": "link",
+   "tag": "a",
+   "text": "Aktiviti Advisor",
+   "href": "https://prestasiplus.my/pusat-ai/aktiviti",
+   "absHref": "https://prestasiplus.my/pusat-ai/aktiviti",
+   "icon": "fa-lightbulb",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-036",
+   "kind": "link",
+   "tag": "a",
+   "text": "Whiteboard → Quiz",
+   "href": "https://prestasiplus.my/pusat-ai/whiteboard",
+   "absHref": "https://prestasiplus.my/pusat-ai/whiteboard",
+   "icon": "fa-clipboard-question",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-037",
+   "kind": "link",
+   "tag": "a",
+   "text": "RPH (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "icon": "fa-clipboard-list",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semak Karangan (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-039",
+   "kind": "link",
+   "tag": "a",
+   "text": "PBD (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/pbd",
+   "absHref": "https://prestasiplus.my/cikgu/pbd",
+   "icon": "fa-tasks",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "🛡️ Kawalan Kualiti",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-041",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semakan Nota Master",
+   "href": "/admin/master-notes",
+   "absHref": "https://prestasiplus.my/admin/master-notes",
+   "icon": "fa-shield-alt",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-042",
+   "kind": "link",
+   "tag": "a",
+   "text": "Audit Log",
+   "href": "https://prestasiplus.my/admin/audit-log",
+   "absHref": "https://prestasiplus.my/admin/audit-log",
+   "icon": "fa-clipboard-check",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "🏆 Bilik Duta",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-044",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bilik Duta",
+   "href": "https://prestasiplus.my/bilik-duta",
+   "absHref": "https://prestasiplus.my/bilik-duta",
+   "icon": "fa-crown",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-045",
+   "kind": "link",
+   "tag": "a",
+   "text": "Akademi Duta",
+   "href": "https://prestasiplus.my/akademi-duta",
+   "absHref": "https://prestasiplus.my/akademi-duta",
+   "icon": "fa-graduation-cap",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kem & Bootcamp",
+   "href": "https://prestasiplus.my/bilik-duta/kem",
+   "absHref": "https://prestasiplus.my/bilik-duta/kem",
+   "icon": "fa-campground",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "✨ Visi & Pertandingan",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-048",
+   "kind": "link",
+   "tag": "a",
+   "text": "Profil Cerah",
+   "href": "https://prestasiplus.my/profil-cerah",
+   "absHref": "https://prestasiplus.my/profil-cerah",
+   "icon": "fa-magic",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sekolah Bersaing",
+   "href": "https://prestasiplus.my/sekolah-bersaing",
+   "absHref": "https://prestasiplus.my/sekolah-bersaing",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-050",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cita-Cita Hijrah",
+   "href": "https://prestasiplus.my/cita-cita",
+   "absHref": "https://prestasiplus.my/cita-cita",
+   "icon": "fa-star",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "💎 Killer Features",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-052",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cikgu Suara",
+   "href": "https://prestasiplus.my/cikgu-suara",
+   "absHref": "https://prestasiplus.my/cikgu-suara",
+   "icon": "fa-microphone",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-053",
+   "kind": "link",
+   "tag": "a",
+   "text": "SPM Mock Exam",
+   "href": "https://prestasiplus.my/spm-mock",
+   "absHref": "https://prestasiplus.my/spm-mock",
+   "icon": "fa-file-pen",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-054",
+   "kind": "link",
+   "tag": "a",
+   "text": "Wellbeing Alerts",
+   "href": "https://prestasiplus.my/wellbeing/alerts",
+   "absHref": "https://prestasiplus.my/wellbeing/alerts",
+   "icon": "fa-triangle-exclamation",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-055",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pembetulan",
+   "href": "https://prestasiplus.my/pembetulan",
+   "absHref": "https://prestasiplus.my/pembetulan",
+   "icon": "fa-arrows-rotate",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-056",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mohon Keluarga Angkat",
+   "href": "https://prestasiplus.my/mohon-keluarga-angkat",
+   "absHref": "https://prestasiplus.my/mohon-keluarga-angkat",
+   "icon": "fa-hand-holding-heart",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-057",
+   "kind": "link",
+   "tag": "a",
+   "text": "Penguasaan",
+   "href": "https://prestasiplus.my/penguasaan",
+   "absHref": "https://prestasiplus.my/penguasaan",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-058",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan Soalan",
+   "href": "https://prestasiplus.my/laporan-soalan",
+   "absHref": "https://prestasiplus.my/laporan-soalan",
+   "icon": "fa-flag",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-059",
+   "kind": "link",
+   "tag": "a",
+   "text": "Liga Pertandingan",
+   "href": "https://prestasiplus.my/liga",
+   "absHref": "https://prestasiplus.my/liga",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-060",
+   "kind": "link",
+   "tag": "a",
+   "text": "Perutusan",
+   "href": "https://prestasiplus.my/perutusan",
+   "absHref": "https://prestasiplus.my/perutusan",
+   "icon": "fa-scroll",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pembelajaran",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-062",
+   "kind": "link",
+   "tag": "a",
+   "text": "Latih Tubi",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-brain",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan by Chapter",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Berstruktur",
+   "href": "https://prestasiplus.my/latihan-berstruktur",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur",
+   "icon": "fa-list-ol",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-065",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedudukan",
+   "href": "https://prestasiplus.my/ranking",
+   "absHref": "https://prestasiplus.my/ranking",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-066",
+   "kind": "link",
+   "tag": "a",
+   "text": "PKSK PRO",
+   "href": "https://prestasiplus.my/pksk",
+   "absHref": "https://prestasiplus.my/pksk",
+   "icon": "fa-shield-halved",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-067",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PRO",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-068",
+   "kind": "link",
+   "tag": "a",
+   "text": "Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-newspaper",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-069",
+   "kind": "link",
+   "tag": "a",
+   "text": "Video",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "icon": "fa-play-circle",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-070",
+   "kind": "link",
+   "tag": "a",
+   "text": "Permainan 🎮",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "icon": "fa-gamepad",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-071",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🎮",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-072",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cabutan Bertuah 🎟️",
+   "href": "https://prestasiplus.my/cabutan",
+   "absHref": "https://prestasiplus.my/cabutan",
+   "icon": "fa-ticket",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-073",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🎟️",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-074",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tournament",
+   "href": "https://prestasiplus.my/tournament",
+   "absHref": "https://prestasiplus.my/tournament",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-075",
+   "kind": "link",
+   "tag": "a",
+   "text": "Topik",
+   "href": "https://prestasiplus.my/topics",
+   "absHref": "https://prestasiplus.my/topics",
+   "icon": "fa-book-open",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-076",
+   "kind": "link",
+   "tag": "a",
+   "text": "Peta Belajar",
+   "href": "https://prestasiplus.my/peta-belajar",
+   "absHref": "https://prestasiplus.my/peta-belajar",
+   "icon": "fa-map",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-077",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelas Saya",
+   "href": "https://prestasiplus.my/kelas-saya",
+   "absHref": "https://prestasiplus.my/kelas-saya",
+   "icon": "fa-book-reader",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "Set Soalan Guru",
+   "href": "https://prestasiplus.my/set-soalan-saya",
+   "absHref": "https://prestasiplus.my/set-soalan-saya",
+   "icon": "fa-clipboard-list",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-079",
+   "kind": "link",
+   "tag": "a",
+   "text": "Audio KBAT",
+   "href": "https://prestasiplus.my/audio-kbat",
+   "absHref": "https://prestasiplus.my/audio-kbat",
+   "icon": "fa-headphones",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-080",
+   "kind": "link",
+   "tag": "a",
+   "text": "Syiling & Token 🏆",
+   "href": "https://prestasiplus.my/gamification",
+   "absHref": "https://prestasiplus.my/gamification",
+   "icon": "fa-coins",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-081",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🏆",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-082",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tukar Token",
+   "href": "https://prestasiplus.my/gamification/convert",
+   "absHref": "https://prestasiplus.my/gamification/convert",
+   "icon": "fa-exchange-alt",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-083",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cabaran Harian",
+   "href": "https://prestasiplus.my/gamification/challenges",
+   "absHref": "https://prestasiplus.my/gamification/challenges",
+   "icon": "fa-bullseye",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-084",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedai Hadiah",
+   "href": "https://prestasiplus.my/gamification/rewards",
+   "absHref": "https://prestasiplus.my/gamification/rewards",
+   "icon": "fa-gift",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-085",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelulusan Hadiah",
+   "href": "https://prestasiplus.my/cikgu/kelulusan-hadiah",
+   "absHref": "https://prestasiplus.my/cikgu/kelulusan-hadiah",
+   "icon": "fa-shield-halved",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-086",
+   "kind": "link",
+   "tag": "a",
+   "text": "Marketplace",
+   "href": "https://prestasiplus.my/marketplace",
+   "absHref": "https://prestasiplus.my/marketplace",
+   "icon": "fa-shopping-bag",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-087",
+   "kind": "link",
+   "tag": "a",
+   "text": "Papan Pendahulu",
+   "href": "https://prestasiplus.my/gamification/leaderboard",
+   "absHref": "https://prestasiplus.my/gamification/leaderboard",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-088",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pencapaian",
+   "href": "https://prestasiplus.my/gamification/achievements",
+   "absHref": "https://prestasiplus.my/gamification/achievements",
+   "icon": "fa-medal",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-089",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kotak Misteri",
+   "href": "https://prestasiplus.my/gamification/mystery-box",
+   "absHref": "https://prestasiplus.my/gamification/mystery-box",
+   "icon": "fa-box-open",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-090",
+   "kind": "link",
+   "tag": "a",
+   "text": "Rujuk Kawan",
+   "href": "https://prestasiplus.my/gamification/referral",
+   "absHref": "https://prestasiplus.my/gamification/referral",
+   "icon": "fa-user-plus",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-091",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cikgu Alesa AI",
+   "href": "https://prestasiplus.my/cikgu",
+   "absHref": "https://prestasiplus.my/cikgu",
+   "icon": "fa-robot",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-092",
+   "kind": "badge",
+   "tag": "span",
+   "text": "AI",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "Cikgu Alesa Tools",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-094",
+   "kind": "link",
+   "tag": "a",
+   "text": "RPH (Rancangan Harian)",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "icon": "fa-file-alt",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-095",
+   "kind": "link",
+   "tag": "a",
+   "text": "PBD Auto-Tag",
+   "href": "https://prestasiplus.my/cikgu/pbd",
+   "absHref": "https://prestasiplus.my/cikgu/pbd",
+   "icon": "fa-clipboard-check",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-096",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mark Karangan",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-097",
+   "kind": "link",
+   "tag": "a",
+   "text": "Admin Tebusan",
+   "href": "https://prestasiplus.my/admin/hadiah",
+   "absHref": "https://prestasiplus.my/admin/hadiah",
+   "icon": "fa-cogs",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-098",
+   "kind": "link",
+   "tag": "a",
+   "text": "Timeline Saya",
+   "href": "https://prestasiplus.my/timeline",
+   "absHref": "https://prestasiplus.my/timeline",
+   "icon": "fa-camera",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-099",
+   "kind": "text",
+   "tag": "span",
+   "text": "Portal Guru",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-100",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard Guru",
+   "href": "https://prestasiplus.my/guru",
+   "absHref": "https://prestasiplus.my/guru",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-101",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelas Guru",
+   "href": "https://prestasiplus.my/guru/kelas",
+   "absHref": "https://prestasiplus.my/guru/kelas",
+   "icon": "fa-chalkboard-teacher",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-102",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sumbang Soalan",
+   "href": "https://prestasiplus.my/guru/soalan",
+   "absHref": "https://prestasiplus.my/guru/soalan",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-103",
+   "kind": "link",
+   "tag": "a",
+   "text": "Databank Soalan",
+   "href": "https://prestasiplus.my/guru/databank",
+   "absHref": "https://prestasiplus.my/guru/databank",
+   "icon": "fa-database",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-104",
+   "kind": "text",
+   "tag": "span",
+   "text": "PPD / JPN",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-105",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard PPD",
+   "href": "https://prestasiplus.my/ppd/dashboard",
+   "absHref": "https://prestasiplus.my/ppd/dashboard",
+   "icon": "fa-building-columns",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-106",
+   "kind": "link",
+   "tag": "a",
+   "text": "Statistik PPD",
+   "href": "https://prestasiplus.my/ppd/statistik-penggunaan",
+   "absHref": "https://prestasiplus.my/ppd/statistik-penggunaan",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-107",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ranking Kebangsaan",
+   "href": "https://prestasiplus.my/ppd/ranking-kebangsaan",
+   "absHref": "https://prestasiplus.my/ppd/ranking-kebangsaan",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-108",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard JPN",
+   "href": "https://prestasiplus.my/jpn/dashboard",
+   "absHref": "https://prestasiplus.my/jpn/dashboard",
+   "icon": "fa-building-flag",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-109",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ranking Kebangsaan JPN",
+   "href": "https://prestasiplus.my/jpn/ranking-kebangsaan",
+   "absHref": "https://prestasiplus.my/jpn/ranking-kebangsaan",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "Admin",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-111",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ke Admin Panel",
+   "href": "https://prestasiplus.my/admin",
+   "absHref": "https://prestasiplus.my/admin",
+   "icon": "fa-shield-halved",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-112",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan by Chapter",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-113",
+   "kind": "link",
+   "tag": "a",
+   "text": "Billing Dashboard",
+   "href": "https://prestasiplus.my/admin/billing",
+   "absHref": "https://prestasiplus.my/admin/billing",
+   "icon": "fa-chart-line",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-114",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Produk",
+   "href": "https://prestasiplus.my/admin/marketplace/products",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products",
+   "icon": "fa-store",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-115",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Penjual",
+   "href": "https://prestasiplus.my/admin/marketplace/sellers",
+   "absHref": "https://prestasiplus.my/admin/marketplace/sellers",
+   "icon": "fa-user-tie",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-116",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Hadiah",
+   "href": "https://prestasiplus.my/admin/hadiah",
+   "absHref": "https://prestasiplus.my/admin/hadiah",
+   "icon": "fa-gift",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-117",
+   "kind": "link",
+   "tag": "a",
+   "text": "Gamifikasi Guru",
+   "href": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "icon": "fa-chalkboard-teacher",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-118",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kertas Soalan Guru",
+   "href": "https://prestasiplus.my/admin/question-submissions",
+   "absHref": "https://prestasiplus.my/admin/question-submissions",
+   "icon": "fa-file-upload",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-119",
+   "kind": "link",
+   "tag": "a",
+   "text": "Profil Saya",
+   "href": "/profile",
+   "absHref": "https://prestasiplus.my/profile",
+   "icon": "fa-user-circle",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-120",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pakej 💎",
+   "href": "https://prestasiplus.my/pricing",
+   "absHref": "https://prestasiplus.my/pricing",
+   "icon": "fa-crown",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-121",
+   "kind": "badge",
+   "tag": "span",
+   "text": "💎",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-122",
+   "kind": "link",
+   "tag": "a",
+   "text": "Invois Saya",
+   "href": "https://prestasiplus.my/billing/invoices",
+   "absHref": "https://prestasiplus.my/billing/invoices",
+   "icon": "fa-file-invoice",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-123",
+   "kind": "link",
+   "tag": "a",
+   "text": "Panduan",
+   "href": "https://prestasiplus.my/panduan",
+   "absHref": "https://prestasiplus.my/panduan",
+   "icon": "fa-book",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-124",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bantuan",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-125",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tiket Bantuan",
+   "href": "https://prestasiplus.my/pusat-tuisyen/tiket",
+   "absHref": "https://prestasiplus.my/pusat-tuisyen/tiket",
+   "icon": "fa-life-ring",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-126",
+   "kind": "link",
+   "tag": "a",
+   "text": "Gambar Rajah 6,144",
+   "href": "https://prestasiplus.my/admin/soalan-gambar",
+   "absHref": "https://prestasiplus.my/admin/soalan-gambar",
+   "icon": "fa-images",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-127",
+   "kind": "badge",
+   "tag": "span",
+   "text": "6,144",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-128",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Tiket 2",
+   "href": "https://prestasiplus.my/admin/tiket",
+   "absHref": "https://prestasiplus.my/admin/tiket",
+   "icon": "fa-headset",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-129",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2",
+   "landmark": "nav",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-130",
+   "kind": "card",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-131",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-132",
+   "kind": "text",
+   "tag": "p",
+   "text": "<name>",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-133",
+   "kind": "text",
+   "tag": "p",
+   "text": "<masked>",
+   "landmark": "aside.sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-134",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/logout",
+   "absHref": "https://prestasiplus.my/logout",
+   "icon": "fa-sign-out-alt",
+   "iconOnly": true,
+   "landmark": "aside.sidebar",
+   "title": "Log Keluar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-135",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-bars",
+   "iconOnly": true,
+   "landmark": "header.topbar",
+   "alpine": {
+    "@click": "sidebarOpen = !sidebarOpen"
+   },
+   "title": "Toggle Sidebar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-136",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Dashboard",
+   "landmark": "header.topbar",
+   "status": "visible-default",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-137",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat datang kembali",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "256",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "domId": "jb-coin-value",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "koin",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "8",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "domId": "jb-mata-value",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "mata",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-142",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-143",
+   "kind": "text",
+   "tag": "span",
+   "text": "hari 🔥",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-144",
+   "kind": "link",
+   "tag": "a",
+   "text": "99+",
+   "href": "https://prestasiplus.my/notifikasi",
+   "absHref": "https://prestasiplus.my/notifikasi",
+   "icon": "fa-bell",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "title": "Notifikasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-145",
+   "kind": "badge",
+   "tag": "span",
+   "text": "99+",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "domId": "notif-badge",
+   "status": "visible-default",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-146",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-147",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/logout",
+   "absHref": "https://prestasiplus.my/logout",
+   "icon": "fa-sign-out-alt",
+   "iconOnly": true,
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "title": "Log Keluar",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-148",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-bars",
+   "iconOnly": true,
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "alpine": {
+    "onclick": "window.dispatchEvent(new CustomEvent('toggle-drawer'))"
+   },
+   "ariaLabel": "Menu",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-149",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "iconOnly": true,
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-150",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "landmark": "header.topbar",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "256",
+   "section": "Dashboard",
+   "domId": "jb-coin-value-m",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-152",
+   "kind": "text",
+   "tag": "span",
+   "text": "koin",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-153",
+   "kind": "text",
+   "tag": "span",
+   "text": "8",
+   "section": "Dashboard",
+   "domId": "jb-mata-value-m",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-154",
+   "kind": "text",
+   "tag": "span",
+   "text": "mata",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-155",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-156",
+   "kind": "text",
+   "tag": "span",
+   "text": "🔥",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-157",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS. Hakcipta Terpelihara",
+   "landmark": "footer.topbar",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-158",
+   "kind": "text",
+   "tag": "span",
+   "text": "✨",
+   "landmark": "footer.topbar",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-159",
+   "kind": "text",
+   "tag": "p",
+   "text": "Didikan penuh dari Malaysia",
+   "landmark": "footer.topbar",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-160",
+   "kind": "text",
+   "tag": "span",
+   "text": "❤️",
+   "landmark": "footer.topbar",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-161",
+   "kind": "text",
+   "tag": "span",
+   "text": "🇲🇾",
+   "landmark": "footer.topbar",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-162",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "@click": "drawerOpen = false"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "opacity:0",
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-163",
+   "kind": "modal",
+   "tag": "div",
+   "text": "<name>",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-164",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/logo-custom.png",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-165",
+   "kind": "text",
+   "tag": "p",
+   "text": "Platform Latih Tubi Nasional",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-166",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "@click": "drawerOpen = false"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-167",
+   "kind": "image",
+   "tag": "img",
+   "alt": "<person>",
+   "src": "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-168",
+   "kind": "text",
+   "tag": "p",
+   "text": "<name>",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-169",
+   "kind": "text",
+   "tag": "p",
+   "text": "admin",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-170",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-home",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-171",
+   "kind": "modal",
+   "tag": "div",
+   "text": "SPM",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-172",
+   "kind": "text",
+   "tag": "span",
+   "text": "SPM",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-173",
+   "kind": "link",
+   "tag": "a",
+   "text": "SPM SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-graduation-cap",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-174",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SPM",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-175",
+   "kind": "link",
+   "tag": "a",
+   "text": "Headcount",
+   "href": "https://prestasiplus.my/headcount",
+   "absHref": "https://prestasiplus.my/headcount",
+   "icon": "fa-chart-line",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-176",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prestasi",
+   "href": "https://prestasiplus.my/prestasi",
+   "absHref": "https://prestasiplus.my/prestasi",
+   "icon": "fa-chart-bar",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-177",
+   "kind": "link",
+   "tag": "a",
+   "text": "Analisa Item",
+   "href": "https://prestasiplus.my/analisa-item",
+   "absHref": "https://prestasiplus.my/analisa-item",
+   "icon": "fa-magnifying-glass-chart",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-178",
+   "kind": "link",
+   "tag": "a",
+   "text": "Amaran Awal",
+   "href": "https://prestasiplus.my/amaran",
+   "absHref": "https://prestasiplus.my/amaran",
+   "icon": "fa-exclamation-triangle",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-179",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kombo",
+   "href": "https://prestasiplus.my/kombo",
+   "absHref": "https://prestasiplus.my/kombo",
+   "icon": "fa-fire",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-180",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cikgu Alesa AI",
+   "href": "https://prestasiplus.my/cikgu",
+   "absHref": "https://prestasiplus.my/cikgu",
+   "icon": "fa-robot",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-181",
+   "kind": "badge",
+   "tag": "span",
+   "text": "AI",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-182",
+   "kind": "link",
+   "tag": "a",
+   "text": "RPH",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "icon": "fa-file-alt",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-183",
+   "kind": "link",
+   "tag": "a",
+   "text": "PBD Auto-Tag",
+   "href": "https://prestasiplus.my/cikgu/pbd",
+   "absHref": "https://prestasiplus.my/cikgu/pbd",
+   "icon": "fa-clipboard-check",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-184",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mark Karangan",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-185",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan Mingguan",
+   "href": "https://prestasiplus.my/laporan-mingguan",
+   "absHref": "https://prestasiplus.my/laporan-mingguan",
+   "icon": "fa-file-lines",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-186",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pembetulan",
+   "href": "https://prestasiplus.my/pembetulan",
+   "absHref": "https://prestasiplus.my/pembetulan",
+   "icon": "fa-arrows-rotate",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-187",
+   "kind": "link",
+   "tag": "a",
+   "text": "Penguasaan",
+   "href": "https://prestasiplus.my/penguasaan",
+   "absHref": "https://prestasiplus.my/penguasaan",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-188",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan Soalan",
+   "href": "https://prestasiplus.my/laporan-soalan",
+   "absHref": "https://prestasiplus.my/laporan-soalan",
+   "icon": "fa-flag",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-189",
+   "kind": "link",
+   "tag": "a",
+   "text": "Command Center LIVE",
+   "href": "https://prestasiplus.my/ppd/command-center",
+   "absHref": "https://prestasiplus.my/ppd/command-center",
+   "target": "_blank",
+   "icon": "fa-satellite-dish",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-190",
+   "kind": "badge",
+   "tag": "span",
+   "text": "LIVE",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-191",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard PPD",
+   "href": "https://prestasiplus.my/ppd/dashboard",
+   "absHref": "https://prestasiplus.my/ppd/dashboard",
+   "icon": "fa-building-columns",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-192",
+   "kind": "link",
+   "tag": "a",
+   "text": "Statistik Penggunaan",
+   "href": "https://prestasiplus.my/ppd/statistik-penggunaan",
+   "absHref": "https://prestasiplus.my/ppd/statistik-penggunaan",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-193",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ranking Kebangsaan",
+   "href": "https://prestasiplus.my/ppd/ranking-kebangsaan",
+   "absHref": "https://prestasiplus.my/ppd/ranking-kebangsaan",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-194",
+   "kind": "link",
+   "tag": "a",
+   "text": "Benchmark Sekolah",
+   "href": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "absHref": "https://prestasiplus.my/ppd/benchmark-sekolah",
+   "icon": "fa-ranking-star",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-195",
+   "kind": "link",
+   "tag": "a",
+   "text": "Peta Haba",
+   "href": "https://prestasiplus.my/ppd/peta-haba",
+   "absHref": "https://prestasiplus.my/ppd/peta-haba",
+   "icon": "fa-map-location-dot",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-196",
+   "kind": "link",
+   "tag": "a",
+   "text": "Export Laporan",
+   "href": "https://prestasiplus.my/ppd/export-laporan",
+   "absHref": "https://prestasiplus.my/ppd/export-laporan",
+   "icon": "fa-file-export",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-197",
+   "kind": "link",
+   "tag": "a",
+   "text": "Leaderboard Sekolah",
+   "href": "https://prestasiplus.my/ppd/leaderboard-sekolah",
+   "absHref": "https://prestasiplus.my/ppd/leaderboard-sekolah",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-198",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard JPN",
+   "href": "https://prestasiplus.my/jpn/dashboard",
+   "absHref": "https://prestasiplus.my/jpn/dashboard",
+   "icon": "fa-building-flag",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-199",
+   "kind": "link",
+   "tag": "a",
+   "text": "Statistik Penggunaan",
+   "href": "https://prestasiplus.my/jpn/statistik-penggunaan",
+   "absHref": "https://prestasiplus.my/jpn/statistik-penggunaan",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-200",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ranking Kebangsaan",
+   "href": "https://prestasiplus.my/jpn/ranking-kebangsaan",
+   "absHref": "https://prestasiplus.my/jpn/ranking-kebangsaan",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-201",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Pembelajaran",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-202",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pembelajaran",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-203",
+   "kind": "link",
+   "tag": "a",
+   "text": "Latih Tubi",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-brain",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-204",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan by Chapter",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-205",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Berstruktur",
+   "href": "https://prestasiplus.my/latihan-berstruktur",
+   "absHref": "https://prestasiplus.my/latihan-berstruktur",
+   "icon": "fa-list-ol",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-206",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedudukan",
+   "href": "https://prestasiplus.my/ranking",
+   "absHref": "https://prestasiplus.my/ranking",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-207",
+   "kind": "link",
+   "tag": "a",
+   "text": "PKSK PRO",
+   "href": "https://prestasiplus.my/pksk",
+   "absHref": "https://prestasiplus.my/pksk",
+   "icon": "fa-shield-halved",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-208",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PRO",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-209",
+   "kind": "link",
+   "tag": "a",
+   "text": "Artikel",
+   "href": "https://prestasiplus.my/artikel",
+   "absHref": "https://prestasiplus.my/artikel",
+   "icon": "fa-newspaper",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-210",
+   "kind": "link",
+   "tag": "a",
+   "text": "Video",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "icon": "fa-play-circle",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-211",
+   "kind": "link",
+   "tag": "a",
+   "text": "Permainan 🎮",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "icon": "fa-gamepad",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-212",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🎮",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-213",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cabutan Bertuah 🎟️",
+   "href": "https://prestasiplus.my/cabutan",
+   "absHref": "https://prestasiplus.my/cabutan",
+   "icon": "fa-ticket",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-214",
+   "kind": "badge",
+   "tag": "span",
+   "text": "🎟️",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-215",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tournament",
+   "href": "https://prestasiplus.my/tournament",
+   "absHref": "https://prestasiplus.my/tournament",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-216",
+   "kind": "link",
+   "tag": "a",
+   "text": "Topik",
+   "href": "https://prestasiplus.my/topics",
+   "absHref": "https://prestasiplus.my/topics",
+   "icon": "fa-book-open",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-217",
+   "kind": "link",
+   "tag": "a",
+   "text": "Peta Belajar",
+   "href": "https://prestasiplus.my/peta-belajar",
+   "absHref": "https://prestasiplus.my/peta-belajar",
+   "icon": "fa-map",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-218",
+   "kind": "link",
+   "tag": "a",
+   "text": "Command Center LIVE",
+   "href": "https://prestasiplus.my/guru/command-center",
+   "absHref": "https://prestasiplus.my/guru/command-center",
+   "target": "_blank",
+   "icon": "fa-satellite-dish",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-219",
+   "kind": "badge",
+   "tag": "span",
+   "text": "LIVE",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-220",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pusat AI",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-221",
+   "kind": "badge",
+   "tag": "span",
+   "text": "NEW",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-222",
+   "kind": "text",
+   "tag": "span",
+   "text": "🤖 Cikgu Alesa AI",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-223",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cikgu Alesa Chat AI",
+   "href": "https://prestasiplus.my/cikgu",
+   "absHref": "https://prestasiplus.my/cikgu",
+   "icon": "fa-robot",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-224",
+   "kind": "badge",
+   "tag": "span",
+   "text": "AI",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-225",
+   "kind": "text",
+   "tag": "span",
+   "text": "✨ Visi & Pertandingan",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-226",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sekolah Bersaing NEW",
+   "href": "https://prestasiplus.my/sekolah-bersaing",
+   "absHref": "https://prestasiplus.my/sekolah-bersaing",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-227",
+   "kind": "badge",
+   "tag": "span",
+   "text": "NEW",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-228",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tetapan Peribadi",
+   "href": "https://prestasiplus.my/tetapan",
+   "absHref": "https://prestasiplus.my/tetapan",
+   "icon": "fa-cog",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-229",
+   "kind": "text",
+   "tag": "span",
+   "text": "🏆 Bilik Duta · 🔒 PREVIEW",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-230",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bilik Duta DEV",
+   "href": "https://prestasiplus.my/bilik-duta",
+   "absHref": "https://prestasiplus.my/bilik-duta",
+   "icon": "fa-crown",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-231",
+   "kind": "badge",
+   "tag": "span",
+   "text": "DEV",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-232",
+   "kind": "text",
+   "tag": "span",
+   "text": "🤖 AI Pintar (Pelajar)",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-233",
+   "kind": "link",
+   "tag": "a",
+   "text": "Wellbeing Alerts",
+   "href": "https://prestasiplus.my/wellbeing/alerts",
+   "absHref": "https://prestasiplus.my/wellbeing/alerts",
+   "icon": "fa-triangle-exclamation",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-234",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kamus AI",
+   "href": "https://prestasiplus.my/pusat-ai/kamus",
+   "absHref": "https://prestasiplus.my/pusat-ai/kamus",
+   "icon": "fa-book-open",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-235",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pendamping Motivasi",
+   "href": "https://prestasiplus.my/pusat-ai/pendamping",
+   "absHref": "https://prestasiplus.my/pusat-ai/pendamping",
+   "icon": "fa-heart",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-236",
+   "kind": "link",
+   "tag": "a",
+   "text": "Doa & Motivasi",
+   "href": "https://prestasiplus.my/pusat-ai/doa",
+   "absHref": "https://prestasiplus.my/pusat-ai/doa",
+   "icon": "fa-mosque",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-237",
+   "kind": "text",
+   "tag": "span",
+   "text": "🎯 AI Pintar (Guru)",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-238",
+   "kind": "link",
+   "tag": "a",
+   "text": "Aktiviti Advisor",
+   "href": "https://prestasiplus.my/pusat-ai/aktiviti",
+   "absHref": "https://prestasiplus.my/pusat-ai/aktiviti",
+   "icon": "fa-lightbulb",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-239",
+   "kind": "link",
+   "tag": "a",
+   "text": "Whiteboard → Quiz",
+   "href": "https://prestasiplus.my/pusat-ai/whiteboard",
+   "absHref": "https://prestasiplus.my/pusat-ai/whiteboard",
+   "icon": "fa-clipboard-question",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-240",
+   "kind": "link",
+   "tag": "a",
+   "text": "RPH (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/rph",
+   "absHref": "https://prestasiplus.my/cikgu/rph",
+   "icon": "fa-clipboard-list",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-241",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semak Karangan (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/essay",
+   "absHref": "https://prestasiplus.my/cikgu/essay",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-242",
+   "kind": "link",
+   "tag": "a",
+   "text": "PBD (Cikgu Alesa)",
+   "href": "https://prestasiplus.my/cikgu/pbd",
+   "absHref": "https://prestasiplus.my/cikgu/pbd",
+   "icon": "fa-tasks",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-243",
+   "kind": "text",
+   "tag": "span",
+   "text": "🛡️ Kawalan Kualiti",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-244",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semakan Nota Master",
+   "href": "/admin/master-notes",
+   "absHref": "https://prestasiplus.my/admin/master-notes",
+   "icon": "fa-shield-alt",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-245",
+   "kind": "link",
+   "tag": "a",
+   "text": "Audit Log",
+   "href": "https://prestasiplus.my/admin/audit-log",
+   "absHref": "https://prestasiplus.my/admin/audit-log",
+   "icon": "fa-clipboard-check",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-246",
+   "kind": "modal",
+   "tag": "div",
+   "text": "HARIAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-247",
+   "kind": "text",
+   "tag": "span",
+   "text": "HARIAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-248",
+   "kind": "link",
+   "tag": "a",
+   "text": "Dashboard Guru",
+   "href": "https://prestasiplus.my/guru",
+   "absHref": "https://prestasiplus.my/guru",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-249",
+   "kind": "link",
+   "tag": "a",
+   "text": "Misi Harian",
+   "href": "https://prestasiplus.my/guru/misi-harian",
+   "absHref": "https://prestasiplus.my/guru/misi-harian",
+   "icon": "fa-rocket",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-250",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan by Chapter",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-251",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelas Saya",
+   "href": "https://prestasiplus.my/guru/kelas",
+   "absHref": "https://prestasiplus.my/guru/kelas",
+   "icon": "fa-chalkboard-teacher",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-252",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pelajar Saya",
+   "href": "https://prestasiplus.my/guru/pelajar",
+   "absHref": "https://prestasiplus.my/guru/pelajar",
+   "icon": "fa-user-graduate",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-253",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kehadiran Digital",
+   "href": "https://prestasiplus.my/guru/kehadiran-digital",
+   "absHref": "https://prestasiplus.my/guru/kehadiran-digital",
+   "icon": "fa-clipboard-check",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-254",
+   "kind": "modal",
+   "tag": "div",
+   "text": "PENGAJARAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-255",
+   "kind": "text",
+   "tag": "span",
+   "text": "PENGAJARAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-256",
+   "kind": "link",
+   "tag": "a",
+   "text": "Jadual Belajar",
+   "href": "https://prestasiplus.my/guru/jadual-belajar",
+   "absHref": "https://prestasiplus.my/guru/jadual-belajar",
+   "icon": "fa-calendar-alt",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-257",
+   "kind": "link",
+   "tag": "a",
+   "text": "Broadcast",
+   "href": "https://prestasiplus.my/guru/broadcast",
+   "absHref": "https://prestasiplus.my/guru/broadcast",
+   "icon": "fa-bullhorn",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-258",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelas Live",
+   "href": "https://prestasiplus.my/guru/live-kelas",
+   "absHref": "https://prestasiplus.my/guru/live-kelas",
+   "icon": "fa-broadcast-tower",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-259",
+   "kind": "modal",
+   "tag": "div",
+   "text": "PENILAIAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-260",
+   "kind": "text",
+   "tag": "span",
+   "text": "PENILAIAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-261",
+   "kind": "link",
+   "tag": "a",
+   "text": "Headcount",
+   "href": "https://prestasiplus.my/headcount",
+   "absHref": "https://prestasiplus.my/headcount",
+   "icon": "fa-chart-line",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-262",
+   "kind": "link",
+   "tag": "a",
+   "text": "Prestasi",
+   "href": "https://prestasiplus.my/prestasi/kelas",
+   "absHref": "https://prestasiplus.my/prestasi/kelas",
+   "icon": "fa-chart-bar",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-263",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan",
+   "href": "https://prestasiplus.my/guru/laporan",
+   "absHref": "https://prestasiplus.my/guru/laporan",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-264",
+   "kind": "link",
+   "tag": "a",
+   "text": "Amaran Awal",
+   "href": "https://prestasiplus.my/amaran",
+   "absHref": "https://prestasiplus.my/amaran",
+   "icon": "fa-exclamation-triangle",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-265",
+   "kind": "modal",
+   "tag": "div",
+   "text": "ANALITIK",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-266",
+   "kind": "text",
+   "tag": "span",
+   "text": "ANALITIK",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-267",
+   "kind": "link",
+   "tag": "a",
+   "text": "Monitoring",
+   "href": "https://prestasiplus.my/guru/monitoring",
+   "absHref": "https://prestasiplus.my/guru/monitoring",
+   "icon": "fa-binoculars",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-268",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kirkpatrick",
+   "icon": "fa-microscope",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "@click": "kirkGuruOpen = !kirkGuruOpen"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-269",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ringkasan",
+   "href": "https://prestasiplus.my/guru/kirkpatrick",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick",
+   "icon": "fa-home",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-270",
+   "kind": "link",
+   "tag": "a",
+   "text": "T1: Reaksi",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/reaction",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/reaction",
+   "icon": "fa-smile",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-271",
+   "kind": "link",
+   "tag": "a",
+   "text": "T2: Pembelajaran",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/learning",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/learning",
+   "icon": "fa-graduation-cap",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-272",
+   "kind": "link",
+   "tag": "a",
+   "text": "T3: Tingkah Laku",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/behavior",
+   "icon": "fa-running",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-273",
+   "kind": "link",
+   "tag": "a",
+   "text": "T4: Hasil",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/results",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/results",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-274",
+   "kind": "link",
+   "tag": "a",
+   "text": "Rantaian Impak",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/chain",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/chain",
+   "icon": "fa-link",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-275",
+   "kind": "link",
+   "tag": "a",
+   "text": "Intervensi",
+   "href": "https://prestasiplus.my/guru/kirkpatrick/interventions",
+   "absHref": "https://prestasiplus.my/guru/kirkpatrick/interventions",
+   "icon": "fa-hand-holding-medical",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show",
+    "display:none"
+   ],
+   "showWhen": "kirkGuruOpen"
+  },
+  {
+   "id": "EL-M21-SHU-276",
+   "kind": "link",
+   "tag": "a",
+   "text": "Analisis Item",
+   "href": "https://prestasiplus.my/guru/analisis-item",
+   "absHref": "https://prestasiplus.my/guru/analisis-item",
+   "icon": "fa-chart-pie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-277",
+   "kind": "link",
+   "tag": "a",
+   "text": "Perbandingan Kelas",
+   "href": "https://prestasiplus.my/guru/perbandingan-kelas",
+   "absHref": "https://prestasiplus.my/guru/perbandingan-kelas",
+   "icon": "fa-balance-scale",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-278",
+   "kind": "link",
+   "tag": "a",
+   "text": "Laporan Mingguan",
+   "href": "https://prestasiplus.my/guru/laporan-mingguan-kelas",
+   "absHref": "https://prestasiplus.my/guru/laporan-mingguan-kelas",
+   "icon": "fa-calendar-week",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-279",
+   "kind": "modal",
+   "tag": "div",
+   "text": "BANK SOALAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-280",
+   "kind": "text",
+   "tag": "span",
+   "text": "BANK SOALAN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-281",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sumbang Soalan",
+   "href": "https://prestasiplus.my/guru/soalan",
+   "absHref": "https://prestasiplus.my/guru/soalan",
+   "icon": "fa-pen-fancy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-282",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan & Rujukan",
+   "href": "https://prestasiplus.my/guru/soalan-guru",
+   "absHref": "https://prestasiplus.my/guru/soalan-guru",
+   "icon": "fa-book-open",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-283",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan Berstruktur",
+   "href": "https://prestasiplus.my/guru/soalan-berstruktur",
+   "absHref": "https://prestasiplus.my/guru/soalan-berstruktur",
+   "icon": "fa-list-ol",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-284",
+   "kind": "link",
+   "tag": "a",
+   "text": "Databank Soalan",
+   "href": "https://prestasiplus.my/guru/databank",
+   "absHref": "https://prestasiplus.my/guru/databank",
+   "icon": "fa-database",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-285",
+   "kind": "link",
+   "tag": "a",
+   "text": "Set Soalan",
+   "href": "https://prestasiplus.my/guru/set-soalan",
+   "absHref": "https://prestasiplus.my/guru/set-soalan",
+   "icon": "fa-clipboard-list",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-286",
+   "kind": "modal",
+   "tag": "div",
+   "text": "LAIN-LAIN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-287",
+   "kind": "text",
+   "tag": "span",
+   "text": "LAIN-LAIN",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-288",
+   "kind": "link",
+   "tag": "a",
+   "text": "Syiling & Ganjaran",
+   "href": "https://prestasiplus.my/guru/gamifikasi",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi",
+   "icon": "fa-coins",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-289",
+   "kind": "link",
+   "tag": "a",
+   "text": "Sumbang Artikel",
+   "href": "https://prestasiplus.my/guru/artikel",
+   "absHref": "https://prestasiplus.my/guru/artikel",
+   "icon": "fa-newspaper",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-290",
+   "kind": "link",
+   "tag": "a",
+   "text": "Video",
+   "href": "https://prestasiplus.my/video",
+   "absHref": "https://prestasiplus.my/video",
+   "icon": "fa-play-circle",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-291",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kelas Saya BARU",
+   "href": "https://prestasiplus.my/kelas-saya",
+   "absHref": "https://prestasiplus.my/kelas-saya",
+   "icon": "fa-book-reader",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-292",
+   "kind": "badge",
+   "tag": "span",
+   "text": "BARU",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-293",
+   "kind": "link",
+   "tag": "a",
+   "text": "Set Soalan Guru",
+   "href": "https://prestasiplus.my/set-soalan-saya",
+   "absHref": "https://prestasiplus.my/set-soalan-saya",
+   "icon": "fa-clipboard-list",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-294",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Gamifikasi",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-295",
+   "kind": "text",
+   "tag": "span",
+   "text": "Gamifikasi",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-296",
+   "kind": "link",
+   "tag": "a",
+   "text": "Syiling & Token",
+   "href": "https://prestasiplus.my/gamification",
+   "absHref": "https://prestasiplus.my/gamification",
+   "icon": "fa-coins",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-297",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tukar Token",
+   "href": "https://prestasiplus.my/gamification/convert",
+   "absHref": "https://prestasiplus.my/gamification/convert",
+   "icon": "fa-exchange-alt",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-298",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cabaran Harian",
+   "href": "https://prestasiplus.my/gamification/challenges",
+   "absHref": "https://prestasiplus.my/gamification/challenges",
+   "icon": "fa-bullseye",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-299",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kedai Hadiah",
+   "href": "https://prestasiplus.my/gamification/rewards",
+   "absHref": "https://prestasiplus.my/gamification/rewards",
+   "icon": "fa-gift",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-300",
+   "kind": "link",
+   "tag": "a",
+   "text": "Marketplace",
+   "href": "https://prestasiplus.my/marketplace",
+   "absHref": "https://prestasiplus.my/marketplace",
+   "icon": "fa-shopping-bag",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-301",
+   "kind": "link",
+   "tag": "a",
+   "text": "Papan Pendahulu",
+   "href": "https://prestasiplus.my/gamification/leaderboard",
+   "absHref": "https://prestasiplus.my/gamification/leaderboard",
+   "icon": "fa-trophy",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-302",
+   "kind": "link",
+   "tag": "a",
+   "text": "Pencapaian",
+   "href": "https://prestasiplus.my/gamification/achievements",
+   "absHref": "https://prestasiplus.my/gamification/achievements",
+   "icon": "fa-medal",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-303",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kotak Misteri",
+   "href": "https://prestasiplus.my/gamification/mystery-box",
+   "absHref": "https://prestasiplus.my/gamification/mystery-box",
+   "icon": "fa-box-open",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-304",
+   "kind": "link",
+   "tag": "a",
+   "text": "Rujuk Kawan",
+   "href": "https://prestasiplus.my/gamification/referral",
+   "absHref": "https://prestasiplus.my/gamification/referral",
+   "icon": "fa-user-plus",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-305",
+   "kind": "link",
+   "tag": "a",
+   "text": "Timeline Saya",
+   "href": "https://prestasiplus.my/timeline",
+   "absHref": "https://prestasiplus.my/timeline",
+   "icon": "fa-camera",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-306",
+   "kind": "link",
+   "tag": "a",
+   "text": "Invois Saya",
+   "href": "https://prestasiplus.my/billing/invoices",
+   "absHref": "https://prestasiplus.my/billing/invoices",
+   "icon": "fa-file-invoice",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-307",
+   "kind": "link",
+   "tag": "a",
+   "text": "Ke Admin Panel",
+   "href": "https://prestasiplus.my/admin",
+   "absHref": "https://prestasiplus.my/admin",
+   "icon": "fa-shield-halved",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-308",
+   "kind": "link",
+   "tag": "a",
+   "text": "Soalan by Chapter",
+   "href": "https://prestasiplus.my/practice/chapter",
+   "absHref": "https://prestasiplus.my/practice/chapter",
+   "icon": "fa-layer-group",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-309",
+   "kind": "link",
+   "tag": "a",
+   "text": "Billing Dashboard",
+   "href": "https://prestasiplus.my/admin/billing",
+   "absHref": "https://prestasiplus.my/admin/billing",
+   "icon": "fa-chart-line",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-310",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Produk",
+   "href": "https://prestasiplus.my/admin/marketplace/products",
+   "absHref": "https://prestasiplus.my/admin/marketplace/products",
+   "icon": "fa-store",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-311",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Penjual",
+   "href": "https://prestasiplus.my/admin/marketplace/sellers",
+   "absHref": "https://prestasiplus.my/admin/marketplace/sellers",
+   "icon": "fa-user-tie",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-312",
+   "kind": "link",
+   "tag": "a",
+   "text": "Urus Hadiah",
+   "href": "https://prestasiplus.my/admin/hadiah",
+   "absHref": "https://prestasiplus.my/admin/hadiah",
+   "icon": "fa-gift",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-313",
+   "kind": "link",
+   "tag": "a",
+   "text": "Gamifikasi Guru",
+   "href": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "absHref": "https://prestasiplus.my/admin/gamifikasi/guru",
+   "icon": "fa-chalkboard-teacher",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-314",
+   "kind": "link",
+   "tag": "a",
+   "text": "Profil Saya",
+   "href": "/profile",
+   "absHref": "https://prestasiplus.my/profile",
+   "icon": "fa-user-circle",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-315",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tetapan",
+   "href": "/settings",
+   "absHref": "https://prestasiplus.my/settings",
+   "icon": "fa-cog",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-316",
+   "kind": "link",
+   "tag": "a",
+   "text": "Panduan",
+   "href": "https://prestasiplus.my/pusat-tuisyen/panduan",
+   "absHref": "https://prestasiplus.my/pusat-tuisyen/panduan",
+   "icon": "fa-book",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-317",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Keluar",
+   "href": "https://prestasiplus.my/logout",
+   "absHref": "https://prestasiplus.my/logout",
+   "icon": "fa-sign-out-alt",
+   "landmark": "nav",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-318",
+   "kind": "text",
+   "tag": "p",
+   "text": "© 2026 PRESTASIPLUS 🇲🇾",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "offscreen"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-319",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pasang PRESTASIPLUS",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-320",
+   "kind": "text",
+   "tag": "p",
+   "text": "Akses pantas dari skrin utama",
+   "section": "Mohon Keluarga Angkat",
+   "domId": "pwa-install-subtitle",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-321",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Pasang",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "pwaInstallApp()"
+   },
+   "domId": "pwa-install-btn",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-322",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "10",
+   "icon": "fa-times",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "pwaCloseBanner()"
+   },
+   "title": "Tutup",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-323",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pasang PRESTASIPLUS",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-324",
+   "kind": "image",
+   "tag": "img",
+   "alt": "PRESTASIPLUS",
+   "src": "/images/icons/icon-192x192.png",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-325",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-326",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ikuti langkah berikut:",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-327",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-328",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tekan ikon Share",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-329",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ikon di bawah skrin Safari",
+   "icon": "fa-share-from-square",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-330",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-331",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih \"Add to Home Screen\"",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-332",
+   "kind": "text",
+   "tag": "p",
+   "text": "Scroll ke bawah, tekan Add to Home Screen",
+   "icon": "fa-plus-square",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-333",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-334",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tekan \"Add\"",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-335",
+   "kind": "text",
+   "tag": "p",
+   "text": "PRESTASIPLUS akan muncul di skrin utama anda",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-336",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Faham!",
+   "section": "Pasang PRESTASIPLUS",
+   "alpine": {
+    "onclick": "document.getElementById('ios-install-modal').style.display='none'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-337",
+   "kind": "link",
+   "tag": "a",
+   "text": "Home",
+   "href": "https://prestasiplus.my/dashboard",
+   "absHref": "https://prestasiplus.my/dashboard",
+   "icon": "fa-home",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-338",
+   "kind": "link",
+   "tag": "a",
+   "text": "SPM",
+   "href": "https://prestasiplus.my/spm",
+   "absHref": "https://prestasiplus.my/spm",
+   "icon": "fa-graduation-cap",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-339",
+   "kind": "link",
+   "tag": "a",
+   "text": "Game",
+   "href": "https://prestasiplus.my/permainan",
+   "absHref": "https://prestasiplus.my/permainan",
+   "icon": "fa-gamepad",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-340",
+   "kind": "link",
+   "tag": "a",
+   "text": "Topik",
+   "href": "https://prestasiplus.my/topics",
+   "absHref": "https://prestasiplus.my/topics",
+   "icon": "fa-book-open",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-341",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Chat",
+   "icon": "fa-comments",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "alpine": {
+    "onclick": "window.dispatchEvent(new CustomEvent('toggle-chatbot'))"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-342",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Lagi",
+   "icon": "fa-bars",
+   "landmark": "nav.bottom-nav",
+   "section": "Pasang PRESTASIPLUS",
+   "alpine": {
+    "onclick": "window.dispatchEvent(new CustomEvent('toggle-drawer'))"
+   },
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-343",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pembantu PrestasiPlus",
+   "section": "Pasang PRESTASIPLUS",
+   "alpine": {
+    "x-show": "open",
+    "x-transition:enter": "transition ease-out duration-300",
+    "x-transition:enter-start": "opacity-0 translate-y-4 scale-95",
+    "x-transition:enter-end": "opacity-100 translate-y-0 scale-100",
+    "x-transition:leave": "transition ease-in duration-200",
+    "x-transition:leave-start": "opacity-100 translate-y-0 scale-100",
+    "x-transition:leave-end": "opacity-0 translate-y-4 scale-95"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M21-SHU-344",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pembantu PrestasiPlus",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M21-SHU-345",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sedia membantu anda",
+   "section": "Pasang PRESTASIPLUS",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M21-SHU-346",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "section": "Pasang PRESTASIPLUS",
+   "alpine": {
+    "@click": "open = false"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M21-SHU-347",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-348",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sila masukkan maklumat anda sebelum memulakan perbualan.",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-349",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [],
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@submit.prevent": "submitLead()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-350",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama",
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-351",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama",
+   "placeholder": "Nama penuh anda",
+   "required": true,
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "x-model": "leadName"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-352",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Telefon",
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-353",
+   "kind": "input",
+   "tag": "input",
+   "type": "tel",
+   "label": "No. Telefon",
+   "placeholder": "cth: 012-3456789",
+   "required": true,
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "x-model": "leadPhone"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-354",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Mula Berbual",
+   "icon": "fa-comments",
+   "disabled": true,
+   "form": "(no action)",
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "alpine": {
+    ":disabled": "!leadName.trim() || !leadPhone.trim()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-355",
+   "kind": "card",
+   "tag": "div",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=messages.length === 0 && !loading"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-356",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat datang, ! Saya Pembantu Maya PrestasiPlus. Bagaimana saya boleh membantu anda hari ini?",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=messages.length === 0 && !loading"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-357",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Apakah PrestasiPlus?",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Apakah PrestasiPlus?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=messages.length === 0 && !loading"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-358",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cara mendaftar",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Bagaimana cara mendaftar?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=messages.length === 0 && !loading"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-359",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Harga langganan",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Berapakah harga langganan?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=messages.length === 0 && !loading"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-360",
+   "kind": "card",
+   "tag": "div",
+   "text": "<name>",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-361",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selamat datang, ! Saya Pembantu Maya PrestasiPlus. Bagaimana saya boleh membantu anda hari ini?",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-362",
+   "kind": "text",
+   "tag": "span",
+   "text": "<name>",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "x-text": "leadName"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-363",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Apakah PrestasiPlus?",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Apakah PrestasiPlus?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-364",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cara mendaftar",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Bagaimana cara mendaftar?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-365",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Harga langganan",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "sendQuickMessage('Berapakah harga langganan?')"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-366",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-thumbs-up",
+   "iconOnly": true,
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "rateMessage(msg, 1)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=msg.role === 'assistant' && msg.id && !streaming"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-367",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-thumbs-down",
+   "iconOnly": true,
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "rateMessage(msg, 0)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=msg.role === 'assistant' && msg.id && !streaming"
+   ]
+  },
+  {
+   "id": "EL-M21-SHU-368",
+   "kind": "form",
+   "tag": "form",
+   "method": "GET",
+   "fields": [],
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@submit.prevent": "sendMessage()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-369",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Taip mesej anda...",
+   "rows": "1",
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "alpine": {
+    "x-ref": "chatInput",
+    "x-model": "input",
+    "@keydown.enter.prevent": "if(!$event.shiftKey) sendMessage()",
+    ":disabled": "streaming",
+    "@input": "$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 80) + 'px'"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-370",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-paper-plane",
+   "disabled": true,
+   "form": "(no action)",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Selamat Datang!",
+   "alpine": {
+    ":disabled": "!input.trim() || streaming"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-371",
+   "kind": "text",
+   "tag": "p",
+   "text": "Dikuasakan oleh AI · Jawapan mungkin tidak sentiasa tepat",
+   "section": "Selamat Datang!",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "leadCaptured"
+  },
+  {
+   "id": "EL-M21-SHU-372",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-comments",
+   "iconOnly": true,
+   "section": "Selamat Datang!",
+   "alpine": {
+    "@click": "toggleChat()",
+    "x-show": "!fabHidden || open",
+    "x-transition:enter": "transition ease-out duration-300",
+    "x-transition:enter-start": "opacity-0 scale-50",
+    "x-transition:enter-end": "opacity-100 scale-100",
+    "x-transition:leave": "transition ease-in duration-300",
+    "x-transition:leave-start": "opacity-100 scale-100",
+    "x-transition:leave-end": "opacity-0 scale-50"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "S6:default__1280",
+    "S6:example-2__1280",
+    "S6:default__375",
+    "S6:default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!fabHidden || open"
+  }
+ ]
+}

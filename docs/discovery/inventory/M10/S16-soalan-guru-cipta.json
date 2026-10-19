@@ -1,0 +1,5180 @@
+{
+ "screen": "S16",
+ "key": "S16-soalan-guru-cipta",
+ "route": "/guru/soalan-guru/cipta",
+ "name": "Soalan & Rujukan — Portal Guru (create)",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:30.723Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 189,
+  "visibleDefault": 120,
+  "conditional": 36,
+  "hiddenOnly": 33,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 87,
+   "card": 4,
+   "heading": 4,
+   "toggle": 1,
+   "badge": 15,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 19,
+   "input": 6,
+   "link": 5,
+   "select": 4,
+   "button": 11,
+   "empty-state": 1,
+   "textarea": 18,
+   "radio": 12
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "create Soalan & Rujukan (guide open)",
+   "file": "_raw/M10/S16-soalan-guru-cipta__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guide-hidden__1280",
+   "description": "guide collapsed",
+   "file": "_raw/M10/S16-soalan-guru-cipta__guide-hidden__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click=\"showGuide = !showGuide\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "link-other__1280",
+   "description": "non-YouTube link typed",
+   "file": "_raw/M10/S16-soalan-guru-cipta__link-other__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "fill": [
+      "main input[name=\"youtube_url\"]",
+      "https://example.com/rujukan.pdf"
+     ]
+    },
+    {
+     "eval": "(() => { var i = document.querySelector('main input[name=youtube_url]'); i.dispatchEvent(new Event('input', {bubbles:true})); return 'lnk'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "lnk",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "subject-chapters__1280",
+   "description": "subject BM + level → chapters loaded; add-chapter panel",
+   "file": "_raw/M10/S16-soalan-guru-cipta__subject-chapters__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=\"subject_id\"]",
+      "1"
+     ]
+    },
+    {
+     "wait": 1200
+    },
+    {
+     "select": [
+      "main select[name=\"education_level_id\"]",
+      "11"
+     ]
+    },
+    {
+     "wait": 1200
+    },
+    {
+     "click": "main button[\\@click=\"showAddChapter = true\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "two-questions__1280",
+   "description": "Tambah Soalan → 2 question cards",
+   "file": "_raw/M10/S16-soalan-guru-cipta__two-questions__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click=\"addQuestion()\"]"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "youtube__1280",
+   "description": "YouTube URL typed → preview",
+   "file": "_raw/M10/S16-soalan-guru-cipta__youtube__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "fill": [
+      "main input[name=\"youtube_url\"]",
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+     ]
+    },
+    {
+     "eval": "(() => { var i = document.querySelector('main input[name=youtube_url]'); i.dispatchEvent(new Event('input', {bubbles:true})); return 'yt'; })()"
+    },
+    {
+     "wait": 800
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "yt",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "create Soalan & Rujukan (guide open) @375",
+   "file": "_raw/M10/S16-soalan-guru-cipta__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": "398px > 375px",
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "create Soalan & Rujukan (guide open) @768",
+   "file": "_raw/M10/S16-soalan-guru-cipta__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "two-questions__375",
+   "description": "Tambah Soalan → 2 cards @375",
+   "file": "_raw/M10/S16-soalan-guru-cipta__two-questions__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/soalan-guru/cipta",
+   "finalUrl": "/guru/soalan-guru/cipta",
+   "httpStatus": 200,
+   "title": "Soalan & Rujukan — Portal Guru",
+   "horizontalOverflow": "398px > 375px",
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click=\"addQuestion()\"]"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Soalan & Rujukan",
+   "seenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "soalanGuru",
+   "xData": "soalanGuru()",
+   "keys": [],
+   "liveState": {
+    "youtubeUrl": "",
+    "youtubeId": "",
+    "youtubeTitle": "",
+    "questions": "array(1)",
+    "anyflipId": "",
+    "canvaId": "",
+    "subjectId": "",
+    "levelId": "",
+    "chapters": "array(0)",
+    "chapterId": "",
+    "topics": "array(0)",
+    "topicId": "",
+    "showAddChapter": false,
+    "newChapterNumber": "",
+    "newChapterName": "",
+    "addingChapter": false,
+    "showAddTopic": false,
+    "newTopicName": "",
+    "addingTopic": false,
+    "selectedClassrooms": "array(0)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Soalan & Rujukan",
+   "seenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ showGuide: true }",
+   "keys": [
+    "showGuide"
+   ],
+   "liveState": {
+    "showGuide": true
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Soalan & Rujukan",
+   "seenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Bab",
+   "sources": [
+    "attr:x-text@option"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/edit",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/view",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/view?",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/chapters?subject_id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/topics?chapter_id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/chapters",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/topics",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S16-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Soalan & Rujukan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Soalan & Rujukan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Soalan & Rujukan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Panduan: Cara Cipta Soalan & Rujukan",
+   "landmark": "main",
+   "section": "Soalan & Rujukan",
+   "alpine": {
+    "x-data": "{ showGuide: true }"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-005",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Panduan: Cara Cipta Soalan & Rujukan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-006",
+   "kind": "toggle",
+   "tag": "button",
+   "type": "submit",
+   "text": "Sembunyikan Panduan Baca Panduan Dulu!",
+   "icon": "fa-eye-slash",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "alpine": {
+    "@click": "showGuide = !showGuide"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Apa itu Soalan & Rujukan?",
+   "icon": "fa-question-circle",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "Feature ini membolehkan anda berdasarkan mana-mana bahan rujukan — video YouTube, buku digital Anyflip, nota PDF, slide Google, atau apa-apa sumber pembelajaran. Soalan yang anda cipta boleh digunakan sebagai untuk pelajar anda.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-009",
+   "kind": "text",
+   "tag": "strong",
+   "text": "cipta soalan MCQ sendiri",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-010",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Misi Harian",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Langkah Demi Langkah",
+   "icon": "fa-list-ol",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-012",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cari bahan rujukan di internet",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Contoh: Cari \"Sejarah Tingkatan 5 Bab 1\" di YouTube. Atau buka buku digital di Anyflip. Atau mana-mana website/PDF yang berkaitan dengan topik anda.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-015",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Copy link & paste di ruangan \"Link Rujukan\"",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Paste link penuh dari mana-mana sumber:",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "AUTO EMBED",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "YouTube — video terus nampak dalam page",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-020",
+   "kind": "text",
+   "tag": "code",
+   "text": "https://www.youtube.com/watch?v=abc123",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar boleh tonton terus tanpa keluar platform.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "AUTO EMBED",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anyflip — buku digital nampak dalam page",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-024",
+   "kind": "text",
+   "tag": "code",
+   "text": "https://anyflip.com/abcd/efgh",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar boleh selak buku digital terus tanpa keluar platform.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "AUTO EMBED",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Canva — slide presentation nampak dalam page",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-028",
+   "kind": "text",
+   "tag": "code",
+   "text": "https://www.canva.com/design/abc123/view",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar boleh lihat slide terus tanpa keluar platform.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "KLIK BUKA",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "PDF / Google Drive / Lain-lain",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-032",
+   "kind": "text",
+   "tag": "code",
+   "text": "https://drive.google.com/file/d/abc123",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar klik butang untuk buka dalam tab baru. Tak auto-embed.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-034",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih subjek yang berkaitan",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih dari dropdown. Ini penting supaya soalan anda dikategorikan dengan betul.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "4",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tulis soalan MCQ (pilihan berganda)",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tulis soalan, kemudian isi 4 pilihan jawapan (A, B, C, D). di sebelah jawapan yang BETUL untuk tandakan. Anda boleh tambah berapa banyak soalan pun — klik butang \"Tambah Soalan\" untuk soalan seterusnya.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-040",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Klik pada bulatan hijau",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-041",
+   "kind": "badge",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "Simpan & gunakan dalam Misi Harian",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selepas simpan, pergi ke → pilih jenis → soalan anda akan digunakan. Pelajar akan nampak link rujukan anda dan menjawab soalan yang anda cipta.",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-044",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Misi Harian",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-045",
+   "kind": "text",
+   "tag": "strong",
+   "text": "\"Soalan & Rujukan\"",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tips Menulis Soalan Yang Baik",
+   "icon": "fa-lightbulb",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-047",
+   "kind": "text",
+   "tag": "li",
+   "text": "Soalan mestilah — elakkan ayat berbelit",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "✓",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-049",
+   "kind": "text",
+   "tag": "strong",
+   "text": "jelas dan mudah difahami",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-050",
+   "kind": "text",
+   "tag": "li",
+   "text": "Pastikan — elakkan jawapan yang samar",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "✓",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-052",
+   "kind": "text",
+   "tag": "strong",
+   "text": "hanya SATU jawapan yang betul",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-053",
+   "kind": "text",
+   "tag": "li",
+   "text": "Pilihan jawapan salah mestilah — jangan letak jawapan yang jelas salah",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "✓",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-055",
+   "kind": "text",
+   "tag": "strong",
+   "text": "munasabah",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-056",
+   "kind": "text",
+   "tag": "li",
+   "text": "Tulis — ini membantu pelajar faham kenapa jawapan tu betul",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "✓",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-058",
+   "kind": "text",
+   "tag": "strong",
+   "text": "penjelasan jawapan",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-059",
+   "kind": "text",
+   "tag": "li",
+   "text": "Rujuk — pastikan soalan relevan dengan peperiksaan",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "✓",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-061",
+   "kind": "text",
+   "tag": "strong",
+   "text": "silibus SPM (DSKP)",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-062",
+   "kind": "text",
+   "tag": "li",
+   "text": "Elakkan soalan terlalu mudah atau terlalu sukar —",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "⚠",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-064",
+   "kind": "text",
+   "tag": "strong",
+   "text": "campurkan aras",
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "guide-hidden__1280"
+   ],
+   "showWhen": "showGuide"
+  },
+  {
+   "id": "EL-M10-S16-065",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/soalan-guru",
+   "method": "POST",
+   "enctype": "multipart/form-data",
+   "fields": [
+    "_token",
+    "youtube_url",
+    "youtube_title",
+    "subject_id",
+    "education_level_id",
+    "chapter_id",
+    "topic_id",
+    "image",
+    "questions[0][question_text]",
+    "questions[0][correct_answer]",
+    "questions[0][option_a]",
+    "questions[0][correct_answer]",
+    "questions[0][option_b]",
+    "questions[0][correct_answer]",
+    "questions[0][option_c]",
+    "questions[0][correct_answer]",
+    "questions[0][option_d]",
+    "questions[0][explanation]"
+   ],
+   "landmark": "main",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-066",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-067",
+   "kind": "card",
+   "tag": "div",
+   "text": "1 Rujukan & Subjek",
+   "landmark": "form",
+   "section": "Panduan: Cara Cipta Soalan & Rujukan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-068",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "1 Rujukan & Subjek",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-069",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-070",
+   "kind": "label",
+   "tag": "label",
+   "text": "Link Rujukan (YouTube, Anyflip, PDF, dll.)",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-071",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "youtube_url",
+   "label": "Link Rujukan (YouTube, Anyflip, PDF, dll.)",
+   "placeholder": "https://youtube.com/... atau https://anyflip.com/... atau mana-mana link",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "youtubeUrl",
+    "@input": "extractTitle()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-072",
+   "kind": "text",
+   "tag": "div",
+   "text": "YouTube — auto embed. Pelajar boleh tonton terus.",
+   "icon": "fa-check-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "youtube__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "youtubeId"
+  },
+  {
+   "id": "EL-M10-S16-073",
+   "kind": "text",
+   "tag": "div",
+   "text": "Anyflip — auto embed. Pelajar boleh selak buku terus.",
+   "icon": "fa-check-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "anyflipId"
+  },
+  {
+   "id": "EL-M10-S16-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Canva — auto embed. Pelajar boleh lihat slide terus.",
+   "icon": "fa-check-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "canvaId"
+  },
+  {
+   "id": "EL-M10-S16-075",
+   "kind": "text",
+   "tag": "p",
+   "text": "Link rujukan:",
+   "icon": "fa-external-link-alt",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "link-other__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "youtubeUrl && !youtubeId && !anyflipId && !canvaId && youtubeUrl.length > 5"
+  },
+  {
+   "id": "EL-M10-S16-076",
+   "kind": "link",
+   "tag": "a",
+   "absHref": "https://prestasiplus.my/guru/soalan-guru/cipta",
+   "target": "_blank",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    ":href": "youtubeUrl",
+    "x-text": "youtubeUrl"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "youtubeUrl && !youtubeId && !anyflipId && !canvaId && youtubeUrl.length > 5"
+  },
+  {
+   "id": "EL-M10-S16-077",
+   "kind": "text",
+   "tag": "p",
+   "text": "Link ini akan dipaparkan kepada pelajar sebagai butang klik. Pelajar perlu klik untuk buka dalam tab baru.",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "link-other__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "youtubeUrl && !youtubeId && !anyflipId && !canvaId && youtubeUrl.length > 5"
+  },
+  {
+   "id": "EL-M10-S16-078",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Rujukan",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-079",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "youtube_title",
+   "label": "Tajuk Rujukan",
+   "placeholder": "cth: Video Bab 3 Algebra atau Nota Anyflip Sejarah",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "youtubeTitle"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-080",
+   "kind": "label",
+   "tag": "label",
+   "text": "Subjek *",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-081",
+   "kind": "select",
+   "tag": "select",
+   "name": "subject_id",
+   "label": "Subjek *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih Subjek"
+    },
+    {
+     "value": "18",
+     "text": "Bahasa Arab"
+    },
+    {
+     "value": "19",
+     "text": "Bahasa Cina"
+    },
+    {
+     "value": "2",
+     "text": "Bahasa Inggeris"
+    },
+    {
+     "value": "1",
+     "text": "Bahasa Melayu"
+    },
+    {
+     "value": "20",
+     "text": "Bahasa Tamil"
+    },
+    {
+     "value": "11",
+     "text": "Biologi"
+    },
+    {
+     "value": "22",
+     "text": "Ekonomi"
+    },
+    {
+     "value": "9",
+     "text": "Fizik"
+    },
+    {
+     "value": "12",
+     "text": "Geografi"
+    },
+    {
+     "value": "26",
+     "text": "Jawi"
+    },
+    {
+     "value": "10",
+     "text": "Kimia"
+    },
+    {
+     "value": "3",
+     "text": "Matematik"
+    },
+    {
+     "value": "8",
+     "text": "Matematik Tambahan"
+    },
+    {
+     "value": "29",
+     "text": "Pembuatan Pakaian Wanita"
+    },
+    {
+     "value": "24",
+     "text": "Pendidikan Al-Quran & As-Sunnah"
+    },
+    {
+     "value": "6",
+     "text": "Pendidikan Islam"
+    },
+    {
+     "value": "15",
+     "text": "Pendidikan Jasmani & Kesihatan"
+    },
+    {
+     "value": "7",
+     "text": "Pendidikan Moral"
+    },
+    {
+     "value": "14",
+     "text": "Pendidikan Muzik"
+    },
+    {
+     "value": "13",
+     "text": "Pendidikan Seni Visual"
+    },
+    {
+     "value": "27",
+     "text": "Pendidikan Syariah Islamiah"
+    },
+    {
+     "value": "23",
+     "text": "Perniagaan"
+    },
+    {
+     "value": "30",
+     "text": "Pertanian"
+    },
+    {
+     "value": "21",
+     "text": "Prinsip Perakaunan"
+    },
+    {
+     "value": "16",
+     "text": "Reka Bentuk & Teknologi"
+    },
+    {
+     "value": "4",
+     "text": "Sains"
+    },
+    {
+     "value": "17",
+     "text": "Sains Komputer"
+    },
+    {
+     "value": "28",
+     "text": "Sains Rumah Tangga"
+    },
+    {
+     "value": "31",
+     "text": "Sains Sukan"
+    },
+    {
+     "value": "5",
+     "text": "Sejarah"
+    },
+    {
+     "value": "25",
+     "text": "Tasawwur Islam"
+    }
+   ],
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "subjectId",
+    "@change": "loadChapters()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-082",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Pendidikan",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-083",
+   "kind": "select",
+   "tag": "select",
+   "name": "education_level_id",
+   "label": "Tahap Pendidikan",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Tahap --"
+    },
+    {
+     "value": "1",
+     "text": "Darjah 1"
+    },
+    {
+     "value": "2",
+     "text": "Darjah 2"
+    },
+    {
+     "value": "3",
+     "text": "Darjah 3"
+    },
+    {
+     "value": "4",
+     "text": "Darjah 4"
+    },
+    {
+     "value": "5",
+     "text": "Darjah 5"
+    },
+    {
+     "value": "6",
+     "text": "Darjah 6"
+    },
+    {
+     "value": "7",
+     "text": "Tingkatan 1"
+    },
+    {
+     "value": "8",
+     "text": "Tingkatan 2"
+    },
+    {
+     "value": "9",
+     "text": "Tingkatan 3"
+    },
+    {
+     "value": "10",
+     "text": "Tingkatan 4"
+    },
+    {
+     "value": "11",
+     "text": "Tingkatan 5"
+    }
+   ],
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "levelId",
+    "@change": "loadChapters()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-084",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bab",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-085",
+   "kind": "select",
+   "tag": "select",
+   "name": "chapter_id",
+   "disabled": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Bab --"
+    }
+   ],
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "chapterId",
+    "@change": "loadTopics()",
+    ":disabled": "chapters.length === 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-086",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-plus",
+   "disabled": true,
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "showAddChapter = true",
+    ":disabled": "!subjectId || !levelId"
+   },
+   "title": "Tambah Bab Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-087",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bab Baru",
+   "icon": "fa-plus-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-chapters__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddChapter"
+  },
+  {
+   "id": "EL-M10-S16-088",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "placeholder": "No.",
+   "min": "1",
+   "max": "99",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "newChapterNumber"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-chapters__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddChapter"
+  },
+  {
+   "id": "EL-M10-S16-089",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Nama bab...",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "newChapterName",
+    "@keydown.enter.prevent": "submitNewChapter()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-chapters__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddChapter"
+  },
+  {
+   "id": "EL-M10-S16-090",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Batal",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "showAddChapter = false"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-chapters__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddChapter"
+  },
+  {
+   "id": "EL-M10-S16-091",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Simpan",
+   "icon": "fa-check",
+   "disabled": true,
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "submitNewChapter()",
+    ":disabled": "addingChapter || !newChapterName || !newChapterNumber"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "subject-chapters__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddChapter"
+  },
+  {
+   "id": "EL-M10-S16-092",
+   "kind": "label",
+   "tag": "label",
+   "text": "Topik",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-093",
+   "kind": "select",
+   "tag": "select",
+   "name": "topic_id",
+   "disabled": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Topik --"
+    }
+   ],
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "topicId",
+    ":disabled": "topics.length === 0"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-094",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-plus",
+   "disabled": true,
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "showAddTopic = true",
+    ":disabled": "!chapterId"
+   },
+   "title": "Tambah Topik Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-095",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topik Baru",
+   "icon": "fa-plus-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddTopic"
+  },
+  {
+   "id": "EL-M10-S16-096",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "placeholder": "Nama topik...",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "x-model": "newTopicName",
+    "@keydown.enter.prevent": "submitNewTopic()"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddTopic"
+  },
+  {
+   "id": "EL-M10-S16-097",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Batal",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "showAddTopic = false"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddTopic"
+  },
+  {
+   "id": "EL-M10-S16-098",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Simpan",
+   "icon": "fa-check",
+   "disabled": true,
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    "@click": "submitNewTopic()",
+    ":disabled": "addingTopic || !newTopicName"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showAddTopic"
+  },
+  {
+   "id": "EL-M10-S16-099",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih Subjek + Tahap dahulu untuk muat Bab & Topik secara automatik.",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-100",
+   "kind": "label",
+   "tag": "label",
+   "text": "Gambarajah (optional)",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-101",
+   "kind": "input",
+   "tag": "input",
+   "type": "file",
+   "name": "image",
+   "label": "Gambarajah (optional)",
+   "accept": "image/*",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-102",
+   "kind": "text",
+   "tag": "p",
+   "text": "JPG, PNG — max 5MB. Gambarajah akan dipaparkan bersama soalan.",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-103",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kelas Sasaran",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-104",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kelas Sasaran",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-105",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilih kelas yang akan menggunakan soalan ini (boleh pilih lebih dari satu)",
+   "landmark": "form",
+   "section": "Kelas Sasaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-106",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada kelas ditemui.",
+   "landmark": "form",
+   "section": "Kelas Sasaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-107",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cipta kelas dahulu",
+   "href": "https://prestasiplus.my/guru/kelas/cipta",
+   "absHref": "https://prestasiplus.my/guru/kelas/cipta",
+   "landmark": "form",
+   "section": "Kelas Sasaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-108",
+   "kind": "card",
+   "tag": "div",
+   "text": "2 Soalan MCQ",
+   "landmark": "form",
+   "section": "Kelas Sasaran",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-109",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "2 Soalan MCQ",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-110",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-111",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Tambah Soalan",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "@click": "addQuestion()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-112",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-113",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-trash",
+   "iconOnly": true,
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "@click": "removeQuestion(idx)",
+    "x-show": "questions.length > 1"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-114",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Tulis soalan di sini...",
+   "required": true,
+   "rows": "4",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][question_text]'",
+    "x-model": "q.question_text"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-115",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilihan Jawapan",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-116",
+   "kind": "text",
+   "tag": "span",
+   "text": "*",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-117",
+   "kind": "text",
+   "tag": "span",
+   "text": "— Klik bulatan hijau untuk tandakan jawapan betul",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-118",
+   "kind": "label",
+   "tag": "label",
+   "text": "A",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-119",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "required": true,
+   "optionValue": "A",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-120",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Taip pilihan jawapan A di sini...",
+   "required": true,
+   "rows": "2",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_a]'",
+    "x-model": "q.option_a"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-121",
+   "kind": "label",
+   "tag": "label",
+   "text": "B",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-122",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "optionValue": "B",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-123",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Taip pilihan jawapan B di sini...",
+   "required": true,
+   "rows": "2",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_b]'",
+    "x-model": "q.option_b"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-124",
+   "kind": "label",
+   "tag": "label",
+   "text": "C",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-125",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "optionValue": "C",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-126",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Taip pilihan jawapan C di sini...",
+   "required": true,
+   "rows": "2",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_c]'",
+    "x-model": "q.option_c"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-127",
+   "kind": "label",
+   "tag": "label",
+   "text": "D",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-128",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "optionValue": "D",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-129",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Taip pilihan jawapan D di sini...",
+   "required": true,
+   "rows": "2",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_d]'",
+    "x-model": "q.option_d"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-130",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penjelasan Jawapan",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-131",
+   "kind": "text",
+   "tag": "span",
+   "text": "(opsional — membantu pelajar faham kenapa jawapan itu betul)",
+   "section": "2 Soalan MCQ",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-132",
+   "kind": "textarea",
+   "tag": "textarea",
+   "placeholder": "Terangkan kenapa jawapan yang dipilih adalah betul. Ini akan dipaparkan selepas pelajar menjawab.",
+   "rows": "3",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][explanation]'",
+    "x-model": "q.explanation"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "hiddenBy": [
+    "template:x-for=(q, idx) in questions"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-133",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-134",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "x-text": "idx + 1"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-135",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "@click": "removeQuestion(idx)",
+    "x-show": "questions.length > 1"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "questions.length > 1"
+  },
+  {
+   "id": "EL-M10-S16-136",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][question_text]",
+   "placeholder": "Tulis soalan di sini...",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][question_text]'",
+    "x-model": "q.question_text"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-137",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilihan Jawapan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "*",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "— Klik bulatan hijau untuk tandakan jawapan betul",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-140",
+   "kind": "label",
+   "tag": "label",
+   "text": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-141",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[0][correct_answer]",
+   "label": "A",
+   "required": true,
+   "optionValue": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-142",
+   "kind": "badge",
+   "tag": "span",
+   "text": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-143",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][option_a]",
+   "placeholder": "Taip pilihan jawapan A di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_a]'",
+    "x-model": "q.option_a"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-144",
+   "kind": "label",
+   "tag": "label",
+   "text": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-145",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[0][correct_answer]",
+   "label": "B",
+   "optionValue": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-146",
+   "kind": "badge",
+   "tag": "span",
+   "text": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-147",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][option_b]",
+   "placeholder": "Taip pilihan jawapan B di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_b]'",
+    "x-model": "q.option_b"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-148",
+   "kind": "label",
+   "tag": "label",
+   "text": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-149",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[0][correct_answer]",
+   "label": "C",
+   "optionValue": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-150",
+   "kind": "badge",
+   "tag": "span",
+   "text": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-151",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][option_c]",
+   "placeholder": "Taip pilihan jawapan C di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_c]'",
+    "x-model": "q.option_c"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-152",
+   "kind": "label",
+   "tag": "label",
+   "text": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-153",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[0][correct_answer]",
+   "label": "D",
+   "optionValue": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-154",
+   "kind": "badge",
+   "tag": "span",
+   "text": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-155",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][option_d]",
+   "placeholder": "Taip pilihan jawapan D di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_d]'",
+    "x-model": "q.option_d"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-156",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penjelasan Jawapan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "(opsional — membantu pelajar faham kenapa jawapan itu betul)",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-158",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[0][explanation]",
+   "placeholder": "Terangkan kenapa jawapan yang dipilih adalah betul. Ini akan dipaparkan selepas pelajar menjawab.",
+   "rows": "3",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][explanation]'",
+    "x-model": "q.explanation"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-159",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali",
+   "href": "https://prestasiplus.my/guru/soalan-guru",
+   "absHref": "https://prestasiplus.my/guru/soalan-guru",
+   "icon": "fa-arrow-left",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-160",
+   "kind": "text",
+   "tag": "span",
+   "text": "1 soalan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "x-text": "questions.length + ' soalan'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-161",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Simpan Soalan",
+   "icon": "fa-save",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guide-hidden__1280",
+    "link-other__1280",
+    "subject-chapters__1280",
+    "two-questions__1280",
+    "youtube__1280",
+    "default__375",
+    "default__768",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-162",
+   "kind": "link",
+   "tag": "a",
+   "text": "https://example.com/rujukan.pdf",
+   "href": "https://example.com/rujukan.pdf",
+   "absHref": "https://example.com/rujukan.pdf",
+   "target": "_blank",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    ":href": "youtubeUrl",
+    "x-text": "youtubeUrl"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "link-other__1280"
+   ],
+   "showWhen": "youtubeUrl && !youtubeId && !anyflipId && !canvaId && youtubeUrl.length > 5"
+  },
+  {
+   "id": "EL-M10-S16-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "x-text": "idx + 1"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-165",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/guru/soalan-guru",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    "@click": "removeQuestion(idx)",
+    "x-show": "questions.length > 1"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "showWhen": "questions.length > 1"
+  },
+  {
+   "id": "EL-M10-S16-166",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][question_text]",
+   "placeholder": "Tulis soalan di sini...",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][question_text]'",
+    "x-model": "q.question_text"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-167",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pilihan Jawapan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-168",
+   "kind": "text",
+   "tag": "span",
+   "text": "*",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-169",
+   "kind": "text",
+   "tag": "span",
+   "text": "— Klik bulatan hijau untuk tandakan jawapan betul",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-170",
+   "kind": "label",
+   "tag": "label",
+   "text": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-171",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[1][correct_answer]",
+   "label": "A",
+   "required": true,
+   "optionValue": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-172",
+   "kind": "badge",
+   "tag": "span",
+   "text": "A",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-173",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][option_a]",
+   "placeholder": "Taip pilihan jawapan A di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_a]'",
+    "x-model": "q.option_a"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-174",
+   "kind": "label",
+   "tag": "label",
+   "text": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-175",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[1][correct_answer]",
+   "label": "B",
+   "optionValue": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-176",
+   "kind": "badge",
+   "tag": "span",
+   "text": "B",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-177",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][option_b]",
+   "placeholder": "Taip pilihan jawapan B di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_b]'",
+    "x-model": "q.option_b"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-178",
+   "kind": "label",
+   "tag": "label",
+   "text": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-179",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[1][correct_answer]",
+   "label": "C",
+   "optionValue": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-180",
+   "kind": "badge",
+   "tag": "span",
+   "text": "C",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-181",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][option_c]",
+   "placeholder": "Taip pilihan jawapan C di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_c]'",
+    "x-model": "q.option_c"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-182",
+   "kind": "label",
+   "tag": "label",
+   "text": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-183",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "questions[1][correct_answer]",
+   "label": "D",
+   "optionValue": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][correct_answer]'",
+    "x-model": "q.correct_answer"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S16-184",
+   "kind": "badge",
+   "tag": "span",
+   "text": "D",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-185",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][option_d]",
+   "placeholder": "Taip pilihan jawapan D di sini...",
+   "required": true,
+   "rows": "2",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][option_d]'",
+    "x-model": "q.option_d"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-186",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penjelasan Jawapan",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-187",
+   "kind": "text",
+   "tag": "span",
+   "text": "(opsional — membantu pelajar faham kenapa jawapan itu betul)",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-188",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "questions[1][explanation]",
+   "placeholder": "Terangkan kenapa jawapan yang dipilih adalah betul. Ini akan dipaparkan selepas pelajar menjawab.",
+   "rows": "3",
+   "landmark": "form",
+   "section": "2 Soalan MCQ",
+   "alpine": {
+    ":name": "'questions[' + idx + '][explanation]'",
+    "x-model": "q.explanation"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "two-questions__1280",
+    "two-questions__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S16-189",
+   "kind": "link",
+   "tag": "a",
+   "text": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+   "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+   "absHref": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+   "target": "_blank",
+   "landmark": "form",
+   "section": "1 Rujukan & Subjek",
+   "alpine": {
+    ":href": "youtubeUrl",
+    "x-text": "youtubeUrl"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "youtube__1280"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "youtubeUrl && !youtubeId && !anyflipId && !canvaId && youtubeUrl.length > 5"
+  }
+ ]
+}

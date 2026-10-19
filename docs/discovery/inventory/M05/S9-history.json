@@ -1,0 +1,1391 @@
+{
+ "screen": "S9",
+ "key": "S9-history",
+ "route": "/practice/history?period=",
+ "name": "Sejarah Latihan",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.704Z",
+ "notes": "first 2 session cards inventoried",
+ "shell": "SHU",
+ "summary": {
+  "total": 64,
+  "visibleDefault": 55,
+  "conditional": 6,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 50,
+   "card": 6,
+   "link": 5,
+   "badge": 2,
+   "heading": 1
+  }
+ },
+ "states": [
+  {
+   "label": "all__1280",
+   "description": "Semua (4 sessions)",
+   "file": "_raw/M05/S9-history__all__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/history",
+   "finalUrl": "/practice/history",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 4
+   }
+  },
+  {
+   "label": "month-empty__1280",
+   "description": "Bulan Ini (empty)",
+   "file": "_raw/M05/S9-history__month-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/history?period=month",
+   "finalUrl": "/practice/history?period=month",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 0
+   }
+  },
+  {
+   "label": "week-empty__1280",
+   "description": "Minggu Ini → \"Belum Ada Rekod Latihan\"",
+   "file": "_raw/M05/S9-history__week-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/history?period=week",
+   "finalUrl": "/practice/history?period=week",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 0
+   }
+  },
+  {
+   "label": "year__1280",
+   "description": "Tahun Ini (4 sessions)",
+   "file": "_raw/M05/S9-history__year__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/practice/history?period=year",
+   "finalUrl": "/practice/history?period=year",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 4
+   }
+  },
+  {
+   "label": "all__375",
+   "description": "Semua @375",
+   "file": "_raw/M05/S9-history__all__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/practice/history",
+   "finalUrl": "/practice/history",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 4
+   }
+  },
+  {
+   "label": "all__768",
+   "description": "Semua @768",
+   "file": "_raw/M05/S9-history__all__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/practice/history",
+   "finalUrl": "/practice/history",
+   "httpStatus": 200,
+   "title": "Sejarah Latihan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {
+    "main .session-card": 4
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Sejarah Latihan",
+   "seenIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S9-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Sejarah Latihan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Sejarah Latihan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Sejarah Latihan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah Sesi",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "✨",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Sesi",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "4",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "84",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "Purata Ketepatan",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "📊",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Purata Ketepatan",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "21.8%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Syiling Dikumpul",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "💰",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Syiling Dikumpul",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "26",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-020",
+   "kind": "link",
+   "tag": "a",
+   "text": "Semua",
+   "href": "https://prestasiplus.my/practice/history",
+   "absHref": "https://prestasiplus.my/practice/history",
+   "icon": "fa-infinity",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-021",
+   "kind": "link",
+   "tag": "a",
+   "text": "Minggu Ini",
+   "href": "https://prestasiplus.my/practice/history?period=week",
+   "absHref": "https://prestasiplus.my/practice/history?period=week",
+   "icon": "fa-calendar-week",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-022",
+   "kind": "link",
+   "tag": "a",
+   "text": "Bulan Ini",
+   "href": "https://prestasiplus.my/practice/history?period=month",
+   "absHref": "https://prestasiplus.my/practice/history?period=month",
+   "icon": "fa-calendar-alt",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-023",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tahun Ini",
+   "href": "https://prestasiplus.my/practice/history?period=year",
+   "absHref": "https://prestasiplus.my/practice/history?period=year",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "month-empty__1280",
+    "week-empty__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "Latihan",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latihan",
+   "icon": "fa-book",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "19 May 2026, 03:49",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-030",
+   "kind": "badge",
+   "tag": "div",
+   "text": "00:14",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "betul",
+   "icon": "fa-check-circle",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "💪 Cuba Lagi",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan: 0.0%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-040",
+   "kind": "text",
+   "tag": "div",
+   "text": "SYILING",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-041",
+   "kind": "card",
+   "tag": "div",
+   "text": "Latihan",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "Latihan",
+   "icon": "fa-book",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "19 May 2026, 03:26",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "5",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-047",
+   "kind": "badge",
+   "tag": "div",
+   "text": "00:36",
+   "icon": "fa-clock",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "betul",
+   "icon": "fa-check-circle",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "salah",
+   "icon": "fa-times-circle",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "4",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "💪 Cuba Lagi",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "20.0%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "20%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan: 20.0%",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "🪙",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-057",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "SYILING",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "visible-default",
+   "visibleIn": [
+    "all__1280",
+    "year__1280",
+    "all__375",
+    "all__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "📝",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "✨",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-061",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎯",
+   "landmark": "main",
+   "section": "Sejarah Latihan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-062",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Belum Ada Rekod Latihan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda belum melengkapkan sebarang latihan lagi. Mulakan latihan pertama anda sekarang dan kumpul syiling! 🚀",
+   "landmark": "main",
+   "section": "Belum Ada Rekod Latihan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S9-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "https://prestasiplus.my/practice",
+   "absHref": "https://prestasiplus.my/practice",
+   "icon": "fa-play-circle",
+   "landmark": "main",
+   "section": "Belum Ada Rekod Latihan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "month-empty__1280",
+    "week-empty__1280"
+   ]
+  }
+ ]
+}

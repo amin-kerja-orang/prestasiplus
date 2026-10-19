@@ -1,0 +1,24 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "screens": {
+    "S1": { "key": "S1-spm-hub", "route": "/spm", "title": "Mod SPM", "shell": "SHU" },
+    "S2": { "key": "S2-databank", "route": "/spm/tahun-lepas", "title": "Databank Soalan SPM", "shell": "SHU" },
+    "S3": { "key": "S3-latih-tubi", "route": "/spm/latih-tubi", "title": "Latih Tubi SPM", "shell": "SHU" },
+    "S4": { "key": "S4-latih-tubi-subject", "route": "/spm/latih-tubi/{CODE}", "title": "Latih Tubi SPM — {subject} (Tetapan Kuiz)", "shell": "SHU" },
+    "S5": { "key": "S5-tracking-a", "route": "/spm/ramalan", "title": "Tracking A SPM", "shell": "SHU" },
+    "S6": { "key": "S6-tracking-a-subject", "route": "/spm/ramalan/{CODE}", "title": "Tracking A SPM — {subject} (set list)", "shell": "SHU" },
+    "S7": { "key": "S7-tracking-bahasa", "route": "/latihan-berstruktur?subject_id={1|2}&scope=spm&track=bahasa", "title": "Tracking A Bahasa (Soalan Berstruktur)", "shell": "SHU", "notes": "route owned by M05 (/latihan-berstruktur); the scope=spm&track=bahasa variant is the M06 Tracking A Bahasa lane" },
+    "S8": { "key": "S8-subjektif", "route": "/spm/subjektif", "title": "Latihan Subjektif SPM", "shell": "SHU" },
+    "S9": { "key": "S9-subjektif-list", "route": "/latihan-berstruktur?subject_id={id}&scope=spm", "title": "Subjektif SPM (Soalan Berstruktur)", "shell": "SHU", "notes": "route owned by M05 (/latihan-berstruktur); the scope=spm variant is the M06 Subjektif SPM list" },
+    "S10": { "key": "S10-history", "route": "/spm/history", "title": "Sejarah Kuiz SPM", "shell": "SHU" },
+    "S11": { "key": "S11-mock", "route": "/spm-mock", "title": "SPM Mock Exam", "shell": "SHA", "notes": "rendered in the admin-panel layout for the admin account" },
+    "S12": { "key": "S12-mock-result", "route": "/spm-mock/{id}/result", "title": "Result Mock SPM — {subject}", "shell": "SHA" },
+    "S13": { "key": "S13-walkthrough", "route": "/pusat-ai/spm", "title": "SPM Walkthrough — Cikgu Alesa", "shell": "SHA" }
+  },
+  "shells": {
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell", "owner": "00-global-ui.md", "note": "layout chrome of S1–S10" },
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell", "owner": "00-global-ui.md / M23", "note": "layout chrome of S11–S13 (admin account)" }
+  }
+}

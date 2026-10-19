@@ -1,0 +1,1006 @@
+{
+ "screen": "S11",
+ "key": "S11-pembetulan",
+ "route": "/pembetulan?bulan=YYYY-MM",
+ "name": "Pembetulan",
+ "module": "M05",
+ "generatedAt": "2026-09-25T07:56:13.786Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 44,
+  "visibleDefault": 8,
+  "conditional": 33,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 28,
+   "card": 6,
+   "link": 5,
+   "heading": 3,
+   "badge": 2
+  }
+ },
+ "states": [
+  {
+   "label": "current-empty__1280",
+   "description": "September 2026 (current month; next arrow disabled) → \"Tiada Data Pembetulan\"",
+   "file": "_raw/M05/S11-pembetulan__current-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pembetulan",
+   "finalUrl": "/pembetulan",
+   "httpStatus": 200,
+   "title": "Pembetulan — Jejak Peningkatan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "future__1280",
+   "description": "future month via URL",
+   "file": "_raw/M05/S11-pembetulan__future__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pembetulan?bulan=2026-10",
+   "finalUrl": "/pembetulan?bulan=2026-10",
+   "httpStatus": 200,
+   "title": "Pembetulan — Jejak Peningkatan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "may-data__1280",
+   "description": "Mei 2026 (summary + per-subject before/after)",
+   "file": "_raw/M05/S11-pembetulan__may-data__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/pembetulan?bulan=2026-05",
+   "finalUrl": "/pembetulan?bulan=2026-05",
+   "httpStatus": 200,
+   "title": "Pembetulan — Jejak Peningkatan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "may-data__375",
+   "description": "Mei 2026 @375",
+   "file": "_raw/M05/S11-pembetulan__may-data__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/pembetulan?bulan=2026-05",
+   "finalUrl": "/pembetulan?bulan=2026-05",
+   "httpStatus": 200,
+   "title": "Pembetulan — Jejak Peningkatan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "may-data__768",
+   "description": "Mei 2026 @768",
+   "file": "_raw/M05/S11-pembetulan__may-data__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/pembetulan?bulan=2026-05",
+   "finalUrl": "/pembetulan?bulan=2026-05",
+   "httpStatus": 200,
+   "title": "Pembetulan — Jejak Peningkatan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { let n=0; document.querySelectorAll('*').forEach(el => { for (const a of Array.from(el.attributes)) { if (/X-CSRF-TOKEN|csrf/i.test(a.value) || a.name==='content' && el.getAttribute('name')==='csrf-token' || a.name==='value' && el.getAttribute('name')==='_token') { const v=a.value.replace(/[A-Za-z0-9]{40}/g,'CSRF'); if (v!==a.value) { el.setAttribute(a.name, v); n++; } } } }); return 'csrf scrubbed: '+n; })()"
+    }
+   ],
+   "actionLog": [
+    "csrf scrubbed: 1"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Pembetulan",
+   "seenIn": [
+    "current-empty__1280",
+    "future__1280",
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ monthVal: '2026-09' }",
+   "keys": [
+    "monthVal"
+   ],
+   "liveState": {
+    "monthVal": "string(7)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pembetulan",
+   "seenIn": [
+    "current-empty__1280"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ monthVal: '2026-10' }",
+   "keys": [
+    "monthVal"
+   ],
+   "liveState": {
+    "monthVal": "string(7)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pembetulan",
+   "seenIn": [
+    "future__1280"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ monthVal: '2026-05' }",
+   "keys": [
+    "monthVal"
+   ],
+   "liveState": {
+    "monthVal": "string(7)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Pembetulan",
+   "seenIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M05-S11-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Pembetulan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "current-empty__1280",
+    "future__1280",
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Pembetulan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "current-empty__1280",
+    "future__1280",
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Pembetulan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "current-empty__1280",
+    "future__1280",
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "September 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bulan:",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280",
+    "future__1280",
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-006",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/pembetulan?bulan=2026-08",
+   "absHref": "https://prestasiplus.my/pembetulan?bulan=2026-08",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "September 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tiada Data Pembetulan",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280",
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔄",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280",
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-010",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tiada Data Pembetulan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280",
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cuba buat pembetulan jawapan semasa sesi latih tubi untuk melihat peningkatan di sini.",
+   "landmark": "main",
+   "section": "Tiada Data Pembetulan",
+   "status": "visible-default",
+   "visibleIn": [
+    "current-empty__1280",
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "Oktober 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-013",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/pembetulan?bulan=2026-09",
+   "absHref": "https://prestasiplus.my/pembetulan?bulan=2026-09",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-014",
+   "kind": "text",
+   "tag": "span",
+   "text": "Oktober 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-015",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/pembetulan?bulan=2026-11",
+   "absHref": "https://prestasiplus.my/pembetulan?bulan=2026-11",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "future__1280"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Mei 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-017",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/pembetulan?bulan=2026-04",
+   "absHref": "https://prestasiplus.my/pembetulan?bulan=2026-04",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mei 2026",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-019",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/pembetulan?bulan=2026-06",
+   "absHref": "https://prestasiplus.my/pembetulan?bulan=2026-06",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ringkasan Keseluruhan",
+   "landmark": "main",
+   "section": "Pembetulan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ringkasan Keseluruhan",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "33.8%",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-023",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sebelum",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-024",
+   "kind": "text",
+   "tag": "div",
+   "text": "33.8%",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-025",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selepas",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-026",
+   "kind": "text",
+   "tag": "div",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "Peningkatan",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "Berdasarkan 74 soalan bulan ini",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-029",
+   "kind": "card",
+   "tag": "div",
+   "text": "Mengikut Subjek",
+   "landmark": "main",
+   "section": "Ringkasan Keseluruhan",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-030",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Mengikut Subjek",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "40 soalan",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sebelum",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "35.0%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selepas",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "35.0%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "34 soalan",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sebelum",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "32.4%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selepas",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "32.4%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  },
+  {
+   "id": "EL-M05-S11-044",
+   "kind": "badge",
+   "tag": "span",
+   "text": "0.0%",
+   "landmark": "main",
+   "section": "Mengikut Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "may-data__1280",
+    "may-data__375",
+    "may-data__768"
+   ]
+  }
+ ]
+}

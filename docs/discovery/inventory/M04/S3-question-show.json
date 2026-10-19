@@ -1,0 +1,1140 @@
+{
+ "screen": "S3",
+ "key": "S3-question-show",
+ "route": "/admin/questions/{id}",
+ "name": "Lihat Soalan (Detail Soalan)",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.207Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 62,
+  "visibleDefault": 48,
+  "conditional": 10,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 2,
+   "heading": 6,
+   "text": 42,
+   "form": 1,
+   "hidden-field": 2,
+   "button": 2,
+   "card": 5,
+   "badge": 2
+  }
+ },
+ "states": [
+  {
+   "label": "approved-dskp__1280",
+   "description": "approved MCQ with DSKP tag + explanation",
+   "file": "_raw/M04/S3-question-show__approved-dskp__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/questions/564159",
+   "finalUrl": "/admin/questions/564159",
+   "httpStatus": 200,
+   "title": "Lihat Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "archived-untagged__1280",
+   "description": "archived MCQ, no DSKP, no explanation",
+   "file": "_raw/M04/S3-question-show__archived-untagged__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/questions/129114",
+   "finalUrl": "/admin/questions/129114",
+   "httpStatus": 200,
+   "title": "Lihat Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "approved @375",
+   "file": "_raw/M04/S3-question-show__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/questions/564159",
+   "finalUrl": "/admin/questions/564159",
+   "httpStatus": 200,
+   "title": "Lihat Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "approved @768",
+   "file": "_raw/M04/S3-question-show__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/questions/564159",
+   "finalUrl": "/admin/questions/564159",
+   "httpStatus": 200,
+   "title": "Lihat Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Gagal jana penjelasan",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Jana semula Penjelasan AI? Versi lama akan ditimpa.",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "Adakah anda pasti mahu mengubah status soalan ini?",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  },
+  {
+   "text": "Adakah anda pasti mahu memadamkan soalan ini?",
+   "sources": [
+    "attr:onsubmit@form"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/questions/",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/generate-penjelasan-ai",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/admin/questions/bulk-action",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#3"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S3-001",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/admin/questions",
+   "absHref": "https://prestasiplus.my/admin/questions",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-002",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "📝 Detail Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan #564159",
+   "landmark": "main",
+   "section": "📝 Detail Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit",
+   "href": "https://prestasiplus.my/admin/questions/564159/edit",
+   "absHref": "https://prestasiplus.my/admin/questions/564159/edit",
+   "icon": "fa-edit",
+   "landmark": "main",
+   "section": "📝 Detail Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/questions/564159",
+   "method": "POST",
+   "spoofedMethod": "DELETE",
+   "fields": [
+    "_token",
+    "_method"
+   ],
+   "landmark": "main",
+   "section": "📝 Detail Soalan",
+   "alpine": {
+    "onsubmit": "return confirm('Adakah anda pasti mahu memadamkan soalan ini?')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "📝 Detail Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-007",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_method",
+   "landmark": "form",
+   "section": "📝 Detail Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-008",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Padam",
+   "icon": "fa-trash",
+   "form": "https://prestasiplus.my/admin/questions/564159",
+   "landmark": "form",
+   "section": "📝 Detail Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan",
+   "landmark": "main",
+   "section": "📝 Detail Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-010",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-011",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Diluluskan",
+   "landmark": "main",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "Topup Sains T5 Bab 9 item 1: Apakah maksud satelit buatan? Pilih jawapan yang paling tepat.",
+   "landmark": "main",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pilihan Jawapan",
+   "landmark": "main",
+   "section": "Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-014",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Pilihan Jawapan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Objek yang dilancarkan manusia untuk mengorbit Bumi atau jasad lain",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jawapan Betul",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "B",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Planet semula jadi yang menghasilkan cahaya sendiri",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-020",
+   "kind": "text",
+   "tag": "div",
+   "text": "C",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Meteor yang jatuh ke Bumi",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "D",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Awan yang bergerak mengikut angin",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penjelasan",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-025",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Penjelasan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Satelit buatan direka dan dilancarkan untuk tujuan komunikasi, pemantauan atau penyelidikan. Item ini khusus untuk T5 Sains Bab 9: Satelit.",
+   "landmark": "main",
+   "section": "Penjelasan",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "landmark": "main",
+   "section": "Penjelasan",
+   "domId": "penjelasan-ai-card",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-028",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Belum ada Penjelasan AI untuk soalan ini. Klik butang untuk jana.",
+   "landmark": "main",
+   "section": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-030",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Jana Penjelasan AI",
+   "icon": "fa-wand-magic-sparkles",
+   "landmark": "main",
+   "section": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "domId": "btn-jana-penjelasan-ai",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sedang menjana penjelasan... (anggaran 5-15 saat)",
+   "landmark": "main",
+   "section": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ralat tidak diketahui",
+   "landmark": "main",
+   "section": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "domId": "penjelasan-ai-error-msg",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-033",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat",
+   "landmark": "main",
+   "section": "Penjelasan AI Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-034",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Maklumat",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Subjek",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sains",
+   "icon": "fa-book",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-037",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tahap Pendidikan",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-038",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 5",
+   "icon": "fa-graduation-cap",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-039",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tahap Kesukaran",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "(3/5)",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "DSKP",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains T5 - Sokongan Bab Buku Teks",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "T5SN.B9 - Menguasai konsep utama Bab 9: Satelit berdasarkan buku teks...",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "T5SN.B9.1 - Menjawab soalan objektif berkaitan konsep dan aplikasi Bab 9...",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "icon": "fa-language",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Nilai Mata",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "1 mata",
+   "icon": "fa-coins",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dicipta Pada",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "18/05/2026 23:21",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-051",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Baharu",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-052",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan ini belum digunakan dalam sebarang kuiz atau latihan.",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "visible-default",
+   "visibleIn": [
+    "approved-dskp__1280",
+    "archived-untagged__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-053",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Diarkibkan",
+   "landmark": "main",
+   "section": "Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-054",
+   "kind": "text",
+   "tag": "p",
+   "text": "34^-1/2 =",
+   "landmark": "main",
+   "section": "Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-055",
+   "kind": "text",
+   "tag": "p",
+   "text": "1/34^2",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-056",
+   "kind": "text",
+   "tag": "p",
+   "text": "-1/34^2",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "1/34^(1/2)",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-058",
+   "kind": "text",
+   "tag": "p",
+   "text": "-1/34^(1/2)",
+   "landmark": "main",
+   "section": "Pilihan Jawapan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "Matematik",
+   "icon": "fa-book",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "(1/5)",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "Belum ditag",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S3-062",
+   "kind": "text",
+   "tag": "div",
+   "text": "20/03/2026 17:08",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Maklumat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "archived-untagged__1280"
+   ]
+  }
+ ]
+}

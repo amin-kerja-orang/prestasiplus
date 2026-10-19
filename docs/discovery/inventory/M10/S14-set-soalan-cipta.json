@@ -1,0 +1,1137 @@
+{
+ "screen": "S14",
+ "key": "S14-set-soalan-cipta",
+ "route": "/guru/set-soalan/cipta",
+ "name": "Cipta Set Soalan - PRESTASIPLUS",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:30.657Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 39,
+  "visibleDefault": 30,
+  "conditional": 2,
+  "hiddenOnly": 7,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 8,
+   "link": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "card": 3,
+   "heading": 3,
+   "label": 10,
+   "select": 1,
+   "input": 5,
+   "textarea": 1,
+   "empty-state": 1,
+   "radio": 3,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "create set (status Draf)",
+   "file": "_raw/M10/S14-set-soalan-cipta__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/set-soalan/cipta",
+   "finalUrl": "/guru/set-soalan/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Set Soalan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "published__1280",
+   "description": "status Terbit",
+   "file": "_raw/M10/S14-set-soalan-cipta__published__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/set-soalan/cipta",
+   "finalUrl": "/guru/set-soalan/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Set Soalan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main label[\\@click=\"status = 'published'\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "scheduled__1280",
+   "description": "status Jadual → scheduled_at shown",
+   "file": "_raw/M10/S14-set-soalan-cipta__scheduled__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/set-soalan/cipta",
+   "finalUrl": "/guru/set-soalan/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Set Soalan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main label[\\@click=\"status = 'scheduled'\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "create set (status Draf) @375",
+   "file": "_raw/M10/S14-set-soalan-cipta__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/set-soalan/cipta",
+   "finalUrl": "/guru/set-soalan/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Set Soalan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "create set (status Draf) @768",
+   "file": "_raw/M10/S14-set-soalan-cipta__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/set-soalan/cipta",
+   "finalUrl": "/guru/set-soalan/cipta",
+   "httpStatus": 200,
+   "title": "Cipta Set Soalan - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Cipta Set Soalan",
+   "seenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "tag": "form",
+   "xData": "{ status: 'draft' }",
+   "keys": [
+    "status"
+   ],
+   "liveState": {
+    "status": "draft"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Cipta Set Soalan",
+   "seenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S14-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Cipta Set Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Cipta Set Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Cipta Set Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Senarai",
+   "href": "https://prestasiplus.my/guru/set-soalan",
+   "absHref": "https://prestasiplus.my/guru/set-soalan",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Cipta Set Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-005",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/set-soalan",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "classroom_id",
+    "title",
+    "description",
+    "group_tag",
+    "time_limit_minutes",
+    "max_attempts",
+    "status",
+    "status",
+    "status",
+    "scheduled_at"
+   ],
+   "landmark": "main",
+   "section": "Cipta Set Soalan",
+   "alpine": {
+    "x-data": "{ status: 'draft' }"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-006",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Cipta Set Soalan",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "1",
+   "landmark": "form",
+   "section": "Cipta Set Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-008",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "form",
+   "section": "Cipta Set Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-009",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Maklumat Asas",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kelas *",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-011",
+   "kind": "select",
+   "tag": "select",
+   "name": "classroom_id",
+   "label": "Kelas *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Kelas --"
+    }
+   ],
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-012",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tajuk Set *",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-013",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "title",
+   "label": "Tajuk Set *",
+   "placeholder": "cth: Latih Tubi BM Mac 2026 - Set 1",
+   "required": true,
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-014",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-015",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan",
+   "placeholder": "Arahan atau penerangan untuk pelajar...",
+   "rows": "2",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-016",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kumpulan Set (untuk TOV/AR tracking)",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-017",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "group_tag",
+   "label": "Kumpulan Set (untuk TOV/AR tracking)",
+   "placeholder": "cth: BM Mac 2026",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "Set pertama dalam kumpulan = TOV (baseline). Set seterusnya = AR (progress).",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "2",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "2",
+   "landmark": "form",
+   "section": "Maklumat Asas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-021",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Tetapan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Had Masa (minit)",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "time_limit_minutes",
+   "label": "Had Masa (minit)",
+   "placeholder": "Tiada had",
+   "min": "1",
+   "max": "360",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-024",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Kosongkan = tiada had masa",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Had Percubaan",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "max_attempts",
+   "label": "Had Percubaan",
+   "min": "0",
+   "max": "99",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "0 = tiada had (boleh ulang)",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-028",
+   "kind": "card",
+   "tag": "div",
+   "text": "3",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "3",
+   "landmark": "form",
+   "section": "Tetapan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-030",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Status Penerbitan",
+   "landmark": "form",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "Draf Simpan dahulu, terbit kemudian",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "@click": "status = 'draft'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-032",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Draf Simpan dahulu, terbit kemudian",
+   "optionValue": "draft",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-033",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jadual Terbit pada masa tertentu",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "@click": "status = 'scheduled'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-034",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Jadual Terbit pada masa tertentu",
+   "optionValue": "scheduled",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "scheduled__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-035",
+   "kind": "label",
+   "tag": "label",
+   "text": "Terbit Pelajar boleh mula sekarang",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "@click": "status = 'published'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-036",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "status",
+   "label": "Terbit Pelajar boleh mula sekarang",
+   "optionValue": "published",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "alpine": {
+    "x-model": "status"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "checkedIn": [
+    "published__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S14-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tarikh & Masa Terbit",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "scheduled__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "status === 'scheduled'"
+  },
+  {
+   "id": "EL-M10-S14-038",
+   "kind": "input",
+   "tag": "input",
+   "type": "datetime-local",
+   "name": "scheduled_at",
+   "label": "Tarikh & Masa Terbit",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "scheduled__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "published__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "status === 'scheduled'"
+  },
+  {
+   "id": "EL-M10-S14-039",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Cipta Set & Tambah Soalan",
+   "icon": "fa-plus",
+   "form": "https://prestasiplus.my/guru/set-soalan",
+   "landmark": "form",
+   "section": "Status Penerbitan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "published__1280",
+    "scheduled__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

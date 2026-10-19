@@ -1,0 +1,150 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    [
+      "^/admin$",
+      "M17",
+      "admin dashboard (TRACKER also lists /admin under M01 login redirect)"
+    ],
+    [
+      "^/admin/laporan$",
+      "M17",
+      "Laporan Statistik (TRACKER M12 line records it as owned by M17)"
+    ],
+    [
+      "^/admin/monitoring",
+      "M17",
+      "route in M17 checklist; component owned by M11 (S2–S5, identical markup)"
+    ],
+    [
+      "^/(subject|week)$",
+      "M17",
+      "fragments of /api/command-center/student/{id}/subject|week harvested from S7 scripts"
+    ],
+    [
+      "^/admin/performance",
+      "M23",
+      "system performance & security (server CPU/RAM/disk, processes, threats) — not academic; M23 owns"
+    ],
+    [
+      "^/admin/command-center",
+      "M17",
+      "Command Center LIVE + drill-downs (school / teacher / classroom / student) + daily activity (found by crawl)"
+    ],
+    [
+      "^/api/command-center",
+      "M17",
+      "Command Center JSON endpoints (GET; daily-activity, student week/subject, session, headcount)"
+    ],
+    [
+      "^/admin/laporan-eksekutif",
+      "M17",
+      "executive report + per-school focus page + clear-cache POST (found by crawl)"
+    ],
+    [
+      "^/admin/export/",
+      "M17",
+      "dashboard 'Muat Turun Data (CSV)' downloads (never opened)"
+    ],
+    [
+      "^/guru/command-center",
+      "M10",
+      "teacher Command Center (same drill-down templates as M17)"
+    ]
+  ],
+  "screens": {
+    "S1": {
+      "key": "S1-dashboard",
+      "route": "/admin",
+      "title": "Dashboard - Admin Panel",
+      "shell": "SHA",
+      "notes": "admin home: 12 stat cards (M04/M03/M01-M02/M16/M21 data), quick actions, 10 latest questions, question status distribution, quick links incl. 4 CSV exports"
+    },
+    "S2": {
+      "key": "S2-command-center",
+      "route": "/admin/command-center",
+      "title": "PRESTASIPLUS COMMAND CENTER",
+      "shell": "none (standalone dark layout)",
+      "notes": "LIVE board polling GET /admin/command-center/live-data every 10 s"
+    },
+    "S3": {
+      "key": "S3-daily-activity",
+      "route": "/admin/command-center/daily-activity",
+      "title": "AKTIVITI PLATFORM — PRESTASIPLUS",
+      "shell": "none (standalone dark layout)",
+      "notes": "new route in sidebar; GET /api/command-center/daily-activity?period=today|week|month every 30 s; school drill GET /api/command-center/daily-activity/school/{id}"
+    },
+    "S4": {
+      "key": "S4-cc-school",
+      "route": "/admin/command-center/school/{id}",
+      "title": "{sekolah} - Command Center",
+      "shell": "none (standalone)",
+      "notes": "new route; teacher list; unknown id 404"
+    },
+    "S5": {
+      "key": "S5-cc-teacher",
+      "route": "/admin/command-center/school/{sid}/teacher/{uid}",
+      "title": "{guru} - Command Center",
+      "shell": "none (standalone)",
+      "notes": "new route; class list; unknown id 404"
+    },
+    "S6": {
+      "key": "S6-cc-classroom",
+      "route": "/admin/command-center/classroom/{id}",
+      "title": "{kelas} - Command Center",
+      "shell": "none (standalone)",
+      "notes": "new route; pupil list; unknown id 404"
+    },
+    "S7": {
+      "key": "S7-cc-student",
+      "route": "/admin/command-center/student/{id}",
+      "title": "{pelajar} - Command Center",
+      "shell": "none (standalone)",
+      "notes": "new route; stats, subjects, 8 weeks, mood, headcount, ALESA insight; 2 modals (week / session) fed by GET /api/command-center/*"
+    },
+    "S8": {
+      "key": "S8-laporan-eksekutif",
+      "route": "/admin/laporan-eksekutif",
+      "title": "Laporan Eksekutif {tahun}",
+      "shell": "SHA",
+      "notes": "?year=; Refresh = POST /admin/laporan-eksekutif/clear-cache (never submitted); ?year=abc 500"
+    },
+    "S9": {
+      "key": "S9-eksekutif-sekolah",
+      "route": "/admin/laporan-eksekutif/sekolah/{id}",
+      "title": "Fokus: {sekolah}",
+      "shell": "SHA",
+      "notes": "new route; per-school focus report; unknown id 404"
+    },
+    "S10": {
+      "key": "S10-analytics",
+      "route": "/admin/analytics",
+      "title": "Analitik & Statistik - Admin Panel",
+      "shell": "SHA",
+      "notes": "content analytics (imports, question status, content counts, coverage matrix, difficulty, curriculum)"
+    },
+    "S11": {
+      "key": "S11-laporan",
+      "route": "/admin/laporan",
+      "title": "Laporan Statistik - Admin Panel",
+      "shell": "SHA",
+      "notes": "laporanApp(): tabs Overview / Sekolah / Guru / Murid, client filters + search, ?range=7|30|90"
+    }
+  },
+  "shells": {
+    "SHA": {
+      "key": "SHA-admin-shell",
+      "title": "Admin panel shell (S1, S8–S11)",
+      "owner": "00-global-ui.md / M23",
+      "note": "Layout chrome, not M17 content."
+    },
+    "SHU": {
+      "key": "SHU-standalone",
+      "title": "(unused)",
+      "owner": "-",
+      "note": "S2–S7 are standalone pages without a shell; their elements are all content."
+    }
+  }
+}

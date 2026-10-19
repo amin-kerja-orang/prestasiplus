@@ -1,0 +1,198 @@
+{
+ "screen": "S1",
+ "key": "S1-pilih-sekolah",
+ "route": "/admin-sekolah/pilih-sekolah",
+ "name": "500 - Ralat Pelayan | PRESTASIPLUS",
+ "module": "M27",
+ "generatedAt": "2026-09-30T03:44:21.986Z",
+ "notes": "302 target of /admin-sekolah, /pelajar, /guru, /kelas, /statistik-penggunaan, /dskp-heatmap, /laporan-bulanan, /pengguna; 500 for the platform admin",
+ "shell": "none (global error page)",
+ "summary": {
+  "total": 7,
+  "visibleDefault": 7,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 4,
+   "heading": 1,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "admin-500__1280",
+   "description": "admin: target of the 302 from 8 routes; 500 \"Ralat Pelayan\"",
+   "file": "_raw/M27/S1-pilih-sekolah__admin-500__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-500__375",
+   "description": "admin-500 @375",
+   "file": "_raw/M27/S1-pilih-sekolah__admin-500__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "admin-500__768",
+   "description": "admin-500 @768",
+   "file": "_raw/M27/S1-pilih-sekolah__admin-500__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin-sekolah/pilih-sekolah",
+   "finalUrl": "/admin-sekolah/pilih-sekolah",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "M27MASK"
+    }
+   ],
+   "actionLog": [
+    "m27mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [],
+ "jsEndpoints": [],
+ "elements": [
+  {
+   "id": "EL-M27-S1-001",
+   "kind": "text",
+   "tag": "div",
+   "text": "500",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-002",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚙️",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-003",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-005",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cuba Semula",
+   "href": "javascript:location.reload()",
+   "absHref": "javascript:location.reload()",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  },
+  {
+   "id": "EL-M27-S1-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Ralat Pelayan",
+   "status": "visible-default",
+   "visibleIn": [
+    "admin-500__1280",
+    "admin-500__375",
+    "admin-500__768"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6349 @@
+{
+ "screen": "S2",
+ "key": "S2-users-create",
+ "route": "/admin/users/create",
+ "name": "Tambah Pengguna",
+ "module": "M02",
+ "generatedAt": "2026-09-25T06:44:32.128Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 156,
+  "visibleDefault": 6,
+  "conditional": 94,
+  "hiddenOnly": 56,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 2,
+   "heading": 1,
+   "text": 16,
+   "form": 1,
+   "hidden-field": 20,
+   "label": 33,
+   "select": 3,
+   "input": 26,
+   "button": 13,
+   "empty-state": 2,
+   "badge": 24,
+   "radio": 11,
+   "checkbox": 2,
+   "link": 1,
+   "modal": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (no role)",
+   "file": "_raw/M02/S2-users-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "jpn-jpn-selected__1280",
+   "description": "jpn_officer + JPN chosen",
+   "file": "_raw/M02/S2-users-create__jpn-jpn-selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "jpn_officer"
+     ]
+    },
+    {
+     "wait": 600
+    },
+    {
+     "select": [
+      "select[x-model=selectedJpnId]",
+      "15"
+     ]
+    },
+    {
+     "wait": 2000
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "parent-linked__1280",
+   "description": "parent + 1 student linked (client only, masked)",
+   "file": "_raw/M02/S2-users-create__parent-linked__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "parent"
+     ]
+    },
+    {
+     "click": "input[x-model=parentStudentSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=parentStudentSearch]",
+      "ah"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"addLinkedStudent\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=1 strings=1 attrs=3 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "parent-search__1280",
+   "description": "parent + student search results (masked)",
+   "file": "_raw/M02/S2-users-create__parent-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "parent"
+     ]
+    },
+    {
+     "click": "input[x-model=parentStudentSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=parentStudentSearch]",
+      "ah"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=15 strings=15 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "ppd-jpn-selected__1280",
+   "description": "ppd_officer + JPN Selangor chosen (PPD list loaded)",
+   "file": "_raw/M02/S2-users-create__ppd-jpn-selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "ppd_officer"
+     ]
+    },
+    {
+     "wait": 600
+    },
+    {
+     "select": [
+      "select[x-model=selectedJpnId]",
+      "15"
+     ]
+    },
+    {
+     "wait": 2000
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-admin__1280",
+   "description": "role=admin",
+   "file": "_raw/M02/S2-users-create__role-admin__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "admin"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-jpn_officer__1280",
+   "description": "role=jpn_officer",
+   "file": "_raw/M02/S2-users-create__role-jpn_officer__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "jpn_officer"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-parent__1280",
+   "description": "role=parent",
+   "file": "_raw/M02/S2-users-create__role-parent__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "parent"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-ppd_officer__1280",
+   "description": "role=ppd_officer",
+   "file": "_raw/M02/S2-users-create__role-ppd_officer__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "ppd_officer"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-school_admin__1280",
+   "description": "role=school_admin",
+   "file": "_raw/M02/S2-users-create__role-school_admin__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "school_admin"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-sponsor__1280",
+   "description": "role=sponsor",
+   "file": "_raw/M02/S2-users-create__role-sponsor__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "sponsor"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-student__1280",
+   "description": "role=student",
+   "file": "_raw/M02/S2-users-create__role-student__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "student"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-teacher__1280",
+   "description": "role=teacher",
+   "file": "_raw/M02/S2-users-create__role-teacher__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "teacher"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "sa-generated__1280",
+   "description": "school_admin + school picked + credentials generated (client only)",
+   "file": "_raw/M02/S2-users-create__sa-generated__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "school_admin"
+     ]
+    },
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectSchool\"]"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "click": "main button[\\@click=\"generateCredentials()\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=2 attrs=2 texts=0 inputs=2 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "sa-search-empty__1280",
+   "description": "school_admin + school search no result",
+   "file": "_raw/M02/S2-users-create__sa-search-empty__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "school_admin"
+     ]
+    },
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "zzqxv"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "sa-search__1280",
+   "description": "school_admin + school search results",
+   "file": "_raw/M02/S2-users-create__sa-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "school_admin"
+     ]
+    },
+    {
+     "click": "input[x-model=schoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=schoolSearch]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=5 strings=5 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "std-school-search__1280",
+   "description": "student + school search results",
+   "file": "_raw/M02/S2-users-create__std-school-search__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "student"
+     ]
+    },
+    {
+     "click": "input[x-model=stdSchoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=stdSchoolSearch]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=5 strings=5 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "std-school-selected__1280",
+   "description": "student + school picked",
+   "file": "_raw/M02/S2-users-create__std-school-selected__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "student"
+     ]
+    },
+    {
+     "click": "input[x-model=stdSchoolSearch]"
+    },
+    {
+     "type": [
+      "input[x-model=stdSchoolSearch]",
+      "bangi"
+     ]
+    },
+    {
+     "wait": 2500
+    },
+    {
+     "click": "main [\\@click^=\"selectStdSchool\"]"
+    },
+    {
+     "wait": 500
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M02/S2-users-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-school_admin__375",
+   "description": "role=school_admin @375",
+   "file": "_raw/M02/S2-users-create__role-school_admin__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "school_admin"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-student__375",
+   "description": "role=student @375",
+   "file": "_raw/M02/S2-users-create__role-student__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "student"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "role-student__768",
+   "description": "role=student @768",
+   "file": "_raw/M02/S2-users-create__role-student__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/users/create",
+   "finalUrl": "/admin/users/create",
+   "httpStatus": 200,
+   "title": "Tambah Pengguna - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "select": [
+      "select[name=role]",
+      "student"
+     ]
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "createUserForm",
+   "xData": "createUserForm()",
+   "keys": [],
+   "liveState": {
+    "selectedRole": "",
+    "schoolSearch": "",
+    "searchResults": "array(0)",
+    "searchLoading": false,
+    "showDropdown": false,
+    "selectedSchool": null,
+    "generated": false,
+    "genName": "",
+    "genEmail": "",
+    "genPassword": "string(11)",
+    "genPhone": "",
+    "copiedToast": false,
+    "saSchoolId": "",
+    "saState": "",
+    "saDistrict": "",
+    "jpnList": "array(16)",
+    "ppdList": "array(0)",
+    "selectedJpnId": "",
+    "selectedPpdId": "",
+    "officerJpnName": "",
+    "officerPpdCode": "",
+    "officerName": "",
+    "officerEmail": "",
+    "ppdLoading": false,
+    "parentStudentSearch": "",
+    "parentStudentResults": "array(0)",
+    "parentStudentLoading": false,
+    "showParentStudentDropdown": false,
+    "linkedStudents": "array(0)",
+    "stdSchoolSearch": "",
+    "stdSearchResults": "array(0)",
+    "showStdDropdown": false,
+    "selectedStdSchoolId": "",
+    "selectedStdSchoolName": "",
+    "isStandardRole": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Tambah Pengguna Baru",
+   "seenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "JPN load error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Pentadbir",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/api/jpn",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/schools/search?q=",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/jpn/",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/ppd",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/api/students/search?q=",
+   "sources": [
+    "script#3"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M02-S2-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "Borang Pendaftaran Pengguna",
+   "landmark": "main",
+   "section": "Tambah Pengguna Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-002",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Borang Pendaftaran Pengguna",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "Isi maklumat untuk mendaftarkan pengguna baru",
+   "landmark": "main",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-004",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/users",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "role",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade",
+    "grade"
+   ],
+   "landmark": "main",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-005",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-006",
+   "kind": "label",
+   "tag": "label",
+   "text": "Peranan *",
+   "for": "role",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-007",
+   "kind": "select",
+   "tag": "select",
+   "name": "role",
+   "label": "Peranan *",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Peranan --"
+    },
+    {
+     "value": "student",
+     "text": "Pelajar"
+    },
+    {
+     "value": "teacher",
+     "text": "Guru"
+    },
+    {
+     "value": "parent",
+     "text": "Ibu Bapa"
+    },
+    {
+     "value": "sponsor",
+     "text": "Penaja"
+    },
+    {
+     "value": "school_admin",
+     "text": "Admin Sekolah"
+    },
+    {
+     "value": "ppd_officer",
+     "text": "Pegawai PPD"
+    },
+    {
+     "value": "jpn_officer",
+     "text": "Pegawai JPN"
+    },
+    {
+     "value": "admin",
+     "text": "Admin"
+    }
+   ],
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "selectedRole",
+    "@change": "onRoleChange()"
+   },
+   "domId": "role",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-008",
+   "kind": "label",
+   "tag": "label",
+   "text": "Cari Sekolah *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'school_admin'"
+  },
+  {
+   "id": "EL-M02-S2-009",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Cari Sekolah *",
+   "placeholder": "Taipkan nama sekolah atau kod sekolah (cth: JBA0001)...",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "schoolSearch",
+    "@input.debounce.300ms": "searchSchool()",
+    "@focus": "showDropdown = true",
+    "@click.away": "showDropdown = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'school_admin'"
+  },
+  {
+   "id": "EL-M02-S2-010",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "• • Tiada kod",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in searchResults"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-011",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada sekolah dijumpai",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-search-empty__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showDropdown && schoolSearch.length >= 2 && searchResults.length === 0 && !searchLoading"
+  },
+  {
+   "id": "EL-M02-S2-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sekolah Dipilih",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-013",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "form": "https://prestasiplus.my/admin/users",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "resetSchoolAdmin()"
+   },
+   "title": "Reset",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-014",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Janakan Akaun Admin Sekolah",
+   "icon": "fa-magic",
+   "disabled": true,
+   "form": "https://prestasiplus.my/admin/users",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "generateCredentials()",
+    ":disabled": "!selectedSchool?.code"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!generated"
+  },
+  {
+   "id": "EL-M02-S2-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah ini tiada kod KPM. Sila isi maklumat secara manual di bawah.",
+   "icon": "fa-exclamation-triangle",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "!selectedSchool?.code"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "!selectedSchool?.code"
+  },
+  {
+   "id": "EL-M02-S2-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "Maklumat Dijana",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Pentadbir",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-018",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama Pentadbir",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'name' : ''",
+    "x-model": "genName",
+    ":required": "selectedRole === 'school_admin' && generated"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "ID Login (Emel)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-020",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "label": "ID Login (Emel)",
+   "readonly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'email' : ''",
+    "x-model": "genEmail",
+    ":required": "selectedRole === 'school_admin' && generated"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-021",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-copy",
+   "form": "https://prestasiplus.my/admin/users",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "copyToClipboard(genEmail)"
+   },
+   "title": "Salin",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Kata Laluan",
+   "readonly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "genPassword"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-024",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-copy",
+   "form": "https://prestasiplus.my/admin/users",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "copyToClipboard(genPassword)"
+   },
+   "title": "Salin",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Telefon (Pilihan)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-026",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Telefon (Pilihan)",
+   "placeholder": "012-345 6789",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'phone' : ''",
+    "x-model": "genPhone"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-027",
+   "kind": "badge",
+   "tag": "span",
+   "text": "JPN:",
+   "icon": "fa-landmark",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PPD:",
+   "icon": "fa-building",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-029",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'password' : ''",
+    "x-model": "genPassword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-030",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'password_confirmation' : ''",
+    "x-model": "genPassword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-031",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' ? 'school_id' : ''",
+    "x-model": "saSchoolId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-032",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' ? 'ppd_state' : ''",
+    "x-model": "saState"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-033",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' ? 'ppd_district' : ''",
+    "x-model": "saDistrict"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-034",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' ? 'is_active' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-035",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-036",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama *",
+   "placeholder": "Nama penuh pegawai",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "officerName",
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'name' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Emel *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-038",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "label": "Emel *",
+   "placeholder": "contoh@email.com",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "officerEmail",
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'email' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Negeri (JPN) *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-040",
+   "kind": "select",
+   "tag": "select",
+   "label": "Negeri (JPN) *",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Negeri --"
+    },
+    {
+     "value": "1",
+     "text": "Johor"
+    },
+    {
+     "value": "2",
+     "text": "Kedah"
+    },
+    {
+     "value": "3",
+     "text": "Kelantan"
+    },
+    {
+     "value": "4",
+     "text": "Kuala Lumpur"
+    },
+    {
+     "value": "5",
+     "text": "Labuan"
+    },
+    {
+     "value": "6",
+     "text": "Melaka"
+    },
+    {
+     "value": "7",
+     "text": "Negeri Sembilan"
+    },
+    {
+     "value": "8",
+     "text": "Pahang"
+    },
+    {
+     "value": "9",
+     "text": "Perak"
+    },
+    {
+     "value": "10",
+     "text": "Perlis"
+    },
+    {
+     "value": "11",
+     "text": "Pulau Pinang"
+    },
+    {
+     "value": "12",
+     "text": "Putrajaya"
+    },
+    {
+     "value": "13",
+     "text": "Sabah"
+    },
+    {
+     "value": "14",
+     "text": "Sarawak"
+    },
+    {
+     "value": "15",
+     "text": "Selangor"
+    },
+    {
+     "value": "16",
+     "text": "Terengganu"
+    }
+   ],
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "selectedJpnId",
+    "@change": "onJpnChange()"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-041",
+   "kind": "label",
+   "tag": "label",
+   "text": "PPD *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "ppd-jpn-selected__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer'"
+  },
+  {
+   "id": "EL-M02-S2-042",
+   "kind": "select",
+   "tag": "select",
+   "label": "PPD *",
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih PPD --"
+    },
+    {
+     "value": "127",
+     "text": "PPD Gombak"
+    },
+    {
+     "value": "128",
+     "text": "PPD Hulu Langat"
+    },
+    {
+     "value": "129",
+     "text": "PPD Hulu Selangor"
+    },
+    {
+     "value": "130",
+     "text": "PPD Klang"
+    },
+    {
+     "value": "131",
+     "text": "PPD Kuala Langat"
+    },
+    {
+     "value": "132",
+     "text": "PPD Kuala Selangor"
+    },
+    {
+     "value": "133",
+     "text": "PPD Petaling Perdana"
+    },
+    {
+     "value": "134",
+     "text": "PPD Petaling Utama"
+    },
+    {
+     "value": "135",
+     "text": "PPD Sabak Bernam"
+    },
+    {
+     "value": "136",
+     "text": "PPD Sepang"
+    }
+   ],
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "selectedPpdId",
+    ":disabled": "!selectedJpnId || ppdLoading"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "ppd-jpn-selected__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer'"
+  },
+  {
+   "id": "EL-M02-S2-043",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'ppd_state' : ''",
+    ":value": "officerJpnName"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-044",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'ppd_district' : ''",
+    ":value": "officerPpdCode"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-045",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-046",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "label": "Kata Laluan *",
+   "placeholder": "Minimum 6 aksara",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'password' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-047",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sahkan Kata Laluan *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-048",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "label": "Sahkan Kata Laluan *",
+   "placeholder": "Taip semula kata laluan",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'password_confirmation' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer'"
+  },
+  {
+   "id": "EL-M02-S2-049",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'is_active' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-050",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-051",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Nama *",
+   "placeholder": "Nama penuh",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'name' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-052",
+   "kind": "label",
+   "tag": "label",
+   "text": "Emel *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-053",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "label": "Emel *",
+   "placeholder": "contoh@email.com",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'email' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-054",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Telefon (Pilihan)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-055",
+   "kind": "input",
+   "tag": "input",
+   "type": "tel",
+   "label": "No. Telefon (Pilihan)",
+   "placeholder": "Cth: 0191234567",
+   "maxlength": "14",
+   "inputmode": "tel",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'phone' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-056",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pautkan Anak (Pelajar)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-parent__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'parent'"
+  },
+  {
+   "id": "EL-M02-S2-057",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Pautkan Anak (Pelajar)",
+   "placeholder": "Cari nama atau emel pelajar...",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "parentStudentSearch",
+    "@input.debounce.300ms": "searchParentStudent()",
+    "@focus": "showParentStudentDropdown = true",
+    "@click.away": "showParentStudentDropdown = false"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-parent__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'parent'"
+  },
+  {
+   "id": "EL-M02-S2-058",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "iconOnly": true,
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "addLinkedStudent(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in parentStudentResults"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-059",
+   "kind": "empty-state",
+   "tag": "div",
+   "text": "Tiada pelajar dijumpai",
+   "icon": "fa-search",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "showParentStudentDropdown && parentStudentSearch.length >= 2 && parentStudentResults.length === 0 && !parentStudentLoading",
+    "x-transition": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showParentStudentDropdown && parentStudentSearch.length >= 2 && parentStudentResults.length === 0 && !parentStudentLoading"
+  },
+  {
+   "id": "EL-M02-S2-060",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anak yang dipautkan:",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "linkedStudents.length > 0"
+  },
+  {
+   "id": "EL-M02-S2-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "iconOnly": true,
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "removeLinkedStudent(idx)"
+   },
+   "title": "Buang",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=(student, idx) in linkedStudents"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-062",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "'linked_students[]'",
+    ":value": "student.id"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-063",
+   "kind": "text",
+   "tag": "p",
+   "text": "Boleh pautkan lebih dari satu pelajar. Boleh juga ditambah kemudian.",
+   "icon": "fa-info-circle",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-parent__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'parent'"
+  },
+  {
+   "id": "EL-M02-S2-064",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tahap Pendidikan",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-065",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Rendah",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-066",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 1",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-067",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 1",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-068",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 2",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-069",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 2",
+   "optionValue": "2",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-070",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 3",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-071",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 3",
+   "optionValue": "3",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-072",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 4",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-073",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 4",
+   "optionValue": "4",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-074",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-075",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 5",
+   "optionValue": "5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-076",
+   "kind": "label",
+   "tag": "label",
+   "text": "Darjah 6",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-077",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Darjah 6",
+   "optionValue": "6",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-078",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Menengah",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-079",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 1",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-080",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Ting. 1",
+   "optionValue": "7",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-081",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 2",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-082",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Ting. 2",
+   "optionValue": "8",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-083",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 3",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-084",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Ting. 3",
+   "optionValue": "9",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-085",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 4",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-086",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Ting. 4",
+   "optionValue": "10",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-087",
+   "kind": "label",
+   "tag": "label",
+   "text": "Ting. 5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-088",
+   "kind": "radio",
+   "tag": "input",
+   "type": "radio",
+   "name": "grade",
+   "label": "Ting. 5",
+   "optionValue": "11",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "display:none",
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M02-S2-089",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Kad Pengenalan (Pilihan)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-090",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "No. Kad Pengenalan (Pilihan)",
+   "placeholder": "Cth: 031215101234",
+   "maxlength": "14",
+   "inputmode": "numeric",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole && selectedRole === 'student' ? 'ic_number' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-091",
+   "kind": "text",
+   "tag": "p",
+   "text": "12 digit MyKad. Dilindungi PDPA.",
+   "icon": "fa-shield-alt",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-092",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sekolah",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "['student','teacher'].includes(selectedRole)"
+  },
+  {
+   "id": "EL-M02-S2-093",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "label": "Sekolah",
+   "placeholder": "Cari nama sekolah...",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "stdSchoolSearch",
+    "@input.debounce.300ms": "searchStdSchool()",
+    "@focus": "showStdDropdown = true",
+    "@click.away": "showStdDropdown = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "['student','teacher'].includes(selectedRole)"
+  },
+  {
+   "id": "EL-M02-S2-094",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "iconOnly": true,
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "selectStdSchool(s)"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "template:x-for=s in stdSearchResults"
+   ],
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-095",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "label": "Sekolah",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'school_id' : ''",
+    ":value": "selectedStdSchoolId || ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-096",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kata Laluan *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-097",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "label": "Kata Laluan *",
+   "placeholder": "Minimum 6 aksara",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'password' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-098",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sahkan Kata Laluan *",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-099",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "label": "Sahkan Kata Laluan *",
+   "placeholder": "Taip semula kata laluan",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'password_confirmation' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-100",
+   "kind": "label",
+   "tag": "label",
+   "text": "Aktifkan Akaun Pengguna yang tidak aktif tidak boleh log masuk",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-101",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Aktifkan Akaun Pengguna yang tidak aktif tidak boleh log masuk",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'is_active' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "isStandardRole",
+   "checkedIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "default__375",
+    "role-school_admin__375"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-102",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/users",
+   "absHref": "https://prestasiplus.my/admin/users",
+   "icon": "fa-arrow-left",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole"
+  },
+  {
+   "id": "EL-M02-S2-103",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Daftar Pengguna",
+   "icon": "fa-user-plus",
+   "form": "https://prestasiplus.my/admin/users",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":disabled": "selectedRole === 'school_admin' && !generated"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "selectedRole"
+  },
+  {
+   "id": "EL-M02-S2-104",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Disalin!",
+   "landmark": "main",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "copiedToast",
+    "x-transition.opacity": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "default__375",
+    "role-school_admin__375",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "copiedToast"
+  },
+  {
+   "id": "EL-M02-S2-105",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama *",
+   "placeholder": "Nama penuh pegawai",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "officerName",
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'name' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-106",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "Emel *",
+   "placeholder": "contoh@email.com",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-model": "officerEmail",
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'email' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-107",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "ppd_state",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'ppd_state' : ''",
+    ":value": "officerJpnName"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-108",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "ppd_district",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'ppd_district' : ''",
+    ":value": "officerPpdCode"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-109",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password",
+   "label": "Kata Laluan *",
+   "placeholder": "Minimum 6 aksara",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'password' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-110",
+   "kind": "input",
+   "tag": "input",
+   "type": "password",
+   "name": "password_confirmation",
+   "label": "Sahkan Kata Laluan *",
+   "placeholder": "Taip semula kata laluan",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'password_confirmation' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "jpn-jpn-selected__1280",
+    "parent-linked__1280",
+    "parent-search__1280",
+    "ppd-jpn-selected__1280",
+    "role-admin__1280",
+    "role-jpn_officer__1280",
+    "role-parent__1280",
+    "role-ppd_officer__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-111",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "is_active",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "(selectedRole === 'ppd_officer' || selectedRole === 'jpn_officer') ? 'is_active' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "jpn-jpn-selected__1280",
+    "ppd-jpn-selected__1280",
+    "role-jpn_officer__1280",
+    "role-ppd_officer__1280",
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-112",
+   "kind": "input",
+   "tag": "input",
+   "type": "tel",
+   "name": "phone",
+   "label": "No. Telefon (Pilihan)",
+   "placeholder": "Cth: 0191234567",
+   "maxlength": "14",
+   "inputmode": "tel",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'phone' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "isStandardRole"
+  },
+  {
+   "id": "EL-M02-S2-113",
+   "kind": "text",
+   "tag": "span",
+   "text": "<name>",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "student.name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280"
+   ],
+   "showWhen": "linkedStudents.length > 0"
+  },
+  {
+   "id": "EL-M02-S2-114",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "student.class_level",
+    "x-text": "student.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280"
+   ],
+   "showWhen": "student.class_level"
+  },
+  {
+   "id": "EL-M02-S2-115",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "icon": "fa-times-circle",
+   "form": "https://prestasiplus.my/admin/users",
+   "iconOnly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "removeLinkedStudent(idx)"
+   },
+   "title": "Buang",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-linked__1280"
+   ],
+   "showWhen": "linkedStudents.length > 0",
+   "dataRow": true,
+   "repeatCount": 1,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-116",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "linked_students[]",
+   "label": "Pautkan Anak (Pelajar)",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "'linked_students[]'",
+    ":value": "student.id"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "parent-linked__1280"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-117",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "label": "Sekolah",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'school_id' : ''",
+    ":value": "selectedStdSchoolId || ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-118",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "name": "is_active",
+   "label": "Aktifkan Akaun Pengguna yang tidak aktif tidak boleh log masuk",
+   "optionValue": "1",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole ? 'is_active' : ''"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "hiddenBy": [
+    "sr-only"
+   ],
+   "showWhen": "isStandardRole",
+   "checkedIn": [
+    "parent-linked__1280",
+    "parent-search__1280",
+    "role-admin__1280",
+    "role-parent__1280",
+    "role-sponsor__1280",
+    "role-student__1280",
+    "role-teacher__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-119",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<name> T5 SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+   "form": "https://prestasiplus.my/admin/users",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "addLinkedStudent(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "showParentStudentDropdown && parentStudentResults.length > 0",
+   "dataRow": true,
+   "repeatCount": 15,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-120",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-121",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-122",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.school_name",
+    "x-text": "s.school_name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.school_name"
+  },
+  {
+   "id": "EL-M02-S2-123",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-124",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-125",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-126",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-127",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-128",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.school_name",
+    "x-text": "s.school_name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.school_name"
+  },
+  {
+   "id": "EL-M02-S2-129",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-130",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-131",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-132",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-133",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.school_name",
+    "x-text": "s.school_name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.school_name"
+  },
+  {
+   "id": "EL-M02-S2-134",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-135",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-136",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-137",
+   "kind": "badge",
+   "tag": "span",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.school_name",
+    "x-text": "s.school_name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.school_name"
+  },
+  {
+   "id": "EL-M02-S2-138",
+   "kind": "badge",
+   "tag": "span",
+   "text": "T5",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "s.class_level",
+    "x-text": "s.class_level"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "parent-search__1280"
+   ],
+   "showWhen": "s.class_level"
+  },
+  {
+   "id": "EL-M02-S2-139",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "school_id",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' ? 'school_id' : ''",
+    "x-model": "saSchoolId"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "role-school_admin__1280",
+    "sa-generated__1280",
+    "sa-search-empty__1280",
+    "sa-search__1280",
+    "role-school_admin__375"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-140",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "ic_number",
+   "label": "No. Kad Pengenalan (Pilihan)",
+   "placeholder": "Cth: 031215101234",
+   "maxlength": "14",
+   "inputmode": "numeric",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "isStandardRole && selectedRole === 'student' ? 'ic_number' : ''"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "role-student__1280",
+    "std-school-search__1280",
+    "std-school-selected__1280",
+    "role-student__375",
+    "role-student__768"
+   ],
+   "showWhen": "selectedRole === 'student'"
+  },
+  {
+   "id": "EL-M02-S2-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "BBD4051",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "selectedSchool?.code",
+    "x-text": "selectedSchool?.code"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "selectedSchool?.code"
+  },
+  {
+   "id": "EL-M02-S2-142",
+   "kind": "text",
+   "tag": "p",
+   "text": "SEKOLAH JENIS KEBANGSAAN (TAMIL) BANGI",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "selectedSchool?.name"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-143",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selangor",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "selectedSchool?.state"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-144",
+   "kind": "text",
+   "tag": "span",
+   "text": "PPD HULU LANGAT",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "selectedSchool?.district"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "SK",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "selectedSchool?.type"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "selectedSchool"
+  },
+  {
+   "id": "EL-M02-S2-146",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Pentadbir",
+   "required": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'name' : ''",
+    "x-model": "genName",
+    ":required": "selectedRole === 'school_admin' && generated"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-147",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "email",
+   "label": "ID Login (Emel)",
+   "required": true,
+   "readonly": true,
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'email' : ''",
+    "x-model": "genEmail",
+    ":required": "selectedRole === 'school_admin' && generated"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-148",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "phone",
+   "label": "Telefon (Pilihan)",
+   "placeholder": "012-345 6789",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'phone' : ''",
+    "x-model": "genPhone"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-149",
+   "kind": "badge",
+   "tag": "span",
+   "text": "JPN: Selangor",
+   "icon": "fa-landmark",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-150",
+   "kind": "badge",
+   "tag": "span",
+   "text": "PPD: PPD HULU LANGAT",
+   "icon": "fa-building",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-generated__1280"
+   ],
+   "showWhen": "generated"
+  },
+  {
+   "id": "EL-M02-S2-151",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "password",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'password' : ''",
+    "x-model": "genPassword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-152",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "password_confirmation",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    ":name": "selectedRole === 'school_admin' && generated ? 'password_confirmation' : ''",
+    "x-model": "genPassword"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "sa-generated__1280"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M02-S2-153",
+   "kind": "card",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-show": "showDropdown && searchResults.length > 0",
+    "x-transition": ""
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-search__1280"
+   ],
+   "showWhen": "showDropdown && searchResults.length > 0"
+  },
+  {
+   "id": "EL-M02-S2-154",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<name> Selangor • PPD HULU LANGAT • SK BBD4051 Tiada kod",
+   "form": "https://prestasiplus.my/admin/users",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "selectSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "sa-search__1280"
+   ],
+   "showWhen": "showDropdown && searchResults.length > 0",
+   "dataRow": true,
+   "repeatCount": 5,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-155",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "<name> (SK, Selangor)",
+   "form": "https://prestasiplus.my/admin/users",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "@click": "selectStdSchool(s)"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "std-school-search__1280"
+   ],
+   "showWhen": "showStdDropdown && stdSearchResults.length > 0",
+   "dataRow": true,
+   "repeatCount": 5,
+   "note": "data-driven list row; one sample kept"
+  },
+  {
+   "id": "EL-M02-S2-156",
+   "kind": "text",
+   "tag": "span",
+   "text": "SEKOLAH JENIS KEBANGSAAN (TAMIL) BANGI",
+   "landmark": "form",
+   "section": "Borang Pendaftaran Pengguna",
+   "alpine": {
+    "x-text": "selectedStdSchoolName"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "std-school-selected__1280"
+   ],
+   "showWhen": "selectedStdSchoolName"
+  }
+ ]
+}

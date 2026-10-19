@@ -1,0 +1,5307 @@
+{
+ "screen": "S8",
+ "key": "S8-laporan-eksekutif",
+ "route": "/admin/laporan-eksekutif",
+ "name": "Laporan Eksekutif {tahun}",
+ "module": "M17",
+ "generatedAt": "2026-09-26T04:57:04.288Z",
+ "notes": "?year=; Refresh = POST /admin/laporan-eksekutif/clear-cache (never submitted); ?year=abc 500",
+ "shell": "SHA",
+ "summary": {
+  "total": 327,
+  "visibleDefault": 288,
+  "conditional": 37,
+  "hiddenOnly": 2,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 13,
+   "text": 223,
+   "form": 1,
+   "hidden-field": 2,
+   "button": 1,
+   "filter": 1,
+   "card": 18,
+   "badge": 4,
+   "empty-state": 56,
+   "link": 7,
+   "table": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "year 2026 (current, default)",
+   "file": "_raw/M17/S8-laporan-eksekutif__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif",
+   "finalUrl": "/admin/laporan-eksekutif",
+   "httpStatus": 200,
+   "title": "Laporan Eksekutif 2026",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div": 109,
+    "main tbody tr": 11
+   }
+  },
+  {
+   "label": "year-2025__1280",
+   "description": "?year=2025 (no activity: 0 figures, no monthly trend / comparison / subject / headcount / GPS sections)",
+   "file": "_raw/M17/S8-laporan-eksekutif__year-2025__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif?year=2025",
+   "finalUrl": "/admin/laporan-eksekutif?year=2025",
+   "httpStatus": 200,
+   "title": "Laporan Eksekutif 2025",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div": 0,
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "year-2027__1280",
+   "description": "?year=2027 (future year accepted, link \"← 2026\")",
+   "file": "_raw/M17/S8-laporan-eksekutif__year-2027__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif?year=2027",
+   "finalUrl": "/admin/laporan-eksekutif?year=2027",
+   "httpStatus": 200,
+   "title": "Laporan Eksekutif 2027",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div": 0,
+    "main tbody tr": 0
+   }
+  },
+  {
+   "label": "year-invalid__1280",
+   "description": "?year=abc → HTTP 500 \"500 - Ralat Pelayan\"",
+   "file": "_raw/M17/S8-laporan-eksekutif__year-invalid__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif?year=abc",
+   "finalUrl": "/admin/laporan-eksekutif?year=abc",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 0",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M17/S8-laporan-eksekutif__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif",
+   "finalUrl": "/admin/laporan-eksekutif",
+   "httpStatus": 200,
+   "title": "Laporan Eksekutif 2026",
+   "horizontalOverflow": "525px > 375px",
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div": 109,
+    "main tbody tr": 11
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M17/S8-laporan-eksekutif__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/laporan-eksekutif",
+   "finalUrl": "/admin/laporan-eksekutif",
+   "httpStatus": 200,
+   "title": "Laporan Eksekutif 2026",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main .space-y-2 > div": 109,
+    "main tbody tr": 11
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M17-S8-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ringkasan Eksekutif 2026",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Laporan prestasi keseluruhan platform PrestasiPlus",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-003",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/laporan-eksekutif/clear-cache",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "year"
+   ],
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-004",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-005",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "year",
+   "landmark": "form",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-006",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Refresh",
+   "icon": "fa-sync-alt",
+   "form": "https://prestasiplus.my/admin/laporan-eksekutif/clear-cache",
+   "landmark": "form",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-007",
+   "kind": "filter",
+   "tag": "a",
+   "text": "← 2025",
+   "href": "?year=2025",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif?year=2025",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Jumlah Sekolah",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Sekolah",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "57",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "sekolah aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-012",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pelajar Berdaftar",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-013",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pelajar Berdaftar",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "3,152",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,563 aktif 2026",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kadar Penglibatan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kadar Penglibatan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-018",
+   "kind": "text",
+   "tag": "p",
+   "text": "49.6%",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "daripada pelajar daftar",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-021",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Dijawab",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-022",
+   "kind": "text",
+   "tag": "p",
+   "text": "477,888",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "sepanjang 2026",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-024",
+   "kind": "card",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "82.9%",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "82.8% selepas pembetulan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-028",
+   "kind": "card",
+   "tag": "div",
+   "text": "Guru",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Guru",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-030",
+   "kind": "text",
+   "tag": "p",
+   "text": "502",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-031",
+   "kind": "card",
+   "tag": "div",
+   "text": "Soalan / Pelajar Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan / Pelajar Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "305.8",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "purata kedalaman penggunaan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sekolah Paling Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sekolah Paling Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-038",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bulan Paling Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-039",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bulan Paling Aktif",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jun",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-041",
+   "kind": "card",
+   "tag": "div",
+   "text": "Trend Penggunaan Bulanan 2026",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-042",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Trend Penggunaan Bulanan 2026",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "5",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "3p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jan",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "1,885",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "51p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "Feb",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "10,357",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-050",
+   "kind": "text",
+   "tag": "div",
+   "text": "48p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "Mar",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "22,762",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-053",
+   "kind": "text",
+   "tag": "div",
+   "text": "333p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apr",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "143,760",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "1178p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-057",
+   "kind": "text",
+   "tag": "div",
+   "text": "May",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "229,467",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "535p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jun",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-061",
+   "kind": "text",
+   "tag": "div",
+   "text": "32,010",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-062",
+   "kind": "text",
+   "tag": "div",
+   "text": "202p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-063",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jul",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-064",
+   "kind": "text",
+   "tag": "div",
+   "text": "17,291",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "80p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aug",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-067",
+   "kind": "text",
+   "tag": "div",
+   "text": "20,351",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-068",
+   "kind": "text",
+   "tag": "div",
+   "text": "86p",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-069",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sep",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "Oct",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-071",
+   "kind": "text",
+   "tag": "div",
+   "text": "Nov",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-072",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dec",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-073",
+   "kind": "card",
+   "tag": "div",
+   "text": "Analisis Perbandingan Sekolah",
+   "landmark": "main",
+   "section": "Trend Penggunaan Bulanan 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-074",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Analisis Perbandingan Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-075",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kadar Penglibatan Pelajar (%)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-076",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN TIGA",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-077",
+   "kind": "text",
+   "tag": "span",
+   "text": "100%",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-078",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN JELI (1)",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "100%",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TEMAI",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "100%",
+   "landmark": "main",
+   "section": "Kadar Penglibatan Pelajar (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-082",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Akhir (%)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-083",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lencana Pencapaian 2026",
+   "landmark": "main",
+   "section": "Ketepatan Akhir (%)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-084",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Lencana Pencapaian 2026",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-086",
+   "kind": "badge",
+   "tag": "span",
+   "text": "★ Paling Aktif",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-087",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-088",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-089",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-090",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-091",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-092",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-093",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-094",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-095",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) CHONG HWA I",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-096",
+   "kind": "badge",
+   "tag": "span",
+   "text": "★ Paling Tepat",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-097",
+   "kind": "badge",
+   "tag": "span",
+   "text": "★ Paling Rajin",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-098",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-099",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-100",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-101",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-102",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN KLANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-103",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-104",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BALING",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-105",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-106",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN MASJID TANAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-107",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-108",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN GHAFAR BABA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-109",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-110",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-111",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-112",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-113",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-114",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN BALING",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-115",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-116",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN AMBUAL",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-117",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-118",
+   "kind": "text",
+   "tag": "div",
+   "text": "SAM HULU LANGAT",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-119",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-120",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN KENINGAU",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-121",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-122",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-123",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-124",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-125",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-126",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-127",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-128",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TOH TANDEWA SAKTI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-129",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-130",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TAMAN KLUANG BARAT",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-131",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-132",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-133",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-134",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN SERI KENCANA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-135",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-136",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN TIGA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-137",
+   "kind": "badge",
+   "tag": "span",
+   "text": "★ Penglibatan Tertinggi",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-138",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN JELI (1)",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-139",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-140",
+   "kind": "text",
+   "tag": "div",
+   "text": "KOLEJ VOKASIONAL KAJANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-141",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-142",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TEMAI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-143",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-144",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN AMINUDDIN BAKI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-145",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-146",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-147",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-148",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN JALAN EMPAT",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-149",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-150",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN SAUJANA IMPIAN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-151",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-152",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN BANDAR BARU DARULAMAN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-153",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-154",
+   "kind": "text",
+   "tag": "div",
+   "text": "KOLEJ ISLAM SULTAN ALAM SHAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-155",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-156",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN BANDAR RINCHING",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-157",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-158",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN CHUKAI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-159",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-160",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN CONVENT",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-161",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-162",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN BERANANG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-163",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-164",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TAMBULION",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-165",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-166",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH SAINS ALAM SHAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-167",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-168",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-169",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-170",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN AGAMA MAAHAD HAMIDIAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-171",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-172",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TUANKU FATIMAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-173",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-174",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN BANDAR BARU BANGI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-175",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-176",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN PEKAN TUARAN",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-177",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-178",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH SAINS TENGKU MUHAMMAD FARIS PETRA",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-179",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-180",
+   "kind": "text",
+   "tag": "div",
+   "text": "SAM MUHAMMADIAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-181",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-182",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TELOK GADONG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-183",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-184",
+   "kind": "text",
+   "tag": "div",
+   "text": "SMK Leqoe",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-185",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-186",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN KAMPONG CHAMEK",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-187",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-188",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN SUBANG BESTARI",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-189",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-190",
+   "kind": "text",
+   "tag": "div",
+   "text": "SMT CHERAS",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-191",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-192",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BENTONG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-193",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-194",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN PANDAN INDAH",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-195",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-196",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN KUALA SELANGOR",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-197",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-198",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BUKIT JELUTONG",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-199",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-200",
+   "kind": "card",
+   "tag": "div",
+   "text": "5 Sekolah Paling Aktif",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2026",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-201",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "5 Sekolah Paling Aktif",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-202",
+   "kind": "text",
+   "tag": "div",
+   "text": "1",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-203",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-204",
+   "kind": "text",
+   "tag": "div",
+   "text": "Johor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-205",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-206",
+   "kind": "text",
+   "tag": "strong",
+   "text": "72,332",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-207",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-208",
+   "kind": "text",
+   "tag": "strong",
+   "text": "33/59",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-209",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penglibatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-210",
+   "kind": "text",
+   "tag": "strong",
+   "text": "55.9%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-211",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-212",
+   "kind": "text",
+   "tag": "strong",
+   "text": "89.8%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-213",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus →",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8880",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8880",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-214",
+   "kind": "text",
+   "tag": "div",
+   "text": "2",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-215",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-216",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selangor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-217",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-218",
+   "kind": "text",
+   "tag": "strong",
+   "text": "67,853",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-219",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-220",
+   "kind": "text",
+   "tag": "strong",
+   "text": "142/562",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-221",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penglibatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-222",
+   "kind": "text",
+   "tag": "strong",
+   "text": "25.3%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-223",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-224",
+   "kind": "text",
+   "tag": "strong",
+   "text": "87.6%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-225",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus →",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8106",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8106",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-226",
+   "kind": "text",
+   "tag": "div",
+   "text": "3",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-227",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-228",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selangor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-229",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-230",
+   "kind": "text",
+   "tag": "strong",
+   "text": "60,644",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-231",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-232",
+   "kind": "text",
+   "tag": "strong",
+   "text": "179/423",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-233",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penglibatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-234",
+   "kind": "text",
+   "tag": "strong",
+   "text": "42.3%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-235",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-236",
+   "kind": "text",
+   "tag": "strong",
+   "text": "79.4%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-237",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus →",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8078",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8078",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-238",
+   "kind": "text",
+   "tag": "div",
+   "text": "4",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-239",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-240",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selangor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-241",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-242",
+   "kind": "text",
+   "tag": "strong",
+   "text": "49,813",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-243",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-244",
+   "kind": "text",
+   "tag": "strong",
+   "text": "225/549",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-245",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penglibatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-246",
+   "kind": "text",
+   "tag": "strong",
+   "text": "41%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-247",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-248",
+   "kind": "text",
+   "tag": "strong",
+   "text": "77.4%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-249",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus →",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8082",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8082",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-250",
+   "kind": "text",
+   "tag": "div",
+   "text": "5",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-251",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-252",
+   "kind": "text",
+   "tag": "div",
+   "text": "Selangor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-253",
+   "kind": "text",
+   "tag": "span",
+   "text": "Soalan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-254",
+   "kind": "text",
+   "tag": "strong",
+   "text": "25,247",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-255",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pelajar:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-256",
+   "kind": "text",
+   "tag": "strong",
+   "text": "192/776",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-257",
+   "kind": "text",
+   "tag": "span",
+   "text": "Penglibatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-258",
+   "kind": "text",
+   "tag": "strong",
+   "text": "24.7%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-259",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ketepatan:",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-260",
+   "kind": "text",
+   "tag": "strong",
+   "text": "76.9%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-261",
+   "kind": "link",
+   "tag": "a",
+   "text": "Fokus →",
+   "href": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8102",
+   "absHref": "https://prestasiplus.my/admin/laporan-eksekutif/sekolah/8102",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-262",
+   "kind": "card",
+   "tag": "div",
+   "text": "Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-263",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Prestasi Mengikut Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-264",
+   "kind": "card",
+   "tag": "div",
+   "text": "Headcount TOV → RS (2026)",
+   "landmark": "main",
+   "section": "Prestasi Mengikut Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-265",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Headcount TOV → RS (2026)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-266",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Sekolah",
+    "Rekod",
+    "Purata TOV",
+    "Purata ETR",
+    "Purata RS",
+    "Perubahan"
+   ],
+   "rowCount": 11,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Headcount TOV → RS (2026)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-267",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kirkpatrick Evaluation",
+   "landmark": "main",
+   "section": "Headcount TOV → RS (2026)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-268",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Kirkpatrick Evaluation",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-269",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Respon",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-270",
+   "kind": "text",
+   "tag": "p",
+   "text": "336",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-271",
+   "kind": "text",
+   "tag": "p",
+   "text": "Purata Kepuasan",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-272",
+   "kind": "text",
+   "tag": "p",
+   "text": "4.6",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-273",
+   "kind": "text",
+   "tag": "span",
+   "text": "/5",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-274",
+   "kind": "text",
+   "tag": "p",
+   "text": "NPS Score",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-275",
+   "kind": "text",
+   "tag": "p",
+   "text": "8.3",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-276",
+   "kind": "card",
+   "tag": "div",
+   "text": "GPS Perbandingan Sekolah (2026)",
+   "landmark": "main",
+   "section": "Kirkpatrick Evaluation",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-277",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "GPS Perbandingan Sekolah (2026)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-278",
+   "kind": "text",
+   "tag": "p",
+   "text": "GPS lebih rendah = lebih baik. GPS 1.0 = semua A.",
+   "landmark": "main",
+   "section": "GPS Perbandingan Sekolah (2026)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-279",
+   "kind": "card",
+   "tag": "div",
+   "text": "Pusat Tuisyen",
+   "landmark": "main",
+   "section": "GPS Perbandingan Sekolah (2026)",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-280",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Pusat Tuisyen",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-281",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pusat Tuisyen Demo PrestasiPlus",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-282",
+   "kind": "text",
+   "tag": "div",
+   "text": "Johor Bahru, Johor",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-283",
+   "kind": "text",
+   "tag": "div",
+   "text": "18",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-284",
+   "kind": "text",
+   "tag": "div",
+   "text": "pelajar aktif",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-285",
+   "kind": "text",
+   "tag": "div",
+   "text": "Alesa IT Tuisyen",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-286",
+   "kind": "text",
+   "tag": "div",
+   "text": "KLUANG, Johor",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-287",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-288",
+   "kind": "text",
+   "tag": "div",
+   "text": "pelajar aktif",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-289",
+   "kind": "text",
+   "tag": "p",
+   "text": "Laporan dijana automatik oleh PrestasiPlus · 26 Sep 2026, 04:26 AM",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-290",
+   "kind": "text",
+   "tag": "p",
+   "text": "Menyeluruh. Berasaskan Data. Berdaya Maju.",
+   "landmark": "main",
+   "section": "Pusat Tuisyen",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "year-2025__1280",
+    "year-2027__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-291",
+   "kind": "text",
+   "tag": "p",
+   "text": "0 aktif 2025",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-292",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-293",
+   "kind": "text",
+   "tag": "p",
+   "text": "0%",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-294",
+   "kind": "text",
+   "tag": "p",
+   "text": "0% selepas pembetulan",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-295",
+   "kind": "text",
+   "tag": "p",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-296",
+   "kind": "text",
+   "tag": "p",
+   "text": "-",
+   "landmark": "main",
+   "section": "Ringkasan Eksekutif 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-297",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-298",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Tiada lencana khas",
+   "landmark": "main",
+   "section": "Lencana Pencapaian 2025",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-299",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0/423",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-300",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-301",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-302",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-303",
+   "kind": "text",
+   "tag": "div",
+   "text": "Terengganu",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-304",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0/1",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-305",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-306",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-307",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH SAINS ALAM SHAH",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-308",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kuala Lumpur",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-309",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0/1",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-310",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-311",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-312",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH MENENGAH KEBANGSAAN TAMAN KLUANG BARAT",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-313",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0/12",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-314",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-315",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-316",
+   "kind": "text",
+   "tag": "div",
+   "text": "SEKOLAH JENIS KEBANGSAAN (CINA) CHONG HWA I",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-317",
+   "kind": "text",
+   "tag": "div",
+   "text": "Johor",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-318",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0/12",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-319",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-320",
+   "kind": "text",
+   "tag": "strong",
+   "text": "0%",
+   "landmark": "main",
+   "section": "5 Sekolah Paling Aktif",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-2025__1280",
+    "year-2027__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-321",
+   "kind": "text",
+   "tag": "div",
+   "text": "500",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-322",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚙️",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-323",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-324",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-325",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-326",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cuba Semula",
+   "href": "javascript:location.reload()",
+   "absHref": "javascript:location.reload()",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  },
+  {
+   "id": "EL-M17-S8-327",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "year-invalid__1280"
+   ]
+  }
+ ]
+}

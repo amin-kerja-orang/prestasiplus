@@ -1,0 +1,901 @@
+{
+ "screen": "S14",
+ "key": "S14-report-modal",
+ "route": "(modal on M05 practice pages: /latihan-berstruktur/{id}/jawab, /spm/latih-tubi/{code}/quiz)",
+ "name": "Lapor Soalan (modal)",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.738Z",
+ "notes": "static markup injected into /laporan-soalan for the inventory; host page chrome is M05's",
+ "shell": "SHU",
+ "summary": {
+  "total": 40,
+  "visibleDefault": 29,
+  "conditional": 11,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 4,
+   "button": 6,
+   "clickable": 1,
+   "card": 1,
+   "text": 3,
+   "label": 13,
+   "checkbox": 11,
+   "textarea": 1
+  }
+ },
+ "states": [
+  {
+   "label": "mcq__1280",
+   "description": "MCQ quiz modal (all branches shown)",
+   "file": "_raw/M04/S14-report-modal__mcq__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var h = localStorage.getItem('m04_modal_mcq'); var tr = localStorage.getItem('m04_trig_mcq') || ''; if (!h) return 'NO MODAL IN STORAGE'; var m = document.querySelector('main'); m.innerHTML = '<div data-host=\"mcq\"><h2>Host trigger (mcq)</h2>' + tr + '</div>' + h; m.querySelectorAll('[x-show],[x-cloak]').forEach(function (e) { e.removeAttribute('x-cloak'); e.setAttribute('data-x-show', e.getAttribute('x-show') || ''); e.removeAttribute('x-show'); e.style.display = ''; }); m.querySelectorAll('[x-transition\\\\:enter],[x-transition\\\\:leave]').forEach(function(){}); return 'modal injected ' + h.length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "modal injected 8946",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "structured__1280",
+   "description": "structured-practice modal (all branches shown)",
+   "file": "_raw/M04/S14-report-modal__structured__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var h = localStorage.getItem('m04_modal_structured'); var tr = localStorage.getItem('m04_trig_structured') || ''; if (!h) return 'NO MODAL IN STORAGE'; var m = document.querySelector('main'); m.innerHTML = '<div data-host=\"structured\"><h2>Host trigger (structured)</h2>' + tr + '</div>' + h; m.querySelectorAll('[x-show],[x-cloak]').forEach(function (e) { e.removeAttribute('x-cloak'); e.setAttribute('data-x-show', e.getAttribute('x-show') || ''); e.removeAttribute('x-show'); e.style.display = ''; }); m.querySelectorAll('[x-transition\\\\:enter],[x-transition\\\\:leave]').forEach(function(){}); return 'modal injected ' + h.length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "modal injected 7226",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "mcq__375",
+   "description": "MCQ quiz modal @375",
+   "file": "_raw/M04/S14-report-modal__mcq__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/laporan-soalan",
+   "finalUrl": "/laporan-soalan",
+   "httpStatus": 200,
+   "title": "Laporan Soalan Saya",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var h = localStorage.getItem('m04_modal_mcq'); var tr = localStorage.getItem('m04_trig_mcq') || ''; if (!h) return 'NO MODAL IN STORAGE'; var m = document.querySelector('main'); m.innerHTML = '<div data-host=\"mcq\"><h2>Host trigger (mcq)</h2>' + tr + '</div>' + h; m.querySelectorAll('[x-show],[x-cloak]').forEach(function (e) { e.removeAttribute('x-cloak'); e.setAttribute('data-x-show', e.getAttribute('x-show') || ''); e.removeAttribute('x-show'); e.style.display = ''; }); m.querySelectorAll('[x-transition\\\\:enter],[x-transition\\\\:leave]').forEach(function(){}); return 'modal injected ' + h.length; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 0",
+    "modal injected 8946",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Accept",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#3"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S14-001",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Host trigger (mcq)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-002",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Lapor Soalan",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Host trigger (mcq)",
+   "alpine": {
+    "@click": "openReport(currentQuestion.id)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-003",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Host trigger (mcq)",
+   "alpine": {
+    "@click": "reportModal = false"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "Lapor Soalan",
+   "landmark": "main",
+   "section": "Host trigger (mcq)",
+   "alpine": {
+    "x-transition:enter": "transition ease-out duration-200",
+    "x-transition:enter-start": "opacity-0 scale-95",
+    "x-transition:enter-end": "opacity-100 scale-100"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-005",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Lapor Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan ini akan dinyahaktifkan sementara",
+   "landmark": "main",
+   "section": "Lapor Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-007",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "icon": "fa-times",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Lapor Soalan",
+   "alpine": {
+    "@click": "reportModal = false"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-008",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Terima Kasih!",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-009",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tutup",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "@click": "reportModal = false"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-010",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sebab Laporan *",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-011",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawapan tidak tepat Jawapan yang ditandakan betul sebenarnya salah",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-012",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Jawapan tidak tepat Jawapan yang ditandakan betul sebenarnya salah",
+   "optionValue": "wrong_answer",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan mengelirukan Ayat soalan tidak jelas atau mengelirukan",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-014",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan mengelirukan Ayat soalan tidak jelas atau mengelirukan",
+   "optionValue": "confusing_question",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Set jawapan tidak tepat Pilihan jawapan yang diberikan tidak betul",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-016",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Set jawapan tidak tepat Pilihan jawapan yang diberikan tidak betul",
+   "optionValue": "wrong_options",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan jawapan tidak lengkap Soalan tiada cukup pilihan jawapan",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-018",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Pilihan jawapan tidak lengkap Soalan tiada cukup pilihan jawapan",
+   "optionValue": "missing_options",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan berulang / pendua Soalan yang sama muncul lebih dari sekali",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-020",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan berulang / pendua Soalan yang sama muncul lebih dari sekali",
+   "optionValue": "duplicate",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kesalahan ejaan / taip Ada kesilapan ejaan dalam soalan atau jawapan",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-022",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Kesalahan ejaan / taip Ada kesilapan ejaan dalam soalan atau jawapan",
+   "optionValue": "typo",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Lain-lain Sebab lain yang tidak disenaraikan",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-024",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Lain-lain Sebab lain yang tidak disenaraikan",
+   "optionValue": "other",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Komen Tambahan (pilihan)",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-026",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Komen Tambahan (pilihan)",
+   "placeholder": "Terangkan masalah soalan ini...",
+   "maxlength": "500",
+   "rows": "3",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportComment"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "/500",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-028",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Batal",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "@click": "reportModal = false"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Laporan Menghantar...",
+   "icon": "fa-paper-plane",
+   "disabled": true,
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "@click": "submitReport()",
+    ":disabled": "reportReasons.length === 0 || reportLoading"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "mcq__1280",
+    "structured__1280",
+    "mcq__375"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-030",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Host trigger (structured)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-031",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Lapor",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Host trigger (structured)",
+   "alpine": {
+    "@click": "reportModal = true"
+   },
+   "title": "Lapor soalan ini",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan ini akan dinyahaktifkan selepas 3 laporan",
+   "landmark": "main",
+   "section": "Lapor Soalan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-033",
+   "kind": "label",
+   "tag": "label",
+   "text": "Skema jawapan tidak tepat Keyword/rubrik yang ditandakan tidak sepadan dengan jawapan sebenar",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-034",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Skema jawapan tidak tepat Keyword/rubrik yang ditandakan tidak sepadan dengan jawapan sebenar",
+   "optionValue": "wrong_answer",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-035",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan mengelirukan Ayat soalan atau arahan tidak jelas",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-036",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan mengelirukan Ayat soalan atau arahan tidak jelas",
+   "optionValue": "confusing_question",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-037",
+   "kind": "label",
+   "tag": "label",
+   "text": "Markah tidak adil Pembahagian markah atau pemarkahan auto tidak tepat",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-038",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Markah tidak adil Pembahagian markah atau pemarkahan auto tidak tepat",
+   "optionValue": "wrong_options",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ],
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M04-S14-039",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kesalahan ejaan / taip Ada kesilapan ejaan dalam soalan atau skema",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S14-040",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Kesalahan ejaan / taip Ada kesilapan ejaan dalam soalan atau skema",
+   "optionValue": "typo",
+   "landmark": "main",
+   "section": "Terima Kasih!",
+   "alpine": {
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "structured__1280"
+   ],
+   "checkedIn": []
+  }
+ ]
+}

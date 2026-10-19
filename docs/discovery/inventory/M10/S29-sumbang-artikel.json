@@ -1,0 +1,1419 @@
+{
+ "screen": "S29",
+ "key": "S29-sumbang-artikel",
+ "route": "/guru/artikel",
+ "name": "Sumbang Artikel",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:31.171Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 68,
+  "visibleDefault": 48,
+  "conditional": 16,
+  "hiddenOnly": 4,
+  "mobileOnly": 2,
+  "desktopOnly": 8,
+  "byKind": {
+   "text": 30,
+   "heading": 7,
+   "link": 10,
+   "card": 6,
+   "badge": 9,
+   "pagination": 6
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "Sumbang Artikel list",
+   "file": "_raw/M10/S29-sumbang-artikel__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/artikel",
+   "finalUrl": "/guru/artikel",
+   "httpStatus": 200,
+   "title": "Sumbang Artikel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.divide-y > div.p-5": 15
+   }
+  },
+  {
+   "label": "page-2__1280",
+   "description": "pager page 2",
+   "file": "_raw/M10/S29-sumbang-artikel__page-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/artikel?page=2",
+   "finalUrl": "/guru/artikel?page=2",
+   "httpStatus": 200,
+   "title": "Sumbang Artikel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 1",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.divide-y > div.p-5": 15
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "Sumbang Artikel list @375",
+   "file": "_raw/M10/S29-sumbang-artikel__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/artikel",
+   "finalUrl": "/guru/artikel",
+   "httpStatus": 200,
+   "title": "Sumbang Artikel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.divide-y > div.p-5": 15
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "Sumbang Artikel list @768",
+   "file": "_raw/M10/S29-sumbang-artikel__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/artikel",
+   "finalUrl": "/guru/artikel",
+   "httpStatus": 200,
+   "title": "Sumbang Artikel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.divide-y > div.p-5": 15
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S29-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Sumbang Artikel",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kongsi ilmu dan pengalaman anda dengan komuniti PRESTASIPLUS",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-006",
+   "kind": "link",
+   "tag": "a",
+   "text": "Tulis Artikel Baru",
+   "href": "https://prestasiplus.my/guru/artikel/cipta",
+   "absHref": "https://prestasiplus.my/guru/artikel/cipta",
+   "icon": "fa-feather-alt",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "36",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "36",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Artikel",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "36",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "36",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Diterbitkan",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Menunggu Semakan",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "12,270",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "12,270",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Pembaca",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-019",
+   "kind": "card",
+   "tag": "div",
+   "text": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-020",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-021",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Diterbitkan",
+   "icon": "fa-check-circle",
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-022",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "22 Feb 2026",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "596 pembaca",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Teknik Pomodoro bantu pelajar fokus dengan pecahkan masa belajar kepada slot 25 minit.",
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-026",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/teknik-pomodoro-belajar-25-minit-rehat-5-minit",
+   "absHref": "https://prestasiplus.my/artikel/teknik-pomodoro-belajar-25-minit-rehat-5-minit",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-027",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel/10/edit",
+   "absHref": "https://prestasiplus.my/guru/artikel/10/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-028",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-029",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Diterbitkan",
+   "icon": "fa-check-circle",
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-030",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "22 Feb 2026",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "448 pembaca",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-033",
+   "kind": "text",
+   "tag": "p",
+   "text": "Teknik KWLH bantu pelajar faham karangan dan petikan dengan lebih mendalam.",
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-034",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/belajar-bahasa-melayu-teknik-kwlh-untuk-pemahaman",
+   "absHref": "https://prestasiplus.my/artikel/belajar-bahasa-melayu-teknik-kwlh-untuk-pemahaman",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-035",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel/13/edit",
+   "absHref": "https://prestasiplus.my/guru/artikel/13/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Belajar Bahasa Melayu: Teknik KWLH untuk Pemahaman",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-036",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Cara Buat Jadual Belajar yang Realistik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Diterbitkan",
+   "icon": "fa-check-circle",
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-038",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tips Belajar",
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "22 Feb 2026",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "430 pembaca",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jadual belajar yang terlalu ketat akan gagal. Ini cara buat yang betul.",
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-042",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/cara-buat-jadual-belajar-yang-realistik",
+   "absHref": "https://prestasiplus.my/artikel/cara-buat-jadual-belajar-yang-realistik",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "title": "Lihat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-043",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel/21/edit",
+   "absHref": "https://prestasiplus.my/guru/artikel/21/edit",
+   "icon": "fa-edit",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "title": "Edit",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-045",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/guru/artikel?page=2",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-046",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "15",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "36",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-051",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/guru/artikel?page=2",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-052",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/guru/artikel?page=3",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-053",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel?page=2",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Cara Buat Jadual Belajar yang Realistik",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "page-2__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-054",
+   "kind": "card",
+   "tag": "div",
+   "text": "Cara Hadapi Tekanan Peperiksaan",
+   "landmark": "main",
+   "section": "Sumbang Artikel",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-055",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Cara Hadapi Tekanan Peperiksaan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-056",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Motivasi",
+   "landmark": "main",
+   "section": "Cara Hadapi Tekanan Peperiksaan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-057",
+   "kind": "text",
+   "tag": "p",
+   "text": "Rasa cemas sebelum peperiksaan? Ini cara nak tenangkan diri.",
+   "landmark": "main",
+   "section": "Cara Hadapi Tekanan Peperiksaan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-058",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/cara-hadapi-tekanan-peperiksaan",
+   "absHref": "https://prestasiplus.my/artikel/cara-hadapi-tekanan-peperiksaan",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Cara Hadapi Tekanan Peperiksaan",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-059",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Memilih Tuisyen yang Tepat untuk Anak",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-060",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Panduan Ibu Bapa",
+   "landmark": "main",
+   "section": "Memilih Tuisyen yang Tepat untuk Anak",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-061",
+   "kind": "text",
+   "tag": "p",
+   "text": "Panduan untuk ibu bapa yang sedang mempertimbangkan tuisyen.",
+   "landmark": "main",
+   "section": "Memilih Tuisyen yang Tepat untuk Anak",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-062",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/memilih-tuisyen-yang-tepat-untuk-anak",
+   "absHref": "https://prestasiplus.my/artikel/memilih-tuisyen-yang-tepat-untuk-anak",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Memilih Tuisyen yang Tepat untuk Anak",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-063",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-064",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Panduan Guru",
+   "landmark": "main",
+   "section": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-065",
+   "kind": "text",
+   "tag": "p",
+   "text": "Cara buat pelajar aktif dan terlibat dalam kelas Matematik.",
+   "landmark": "main",
+   "section": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-066",
+   "kind": "link",
+   "tag": "a",
+   "href": "https://prestasiplus.my/artikel/teknik-pengajaran-aktif-untuk-kelas-matematik",
+   "absHref": "https://prestasiplus.my/artikel/teknik-pengajaran-aktif-untuk-kelas-matematik",
+   "target": "_blank",
+   "icon": "fa-external-link-alt",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "title": "Lihat",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-067",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "« Previous",
+   "href": "https://prestasiplus.my/guru/artikel?page=1",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "page-2__1280"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S29-068",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/artikel?page=3",
+   "absHref": "https://prestasiplus.my/guru/artikel?page=3",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Teknik Pengajaran Aktif untuk Kelas Matematik",
+   "ariaLabel": "Next &raquo;",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "page-2__1280"
+   ]
+  }
+ ]
+}

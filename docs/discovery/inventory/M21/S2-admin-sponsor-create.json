@@ -1,0 +1,780 @@
+{
+ "screen": "S2",
+ "key": "S2-admin-sponsor-create",
+ "route": "/admin/sponsors/create",
+ "name": "Tambah Penaja - Admin",
+ "module": "M21",
+ "generatedAt": "2026-09-27T02:22:47.241Z",
+ "notes": "form POST /admin/sponsors (never submitted)",
+ "shell": "SHA",
+ "summary": {
+  "total": 38,
+  "visibleDefault": 37,
+  "conditional": 0,
+  "hiddenOnly": 1,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 2,
+   "form": 1,
+   "hidden-field": 1,
+   "heading": 3,
+   "label": 15,
+   "input": 13,
+   "select": 1,
+   "textarea": 1,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "create form (never submitted)",
+   "file": "_raw/M21/S2-admin-sponsor-create__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/sponsors/create",
+   "finalUrl": "/admin/sponsors/create",
+   "httpStatus": 200,
+   "title": "Tambah Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "create form @375",
+   "file": "_raw/M21/S2-admin-sponsor-create__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/sponsors/create",
+   "finalUrl": "/admin/sponsors/create",
+   "httpStatus": 200,
+   "title": "Tambah Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "create form @768",
+   "file": "_raw/M21/S2-admin-sponsor-create__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/sponsors/create",
+   "finalUrl": "/admin/sponsors/create",
+   "httpStatus": 200,
+   "title": "Tambah Penaja - Admin",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 2",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M21-S2-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Senarai Penaja",
+   "href": "https://prestasiplus.my/admin/sponsors",
+   "absHref": "https://prestasiplus.my/admin/sponsors",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Tambah Penaja Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-002",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/admin/sponsors",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "name",
+    "category",
+    "description",
+    "tagline",
+    "website",
+    "logo_url",
+    "registration_number",
+    "contact_person_name",
+    "contact_person_position",
+    "contact_email",
+    "contact_phone",
+    "address",
+    "city",
+    "state",
+    "postcode"
+   ],
+   "landmark": "main",
+   "section": "Tambah Penaja Baru",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-003",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form.card",
+   "section": "Tambah Penaja Baru",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-004",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Maklumat Organisasi",
+   "landmark": "form.card",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-005",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Organisasi *",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-006",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "name",
+   "label": "Nama Organisasi *",
+   "placeholder": "cth: Kedai Buku Popular",
+   "required": true,
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-007",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori *",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-008",
+   "kind": "select",
+   "tag": "select",
+   "name": "category",
+   "label": "Kategori *",
+   "required": true,
+   "options": [
+    {
+     "value": "INDIVIDU",
+     "text": "Individu / Peribadi"
+    },
+    {
+     "value": "SYARIKAT_SWASTA",
+     "text": "Syarikat Swasta"
+    },
+    {
+     "value": "GLC",
+     "text": "Syarikat Berkaitan Kerajaan"
+    },
+    {
+     "value": "NGO",
+     "text": "Pertubuhan Bukan Kerajaan"
+    },
+    {
+     "value": "BADAN_KERAJAAN",
+     "text": "Badan / Agensi Kerajaan"
+    },
+    {
+     "value": "BANK",
+     "text": "Bank / Institusi Kewangan"
+    },
+    {
+     "value": "UNIVERSITI",
+     "text": "Universiti / IPT"
+    },
+    {
+     "value": "PERSATUAN",
+     "text": "Persatuan / Kesatuan"
+    },
+    {
+     "value": "KOPERASI",
+     "text": "Koperasi"
+    },
+    {
+     "value": "KEDAI_BUKU",
+     "text": "Kedai Buku / Alat Tulis"
+    },
+    {
+     "value": "RESTORAN",
+     "text": "Restoran / F&B"
+    },
+    {
+     "value": "TEKNOLOGI",
+     "text": "Syarikat Teknologi"
+    },
+    {
+     "value": "PENDIDIKAN",
+     "text": "Penyedia Pendidikan"
+    }
+   ],
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Penerangan",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-010",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "description",
+   "label": "Penerangan",
+   "placeholder": "Penerangan ringkas organisasi...",
+   "rows": "3",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-011",
+   "kind": "label",
+   "tag": "label",
+   "text": "Tagline",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-012",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "tagline",
+   "label": "Tagline",
+   "placeholder": "cth: Membaca Jambatan Ilmu",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Website",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-014",
+   "kind": "input",
+   "tag": "input",
+   "type": "url",
+   "name": "website",
+   "label": "Website",
+   "placeholder": "https://example.com",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "URL Logo",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-016",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "logo_url",
+   "label": "URL Logo",
+   "placeholder": "https://example.com/logo.png",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Pendaftaran (SSM/ROC)",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-018",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "registration_number",
+   "label": "No. Pendaftaran (SSM/ROC)",
+   "landmark": "form.card",
+   "section": "Maklumat Organisasi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-019",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Maklumat Pegawai Perhubungan",
+   "landmark": "form.card",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-020",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Pegawai",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-021",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "contact_person_name",
+   "label": "Nama Pegawai",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-022",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawatan",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-023",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "contact_person_position",
+   "label": "Jawatan",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Email",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "contact_email",
+   "label": "Email",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-026",
+   "kind": "label",
+   "tag": "label",
+   "text": "Telefon",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-027",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "contact_phone",
+   "label": "Telefon",
+   "landmark": "form.card",
+   "section": "Maklumat Pegawai Perhubungan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-028",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Alamat",
+   "landmark": "form.card",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-029",
+   "kind": "label",
+   "tag": "label",
+   "text": "Alamat",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-030",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "address",
+   "label": "Alamat",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-031",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bandar",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-032",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "city",
+   "label": "Bandar",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-033",
+   "kind": "label",
+   "tag": "label",
+   "text": "Negeri",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-034",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "state",
+   "label": "Negeri",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-035",
+   "kind": "label",
+   "tag": "label",
+   "text": "Poskod",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-036",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "postcode",
+   "label": "Poskod",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-037",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tambah Penaja",
+   "icon": "fa-plus-circle",
+   "form": "https://prestasiplus.my/admin/sponsors",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S2-038",
+   "kind": "link",
+   "tag": "a",
+   "text": "Batal",
+   "href": "https://prestasiplus.my/admin/sponsors",
+   "absHref": "https://prestasiplus.my/admin/sponsors",
+   "landmark": "form.card",
+   "section": "Alamat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

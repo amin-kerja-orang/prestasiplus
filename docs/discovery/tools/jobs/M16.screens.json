@@ -1,0 +1,50 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    ["^/api/battle/", "M16", "battle JSON endpoints (lobby script)"],
+    ["^/api/tournament/", "M16", "tournament banner endpoint"],
+    ["^/battle/(arena|history)", "M16", "battle arena / history (found by crawl)"],
+    ["^/(papan-bijak|perang-fakta|benteng-ilmu|perlumbaan-matematik|kuiz-relay|teka-silang-kata)(/.*)?$", "M16", "multiplayer game lobbies and rooms (found by crawl)"],
+    ["^/permainan/", "M16", "single-player games (found by crawl)"],
+    ["^/tournament/", "M16", "tournament admin / detail (found by crawl)"],
+    ["^/liga/", "M16", "liga create / detail / join (found by crawl)"]
+  ],
+  "screens": {
+    "S1": { "key": "S1-battle", "route": "/battle", "title": "Battle Arena", "shell": "SHU", "notes": "Battle Arena lobby: Biasa / PKSK / SPM (tooltip only), matchmaking by polling" },
+    "S2": { "key": "S2-battle-leaderboard", "route": "/battle/leaderboard", "title": "Ranking Pelajar Battle", "shell": "SHU", "notes": "empty; Mingguan / Bulanan pills are client-only and do not change the table" },
+    "S3": { "key": "S3-ranking-sekolah", "route": "/battle/ranking-sekolah", "title": "Papan Ranking Sekolah", "shell": "SHU", "notes": "?period=weekly|monthly|all_time&state=; podium + Senarai Penuh" },
+    "S4": { "key": "S4-ranking-sekolah-show", "route": "/battle/ranking-sekolah/{id}", "title": "{sekolah}", "shell": "SHU", "notes": "new route; any school id renders; unknown id 404" },
+    "S5": { "key": "S5-battle-history", "route": "/battle/history", "title": "Sejarah Battle", "shell": "SHU", "notes": "new route; not linked from any page; empty for admin" },
+    "S6": { "key": "S6-permainan", "route": "/permainan", "title": "Permainan — PRESTASIPLUS", "shell": "SHU", "notes": "games hub, 17 cards; open-rooms strip" },
+    "S7": { "key": "S7-papan-bijak", "route": "/papan-bijak", "title": "Papan Bijak — PRESTASIPLUS", "shell": "SHU", "notes": "new route; room create/join + Cari Lawan Auto + Top 10" },
+    "S8": { "key": "S8-perang-fakta", "route": "/perang-fakta", "title": "Perang Fakta — PRESTASIPLUS", "shell": "SHU", "notes": "new route; shared multiplayer lobby template" },
+    "S9": { "key": "S9-benteng-ilmu", "route": "/benteng-ilmu", "title": "Benteng Ilmu — PRESTASIPLUS", "shell": "SHU", "notes": "new route; shared lobby template" },
+    "S10": { "key": "S10-perlumbaan-matematik", "route": "/perlumbaan-matematik", "title": "Perlumbaan Matematik — PRESTASIPLUS", "shell": "SHU", "notes": "new route; shared lobby template" },
+    "S11": { "key": "S11-kuiz-relay", "route": "/kuiz-relay", "title": "Kuiz Relay — PRESTASIPLUS", "shell": "SHU", "notes": "new route; shared lobby template (MVP list)" },
+    "S12": { "key": "S12-teka-silang-kata", "route": "/teka-silang-kata", "title": "Teka Silang Kata — PRESTASIPLUS", "shell": "SHU", "notes": "new route; shared lobby template" },
+    "S13": { "key": "S13-betul-salah", "route": "/permainan/betul-salah", "title": "Betul atau Salah ✅ — PRESTASIPLUS", "shell": "SHU", "notes": "new route; ?darjah=; 45 s game, auto-start" },
+    "S14": { "key": "S14-cabaran-kilat", "route": "/permainan/cabaran-kilat", "title": "Cabaran Kilat ⚡ — PRESTASIPLUS", "shell": "SHU", "notes": "new route; ?darjah=; 60 s game, auto-start" },
+    "S15": { "key": "S15-tembak-jawapan", "route": "/permainan/tembak-jawapan", "title": "Tembak Jawapan 🎯 — PRESTASIPLUS", "shell": "SHU", "notes": "new route; ?darjah=; 3 lives, auto-start" },
+    "S16": { "key": "S16-susun-jawapan", "route": "/permainan/susun-jawapan", "title": "Susun Jawapan 🧩 — PRESTASIPLUS", "shell": "SHU", "notes": "new route; ?darjah=; 20 puzzles" },
+    "S17": { "key": "S17-kad-memori", "route": "/permainan/kad-memori", "title": "Kad Memori — PRESTASIPLUS", "shell": "SHU", "notes": "new route; 6 pairs, timer" },
+    "S18": { "key": "S18-roda-nasib", "route": "/permainan/roda-nasib", "title": "Roda Nasib — PRESTASIPLUS", "shell": "SHU", "notes": "new route; 8-segment wheel, POST …/spin" },
+    "S19": { "key": "S19-jutawan", "route": "/permainan/jutawan", "title": "Jutawan Ilmu 💰 — PRESTASIPLUS", "shell": "SHU", "notes": "new route; ?darjah= → subject list → /permainan/jutawan/main (not opened)" },
+    "S20": { "key": "S20-pertandingan", "route": "/permainan/pertandingan", "title": "Pertandingan Mingguan — PRESTASIPLUS", "shell": "SHU", "notes": "new route; weekly top-20 by correct answers" },
+    "S21": { "key": "S21-uji-minda", "route": "/permainan/uji-minda", "title": "Uji Minda — Belum Ada Cabaran", "shell": "SHU", "notes": "new route; parent challenge, empty state" },
+    "S22": { "key": "S22-sambung-kata", "route": "/permainan/sambung-kata", "title": "(HTTP 500, empty body)", "shell": "none", "notes": "new route; HTTP 500 with an empty body (browser error page)" },
+    "S23": { "key": "S23-tournament", "route": "/tournament", "title": "Liga & Tournament", "shell": "SHU", "notes": "empty state + admin create link" },
+    "S24": { "key": "S24-tournament-create", "route": "/tournament/admin/create", "title": "Cipta Tournament", "shell": "SHU", "notes": "new route; POST /tournament/admin (not submitted)" },
+    "S25": { "key": "S25-liga", "route": "/liga", "title": "Liga Pertandingan", "shell": "SHU", "notes": "tabs Liga Saya / Liga Terbuka; join-by-code modal" },
+    "S26": { "key": "S26-liga-cipta", "route": "/liga/cipta", "title": "Cipta Liga", "shell": "SHU", "notes": "new route; POST /liga/cipta (not submitted)" },
+    "S27": { "key": "S27-liga-show", "route": "/liga/{id}", "title": "{nama liga}", "shell": "SHU", "notes": "new route; ids 1 and 2 exist; unknown id 404" },
+    "S28": { "key": "S28-sekolah-bersaing", "route": "/sekolah-bersaing", "title": "Sekolah Bersaing — Leaderboard Mingguan", "shell": "SHA", "notes": "renders in the admin layout (header 'Dashboard')" },
+    "S29": { "key": "S29-admin-permainan", "route": "/admin/permainan", "title": "Permainan - Admin Panel", "shell": "SHA", "notes": "game settings: Papan Bijak quiz tiles (PUT /admin/permainan, not saved)" },
+    "S30": { "key": "S30-tournament-banner", "route": "(every SHU page) tournamentBanner()", "title": "Tournament banner (global widget in <main>)", "shell": "SHU", "notes": "states revealed with placeholder data (registration / ongoing / live_match); live API returned []" }
+  },
+  "shells": {
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell (S1–S27, S30)", "owner": "00-global-ui.md", "note": "Layout chrome, not M16 content." },
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell (S28, S29)", "owner": "00-global-ui.md / M23", "note": "Layout chrome, not M16 content. Admin sidebar group 'Battle & Permainan' (M16 links) is listed in the narrative." }
+  }
+}

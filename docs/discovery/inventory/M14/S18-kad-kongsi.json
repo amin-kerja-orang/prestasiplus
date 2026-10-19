@@ -1,0 +1,2217 @@
+{
+ "screen": "S18",
+ "key": "S18-kad-kongsi",
+ "route": "/gamification/kad-kongsi",
+ "name": "Kad Kongsi — PRESTASIPLUS",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.754Z",
+ "notes": "new route",
+ "shell": "SHU",
+ "summary": {
+  "total": 73,
+  "visibleDefault": 21,
+  "conditional": 49,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 49,
+   "tab": 4,
+   "card": 6,
+   "heading": 4,
+   "button": 10
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "tab Profil (default)",
+   "file": "_raw/M14/S18-kad-kongsi__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "tab-kombo__1280",
+   "description": "tab kombo",
+   "file": "_raw/M14/S18-kad-kongsi__tab-kombo__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"tab='kombo'\\\"]\"); if (!e) return 'missing main button[\\@click=\"tab=kombo\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "tab-penguasaan__1280",
+   "description": "tab penguasaan",
+   "file": "_raw/M14/S18-kad-kongsi__tab-penguasaan__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"tab='penguasaan'\\\"]\"); if (!e) return 'missing main button[\\@click=\"tab=penguasaan\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "tab-ranking__1280",
+   "description": "tab ranking",
+   "file": "_raw/M14/S18-kad-kongsi__tab-ranking__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"tab='ranking'\\\"]\"); if (!e) return 'missing main button[\\@click=\"tab=ranking\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "tab Profil (default) @375",
+   "file": "_raw/M14/S18-kad-kongsi__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "tab Profil (default) @768",
+   "file": "_raw/M14/S18-kad-kongsi__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "tab-penguasaan__375",
+   "description": "tab penguasaan @375",
+   "file": "_raw/M14/S18-kad-kongsi__tab-penguasaan__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/gamification/kad-kongsi",
+   "finalUrl": "/gamification/kad-kongsi",
+   "httpStatus": 200,
+   "title": "Kad Kongsi — PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var e = document.querySelector(\"main button[\\\\@click=\\\"tab='penguasaan'\\\"]\"); if (!e) return 'missing main button[\\@click=\"tab=penguasaan\"]'; e.click(); return 'clicked'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "clicked",
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=0 texts=8 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Kad Kongsi",
+   "seenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "shareApp",
+   "xData": "shareApp()",
+   "keys": [],
+   "liveState": {
+    "tab": "profil",
+    "downloading": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Kad Kongsi",
+   "seenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Lihat profil saya di PRESTASIPLUS! 38.7% ketepatan dengan 119 soalan dijawab.",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "🔥 Kombo 0 hari berturut-turut di PRESTASIPLUS! Rekod terbaik: 0 hari. Jom cabaran!",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "🧠 Saya sudah capai Level 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "🧠 Saya sudah capai Level 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "🏆 Kedudukan saya di PRESTASIPLUS: ! Jom latih tubi!",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/pelajar/3",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S18-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Kad Kongsi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Kad Kongsi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Kad Kongsi",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-004",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Profil",
+   "icon": "fa-id-card",
+   "landmark": "main",
+   "section": "Kad Kongsi",
+   "alpine": {
+    "@click": "tab='profil'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-005",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kombo",
+   "icon": "fa-fire",
+   "landmark": "main",
+   "section": "Kad Kongsi",
+   "alpine": {
+    "@click": "tab='kombo'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-006",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Penguasaan",
+   "icon": "fa-brain",
+   "landmark": "main",
+   "section": "Kad Kongsi",
+   "alpine": {
+    "@click": "tab='penguasaan'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-007",
+   "kind": "tab",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kedudukan",
+   "icon": "fa-trophy",
+   "landmark": "main",
+   "section": "Kad Kongsi",
+   "alpine": {
+    "@click": "tab='ranking'"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ]
+  },
+  {
+   "id": "EL-M14-S18-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kad Profil Pelajar",
+   "landmark": "main",
+   "section": "Kad Kongsi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-009",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kad Profil Pelajar",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "119",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "38.7%",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-016",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "4",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sesi",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "🥉 Bronze",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "🪙 256",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-022",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 PRESTASIPLUS.MY",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-023",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Muat Turun",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "alpine": {
+    "@click": "download('card-profil', 'profil')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-024",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "WhatsApp",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "alpine": {
+    "@click": "whatsapp('Lihat profil saya di PRESTASIPLUS! 38.7% ketepatan dengan 119 soalan dijawab.')"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "tab-penguasaan__375"
+   ],
+   "showWhen": "tab==='profil'"
+  },
+  {
+   "id": "EL-M14-S18-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kad Kombo",
+   "landmark": "main",
+   "section": "Kad Profil Pelajar",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-026",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kad Kombo",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-027",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔥",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-028",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-029",
+   "kind": "text",
+   "tag": "div",
+   "text": "Hari Berturut-turut!",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-030",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-031",
+   "kind": "text",
+   "tag": "div",
+   "text": "Rekod Terbaik",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-032",
+   "kind": "text",
+   "tag": "div",
+   "text": "1.0x",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pengganda",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 PRESTASIPLUS.MY",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-036",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Muat Turun",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "alpine": {
+    "@click": "download('card-kombo', 'kombo')"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-037",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "WhatsApp",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "alpine": {
+    "@click": "whatsapp('🔥 Kombo 0 hari berturut-turut di PRESTASIPLUS! Rekod terbaik: 0 hari. Jom cabaran!')"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-kombo__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-penguasaan__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='kombo'"
+  },
+  {
+   "id": "EL-M14-S18-038",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kad Penguasaan Subjek",
+   "landmark": "main",
+   "section": "Kad Kombo",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-039",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kad Penguasaan Subjek",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-040",
+   "kind": "card",
+   "tag": "div",
+   "text": "Muat Turun",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-041",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penguasaan Subjek",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-042",
+   "kind": "text",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-043",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lvl 2 — Aktif",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-044",
+   "kind": "text",
+   "tag": "div",
+   "text": "48.9%",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "46",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Betul",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-048",
+   "kind": "text",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-049",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 PRESTASIPLUS.MY",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-050",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Muat Turun",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "alpine": {
+    "@click": "download('card-mastery-0', 'penguasaan-bahasa-melayu')"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-051",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kongsi",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "alpine": {
+    "@click": "whatsapp('🧠 Saya sudah capai Level 2 (Aktif) dalam Bahasa Melayu di PRESTASIPLUS! Ketepatan 48.9%. Jom bersaing!')"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-052",
+   "kind": "text",
+   "tag": "div",
+   "text": "Penguasaan Subjek",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-053",
+   "kind": "text",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "Lvl 1 — Mula Belajar",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "35%",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-056",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-057",
+   "kind": "text",
+   "tag": "div",
+   "text": "14",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-058",
+   "kind": "text",
+   "tag": "div",
+   "text": "Betul",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 PRESTASIPLUS.MY",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-061",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Muat Turun",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "alpine": {
+    "@click": "download('card-mastery-1', 'penguasaan-sejarah')"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-062",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Kongsi",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "alpine": {
+    "@click": "whatsapp('🧠 Saya sudah capai Level 1 (Mula Belajar) dalam Sejarah di PRESTASIPLUS! Ketepatan 35%. Jom bersaing!')"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "tab-penguasaan__1280",
+    "tab-penguasaan__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-ranking__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='penguasaan'"
+  },
+  {
+   "id": "EL-M14-S18-063",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kad Kedudukan",
+   "landmark": "main",
+   "section": "Kad Penguasaan Subjek",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-064",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Kad Kedudukan",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-065",
+   "kind": "card",
+   "tag": "div",
+   "text": "38.7%",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "domId": "card-ranking",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "🏆",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-067",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kedudukan Terkini",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-068",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan · 46/119 betul",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-069",
+   "kind": "text",
+   "tag": "strong",
+   "text": "38.7%",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-070",
+   "kind": "text",
+   "tag": "div",
+   "text": "<name>",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-071",
+   "kind": "text",
+   "tag": "div",
+   "text": "🎓 PRESTASIPLUS.MY",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-072",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Muat Turun",
+   "icon": "fa-download",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "alpine": {
+    "@click": "download('card-ranking', 'kedudukan')"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  },
+  {
+   "id": "EL-M14-S18-073",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "WhatsApp",
+   "icon": "fa-whatsapp",
+   "landmark": "main",
+   "section": "Kad Kedudukan",
+   "alpine": {
+    "@click": "whatsapp('🏆 Kedudukan saya di PRESTASIPLUS: ! Jom latih tubi!')"
+   },
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "tab-ranking__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "tab-kombo__1280",
+    "tab-penguasaan__1280",
+    "default__375",
+    "default__768",
+    "tab-penguasaan__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "tab==='ranking'"
+  }
+ ]
+}

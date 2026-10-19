@@ -1,0 +1,1354 @@
+{
+ "screen": "S8",
+ "key": "S8-pelajar",
+ "route": "/admin/kirkpatrick/pelajar/{id}",
+ "name": "Kirkpatrick — {nama}",
+ "module": "M12",
+ "generatedAt": "2026-09-25T11:27:07.607Z",
+ "notes": "new route (linked from M11 S3 / M17 monitoring school page); twin /guru/kirkpatrick/pelajar/{id}; unknown id = 403",
+ "shell": "SHA",
+ "summary": {
+  "total": 80,
+  "visibleDefault": 52,
+  "conditional": 28,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "heading": 5,
+   "text": 69,
+   "link": 3,
+   "badge": 1,
+   "card": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "student with 1 Head Count TOV and 3 platform subjects",
+   "file": "_raw/M12/S8-pelajar__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 200,
+   "title": "Kirkpatrick — <person>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "guru__1280",
+   "description": "teacher route /guru/kirkpatrick/pelajar/{id}",
+   "file": "_raw/M12/S8-pelajar__guru__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/guru/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 200,
+   "title": "Kirkpatrick — <person>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "low__1280",
+   "description": "student with several TOVs, weakest subject 0%",
+   "file": "_raw/M12/S8-pelajar__low__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 200,
+   "title": "Kirkpatrick — <person>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "unknown-403__1280",
+   "description": "unknown student id → 403 Akses Ditolak",
+   "file": "_raw/M12/S8-pelajar__unknown-403__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 403,
+   "title": "403 - <person> | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 3",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M12/S8-pelajar__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 200,
+   "title": "Kirkpatrick — <person>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M12/S8-pelajar__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "finalUrl": "/admin/kirkpatrick/pelajar/%7Bid%7D",
+   "httpStatus": 200,
+   "title": "Kirkpatrick — <person>",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m12n')) { el.classList.add('m12n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SMKA? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMT [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SMS [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    var KOD = /\\b[A-Z]{3}\\d{4}\\b/g;\n    var path = location.pathname;\n    // --- student detail page: name in h1, <title>, AI paragraph\n    if (/\\/kirkpatrick\\/pelajar\\/\\d+/.test(path)) {\n      var h1 = main.querySelector('h1'); var nm = h1 ? h1.textContent.replace(/\\s+/g, ' ').trim() : '';\n      if (nm.length > 2) {\n        var w0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t0;\n        while ((t0 = w0.nextNode())) { if (t0.parentNode && /SCRIPT|STYLE/.test(t0.parentNode.tagName)) continue; if (t0.nodeValue.indexOf(nm) >= 0) { t0.nodeValue = t0.nodeValue.split(nm).join('<person>'); n++; } }\n        document.title = document.title.split(nm).join('<person>'); n++;\n      }\n    }\n    // --- student links (T4 prediction table) and ALESA student cell (name span + school line)\n    main.querySelectorAll('a[href*=\"/pelajar/\"]').forEach(function (a) { tag(a); });\n    main.querySelectorAll('tbody tr td:nth-child(2) > span.font-medium').forEach(function (s) { tag(s); });\n    // --- school names / codes in text nodes (incl. <option>), attributes and title\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    document.querySelectorAll('[title],[alt],[aria-label]').forEach(function (e) { ['title', 'alt', 'aria-label'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(SCH, '<school>').replace(KOD, '<kod>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); });\n    var tv = document.title.replace(SCH, '<school>'); if (tv !== document.title) { document.title = tv; n++; }\n    // --- avatars\n    main.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage/.test(s)) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } });\n    // --- person-record ids in links and location\n    document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/pelajar\\/\\d+(?=$|[?#/])/g, '/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } });\n    if (/\\/pelajar\\/\\d+/.test(path)) { history.replaceState(null, '', location.href.replace(/\\/pelajar\\/\\d+/, '/pelajar/{id}')); n++; }\n    return 'm12mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m12mask: 5",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M12-S8-001",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "<person>",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "<school> · Tingkatan 5",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-003",
+   "kind": "link",
+   "tag": "a",
+   "text": "← Kembali ke Tahap 3",
+   "href": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "absHref": "https://prestasiplus.my/admin/kirkpatrick/behavior",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-004",
+   "kind": "badge",
+   "tag": "div",
+   "text": "AI",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "ALESA — Analisis Tingkah Laku Kirkpatrick",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penggunaan Prestasi Plus oleh <person> masih pada tahap minimum dengan hanya 4 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Ketepatan jawapan pada 73.1% menunjukkan pemahaman yang baik. Subjek terkuat: Sejarah (78.9%).",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "219",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "73.1%",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "Ketepatan",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "22.5",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Konsistensi",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "1d",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "Streak",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Terkuat: · Perlu perhatian:",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-016",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Sejarah (78.9%)",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-017",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Matematik (16.7%)",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-018",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 2 — Head Count",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-019",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tahap 2 — Head Count",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-020",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "2026 — Head Count",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:78.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Jasmani & Kesihatan",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pertanian",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "-",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 2 — Prestasi Platform",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-046",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Tahap 2 — Prestasi Platform",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "78.9% (190)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "39.1% (23)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "low__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "16.7% (6)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "guru__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-053",
+   "kind": "text",
+   "tag": "p",
+   "text": "Penggunaan Prestasi Plus oleh <person> masih pada tahap minimum dengan hanya 3 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Subjek terkuat: Bahasa Melayu (60.0%).",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-054",
+   "kind": "text",
+   "tag": "div",
+   "text": "38.6%",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-055",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Bahasa Melayu (60.0%)",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-056",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Sejarah (0.0%)",
+   "landmark": "main",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:20.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-058",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:60.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:40.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:55.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:33.33",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains Rumah Tangga",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains Sukan",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-064",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:37.00",
+   "landmark": "main",
+   "section": "2026 — Head Count",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-066",
+   "kind": "text",
+   "tag": "span",
+   "text": "60.0% (5)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "55.0% (20)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "40.0% (15)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "33.3% (15)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "20.0% (10)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "0.0% (5)",
+   "landmark": "main",
+   "section": "Tahap 2 — Prestasi Platform",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "low__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "403",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-075",
+   "kind": "text",
+   "tag": "div",
+   "text": "🚫",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-076",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-077",
+   "kind": "text",
+   "tag": "p",
+   "text": "Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-078",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-079",
+   "kind": "link",
+   "tag": "a",
+   "text": "Log Masuk",
+   "href": "/login",
+   "absHref": "https://prestasiplus.my/login",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  },
+  {
+   "id": "EL-M12-S8-080",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "<person>",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "unknown-403__1280"
+   ]
+  }
+ ]
+}

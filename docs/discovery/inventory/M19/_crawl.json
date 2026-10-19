@@ -1,0 +1,6462 @@
+{
+ "module": "M19",
+ "generatedAt": "2026-09-26T20:36:45.247Z",
+ "total": 379,
+ "urls": [
+  {
+   "url": "/logout",
+   "module": "M01",
+   "via": "TRACKER /logout",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Log Keluar"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint",
+    "link"
+   ],
+   "foundOn": [
+    "S6",
+    "S6(shell)",
+    "S7",
+    "S7(shell)"
+   ],
+   "texts": [
+    "99+",
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "module": "M01",
+   "via": "TRACKER /notifikasi",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/profile",
+   "module": "M01",
+   "via": "TRACKER /profile",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Profil Saya"
+   ]
+  },
+  {
+   "url": "/settings",
+   "module": "M01",
+   "via": "TRACKER /settings",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Tetapan"
+   ]
+  },
+  {
+   "url": "/tetapan",
+   "module": "M01",
+   "via": "TRACKER /tetapan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Tetapan Peribadi"
+   ]
+  },
+  {
+   "url": "/admin/comp-students",
+   "module": "M02",
+   "via": "TRACKER /admin/comp-students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Pelajar Komplimen"
+   ]
+  },
+  {
+   "url": "/admin/import-students",
+   "module": "M02",
+   "via": "TRACKER /admin/import-students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Import Pelajar"
+   ]
+  },
+  {
+   "url": "/admin/school-subscriptions",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Langganan Sekolah",
+    "Langganan Sekolah - Admin PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/school-subscriptions/1",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/10",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/11",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/12",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/13",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/14",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/15",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/2",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/4",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/5",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/6",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/7",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/8",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/9",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/school-subscriptions/create",
+   "module": "M02",
+   "via": "school subscriptions S12–S15 (owner M02; M19 reads the counts only)",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/school-subscriptions"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/schools",
+   "module": "M02",
+   "via": "TRACKER /admin/schools",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Sekolah"
+   ]
+  },
+  {
+   "url": "/admin/users",
+   "module": "M02",
+   "via": "TRACKER /admin/users",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Senarai Pengguna",
+    "Pengguna"
+   ]
+  },
+  {
+   "url": "/admin/users/bulk-import",
+   "module": "M02",
+   "via": "TRACKER /admin/users/bulk-import",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Import Pengguna"
+   ]
+  },
+  {
+   "url": "/admin/curriculum",
+   "module": "M03",
+   "via": "TRACKER /admin/curriculum",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Kurikulum"
+   ]
+  },
+  {
+   "url": "/admin/education-levels",
+   "module": "M03",
+   "via": "TRACKER /admin/education-levels",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tahap Pendidikan"
+   ]
+  },
+  {
+   "url": "/admin/subjects",
+   "module": "M03",
+   "via": "TRACKER /admin/subjects",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Subjek"
+   ]
+  },
+  {
+   "url": "/peta-belajar",
+   "module": "M03",
+   "via": "TRACKER /peta-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Peta Belajar"
+   ]
+  },
+  {
+   "url": "/topics",
+   "module": "M03",
+   "via": "TRACKER /topics",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Topik"
+   ]
+  },
+  {
+   "url": "/admin/master-notes",
+   "module": "M04",
+   "via": "TRACKER /admin/master-notes",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Semakan Nota Master"
+   ]
+  },
+  {
+   "url": "/admin/question-reports",
+   "module": "M04",
+   "via": "TRACKER /admin/question-reports",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan Soalan"
+   ]
+  },
+  {
+   "url": "/admin/question-submissions",
+   "module": "M04",
+   "via": "TRACKER /admin/question-submissions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kertas Soalan Guru"
+   ]
+  },
+  {
+   "url": "/admin/questions",
+   "module": "M04",
+   "via": "TRACKER /admin/questions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Senarai Soalan",
+    "Soalan"
+   ]
+  },
+  {
+   "url": "/admin/questions/import",
+   "module": "M04",
+   "via": "TRACKER /admin/questions/import",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Import CSV"
+   ]
+  },
+  {
+   "url": "/admin/questions/quality",
+   "module": "M04",
+   "via": "TRACKER /admin/questions/quality",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Kualiti Soalan"
+   ]
+  },
+  {
+   "url": "/admin/soalan-gambar",
+   "module": "M04",
+   "via": "TRACKER /admin/soalan-gambar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Gambar Rajah 6,144"
+   ]
+  },
+  {
+   "url": "/admin/structured-questions",
+   "module": "M04",
+   "via": "TRACKER /admin/structured-questions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/laporan-soalan",
+   "module": "M04",
+   "via": "TRACKER /laporan-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Laporan Soalan"
+   ]
+  },
+  {
+   "url": "/dashboard",
+   "module": "M05",
+   "via": "TRACKER /dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Ke Dashboard",
+    "Student View",
+    "Dashboard",
+    "Home"
+   ]
+  },
+  {
+   "url": "/latihan-berstruktur",
+   "module": "M05",
+   "via": "TRACKER /latihan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/misi-harian",
+   "module": "M05",
+   "via": "TRACKER /misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/pembetulan",
+   "module": "M05",
+   "via": "TRACKER /pembetulan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Pembetulan"
+   ]
+  },
+  {
+   "url": "/penguasaan",
+   "module": "M05",
+   "via": "TRACKER /penguasaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Penguasaan"
+   ]
+  },
+  {
+   "url": "/practice",
+   "module": "M05",
+   "via": "TRACKER /practice",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Latih Tubi"
+   ]
+  },
+  {
+   "url": "/practice/chapter",
+   "module": "M05",
+   "via": "TRACKER /practice/chapter",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Soalan by Chapter"
+   ]
+  },
+  {
+   "url": "/remedial/saya",
+   "module": "M05",
+   "via": "TRACKER /remedial/saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Remedial"
+   ]
+  },
+  {
+   "url": "/target-spm",
+   "module": "M05",
+   "via": "TRACKER /target-spm",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Target SPM"
+   ]
+  },
+  {
+   "url": "/pusat-ai/spm",
+   "module": "M06",
+   "via": "TRACKER /pusat-ai/spm",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "SPM Walkthrough"
+   ]
+  },
+  {
+   "url": "/spm-mock",
+   "module": "M06",
+   "via": "TRACKER /spm-mock",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "SPM Mock Exam"
+   ]
+  },
+  {
+   "url": "/spm/latih-tubi",
+   "module": "M06",
+   "via": "TRACKER /spm/latih-tubi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Latih Tubi"
+   ]
+  },
+  {
+   "url": "/spm/ramalan",
+   "module": "M06",
+   "via": "TRACKER /spm/ramalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tracking A"
+   ]
+  },
+  {
+   "url": "/spm/subjektif",
+   "module": "M06",
+   "via": "TRACKER /spm/subjektif",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Subjektif"
+   ]
+  },
+  {
+   "url": "/spm/tahun-lepas",
+   "module": "M06",
+   "via": "TRACKER /spm/tahun-lepas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Databank Soalan"
+   ]
+  },
+  {
+   "url": "/admin/pksk/access",
+   "module": "M07",
+   "via": "TRACKER /admin/pksk/access",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "PKSK Akses"
+   ]
+  },
+  {
+   "url": "/admin/pksk/questions",
+   "module": "M07",
+   "via": "TRACKER /admin/pksk/questions",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "PKSK Soalan"
+   ]
+  },
+  {
+   "url": "/analisa-item",
+   "module": "M08",
+   "via": "TRACKER /analisa-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Analisa Item"
+   ]
+  },
+  {
+   "url": "/analitik/pelajar",
+   "module": "M08",
+   "via": "TRACKER /analitik/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Analitik Adaptif"
+   ]
+  },
+  {
+   "url": "/headcount",
+   "module": "M08",
+   "via": "TRACKER /headcount",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Headcount"
+   ]
+  },
+  {
+   "url": "/laporan-mingguan",
+   "module": "M08",
+   "via": "TRACKER /laporan-mingguan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/prestasi",
+   "module": "M08",
+   "via": "TRACKER /prestasi",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/prestasi/kelas",
+   "module": "M08",
+   "via": "TRACKER /prestasi/{userId}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Prestasi"
+   ]
+  },
+  {
+   "url": "/ranking",
+   "module": "M08",
+   "via": "TRACKER /ranking",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kedudukan"
+   ]
+  },
+  {
+   "url": "/timeline",
+   "module": "M08",
+   "via": "TRACKER /timeline",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Timeline Saya"
+   ]
+  },
+  {
+   "url": "/admin/articles",
+   "module": "M09",
+   "via": "TRACKER /admin/articles",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Artikel"
+   ]
+  },
+  {
+   "url": "/admin/audio-kbat",
+   "module": "M09",
+   "via": "TRACKER /admin/audio-kbat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Audio KBAT"
+   ]
+  },
+  {
+   "url": "/admin/banners",
+   "module": "M09",
+   "via": "TRACKER /admin/banners",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Banner"
+   ]
+  },
+  {
+   "url": "/admin/notes",
+   "module": "M09",
+   "via": "TRACKER /admin/notes",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Nota"
+   ]
+  },
+  {
+   "url": "/admin/tools/screenshots",
+   "module": "M09",
+   "via": "TRACKER /admin/tools/screenshots",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Upload Screenshot"
+   ]
+  },
+  {
+   "url": "/artikel",
+   "module": "M09",
+   "via": "TRACKER /artikel",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Artikel"
+   ]
+  },
+  {
+   "url": "/audio-kbat",
+   "module": "M09",
+   "via": "TRACKER /audio-kbat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Audio KBAT"
+   ]
+  },
+  {
+   "url": "/panduan",
+   "module": "M09",
+   "via": "TRACKER /panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/perutusan",
+   "module": "M09",
+   "via": "TRACKER /perutusan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Perutusan"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/panduan",
+   "module": "M09",
+   "via": "TRACKER /pusat-tuisyen/panduan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Panduan"
+   ]
+  },
+  {
+   "url": "/guru/artikel",
+   "module": "M10",
+   "via": "TRACKER /guru/artikel",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Sumbang Artikel"
+   ]
+  },
+  {
+   "url": "/guru/broadcast",
+   "module": "M10",
+   "via": "TRACKER /guru/broadcast",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Broadcast"
+   ]
+  },
+  {
+   "url": "/guru/databank",
+   "module": "M10",
+   "via": "TRACKER /guru/databank",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Databank Soalan"
+   ]
+  },
+  {
+   "url": "/guru/jadual-belajar",
+   "module": "M10",
+   "via": "TRACKER /guru/jadual-belajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Jadual Belajar"
+   ]
+  },
+  {
+   "url": "/guru/kehadiran-digital",
+   "module": "M10",
+   "via": "TRACKER /guru/kehadiran-digital",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kehadiran Digital"
+   ]
+  },
+  {
+   "url": "/guru/kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kelas Guru",
+    "Kelas Saya"
+   ]
+  },
+  {
+   "url": "/guru/live-kelas",
+   "module": "M10",
+   "via": "TRACKER /guru/live-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kelas Live"
+   ]
+  },
+  {
+   "url": "/guru/misi-harian",
+   "module": "M10",
+   "via": "TRACKER /guru/misi-harian",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Misi Harian"
+   ]
+  },
+  {
+   "url": "/guru/pelajar",
+   "module": "M10",
+   "via": "TRACKER /guru/pelajar",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Pelajar Saya"
+   ]
+  },
+  {
+   "url": "/guru/set-soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/set-soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Set Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Sumbang Soalan"
+   ]
+  },
+  {
+   "url": "/guru/soalan-berstruktur",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-berstruktur",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Soalan Berstruktur"
+   ]
+  },
+  {
+   "url": "/guru/soalan-guru",
+   "module": "M10",
+   "via": "TRACKER /guru/soalan-guru",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Soalan & Rujukan"
+   ]
+  },
+  {
+   "url": "/kelas-saya",
+   "module": "M10",
+   "via": "TRACKER /kelas-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kelas Saya",
+    "Kelas Saya BARU"
+   ]
+  },
+  {
+   "url": "/set-soalan-saya",
+   "module": "M10",
+   "via": "TRACKER /set-soalan-saya",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Set Soalan Guru"
+   ]
+  },
+  {
+   "url": "/admin/monitoring",
+   "module": "M11",
+   "via": "TRACKER /admin/monitoring*",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Monitoring"
+   ]
+  },
+  {
+   "url": "/guru/analisis-item",
+   "module": "M11",
+   "via": "TRACKER /guru/analisis-item",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Analisis Item"
+   ]
+  },
+  {
+   "url": "/guru/laporan",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Laporan"
+   ]
+  },
+  {
+   "url": "/guru/laporan-mingguan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/laporan-mingguan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Laporan Mingguan"
+   ]
+  },
+  {
+   "url": "/guru/monitoring",
+   "module": "M11",
+   "via": "TRACKER /guru/monitoring",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Monitoring"
+   ]
+  },
+  {
+   "url": "/guru/perbandingan-kelas",
+   "module": "M11",
+   "via": "TRACKER /guru/perbandingan-kelas",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Perbandingan Kelas"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Overview",
+    "Kirkpatrick"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/behavior",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T3: Tingkah Laku"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/chain",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Rantaian Impak"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/interventions",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Intervensi"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/learning",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T2: Pembelajaran"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/reaction",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T1: Reaksi"
+   ]
+  },
+  {
+   "url": "/admin/kirkpatrick/results",
+   "module": "M12",
+   "via": "TRACKER /admin/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "T4: Hasil"
+   ]
+  },
+  {
+   "url": "/admin/laporan",
+   "module": "M12",
+   "via": "TRACKER /admin/laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan",
+    "Laporan Aktiviti"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Ringkasan"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/behavior",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "T3: Tingkah Laku"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/chain",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Rantaian Impak"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/interventions",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Intervensi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/learning",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "T2: Pembelajaran"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/reaction",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "T1: Reaksi"
+   ]
+  },
+  {
+   "url": "/guru/kirkpatrick/results",
+   "module": "M12",
+   "via": "TRACKER /guru/kirkpatrick",
+   "inTracker": false,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "T4: Hasil"
+   ]
+  },
+  {
+   "url": "/cikgu/essay",
+   "module": "M13",
+   "via": "TRACKER /cikgu/essay",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Semak Karangan (Cikgu Alesa)",
+    "Mark Karangan"
+   ]
+  },
+  {
+   "url": "/cikgu/pbd",
+   "module": "M13",
+   "via": "TRACKER /cikgu/pbd",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "PBD (Cikgu Alesa)",
+    "PBD Auto-Tag"
+   ]
+  },
+  {
+   "url": "/cikgu/rph",
+   "module": "M13",
+   "via": "TRACKER /cikgu/rph",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "RPH (Cikgu Alesa)",
+    "RPH (Rancangan Harian)",
+    "RPH"
+   ]
+  },
+  {
+   "url": "/admin/gamification",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Overview"
+   ]
+  },
+  {
+   "url": "/admin/gamification/challenges",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/challenges",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Cabaran"
+   ]
+  },
+  {
+   "url": "/admin/gamification/students",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/students",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Pelajar"
+   ]
+  },
+  {
+   "url": "/admin/gamification/tiers",
+   "module": "M14",
+   "via": "TRACKER /admin/gamification/tiers",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tier Config"
+   ]
+  },
+  {
+   "url": "/admin/gamification/transactions",
+   "module": "M14",
+   "via": "coin ledger (M14)",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Transaksi"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/guru",
+   "module": "M14",
+   "via": "TRACKER /admin/gamifikasi/guru",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "/admin/gamifikasi/guru/tunai"
+   ],
+   "texts": [
+    "Gamifikasi Guru"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/guru/tunai",
+   "module": "M14",
+   "via": "teacher cash-out requests (M14 S21/S22)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "Tebus Tunai Guru — Admin"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/gamifikasi/guru/tunai/1",
+   "module": "M14",
+   "via": "teacher cash-out requests (M14 S21/S22)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/gamifikasi/guru/tunai"
+   ],
+   "texts": [
+    "_token,_method,status,admin_note"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/guru/tunai/2",
+   "module": "M14",
+   "via": "teacher cash-out requests (M14 S21/S22)",
+   "inTracker": false,
+   "kinds": [
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/gamifikasi/guru/tunai"
+   ],
+   "texts": [
+    "_token,_method,status,admin_note"
+   ]
+  },
+  {
+   "url": "/admin/reward-control",
+   "module": "M14",
+   "via": "TRACKER /admin/reward-control",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Kawalan Reward"
+   ]
+  },
+  {
+   "url": "/gamification",
+   "module": "M14",
+   "via": "TRACKER /gamification",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Syiling & Token 🏆",
+    "Syiling & Token"
+   ]
+  },
+  {
+   "url": "/gamification/achievements",
+   "module": "M14",
+   "via": "TRACKER /gamification/achievements",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Pencapaian"
+   ]
+  },
+  {
+   "url": "/gamification/challenges",
+   "module": "M14",
+   "via": "TRACKER /gamification/challenges",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Cabaran Harian"
+   ]
+  },
+  {
+   "url": "/gamification/convert",
+   "module": "M14",
+   "via": "TRACKER /gamification/convert",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Tukar Token"
+   ]
+  },
+  {
+   "url": "/gamification/leaderboard",
+   "module": "M14",
+   "via": "TRACKER /gamification/leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Papan Pendahulu"
+   ]
+  },
+  {
+   "url": "/gamification/referral",
+   "module": "M14",
+   "via": "TRACKER /gamification/referral",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Rujuk Kawan"
+   ]
+  },
+  {
+   "url": "/guru/gamifikasi",
+   "module": "M14",
+   "via": "TRACKER /guru/gamifikasi",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)",
+    "/guru/gamifikasi/tebus-tunai"
+   ],
+   "texts": [
+    "Syiling & Ganjaran"
+   ]
+  },
+  {
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "module": "M14",
+   "via": "teacher cash-out (M14 S20)",
+   "inTracker": false,
+   "kinds": [
+    "probe",
+    "form POST"
+   ],
+   "foundOn": [
+    "M19-crawl",
+    "/guru/gamifikasi/tebus-tunai"
+   ],
+   "texts": [
+    "Tebus Tunai",
+    "_token,coins_amount,bank_name,bank_account,account_holder"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/hadiah",
+   "module": "M15",
+   "via": "rewards catalogue incl. e-wallet rewards (M15)",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kedai Hadiah",
+    "Admin Tebusan",
+    "Urus Hadiah"
+   ]
+  },
+  {
+   "url": "/cabutan",
+   "module": "M15",
+   "via": "TRACKER /cabutan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Cabutan Bertuah 🎟️"
+   ]
+  },
+  {
+   "url": "/cikgu/kelulusan-hadiah",
+   "module": "M15",
+   "via": "TRACKER /cikgu/kelulusan-hadiah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kelulusan Hadiah"
+   ]
+  },
+  {
+   "url": "/gamification/mystery-box",
+   "module": "M15",
+   "via": "TRACKER /gamification/mystery-box",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kotak Misteri"
+   ]
+  },
+  {
+   "url": "/gamification/rewards",
+   "module": "M15",
+   "via": "TRACKER /gamification/rewards",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kedai Hadiah"
+   ]
+  },
+  {
+   "url": "/admin",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Dashboard",
+    "Ke Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/gamifikasi/pengaturan",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/gamifikasi/guru/tunai"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/permainan",
+   "module": "M16",
+   "via": "TRACKER /admin/permainan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tetapan Permainan"
+   ]
+  },
+  {
+   "url": "/admin/server-status",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5"
+   ],
+   "texts": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/amaran",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Amaran Awal"
+   ]
+  },
+  {
+   "url": "/api/tournament/active",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/battle",
+   "module": "M16",
+   "via": "TRACKER /battle",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Battle Live"
+   ]
+  },
+  {
+   "url": "/battle/leaderboard",
+   "module": "M16",
+   "via": "TRACKER /battle/leaderboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Leaderboard"
+   ]
+  },
+  {
+   "url": "/battle/ranking-sekolah",
+   "module": "M16",
+   "via": "TRACKER /battle/ranking-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Ranking Sekolah"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/cikgu",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Cikgu Alesa Chat AI",
+    "Cikgu Alesa AI"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": false,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/guru",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Dashboard Guru"
+   ]
+  },
+  {
+   "url": "/kombo",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Streak / Kombo",
+    "Kombo"
+   ]
+  },
+  {
+   "url": "/latih-tubi",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S2",
+    "S3",
+    "/admin/payments/99999999",
+    "/admin/payments/99999999/edit",
+    "/admin/subscriptions",
+    "/admin/individual-subscriptions",
+    "/admin/invoices",
+    "/admin/packages",
+    "/admin/pricing",
+    "/billing",
+    "/billing/invoices/1",
+    "/subscribe",
+    "/subscription",
+    "/langganan",
+    "/pakej",
+    "/guru/invois"
+   ],
+   "texts": [
+    "Mula Latihan"
+   ]
+  },
+  {
+   "url": "/liga",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Liga Pertandingan"
+   ]
+  },
+  {
+   "url": "/permainan",
+   "module": "M16",
+   "via": "TRACKER /permainan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Permainan 🎮",
+    "Game"
+   ]
+  },
+  {
+   "url": "/pksk",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "PKSK PRO"
+   ]
+  },
+  {
+   "url": "/sekolah-bersaing",
+   "module": "M16",
+   "via": "TRACKER /sekolah-bersaing",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Sekolah Bersaing",
+    "Sekolah Bersaing NEW"
+   ]
+  },
+  {
+   "url": "/spm",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "SPM SPM",
+    "SPM"
+   ]
+  },
+  {
+   "url": "/tournament",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Tournament"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "module": "M16",
+   "via": "TRACKER /tournament",
+   "inTracker": true,
+   "kinds": [
+    "js-endpoint"
+   ],
+   "foundOn": [
+    "S6",
+    "S7"
+   ],
+   "texts": [
+    "attr::href@a"
+   ]
+  },
+  {
+   "url": "/video",
+   "module": "M16",
+   "via": "TRACKER /{code}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Video"
+   ]
+  },
+  {
+   "url": "/admin/analytics",
+   "module": "M17",
+   "via": "TRACKER /admin/analytics",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Analitik"
+   ]
+  },
+  {
+   "url": "/admin/command-center",
+   "module": "M17",
+   "via": "TRACKER /admin/command-center",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/admin/command-center/daily-activity",
+   "module": "M17",
+   "via": "TRACKER /admin/command-center/daily-activity",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Aktiviti Harian"
+   ]
+  },
+  {
+   "url": "/admin/laporan-eksekutif",
+   "module": "M17",
+   "via": "TRACKER /admin/laporan-eksekutif",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Laporan Eksekutif"
+   ]
+  },
+  {
+   "url": "/admin/performance",
+   "module": "M17",
+   "via": "TRACKER /admin/performance",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Performance"
+   ]
+  },
+  {
+   "url": "/guru/command-center",
+   "module": "M17",
+   "via": "TRACKER /guru/command-center/*",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/jpn/dashboard",
+   "module": "M18",
+   "via": "TRACKER /jpn/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Dashboard JPN"
+   ]
+  },
+  {
+   "url": "/jpn/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan JPN",
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/jpn/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /jpn/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/ppd/benchmark-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/benchmark-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Benchmark Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/command-center",
+   "module": "M18",
+   "via": "TRACKER /ppd/command-center",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Command Center LIVE"
+   ]
+  },
+  {
+   "url": "/ppd/dashboard",
+   "module": "M18",
+   "via": "TRACKER /ppd/dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Dashboard PPD"
+   ]
+  },
+  {
+   "url": "/ppd/export-laporan",
+   "module": "M18",
+   "via": "TRACKER /ppd/export-laporan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Export Laporan"
+   ]
+  },
+  {
+   "url": "/ppd/leaderboard-sekolah",
+   "module": "M18",
+   "via": "TRACKER /ppd/leaderboard-sekolah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Leaderboard Sekolah"
+   ]
+  },
+  {
+   "url": "/ppd/peta-haba",
+   "module": "M18",
+   "via": "TRACKER /ppd/peta-haba",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Peta Haba"
+   ]
+  },
+  {
+   "url": "/ppd/ranking-kebangsaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/ranking-kebangsaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Ranking Kebangsaan"
+   ]
+  },
+  {
+   "url": "/ppd/statistik-penggunaan",
+   "module": "M18",
+   "via": "TRACKER /ppd/statistik-penggunaan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Statistik PPD",
+    "Statistik Penggunaan"
+   ]
+  },
+  {
+   "url": "/admin/billing",
+   "module": "M19",
+   "via": "billing dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Billing Dashboard",
+    "Billing Dashboard - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/billing?month=2026-08",
+   "module": "M19",
+   "via": "billing dashboard",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S4",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Billing Dashboard - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/dunning",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5",
+    "S5(shell)",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Dunning Log",
+    "Dunning Log — Admin",
+    "Reset"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/dunning?event=expired",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S5"
+   ],
+   "texts": [
+    "Dunning Log — Admin"
+   ]
+  },
+  {
+   "url": "/admin/dunning?event=reminder_7d",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S5"
+   ],
+   "texts": [
+    "Dunning Log — Admin"
+   ]
+  },
+  {
+   "url": "/admin/dunning?page=1",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "pagination",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S5",
+    "/admin/dunning?page=2"
+   ],
+   "texts": [
+    "« Previous",
+    "&laquo; Previous",
+    "1"
+   ]
+  },
+  {
+   "url": "/admin/dunning?page=2",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S5",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Dunning Log — Admin"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/dunning?type=individual",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S5"
+   ],
+   "texts": [
+    "Dunning Log — Admin"
+   ]
+  },
+  {
+   "url": "/admin/dunning?type=school",
+   "module": "M19",
+   "via": "dunning log",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S5"
+   ],
+   "texts": [
+    "Dunning Log — Admin"
+   ]
+  },
+  {
+   "url": "/admin/export/payments",
+   "module": "M19",
+   "via": "S1 dashboard 'Pembayaran' CSV export (download; never opened; link owned by M17 S1)",
+   "inTracker": true,
+   "kinds": [
+    "download (not opened; M17 S1 link)"
+   ],
+   "foundOn": [
+    "M19 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/individual-subscriptions",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/invoices",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/packages",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/payments",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S1(shell)",
+    "S2",
+    "S2(shell)",
+    "S3",
+    "S3(shell)",
+    "S4",
+    "S4(shell)",
+    "S5(shell)",
+    "M19-crawl",
+    "/admin/payments/65",
+    "/admin/payments/65/edit",
+    "/admin/billing",
+    "/admin/billing?month=2026-08"
+   ],
+   "texts": [
+    "Pembayaran",
+    "Pembayaran - Admin Panel",
+    "Reset",
+    "Senarai Pembayaran"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments?gateway=bizappay",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?page=1",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "« Previous",
+    "&laquo; Previous",
+    "1"
+   ]
+  },
+  {
+   "url": "/admin/payments?page=2",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments",
+    "M19-crawl",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Next »",
+    "2",
+    "Next &raquo;",
+    "Pembayaran - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments?page=3",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments",
+    "/admin/payments?page=2",
+    "M19-crawl"
+   ],
+   "texts": [
+    "3",
+    "Next »",
+    "Next &raquo;",
+    "Pembayaran - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments?page=99",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments?search=zzqxv",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=failed",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=paid",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=paid&type=personal",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=pending",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=pending&page=2",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Next »",
+    "2",
+    "Next &raquo;"
+   ]
+  },
+  {
+   "url": "/admin/payments?status=pending&page=3",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "3"
+   ]
+  },
+  {
+   "url": "/admin/payments?type=personal",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?type=pksk",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?type=regular",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Pembayaran - Admin Panel"
+   ]
+  },
+  {
+   "url": "/admin/payments?type=regular&page=2",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "Next »",
+    "2",
+    "Next &raquo;"
+   ]
+  },
+  {
+   "url": "/admin/payments?type=regular&page=3",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "pagination"
+   ],
+   "foundOn": [
+    "S1"
+   ],
+   "texts": [
+    "3"
+   ]
+  },
+  {
+   "url": "/admin/payments/{id}",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE (row delete; not submitted)"
+   ],
+   "foundOn": [
+    "M19 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/{id}/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form PUT status (not submitted)"
+   ],
+   "foundOn": [
+    "M19 page code"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/10",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/10/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/11",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/11/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/12",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/12/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/13",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/13/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/14",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/14/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/15",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/15/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/16",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/16/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/17",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/17/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/18",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/18/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/19",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/19/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/20",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/20/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/21",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/21/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/22",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/22/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/23",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/23/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/24",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/24/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/25",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "visited",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method",
+    "Pembayaran #25"
+   ]
+  },
+  {
+   "url": "/admin/payments/25/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/26",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/26/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/27",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/27/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/28",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/28/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/29",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/29/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/30",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/30/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/31",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/31/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/32",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/32/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/33",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/33/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/34",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/34/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/35",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/35/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/36",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/36/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/37",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/37/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/38",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/38/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/39",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/39/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/40",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/40/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/41",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/41/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/42",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/42/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=2"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/43",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/43/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/44",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/44/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/45",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/45/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments?page=2"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/46",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/46/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/47",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/47/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/48",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/48/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/49",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/49/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/50",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/50/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/51",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/51/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/52",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/52/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/53",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/53/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/54",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/54/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/55",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/55/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/56",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/56/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/57",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/57/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/58",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/58/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/59",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/59/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/60",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/60/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/61",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/61/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/62",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/62/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/63",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "link",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/63/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Edit"
+   ]
+  },
+  {
+   "url": "/admin/payments/64",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "link",
+    "visited",
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method",
+    "Pembayaran #64",
+    "#64"
+   ]
+  },
+  {
+   "url": "/admin/payments/64/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "/admin/payments"
+   ],
+   "texts": [
+    "Edit",
+    "Edit Pembayaran #64"
+   ]
+  },
+  {
+   "url": "/admin/payments/65",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "form PUT",
+    "link",
+    "visited",
+    "crawl-link",
+    "form POST",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "/admin/payments",
+    "M19-crawl",
+    "/admin/payments/65",
+    "/admin/payments/65/edit"
+   ],
+   "texts": [
+    "Lihat",
+    "_token,_method",
+    "Pembayaran #65",
+    "#65"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments/65/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "crawl-link",
+    "probe"
+   ],
+   "foundOn": [
+    "S1",
+    "S2",
+    "S3",
+    "/admin/payments",
+    "/admin/payments/65",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Edit",
+    "Edit Pembayaran #65"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/admin/payments/7",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/7/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/8",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/8/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/9",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link",
+    "form POST"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": [
+    "_token,_method"
+   ]
+  },
+  {
+   "url": "/admin/payments/9/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "crawl-link"
+   ],
+   "foundOn": [
+    "/admin/payments?page=3"
+   ],
+   "texts": []
+  },
+  {
+   "url": "/admin/payments/99999999",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S2",
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/payments/99999999/edit",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S3",
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/payments/bulk-delete",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "form DELETE",
+    "form POST",
+    "form POST ids[] (not submitted)"
+   ],
+   "foundOn": [
+    "S1",
+    "/admin/payments",
+    "/admin/payments?page=2",
+    "/admin/payments?page=3",
+    "/admin/payments?page=99",
+    "M19 page code"
+   ],
+   "texts": [
+    "_token,_method",
+    "_token,_method,ids[],ids[],ids[],ids[],ids[],ids[],ids[],ids",
+    "_token,_method,ids[]"
+   ]
+  },
+  {
+   "url": "/admin/payments/create",
+   "module": "M19",
+   "via": "payments list + show /admin/payments/{id} + edit /admin/payments/{id}/edit + DELETE /admin/payments/{id} + POST /admin/payments/bulk-delete (found by crawl; writes never submitted)",
+   "inTracker": true,
+   "kinds": [
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S2",
+    "M19-crawl"
+   ],
+   "texts": [
+    "500 - Ralat Pelayan | PRESTASIPLUS"
+   ],
+   "httpStatus": 500
+  },
+  {
+   "url": "/admin/pricing",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/subscriptions",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/billing",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/billing/invoices",
+   "module": "M19",
+   "via": "user invoice history (Invois Saya)",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7",
+    "S7(shell)",
+    "M19-crawl"
+   ],
+   "texts": [
+    "Invois Saya",
+    "Sejarah Invois - PRESTASIPLUS"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/billing/invoices/1",
+   "module": "M19",
+   "via": "user invoice history (Invois Saya)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/guru/invois",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": false,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/langganan",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/pakej",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/pricing",
+   "module": "M19",
+   "via": "TRACKER /pricing",
+   "inTracker": true,
+   "kinds": [
+    "link",
+    "visited",
+    "probe",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S6",
+    "S6(shell)",
+    "S7",
+    "S7(shell)",
+    "M19-crawl",
+    "/billing/invoices"
+   ],
+   "texts": [
+    "Pakej 💎",
+    "Pilih Pakej Anda - PRESTASIPLUS",
+    "Lihat Pakej",
+    "Terokai Pakej"
+   ],
+   "httpStatus": 200
+  },
+  {
+   "url": "/subscribe",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/subscribe/personal",
+   "module": "M19",
+   "via": "POST /subscribe/regular, /subscribe/personal (pricing 'Langgan' forms → ToyyibPay; never submitted; GET = 405)",
+   "inTracker": true,
+   "kinds": [
+    "form POST",
+    "probe",
+    "form POST billing=monthly|onetime (not submitted; → ToyyibPay)"
+   ],
+   "foundOn": [
+    "S6",
+    "/pricing",
+    "M19-crawl",
+    "M19 page code"
+   ],
+   "texts": [
+    "_token,billing",
+    "An Error Occurred: Method Not Allowed"
+   ],
+   "httpStatus": 405
+  },
+  {
+   "url": "/subscribe/regular",
+   "module": "M19",
+   "via": "POST /subscribe/regular, /subscribe/personal (pricing 'Langgan' forms → ToyyibPay; never submitted; GET = 405)",
+   "inTracker": true,
+   "kinds": [
+    "form POST",
+    "probe",
+    "form POST billing=monthly (not submitted; → ToyyibPay)"
+   ],
+   "foundOn": [
+    "S6",
+    "/pricing",
+    "M19-crawl",
+    "M19 page code"
+   ],
+   "texts": [
+    "_token,billing",
+    "An Error Occurred: Method Not Allowed"
+   ],
+   "httpStatus": 405
+  },
+  {
+   "url": "/subscription",
+   "module": "M19",
+   "via": "guessed finance route probed by the M19 crawl → 404 (does not exist on live)",
+   "inTracker": true,
+   "kinds": [
+    "probe"
+   ],
+   "foundOn": [
+    "M19-crawl"
+   ],
+   "texts": [
+    "404 - Halaman Tidak Dijumpai | PRESTASIPLUS"
+   ],
+   "httpStatus": 404
+  },
+  {
+   "url": "/admin/marketplace/products",
+   "module": "M20",
+   "via": "TRACKER /admin/marketplace/products",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Produk",
+    "Urus Produk"
+   ]
+  },
+  {
+   "url": "/admin/marketplace/sellers",
+   "module": "M20",
+   "via": "TRACKER /admin/marketplace/sellers",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Penjual",
+    "Urus Penjual"
+   ]
+  },
+  {
+   "url": "/marketplace",
+   "module": "M20",
+   "via": "TRACKER /marketplace",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Marketplace"
+   ]
+  },
+  {
+   "url": "/admin/anak-angkat",
+   "module": "M21",
+   "via": "TRACKER /admin/anak-angkat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Anak Angkat"
+   ]
+  },
+  {
+   "url": "/admin/anak-angkat/permohonan",
+   "module": "M21",
+   "via": "TRACKER /admin/anak-angkat/permohonan",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Permohonan"
+   ]
+  },
+  {
+   "url": "/admin/sponsors",
+   "module": "M21",
+   "via": "TRACKER /admin/sponsors",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Penajaan",
+    "Penaja"
+   ]
+  },
+  {
+   "url": "/mohon-keluarga-angkat",
+   "module": "M21",
+   "via": "TRACKER /mohon-keluarga-angkat",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Mohon Keluarga Angkat"
+   ]
+  },
+  {
+   "url": "/admin/chatbot",
+   "module": "M22",
+   "via": "TRACKER /admin/chatbot",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Chatbot"
+   ]
+  },
+  {
+   "url": "/admin/notifications",
+   "module": "M22",
+   "via": "TRACKER /admin/notifications",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Push Notifikasi"
+   ]
+  },
+  {
+   "url": "/admin/tiket",
+   "module": "M22",
+   "via": "TRACKER /admin/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Urus Tiket 2"
+   ]
+  },
+  {
+   "url": "/pusat-tuisyen/tiket",
+   "module": "M22",
+   "via": "TRACKER /pusat-tuisyen/tiket",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Tiket Bantuan"
+   ]
+  },
+  {
+   "url": "/admin/audit-log",
+   "module": "M23",
+   "via": "TRACKER /admin/audit-log",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Audit Log"
+   ]
+  },
+  {
+   "url": "/admin/audit-logs",
+   "module": "M23",
+   "via": "TRACKER /admin/audit-logs",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Log Audit"
+   ]
+  },
+  {
+   "url": "/admin/settings",
+   "module": "M23",
+   "via": "TRACKER /admin/settings",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Tetapan"
+   ]
+  },
+  {
+   "url": "/admin/duta-applications",
+   "module": "M24",
+   "via": "TRACKER /admin/duta-applications",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Permohonan Duta"
+   ]
+  },
+  {
+   "url": "/akademi-duta",
+   "module": "M24",
+   "via": "TRACKER /akademi-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Akademi Duta"
+   ]
+  },
+  {
+   "url": "/bilik-duta",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Bilik Duta",
+    "Bilik Duta DEV"
+   ]
+  },
+  {
+   "url": "/bilik-duta/kem",
+   "module": "M24",
+   "via": "TRACKER /bilik-duta/{slug}",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kem & Bootcamp"
+   ]
+  },
+  {
+   "url": "/duta-dashboard",
+   "module": "M24",
+   "via": "TRACKER /duta-dashboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Duta Dashboard"
+   ]
+  },
+  {
+   "url": "/jemput-duta",
+   "module": "M24",
+   "via": "TRACKER /jemput-duta",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Jemput Duta"
+   ]
+  },
+  {
+   "url": "/pusat-ai/aktiviti",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/aktiviti",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Aktiviti Advisor"
+   ]
+  },
+  {
+   "url": "/pusat-ai/doa",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/doa",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Doa & Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/kamus",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/kamus",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Kamus AI"
+   ]
+  },
+  {
+   "url": "/pusat-ai/parent-whisperer",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/parent-whisperer",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)"
+   ],
+   "texts": [
+    "Parent Whisperer"
+   ]
+  },
+  {
+   "url": "/pusat-ai/pendamping",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/pendamping",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Pendamping Motivasi"
+   ]
+  },
+  {
+   "url": "/pusat-ai/whiteboard",
+   "module": "M25",
+   "via": "TRACKER /pusat-ai/whiteboard",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Whiteboard → Quiz"
+   ]
+  },
+  {
+   "url": "/cikgu-suara",
+   "module": "M26",
+   "via": "TRACKER /cikgu-suara",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Cikgu Suara"
+   ]
+  },
+  {
+   "url": "/cita-cita",
+   "module": "M26",
+   "via": "TRACKER /cita-cita",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Cita-Cita Hijrah"
+   ]
+  },
+  {
+   "url": "/profil-cerah",
+   "module": "M26",
+   "via": "TRACKER /profil-cerah",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Profil Cerah"
+   ]
+  },
+  {
+   "url": "/wellbeing/alerts",
+   "module": "M26",
+   "via": "TRACKER /wellbeing/alerts",
+   "inTracker": true,
+   "kinds": [
+    "link"
+   ],
+   "foundOn": [
+    "S1(shell)",
+    "S2(shell)",
+    "S3(shell)",
+    "S4(shell)",
+    "S5(shell)",
+    "S6(shell)",
+    "S7(shell)"
+   ],
+   "texts": [
+    "Wellbeing Alerts"
+   ]
+  },
+  {
+   "url": "/",
+   "module": "unknown",
+   "via": "",
+   "inTracker": false,
+   "kinds": [
+    "link",
+    "crawl-link"
+   ],
+   "foundOn": [
+    "S2",
+    "S3",
+    "/admin/payments/99999999",
+    "/admin/payments/99999999/edit",
+    "/admin/payments/create",
+    "/admin/subscriptions",
+    "/admin/individual-subscriptions",
+    "/admin/invoices",
+    "/admin/packages",
+    "/admin/pricing",
+    "/billing",
+    "/billing/invoices/1",
+    "/subscribe",
+    "/subscription",
+    "/langganan",
+    "/pakej",
+    "/guru/invois"
+   ],
+   "texts": [
+    "Halaman Utama"
+   ]
+  }
+ ],
+ "supplement": "tools/jobs/M19-crawl-post.js: probes (with httpStatus) + in-page links of the structural crawl (capped at 150 links per page)"
+}

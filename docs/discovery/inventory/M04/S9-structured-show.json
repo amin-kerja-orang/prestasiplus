@@ -1,0 +1,789 @@
+{
+ "screen": "S9",
+ "key": "S9-structured-show",
+ "route": "/admin/structured-questions/{id}",
+ "name": "Detail Soalan Berstruktur",
+ "module": "M04",
+ "generatedAt": "2026-09-25T07:37:18.489Z",
+ "shell": "SHA",
+ "summary": {
+  "total": 45,
+  "visibleDefault": 34,
+  "conditional": 11,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "link": 3,
+   "card": 6,
+   "badge": 10,
+   "text": 24,
+   "heading": 2
+  }
+ },
+ "states": [
+  {
+   "label": "multi-sub__1280",
+   "description": "3 sub-questions (3(A)–3(C))",
+   "file": "_raw/M04/S9-structured-show__multi-sub__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions/3698",
+   "finalUrl": "/admin/structured-questions/3698",
+   "httpStatus": 200,
+   "title": "Detail Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 1",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "single-sub__1280",
+   "description": "1 sub-question (A)",
+   "file": "_raw/M04/S9-structured-show__single-sub__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/structured-questions/4454",
+   "finalUrl": "/admin/structured-questions/4454",
+   "httpStatus": 200,
+   "title": "Detail Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 2",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M04/S9-structured-show__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/structured-questions/3698",
+   "finalUrl": "/admin/structured-questions/3698",
+   "httpStatus": 200,
+   "title": "Detail Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 1",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M04/S9-structured-show__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/structured-questions/3698",
+   "finalUrl": "/admin/structured-questions/3698",
+   "httpStatus": 200,
+   "title": "Detail Soalan Berstruktur",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var W = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, L = []; while ((t = W.nextNode())) L.push(t); L.forEach(function (t) { if (t.parentNode && /^(SCRIPT|STYLE)$/.test(t.parentNode.tagName)) return; var v = t.nodeValue, o = v;  if (/^\\s*oleh\\s+\\S/.test(v) && v.trim().length < 80) v = v.replace(/oleh\\s+.+/, 'oleh <person>');  v = v.replace(/(Soalan Oleh:|Dicipta oleh:|Oleh:)[ \\t]*([^\\n<]+)/g, function (m, a, b) { return b.trim() ? a + ' <person>' : m; });  if (v !== o) { t.nodeValue = v; n++; } }); document.querySelectorAll('span, p, div').forEach(function (s) { var f = s.firstChild; if (f && f.nodeType === 3 && /^\\s*Oleh:\\s*$/.test(f.nodeValue)) { var st = s.querySelector('strong'); if (st) { st.textContent = '<person>'; n++; } } }); document.querySelectorAll('[data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.setAttribute('href', '#'); a.textContent = '<email>'; n++; }); document.querySelectorAll('main table').forEach(function (tb) { var h = tb.querySelector('thead th'); if (h && /Guru \\/ Sekolah/.test(h.textContent)) tb.querySelectorAll('tbody tr > td:first-child').forEach(function (td) { td.querySelectorAll('p').forEach(function (p, i) { var ic = p.querySelector('i'); p.textContent = i === 0 ? '<person>' : i === 1 ? '<email>' : '<school>'; if (ic && i === 2) p.prepend(ic); n++; }); }); }); document.querySelectorAll('main textarea[name=admin_notes]').forEach(function (x) { if (x.value) { x.value = '<note>'; x.textContent = '<note>'; n++; } }); return 'm04mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m04mask: 1",
+    "sanitized: cells=0 strings=0 attrs=2 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main [data-card]": 0
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M04-S9-001",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke senarai",
+   "href": "https://prestasiplus.my/admin/structured-questions",
+   "absHref": "https://prestasiplus.my/admin/structured-questions",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-002",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-003",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-004",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Tingkatan 5",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-005",
+   "kind": "badge",
+   "tag": "span",
+   "text": "KBAT: Mengaplikasi (L3)",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-006",
+   "kind": "badge",
+   "tag": "span",
+   "text": "10 Markah",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "ID: #3698",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "Stimulus / Konteks Soalan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kedaulatan ialah konsep kenegaraan yang diasaskan sejak tamadun Yunani dan ditafsirkan oleh pelbagai tokoh mengikut perubahan zaman.",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "Dicipta oleh: <person>",
+   "icon": "fa-user",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "08 Apr 2026",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "Visibiliti: Public",
+   "icon": "fa-eye",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "Published",
+   "icon": "fa-circle",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-014",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian Soalan (3 sub-soalan)",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-015",
+   "kind": "card",
+   "tag": "div",
+   "text": "3(A)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-016",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3(A)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-017",
+   "kind": "text",
+   "tag": "p",
+   "text": "Apakah yang anda faham dengan konsep kedaulatan?",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "2m",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawapan Model",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-020",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kedaulatan ialah kekuasaan tertinggi sesebuah negara yang bebas daripada campur tangan kuasa luar dan mempunyai hak mentadbir wilayah serta rakyatnya sendiri.",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-021",
+   "kind": "card",
+   "tag": "div",
+   "text": "3(B)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-022",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3(B)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-023",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bagaimanakah pemerintah dan rakyat berperanan bagi mengekalkan kedaulatan negara?",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "4m",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawapan Model",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-026",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pemerintah perlu mentadbir dengan cekap, menjaga keselamatan, menguatkuasakan undang-undang dan memelihara perpaduan. Rakyat pula perlu setia kepada negara, mematuhi undang-undang, menyokong usaha kerajaan, mempertahankan negara dan memupuk semangat patriotik.",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-027",
+   "kind": "card",
+   "tag": "div",
+   "text": "3(C)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-028",
+   "kind": "badge",
+   "tag": "span",
+   "text": "3(C)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-029",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jelaskan kepentingan mengekalkan kedaulatan negara.",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "4m",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawapan Model",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kedaulatan penting untuk menjamin keamanan, kestabilan politik, kemakmuran ekonomi, melindungi maruah negara, memastikan pentadbiran berjalan lancar dan menjamin kesejahteraan hidup rakyat.",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-033",
+   "kind": "link",
+   "tag": "a",
+   "text": "Edit Soalan",
+   "href": "https://prestasiplus.my/guru/soalan-berstruktur/3698/edit",
+   "absHref": "https://prestasiplus.my/guru/soalan-berstruktur/3698/edit",
+   "icon": "fa-edit",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-034",
+   "kind": "link",
+   "tag": "a",
+   "text": "Balik ke Senarai",
+   "href": "https://prestasiplus.my/admin/structured-questions",
+   "absHref": "https://prestasiplus.my/admin/structured-questions",
+   "icon": "fa-list",
+   "landmark": "main",
+   "section": "Bahagian Soalan (3 sub-soalan)",
+   "status": "visible-default",
+   "visibleIn": [
+    "multi-sub__1280",
+    "single-sub__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-035",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-036",
+   "kind": "badge",
+   "tag": "span",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-037",
+   "kind": "badge",
+   "tag": "span",
+   "text": "8 Markah",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Oleh: <person> Kertas 2 Bab 7 Tingkatan 5 (2019) Item 1 Terangkan kepentingan menyediakan rancangan perniagaan kepada usahawan. [8 markah] Negeri Sembilan No (8b)",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "20 May 2026",
+   "icon": "fa-calendar",
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-040",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahagian Soalan (1 sub-soalan)",
+   "landmark": "main",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-041",
+   "kind": "card",
+   "tag": "div",
+   "text": "A",
+   "landmark": "main",
+   "section": "Bahagian Soalan (1 sub-soalan)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-042",
+   "kind": "badge",
+   "tag": "span",
+   "text": "A",
+   "landmark": "main",
+   "section": "Bahagian Soalan (1 sub-soalan)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Terangkan kepentingan menyediakan rancangan perniagaan kepada usahawan. [8 markah] Negeri Sembilan No (8b)",
+   "landmark": "main",
+   "section": "Bahagian Soalan (1 sub-soalan)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "8m",
+   "landmark": "main",
+   "section": "Bahagian Soalan (1 sub-soalan)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  },
+  {
+   "id": "EL-M04-S9-045",
+   "kind": "text",
+   "tag": "p",
+   "text": "Terangkan kepentingan menyediakan rancangan perniagaan kepada usahawan. JAWAPAN Meyakinkan pihak pelabur / bank Kemampuan menjelaskan hutang / senarai anggaran kos / keuntungan yang relevan / sesuai Merancang keperluan sumber perniagaan Sumber manusia / sumber fizikal / sumber pembiayaan yang sesuai…",
+   "landmark": "main",
+   "section": "Bahagian Soalan (1 sub-soalan)",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "single-sub__1280"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1293 @@
+{
+ "screen": "S20",
+ "key": "S20-guru-tebus-tunai",
+ "route": "/guru/gamifikasi/tebus-tunai",
+ "name": "Tebus Tunai",
+ "module": "M14",
+ "generatedAt": "2026-09-25T11:53:41.829Z",
+ "notes": "new route",
+ "shell": "SHU",
+ "summary": {
+  "total": 47,
+  "visibleDefault": 40,
+  "conditional": 2,
+  "hiddenOnly": 5,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 20,
+   "card": 7,
+   "heading": 2,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 4,
+   "input": 3,
+   "button": 6,
+   "select": 1,
+   "empty-state": 1,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default (preview hidden, submit disabled)",
+   "file": "_raw/M14/S20-guru-tebus-tunai__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "finalUrl": "/guru/gamifikasi/tebus-tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=1 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "below-min__1280",
+   "description": "typed 50 (< min 100): preview hidden",
+   "file": "_raw/M14/S20-guru-tebus-tunai__below-min__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "finalUrl": "/guru/gamifikasi/tebus-tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "type": [
+      "#coinsInput",
+      "50"
+     ]
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=1 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "quick-500__1280",
+   "description": "quick \"500 syiling\" → preview RM4.00, submit enabled (not submitted)",
+   "file": "_raw/M14/S20-guru-tebus-tunai__quick-500__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "finalUrl": "/guru/gamifikasi/tebus-tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "click": "main form button[type=button]:nth-child(2)"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=1 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default (preview hidden, submit disabled) @375",
+   "file": "_raw/M14/S20-guru-tebus-tunai__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "finalUrl": "/guru/gamifikasi/tebus-tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=1 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default (preview hidden, submit disabled) @768",
+   "file": "_raw/M14/S20-guru-tebus-tunai__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/gamifikasi/tebus-tunai",
+   "finalUrl": "/guru/gamifikasi/tebus-tunai",
+   "httpStatus": 200,
+   "title": "Tebus Tunai",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && !el.classList.contains('m14n')) { el.classList.add('m14n'); n++; } }\n    var SCH = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI |SUKAN |BERASRAMA )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Za-z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SAM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|KOLEJ [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MAKTAB [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SBP [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|MRSM [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g;\n    // overview Top 10 (/admin/gamification)\n    main.querySelectorAll('.section-card .space-y-2 > div .font-semibold.truncate').forEach(tag);\n    // student leaderboard podium + rows\n    main.querySelectorAll('.lb-top-card .font-bold.truncate, .lb-row .font-bold.truncate').forEach(tag);\n    // tunai \"Bank\" column: bank name kept, account number and holder masked\n    main.querySelectorAll('tbody tr').forEach(function (tr) {\n      var th = tr.closest('table').querySelectorAll('thead th'), bi = -1;\n      th.forEach(function (h, i) { if (/^Bank$/i.test(h.textContent.trim())) bi = i; });\n      if (bi >= 0 && tr.children[bi]) { var ds = tr.children[bi].querySelectorAll('div'); for (var i = 1; i < ds.length; i++) { ds[i].textContent = i === 1 ? '<account-no>' : '<person>'; n++; } }\n    });\n    // avatars\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // school names in text and attributes\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t;\n    while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(SCH, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } }\n    return 'm14mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m14mask: 3",
+    "sanitized: cells=1 strings=1 attrs=1 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Tebus Tunai",
+   "seenIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "Sahkan tebus tunai?\\n\\n",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "syiling = RM",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M14-S20-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Tebus Tunai",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Tebus Tunai",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Tebus Tunai",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-004",
+   "kind": "card",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Syiling",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "92,683",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Boleh Ditebus",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-010",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "Dalam Proses",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "RM741.46",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-014",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM741.46",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-015",
+   "kind": "text",
+   "tag": "div",
+   "text": "Nilai Tunai",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-016",
+   "kind": "card",
+   "tag": "div",
+   "text": "Maklumat",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-017",
+   "kind": "text",
+   "tag": "div",
+   "text": "Maklumat",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-018",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tukar syiling anda kepada wang tunai",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-019",
+   "kind": "text",
+   "tag": "div",
+   "text": "Minimum tebus: 100 syiling",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-020",
+   "kind": "card",
+   "tag": "div",
+   "text": "Borang Tebus Tunai",
+   "landmark": "main",
+   "section": "Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-021",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Borang Tebus Tunai",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-022",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "coins_amount",
+    "bank_name",
+    "bank_account",
+    "account_holder"
+   ],
+   "landmark": "main",
+   "section": "Borang Tebus Tunai",
+   "domId": "tebusTunaiForm",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-023",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-024",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jumlah Syiling",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-025",
+   "kind": "input",
+   "tag": "input",
+   "type": "number",
+   "name": "coins_amount",
+   "label": "Jumlah Syiling",
+   "placeholder": "Masukkan jumlah syiling...",
+   "required": true,
+   "min": "100",
+   "max": "92683",
+   "step": "1",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "domId": "coinsInput",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "Min: 100",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "Max: 92,683",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-028",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "100 syiling",
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "alpine": {
+    "onclick": "document.getElementById('coinsInput').value=100;calculateCash();"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "500 syiling",
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "alpine": {
+    "onclick": "document.getElementById('coinsInput').value=500;calculateCash();"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-030",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "1,000 syiling",
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "alpine": {
+    "onclick": "document.getElementById('coinsInput').value=1000;calculateCash();"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-031",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "5,000 syiling",
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "alpine": {
+    "onclick": "document.getElementById('coinsInput').value=5000;calculateCash();"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-032",
+   "kind": "button",
+   "tag": "button",
+   "type": "button",
+   "text": "Semua (92,683)",
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "alpine": {
+    "onclick": "document.getElementById('coinsInput').value=92683;calculateCash();"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-033",
+   "kind": "text",
+   "tag": "div",
+   "text": "Anda akan menerima",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "quick-500__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-034",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM0.00",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "domId": "cashAmount",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "below-min__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-035",
+   "kind": "text",
+   "tag": "div",
+   "text": "Maklumat Akaun Bank",
+   "icon": "fa-university",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-036",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Bank",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-037",
+   "kind": "select",
+   "tag": "select",
+   "name": "bank_name",
+   "label": "Nama Bank",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "-- Pilih Bank --"
+    },
+    {
+     "value": "Maybank",
+     "text": "Maybank"
+    },
+    {
+     "value": "CIMB Bank",
+     "text": "CIMB Bank"
+    },
+    {
+     "value": "Bank Islam",
+     "text": "Bank Islam"
+    },
+    {
+     "value": "Bank Rakyat",
+     "text": "Bank Rakyat"
+    },
+    {
+     "value": "RHB Bank",
+     "text": "RHB Bank"
+    },
+    {
+     "value": "Public Bank",
+     "text": "Public Bank"
+    },
+    {
+     "value": "Hong Leong Bank",
+     "text": "Hong Leong Bank"
+    },
+    {
+     "value": "AmBank",
+     "text": "AmBank"
+    },
+    {
+     "value": "Bank Muamalat",
+     "text": "Bank Muamalat"
+    },
+    {
+     "value": "Affin Bank",
+     "text": "Affin Bank"
+    },
+    {
+     "value": "Alliance Bank",
+     "text": "Alliance Bank"
+    },
+    {
+     "value": "OCBC Bank",
+     "text": "OCBC Bank"
+    },
+    {
+     "value": "UOB Bank",
+     "text": "UOB Bank"
+    },
+    {
+     "value": "HSBC Bank",
+     "text": "HSBC Bank"
+    },
+    {
+     "value": "Standard Chartered",
+     "text": "Standard Chartered"
+    },
+    {
+     "value": "BSN",
+     "text": "BSN"
+    },
+    {
+     "value": "Agrobank",
+     "text": "Agrobank"
+    },
+    {
+     "value": "Bank Simpanan Nasional",
+     "text": "Bank Simpanan Nasional"
+    },
+    {
+     "value": "TNG eWallet",
+     "text": "TNG eWallet"
+    },
+    {
+     "value": "Touch n Go",
+     "text": "Touch n Go"
+    },
+    {
+     "value": "Boost",
+     "text": "Boost"
+    },
+    {
+     "value": "GrabPay",
+     "text": "GrabPay"
+    },
+    {
+     "value": "ShopeePay",
+     "text": "ShopeePay"
+    },
+    {
+     "value": "BigPay",
+     "text": "BigPay"
+    }
+   ],
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-038",
+   "kind": "label",
+   "tag": "label",
+   "text": "No. Akaun Bank",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-039",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "bank_account",
+   "label": "No. Akaun Bank",
+   "placeholder": "Cth: 1234567890",
+   "required": true,
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-040",
+   "kind": "label",
+   "tag": "label",
+   "text": "Nama Pemilik Akaun",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-041",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "account_holder",
+   "label": "Nama Pemilik Akaun",
+   "placeholder": "Nama seperti dalam akaun bank",
+   "required": true,
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-042",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Permohonan Tebus Tunai",
+   "icon": "fa-paper-plane",
+   "disabled": true,
+   "form": "https://prestasiplus.my/guru/gamifikasi/tebus-tunai",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "domId": "submitBtn",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-043",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah Tebus Tunai",
+   "landmark": "main",
+   "section": "Borang Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-044",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sejarah Tebus Tunai",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-045",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada rekod tebus tunai lagi",
+   "landmark": "main",
+   "section": "Sejarah Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-046",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kembali ke Dashboard",
+   "href": "https://prestasiplus.my/guru/gamifikasi",
+   "absHref": "https://prestasiplus.my/guru/gamifikasi",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Sejarah Tebus Tunai",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "below-min__1280",
+    "quick-500__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M14-S20-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "RM4.00",
+   "landmark": "form#tebusTunaiForm",
+   "section": "Borang Tebus Tunai",
+   "domId": "cashAmount",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "quick-500__1280"
+   ]
+  }
+ ]
+}

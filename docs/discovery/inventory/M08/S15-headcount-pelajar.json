@@ -1,0 +1,4089 @@
+{
+ "screen": "S15",
+ "key": "S15-headcount-pelajar",
+ "route": "/headcount/student/{id}",
+ "name": "Headcount {nama}",
+ "module": "M08",
+ "generatedAt": "2026-09-25T10:25:47.124Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 244,
+  "visibleDefault": 55,
+  "conditional": 186,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 199,
+   "link": 3,
+   "heading": 14,
+   "card": 7,
+   "empty-state": 3,
+   "table": 5,
+   "badge": 13
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "student headcount (3 configs, charts)",
+   "file": "_raw/M08/S15-headcount-pelajar__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/student/1771",
+   "finalUrl": "/headcount/student/1771",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 5",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "hampir-tepat__1280",
+   "description": "Ketepatan Ramalan \"Hampir Tepat\" variant (audit top-up)",
+   "file": "_raw/M08/S15-headcount-pelajar__hampir-tepat__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/student/2228",
+   "finalUrl": "/headcount/student/2228",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "not-found__1280",
+   "description": "unknown id",
+   "file": "_raw/M08/S15-headcount-pelajar__not-found__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/student/99999999",
+   "finalUrl": "/headcount/student/99999999",
+   "httpStatus": 404,
+   "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "populated__1280",
+   "description": "5 configs: On Track/Below Target/Belum Ada Data, RS badge/chip/row, Menurun, Keyakinan Rendah, Ramalan Tepat (audit top-up)",
+   "file": "_raw/M08/S15-headcount-pelajar__populated__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/student/2224",
+   "finalUrl": "/headcount/student/2224",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "selisih-besar__1280",
+   "description": "Ketepatan Ramalan \"Selisih Besar\" variant (audit top-up)",
+   "file": "_raw/M08/S15-headcount-pelajar__selisih-besar__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/headcount/student/2219",
+   "finalUrl": "/headcount/student/2219",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "student headcount @375",
+   "file": "_raw/M08/S15-headcount-pelajar__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/headcount/student/1771",
+   "finalUrl": "/headcount/student/1771",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 5",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "student headcount @768",
+   "file": "_raw/M08/S15-headcount-pelajar__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/headcount/student/1771",
+   "finalUrl": "/headcount/student/1771",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 5",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "populated__375",
+   "description": "populated (audit top-up) @375",
+   "file": "_raw/M08/S15-headcount-pelajar__populated__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/headcount/student/2224",
+   "finalUrl": "/headcount/student/2224",
+   "httpStatus": 200,
+   "title": "Headcount <person> - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; function tag(el) { if (el && !el.classList.contains('m08n')) { el.classList.add('m08n'); n++; } } function wrapText(a) { Array.from(a.childNodes).forEach(function (c) { if (c.nodeType === 3 && c.nodeValue.trim()) { var s = document.createElement('span'); s.className = 'm08n'; s.textContent = c.nodeValue.trim(); a.replaceChild(s, c); n++; } }); } function h(sel, re) { return Array.from(main.querySelectorAll(sel)).filter(function (x) { return re.test(x.textContent); }); } h('h2', /Prestasi Guru/).forEach(function (x) { var g = x.nextElementSibling; if (g) Array.from(g.children).forEach(function (c) { tag(c.querySelector('span')); }); }); h('h3', /Murid Terbaik|Murid Berisiko/).forEach(function (x) { var g = x.nextElementSibling; if (g) g.querySelectorAll('p.font-semibold').forEach(tag); }); main.querySelectorAll('.overflow-y-auto a[href*=\"/prestasi/\"] p:first-child').forEach(tag); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { main.querySelectorAll('h1').forEach(tag); var av = main.querySelector('.w-16.h-16.rounded-full'); if (av) { av.textContent = '<in>'; n++; } } Array.from(main.querySelectorAll('tbody a[href*=\"/prestasi/\"].rounded-lg')).filter(function (a) { return /\\/prestasi\\/\\d+$/.test(a.getAttribute('href')); }).forEach(wrapText); main.querySelectorAll('div,p,span').forEach(function (el) { if (el.children.length || el.closest('table,select,label,button,a')) return; if (/^(guru|nama|pelajar|cikgu|guru kelas)\\s*:?$/i.test(el.textContent.trim())) { var sp = document.createElement('span'); sp.textContent = el.textContent; el.textContent = ''; el.appendChild(sp); n++; } }); main.querySelectorAll('.grid.grid-cols-12 .col-span-5 p').forEach(tag); main.querySelectorAll('.podium-position .truncate').forEach(tag); main.querySelectorAll('img').forEach(function (im) { if (im.closest('.podium-position, tbody, .leaderboard-row, .col-span-5') || /avatar|storage|ui-avatars/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Z0-9 ()'.@&\\/-]*[A-Z0-9)]|SMK [A-Z][A-Z0-9 ()'.@-]*[A-Z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)]|SK [A-Z][A-Z0-9 ()'.-]*[A-Z0-9)])/g; var RP = /\\bPPD [A-Z][A-Z ]+[A-Z]/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && t.parentNode.tagName === 'SCRIPT') continue; var v = t.nodeValue, nv = v.replace(RE, '<school>').replace(RP, 'PPD <ppd>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('[title],[onclick],[alt]').forEach(function (e) { ['title', 'onclick', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v && RE.test(v)) { e.setAttribute(k, v.replace(RE, '<school>')); n++; } RE.lastIndex = 0; }); }); document.querySelectorAll('a[href]').forEach(function (a) { var v = a.getAttribute('href'), nv = v.replace(/\\/prestasi\\/(\\d+)(?=$|[?#])/, '/prestasi/{id}').replace(/\\/prestasi\\?\\d+/, '/prestasi?{id}').replace(/\\/headcount\\/student\\/\\d+/, '/headcount/student/{id}').replace(/\\/analitik\\/kelas\\/pelajar\\/\\d+/, '/analitik/kelas/pelajar/{id}'); if (nv !== v) { a.setAttribute('href', nv); n++; } }); if (document.querySelector('main') && /^\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+)/.test(location.pathname)) { var hh = main.querySelector('h1'); var nm = hh ? hh.textContent.trim() : ''; if (nm && nm !== '<masked>' && nm.length > 2) document.title = document.title.split(nm).join('<person>'); } return 'm08mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; document.querySelectorAll('main p').forEach(function (p) { if (/Guru:/.test(p.textContent)) { p.textContent = p.textContent.replace(/Guru:.*$/, 'Guru: <person>'); n++; } }); document.querySelectorAll('main a[href*=\"/headcount/student/\"]').forEach(function (a) { if (a.closest('tbody')) { a.classList.add('m08n'); n++; } }); document.querySelectorAll('main tbody input[type=checkbox][value]').forEach(function (c) { c.setAttribute('value', 'N'); }); return 'tmask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m08mask: 7",
+    "tmask: 0",
+    "sanitized: cells=2 strings=2 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#5"
+   ]
+  },
+  {
+   "text": "Target (OTR)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "rgba(59, 130, 246, 0.1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Markah Sebenar (AR)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Unjuran (Trend)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "rgba(245, 158, 11, 0.08)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "RS (SPM Sebenar)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "Markah (%)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M08-S15-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-004",
+   "kind": "link",
+   "tag": "a",
+   "href": "javascript:history.back()",
+   "absHref": "javascript:history.back()",
+   "icon": "fa-arrow-left",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Dashboard",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-005",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "<masked>",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Headcount — Prestasi Individu ·",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-007",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-008",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "<masked>",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-009",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-010",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-011",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 5",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-012",
+   "kind": "text",
+   "tag": "span",
+   "text": "MARIKH - Bahasa Melayu",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-013",
+   "kind": "text",
+   "tag": "span",
+   "text": "2026",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-014",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Belum Ada Data",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-015",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "91.2% (A+)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "—",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Unjuran:",
+   "icon": "fa-arrow-trend-up",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "94.1% (A+)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "Stabil",
+   "icon": "fa-minus",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "Keyakinan:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sederhana",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-024",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Checkpoint",
+    "Target (%)",
+    "Gred Target",
+    "AR (%)",
+    "Gred AR",
+    "Status"
+   ],
+   "rowCount": 4,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-025",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-026",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 5",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "5 MARIKH",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "2026",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-031",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Belum Ada Data",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "69.0% (B+)",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-034",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-035",
+   "kind": "text",
+   "tag": "span",
+   "text": "—",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Unjuran:",
+   "icon": "fa-arrow-trend-up",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "71.2% (A-)",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "Meningkat",
+   "icon": "fa-arrow-up",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "Keyakinan:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tinggi",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-041",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Checkpoint",
+    "Target (%)",
+    "Gred Target",
+    "AR (%)",
+    "Gred AR",
+    "Status"
+   ],
+   "rowCount": 4,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-043",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-045",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 5",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-046",
+   "kind": "text",
+   "tag": "span",
+   "text": "5 MARIKH - Kimia",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "2026",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-048",
+   "kind": "empty-state",
+   "tag": "span",
+   "text": "Belum Ada Data",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "69.0% (B+)",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "—",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "Unjuran:",
+   "icon": "fa-arrow-trend-up",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "71.2% (A-)",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "Meningkat",
+   "icon": "fa-arrow-up",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "Keyakinan:",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tinggi",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-058",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Checkpoint",
+    "Target (%)",
+    "Gred Target",
+    "AR (%)",
+    "Gred AR",
+    "Status"
+   ],
+   "rowCount": 4,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "default__375",
+    "default__768",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-066",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 4",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 Simulasi",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "On Track",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-069",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 69.0% (B+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "55.0% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS:",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "69% (B+)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rendah",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-074",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Ramalan ETR vs RS",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR (Ramalan):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "69.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-077",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS (Sebenar):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-078",
+   "kind": "text",
+   "tag": "span",
+   "text": "69.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih:",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-080",
+   "kind": "text",
+   "tag": "span",
+   "text": "+0 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ramalan Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-082",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-083",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-084",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-085",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 4",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-086",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 Simulasi",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "Below Target",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-088",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 57.0% (C+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-089",
+   "kind": "text",
+   "tag": "span",
+   "text": "59.0% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-090",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS:",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-092",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "57% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-094",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rendah",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-095",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Ramalan ETR vs RS",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-096",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR (Ramalan):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-097",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-098",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS (Sebenar):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-099",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-100",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih:",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-101",
+   "kind": "text",
+   "tag": "span",
+   "text": "+0 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-102",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ramalan Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-103",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-104",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-105",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-106",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 4",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-107",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 Simulasi",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-108",
+   "kind": "text",
+   "tag": "span",
+   "text": "Below Target",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-109",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 65.0% (B+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-110",
+   "kind": "text",
+   "tag": "span",
+   "text": "55.0% (C+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-111",
+   "kind": "text",
+   "tag": "span",
+   "text": "65.0% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-112",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS:",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-113",
+   "kind": "text",
+   "tag": "span",
+   "text": "65.0% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-114",
+   "kind": "text",
+   "tag": "span",
+   "text": "65% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-115",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rendah",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-116",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Ramalan ETR vs RS",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-117",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR (Ramalan):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-118",
+   "kind": "text",
+   "tag": "span",
+   "text": "65.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-119",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS (Sebenar):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-120",
+   "kind": "text",
+   "tag": "span",
+   "text": "65.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-121",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih:",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-122",
+   "kind": "text",
+   "tag": "span",
+   "text": "+0 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-123",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ramalan Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-124",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-125",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-126",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-127",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 4",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-129",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 Simulasi",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-130",
+   "kind": "text",
+   "tag": "span",
+   "text": "2026",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-131",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 60.0% (B)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-132",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-133",
+   "kind": "text",
+   "tag": "span",
+   "text": "70.5% (A-)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-134",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR:",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "60.0% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-136",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS:",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "60.0% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "Unjuran:",
+   "icon": "fa-arrow-trend-up",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "60% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menurun",
+   "icon": "fa-arrow-down",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "Keyakinan:",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-142",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rendah",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-143",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Checkpoint",
+    "Target (%)",
+    "Gred Target",
+    "AR (%)",
+    "Gred AR",
+    "Status"
+   ],
+   "rowCount": 5,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-144",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Ramalan ETR vs RS",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR (Ramalan):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "60.0% (B)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-147",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS (Sebenar):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-148",
+   "kind": "text",
+   "tag": "span",
+   "text": "60.0% (B)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-149",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih:",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-150",
+   "kind": "text",
+   "tag": "span",
+   "text": "+0 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ramalan Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-152",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-153",
+   "kind": "card",
+   "tag": "div",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-154",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-155",
+   "kind": "text",
+   "tag": "span",
+   "text": "<school>",
+   "icon": "fa-school",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-156",
+   "kind": "text",
+   "tag": "span",
+   "text": "Tingkatan 4",
+   "icon": "fa-layer-group",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "4 Simulasi",
+   "icon": "fa-users",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-158",
+   "kind": "text",
+   "tag": "span",
+   "text": "2026",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-159",
+   "kind": "text",
+   "tag": "span",
+   "text": "Below Target",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-160",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 47.0% (D)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-161",
+   "kind": "text",
+   "tag": "span",
+   "text": "TOV:",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-162",
+   "kind": "text",
+   "tag": "span",
+   "text": "46.0% (D)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR:",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-165",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS:",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-166",
+   "kind": "text",
+   "tag": "span",
+   "text": "47.0% (D)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-167",
+   "kind": "text",
+   "tag": "span",
+   "text": "Unjuran:",
+   "icon": "fa-arrow-trend-up",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-168",
+   "kind": "text",
+   "tag": "span",
+   "text": "57% (C+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-169",
+   "kind": "text",
+   "tag": "span",
+   "text": "Meningkat",
+   "icon": "fa-arrow-up",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-170",
+   "kind": "text",
+   "tag": "span",
+   "text": "Keyakinan:",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-171",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rendah",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-172",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Checkpoint",
+    "Target (%)",
+    "Gred Target",
+    "AR (%)",
+    "Gred AR",
+    "Status"
+   ],
+   "rowCount": 5,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-173",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Ketepatan Ramalan ETR vs RS",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-174",
+   "kind": "text",
+   "tag": "span",
+   "text": "ETR (Ramalan):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-175",
+   "kind": "text",
+   "tag": "span",
+   "text": "57.0% (C+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-176",
+   "kind": "text",
+   "tag": "span",
+   "text": "RS (Sebenar):",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-177",
+   "kind": "text",
+   "tag": "span",
+   "text": "47.0% (D)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-178",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih:",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "hampir-tepat__1280",
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-179",
+   "kind": "text",
+   "tag": "span",
+   "text": "-10 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-180",
+   "kind": "text",
+   "tag": "span",
+   "text": "Hampir Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-181",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR agak tepat — selisih dalam lingkungan ±10 markah. Boleh diperbaiki lagi.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "hampir-tepat__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-059",
+   "kind": "text",
+   "tag": "div",
+   "text": "404",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-060",
+   "kind": "text",
+   "tag": "div",
+   "text": "🔍",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-061",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-062",
+   "kind": "text",
+   "tag": "p",
+   "text": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-063",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-064",
+   "kind": "link",
+   "tag": "a",
+   "text": "Mula Latihan",
+   "href": "/latih-tubi",
+   "absHref": "https://prestasiplus.my/latih-tubi",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Halaman Tidak Dijumpai",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "not-found__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-182",
+   "kind": "text",
+   "tag": "span",
+   "text": "58.0% (C+)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-183",
+   "kind": "text",
+   "tag": "span",
+   "text": "On Track",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-184",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 74.0% (A-)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-185",
+   "kind": "text",
+   "tag": "span",
+   "text": "51.0% (C)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-186",
+   "kind": "text",
+   "tag": "span",
+   "text": "74.0% (A-)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-187",
+   "kind": "text",
+   "tag": "span",
+   "text": "74.0% (A-)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-188",
+   "kind": "text",
+   "tag": "span",
+   "text": "74% (A-)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-189",
+   "kind": "text",
+   "tag": "span",
+   "text": "74.0% (A-)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-190",
+   "kind": "text",
+   "tag": "span",
+   "text": "74.0% (A-)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-191",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 61.0% (B)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-192",
+   "kind": "text",
+   "tag": "span",
+   "text": "70.2% (A-)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-193",
+   "kind": "text",
+   "tag": "span",
+   "text": "61.0% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-194",
+   "kind": "text",
+   "tag": "span",
+   "text": "61.0% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-195",
+   "kind": "text",
+   "tag": "span",
+   "text": "61% (B)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-196",
+   "kind": "text",
+   "tag": "span",
+   "text": "61.0% (B)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-197",
+   "kind": "text",
+   "tag": "span",
+   "text": "61.0% (B)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-198",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 56.4% (C+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-199",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "selisih-besar__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-200",
+   "kind": "text",
+   "tag": "span",
+   "text": "56.0% (C+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-201",
+   "kind": "text",
+   "tag": "span",
+   "text": "56.4% (C+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-202",
+   "kind": "text",
+   "tag": "span",
+   "text": "56% (C+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-203",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menurun",
+   "icon": "fa-arrow-down",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-204",
+   "kind": "text",
+   "tag": "span",
+   "text": "56.0% (C+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-205",
+   "kind": "text",
+   "tag": "span",
+   "text": "56.4% (C+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-206",
+   "kind": "text",
+   "tag": "span",
+   "text": "+0.4 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-207",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ramalan Tepat",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-208",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "visibleIn": [
+    "populated__1280",
+    "populated__375"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-209",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 81.0% (A)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-210",
+   "kind": "text",
+   "tag": "span",
+   "text": "72.0% (A-)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-211",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.0% (A)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-212",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.0% (A)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-213",
+   "kind": "text",
+   "tag": "span",
+   "text": "81% (A)",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-214",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.0% (A)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-215",
+   "kind": "text",
+   "tag": "span",
+   "text": "81.0% (A)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-216",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 68.0% (B+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-217",
+   "kind": "text",
+   "tag": "span",
+   "text": "68.0% (B+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-218",
+   "kind": "text",
+   "tag": "span",
+   "text": "68.0% (B+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-219",
+   "kind": "text",
+   "tag": "span",
+   "text": "68% (B+)",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-220",
+   "kind": "text",
+   "tag": "span",
+   "text": "68.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-221",
+   "kind": "text",
+   "tag": "span",
+   "text": "68.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-222",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 66.0% (B+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-223",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-224",
+   "kind": "text",
+   "tag": "span",
+   "text": "66.0% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-225",
+   "kind": "text",
+   "tag": "span",
+   "text": "66.0% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-226",
+   "kind": "text",
+   "tag": "span",
+   "text": "66% (B+)",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-227",
+   "kind": "text",
+   "tag": "span",
+   "text": "Stabil",
+   "icon": "fa-minus",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-228",
+   "kind": "text",
+   "tag": "span",
+   "text": "66.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-229",
+   "kind": "text",
+   "tag": "span",
+   "text": "66.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-230",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 67.0% (B+)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-231",
+   "kind": "text",
+   "tag": "span",
+   "text": "78.4% (A-)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-232",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-233",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-234",
+   "kind": "text",
+   "tag": "span",
+   "text": "67% (B+)",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-235",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-236",
+   "kind": "text",
+   "tag": "span",
+   "text": "67.0% (B+)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-237",
+   "kind": "badge",
+   "tag": "span",
+   "text": "RS: 35.1% (G)",
+   "icon": "fa-star",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-238",
+   "kind": "text",
+   "tag": "span",
+   "text": "68.0% (B+)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-239",
+   "kind": "text",
+   "tag": "span",
+   "text": "35.1% (G)",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-240",
+   "kind": "text",
+   "tag": "span",
+   "text": "Stabil",
+   "icon": "fa-minus",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-241",
+   "kind": "text",
+   "tag": "span",
+   "text": "35.1% (G)",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-242",
+   "kind": "text",
+   "tag": "span",
+   "text": "-29.9 markah",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-243",
+   "kind": "text",
+   "tag": "span",
+   "text": "Selisih Besar",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  },
+  {
+   "id": "EL-M08-S15-244",
+   "kind": "text",
+   "tag": "p",
+   "text": "Selisih melebihi 10 markah. Semak semula kaedah penetapan ETR.",
+   "landmark": "main",
+   "section": "Ketepatan Ramalan ETR vs RS",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "selisih-besar__1280"
+   ]
+  }
+ ]
+}

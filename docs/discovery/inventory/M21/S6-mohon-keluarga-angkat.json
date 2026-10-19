@@ -1,0 +1,995 @@
+{
+ "screen": "S6",
+ "key": "S6-mohon-keluarga-angkat",
+ "route": "/mohon-keluarga-angkat",
+ "name": "Mohon Keluarga Angkat",
+ "module": "M21",
+ "generatedAt": "2026-09-27T02:22:47.340Z",
+ "notes": "form POST /mohon-keluarga-angkat (never submitted); guest → /login",
+ "shell": "SHU",
+ "summary": {
+  "total": 38,
+  "visibleDefault": 34,
+  "conditional": 0,
+  "hiddenOnly": 4,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 19,
+   "heading": 1,
+   "card": 1,
+   "form": 1,
+   "hidden-field": 1,
+   "label": 4,
+   "input": 1,
+   "link": 1,
+   "select": 2,
+   "textarea": 1,
+   "clickable": 5,
+   "button": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "apply form (never submitted)",
+   "file": "_raw/M21/S6-mohon-keluarga-angkat__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/mohon-keluarga-angkat",
+   "finalUrl": "/mohon-keluarga-angkat",
+   "httpStatus": 200,
+   "title": "Mohon Keluarga Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 4",
+    "sanitized: cells=4 strings=4 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "example-2__1280",
+   "description": "example reason 2 clicked (copied into textarea client-side)",
+   "file": "_raw/M21/S6-mohon-keluarga-angkat__example-2__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/mohon-keluarga-angkat",
+   "finalUrl": "/mohon-keluarga-angkat",
+   "httpStatus": 200,
+   "title": "Mohon Keluarga Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var li = document.querySelectorAll('main li[onclick]')[1]; if (!li) return 'no example'; li.click(); return 'example 2 copied (' + document.querySelector('textarea[name=reason]').value.length + ' chars)'; })()"
+    },
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "example 2 copied (170 chars)",
+    "m21mask: 4",
+    "sanitized: cells=4 strings=4 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M21/S6-mohon-keluarga-angkat__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/mohon-keluarga-angkat",
+   "finalUrl": "/mohon-keluarga-angkat",
+   "httpStatus": 200,
+   "title": "Mohon Keluarga Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 4",
+    "sanitized: cells=4 strings=4 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M21/S6-mohon-keluarga-angkat__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/mohon-keluarga-angkat",
+   "finalUrl": "/mohon-keluarga-angkat",
+   "httpStatus": 200,
+   "title": "Mohon Keluarga Angkat",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "wait": 500
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var tag = function (el, c) { c = c || 'm21n'; if (el && el.classList && !el.classList.contains(c)) { el.classList.add(c); n++; } };\n    var T = function (s) { return String(s || '').replace(/\\s+/g, ' ').trim(); };\n    var PHONE = /(\\+?6?0\\s?1\\d[\\d\\- ]{6,10}\\d)/;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || el.closest('script,style,template,select,option')) return;\n      var t = T(el.textContent); if (!t) return;\n      if (/[^\\s@]+@[^\\s@]+\\.[a-z]{2,}/i.test(t)) tag(el);\n      else if (PHONE.test(t) && !/RM\\s?\\d/.test(t)) tag(el);\n      else if (/\\b(BIN|BINTI|BTE|BT|A\\/L|A\\/P)\\b/i.test(t) && t.length < 90 && !el.closest('label,button,nav,aside,header,th')) tag(el);\n    });\n    // person / free-text columns of the M21 tables\n    document.querySelectorAll('main table').forEach(function (tb) {\n      var heads = Array.from(tb.querySelectorAll('thead th')).map(function (th) { return T(th.textContent); });\n      heads.forEach(function (h, i) {\n        if (!/^(Pelajar|Pemohon|Pegawai|Penaja|Sebab)$/i.test(h)) return;\n        tb.querySelectorAll('tbody tr').forEach(function (tr) { var td = tr.children[i]; if (td && tr.children.length === heads.length) td.querySelectorAll('*').forEach(function (x) { if (!x.children.length && T(x.textContent) && !x.closest('form,button')) tag(x); }); if (td && !td.children.length && T(td.textContent) && T(td.textContent) !== '-') tag(td); });\n      });\n    });\n    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);\n    var tn; while ((tn = w.nextNode())) { if (tn.parentElement && tn.parentElement.closest('script,style,template')) continue; if (PHONE.test(tn.nodeValue) && !/RM\\s?\\d/.test(tn.nodeValue)) { tn.nodeValue = tn.nodeValue.replace(new RegExp(PHONE.source, 'g'), '<phone>'); n++; } }\n    document.querySelectorAll('input, textarea').forEach(function (i) { var nm = (i.name || '') + ' ' + (i.id || ''); if (/phone|telefon|email|emel|contact_person|address|alamat|postcode|poskod|city|bandar|registration|ic_|bank|account|akaun/i.test(nm) && i.type !== 'hidden' && (i.value || i.textContent)) { i.setAttribute('data-m21', 'masked'); i.value = ''; i.setAttribute('value', ''); if (i.tagName === 'TEXTAREA') i.textContent = ''; n++; } });\n    document.querySelectorAll('a[href^=\"tel:\"], a[href^=\"mailto:\"], a[href*=\"wa.me\"]').forEach(function (a) { a.setAttribute('href', a.getAttribute('href').replace(/(wa\\.me\\/|tel:)\\+?\\d+/, '$160XXXXXXXXX').replace(/^mailto:.*/, 'mailto:<email>')); n++; });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    document.querySelectorAll('[href*=\"/users/\"], [href*=\"/student/\"], [href*=\"/pelajar/\"]').forEach(function (el) { el.setAttribute('href', el.getAttribute('href').replace(/\\/(users|student|pelajar)\\/\\d+/g, '/$1/{id}')); });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm21mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m21mask: 4",
+    "sanitized: cells=4 strings=4 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Dashboard",
+   "seenIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M21-S6-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Dashboard",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-004",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Mohon Keluarga Angkat",
+   "landmark": "section",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-005",
+   "kind": "text",
+   "tag": "p",
+   "text": "Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma.",
+   "landmark": "section",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-006",
+   "kind": "card",
+   "tag": "div",
+   "text": "Email Pelajar",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-007",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/mohon-keluarga-angkat",
+   "method": "POST",
+   "fields": [
+    "_token",
+    "student_email",
+    "student_category",
+    "family_income_range",
+    "reason"
+   ],
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-008",
+   "kind": "hidden-field",
+   "tag": "input",
+   "type": "hidden",
+   "name": "_token",
+   "autocomplete": "off",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "type=hidden"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-009",
+   "kind": "label",
+   "tag": "label",
+   "text": "Email Pelajar",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-010",
+   "kind": "input",
+   "tag": "input",
+   "type": "email",
+   "name": "student_email",
+   "label": "Email Pelajar",
+   "placeholder": "pelajar@email.com",
+   "required": true,
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "Email pelajar yang berdaftar dalam PrestasiPlus. Jika pelajar belum daftar, minta mereka daftar terlebih dahulu di .",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-012",
+   "kind": "link",
+   "tag": "a",
+   "text": "sini",
+   "href": "/register",
+   "absHref": "https://prestasiplus.my/register",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-013",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kategori Pelajar",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-014",
+   "kind": "select",
+   "tag": "select",
+   "name": "student_category",
+   "label": "Kategori Pelajar",
+   "required": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih kategori"
+    },
+    {
+     "value": "B40",
+     "text": "B40 — Pendapatan rendah"
+    },
+    {
+     "value": "Asnaf",
+     "text": "Asnaf — Layak bantuan zakat"
+    },
+    {
+     "value": "Yatim",
+     "text": "Yatim — Tiada ibu/bapa"
+    },
+    {
+     "value": "OKU",
+     "text": "OKU — Orang kurang upaya"
+    },
+    {
+     "value": "Lain-lain",
+     "text": "Lain-lain"
+    }
+   ],
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Anggaran Pendapatan Keluarga",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-016",
+   "kind": "select",
+   "tag": "select",
+   "name": "family_income_range",
+   "label": "Anggaran Pendapatan Keluarga",
+   "options": [
+    {
+     "value": "",
+     "text": "Pilih (pilihan)"
+    },
+    {
+     "value": "< RM1,000",
+     "text": "Bawah RM1,000"
+    },
+    {
+     "value": "RM1,000 - RM2,500",
+     "text": "RM1,000 - RM2,500"
+    },
+    {
+     "value": "RM2,500 - RM4,000",
+     "text": "RM2,500 - RM4,000"
+    },
+    {
+     "value": "> RM4,000",
+     "text": "Atas RM4,000"
+    }
+   ],
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sebab Permohonan",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-018",
+   "kind": "textarea",
+   "tag": "textarea",
+   "name": "reason",
+   "label": "Sebab Permohonan",
+   "placeholder": "Terangkan kenapa pelajar ini memerlukan tajaan...",
+   "required": true,
+   "rows": "4",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-019",
+   "kind": "text",
+   "tag": "p",
+   "text": "Contoh sebab permohonan:",
+   "icon": "fa-lightbulb",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-020",
+   "kind": "clickable",
+   "tag": "li",
+   "text": "• Keluarga berpendapatan rendah (B40). Bapa bekerja sebagai buruh am, ibu suri rumah. Tidak mampu membayar yuran tuisyen tambahan untuk persediaan SPM.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "document.querySelector('textarea[name=reason]').value=this.innerText"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-021",
+   "kind": "clickable",
+   "tag": "li",
+   "text": "• Pelajar yatim piatu yang tinggal bersama nenek. Nenek sudah tua dan tiada pendapatan tetap. Pelajar ini berpotensi tetapi tiada akses kepada bahan pembelajaran digital.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "document.querySelector('textarea[name=reason]').value=this.innerText"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-022",
+   "kind": "clickable",
+   "tag": "li",
+   "text": "• Anak asnaf yang menerima bantuan zakat. Keluarga mempunyai 6 orang anak dan pendapatan tidak mencukupi untuk perbelanjaan pendidikan tambahan.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "document.querySelector('textarea[name=reason]').value=this.innerText"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-023",
+   "kind": "clickable",
+   "tag": "li",
+   "text": "• Pelajar OKU (masalah penglihatan) yang memerlukan akses digital kerana sukar membaca buku teks biasa. Platform digital lebih mesra OKU dengan saiz teks boleh dilaraskan.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "document.querySelector('textarea[name=reason]').value=this.innerText"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-024",
+   "kind": "clickable",
+   "tag": "li",
+   "text": "• Pelajar cemerlang dari keluarga miskin. Mendapat 5A dalam PT3 tetapi ibu bapa tidak mampu hantar ke tuisyen. Dengan PrestasiPlus, pelajar ini boleh belajar sendiri dari rumah.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "alpine": {
+    "onclick": "document.querySelector('textarea[name=reason]').value=this.innerText"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-025",
+   "kind": "text",
+   "tag": "p",
+   "text": "Klik mana-mana contoh untuk guna sebagai template. Sila ubahsuai mengikut situasi sebenar.",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-026",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Permohonan",
+   "icon": "fa-paper-plane",
+   "form": "https://prestasiplus.my/mohon-keluarga-angkat",
+   "landmark": "form",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-027",
+   "kind": "text",
+   "tag": "p",
+   "text": "Apa yang berlaku selepas mohon?",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-028",
+   "kind": "text",
+   "tag": "li",
+   "text": "Admin semak dan luluskan permohonan (1-3 hari bekerja)",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-029",
+   "kind": "text",
+   "tag": "li",
+   "text": "Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-030",
+   "kind": "text",
+   "tag": "li",
+   "text": "Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-031",
+   "kind": "text",
+   "tag": "li",
+   "text": "Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "Siapa boleh mohon?",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-033",
+   "kind": "text",
+   "tag": "li",
+   "text": "— mohon untuk diri sendiri",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-034",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Pelajar sendiri",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-035",
+   "kind": "text",
+   "tag": "li",
+   "text": "— mohon untuk anak",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-036",
+   "kind": "text",
+   "tag": "strong",
+   "text": "Ibu bapa",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-037",
+   "kind": "text",
+   "tag": "li",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M21-S6-038",
+   "kind": "text",
+   "tag": "strong",
+   "text": "<person>",
+   "landmark": "main",
+   "section": "Mohon Keluarga Angkat",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "example-2__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,4133 @@
+{
+ "screen": "S28",
+ "key": "S28-databank-subjek",
+ "route": "/guru/databank/{CODE}",
+ "name": "{subjek} — Databank Soalan",
+ "module": "M10",
+ "generatedAt": "2026-09-25T09:58:31.148Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 166,
+  "visibleDefault": 98,
+  "conditional": 58,
+  "hiddenOnly": 10,
+  "mobileOnly": 2,
+  "desktopOnly": 18,
+  "byKind": {
+   "text": 76,
+   "link": 2,
+   "card": 8,
+   "heading": 2,
+   "badge": 4,
+   "alert": 14,
+   "form": 1,
+   "label": 16,
+   "input": 1,
+   "select": 6,
+   "button": 6,
+   "dropdown-trigger": 3,
+   "pagination": 13,
+   "modal": 2,
+   "clickable": 3,
+   "checkbox": 8,
+   "textarea": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "databank subject BM",
+   "file": "_raw/M10/S28-databank-subjek__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "bidang__1280",
+   "description": "Bidang chosen → SK loaded",
+   "file": "_raw/M10/S28-databank-subjek__bidang__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "select": [
+      "main select[name=\"dskp_bidang_id\"]",
+      {
+       "index": 1
+      }
+     ]
+    },
+    {
+     "wait": 1500
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "filtered__1280",
+   "description": "GET filter mcq + difficulty 3",
+   "file": "_raw/M10/S28-databank-subjek__filtered__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/databank/BM?q=&question_type=mcq&source_type=&difficulty=3",
+   "finalUrl": "/guru/databank/BM?q=&question_type=mcq&source_type=&difficulty=3",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "penerangan__1280",
+   "description": "first Penerangan expanded",
+   "file": "_raw/M10/S28-databank-subjek__penerangan__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click=\"open = !open\"]"
+    },
+    {
+     "wait": 300
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "report-modal__1280",
+   "description": "Lapor Masalah modal (not sent)",
+   "file": "_raw/M10/S28-databank-subjek__report-modal__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click^=\"openReport(\"]"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "databank subject BM @375",
+   "file": "_raw/M10/S28-databank-subjek__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "databank subject BM @768",
+   "file": "_raw/M10/S28-databank-subjek__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  },
+  {
+   "label": "report-modal__375",
+   "description": "report modal @375",
+   "file": "_raw/M10/S28-databank-subjek__report-modal__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/guru/databank/BM",
+   "finalUrl": "/guru/databank/BM",
+   "httpStatus": 200,
+   "title": "Bahasa Melayu — Databank Soalan",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    },
+    {
+     "click": "main button[\\@click^=\"openReport(\"]"
+    },
+    {
+     "wait": 400
+    },
+    {
+     "eval": "(() => { var n = 0; var main = document.querySelector('main') || document.body; var RO = /(Soalan Oleh:\\s*|Dicipta oleh\\s+|Disediakan oleh:?\\s*)((Cikgu|Cg\\.?|Puan|Pn\\.?|Encik|En\\.?|Ustaz|Ustazah|Tuan|Dr\\.?)\\s+)?[A-Za-z][A-Za-z'.@\\/-]*(\\s+(bin|binti|bt|b\\.|A\\/P|A\\/L|[A-Z][A-Za-z'.-]*))*/g; var RE = /\\b(SEKOLAH (MENENGAH |KEBANGSAAN |JENIS |AGAMA |RENDAH |SENI )[A-Za-z0-9 ()'.@&\\/-]*[A-Za-z0-9)]|SMK [A-Z][A-Za-z0-9 ()'.@-]*[A-Za-z0-9)]|SJKC? ?\\(?[CT]?\\)? [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SK [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|SMA [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)]|MRSM [A-Z][A-Za-z0-9 ()'.-]*[A-Za-z0-9)])/g; var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) { if (t.parentNode && /SCRIPT|STYLE/.test(t.parentNode.tagName)) continue; var v = t.nodeValue, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { t.nodeValue = nv; n++; } } document.querySelectorAll('textarea, input[type=text]').forEach(function (e) { var v = e.value, nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.value = nv; n++; } }); document.querySelectorAll('[title],[alt],[placeholder]').forEach(function (e) { ['title', 'alt'].forEach(function (k) { var v = e.getAttribute(k); if (v) { var nv = v.replace(RO, '$1<person>').replace(RE, '<school>'); if (nv !== v) { e.setAttribute(k, nv); n++; } } }); }); main.querySelectorAll('[x-text=\"s.name\"], [x-text=\"schoolName\"], [x-text=\"selectedName\"], [x-text=\"r.name\"], [x-text=\"school.name\"]').forEach(function (e) { e.classList.add('m10n'); n++; }); main.querySelectorAll('img').forEach(function (im) { if (/avatar|ui-avatars|profile/i.test(im.getAttribute('src') || '')) { im.removeAttribute('src'); im.setAttribute('alt', '<person>'); n++; } }); main.querySelectorAll('select').forEach(function (s) { if (s.options.length > 60) { s.setAttribute('data-total-options', s.options.length); while (s.options.length > 12) s.remove(12); n++; } }); return 'm10mask: ' + n; })()"
+    }
+   ],
+   "actionLog": [
+    "m10mask: 0",
+    "m10mask: 0",
+    "sanitized: cells=1 strings=1 attrs=3 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main div.card:has(button[\\@click^=\"openReport(\"])": 15
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Bahasa Melayu",
+   "seenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "databankPage",
+   "xData": "databankPage()",
+   "keys": [],
+   "liveState": {
+    "showReportModal": false,
+    "reportQuestionId": null,
+    "reportReasons": "array(0)",
+    "reportComment": "",
+    "reportSubmitting": false,
+    "toastMsg": "",
+    "toastSuccess": true
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Bahasa Melayu",
+   "seenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "component": "dskpFilter",
+   "xData": "dskpFilter()",
+   "keys": [],
+   "liveState": {
+    "subjectId": 1,
+    "bidangId": "",
+    "skId": "",
+    "spId": "",
+    "bidangList": "array(10)",
+    "skList": "array(0)",
+    "spList": "array(0)"
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Bahasa Melayu",
+   "seenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "tag": "div",
+   "xData": "{ open: false }",
+   "keys": [
+    "open"
+   ],
+   "liveState": {
+    "open": false
+   },
+   "visible": true,
+   "region": "content",
+   "section": "Bahasa Melayu",
+   "seenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4",
+    "script#5"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Sudah Dilaporkan",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "<span class=\"inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg\"><i class=\"fas fa-check-circle\"></i> Sudah Dilaporkan</span>",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Gagal menghantar laporan.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Ralat rangkaian. Sila cuba lagi.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/guru/api/dskp/bidang?subject_id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/dskp/sk?dskp_bidang_id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/guru/api/dskp/sp?dskp_sk_id=",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/report-question",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#5"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M10-S28-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-004",
+   "kind": "link",
+   "tag": "a",
+   "text": "Databank",
+   "href": "https://prestasiplus.my/guru/databank",
+   "absHref": "https://prestasiplus.my/guru/databank",
+   "icon": "fa-arrow-left",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-005",
+   "kind": "text",
+   "tag": "span",
+   "text": "/",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-006",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-007",
+   "kind": "card",
+   "tag": "div",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-008",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-009",
+   "kind": "text",
+   "tag": "p",
+   "text": "Malay Language",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-010",
+   "kind": "badge",
+   "tag": "span",
+   "text": "6,048 Jumlah",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-011",
+   "kind": "alert",
+   "tag": "span",
+   "text": "5,918 Objektif",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-012",
+   "kind": "alert",
+   "tag": "span",
+   "text": "105 Subjektif",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "Carian",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-data": "dskpFilter()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-014",
+   "kind": "form",
+   "tag": "form",
+   "action": "https://prestasiplus.my/guru/databank/BM",
+   "method": "GET",
+   "fields": [
+    "q",
+    "question_type",
+    "source_type",
+    "difficulty",
+    "dskp_bidang_id",
+    "dskp_sk_id",
+    "dskp_sp_id"
+   ],
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-015",
+   "kind": "label",
+   "tag": "label",
+   "text": "Carian",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-016",
+   "kind": "input",
+   "tag": "input",
+   "type": "text",
+   "name": "q",
+   "label": "Carian",
+   "placeholder": "Cari soalan...",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-017",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jenis",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-018",
+   "kind": "select",
+   "tag": "select",
+   "name": "question_type",
+   "label": "Jenis",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua"
+    },
+    {
+     "value": "mcq",
+     "text": "Objektif"
+    },
+    {
+     "value": "essay",
+     "text": "Subjektif"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-019",
+   "kind": "label",
+   "tag": "label",
+   "text": "Sumber",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-020",
+   "kind": "select",
+   "tag": "select",
+   "name": "source_type",
+   "label": "Sumber",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua"
+    },
+    {
+     "value": "past_year",
+     "text": "Tahun Lepas"
+    },
+    {
+     "value": "practice",
+     "text": "Latihan"
+    },
+    {
+     "value": "prediction",
+     "text": "Ramalan"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-021",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kesukaran",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-022",
+   "kind": "select",
+   "tag": "select",
+   "name": "difficulty",
+   "label": "Kesukaran",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua"
+    },
+    {
+     "value": "1",
+     "text": "1"
+    },
+    {
+     "value": "2",
+     "text": "2"
+    },
+    {
+     "value": "3",
+     "text": "3"
+    },
+    {
+     "value": "4",
+     "text": "4"
+    },
+    {
+     "value": "5",
+     "text": "5"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-023",
+   "kind": "label",
+   "tag": "label",
+   "text": "Bidang",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-024",
+   "kind": "select",
+   "tag": "select",
+   "name": "dskp_bidang_id",
+   "label": "Bidang",
+   "options": [
+    {
+     "value": "",
+     "text": "Semua Bidang"
+    },
+    {
+     "value": "18",
+     "text": "1.0 — Kemahiran Mendengar dan Bertutur"
+    },
+    {
+     "value": "19",
+     "text": "2.0 — Kemahiran Membaca"
+    },
+    {
+     "value": "20",
+     "text": "3.0 — Kemahiran Menulis"
+    },
+    {
+     "value": "21",
+     "text": "4.0 — Aspek Seni Bahasa"
+    },
+    {
+     "value": "22",
+     "text": "5.0 — Aspek Tatabahasa"
+    },
+    {
+     "value": "23",
+     "text": "1.0 — Kemahiran Mendengar dan Bertutur"
+    },
+    {
+     "value": "24",
+     "text": "2.0 — Kemahiran Membaca"
+    },
+    {
+     "value": "25",
+     "text": "3.0 — Kemahiran Menulis"
+    },
+    {
+     "value": "26",
+     "text": "4.0 — Aspek Seni Bahasa"
+    },
+    {
+     "value": "27",
+     "text": "5.0 — Aspek Tatabahasa"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-model": "bidangId",
+    "@change": "onBidangChange()"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-025",
+   "kind": "label",
+   "tag": "label",
+   "text": "Standard Kandungan",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-026",
+   "kind": "select",
+   "tag": "select",
+   "name": "dskp_sk_id",
+   "label": "Standard Kandungan",
+   "disabled": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Semua SK"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-model": "skId",
+    "@change": "onSkChange()",
+    ":disabled": "!bidangId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-027",
+   "kind": "label",
+   "tag": "label",
+   "text": "Standard Pembelajaran",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-028",
+   "kind": "select",
+   "tag": "select",
+   "name": "dskp_sp_id",
+   "label": "Standard Pembelajaran",
+   "disabled": true,
+   "options": [
+    {
+     "value": "",
+     "text": "Semua SP"
+    }
+   ],
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-model": "spId",
+    ":disabled": "!skId"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-029",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Tapis",
+   "icon": "fa-search",
+   "form": "https://prestasiplus.my/guru/databank/BM",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-030",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-525433",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-031",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "chapter_textbook_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-033",
+   "kind": "text",
+   "tag": "span",
+   "text": "Objektif",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-034",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T1 - Sokongan Bab Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BAB21.1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-035",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 525433",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "ID untuk cari/fix soalan di admin",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-036",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah tindakan pembaca kritis apabila menemui maklumat tentang keputusan bersama?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "A.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-038",
+   "kind": "text",
+   "tag": "span",
+   "text": "menyalin pilihan tanpa membaca",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-039",
+   "kind": "text",
+   "tag": "span",
+   "text": "B.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-040",
+   "kind": "text",
+   "tag": "span",
+   "text": "menilai maklumat dan menyokong jawapan dengan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-041",
+   "kind": "text",
+   "tag": "span",
+   "text": "C.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-042",
+   "kind": "text",
+   "tag": "span",
+   "text": "terus meneka",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-043",
+   "kind": "text",
+   "tag": "span",
+   "text": "D.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-044",
+   "kind": "text",
+   "tag": "span",
+   "text": "mengabaikan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-045",
+   "kind": "dropdown-trigger",
+   "tag": "button",
+   "type": "submit",
+   "text": "Penerangan",
+   "icon": "fa-chevron-right",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan tepat: menilai maklumat dan menyokong jawapan dengan bukti. Soalan ini menguji kemahiran Bahasa Melayu dalam tema Nilai Demokrasi tanpa menggunakan kandungan indeks atau halaman rujukan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "penerangan__1280"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-047",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-048",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Lapor Masalah",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "openReport(525433)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-049",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-525432",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-050",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "chapter_textbook_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "Objektif",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-053",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T1 - Sokongan Bab Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BAB21.1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-054",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 525432",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "ID untuk cari/fix soalan di admin",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-055",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah tindakan pembaca kritis apabila menemui maklumat tentang musyawarah?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "A.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "mengabaikan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-058",
+   "kind": "text",
+   "tag": "span",
+   "text": "B.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "menyalin pilihan tanpa membaca",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "C.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "menilai maklumat dan menyokong jawapan dengan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "D.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "terus meneka",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-064",
+   "kind": "dropdown-trigger",
+   "tag": "button",
+   "type": "submit",
+   "text": "Penerangan",
+   "icon": "fa-chevron-right",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-065",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan tepat: menilai maklumat dan menyokong jawapan dengan bukti. Soalan ini menguji kemahiran Bahasa Melayu dalam tema Nilai Demokrasi tanpa menggunakan kandungan indeks atau halaman rujukan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-066",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-067",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Lapor Masalah",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "openReport(525432)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-068",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-525431",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-069",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "chapter_textbook_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "Objektif",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-072",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T1 - Sokongan Bab Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BAB21.1",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-073",
+   "kind": "badge",
+   "tag": "span",
+   "text": "ID Soalan: 525431",
+   "icon": "fa-hashtag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "ID untuk cari/fix soalan di admin",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-074",
+   "kind": "text",
+   "tag": "div",
+   "text": "Apakah tindakan pembaca kritis apabila menemui maklumat tentang tanggungjawab rakyat?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "A.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "terus meneka",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-077",
+   "kind": "text",
+   "tag": "span",
+   "text": "B.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-078",
+   "kind": "text",
+   "tag": "span",
+   "text": "mengabaikan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-079",
+   "kind": "text",
+   "tag": "span",
+   "text": "C.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-080",
+   "kind": "text",
+   "tag": "span",
+   "text": "menyalin pilihan tanpa membaca",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-081",
+   "kind": "text",
+   "tag": "span",
+   "text": "D.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-082",
+   "kind": "text",
+   "tag": "span",
+   "text": "menilai maklumat dan menyokong jawapan dengan bukti",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-083",
+   "kind": "dropdown-trigger",
+   "tag": "button",
+   "type": "submit",
+   "text": "Penerangan",
+   "icon": "fa-chevron-right",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "open = !open"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-084",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan tepat: menilai maklumat dan menyokong jawapan dengan bukti. Soalan ini menguji kemahiran Bahasa Melayu dalam tema Nilai Demokrasi tanpa menggunakan kandungan indeks atau halaman rujukan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-085",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-086",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Lapor Masalah",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "openReport(525431)"
+   },
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-087",
+   "kind": "text",
+   "tag": "span",
+   "text": "« Previous",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-088",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "Next »",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "mobile-only",
+   "visibleIn": [
+    "default__375",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "display:none"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-089",
+   "kind": "text",
+   "tag": "p",
+   "text": "Showing to of results",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-090",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-091",
+   "kind": "text",
+   "tag": "span",
+   "text": "15",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-092",
+   "kind": "text",
+   "tag": "span",
+   "text": "6048",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-093",
+   "kind": "text",
+   "tag": "span",
+   "text": "1",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-094",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "2",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 2",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-095",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "3",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=3",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=3",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 3",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-096",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "4",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=4",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=4",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 4",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-097",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "5",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=5",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=5",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 5",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-098",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "6",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=6",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=6",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 6",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-099",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "7",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=7",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=7",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 7",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-100",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "8",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=8",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=8",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 8",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-101",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "9",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=9",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=9",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 9",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-102",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "10",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=10",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=10",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 10",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-103",
+   "kind": "text",
+   "tag": "span",
+   "text": "...",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-104",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "403",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=403",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=403",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 403",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-105",
+   "kind": "pagination",
+   "tag": "a",
+   "text": "404",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=404",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=404",
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Go to page 404",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-106",
+   "kind": "pagination",
+   "tag": "a",
+   "href": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "absHref": "https://prestasiplus.my/guru/databank/BM?page=2",
+   "icon": "svg",
+   "iconOnly": true,
+   "landmark": "nav[Pagination Navigation]",
+   "section": "Bahasa Melayu",
+   "ariaLabel": "Next &raquo;",
+   "status": "visible-default",
+   "viewport": "desktop-only",
+   "visibleIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__768"
+   ],
+   "hiddenIn": [
+    "default__375",
+    "report-modal__375"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-107",
+   "kind": "modal",
+   "tag": "div",
+   "text": "Lapor Masalah Soalan",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-show": "showReportModal",
+    "x-transition:enter": "transition ease-out duration-200",
+    "x-transition:enter-start": "opacity-0",
+    "x-transition:enter-end": "opacity-100",
+    "x-transition:leave": "transition ease-in duration-150",
+    "x-transition:leave-start": "opacity-100",
+    "x-transition:leave-end": "opacity-0",
+    "@keydown.escape.window": "showReportModal = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-108",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "@click": "showReportModal = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-109",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Lapor Masalah Soalan Soalan # Jawapan tidak tepat Soalan mengelirukan Set jawapan tidak tepat Pilihan jawapan tidak lengkap Soalan berulang / pendua Soalan sudah tidak relevan Kesalahan ejaan / taip Lain-lain Komen (pilihan) Hantar Laporan Menghantar... Batal",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-transition:enter": "transition ease-out duration-200",
+    "x-transition:enter-start": "opacity-0 -translate-y-4 scale-95",
+    "x-transition:enter-end": "opacity-100 translate-y-0 scale-100",
+    "@click.stop": ""
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-110",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Lapor Masalah Soalan",
+   "landmark": "main",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-111",
+   "kind": "label",
+   "tag": "label",
+   "text": "Jawapan tidak tepat",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-112",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Jawapan tidak tepat",
+   "optionValue": "wrong_answer",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'wrong_answer'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-113",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan mengelirukan",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-114",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan mengelirukan",
+   "optionValue": "confusing_question",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'confusing_question'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-115",
+   "kind": "label",
+   "tag": "label",
+   "text": "Set jawapan tidak tepat",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-116",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Set jawapan tidak tepat",
+   "optionValue": "wrong_options",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'wrong_options'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-117",
+   "kind": "label",
+   "tag": "label",
+   "text": "Pilihan jawapan tidak lengkap",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-118",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Pilihan jawapan tidak lengkap",
+   "optionValue": "missing_options",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'missing_options'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-119",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan berulang / pendua",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-120",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan berulang / pendua",
+   "optionValue": "duplicate",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'duplicate'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-121",
+   "kind": "label",
+   "tag": "label",
+   "text": "Soalan sudah tidak relevan",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-122",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Soalan sudah tidak relevan",
+   "optionValue": "outdated",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'outdated'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-123",
+   "kind": "label",
+   "tag": "label",
+   "text": "Kesalahan ejaan / taip",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-124",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Kesalahan ejaan / taip",
+   "optionValue": "typo",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'typo'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-125",
+   "kind": "label",
+   "tag": "label",
+   "text": "Lain-lain",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-126",
+   "kind": "checkbox",
+   "tag": "input",
+   "type": "checkbox",
+   "label": "Lain-lain",
+   "optionValue": "other",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    ":value": "'other'",
+    "x-model": "reportReasons"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal",
+   "checkedIn": []
+  },
+  {
+   "id": "EL-M10-S28-127",
+   "kind": "label",
+   "tag": "label",
+   "text": "Komen (pilihan)",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-128",
+   "kind": "textarea",
+   "tag": "textarea",
+   "label": "Komen (pilihan)",
+   "placeholder": "Jelaskan masalah secara ringkas...",
+   "maxlength": "500",
+   "rows": "2",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    "x-model": "reportComment"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-129",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Hantar Laporan Menghantar...",
+   "icon": "fa-paper-plane",
+   "disabled": true,
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    "@click": "submitReport()",
+    ":disabled": "reportReasons.length === 0 || reportSubmitting"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-130",
+   "kind": "button",
+   "tag": "button",
+   "type": "submit",
+   "text": "Batal",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    "@click": "showReportModal = false"
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "showReportModal"
+  },
+  {
+   "id": "EL-M10-S28-131",
+   "kind": "modal",
+   "tag": "div",
+   "landmark": "main",
+   "section": "Lapor Masalah Soalan",
+   "alpine": {
+    "x-show": "toastMsg",
+    "x-transition:enter": "transition ease-out duration-300",
+    "x-transition:enter-start": "translate-y-4 opacity-0",
+    "x-transition:enter-end": "translate-y-0 opacity-100",
+    "x-transition:leave": "transition ease-in duration-200",
+    "x-transition:leave-start": "translate-y-0 opacity-100",
+    "x-transition:leave-end": "translate-y-4 opacity-0",
+    "x-text": "toastMsg"
+   },
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "bidang__1280",
+    "filtered__1280",
+    "penerangan__1280",
+    "report-modal__1280",
+    "default__375",
+    "default__768",
+    "report-modal__375"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "toastMsg"
+  },
+  {
+   "id": "EL-M10-S28-132",
+   "kind": "link",
+   "tag": "a",
+   "text": "Reset",
+   "href": "https://prestasiplus.my/guru/databank/BM",
+   "absHref": "https://prestasiplus.my/guru/databank/BM",
+   "icon": "fa-times",
+   "landmark": "form",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-133",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-501503",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-134",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "textbook_content_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-136",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T3 - Sokongan Tema Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BM3.T15.4",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-137",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan kefahaman: pernyataan manakah paling tepat tentang hubungan tajuk dengan kehidupan harian?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kesimpulan yang bercanggah dengan maksud tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "Huraian yang terlalu sempit dan tidak menjawab kehendak soalan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "hubungan tajuk dengan kehidupan harian ialah fokus pembelajaran yang perlu difahami melalui bahan Tema Destinasi Misteri.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilihan yang hanya menyebut tajuk tanpa menerangkan maksudnya.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-142",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan ini tepat kerana hubungan tajuk dengan kehidupan harian ialah fokus isi pelajaran Tema 15 Destinasi Misteri. Murid perlu memilih pilihan yang selari dengan maksud, konteks dan penggunaan bahasa dalam bahan tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "filtered__1280"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-143",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-144",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-501500",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-145",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "textbook_content_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-147",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T3 - Sokongan Tema Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BM3.T15.1",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-148",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan kefahaman: pernyataan manakah paling tepat tentang rumusan ringkas Tema Destinasi Misteri?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-149",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ayat yang tidak menunjukkan penggunaan bahasa yang tepat.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-150",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pernyataan yang tidak berkaitan dengan fokus pembelajaran tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "Maklumat umum yang tidak menepati konteks bahan bacaan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-152",
+   "kind": "text",
+   "tag": "span",
+   "text": "rumusan ringkas Tema Destinasi Misteri ialah fokus pembelajaran yang perlu difahami melalui bahan Tema Destinasi Misteri.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-153",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan ini tepat kerana rumusan ringkas Tema Destinasi Misteri ialah fokus isi pelajaran Tema 15 Destinasi Misteri. Murid perlu memilih pilihan yang selari dengan maksud, konteks dan penggunaan bahasa dalam bahan tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "filtered__1280"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-154",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-155",
+   "kind": "card",
+   "tag": "div",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "domId": "q-501497",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-156",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Tahap 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "textbook_content_rebuild",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-158",
+   "kind": "alert",
+   "tag": "span",
+   "text": "Bahasa Melayu T3 - Sokongan Tema Buku Teks",
+   "icon": "fa-sitemap",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "title": "BM3.T15.3",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-159",
+   "kind": "text",
+   "tag": "div",
+   "text": "Soalan kefahaman: pernyataan manakah paling tepat tentang ayat gramatis dalam Tema Destinasi Misteri?",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-160",
+   "kind": "text",
+   "tag": "span",
+   "text": "ayat gramatis dalam Tema Destinasi Misteri ialah fokus pembelajaran yang perlu difahami melalui bahan Tema Destinasi Misteri.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-161",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kesimpulan yang bercanggah dengan maksud tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-162",
+   "kind": "text",
+   "tag": "span",
+   "text": "Huraian yang terlalu sempit dan tidak menjawab kehendak soalan.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pilihan yang hanya menyebut tajuk tanpa menerangkan maksudnya.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-164",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jawapan ini tepat kerana ayat gramatis dalam Tema Destinasi Misteri ialah fokus isi pelajaran Tema 15 Destinasi Misteri. Murid perlu memilih pilihan yang selari dengan maksud, konteks dan penggunaan bahasa dalam bahan tema.",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "filtered__1280"
+   ],
+   "hiddenBy": [
+    "x-show"
+   ],
+   "showWhen": "open"
+  },
+  {
+   "id": "EL-M10-S28-165",
+   "kind": "text",
+   "tag": "div",
+   "text": "Tingkatan 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "filtered__1280"
+   ]
+  },
+  {
+   "id": "EL-M10-S28-166",
+   "kind": "clickable",
+   "tag": "div",
+   "text": "Lapor Masalah Soalan Soalan #525433 Jawapan tidak tepat Soalan mengelirukan Set jawapan tidak tepat Pilihan jawapan tidak lengkap Soalan berulang / pendua Soalan sudah tidak relevan Kesalahan ejaan / taip Lain-lain Komen (pilihan) Hantar Laporan Menghantar... Batal",
+   "icon": "fa-flag",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "alpine": {
+    "x-transition:enter": "transition ease-out duration-200",
+    "x-transition:enter-start": "opacity-0 -translate-y-4 scale-95",
+    "x-transition:enter-end": "opacity-100 translate-y-0 scale-100",
+    "@click.stop": ""
+   },
+   "status": "conditional",
+   "visibleIn": [
+    "report-modal__1280",
+    "report-modal__375"
+   ],
+   "showWhen": "showReportModal"
+  }
+ ]
+}

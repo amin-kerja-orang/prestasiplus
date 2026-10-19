@@ -1,0 +1,26 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    ["^/admin/sponsors", "M21", "admin sponsors: list / create / edit / reactivate (writes never submitted); GET /admin/sponsors/{id} ('Lihat') → 500"],
+    ["^/admin/anak-angkat", "M21", "admin anak angkat: assignments, assign / status (Graduate / Tarik), student search JSON, applications (Lulus / Tolak); writes never submitted"],
+    ["^/mohon-keluarga-angkat", "M21", "foster-family application form (student / parent / teacher); never submitted"],
+    ["^/sponsor(/|$)", "M21", "sponsor self-registration /sponsor/register (public) and role-gated sponsor portal (/sponsor, /sponsor/anak-angkat, /sponsor/anak-angkat/pool, /sponsor/rewards → 403 for admin; /sponsor/profile → 405)"],
+    ["^/(penaja|anak-angkat|keluarga-angkat)(/|$)", "M21", "guessed M21 routes → 404 (do not exist on live)"],
+    ["^/admin/(sponsor|penaja)$", "M21", "guessed admin route → 404"]
+  ],
+  "screens": {
+    "S1": { "key": "S1-admin-sponsors", "route": "/admin/sponsors", "title": "Urus Penaja - Admin", "shell": "SHA", "notes": "GET ?search&status&category&page; row 'Lihat' → 500, 'Edit' → S3; guest → /login" },
+    "S2": { "key": "S2-admin-sponsor-create", "route": "/admin/sponsors/create", "title": "Tambah Penaja - Admin", "shell": "SHA", "notes": "form POST /admin/sponsors (never submitted)" },
+    "S3": { "key": "S3-admin-sponsor-edit", "route": "/admin/sponsors/{id}/edit", "title": "Edit Penaja - Admin", "shell": "SHA", "notes": "form PUT /admin/sponsors/{id}; POST /admin/sponsors/{id}/reactivate (never submitted); unknown id 404; GET /admin/sponsors/{id} → 500 (captured here)" },
+    "S4": { "key": "S4-admin-anak-angkat", "route": "/admin/anak-angkat", "title": "Pengurusan Anak Angkat", "shell": "SHA", "notes": "GET ?status; assign form POST /admin/anak-angkat/assign; status forms POST /admin/anak-angkat/{id}/status (never submitted); GET /admin/anak-angkat/{id} → 405 (captured here)" },
+    "S5": { "key": "S5-admin-permohonan", "route": "/admin/anak-angkat/permohonan", "title": "Permohonan Anak Angkat", "shell": "SHA", "notes": "GET ?status; Lulus / Tolak POST forms (never submitted); GET /admin/anak-angkat/permohonan/{id} → 404" },
+    "S6": { "key": "S6-mohon-keluarga-angkat", "route": "/mohon-keluarga-angkat", "title": "Mohon Keluarga Angkat", "shell": "SHU", "notes": "form POST /mohon-keluarga-angkat (never submitted); guest → /login" },
+    "S7": { "key": "S7-sponsor-register", "route": "/sponsor/register", "title": "Daftar Penaja - PRESTASIPLUS", "shell": "none (standalone guest-style page)", "notes": "3-step Alpine wizard; form POST /sponsor/register (never submitted); open to guest and logged-in users" }
+  },
+  "shells": {
+    "SHA": { "key": "SHA-admin-shell", "title": "Admin panel shell (S1–S5)", "owner": "00-global-ui.md", "note": "Layout chrome, not M21 content. Sidebar group 'Pengguna' (toggle('pengguna')) holds Penajaan / Anak Angkat / Permohonan; mobile bottom nav 'Penaja'." },
+    "SHU": { "key": "SHU-user-shell", "title": "User-portal shell (S6)", "owner": "00-global-ui.md", "note": "Layout chrome, not M21 content. User menu group '💎 KILLER FEATURES' holds 'Mohon Keluarga Angkat'." }
+  }
+}

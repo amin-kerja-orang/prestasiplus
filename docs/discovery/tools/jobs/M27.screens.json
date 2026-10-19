@@ -1,0 +1,14 @@
+{
+  "normalizeIds": true,
+  "dataRows": [],
+  "collapseKeys": [],
+  "extraModuleRules": [
+    ["^/admin-sekolah", "M27", "School Admin Portal (role school_admin), D16: routes 302 to /admin-sekolah/pilih-sekolah (500 for the platform admin); monitoring and kirkpatrick are aliases of /admin/monitoring (M11) and /admin/kirkpatrick (M12)"]
+  ],
+  "screens": {
+    "S1": { "key": "S1-pilih-sekolah", "route": "/admin-sekolah/pilih-sekolah", "title": "500 - Ralat Pelayan | PRESTASIPLUS", "shell": "none (global error page)", "notes": "302 target of /admin-sekolah, /pelajar, /guru, /kelas, /statistik-penggunaan, /dskp-heatmap, /laporan-bulanan, /pengguna; 500 for the platform admin" },
+    "S2": { "key": "S2-command-center", "route": "/admin-sekolah/command-center", "title": "403 - Akses Ditolak | PRESTASIPLUS", "shell": "none (global error page)", "notes": "admin is refused (route exists, role-gated)" },
+    "S3": { "key": "S3-laporan-aktiviti", "route": "/admin-sekolah/laporan-aktiviti", "title": "404 - Halaman Tidak Dijumpai | PRESTASIPLUS", "shell": "none (global error page)", "notes": "INFERRED href is not a route on live" }
+  },
+  "shells": {}
+}

@@ -1,0 +1,7097 @@
+{
+ "screen": "S10",
+ "key": "S10-analytics",
+ "route": "/admin/analytics",
+ "name": "Analitik & Statistik - Admin Panel",
+ "module": "M17",
+ "generatedAt": "2026-09-26T04:57:04.380Z",
+ "notes": "content analytics (imports, question status, content counts, coverage matrix, difficulty, curriculum)",
+ "shell": "SHA",
+ "summary": {
+  "total": 494,
+  "visibleDefault": 494,
+  "conditional": 0,
+  "hiddenOnly": 0,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "card": 12,
+   "text": 411,
+   "heading": 31,
+   "badge": 36,
+   "table": 1,
+   "empty-state": 3
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "analytics (import cards, status distribution, content counts, top 10 subjects, coverage matrix, difficulty, curriculum status)",
+   "file": "_raw/M17/S10-analytics__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/admin/analytics",
+   "finalUrl": "/admin/analytics",
+   "httpStatus": 200,
+   "title": "Analitik & Statistik - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 31
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M17/S10-analytics__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/admin/analytics",
+   "finalUrl": "/admin/analytics",
+   "httpStatus": 200,
+   "title": "Analitik & Statistik - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 31
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "default @768",
+   "file": "_raw/M17/S10-analytics__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/admin/analytics",
+   "finalUrl": "/admin/analytics",
+   "httpStatus": 200,
+   "title": "Analitik & Statistik - Admin Panel",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    },
+    {
+     "eval": "(async () => { if (typeof fetchData === 'function') await fetchData(); else if (typeof load === 'function' && document.getElementById('school-list')) await load(); return 'reloaded'; })()"
+    },
+    {
+     "wait": 1800
+    },
+    {
+     "wait": 900
+    },
+    {
+     "eval": "(function mask() {\n    var n = 0;\n    var PKEY = /^(name|student|student_name|teacher_name|reason|full_name)$/;\n    // (1) stop polling + fetch wrapper\n    var last = setTimeout(function () {}, 0); for (var i = 0; i <= last; i++) { clearInterval(i); }\n    if (!window.__m17fetch) {\n      var of = window.fetch; window.__m17fetch = of;\n      var scrub = function (o) { if (Array.isArray(o)) return o.map(scrub); if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { if (PKEY.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = '<name>'; } else o[k] = scrub(o[k]); }); } return o; };\n      window.fetch = function (u, a) { return of(u, a).then(function (r) { if (!/command-center|daily-activity/.test(String(u))) return r; return r.clone().json().then(function (j) { return new Response(JSON.stringify(scrub(j)), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }).catch(function () { return r; }); }); };\n    }\n    // (2) tags\n    var tag = function (el) { if (el && !el.classList.contains('m17n')) { el.classList.add('m17n'); n++; } };\n    var p = location.pathname;\n    document.querySelectorAll('.breadcrumb a[href*=\"/teacher/\"]').forEach(tag);\n    if (/\\/(student|teacher)\\/\\d+/.test(p)) { document.querySelectorAll('.breadcrumb .current').forEach(tag); document.title = '<name> - Command Center'; }\n    document.querySelectorAll('.info-item').forEach(function (it) { if (/^\\s*Guru:/.test(it.textContent)) tag(it.querySelector('strong')); });\n    if (/^\\/admin\\/laporan$/.test(p)) {\n      var ov = document.querySelector('main [x-show=\"tab === \\'overview\\'\"]');\n      if (ov) ov.querySelectorAll('.card p.truncate').forEach(function (x) { tag(x); if (x.nextElementSibling && x.nextElementSibling.tagName === 'P') tag(x.nextElementSibling); });\n      document.querySelectorAll('main [data-name]').forEach(function (r) { if (r.closest('[x-show=\"tab === \\'sekolah\\'\"]')) return; r.setAttribute('data-name', '<name>'); var c = r.querySelector('td:nth-child(2)'); if (c) c.querySelectorAll('div, *').forEach(function (d) { if (!d.children.length) tag(d); }); if (c && !c.children.length) tag(c); });\n    }\n    document.querySelectorAll('body *').forEach(function (el) { if (el.children.length || el.closest('script,style')) return; var t = (el.textContent || '').trim(); if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(t)) tag(el); });\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; n++; });\n    // (3) person ids\n    document.querySelectorAll('[href*=\"/student/\"], [href*=\"/teacher/\"], [onclick*=\"/student/\"], [onclick*=\"/teacher/\"]').forEach(function (el) {\n      ['href', 'onclick'].forEach(function (k) { var v = el.getAttribute(k); if (v) el.setAttribute(k, v.replace(/\\/(student|teacher)\\/\\d+/g, '/$1/{id}')); });\n    });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    return 'm17mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m17mask: 2",
+    "reloaded",
+    "m17mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 31
+   }
+  }
+ ],
+ "alpineComponents": [],
+ "jsMessages": [
+  {
+   "text": "GB /",
+   "sources": [
+    "attr::title@div"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/admin/server-status",
+   "sources": [
+    "script#1"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M17-S10-001",
+   "kind": "card",
+   "tag": "div",
+   "text": "1,123",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-002",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jumlah Import",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-003",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,123",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-004",
+   "kind": "text",
+   "tag": "p",
+   "text": "Keseluruhan",
+   "icon": "fa-upload",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-005",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "Import Bulan Ini",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-008",
+   "kind": "text",
+   "tag": "p",
+   "text": "September 2026",
+   "icon": "fa-calendar-check",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-009",
+   "kind": "card",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-010",
+   "kind": "text",
+   "tag": "p",
+   "text": "Import Lepas",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-011",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-012",
+   "kind": "text",
+   "tag": "p",
+   "text": "August 2026",
+   "icon": "fa-history",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-013",
+   "kind": "card",
+   "tag": "div",
+   "text": "31,101",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-014",
+   "kind": "text",
+   "tag": "p",
+   "text": "Soalan Diimport",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-015",
+   "kind": "text",
+   "tag": "p",
+   "text": "31,101",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-016",
+   "kind": "text",
+   "tag": "p",
+   "text": "Berjaya",
+   "icon": "fa-check-double",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-017",
+   "kind": "card",
+   "tag": "div",
+   "text": "Taburan Status Soalan",
+   "landmark": "main",
+   "section": "Analitik & Statistik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-018",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Taburan Status Soalan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Draf",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 (0.0%)",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "Menunggu Review",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 (0.0%)",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "Diluluskan",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "128,006 (99.7%)",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-025",
+   "kind": "badge",
+   "tag": "div",
+   "text": "128,006",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ditolak",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "0 (0.0%)",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "Diarkib",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "400 (0.3%)",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-030",
+   "kind": "card",
+   "tag": "div",
+   "text": "5",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-031",
+   "kind": "text",
+   "tag": "p",
+   "text": "Banner",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-032",
+   "kind": "text",
+   "tag": "p",
+   "text": "5",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-033",
+   "kind": "card",
+   "tag": "div",
+   "text": "72",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-034",
+   "kind": "text",
+   "tag": "p",
+   "text": "Artikel",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-035",
+   "kind": "text",
+   "tag": "p",
+   "text": "Terbit",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-036",
+   "kind": "text",
+   "tag": "p",
+   "text": "72",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-037",
+   "kind": "text",
+   "tag": "p",
+   "text": "Draf",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-039",
+   "kind": "card",
+   "tag": "div",
+   "text": "10",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-040",
+   "kind": "text",
+   "tag": "p",
+   "text": "Nota",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-041",
+   "kind": "text",
+   "tag": "p",
+   "text": "Terbit",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-042",
+   "kind": "text",
+   "tag": "p",
+   "text": "10",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-043",
+   "kind": "text",
+   "tag": "p",
+   "text": "Draf",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-044",
+   "kind": "text",
+   "tag": "p",
+   "text": "0",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-045",
+   "kind": "card",
+   "tag": "div",
+   "text": "Top 10 Subjek Aktif",
+   "landmark": "main",
+   "section": "Taburan Status Soalan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-046",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Top 10 Subjek Aktif",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-047",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-048",
+   "kind": "text",
+   "tag": "span",
+   "text": "15,414",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-049",
+   "kind": "text",
+   "tag": "span",
+   "text": "15,414",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-050",
+   "kind": "text",
+   "tag": "span",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-051",
+   "kind": "text",
+   "tag": "span",
+   "text": "13,354",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-052",
+   "kind": "text",
+   "tag": "span",
+   "text": "13,354",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-053",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-054",
+   "kind": "text",
+   "tag": "span",
+   "text": "12,128",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-055",
+   "kind": "text",
+   "tag": "span",
+   "text": "12,128",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-056",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-057",
+   "kind": "text",
+   "tag": "span",
+   "text": "11,688",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-058",
+   "kind": "text",
+   "tag": "span",
+   "text": "11,688",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-059",
+   "kind": "text",
+   "tag": "span",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-060",
+   "kind": "text",
+   "tag": "span",
+   "text": "9,152",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-061",
+   "kind": "text",
+   "tag": "span",
+   "text": "9,152",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-062",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-063",
+   "kind": "text",
+   "tag": "span",
+   "text": "8,039",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-064",
+   "kind": "text",
+   "tag": "span",
+   "text": "8,039",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-065",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-066",
+   "kind": "text",
+   "tag": "span",
+   "text": "6,468",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-067",
+   "kind": "text",
+   "tag": "span",
+   "text": "6,468",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-068",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Tamil",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-069",
+   "kind": "text",
+   "tag": "span",
+   "text": "6,300",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-070",
+   "kind": "text",
+   "tag": "span",
+   "text": "6,300",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-071",
+   "kind": "text",
+   "tag": "span",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-072",
+   "kind": "text",
+   "tag": "span",
+   "text": "5,692",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-073",
+   "kind": "text",
+   "tag": "span",
+   "text": "5,692",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-074",
+   "kind": "text",
+   "tag": "span",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-075",
+   "kind": "text",
+   "tag": "span",
+   "text": "5,400",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-076",
+   "kind": "text",
+   "tag": "span",
+   "text": "5,400",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-077",
+   "kind": "card",
+   "tag": "div",
+   "text": "Matriks Liputan Subjek",
+   "landmark": "main",
+   "section": "Top 10 Subjek Aktif",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-078",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Matriks Liputan Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-079",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bilangan soalan mengikut subjek dan tahap pendidikan",
+   "landmark": "main",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-080",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Subjek",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "Jumlah"
+   ],
+   "rowCount": 31,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-081",
+   "kind": "badge",
+   "tag": "span",
+   "text": "958",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-082",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2,540",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-083",
+   "kind": "badge",
+   "tag": "span",
+   "text": "805",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-084",
+   "kind": "badge",
+   "tag": "span",
+   "text": "530",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-085",
+   "kind": "badge",
+   "tag": "span",
+   "text": "407",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-086",
+   "kind": "badge",
+   "tag": "span",
+   "text": "400",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-087",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2,104",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-088",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,800",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-089",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,500",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-090",
+   "kind": "badge",
+   "tag": "span",
+   "text": "257",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-091",
+   "kind": "badge",
+   "tag": "span",
+   "text": "387",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-092",
+   "kind": "badge",
+   "tag": "span",
+   "text": "11,688",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-093",
+   "kind": "badge",
+   "tag": "span",
+   "text": "926",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-094",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,225",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-095",
+   "kind": "badge",
+   "tag": "span",
+   "text": "846",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-096",
+   "kind": "badge",
+   "tag": "span",
+   "text": "524",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-097",
+   "kind": "badge",
+   "tag": "span",
+   "text": "403",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-098",
+   "kind": "badge",
+   "tag": "span",
+   "text": "992",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-099",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,609",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-100",
+   "kind": "badge",
+   "tag": "span",
+   "text": "400",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-101",
+   "kind": "badge",
+   "tag": "span",
+   "text": "362",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-102",
+   "kind": "badge",
+   "tag": "span",
+   "text": "752",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-103",
+   "kind": "badge",
+   "tag": "span",
+   "text": "8,039",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-104",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2,725",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-105",
+   "kind": "badge",
+   "tag": "span",
+   "text": "2,096",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-106",
+   "kind": "badge",
+   "tag": "span",
+   "text": "677",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-107",
+   "kind": "badge",
+   "tag": "span",
+   "text": "932",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-108",
+   "kind": "badge",
+   "tag": "span",
+   "text": "573",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-109",
+   "kind": "badge",
+   "tag": "span",
+   "text": "633",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-110",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,300",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-111",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,300",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-112",
+   "kind": "badge",
+   "tag": "span",
+   "text": "900",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-113",
+   "kind": "badge",
+   "tag": "span",
+   "text": "1,500",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-114",
+   "kind": "badge",
+   "tag": "span",
+   "text": "718",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-115",
+   "kind": "badge",
+   "tag": "span",
+   "text": "13,354",
+   "landmark": "table",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-116",
+   "kind": "card",
+   "tag": "div",
+   "text": "Taburan Kesukaran Mengikut Subjek",
+   "landmark": "main",
+   "section": "Matriks Liputan Subjek",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-117",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Taburan Kesukaran Mengikut Subjek",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-118",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-119",
+   "kind": "text",
+   "tag": "p",
+   "text": "5,400 soalan",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-120",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-121",
+   "kind": "text",
+   "tag": "span",
+   "text": "2826",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-122",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-123",
+   "kind": "text",
+   "tag": "span",
+   "text": "1287",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-124",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-125",
+   "kind": "text",
+   "tag": "span",
+   "text": "1287",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-126",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-127",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-128",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-129",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Arab",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-130",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-131",
+   "kind": "text",
+   "tag": "p",
+   "text": "8,039 soalan",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-132",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-133",
+   "kind": "text",
+   "tag": "span",
+   "text": "2105",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-134",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-135",
+   "kind": "text",
+   "tag": "span",
+   "text": "2587",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-136",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-137",
+   "kind": "text",
+   "tag": "span",
+   "text": "2581",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-138",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-139",
+   "kind": "text",
+   "tag": "span",
+   "text": "766",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-140",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-141",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Inggeris",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-142",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-143",
+   "kind": "text",
+   "tag": "p",
+   "text": "11,688 soalan",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-144",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-145",
+   "kind": "text",
+   "tag": "span",
+   "text": "3018",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-146",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-147",
+   "kind": "text",
+   "tag": "span",
+   "text": "4608",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-148",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-149",
+   "kind": "text",
+   "tag": "span",
+   "text": "2880",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-150",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-151",
+   "kind": "text",
+   "tag": "span",
+   "text": "1182",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-152",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-153",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Melayu",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-154",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Bahasa Tamil",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-155",
+   "kind": "text",
+   "tag": "p",
+   "text": "6,300 soalan",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-156",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-157",
+   "kind": "text",
+   "tag": "span",
+   "text": "2142",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-158",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-159",
+   "kind": "text",
+   "tag": "span",
+   "text": "2079",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-160",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-161",
+   "kind": "text",
+   "tag": "span",
+   "text": "2079",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-162",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-163",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-164",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-165",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Bahasa Tamil",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-166",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Biologi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-167",
+   "kind": "text",
+   "tag": "p",
+   "text": "4,232 soalan",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-168",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-169",
+   "kind": "text",
+   "tag": "span",
+   "text": "10",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-170",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-171",
+   "kind": "text",
+   "tag": "span",
+   "text": "2429",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-172",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-173",
+   "kind": "text",
+   "tag": "span",
+   "text": "1119",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-174",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-175",
+   "kind": "text",
+   "tag": "span",
+   "text": "674",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-176",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-177",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Biologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-178",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Ekonomi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-179",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,625 soalan",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-180",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-181",
+   "kind": "text",
+   "tag": "span",
+   "text": "269",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-182",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-183",
+   "kind": "text",
+   "tag": "span",
+   "text": "861",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-184",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-185",
+   "kind": "text",
+   "tag": "span",
+   "text": "983",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-186",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-187",
+   "kind": "text",
+   "tag": "span",
+   "text": "512",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-188",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-189",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Ekonomi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-190",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Fizik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-191",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,251 soalan",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-192",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-193",
+   "kind": "text",
+   "tag": "span",
+   "text": "66",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-194",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-195",
+   "kind": "text",
+   "tag": "span",
+   "text": "447",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-196",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-197",
+   "kind": "text",
+   "tag": "span",
+   "text": "540",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-198",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-199",
+   "kind": "text",
+   "tag": "span",
+   "text": "198",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-200",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-201",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Fizik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-202",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Geografi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-203",
+   "kind": "text",
+   "tag": "p",
+   "text": "5,692 soalan",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-204",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-205",
+   "kind": "text",
+   "tag": "span",
+   "text": "3480",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-206",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-207",
+   "kind": "text",
+   "tag": "span",
+   "text": "1659",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-208",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-209",
+   "kind": "text",
+   "tag": "span",
+   "text": "383",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-210",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-211",
+   "kind": "text",
+   "tag": "span",
+   "text": "170",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-212",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-213",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Geografi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-214",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Jawi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-215",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,100 soalan",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-216",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-217",
+   "kind": "text",
+   "tag": "span",
+   "text": "2016",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-218",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-219",
+   "kind": "text",
+   "tag": "span",
+   "text": "42",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-220",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-221",
+   "kind": "text",
+   "tag": "span",
+   "text": "21",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-222",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-223",
+   "kind": "text",
+   "tag": "span",
+   "text": "21",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-224",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-225",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Jawi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-226",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Kimia",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-227",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,223 soalan",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-228",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-229",
+   "kind": "text",
+   "tag": "span",
+   "text": "42",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-230",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-231",
+   "kind": "text",
+   "tag": "span",
+   "text": "1557",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-232",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-233",
+   "kind": "text",
+   "tag": "span",
+   "text": "492",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-234",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-235",
+   "kind": "text",
+   "tag": "span",
+   "text": "132",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-236",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-237",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kimia",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-238",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Matematik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-239",
+   "kind": "text",
+   "tag": "p",
+   "text": "13,354 soalan",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-240",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-241",
+   "kind": "text",
+   "tag": "span",
+   "text": "3614",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-242",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-243",
+   "kind": "text",
+   "tag": "span",
+   "text": "4398",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-244",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-245",
+   "kind": "text",
+   "tag": "span",
+   "text": "4460",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-246",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-247",
+   "kind": "text",
+   "tag": "span",
+   "text": "882",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-248",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-249",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Matematik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-250",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-251",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,078 soalan",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-252",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-253",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-254",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-255",
+   "kind": "text",
+   "tag": "span",
+   "text": "985",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-256",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-257",
+   "kind": "text",
+   "tag": "span",
+   "text": "976",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-258",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-259",
+   "kind": "text",
+   "tag": "span",
+   "text": "117",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-260",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-261",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Matematik Tambahan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-262",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Al-Quran & As-Sunnah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-263",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,000 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-264",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-265",
+   "kind": "text",
+   "tag": "span",
+   "text": "340",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-266",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-267",
+   "kind": "text",
+   "tag": "span",
+   "text": "330",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-268",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-269",
+   "kind": "text",
+   "tag": "span",
+   "text": "330",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-270",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-271",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-272",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-273",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Al-Quran & As-Sunnah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-274",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-275",
+   "kind": "text",
+   "tag": "p",
+   "text": "9,152 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-276",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-277",
+   "kind": "text",
+   "tag": "span",
+   "text": "4614",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-278",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-279",
+   "kind": "text",
+   "tag": "span",
+   "text": "1907",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-280",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-281",
+   "kind": "text",
+   "tag": "span",
+   "text": "1937",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-282",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-283",
+   "kind": "text",
+   "tag": "span",
+   "text": "694",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-284",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-285",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-286",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Jasmani & Kesihatan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-287",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,900 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-288",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-289",
+   "kind": "text",
+   "tag": "span",
+   "text": "2372",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-290",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-291",
+   "kind": "text",
+   "tag": "span",
+   "text": "264",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-292",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-293",
+   "kind": "text",
+   "tag": "span",
+   "text": "264",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-294",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-295",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-296",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-297",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Jasmani & Kesihatan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-298",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-299",
+   "kind": "text",
+   "tag": "p",
+   "text": "15,414 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-300",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-301",
+   "kind": "text",
+   "tag": "span",
+   "text": "2763",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-302",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-303",
+   "kind": "text",
+   "tag": "span",
+   "text": "6686",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-304",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-305",
+   "kind": "text",
+   "tag": "span",
+   "text": "3959",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-306",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-307",
+   "kind": "text",
+   "tag": "span",
+   "text": "2006",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-308",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-309",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Moral",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-310",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Muzik",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-311",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,800 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-312",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-313",
+   "kind": "text",
+   "tag": "span",
+   "text": "1008",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-314",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-315",
+   "kind": "text",
+   "tag": "span",
+   "text": "396",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-316",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-317",
+   "kind": "text",
+   "tag": "span",
+   "text": "396",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-318",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-319",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-320",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-321",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Muzik",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-322",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-323",
+   "kind": "text",
+   "tag": "p",
+   "text": "4,910 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-324",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-325",
+   "kind": "text",
+   "tag": "span",
+   "text": "1914",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-326",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-327",
+   "kind": "text",
+   "tag": "span",
+   "text": "1191",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-328",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-329",
+   "kind": "text",
+   "tag": "span",
+   "text": "1490",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-330",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-331",
+   "kind": "text",
+   "tag": "span",
+   "text": "315",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-332",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-333",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Seni Visual",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-334",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-335",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,228 soalan",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-336",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-337",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-338",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-339",
+   "kind": "text",
+   "tag": "span",
+   "text": "384",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-340",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-341",
+   "kind": "text",
+   "tag": "span",
+   "text": "522",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-342",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-343",
+   "kind": "text",
+   "tag": "span",
+   "text": "322",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-344",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-345",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Pendidikan Syariah Islamiah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-346",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Perniagaan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-347",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,732 soalan",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-348",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-349",
+   "kind": "text",
+   "tag": "span",
+   "text": "475",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-350",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-351",
+   "kind": "text",
+   "tag": "span",
+   "text": "1532",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-352",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-353",
+   "kind": "text",
+   "tag": "span",
+   "text": "641",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-354",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-355",
+   "kind": "text",
+   "tag": "span",
+   "text": "84",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-356",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-357",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Perniagaan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-358",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-359",
+   "kind": "text",
+   "tag": "p",
+   "text": "2,329 soalan",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-360",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-361",
+   "kind": "text",
+   "tag": "span",
+   "text": "240",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-362",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-363",
+   "kind": "text",
+   "tag": "span",
+   "text": "1526",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-364",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-365",
+   "kind": "text",
+   "tag": "span",
+   "text": "384",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-366",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-367",
+   "kind": "text",
+   "tag": "span",
+   "text": "179",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-368",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-369",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Prinsip Perakaunan",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-370",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Reka Bentuk & Teknologi",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-371",
+   "kind": "text",
+   "tag": "p",
+   "text": "200 soalan",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-372",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-373",
+   "kind": "text",
+   "tag": "span",
+   "text": "68",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-374",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-375",
+   "kind": "text",
+   "tag": "span",
+   "text": "66",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-376",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-377",
+   "kind": "text",
+   "tag": "span",
+   "text": "66",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-378",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-379",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-380",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-381",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Reka Bentuk & Teknologi",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-382",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Sains",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-383",
+   "kind": "text",
+   "tag": "p",
+   "text": "12,128 soalan",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-384",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-385",
+   "kind": "text",
+   "tag": "span",
+   "text": "3846",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-386",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-387",
+   "kind": "text",
+   "tag": "span",
+   "text": "4363",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-388",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-389",
+   "kind": "text",
+   "tag": "span",
+   "text": "3176",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-390",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-391",
+   "kind": "text",
+   "tag": "span",
+   "text": "743",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-392",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-393",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sains",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-394",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-395",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,100 soalan",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-396",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-397",
+   "kind": "text",
+   "tag": "span",
+   "text": "374",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-398",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-399",
+   "kind": "text",
+   "tag": "span",
+   "text": "363",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-400",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-401",
+   "kind": "text",
+   "tag": "span",
+   "text": "363",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-402",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-403",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-404",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-405",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sains Komputer",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-406",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Sejarah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-407",
+   "kind": "text",
+   "tag": "p",
+   "text": "6,468 soalan",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-408",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-409",
+   "kind": "text",
+   "tag": "span",
+   "text": "1075",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-410",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-411",
+   "kind": "text",
+   "tag": "span",
+   "text": "4015",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-412",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-413",
+   "kind": "text",
+   "tag": "span",
+   "text": "1158",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-414",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-415",
+   "kind": "text",
+   "tag": "span",
+   "text": "220",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-416",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-417",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Sejarah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-418",
+   "kind": "heading",
+   "tag": "h4",
+   "level": 4,
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-419",
+   "kind": "text",
+   "tag": "p",
+   "text": "1,300 soalan",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-420",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 1",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-421",
+   "kind": "text",
+   "tag": "span",
+   "text": "291",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-422",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 2",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-423",
+   "kind": "text",
+   "tag": "span",
+   "text": "192",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-424",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 3",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-425",
+   "kind": "text",
+   "tag": "span",
+   "text": "500",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-426",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 4",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-427",
+   "kind": "text",
+   "tag": "span",
+   "text": "317",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-428",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lvl 5",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-429",
+   "kind": "text",
+   "tag": "span",
+   "text": "0",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-430",
+   "kind": "card",
+   "tag": "div",
+   "text": "Status Kurikulum",
+   "landmark": "main",
+   "section": "Tasawwur Islam",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-431",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Status Kurikulum",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-432",
+   "kind": "text",
+   "tag": "p",
+   "text": "Subjek yang mempunyai bab vs subjek tanpa bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-433",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Melayu",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-434",
+   "kind": "text",
+   "tag": "p",
+   "text": "84 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-435",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Inggeris",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-436",
+   "kind": "text",
+   "tag": "p",
+   "text": "46 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-437",
+   "kind": "text",
+   "tag": "p",
+   "text": "Matematik",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-438",
+   "kind": "text",
+   "tag": "p",
+   "text": "94 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-439",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sains",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-440",
+   "kind": "text",
+   "tag": "p",
+   "text": "109 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-441",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sejarah",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-442",
+   "kind": "text",
+   "tag": "p",
+   "text": "40 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-443",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Islam",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-444",
+   "kind": "text",
+   "tag": "p",
+   "text": "69 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-445",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Moral",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-446",
+   "kind": "text",
+   "tag": "p",
+   "text": "91 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-447",
+   "kind": "text",
+   "tag": "p",
+   "text": "Matematik Tambahan",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-448",
+   "kind": "text",
+   "tag": "p",
+   "text": "18 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-449",
+   "kind": "text",
+   "tag": "p",
+   "text": "Fizik",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-450",
+   "kind": "text",
+   "tag": "p",
+   "text": "2 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-451",
+   "kind": "text",
+   "tag": "p",
+   "text": "Kimia",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-452",
+   "kind": "text",
+   "tag": "p",
+   "text": "14 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-453",
+   "kind": "text",
+   "tag": "p",
+   "text": "Biologi",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-454",
+   "kind": "text",
+   "tag": "p",
+   "text": "41 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-455",
+   "kind": "text",
+   "tag": "p",
+   "text": "Geografi",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-456",
+   "kind": "text",
+   "tag": "p",
+   "text": "50 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-457",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Seni Visual",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-458",
+   "kind": "text",
+   "tag": "p",
+   "text": "155 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-459",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Muzik",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-460",
+   "kind": "text",
+   "tag": "p",
+   "text": "56 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-461",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Jasmani & Kesihatan",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-462",
+   "kind": "text",
+   "tag": "p",
+   "text": "48 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-463",
+   "kind": "text",
+   "tag": "p",
+   "text": "Reka Bentuk & Teknologi",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-464",
+   "kind": "text",
+   "tag": "p",
+   "text": "48 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-465",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sains Komputer",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-466",
+   "kind": "text",
+   "tag": "p",
+   "text": "122 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-467",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Arab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-468",
+   "kind": "text",
+   "tag": "p",
+   "text": "55 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-469",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Cina",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-470",
+   "kind": "text",
+   "tag": "p",
+   "text": "1 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-471",
+   "kind": "text",
+   "tag": "p",
+   "text": "Bahasa Tamil",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-472",
+   "kind": "text",
+   "tag": "p",
+   "text": "79 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-473",
+   "kind": "text",
+   "tag": "p",
+   "text": "Prinsip Perakaunan",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-474",
+   "kind": "text",
+   "tag": "p",
+   "text": "14 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-475",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ekonomi",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-476",
+   "kind": "text",
+   "tag": "p",
+   "text": "10 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-477",
+   "kind": "text",
+   "tag": "p",
+   "text": "Perniagaan",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-478",
+   "kind": "text",
+   "tag": "p",
+   "text": "14 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-479",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Al-Quran & As-Sunnah",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-480",
+   "kind": "text",
+   "tag": "p",
+   "text": "10 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-481",
+   "kind": "text",
+   "tag": "p",
+   "text": "Tasawwur Islam",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-482",
+   "kind": "text",
+   "tag": "p",
+   "text": "10 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-483",
+   "kind": "text",
+   "tag": "p",
+   "text": "Jawi",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-484",
+   "kind": "text",
+   "tag": "p",
+   "text": "21 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-485",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pendidikan Syariah Islamiah",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-486",
+   "kind": "text",
+   "tag": "p",
+   "text": "9 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-487",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sains Rumah Tangga",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-488",
+   "kind": "text",
+   "tag": "p",
+   "text": "1 bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-489",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pembuatan Pakaian Wanita",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-490",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-491",
+   "kind": "text",
+   "tag": "p",
+   "text": "Pertanian",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-492",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-493",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sains Sukan",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M17-S10-494",
+   "kind": "empty-state",
+   "tag": "p",
+   "text": "Tiada bab",
+   "landmark": "main",
+   "section": "Status Kurikulum",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,394 @@
+{
+ "screen": "S7",
+ "key": "S7-profile",
+ "route": "/profile",
+ "name": "Profil Saya",
+ "module": "M01",
+ "generatedAt": "2026-09-25T05:07:36.960Z",
+ "shell": "SHU",
+ "summary": {
+  "total": 8,
+  "visibleDefault": 5,
+  "conditional": 0,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 5,
+   "image": 1,
+   "heading": 1,
+   "link": 1
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "default",
+   "file": "_raw/M01/S7-profile__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/profile",
+   "finalUrl": "/profile",
+   "httpStatus": 200,
+   "title": "Profil Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "default__375",
+   "description": "default @375",
+   "file": "_raw/M01/S7-profile__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/profile",
+   "finalUrl": "/profile",
+   "httpStatus": 200,
+   "title": "Profil Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [],
+   "actionLog": [],
+   "repeats": {}
+  },
+  {
+   "label": "drawer-open__375",
+   "description": "user-shell drawer open @375",
+   "file": "_raw/M01/S7-profile__drawer-open__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/profile",
+   "finalUrl": "/profile",
+   "httpStatus": 200,
+   "title": "Profil Saya - PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(()=>{const b=document.querySelector('[onclick*=toggle-drawer]');if(!b) return 'no drawer btn';b.click();return 'drawer toggled'})()"
+    },
+    {
+     "wait": 600
+    }
+   ],
+   "actionLog": [
+    "drawer toggled"
+   ],
+   "repeats": {}
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Profil Saya",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Admin PRESTASI+",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M01-S7-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Profil Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Profil Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Profil Saya",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-004",
+   "kind": "image",
+   "tag": "img",
+   "alt": "Admin PRESTASI+",
+   "src": "/api/?name=Admin+PRESTASI%2B&background=4f46e5&color=fff&size=200",
+   "landmark": "main",
+   "section": "Profil Saya",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-005",
+   "kind": "heading",
+   "tag": "h2",
+   "level": 2,
+   "text": "Admin PRESTASI+",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-006",
+   "kind": "text",
+   "tag": "p",
+   "text": "<email>",
+   "landmark": "main",
+   "section": "Admin PRESTASI+",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-007",
+   "kind": "text",
+   "tag": "p",
+   "text": "Ahli sejak 6 Februari 2026",
+   "icon": "fa-calendar-alt",
+   "landmark": "main",
+   "section": "Admin PRESTASI+",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  },
+  {
+   "id": "EL-M01-S7-008",
+   "kind": "link",
+   "tag": "a",
+   "text": "Kemaskini Profil",
+   "href": "https://prestasiplus.my/profile/edit",
+   "absHref": "https://prestasiplus.my/profile/edit",
+   "icon": "fa-pen",
+   "landmark": "main",
+   "section": "Admin PRESTASI+",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "drawer-open__375"
+   ]
+  }
+ ]
+}

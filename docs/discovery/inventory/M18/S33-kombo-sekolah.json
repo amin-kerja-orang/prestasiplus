@@ -1,0 +1,1061 @@
+{
+ "screen": "S33",
+ "key": "S33-kombo-sekolah",
+ "route": "/kombo/sekolah/{id}",
+ "name": "{sekolah} — Kombo Harian | PRESTASIPLUS",
+ "module": "M18",
+ "generatedAt": "2026-09-26T04:52:49.451Z",
+ "notes": "new route; unknown id → 500",
+ "shell": "SHU",
+ "summary": {
+  "total": 51,
+  "visibleDefault": 41,
+  "conditional": 7,
+  "hiddenOnly": 3,
+  "mobileOnly": 0,
+  "desktopOnly": 0,
+  "byKind": {
+   "text": 37,
+   "card": 3,
+   "heading": 4,
+   "clickable": 3,
+   "table": 2,
+   "link": 2
+  }
+ },
+ "states": [
+  {
+   "label": "default__1280",
+   "description": "school daily combo via /kombo/sekolah/{id} (7780)",
+   "file": "_raw/M18/S33-kombo-sekolah__default__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/kombo/sekolah/7780",
+   "finalUrl": "/kombo/sekolah/7780",
+   "httpStatus": 200,
+   "title": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN — Kombo Harian | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 13",
+    "sanitized: cells=11 strings=11 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 20,
+    "main div[title^=\"20\"]": 365,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "server-error__1280",
+   "description": "unknown school id → 500 \"Ralat Pelayan\"",
+   "file": "_raw/M18/S33-kombo-sekolah__server-error__1280.json",
+   "width": 1280,
+   "session": "admin",
+   "url": "/kombo/sekolah/99999999",
+   "finalUrl": "/kombo/sekolah/99999999",
+   "httpStatus": 500,
+   "title": "500 - Ralat Pelayan | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 0",
+    "sanitized: cells=0 strings=0 attrs=0 texts=0 inputs=0 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 0,
+    "main div[title^=\"20\"]": 0,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "default__375",
+   "description": "school daily combo via /kombo/sekolah/{id} (7780) @375",
+   "file": "_raw/M18/S33-kombo-sekolah__default__375.json",
+   "width": 375,
+   "session": "admin",
+   "url": "/kombo/sekolah/7780",
+   "finalUrl": "/kombo/sekolah/7780",
+   "httpStatus": 200,
+   "title": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN — Kombo Harian | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 13",
+    "sanitized: cells=11 strings=11 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 20,
+    "main div[title^=\"20\"]": 365,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  },
+  {
+   "label": "default__768",
+   "description": "school daily combo via /kombo/sekolah/{id} (7780) @768",
+   "file": "_raw/M18/S33-kombo-sekolah__default__768.json",
+   "width": 768,
+   "session": "admin",
+   "url": "/kombo/sekolah/7780",
+   "finalUrl": "/kombo/sekolah/7780",
+   "httpStatus": 200,
+   "title": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN — Kombo Harian | PRESTASIPLUS",
+   "horizontalOverflow": false,
+   "actions": [
+    {
+     "eval": "(function mask() {\n    var n = 0, main = document.querySelector('main') || document.body;\n    function tag(el) { if (el && el.classList && !el.classList.contains('m18n')) { el.classList.add('m18n'); n++; } }\n    var NUM = /^[\\d\\s,.%+\\-\\/:()—–]*$/, KEEP = /^(Tingkatan|Darjah)\\s*\\d+$|^(-|—|Tiada)$/;\n    // R6 e-mails + avatars\n    document.querySelectorAll('a.__cf_email__, [data-cfemail]').forEach(function (a) { a.removeAttribute('data-cfemail'); a.textContent = '<email>'; a.setAttribute('href', '/cdn-cgi/l/email-protection'); n++; });\n    document.querySelectorAll('img').forEach(function (im) { var s = im.getAttribute('src') || ''; if (/ui-avatars|avatar|storage\\/(avatars|profile)/.test(s)) { im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw='); im.setAttribute('alt', '<person>'); n++; } });\n    // R1 person links\n    var PL = /\\/(prestasi\\/\\d+|headcount\\/student\\/\\d+|amaran\\/intervensi\\/\\d+|prestasi\\/sekolah\\/\\d+\\/guru\\/\\d+|pelajar\\/\\d+)(\\?|$)/;\n    main.querySelectorAll('a[href]').forEach(function (a) {\n      var h = (a.getAttribute('href') || '').replace(/^https?:\\/\\/[^/]+/, ''), t = a.textContent.replace(/\\s+/g, ' ').trim();\n      if (!PL.test(h) || !t || NUM.test(t) || /^Intervensi$/i.test(t)) return;\n      tag(a);\n    });\n    // R2 \"PELAJAR\" name cells\n    main.querySelectorAll('table').forEach(function (tb) {\n      var idx = -1; tb.querySelectorAll('thead th').forEach(function (th, i) { if (/^pelajar$/i.test(th.textContent.replace(/\\s+/g, ' ').trim())) idx = i; });\n      if (idx < 0) return;\n      tb.querySelectorAll('tbody tr').forEach(function (tr) {\n        var td = tr.children[idx]; if (!td) return;\n        var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), x, list = [];\n        while ((x = w.nextNode())) list.push(x);\n        list.forEach(function (tn) {\n          var v = tn.nodeValue.replace(/\\s+/g, ' ').trim();\n          if (!v || NUM.test(v) || KEEP.test(v) || /^\\d+ pelajar/.test(v)) return;\n          var p = tn.parentElement;\n          if (p === td || p.childNodes.length > 1) { var sp = document.createElement('span'); sp.className = 'm18n'; tn.parentNode.insertBefore(sp, tn); sp.appendChild(tn); n++; }\n          else tag(p);\n        });\n      });\n    });\n    // R3 intervention rows (keberkesanan lists)\n    main.querySelectorAll('a[href*=\"/amaran/intervensi/\"]').forEach(function (a) {\n      var row = a.closest('.justify-between'); if (!row) return;\n      row.querySelectorAll('p.font-semibold, .font-semibold.text-slate-700').forEach(tag);\n    });\n    // R4 intervention log page\n    var tm = document.title.match(/^Log Intervensi\\s+[—-]\\s+(.+?)(\\s+\\|\\s+.*)?$/);\n    if (tm) {\n      var nm = tm[1].trim();\n      main.querySelectorAll('.divide-y > div p.text-sm, .divide-y > div .text-\\\\[10px\\\\].text-slate-400.mt-1').forEach(function (el) { el.classList.add('m18l'); n++; });\n      var ww = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), y;\n      while ((y = ww.nextNode())) if (y.nodeValue.indexOf(nm) >= 0) { y.nodeValue = y.nodeValue.split(nm).join('<name>'); n++; }\n      document.querySelectorAll('*').forEach(function (el) { for (var i = 0; i < el.attributes.length; i++) { var at = el.attributes[i]; if (at.value.indexOf(nm) >= 0) el.setAttribute(at.name, at.value.split(nm).join('<name>')); } });\n      document.title = document.title.split(nm).join('<name>');\n    }\n    // R5 JPN command center\n    document.querySelectorAll('.student-name, .feed-name').forEach(tag);\n    // R7 protect stat labels from sanitize.js label→value rule\n    var PERSONAL_LABEL = /^(nama( penuh)?|name|username|nama pengguna|e-?mel|email|telefon|no\\.? ?tel(efon)?|phone|ic|no\\.? ?(ic|k\\/?p|kp|mykad)|mykad|kad pengenalan|ibu ?bapa|penjaga|waris|anak|cikgu|guru|guru kelas|pic|pegawai)\\s*:?$/i;\n    document.querySelectorAll('body *').forEach(function (el) {\n      if (el.children.length || !el.textContent || el.textContent.length > 40) return;\n      if (!PERSONAL_LABEL.test(el.textContent.replace(/\\s+/g, ' ').trim())) return;\n      if (el.closest('table,select,label,button,a,nav,aside,header')) return;\n      el.appendChild(document.createElement('wbr')); n++;\n    });\n    return 'm18mask: ' + n;\n  })()"
+    }
+   ],
+   "actionLog": [
+    "m18mask: 13",
+    "sanitized: cells=11 strings=11 attrs=0 texts=3 inputs=1 options=0"
+   ],
+   "repeats": {
+    "main tbody tr": 20,
+    "main div[title^=\"20\"]": 365,
+    "main .divide-y > div.p-4.space-y-2": 0
+   }
+  }
+ ],
+ "alpineComponents": [
+  {
+   "tag": "div",
+   "component": "tournamentBanner",
+   "xData": "tournamentBanner()",
+   "keys": [],
+   "liveState": {
+    "tournaments": "array(0)"
+   },
+   "visible": false,
+   "region": "content",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "seenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  }
+ ],
+ "jsMessages": [
+  {
+   "text": "Accept",
+   "sources": [
+    "script#1",
+    "script#4"
+   ]
+  },
+  {
+   "text": "translate(0, 0) scale(1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "cubic-bezier(0.22, 0.85, 0.32, 1)",
+   "sources": [
+    "script#2"
+   ]
+  },
+  {
+   "text": "(display-mode: standalone)",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Tekan Pasang untuk arahan pemasangan",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registered, scope:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[App] SW registration failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token saved:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Save token failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Token error:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] Foreground message:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "[FCM] SDK load failed:",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "text": "Maaf, berlaku ralat. Sila cuba semula.",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "text": "Pendaftaran dibuka",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Sedang berlangsung",
+   "sources": [
+    "attr:x-text@span"
+   ]
+  },
+  {
+   "text": "Apakah PrestasiPlus?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Bagaimana cara mendaftar?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  },
+  {
+   "text": "Berapakah harga langganan?",
+   "sources": [
+    "attr:@click@button"
+   ]
+  }
+ ],
+ "jsEndpoints": [
+  {
+   "url": "/api/tournament/active",
+   "sources": [
+    "script#1"
+   ]
+  },
+  {
+   "url": "/fcm/token",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/notifikasi/unread-count",
+   "sources": [
+    "script#3"
+   ]
+  },
+  {
+   "url": "/chatbot/history?session_id=${this.sessionId}",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/send",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/chatbot/rate",
+   "sources": [
+    "script#4"
+   ]
+  },
+  {
+   "url": "/tournament/",
+   "sources": [
+    "attr::href@a"
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "EL-M18-S33-001",
+   "kind": "text",
+   "tag": "span",
+   "text": "LIVE:",
+   "icon": "fa-circle",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-002",
+   "kind": "text",
+   "tag": "span",
+   "text": "MAIN",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=t.live_match"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-003",
+   "kind": "text",
+   "tag": "span",
+   "text": "DAFTAR",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "hidden-only",
+   "visibleIn": [],
+   "hiddenIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ],
+   "hiddenBy": [
+    "template:x-if=!t.live_match && t.status === 'registration'"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-004",
+   "kind": "text",
+   "tag": "div",
+   "text": "17",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-005",
+   "kind": "text",
+   "tag": "div",
+   "text": "Jumlah Pelajar",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-006",
+   "kind": "text",
+   "tag": "div",
+   "text": "0",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-007",
+   "kind": "text",
+   "tag": "div",
+   "text": "Aktif Hari Ini",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-008",
+   "kind": "text",
+   "tag": "div",
+   "text": "7",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-009",
+   "kind": "text",
+   "tag": "div",
+   "text": "Purata Kombo",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-010",
+   "kind": "text",
+   "tag": "div",
+   "text": "15",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-011",
+   "kind": "text",
+   "tag": "div",
+   "text": "Kombo Tertinggi",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-012",
+   "kind": "text",
+   "tag": "div",
+   "text": "15",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-013",
+   "kind": "text",
+   "tag": "div",
+   "text": "Pelajar Aktif Kombo",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-014",
+   "kind": "card",
+   "tag": "div",
+   "text": "Aktiviti Harian Sekolah",
+   "landmark": "main",
+   "section": "Kombo Harian — SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-015",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Aktiviti Harian Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-016",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sep",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-017",
+   "kind": "text",
+   "tag": "span",
+   "text": "Okt",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-018",
+   "kind": "text",
+   "tag": "span",
+   "text": "Nov",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-019",
+   "kind": "text",
+   "tag": "span",
+   "text": "Dis",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-020",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jan",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-021",
+   "kind": "text",
+   "tag": "span",
+   "text": "Feb",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-022",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mac",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-023",
+   "kind": "text",
+   "tag": "span",
+   "text": "Apr",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-024",
+   "kind": "text",
+   "tag": "span",
+   "text": "Mei",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-025",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jun",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-026",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jul",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-027",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ogs",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-028",
+   "kind": "text",
+   "tag": "span",
+   "text": "Sep",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-029",
+   "kind": "text",
+   "tag": "span",
+   "text": "Isn",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-030",
+   "kind": "text",
+   "tag": "span",
+   "text": "Rab",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-031",
+   "kind": "text",
+   "tag": "span",
+   "text": "Jum",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-032",
+   "kind": "text",
+   "tag": "span",
+   "text": "Ahd",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-033",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "alpine": {
+    "@click": "$dispatch('select-month', { month: '2025-09' })"
+   },
+   "title": "2025-09-27: 0 betul",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-034",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "alpine": {
+    "@click": "$dispatch('select-month', { month: '2025-09' })"
+   },
+   "title": "2025-09-28: 0 betul",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-035",
+   "kind": "clickable",
+   "tag": "div",
+   "iconOnly": true,
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "alpine": {
+    "@click": "$dispatch('select-month', { month: '2025-09' })"
+   },
+   "title": "2025-09-29: 0 betul",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-036",
+   "kind": "text",
+   "tag": "span",
+   "text": "Kurang",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-037",
+   "kind": "text",
+   "tag": "span",
+   "text": "Lebih",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-038",
+   "kind": "text",
+   "tag": "p",
+   "text": "Warna menunjukkan bilangan soalan betul seluruh sekolah setiap hari",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-039",
+   "kind": "card",
+   "tag": "div",
+   "text": "Perbandingan Kelas",
+   "landmark": "main",
+   "section": "Aktiviti Harian Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-040",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Perbandingan Kelas",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-041",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "Kelas",
+    "Subjek",
+    "Pelajar",
+    "Purata Kombo",
+    "Max Kombo",
+    "Aktif"
+   ],
+   "rowCount": 10,
+   "firstRowActions": [],
+   "landmark": "main",
+   "section": "Perbandingan Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-042",
+   "kind": "card",
+   "tag": "div",
+   "text": "Top 10 Kombo Sekolah",
+   "landmark": "main",
+   "section": "Perbandingan Kelas",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-043",
+   "kind": "heading",
+   "tag": "h3",
+   "level": 3,
+   "text": "Top 10 Kombo Sekolah",
+   "landmark": "main",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-044",
+   "kind": "table",
+   "tag": "table",
+   "columns": [
+    "#",
+    "Nama",
+    "Kombo",
+    "Terbaik",
+    "Jumlah Hari"
+   ],
+   "rowCount": 10,
+   "firstRowActions": [
+    {
+     "tag": "a",
+     "text": "<name>",
+     "href": "https://prestasiplus.my/prestasi/266"
+    }
+   ],
+   "landmark": "main",
+   "section": "Top 10 Kombo Sekolah",
+   "status": "visible-default",
+   "visibleIn": [
+    "default__1280",
+    "default__375",
+    "default__768"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-045",
+   "kind": "text",
+   "tag": "div",
+   "text": "500",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-046",
+   "kind": "text",
+   "tag": "div",
+   "text": "⚙️",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-047",
+   "kind": "heading",
+   "tag": "h1",
+   "level": 1,
+   "text": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-048",
+   "kind": "text",
+   "tag": "p",
+   "text": "Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-049",
+   "kind": "link",
+   "tag": "a",
+   "text": "Halaman Utama",
+   "href": "/",
+   "absHref": "https://prestasiplus.my/",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-050",
+   "kind": "link",
+   "tag": "a",
+   "text": "Cuba Semula",
+   "href": "javascript:location.reload()",
+   "absHref": "javascript:location.reload()",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  },
+  {
+   "id": "EL-M18-S33-051",
+   "kind": "text",
+   "tag": "div",
+   "text": "PRESTASIPLUS",
+   "section": "Ralat Pelayan",
+   "status": "conditional",
+   "viewport": "state captured @1280 only",
+   "visibleIn": [
+    "server-error__1280"
+   ]
+  }
+ ]
+}
