@@ -34,6 +34,8 @@ import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
 import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
+import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths'
+import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -70,6 +72,8 @@ export const COMPONENT_SCHEMAS = {
   ...GAMES_COMPONENT_SCHEMAS, // BE-45 (M16 games, leagues)
   ...MARKETPLACE_COMPONENT_SCHEMAS, // BE-46 (M20)
   ...SPONSORSHIP_COMPONENT_SCHEMAS, // BE-47 (M21 student side)
+  ...ACCOUNT_COMPONENT_SCHEMAS, // BE-06 (M01 account)
+  ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -108,6 +112,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
+  registerAccountPaths(registry) // BE-06 (M01 account)
+  registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
