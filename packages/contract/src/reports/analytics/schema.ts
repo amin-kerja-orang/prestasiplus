@@ -10,11 +10,12 @@ import { TimestampSchema } from '../../common/time'
  * `monitoring_flags` is stored). Wellbeing, psychometric and faith data are not modelled.
  *
  * Access (role access matrix rows 10 and 42, catalogue M11-01..07):
- * - Monitoring (`/monitoring/*`): admin, teacher (all schools, provisional OQ-M11-02) and
- *   school_admin (forced to the own school from the session). Every other role gets 403.
+ * - Monitoring (`/monitoring/*`): admin (all schools), teacher and school_admin (both forced to the
+ *   own school from the session; LEAD decision, final). Every other role gets 403. The mock lets a
+ *   teacher see all schools; that is a recorded deviation.
  * - Teacher report and item analysis (`/teacher/*`): admin (empty population) and teacher (own
  *   classes). school_admin and every other role get 403.
- * - A school_admin asking about another school, or a pupil or teacher of another school, gets 404
+ * - A teacher or school_admin asking about another school, or a pupil or teacher of another school, gets 404
  *   (existence is not revealed, SEC-M11-02). No session gives 401.
  */
 

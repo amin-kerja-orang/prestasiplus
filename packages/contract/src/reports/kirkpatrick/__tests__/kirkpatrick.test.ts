@@ -271,6 +271,19 @@ describe('OpenAPI registration', () => {
     }
     expect(doc.paths['/kirkpatrick/interventions']?.post?.responses['201']?.headers).toHaveProperty('Cache-Control')
   })
+  it('lets school_admin and teacher in, scoped to the own school, with the 403 and 422 for the rest', () => {
+    type D = { description?: string; responses: Record<string, { description?: string }> }
+    const op = (p: string, m = 'get') => doc.paths[p]?.[m] as unknown as D
+    for (const p of ['/kirkpatrick/reaction', '/kirkpatrick/learning', '/kirkpatrick/behavior', '/kirkpatrick/results', '/kirkpatrick/chain']) {
+      expect(op(p).responses['403']?.description, p).toContain('role not admin, teacher or school_admin')
+      expect(op(p).description, p).toMatch(/school_admin/)
+    }
+    expect(op('/kirkpatrick/students/{id}').responses['403']?.description).toContain('pupil of another school')
+    expect(op('/kirkpatrick/interventions').description).toContain('pupils of the own classes')
+    expect(op('/kirkpatrick/interventions').description).toContain('pupils of the own school')
+    expect(op('/kirkpatrick/interventions', 'post').description).toContain('out-of-scope pupil gives the same typed 422')
+    expect(op('/kirkpatrick/results').description).toContain('forced to the own school')
+  })
   it('exposes every component under the Kirkpatrick prefix', () => {
     for (const name of Object.keys(KIRKPATRICK_COMPONENT_SCHEMAS)) {
       expect(name.startsWith('Kirkpatrick')).toBe(true)

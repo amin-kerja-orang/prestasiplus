@@ -73,9 +73,9 @@ const E404 = (what: string) => err(`NOT_FOUND "${MSG.notFound}": ${what}`)
 
 const MONITORING_ROLES = 'role not admin, teacher or school_admin'
 const SCOPE =
-  'Admin and teacher see all schools (teacher scope is provisional); school_admin is forced to the own school from the session, never from the request.'
+  'Admin sees all schools; teacher and school_admin are forced to the own school from the session, never from the request (deviation from the mock, where a teacher sees all schools).'
 const OUT_OF_SCOPE =
-  'Unknown ids and, for school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.'
+  'Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.'
 
 /** Registers the 7 BE-20 (M11) endpoints. Success bodies are `{ data }`; errors are `{ error }`. */
 export function registerAnalyticsPaths(registry: OpenAPIRegistry): void {
@@ -113,7 +113,7 @@ export function registerAnalyticsPaths(registry: OpenAPIRegistry): void {
     AnalyticsSchoolDetailSchema,
     { 403: E403(MONITORING_ROLES), 404: E404(OUT_OF_SCOPE) },
     { params: z.object({ schoolId: IdSchema }) },
-    `Pupils (T4 and T5) and teachers of one school. Admin and teacher: any school. school_admin: the own school only. ${OUT_OF_SCOPE}`,
+    `Pupils (T4 and T5) and teachers of one school. Admin: any school. Teacher and school_admin: the own school only. ${OUT_OF_SCOPE}`,
   )
   get(
     '/monitoring/schools/{schoolId}/students/{userId}',
@@ -121,7 +121,7 @@ export function registerAnalyticsPaths(registry: OpenAPIRegistry): void {
     AnalyticsStudentDetailSchema,
     { 403: E403(MONITORING_ROLES), 404: E404(OUT_OF_SCOPE) },
     { params: z.object({ schoolId: IdSchema, userId: IdSchema }) },
-    `Answers, topics and gaps of one pupil. Admin and teacher: the school segment is not validated against the pupil (live rule BR-M11-29). school_admin: school and pupil must be own. A pupil with no answers returns the empty state, not 404. ${OUT_OF_SCOPE}`,
+    `Answers, topics and gaps of one pupil. Admin: the school segment is not validated against the pupil (live rule BR-M11-29). Teacher and school_admin: school and pupil must be own. A pupil with no answers returns the empty state, not 404. ${OUT_OF_SCOPE}`,
   )
   get(
     '/monitoring/schools/{schoolId}/teachers/{userId}',

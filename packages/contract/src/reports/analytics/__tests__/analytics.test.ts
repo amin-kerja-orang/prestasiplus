@@ -150,6 +150,16 @@ describe('OpenAPI registration', () => {
       expect(doc.paths[p]?.get?.responses['200']?.headers).toHaveProperty('Cache-Control')
     }
   })
+  it('forces teacher and school_admin to the own school and answers 404 for another school', () => {
+    type D = { description?: string; responses: Record<string, { description?: string }> }
+    for (const p of paths.slice(0, 5)) {
+      const op = doc.paths[p]?.get as unknown as D
+      expect(op.description, p).toMatch(/[Tt]eacher and school_admin/)
+      expect(op.description, p).not.toContain('provisional')
+    }
+    const pupil = doc.paths['/monitoring/schools/{schoolId}/students/{userId}']?.get as unknown as D
+    expect(pupil.responses['404']?.description).toContain('for teacher and school_admin, another school')
+  })
   it('exposes every component under the Analytics prefix', () => {
     for (const name of Object.keys(ANALYTICS_COMPONENT_SCHEMAS)) {
       expect(name.startsWith('Analytics')).toBe(true)

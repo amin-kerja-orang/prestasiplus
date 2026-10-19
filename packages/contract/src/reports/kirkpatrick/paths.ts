@@ -87,10 +87,9 @@ const E429 = (what: string) =>
   })
 const E403CSRF = err(`FORBIDDEN "${MSG.forbidden}", or CSRF_INVALID on a missing or invalid X-CSRF-Token.`)
 
-const STAFF = 'role not admin or teacher (school_admin included)'
 const SCOPED = 'role not admin, teacher or school_admin'
 const SCOPE_NOTE =
-  'school_admin is forced to the own school from the session whatever schoolId or state is sent; admin and teacher choose any school or state.'
+  'Teacher and school_admin are forced to the own school from the session whatever schoolId or state is sent (a caller without a school gets the empty view); admin chooses any school or state. Deviation from the mock, where a teacher chooses any school.'
 const BAD_SCHOOL = err(`VALIDATION_ERROR: fields.schoolId "${KIRKPATRICK_MESSAGES.invalid}" (not a whole-number id).`)
 
 const csrf = z.object({ 'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf.' }) })
@@ -119,11 +118,11 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
 
   // Levels
   get('/kirkpatrick/overview', 'Four-level summary with before and after comparison (S1)', KirkpatrickOverviewSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickScopeQuerySchema }, `Admin, teacher, school_admin. ${SCOPE_NOTE}`)
-  get('/kirkpatrick/reaction', 'Level 1 reaction (S2)', KirkpatrickReactionSchema, { 403: E403(STAFF) }, {}, 'Admin and teacher. Global: ignores the scope and every query.')
-  get('/kirkpatrick/learning', 'Level 2 learning (S3)', KirkpatrickLearningSchema, { 403: E403(STAFF), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, 'Admin and teacher. state is ignored.')
-  get('/kirkpatrick/behavior', 'Level 3 behaviour (S4)', KirkpatrickBehaviorSchema, { 403: E403(STAFF), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, 'Admin and teacher.')
-  get('/kirkpatrick/results', 'Level 4 results (S5)', KirkpatrickResultsSchema, { 403: E403(STAFF), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, 'Admin and teacher. Lists pupils by name (predictions, ALESA rows): personal data of minors.', true)
-  get('/kirkpatrick/chain', 'Impact chain (S6)', KirkpatrickChainSchema, { 403: E403(STAFF) }, {}, 'Admin and teacher. Platform-wide: ignores the scope.')
+  get('/kirkpatrick/reaction', 'Level 1 reaction (S2)', KirkpatrickReactionSchema, { 403: E403(SCOPED) }, {}, 'Admin, teacher, school_admin. Platform-wide for admin and ignores every query; for teacher and school_admin the means are over the own school respondents (deviation from the mock, which is global).')
+  get('/kirkpatrick/learning', 'Level 2 learning (S3)', KirkpatrickLearningSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). state is ignored. ${SCOPE_NOTE}`)
+  get('/kirkpatrick/behavior', 'Level 3 behaviour (S4)', KirkpatrickBehaviorSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). ${SCOPE_NOTE}`)
+  get('/kirkpatrick/results', 'Level 4 results (S5)', KirkpatrickResultsSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). ${SCOPE_NOTE} Lists pupils by name (predictions, ALESA rows): personal data of minors.`, true)
+  get('/kirkpatrick/chain', 'Impact chain (S6)', KirkpatrickChainSchema, { 403: E403(SCOPED) }, {}, 'Admin, teacher, school_admin (deviation: the mock refuses school_admin). Platform-wide for admin; for teacher and school_admin computed over the own school (the mock is platform-wide).')
   get('/kirkpatrick/filter-options', 'School and state options of the filters', KirkpatrickFilterOptionsSchema, { 403: E403(SCOPED) }, {}, 'Admin, teacher, school_admin. school_admin gets only the own school (empty lists when it has none).')
 
   // Pupil views
@@ -131,9 +130,9 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     '/kirkpatrick/students/{id}',
     'Kirkpatrick view of one pupil (S8)',
     KirkpatrickStudentSchema,
-    { 403: E403('role not admin or teacher, or an id that is not a pupil: one uniform 403 for an unknown id and a non-pupil, so ids cannot be probed') },
+    { 403: E403('role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed') },
     { params: z.object({ id: IdSchema }) },
-    'Admin and teacher; no school scope beyond the role (provisional). A non-numeric id is 404 NOT_FOUND "Not Found." (no route). A pupil with no sessions gets the zero state.',
+    'Admin: any pupil. Teacher and school_admin: pupils of the own school only (deviation: the mock has no school limit and refuses school_admin). A non-numeric id is 404 NOT_FOUND "Not Found." (no route). A pupil with no sessions gets the zero state.',
     true,
   )
   get('/kirkpatrick/me', 'Own headcount and last 30 days (S9)', KirkpatrickMeSchema, {}, {}, 'Any signed-in role; own data only.', true)
@@ -144,7 +143,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     path: '/kirkpatrick/export-pdf',
     tags: ['kirkpatrick'],
     summary: 'Impact chain report as PDF (S6 "Muat Turun Laporan")',
-    description: `Admin and teacher. One A4 page "${KIRKPATRICK_PDF.title}" built from the chain figures; the body starts with %PDF. File name ${KIRKPATRICK_PDF.filename} (layout contract: mock pdf.ts).`,
+    description: `Admin, teacher, school_admin; figures as in the chain (own school for teacher and school_admin). One A4 page "${KIRKPATRICK_PDF.title}" built from the chain figures; the body starts with %PDF. File name ${KIRKPATRICK_PDF.filename} (layout contract: mock pdf.ts).`,
     responses: {
       200: {
         description: 'The PDF file.',
@@ -152,7 +151,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
         content: { [KIRKPATRICK_PDF.contentType]: { schema: z.string().meta({ type: 'string', format: 'binary' }) } },
       },
       401: E401,
-      403: E403(STAFF),
+      403: E403(SCOPED),
     },
   })
 
@@ -161,9 +160,9 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     '/kirkpatrick/interventions',
     'Intervention log and KPIs (S7)',
     KirkpatrickInterventionListSchema,
-    { 403: E403(STAFF) },
+    { 403: E403(SCOPED) },
     {},
-    'Admin and teacher. The mock returns every intervention to any admin or teacher (no own-student or school limit, OQ-API-B3-9). Notes are sensitive personal data of minors: never logged.',
+    'Admin: all. School_admin: interventions of pupils of the own school. Teacher: interventions of pupils of the own classes. Out-of-scope rows are omitted and the KPIs count the visible rows only (deviation: the mock returns every intervention to any admin or teacher, and refuses school_admin). Notes are sensitive personal data of minors: never logged.',
     true,
   )
   registry.registerPath({
@@ -172,7 +171,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     tags: ['kirkpatrick'],
     summary: 'Record an intervention',
     description:
-      'Admin and teacher. Needs X-CSRF-Token. 422 fields use the copy "Medan ini diperlukan." (blank) and "Medan ini tidak sah." (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.',
+      'Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown or out-of-scope pupil gives the same typed 422 "Pelajar tidak dijumpai." so existence is not revealed. 422 fields use the copy "Medan ini diperlukan." (blank) and "Medan ini tidak sah." (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.',
     request: { headers: csrf, body: body(KirkpatrickInterventionCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(KirkpatrickInterventionRowSchema), 'The recorded intervention.', NO_STORE),

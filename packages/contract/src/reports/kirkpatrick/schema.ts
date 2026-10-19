@@ -10,11 +10,15 @@ import { DateOnlySchema, TimestampSchema } from '../../common/time'
  * (`kirkpatrick_school_scores` is not persisted: working assumption of the card).
  *
  * Access (role access matrix row 11, catalogue M12-01..14):
- * - Levels 2 to 6, export-pdf, interventions and pupil view: admin and teacher (teacher has no
- *   class or school limit, provisional OQ-API-B3-5). school_admin and every other role get 403.
- * - `overview` and `filter-options`: also school_admin, forced to the own school from the session
- *   whatever `schoolId` or `state` the request carries (a school_admin without a school gets the
- *   empty view).
+ * - Every level, `filter-options`, export-pdf and the pupil view: admin (all schools), teacher and
+ *   school_admin (both forced to the own school from the session, whatever `schoolId` or `state` the
+ *   request carries; a caller without a school gets the empty view). Every other role gets 403. This
+ *   follows the role access matrix (row 11, D-RAM-4) and the LEAD decisions, not the mock (the mock
+ *   gives a teacher all schools and refuses school_admin on levels 2 to 6, interventions and the pupil
+ *   view). Reaction and chain are platform-wide in the mock; for teacher and school_admin they are
+ *   computed over the own school.
+ * - Interventions (GET and POST): admin all; school_admin the own school; teacher the pupils of the
+ *   own classes. Anything else is out of scope (see the path descriptions).
  * - `me`, `feedback/status`, `feedback`: any signed-in role, own data only.
  * - Intervention notes are sensitive personal data of minors: never logged; staff roles only.
  *   Wellbeing, psychometric and faith data are not modelled (v2-data-migration Q7).
