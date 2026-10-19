@@ -4,6 +4,6 @@ export const INTAKE_ROUTES = {
   review: 'm28.intake.review',
 } as const
 
-export const INTAKE_LIST_PATH = '/admin/spm/soalan'
+export const INTAKE_LIST_PATH = '/admin/spm/soalan/ekstrak'
 export const INTAKE_UPLOAD_PATH = '/admin/spm/soalan/muat-naik'
-export const intakeReviewPath = (id: string): string => `/admin/spm/soalan/${id}`
+export const intakeReviewPath = (id: string): string => `/admin/spm/soalan/ekstrak/${id}`

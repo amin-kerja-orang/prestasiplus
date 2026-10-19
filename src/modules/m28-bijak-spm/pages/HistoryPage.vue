@@ -41,7 +41,6 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
     back-label="Bijak SPM"
     data-testid="bijak-history"
   >
-
     <DsLoadError v-if="error" message="Sejarah tidak dapat dimuatkan." @retry="reload" />
     <div v-else-if="!rows" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
@@ -55,14 +54,11 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
     />
     <template v-else>
       <ul class="grid grid-cols-3 gap-3" aria-label="Ringkasan" data-testid="history-summary">
-        <li><DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" accent="action" /></li>
         <li>
-          <DsStatTile
-            :value="`${average}%`"
-            unit="Purata"
-            icon="chart-line-up"
-            accent="win"
-          />
+          <DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" accent="action" />
+        </li>
+        <li>
+          <DsStatTile :value="`${average}%`" unit="Purata" icon="chart-line-up" accent="win" />
         </li>
         <li><DsStatTile :value="coins" unit="Koin" art="coin" /></li>
       </ul>

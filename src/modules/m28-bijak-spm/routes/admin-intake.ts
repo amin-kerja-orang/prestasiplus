@@ -17,7 +17,7 @@ const base = {
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/admin/spm/soalan',
+    path: '/admin/spm/soalan/ekstrak',
     name: INTAKE_ROUTES.list,
     component: () => import('../admin/intake/pages/IntakeListPage.vue'),
     meta: {
@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/admin/spm/soalan/:batchId',
+    path: '/admin/spm/soalan/ekstrak/:batchId',
     name: INTAKE_ROUTES.review,
     component: () => import('../admin/intake/pages/IntakeReviewPage.vue'),
     props: true,

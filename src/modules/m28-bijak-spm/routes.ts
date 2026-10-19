@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import adminIntake from './routes/admin-intake'
+import adminPapers from './routes/admin-papers'
 
 /**
  * Bijak SPM routes (v2 student flow). They sit under `/spm`, so the Murid menu row 13 "SPM" of the
@@ -18,6 +19,7 @@ const base = {
 } as const
 
 const routes: RouteRecordRaw[] = [
+  ...adminPapers,
   {
     path: '/spm/bijak',
     name: 'm28.bijak',

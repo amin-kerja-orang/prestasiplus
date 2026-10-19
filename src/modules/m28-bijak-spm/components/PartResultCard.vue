@@ -133,9 +133,7 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
     <p v-if="result.ecf" class="text-caption text-info" data-testid="ecf-note">{{ result.ecf }}</p>
 
     <div class="rounded-xl bg-elevated p-3 text-body text-default" data-testid="scheme">
-      <p class="text-label text-highlighted">
-        Skema Pemarkahan · {{ result.scheme.marks }} markah
-      </p>
+      <p class="text-label text-highlighted">Skema Pemarkahan · {{ result.scheme.marks }} markah</p>
       <p v-if="result.scheme.explanation" class="mt-1">
         <RichText :text="result.scheme.explanation" />
       </p>

@@ -4,9 +4,11 @@ Slug: `v2-portals` · Date: 2026-10-18 · User decision: unbuilt menu items are 
 
 Source of each item: `docs/requirements/v2-portals.md` section 6 (Evidence column). Mapping: B = .my (Blade admin), P = .cloud (admin React panel), F = filament (`/admin-filament`).
 
+Built since: KS-02 Bank Soalan SPM, KS-09 Pembina Kertas, and new rows KS-13 Muat Naik Kertas, KS-14 Senarai Ekstrak, KS-15 Baris Gilir Semakan (slug `v2-question-bank`).
+
 To bring an item back: build its screen and route, then pass its route as the third value of its row in `menu.ts` (the item then becomes `built` and is rendered).
 
-Hidden items: 70
+Hidden items: 68
 
 | ID | Label (BM) | Group | Source | Status |
 |---|---|---|---|---|

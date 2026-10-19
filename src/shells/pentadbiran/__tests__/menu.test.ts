@@ -15,20 +15,24 @@ import {
 
 import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem } from '../menu'
 
+const itemsOf = (label: string): string[] =>
+  PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
+
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 100-item definition as data', () => {
+  it('keeps the full 9-group, 103-item definition as data', () => {
     expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 7, 12, 12, 6, 22, 6, 5,
+      2, 28, 7, 15, 12, 6, 22, 6, 5,
     ])
-    expect(FULL_ITEMS).toHaveLength(100)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(100)
+    expect(FULL_ITEMS).toHaveLength(103)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(103)
   })
 
   it('renders built screens only and drops empty groups', () => {
     expect(ALL_ITEMS.every((i) => i.built)).toBe(true)
     expect(ALL_ITEMS.length).toBe(FULL_ITEMS.filter((i) => i.built).length)
     expect(PENTADBIRAN_MENU.every((g) => g.items.length > 0)).toBe(true)
-    expect(PENTADBIRAN_MENU.map((g) => g.label)).not.toContain('Kertas & SPM')
+    expect(PENTADBIRAN_MENU.map((g) => g.label)).toContain('Kertas & SPM')
+    expect(itemsOf('Kertas & SPM')).toEqual(['KS-13', 'KS-14', 'KS-15', 'KS-02', 'KS-09'])
   })
 
   it('never points a visible item at a placeholder route', () => {
