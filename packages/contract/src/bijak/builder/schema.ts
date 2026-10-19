@@ -17,30 +17,36 @@ import {
  * Bijak SPM (M28) paper builder and blueprint admin: the write side of BE-15 (BE-39, contract
  * only). Admin Pusat only (D40a, D52).
  *
- * SOURCE. The behavioural spec is the prototype paper-builder mock, kept as a read-only snapshot in
- * `docs/reference/bijak-paper-builder-mock/` (`server_admin.ts.txt` = `server/admin.ts`,
- * `domain_admin-types.ts.txt`, `domain_paper-builder.ts.txt`, `domain_blueprint.ts.txt`; taken from
- * `feature/student-prototype` at f9eeded5). Field names, statuses, result shapes, BM strings and the
- * `checkPaper` lines below are copied from it. A string or a field is marked [PROPOSED] only where
- * the snapshot does not cover it (blueprint admin writes, route paths, HTTP codes of the mock's
- * `bad_request`). Every deliberate difference from the mock is a row in
- * `docs/architecture/v2-backend-deviations.md`.
+ * SOURCE. The behavioural spec is the prototype on `feature/student-prototype` at `9af43134`,
+ * read-only: `src/modules/m28-bijak-spm/server/admin.ts`, `domain/admin-types.ts`,
+ * `domain/paper-builder.ts`, `domain/blueprint.ts` and `domain/types.ts` (`CurriculumTag` lines 67-76,
+ * `StimulusDef` lines 15-27, `PartDef`, `SectionDef`, `SchemeDef`). The earlier read-only snapshot
+ * `docs/reference/bijak-paper-builder-mock/` held the first four of these files; the full prototype
+ * now settles the shapes that the snapshot lacked, so they are no longer [PROPOSED]. Field names,
+ * statuses, result shapes, BM strings and the `checkPaper` lines below are copied from it. A string or
+ * a field is marked [PROPOSED] only where the prototype does not cover it (blueprint admin writes,
+ * route paths, the HTTP codes of the mock's `bad_request`, the D54 mapping of `ditolak`). Every
+ * deliberate difference from the prototype is a row in `docs/architecture/v2-backend-deviations.md`.
  *
- * Mock operations behind the routes: `createPaper`, `savePaper` (PaperPatch), `publishPaper`
+ * Prototype operations behind the routes: `createPaper`, `savePaper` (PaperPatch), `publishPaper`
  * ({ ok, errors }), `unpublishPaper`, `deletePaper` (idempotent), `getPaperEditor`,
- * `previewQuestions`, `listAdminPapers`, `listBlueprints`. The mock keeps `SectionCheck` and
+ * `previewQuestions`, `listAdminPapers`, `listBlueprints`. The prototype keeps `SectionCheck` and
  * `PaperCheck` server-side; the wire shows only their result (`budget`, `ok` on the list row and the
- * publish `errors`).
+ * publish `errors`). `SectionCheck.notes` (the non-blocking line "Soalan pilihan sepatutnya sama
+ * markah supaya pilihan adil" for a choose-N section whose questions differ in marks) never reaches
+ * the wire.
  *
- * Questions are owned by M04 (BE-09/BE-10). The snapshot does not contain the prototype
- * `domain/types.ts` (`StimulusDef`, `McqOption`, `PartDef`, `CurriculumTag`, `SectionDef`) or the
- * helpers `kindOf` and `previewOf`. Stimulus, option and part shapes therefore reuse the BE-16 views,
- * and the fields taken from the missing file are marked [PROPOSED] where they appear.
+ * Questions are owned by M04 (BE-09/BE-10). Stimulus, option and part shapes reuse the BE-16 views,
+ * which carry every field of the prototype `StimulusDef` (id, kind, label, caption, alt, svg, text,
+ * table), `McqOption` (id, text) and `PartDef` (id, label, prompt, marks, answer { kind, unit,
+ * wordRange }, children); the curriculum tag and the bounds of the review shapes are those of BE-36
+ * (`AiCurriculumTag`) and BE-38 (`IntakeCurriculumTag`).
  */
 
 /**
- * BM messages, all copied from the snapshot (`server_admin.ts.txt`). The last three were invented
- * for blueprint admin, which has no mock, and are [PROPOSED].
+ * BM messages, all copied from the prototype (`server/admin.ts`, `savePaper`, `createPaper` and
+ * `deletePaper`). The last three were invented for blueprint admin, which has no prototype
+ * counterpart, and are [PROPOSED].
  */
 export const BIJAK_BUILDER_MESSAGES = {
   paperNotFound: BIJAK_PAPERS_MESSAGES.paperNotFound,
@@ -50,11 +56,11 @@ export const BIJAK_BUILDER_MESSAGES = {
   invalidQuestion: 'Soalan tidak sah untuk kertas ini',
   invalidSection: 'Bahagian tidak sah',
   noBlueprint: 'Tiada blueprint untuk subjek dan kertas ini',
-  /** [PROPOSED] (blueprint admin has no mock) */
+  /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintNotFound: 'Kontrak tidak ditemui',
-  /** [PROPOSED] (blueprint admin has no mock) */
+  /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintExists: 'Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.',
-  /** [PROPOSED] (blueprint admin has no mock) */
+  /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintAlreadyRetired: 'Kontrak ini sudah dipersara.',
 } as const
 
@@ -85,7 +91,7 @@ export const BIJAK_BUILDER_CSRF_MESSAGE = AUTH_ERROR_MESSAGES.CSRF_INVALID
 
 /* -------------------------------------------------------------------------- shared vocabulary */
 
-/** Kertas number (the mock types it 1 | 2; the dictionary is open in v2, exam schema D5). */
+/** Kertas number (the prototype types it 1 | 2; the dictionary is open in v2, exam schema D5). */
 const Kertas = z.number().int().min(1).meta({ description: 'Kertas number.', example: 2 })
 
 /** Section rule of `SectionDef` / `BlueprintSection`: answer all, or choose n. */
@@ -112,7 +118,8 @@ export type BijakBuilderPaperStatus = z.infer<typeof BijakBuilderPaperStatusSche
 
 /**
  * Question lifecycle codes of D54(a), as on every question wire shape; `BuilderQuestion.status`. The
- * mock `QuestionStatus` is semakan | terbit | draf | ditolak; the mapping is a deviation row.
+ * prototype `QuestionStatus` (`admin-types.ts` line 19) is semakan | terbit | draf | ditolak; the
+ * mapping is a deviation row.
  */
 export const BIJAK_BUILDER_QUESTION_STATUSES = [
   'draft',
@@ -124,16 +131,16 @@ export const BIJAK_BUILDER_QUESTION_STATUSES = [
 export const BijakBuilderQuestionStatusSchema = z.enum(BIJAK_BUILDER_QUESTION_STATUSES).meta({
   id: 'BijakBuilderQuestionStatus',
   description:
-    'Question lifecycle code (D54a): draft, review, approved, published, archived. Mock mapping: semakan = review, terbit = published, draf = draft; ditolak (rejected) has no D54 code and maps to draft [PROPOSED]. The builder offers only published questions as candidates; a paper can reference questions of any status, and publish refuses any that is not published ("{N} soalan belum Terbit").',
+    'Question lifecycle code (D54a): draft, review, approved, published, archived. Prototype mapping: semakan = review, terbit = published, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only published questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not published ("{N} soalan belum Terbit").',
 })
 export type BijakBuilderQuestionStatus = z.infer<typeof BijakBuilderQuestionStatusSchema>
 
-/** `QuestionKind` of the mock (admin-types.ts): objektif (MCQ), berstruktur, esei (rubric-marked). */
+/** `QuestionKind` of the prototype (`admin-types.ts` line 20): objektif (MCQ), berstruktur, esei (rubric-marked). */
 export const BIJAK_BUILDER_QUESTION_KINDS = ['objektif', 'berstruktur', 'esei'] as const
 export const BijakBuilderQuestionKindSchema = z.enum(BIJAK_BUILDER_QUESTION_KINDS).meta({
   id: 'BijakBuilderQuestionKind',
   description:
-    'QuestionKind of the mock (the three values are in admin-types.ts). How the mock derives it (kindOf: objektif = MCQ, esei = a structured question with a rubric leaf, berstruktur = any other) is not in the snapshot [PROPOSED].',
+    'QuestionKind of the prototype (admin-types.ts line 20). Derived as `kindOf` does (admin.ts lines 197-201): objektif = the question has MCQ options; esei = a structured question with at least one leaf whose scheme is a rubric; berstruktur = any other.',
 })
 export type BijakBuilderQuestionKind = z.infer<typeof BijakBuilderQuestionKindSchema>
 
@@ -151,10 +158,7 @@ export const BijakBuilderPaperSectionSchema = z
     title: z
       .string()
       .optional()
-      .meta({
-        description:
-          'Section title (`SectionDef.title`; the mock `SectionDef` is not in the snapshot) [PROPOSED].',
-      }),
+      .meta({ description: 'Section title (`SectionDef.title`, types.ts line 182).' }),
     markBudget: z
       .number()
       .int()
@@ -251,11 +255,17 @@ export const BijakBuilderQuestionSchema = z
       .meta({ description: 'Label of the group stimulus, e.g. "Rajah 2".' }),
     preview: z.string().meta({
       description:
-        'Short text for the picker; may hold $latex$ spans. How the mock composes it (previewOf: the stem, followed by the first part label and prompt when the first part is a leaf) is not in the snapshot [PROPOSED].',
+        'Short text for the picker; may hold $latex$ spans. Composed as `previewOf` does (admin.ts lines 217-220): the stem, then " {label} {prompt}" of the first part when that part is a leaf (has no children); the stem alone otherwise.',
     }),
-    marks: z.number().int().min(0).meta({ description: 'Total marks of the question.' }),
+    marks: z.number().int().min(0).max(1000).meta({
+      description:
+        'Total marks of the question (`marksOf`, admin.ts lines 202-205): the MCQ scheme marks (1 when there is no scheme), else the sum of the leaf marks.',
+    }),
     kind: BijakBuilderQuestionKindSchema,
-    topic: z.string().meta({ description: 'Display name of the curriculum unit (unitLabel).' }),
+    topic: z
+      .string()
+      .max(200)
+      .meta({ description: 'Display name of the curriculum unit (unitLabel).' }),
     status: BijakBuilderQuestionStatusSchema,
     kertas: Kertas,
     subject: z.string().min(1).meta({ example: 'MAT' }),
@@ -265,7 +275,8 @@ export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
 
 /**
  * Stimulus group of the picker (`BuilderGroup` = { id, stimulus: StimulusDef, questionIds }); its
- * questions must stay together in one section (D6). `stimulus` reuses the BE-16 stimulus shape.
+ * questions must stay together in one section (D6). `stimulus` reuses the BE-16 stimulus shape, which
+ * carries every field of the prototype `StimulusDef` (types.ts lines 15-27).
  */
 export const BijakBuilderGroupSchema = z
   .strictObject({
@@ -426,66 +437,110 @@ export const BijakBuilderPreviewRequestSchema = z
 export type BijakBuilderPreviewRequest = z.infer<typeof BijakBuilderPreviewRequestSchema>
 
 /**
- * Curriculum tag of a question (`CurriculumTag`, exam schema D9). The snapshot reads only `subject` and
- * `unitLabel`; `level`, `unit`, `sp`, `tp` and `formOrigin` come from the prototype `domain/types.ts`,
- * which is not in the snapshot [PROPOSED].
+ * Curriculum tag of a question: the prototype `CurriculumTag` (`domain/types.ts` lines 67-76, exam
+ * schema D9), field for field, with the bounds of BE-36 `AiCurriculumTag` and BE-38
+ * `IntakeCurriculumTag`: `subject` 1..32 characters, `unit` 1..64 characters or null, `unitLabel` at
+ * most 200, `sp` at most 20 codes of 1..64 characters, `tp` an integer 1..6. T1-T3 Matematik content
+ * has `formOrigin` 'T1-T3' and `unit` null (types.ts line 66, Q-S2). An empty `sp` is valid (legacy
+ * seed questions carry none; the prototype waives the SP check for them).
  */
 export const BijakBuilderCurriculumTagSchema = z
   .strictObject({
-    subject: z.string().min(1).meta({ example: 'MAT' }),
-    level: z.enum(['T4', 'T5', 'T4+T5']),
-    unit: z
+    subject: z
       .string()
-      .nullable()
-      .meta({ description: 'DSKP unit code, null outside the DSKP [PROPOSED].' }),
-    unitLabel: z.string().meta({ description: 'Display name of the unit.' }),
-    sp: z.array(z.string()),
-    tp: z.number().int(),
+      .min(1)
+      .max(32)
+      .meta({ description: 'SubjectCode (open dictionary).', example: 'MAT' }),
+    level: z.enum(['T4', 'T5', 'T4+T5']),
+    unit: z.string().min(1).max(64).nullable().meta({
+      description:
+        'DSKP unit code, or null when the content lies outside the DSKP (always null for T1-T3 content).',
+    }),
+    unitLabel: z.string().max(200).meta({ description: 'Display name of the unit.' }),
+    sp: z
+      .array(z.string().min(1).max(64))
+      .max(20)
+      .meta({ description: 'Standard Pembelajaran codes.' }),
+    tp: z.number().int().min(1).max(6).meta({ description: 'Tahap Penguasaan 1..6.' }),
     formOrigin: z.enum(['T1-T3', 'T4', 'T5']),
   })
-  .meta({ id: 'BijakBuilderCurriculumTag' })
+  .meta({ id: 'BijakBuilderCurriculumTag', description: 'Prototype CurriculumTag.' })
 
-/** One line of a mark scheme as the review shows it (`SchemeLine`). */
+/** Longest scheme line the review accepts (the BE-38 `model` cap). */
+const SCHEME_LINE_MAX_CHARS = 5000
+
+/**
+ * BM text of the scheme lines, built exactly as `describeScheme` and `reviewQuestion` build them
+ * (admin.ts lines 233-282). `optionIndex` is the position of the correct option in `mcq.options`;
+ * the letter is A..H, or "?" when the position is outside A..H (as the prototype).
+ */
+export const BIJAK_BUILDER_SCHEME_LINES = {
+  correctOption: (optionIndex: number) => `Jawapan betul: ${'ABCDEFGH'[optionIndex] ?? '?'}`,
+  accepted: (value: string, unit?: string) => `Diterima: ${value}${unit ? ` ${unit}` : ''}`,
+  mapping: (key: string, value: string) => `${key} = ${value}`,
+  rubricBand: (name: string, from: number, to: number, descriptor: string) =>
+    `${name} (${from}-${to}): ${descriptor}`,
+  finalAnswer: (display: string) => `Jawapan akhir: $${display}$`,
+  /** Tag of a mark point: its code and its 1-based sequence among the points of the same code. */
+  pointTag: (code: string, sequence: number) => `${code}${sequence}`,
+} as const
+
+/**
+ * One line of a mark scheme as the review shows it (`SchemeLine`, admin-types.ts lines 112-116).
+ * `tag` and `marks` are set on a mark point of a `points` scheme only; `tag` is the point code
+ * (K N P B M F C, types.ts `PointCode`) followed by its sequence ("K1", "M2").
+ */
 export const BijakBuilderSchemeLineSchema = z
   .strictObject({
-    tag: z.string().optional().meta({ example: 'K1' }),
-    text: z.string(),
-    marks: z.number().int().min(0).optional(),
+    tag: z
+      .string()
+      .regex(/^[KNPBMFC][1-9][0-9]*$/)
+      .optional()
+      .meta({ example: 'K1' }),
+    text: z.string().max(SCHEME_LINE_MAX_CHARS),
+    marks: z.number().int().min(0).max(100).optional(),
   })
   .meta({ id: 'BijakBuilderSchemeLine' })
 
 /**
- * `ReviewQuestion` of the mock, as `previewQuestions` returns it: the question content (stem,
- * curriculum tag, MCQ options with `correct`, parts) and its mark scheme per leaf id (the question id
- * for an MCQ; null when a leaf has no scheme). This is the ADMIN review shape and carries the answer
- * key and scheme lines (for example "Jawapan betul: A"): the route is Admin Pusat only and nothing of
- * it reaches students.
+ * `ReviewQuestion` of the prototype (admin-types.ts lines 118-126), as `previewQuestions` returns it
+ * through `reviewQuestion` (admin.ts lines 266-298): the question content (`id`, `stem`, `marks`,
+ * `curriculum`, `mcq`, `parts`) and its mark scheme per leaf id (the question id for an MCQ; null
+ * when a leaf has no scheme). `mcq` is set only for an MCQ, `parts` only for a structured question,
+ * and `mcq.correct` only when the MCQ scheme is an option key. This is the ADMIN review shape and
+ * carries the answer key and scheme lines (for example "Jawapan betul: A"): the route is Admin Pusat
+ * only and nothing of it reaches students. `parts` is the BE-16 part view, which has exactly the
+ * fields of the prototype `PartDef` (types.ts lines 42-51).
  */
 export const BijakBuilderReviewQuestionSchema = z
   .strictObject({
     id: IdSchema,
-    stem: z.string(),
-    marks: z.number().int().min(0),
+    stem: z.string().max(100_000),
+    marks: z.number().int().min(0).max(1000),
     curriculum: BijakBuilderCurriculumTagSchema,
     mcq: z
       .strictObject({
-        options: z.array(BijakAttemptOptionSchema),
-        correct: z.string().optional().meta({ description: 'Id of the correct option.' }),
+        options: z.array(BijakAttemptOptionSchema).max(10),
+        correct: IdSchema.optional().meta({ description: 'Id of the correct option.' }),
       })
       .optional(),
-    parts: z.array(BijakAttemptPartViewSchema).optional().meta({
-      description:
-        'Question parts. `PartDef` is not in the snapshot; the BE-16 part view (same fields as the prototype PartDef) is used [PROPOSED].',
+    parts: z.array(BijakAttemptPartViewSchema).max(50).optional().meta({
+      description: 'Question parts (prototype PartDef, nested through `children`).',
     }),
-    scheme: z.record(
-      z.string(),
-      z
-        .strictObject({
-          marks: z.number().int().min(0),
-          lines: z.array(BijakBuilderSchemeLineSchema),
-        })
-        .nullable(),
-    ),
+    scheme: z
+      .record(
+        z.string(),
+        z
+          .strictObject({
+            marks: z.number().int().min(0).max(1000),
+            lines: z.array(BijakBuilderSchemeLineSchema).max(100),
+          })
+          .nullable(),
+      )
+      .meta({
+        description:
+          'Mark scheme per leaf id (the question id for an MCQ); null where a leaf has no scheme. Lines are built as `describeScheme` does: option = the reason; accepted = "Diterima: {value} {unit}"; mapping = "{key} = {value}"; rubric = one line per band, then the notes; points = one tagged line per mark point and a closing "Jawapan akhir: $display$" when the scheme has a final answer. An MCQ scheme starts with "Jawapan betul: {letter}".',
+      }),
   })
   .meta({ id: 'BijakBuilderReviewQuestion' })
 export type BijakBuilderReviewQuestion = z.infer<typeof BijakBuilderReviewQuestionSchema>
@@ -493,7 +548,8 @@ export type BijakBuilderReviewQuestion = z.infer<typeof BijakBuilderReviewQuesti
 /**
  * `previewQuestions` result: `{ questions, stimuli, optionBanks }`, the last two keyed by group id
  * (`Record<groupId, StimulusDef>` and `Record<groupId, McqOption[]>`). Ids that do not exist are left
- * out; a group appears once per group that has a stimulus or an option bank.
+ * out; a group appears once per group that has a stimulus or an option bank (admin.ts lines
+ * 1071-1093).
  */
 export const BijakBuilderPreviewSchema = z
   .strictObject({
@@ -531,16 +587,27 @@ export const BijakBuilderCsrfErrorSchema = z
 
 /**
  * Section of a blueprint as written by the admin (NO MOCK: the card requires blueprint writes). The
- * field names are those of `BlueprintView.sections[]`; `compulsory` and `instruction` may be left
- * out (defaults false and empty).
+ * field names are those of `BlueprintView.sections[]`; the prototype domain `BlueprintSection`
+ * (types.ts lines 210-220) calls `questionCount` `take` and makes `markBudget` optional (default
+ * `take`); the write requires `markBudget` so a choose-N section never takes the wrong default
+ * (deviations log). `compulsory` and `instruction` may be left out (defaults: false, and the derived
+ * line of `BlueprintView`).
  */
 export const BijakBlueprintAdminSectionInputSchema = z
   .strictObject({
     label: z.string().trim().min(1).max(100).meta({ example: 'Bahagian A' }),
-    markBudget: z.number().int().min(0).max(1000),
-    questionCount: z.number().int().min(1).max(500),
+    markBudget: z.number().int().min(0).max(1000).meta({
+      description:
+        'Marks after choose-N (required on the write; optional in the prototype, where it defaults to the question count).',
+    }),
+    questionCount: z.number().int().min(1).max(500).meta({
+      description: 'Questions the section holds (prototype `BlueprintSection.take`).',
+    }),
     compulsory: z.boolean().optional().meta({ description: 'Default: false.' }),
-    instruction: z.string().max(500).optional().meta({ description: 'Default: empty.' }),
+    instruction: z.string().max(500).optional().meta({
+      description:
+        'Authored instruction. Default: absent, and the view derives "Jawab semua soalan." or "Jawab N daripada M soalan.".',
+    }),
     rule: BijakBuilderSectionRuleSchema,
     pool: z.string().trim().min(1).max(64),
   })

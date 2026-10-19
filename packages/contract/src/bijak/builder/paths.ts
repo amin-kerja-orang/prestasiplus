@@ -104,7 +104,7 @@ const BlueprintParams = z.object({
 
 const ROLE_NOTE = 'Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.'
 const COPY_NOTE =
-  'Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED].'
+  'Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED].'
 const ERROR_NOTE =
   'The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log).'
 const UNAUTHORIZED = err('UNAUTHORIZED (no valid session).')
@@ -119,9 +119,8 @@ const BLUEPRINT_NOT_FOUND = err(
 )
 /**
  * Registers the 13 admin operations of BE-39 (8 paper, 5 blueprint). The paper routes follow the
- * paper builder mock snapshot in docs/reference/bijak-paper-builder-mock/ (server_admin.ts.txt and
- * the three domain files); the blueprint
- * write routes (create, version, retire) have NO mock and exist only because the card requires
+ * prototype paper builder (m28-bijak-spm `server/admin.ts` and the domain files at 9af43134; see
+ * schema.ts); the blueprint write routes (create, version, retire) have NO mock and exist only because the card requires
  * them. Every response is `{ data }`, `{ data, meta }` or `{ error }`; every mutation needs
  * `X-CSRF-Token`.
  *
@@ -216,7 +215,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question whose curriculum subject differs from the paper subject "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),

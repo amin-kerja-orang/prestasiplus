@@ -15,11 +15,13 @@ import {
   BIJAK_BUILDER_CSRF_MESSAGE,
   BIJAK_BUILDER_MESSAGES,
   BIJAK_BUILDER_PAPER_STATUSES,
+  BIJAK_BUILDER_SCHEME_LINES,
   BijakBlueprintAdminCreateSchema,
   BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintListQuerySchema,
   BijakBlueprintViewSchema,
   BijakBuilderCsrfErrorSchema,
+  BijakBuilderCurriculumTagSchema,
   BijakBuilderEditorSchema,
   BijakBuilderGroupSchema,
   BijakBuilderOkSchema,
@@ -33,14 +35,16 @@ import {
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
   BijakBuilderQuestionSchema,
+  BijakBuilderSchemeLineSchema,
 } from '../schema'
 
-/* Fixtures are shaped like the data of the prototype paper-builder mock (snapshot in
- * docs/reference/bijak-paper-builder-mock/): AdminPaper (extends PaperDef), AdminPaperSummary,
- * BuilderQuestion, BuilderGroup, PaperEditorData, BlueprintView, previewQuestions, publishPaper.
- * Ids and the Matematik Kertas 2 seed structure (A all, B all, C choose 1 of 2) follow the mock
- * seed (kp-N paper ids, kp-N-sN section ids, mat2-* question ids). The only differences are the
- * wire timestamps (the mock keeps epoch numbers) and the D54 question status codes. */
+/* Fixtures are shaped like the data of the prototype paper builder (m28-bijak-spm at 9af43134;
+ * the first four files are also in docs/reference/bijak-paper-builder-mock/): AdminPaper (extends
+ * PaperDef), AdminPaperSummary, BuilderQuestion, BuilderGroup, PaperEditorData, BlueprintView,
+ * ReviewQuestion, previewQuestions, publishPaper. Ids and the Matematik Kertas 2 seed structure (A
+ * all, B all, C choose 1 of 2) follow the prototype seed (kp-N paper ids, kp-N-sN section ids, mat2-*
+ * question ids). The only differences are the wire timestamps (the prototype keeps epoch numbers) and
+ * the D54 question status codes. */
 
 const TS = '2026-10-19T09:30:00+08:00'
 const TS2 = '2026-10-19T10:00:00+08:00'
@@ -544,9 +548,132 @@ describe('publish, delete and preview results', () => {
     expect(parse({ ...REVIEW_Q, sectionId: 'kp-2-s1' })).toBe(false)
     expect(parse({ ...REVIEW_Q, curriculum: { ...REVIEW_Q.curriculum, level: 'T3' } })).toBe(false)
   })
+
+  it('keeps the curriculum tag field for field with the BE-36 / BE-38 bounds (tp 1..6, unit at most 64)', () => {
+    const tag = (over: Record<string, unknown> = {}) => ({ ...REVIEW_Q.curriculum, ...over })
+    const ok = (t: unknown) => BijakBuilderCurriculumTagSchema.safeParse(t).success
+    expect(ok(tag())).toBe(true)
+    // seed shape of the prototype `curr()`: no DSKP unit, no SP, tp 2, T1-T3 origin
+    expect(ok(tag({ unit: null, sp: [], tp: 2, formOrigin: 'T1-T3', level: 'T4+T5' }))).toBe(true)
+    for (const tp of [1, 6]) expect(ok(tag({ tp })), `tp ${tp}`).toBe(true)
+    for (const tp of [0, 7, -1, 2.5, '3', null])
+      expect(ok(tag({ tp })), `tp ${String(tp)}`).toBe(false)
+    expect(ok(tag({ unit: 'u'.repeat(64) }))).toBe(true)
+    expect(ok(tag({ unit: 'u'.repeat(65) }))).toBe(false)
+    expect(ok(tag({ unit: '' }))).toBe(false)
+    expect(ok(tag({ unit: undefined }))).toBe(false)
+    expect(ok(tag({ unitLabel: 'x'.repeat(200) }))).toBe(true)
+    expect(ok(tag({ unitLabel: 'x'.repeat(201) }))).toBe(false)
+    expect(ok(tag({ subject: '' }))).toBe(false)
+    expect(ok(tag({ subject: 'S'.repeat(33) }))).toBe(false)
+    expect(ok(tag({ sp: Array.from({ length: 20 }, (_, i) => `2.2.${i + 1}`) }))).toBe(true)
+    expect(ok(tag({ sp: Array.from({ length: 21 }, (_, i) => `2.2.${i + 1}`) }))).toBe(false)
+    expect(ok(tag({ sp: [''] }))).toBe(false)
+    expect(ok(tag({ sp: ['s'.repeat(65)] }))).toBe(false)
+    for (const level of ['T4', 'T5', 'T4+T5']) expect(ok(tag({ level })), level).toBe(true)
+    for (const formOrigin of ['T1-T3', 'T4', 'T5'])
+      expect(ok(tag({ formOrigin })), formOrigin).toBe(true)
+    expect(ok(tag({ formOrigin: 'T6' }))).toBe(false)
+    expect(ok(tag({ extra: 1 }))).toBe(false)
+  })
+
+  it('builds the scheme lines exactly as the prototype describeScheme and reviewQuestion do', () => {
+    const L = BIJAK_BUILDER_SCHEME_LINES
+    expect(L.correctOption(0)).toBe('Jawapan betul: A')
+    expect(L.correctOption(7)).toBe('Jawapan betul: H')
+    expect(L.correctOption(8)).toBe('Jawapan betul: ?')
+    expect(L.correctOption(-1)).toBe('Jawapan betul: ?')
+    expect(L.accepted('12')).toBe('Diterima: 12')
+    expect(L.accepted('12', 'cm')).toBe('Diterima: 12 cm')
+    expect(L.mapping('1', 'P')).toBe('1 = P')
+    expect(L.rubricBand('Cemerlang', 9, 10, 'Huraian lengkap')).toBe(
+      'Cemerlang (9-10): Huraian lengkap',
+    )
+    expect(L.finalAnswer('x = 2, 3')).toBe('Jawapan akhir: $x = 2, 3$')
+    expect(L.pointTag('K', 1)).toBe('K1')
+    expect(L.pointTag('M', 2)).toBe('M2')
+    const line = (l: unknown) => BijakBuilderSchemeLineSchema.safeParse(l).success
+    for (const code of ['K', 'N', 'P', 'B', 'M', 'F', 'C']) {
+      expect(line({ tag: L.pointTag(code, 1), text: 'x', marks: 1 }), code).toBe(true)
+    }
+    for (const tag of ['X1', 'K', 'K0', 'k1', '1K', 'K1 '])
+      expect(line({ tag, text: 'x' }), tag).toBe(false)
+    expect(line({ text: L.correctOption(1) })).toBe(true)
+    expect(line({ text: 'x', marks: -1 })).toBe(false)
+    expect(line({ text: 'x', extra: 1 })).toBe(false)
+  })
+
+  it('bounds the ReviewQuestion MCQ options at 10 and keeps correct optional', () => {
+    const parse = (q: unknown) =>
+      BijakBuilderPreviewSchema.safeParse({ questions: [q], stimuli: {}, optionBanks: {} }).success
+    const options = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `o${i + 1}`, text: `${i}` }))
+    const mcq = (n: number, extra: Record<string, unknown> = {}) => ({
+      id: 'mat2-obj-1',
+      stem: 'Nilai $f(2)$ ialah',
+      marks: 1,
+      curriculum: REVIEW_Q.curriculum,
+      mcq: { options: options(n), ...extra },
+      scheme: { 'mat2-obj-1': null },
+    })
+    expect(parse(mcq(10, { correct: 'o2' }))).toBe(true)
+    expect(parse(mcq(4))).toBe(true) // no scheme option key: correct is absent, as in the prototype
+    expect(parse(mcq(11))).toBe(false)
+    expect(parse(mcq(4, { correct: '' }))).toBe(false)
+    expect(parse(mcq(4, { correct: 2 }))).toBe(false)
+  })
+
+  it('carries every prototype StimulusDef field on the group and the preview', () => {
+    const full = stimulus({
+      kind: 'table',
+      caption: 'Jadual 1',
+      svg: '<svg viewBox="0 0 10 10"></svg>',
+      text: 'Petikan ringkas',
+      table: { head: ['x', 'y'], rows: [['1', '2']] },
+    })
+    for (const kind of ['diagram', 'passage', 'table']) {
+      expect(
+        BijakBuilderGroupSchema.safeParse({
+          id: 'g-1',
+          stimulus: { ...full, kind },
+          questionIds: ['a'],
+        }).success,
+        kind,
+      ).toBe(true)
+    }
+    expect(
+      BijakBuilderPreviewSchema.safeParse({
+        questions: [],
+        stimuli: { 'g-1': full },
+        optionBanks: {},
+      }).success,
+    ).toBe(true)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: stimulus({ kind: 'video' }),
+        questionIds: [],
+      }).success,
+    ).toBe(false)
+    // alt is required by StimulusDef (the prototype keeps "" when a paper has none)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: { ...stimulus(), alt: undefined },
+        questionIds: [],
+      }).success,
+    ).toBe(false)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: stimulus({ alt: '' }),
+        questionIds: [],
+      }).success,
+    ).toBe(true)
+  })
 })
 
-describe('BM copy (copied from the mock snapshot server_admin.ts.txt)', () => {
+describe('BM copy (copied from the prototype server/admin.ts)', () => {
   it('keeps the quoted strings verbatim', () => {
     expect(BIJAK_BUILDER_MESSAGES.paperLocked).toBe(
       'Kertas Terbit tidak boleh disunting. Tarik balik dahulu.',
