@@ -156,10 +156,17 @@ export class CompStudentsService {
       now,
     }))
 
+    let created = 0
     try {
       await this.prisma.transaction(async (tx) => {
-        const ids = await this.users.createManyWithRole(rows, 'student')
-        if (ids.length !== rows.length) throw ApiError.of('CONFLICT')
+        // Lock, then re-check the IC hashes: a parallel register of the same IC may have committed since the first check.
+        await this.repo.lockRegister()
+        const taken = await this.users.existingIcHashes(rows.map((r) => r.icHash ?? ''))
+        const fresh = rows.filter((r) => !taken.has(r.icHash ?? ''))
+        result.skipped += rows.length - fresh.length
+        const ids = await this.users.createManyWithRole(fresh, 'student')
+        if (ids.length !== fresh.length) throw ApiError.of('CONFLICT')
+        created = ids.length
         await this.repo.createMany(
           ids.map((userId) => ({ userId, packageExpiresOn: body.packageExpiresAt, originalSchoolName: classroom.schoolName })),
           now,
@@ -185,7 +192,7 @@ export class CompStudentsService {
       if (uniqueField(err) !== null) throw ApiError.of('CONFLICT')
       throw err
     }
-    result.created = planned.length
+    result.created = created
     return { data: result, status: compStudentsCreatedText(result.created) }
   }
 

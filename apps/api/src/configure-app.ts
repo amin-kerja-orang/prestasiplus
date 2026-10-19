@@ -12,10 +12,10 @@ export function trustProxyHops(raw: unknown): number {
 }
 
 /**
- * JSON limit of the bulk user import only. The contract allows 1,048,576 characters of text plus the
- * JSON envelope, so 1100kb. Every other route keeps Nest's default JSON limit (100kb).
+ * JSON limit of the two import routes (bulk user import and DELIMa student import) only; 2200kb because a 1,000,000-character text full of newlines or quotes doubles when JSON-escaped. The contract allows 1,048,576 characters of text plus the
+ * JSON envelope, so 2200kb (see above). Every other route keeps Nest's default JSON limit (100kb).
  */
-export const IMPORT_JSON_LIMIT = '1100kb'
+export const IMPORT_JSON_LIMIT = '2200kb'
 export const IMPORT_JSON_PATH = '/api/admin/users/bulk-import'
 /** The DELIMa student import (BE-25) takes the same large JSON body. */
 export const STUDENT_IMPORT_JSON_PATH = '/api/admin/students/import'

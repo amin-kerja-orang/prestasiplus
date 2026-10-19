@@ -154,6 +154,14 @@ describe('complimentary students (AC 3)', () => {
       expect(fieldsOf(await register({ role: 'admin' })).role).toBe('The role field is not allowed.')
     })
 
+    it('two concurrent registers of the same IC create exactly one student (lock and re-check)', async () => {
+      const [a, b] = await Promise.all([register({ students: 'Serentak Satu, 910909-09-0909' }), register({ students: 'Serentak Dua, 910909090909' })])
+      expect([a.status, b.status]).toEqual([201, 201])
+      expect(a.body.data.created + b.body.data.created).toBe(1)
+      expect(a.body.data.skipped + b.body.data.skipped).toBe(1)
+      expect(await t.db.query(`select 1 from users where name like 'Serentak%'`)).toHaveLength(1)
+    })
+
     it('413 for more than 1000 lines', async () => {
       const students = Array.from({ length: 1001 }, (_v, i) => `N${String(i)}, ${String(100000 + i)}`).join('\n')
       const res = await register({ students })
@@ -194,7 +202,7 @@ describe('complimentary students (AC 3)', () => {
       expect(first.headers['cache-control']).toBe('no-store')
       expect(first.body.data).toHaveLength(50)
       const items = (first.body.data as unknown[]).map((r) => CompStudentListItemSchema.parse(r))
-      expect(items[0]?.name).toBe('Enam Contoh') // the newest registered
+      expect(items[0]?.name).toMatch(/^(Serentak|Enam)/) // the newest registered
       const aina = items.find((i) => i.name === 'Aina Contoh')
       expect(aina).toMatchObject({ icMasked: 'xxxxxx-xx-xx01', schoolName: 'SMK Demo Satu', classLabel: '4 Amanah', teacherName: 'Guru Demo', isActive: true, coinsEnabled: false, packageExpiresAt: '2026-12-31' })
       expect(aina?.username).toMatch(/@prestasiplus\.my$/)

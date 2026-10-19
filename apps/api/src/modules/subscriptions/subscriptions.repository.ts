@@ -310,14 +310,15 @@ export class SubscriptionsRepository {
     studentQuota: number
     now: Date
   }): Promise<UserPackageRow> {
-    const userId = idFromString(input.userId)
-    const data = { schoolPackageId: idFromString(input.schoolPackageId), studentQuota: input.studentQuota, assignedAt: input.now, updatedAt: input.now }
-    // One statement on the unique key (INSERT ... ON CONFLICT DO UPDATE): parallel calls leave one row.
-    const row = await this.prisma.client.userPackage.upsert({
-      where: { userId_formLevel: { userId, formLevel: input.formLevel } },
-      create: { userId, formLevel: input.formLevel, createdAt: input.now, ...data },
-      update: data,
-    })
-    return toUserPackage(row)
+    // One native statement on the unique key (uq_user_packages_user_form_level): parallel calls leave one row, never a 500.
+    const rows = await this.prisma.client.$queryRaw<Prisma.UserPackageGetPayload<object>[]>`
+      INSERT INTO user_packages (user_id, form_level, school_package_id, student_quota, assigned_at, created_at, updated_at)
+      VALUES (${idFromString(input.userId)}, ${input.formLevel}, ${idFromString(input.schoolPackageId)}, ${input.studentQuota}, ${input.now}, ${input.now}, ${input.now})
+      ON CONFLICT (user_id, form_level) DO UPDATE
+        SET school_package_id = EXCLUDED.school_package_id, student_quota = EXCLUDED.student_quota,
+            assigned_at = EXCLUDED.assigned_at, updated_at = EXCLUDED.updated_at
+      RETURNING id, user_id AS "userId", form_level AS "formLevel", school_package_id AS "schoolPackageId",
+                student_quota AS "studentQuota", assigned_at AS "assignedAt", created_at AS "createdAt", updated_at AS "updatedAt"`
+    return toUserPackage(rows[0] as Prisma.UserPackageGetPayload<object>)
   }
 }

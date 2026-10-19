@@ -21,8 +21,9 @@ describe('SubscriptionService (AC 5)', () => {
     await t.close()
   })
 
-  const fresh = async (school: string | null): Promise<string> => {
+  const fresh = async (school: string | null, role = 'student'): Promise<string> => {
     const [u] = await t.db.query<{ id: string }>(`insert into users (name, school_id) values ('Pengguna Ujian', $1) returning id::text`, [school])
+    await t.db.query(`insert into user_roles (user_id, role) values ($1, $2)`, [u?.id, role])
     return u?.id as string
   }
 
@@ -48,6 +49,13 @@ describe('SubscriptionService (AC 5)', () => {
       expect(await service.isSubscribed(user, at('2027-01-01T00:00:00+08:00'))).toBe(false)
       // 2026-12-31T16:30Z is already 1 January in Malaysia.
       expect(await service.isSubscribed(user, at('2026-12-31T16:30:00Z'))).toBe(false)
+    })
+
+    it('only a STUDENT is covered by the school subscription: a parent or a teacher of the school is not', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Peranan', 'PERAN1') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-01-01', ends: '2027-12-31' })
+      expect(await service.isSubscribed(await fresh(school, 'student'), at('2026-10-19T09:00:00+08:00'))).toBe(true)
+      for (const role of ['parent', 'teacher', 'school_admin']) expect(await service.isSubscribed(await fresh(school, role), at('2026-10-19T09:00:00+08:00'))).toBe(false)
     })
 
     it('a subscription of another school, or one that is grace, expired or cancelled, does not count', async () => {

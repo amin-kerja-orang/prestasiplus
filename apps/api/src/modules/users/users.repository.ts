@@ -77,6 +77,8 @@ export interface NewUserRow {
 export interface AccessFacts {
   schoolId: string | null
   trialQuestionsUsed: number
+  /** Holds the student role (a parent or teacher with a school is not covered by the school subscription). */
+  isStudent: boolean
   /** `YYYY-MM-DD` the complimentary package ends (that day included), or null for any other user. */
   compExpiresOn: string | null
 }
@@ -557,12 +559,13 @@ export class UsersRepository {
     if (!isIdString(userId)) return null
     const row = await this.prisma.client.user.findUnique({
       where: { id: idFromString(userId) },
-      select: { schoolId: true, trialQuestionsUsed: true, compStudent: { select: { packageExpiresOn: true } } },
+      select: { schoolId: true, trialQuestionsUsed: true, roles: { where: { role: 'student' }, select: { id: true } }, compStudent: { select: { packageExpiresOn: true } } },
     })
     if (!row) return null
     return {
       schoolId: row.schoolId === null ? null : idToString(row.schoolId),
       trialQuestionsUsed: row.trialQuestionsUsed,
+      isStudent: row.roles.length > 0,
       compExpiresOn: row.compStudent ? row.compStudent.packageExpiresOn.toISOString().slice(0, 10) : null,
     }
   }

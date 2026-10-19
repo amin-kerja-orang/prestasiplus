@@ -15,13 +15,15 @@ export const SCHOOL_PACKAGES = [
 
 export const schoolPackagesSeed: SeedModule = {
   name: 'core-school-packages',
+  kind: 'reference',
   async run(ctx) {
     const createdAt = ctx.clock.now()
     for (const p of SCHOOL_PACKAGES) {
       await ctx.prisma.schoolPackage.upsert({
         where: { code: p.code },
         create: { ...p, createdAt, updatedAt: createdAt },
-        update: {},
+        // Full catalogue values: a corrected catalogue reaches existing databases (still deterministic and idempotent).
+        update: { name: p.name, slug: p.slug, educationLevel: p.educationLevel, formLevel: p.formLevel, priceAnnual: p.priceAnnual, maxRenewals: p.maxRenewals, isActive: p.isActive, updatedAt: createdAt },
       })
     }
   },

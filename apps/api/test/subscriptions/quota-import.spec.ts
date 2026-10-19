@@ -215,6 +215,25 @@ describe('school quota and student import (AC 2)', () => {
       expect(res.body.data).toMatchObject({ created: 1 })
     })
 
+    it('an IC that is not 12 digits is accepted and not stored (no hash, no mask), as the mock accepts any IC up to 14 characters', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK IC', 'ICKU01') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, quota: 5 })
+      const res = await imp({ schoolId: school, pasteContent: block('Pendek', 'ic.pendek', 'kata1', '12345') })
+      expect(res.body.data).toMatchObject({ created: 1, failed: 0 })
+      const row = (await t.db.query<{ ic_hash: string | null; ic_masked: string | null }>(`select ic_hash, ic_masked from users where school_id = $1`, [school]))[0]
+      expect(row).toEqual({ ic_hash: null, ic_masked: null })
+    })
+
+    it('a ~1 MB text full of newlines and quotes gets the contract answer, never the generic 413 (both import routes)', async () => {
+      const text = '"\n'.repeat(500_000)
+      const student = await imp({ importMode: 'csv', csvFile: text })
+      expect(student.body.error?.message ?? '').not.toBe('Payload Too Large.')
+      expect([200, 413, 422]).toContain(student.status)
+      const users = await admin.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s3, importMode: 'csv', csvFile: text })
+      expect(users.body.error?.message ?? '').not.toBe('Payload Too Large.')
+      expect([200, 413, 422]).toContain(users.status)
+    })
+
     it('413 for a JSON text over 1 MB (bytes), even before other checks', async () => {
       const res = await imp({ importMode: 'paste', pasteContent: 'a'.repeat(1_000_001) })
       expect(res.status).toBe(413)

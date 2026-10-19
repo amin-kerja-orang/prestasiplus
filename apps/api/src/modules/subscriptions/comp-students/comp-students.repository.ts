@@ -98,6 +98,11 @@ export class CompStudentsRepository {
     })
   }
 
+  /** Serialises complimentary registers, so the IC duplicate check cannot race. Transaction scoped. */
+  async lockRegister(): Promise<void> {
+    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('comp.register'))`
+  }
+
   async setCoins(userIds: readonly string[], coinsEnabled: boolean, now: Date): Promise<void> {
     const ids = userIds.filter(isIdString).map(idFromString)
     if (ids.length === 0) return

@@ -22,7 +22,7 @@ export interface TrialStatus {
  * `isSubscribed(userId, at)` is TRUE when, on the Malaysian day of `at`:
  *  1. the user is a complimentary student whose package has not ended (`comp_students.package_expires_on`,
  *     that day included; the mock stores the same as an expiry of 23:59:59 on that date), or
- *  2. the user belongs to a school that has an `active` subscription covering that day
+ *  2. the user is a STUDENT (role student) of a school that has an `active` subscription covering that day
  *     (`starts_on <= day <= ends_on`).
  * Anything else, and an unknown user, is false. The mock's rule was "the user's own subscription expiry
  * is set and after `at`"; v2 has no such user column. Q6 (v2-data-migration) is OPEN: payments (paid,
@@ -60,9 +60,9 @@ export class SubscriptionService {
     return used
   }
 
-  private async subscribedBy(facts: { schoolId: string | null; compExpiresOn: string | null }, at: Date): Promise<boolean> {
+  private async subscribedBy(facts: { schoolId: string | null; isStudent: boolean; compExpiresOn: string | null }, at: Date): Promise<boolean> {
     const day = mytDay(at)
     if (facts.compExpiresOn !== null && day <= facts.compExpiresOn) return true
-    return facts.schoolId !== null && (await this.subscriptions.hasLiveSubscription(facts.schoolId, day))
+    return facts.isStudent && facts.schoolId !== null && (await this.subscriptions.hasLiveSubscription(facts.schoolId, day))
   }
 }

@@ -94,10 +94,10 @@ describe('user packages (AC 1)', () => {
     expect(cards[1]?.assigned?.studentQuota).toBe(1)
   })
 
-  it('parallel assigns of one form level leave a single row (lock)', async () => {
+  it('parallel assigns of one form level leave a single row (native upsert), never a 500', async () => {
     await t.db.query(`delete from user_packages where user_id = $1`, [schoolAdminId])
     const results = await Promise.all([10, 20, 30, 40].map((q) => assign({ formLevel: 't5', packageId: packageId.T5, studentQuota: q })))
-    expect(results.every((r) => r.status === 200)).toBe(true)
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200])
     expect(await rows()).toHaveLength(1)
   })
 
