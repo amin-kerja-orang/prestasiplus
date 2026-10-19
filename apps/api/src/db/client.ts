@@ -13,7 +13,9 @@ export type TxClient = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0
  */
 export function createAdapter(connectionString: string): PrismaPg {
   return new PrismaPg(
-    { connectionString, connectionTimeoutMillis: 5_000 },
+    // 30 s: under load a new connection to Postgres (Docker port forward) can take over 5 s, which
+    // surfaced as random 500s and P1001 in full test runs (BE-05). Queries still fail fast once connected.
+    { connectionString, connectionTimeoutMillis: 30_000 },
     {
       // An idle-connection error (database restarted) must not crash the process; the next query
       // opens a fresh connection.

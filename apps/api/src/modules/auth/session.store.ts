@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
+import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import type { Session as SessionRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
@@ -152,5 +153,18 @@ export class SessionStore {
       where: { id: rowId, revokedAt: null },
       data: { revokedAt: this.clock.now() },
     })
+  }
+
+  /**
+   * Ends every live session of one user (password reset, deactivation, role or school change,
+   * delete). Pass a transaction client to commit or roll back with the account change. Returns how many ended.
+   */
+  async revokeAllFor(userId: bigint, tx?: TxClient): Promise<number> {
+    const db = tx ?? this.prisma.client
+    const res = await db.session.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: this.clock.now() },
+    })
+    return res.count
   }
 }

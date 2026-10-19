@@ -55,7 +55,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
       // Throwaway test server: skip disk flushes. Every spec clones a template database, and with
       // fsync on, CREATE DATABASE ... TEMPLATE took 20+ s under a full run (BE-03).
       container = await new PostgreSqlContainer('postgres:16-alpine')
-        .withCommand(['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off'])
+        .withCommand(['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off', '-c', 'max_connections=400'])
         .start()
       // 127.0.0.1, not localhost: on Windows localhost may resolve to ::1 first and stall or fail.
       adminUrl = container.getConnectionUri().replace('@localhost:', '@127.0.0.1:')
