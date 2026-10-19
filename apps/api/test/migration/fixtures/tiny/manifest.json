@@ -1,0 +1,404 @@
+{
+  "format": "pp-staging-dump/1",
+  "source": "cloud",
+  "synthetic": true,
+  "tables": {
+    "users": {
+      "rows": 100,
+      "file": "users.ndjson"
+    },
+    "schools": {
+      "rows": 3,
+      "file": "schools.ndjson"
+    },
+    "school_subscriptions": {
+      "rows": 3,
+      "file": "school_subscriptions.ndjson"
+    },
+    "parent_student": {
+      "rows": 12,
+      "file": "parent_student.ndjson"
+    },
+    "classrooms": {
+      "rows": 4,
+      "file": "classrooms.ndjson"
+    },
+    "classroom_student": {
+      "rows": 66,
+      "file": "classroom_student.ndjson"
+    },
+    "education_levels": {
+      "rows": 4,
+      "file": "education_levels.ndjson"
+    },
+    "subjects": {
+      "rows": 6,
+      "file": "subjects.ndjson"
+    },
+    "chapters": {
+      "rows": 18,
+      "file": "chapters.ndjson"
+    },
+    "topics": {
+      "rows": 54,
+      "file": "topics.ndjson"
+    },
+    "practice_sessions": {
+      "rows": 200,
+      "file": "practice_sessions.ndjson"
+    },
+    "question_attempts": {
+      "rows": 600,
+      "file": "question_attempts.ndjson"
+    },
+    "review_schedules": {
+      "rows": 63,
+      "file": "review_schedules.ndjson"
+    },
+    "structured_attempts": {
+      "rows": 0
+    },
+    "structured_attempt_answers": {
+      "rows": 0
+    },
+    "student_notes": {
+      "rows": 16,
+      "file": "student_notes.ndjson"
+    },
+    "study_schedules": {
+      "rows": 0
+    },
+    "broadcasts": {
+      "rows": 0
+    },
+    "timeline_entries": {
+      "rows": 0
+    },
+    "headcounts": {
+      "rows": 0
+    },
+    "question_sets": {
+      "rows": 4,
+      "file": "question_sets.ndjson"
+    },
+    "mood_checkins": {
+      "rows": 63,
+      "file": "mood_checkins.ndjson"
+    },
+    "wellbeing_alerts": {
+      "rows": 0
+    },
+    "psychometric_results": {
+      "rows": 0
+    },
+    "interventions": {
+      "rows": 0
+    },
+    "aspirations": {
+      "rows": 0
+    },
+    "career_paths": {
+      "rows": 0
+    },
+    "universities": {
+      "rows": 0
+    },
+    "scholarships": {
+      "rows": 0
+    },
+    "feedback": {
+      "rows": 7,
+      "file": "feedback.ndjson"
+    },
+    "gamification_tiers": {
+      "rows": 4,
+      "file": "gamification_tiers.ndjson"
+    },
+    "student_wallets": {
+      "rows": 63,
+      "file": "student_wallets.ndjson"
+    },
+    "coin_transactions": {
+      "rows": 189,
+      "file": "coin_transactions.ndjson"
+    },
+    "challenges": {
+      "rows": 5,
+      "file": "challenges.ndjson"
+    },
+    "challenge_user": {
+      "rows": 32,
+      "file": "challenge_user.ndjson"
+    },
+    "gifts": {
+      "rows": 0
+    },
+    "gift_redemptions": {
+      "rows": 0
+    },
+    "teacher_badges": {
+      "rows": 0
+    },
+    "teacher_badge_user": {
+      "rows": 0
+    },
+    "achievements": {
+      "rows": 6,
+      "file": "achievements.ndjson"
+    },
+    "achievement_user": {
+      "rows": 31,
+      "file": "achievement_user.ndjson"
+    },
+    "lucky_draws": {
+      "rows": 0
+    },
+    "reward_settings": {
+      "rows": 0
+    },
+    "battles": {
+      "rows": 10,
+      "file": "battles.ndjson"
+    },
+    "battle_participants": {
+      "rows": 20,
+      "file": "battle_participants.ndjson"
+    },
+    "battle_queue": {
+      "rows": 0
+    },
+    "battle_invites": {
+      "rows": 0
+    },
+    "games": {
+      "rows": 3,
+      "file": "games.ndjson"
+    },
+    "game_sessions": {
+      "rows": 63,
+      "file": "game_sessions.ndjson"
+    },
+    "game_rooms": {
+      "rows": 0
+    },
+    "game_room_players": {
+      "rows": 0
+    },
+    "leagues": {
+      "rows": 0
+    },
+    "league_members": {
+      "rows": 0
+    },
+    "banners": {
+      "rows": 3,
+      "file": "banners.ndjson"
+    },
+    "articles": {
+      "rows": 5,
+      "file": "articles.ndjson"
+    },
+    "notes": {
+      "rows": 0
+    },
+    "videos": {
+      "rows": 0
+    },
+    "audio_kbat": {
+      "rows": 0
+    },
+    "notifications": {
+      "rows": 0
+    },
+    "support_tickets": {
+      "rows": 6,
+      "file": "support_tickets.ndjson"
+    },
+    "chatbot_conversations": {
+      "rows": 0
+    },
+    "chatbot_messages": {
+      "rows": 0
+    },
+    "settings": {
+      "rows": 5,
+      "file": "settings.ndjson"
+    },
+    "feature_flags": {
+      "rows": 4,
+      "file": "feature_flags.ndjson"
+    },
+    "ai_usage_logs": {
+      "rows": 0
+    },
+    "audit_logs": {
+      "rows": 0
+    },
+    "packages": {
+      "rows": 3,
+      "file": "packages.ndjson"
+    },
+    "payments": {
+      "rows": 6,
+      "file": "payments.ndjson"
+    },
+    "invoices": {
+      "rows": 6,
+      "file": "invoices.ndjson"
+    },
+    "dunning_logs": {
+      "rows": 0
+    },
+    "pksk_packages": {
+      "rows": 0
+    },
+    "pksk_accesses": {
+      "rows": 0
+    },
+    "marketplace_sellers": {
+      "rows": 0
+    },
+    "marketplace_products": {
+      "rows": 0
+    },
+    "marketplace_orders": {
+      "rows": 0
+    },
+    "sponsors": {
+      "rows": 0
+    },
+    "foster_sponsorships": {
+      "rows": 0
+    },
+    "foster_applications": {
+      "rows": 0
+    },
+    "duta_profiles": {
+      "rows": 0
+    },
+    "duta_applications": {
+      "rows": 0
+    },
+    "duta_bookings": {
+      "rows": 0
+    },
+    "exam_attempts": {
+      "rows": 13,
+      "file": "exam_attempts.ndjson"
+    },
+    "part_responses": {
+      "rows": 0
+    },
+    "questions": {
+      "rows": 24,
+      "file": "questions.ndjson"
+    },
+    "question_options": {
+      "rows": 96,
+      "file": "question_options.ndjson"
+    },
+    "structured_questions": {
+      "rows": 0
+    },
+    "structured_sub_questions": {
+      "rows": 0
+    },
+    "structured_rubric_points": {
+      "rows": 0
+    },
+    "pksk_questions": {
+      "rows": 0
+    },
+    "question_reports": {
+      "rows": 0
+    },
+    "question_submissions": {
+      "rows": 0
+    },
+    "question_imports": {
+      "rows": 0
+    },
+    "question_set_items": {
+      "rows": 0
+    },
+    "spm_sets": {
+      "rows": 0
+    },
+    "spm_set_question": {
+      "rows": 0
+    },
+    "exam_papers": {
+      "rows": 3,
+      "file": "exam_papers.ndjson"
+    },
+    "paper_sections": {
+      "rows": 0
+    },
+    "exam_questions": {
+      "rows": 0
+    },
+    "exam_paper_questions": {
+      "rows": 0
+    },
+    "question_stimulus": {
+      "rows": 0
+    },
+    "question_parts": {
+      "rows": 0
+    },
+    "part_options": {
+      "rows": 0
+    },
+    "part_answer_keys": {
+      "rows": 0
+    },
+    "stimuli": {
+      "rows": 0
+    },
+    "media_assets": {
+      "rows": 0
+    },
+    "question_revisions": {
+      "rows": 0
+    },
+    "question_snapshots": {
+      "rows": 0
+    },
+    "source_papers": {
+      "rows": 3,
+      "file": "source_papers.ndjson"
+    },
+    "import_batches": {
+      "rows": 0
+    },
+    "import_items": {
+      "rows": 0
+    },
+    "legacy_canonical_map": {
+      "rows": 24,
+      "file": "legacy_canonical_map.ndjson"
+    },
+    "unify_quarantine": {
+      "rows": 0
+    },
+    "paper_documents": {
+      "rows": 0
+    },
+    "paper_document_pages": {
+      "rows": 0
+    },
+    "paper_blueprints": {
+      "rows": 0
+    },
+    "blueprint_sections": {
+      "rows": 0
+    },
+    "teacher_reference_documents": {
+      "rows": 0
+    },
+    "teacher_reference_papers": {
+      "rows": 3,
+      "file": "teacher_reference_papers.ndjson"
+    }
+  }
+}

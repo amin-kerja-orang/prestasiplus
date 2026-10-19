@@ -1,0 +1,6 @@
+{"id":1,"name":"Mata Pelajaran Contoh 1","code":"MP1","is_core":"1","color":"#cccccc","sort_order":1}
+{"id":2,"name":"Mata Pelajaran Contoh 2","code":"MP2","is_core":"1","color":"#cccccc","sort_order":2}
+{"id":3,"name":"Mata Pelajaran Contoh 3","code":"MP3","is_core":"1","color":"#cccccc","sort_order":3}
+{"id":4,"name":"Mata Pelajaran Contoh 4","code":"MP4","is_core":"0","color":"#cccccc","sort_order":4}
+{"id":5,"name":"Mata Pelajaran Contoh 5","code":"MP5","is_core":"0","color":"#cccccc","sort_order":5}
+{"id":6,"name":"Mata Pelajaran Contoh 6","code":"MP6","is_core":"0","color":"#cccccc","sort_order":6}
