@@ -557,6 +557,436 @@
         ],
         "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
       },
+      "WalletLedgerType": {
+        "type": "string",
+        "enum": [
+          "earn",
+          "spend",
+          "convert",
+          "bonus",
+          "refund"
+        ]
+      },
+      "WalletErrorCode": {
+        "type": "string",
+        "enum": [
+          "INSUFFICIENT_BALANCE"
+        ]
+      },
+      "WalletTierRef": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelMs": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "icon",
+          "color",
+          "minSyiling",
+          "conversionRate"
+        ],
+        "additionalProperties": false
+      },
+      "WalletNextTier": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelMs": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "need": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "icon",
+          "color",
+          "minSyiling",
+          "conversionRate",
+          "pct",
+          "need"
+        ],
+        "additionalProperties": false
+      },
+      "WalletTitle": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "emoji": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "emoji"
+        ],
+        "additionalProperties": false
+      },
+      "WalletNextTitle": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "need": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "emoji",
+          "threshold",
+          "need"
+        ],
+        "additionalProperties": false
+      },
+      "WalletStreakSummary": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "best": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "multiplier": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "current",
+          "best",
+          "multiplier"
+        ],
+        "additionalProperties": false
+      },
+      "WalletSummary": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalSyilingEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer"
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "xpNeeded": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "levelProgressPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "tier": {
+            "$ref": "#/components/schemas/WalletTierRef"
+          },
+          "nextTier": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "labelMs": {
+                "type": "string",
+                "minLength": 1
+              },
+              "icon": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minSyiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conversionRate": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "need": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "key",
+              "labelMs",
+              "icon",
+              "color",
+              "minSyiling",
+              "conversionRate",
+              "pct",
+              "need"
+            ],
+            "additionalProperties": false,
+            "description": "null at the highest active tier."
+          },
+          "title": {
+            "$ref": "#/components/schemas/WalletTitle"
+          },
+          "nextTitle": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "emoji": {
+                "type": "string"
+              },
+              "threshold": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "need": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "name",
+              "emoji",
+              "threshold",
+              "need"
+            ],
+            "additionalProperties": false,
+            "description": "null after the last title."
+          },
+          "earnedToday": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "earnedThisWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streak": {
+            "$ref": "#/components/schemas/WalletStreakSummary"
+          }
+        },
+        "required": [
+          "userId",
+          "currentSyiling",
+          "totalSyilingEarned",
+          "tokenBalance",
+          "xp",
+          "level",
+          "xpNeeded",
+          "levelProgressPct",
+          "tier",
+          "nextTier",
+          "title",
+          "nextTitle",
+          "earnedToday",
+          "earnedThisWeek",
+          "streak"
+        ],
+        "additionalProperties": false
+      },
+      "WalletLedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/WalletLedgerType"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Signed: positive for earn/bonus/refund, negative for spend/convert."
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Syiling balance after this movement."
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "amount",
+          "balanceAfter",
+          "source",
+          "description",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "WalletTransactionsQuery": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "earn | spend | convert | bonus | refund. Empty = all; anything else = no rows."
+          }
+        }
+      },
+      "WalletTransactionsMeta": {
+        "type": "object",
+        "properties": {
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentSyiling",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "WalletTransactionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletLedgerEntry"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/WalletTransactionsMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "WalletGamificationSummary": {
+        "type": "object",
+        "properties": {
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streakDays": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "coins",
+          "points",
+          "streakDays"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -1186,6 +1616,127 @@
           },
           "409": {
             "description": "NO_MODE_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/wallet": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "summary": "Own wallet summary",
+        "description": "Any signed-in user; every figure is the caller's own (no id parameter). A user without a wallet row reads the defaults (BR-M14-02). Read only: nothing is created.",
+        "responses": {
+          "200": {
+            "description": "The caller's wallet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WalletSummary"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/transactions": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "summary": "Own syiling ledger",
+        "description": "Every ledger row of the caller, newest first, NOT paginated (as the mock; OQ-API-B4-2). meta is { currentSyiling, type }, not ListMeta. An unknown type returns an empty list, not an error.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "earn | spend | convert | bonus | refund. Empty = all; anything else = no rows."
+            },
+            "required": false,
+            "description": "earn | spend | convert | bonus | refund. Empty = all; anything else = no rows.",
+            "name": "type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger rows with meta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletTransactionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/gamification-summary": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "summary": "App shell chips: coins, points, streak days",
+        "description": "Any signed-in user. A user without wallet or streak rows reads 0 / 0 / 0.",
+        "responses": {
+          "200": {
+            "description": "coins = currentSyiling, points = xp, streakDays = streak.current.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WalletGamificationSummary"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
             "content": {
               "application/json": {
                 "schema": {

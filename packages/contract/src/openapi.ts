@@ -17,6 +17,7 @@ import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/e
 import { ClientUuidSchema, IdSchema } from './common/ids'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
+import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -38,6 +39,7 @@ export const COMPONENT_SCHEMAS = {
   IdEnvelope: envelopeOf(IdSchema).meta({ id: 'IdEnvelope' }),
   IdListEnvelope: listEnvelopeOf(IdSchema).meta({ id: 'IdListEnvelope' }),
   ...SESSION_COMPONENT_SCHEMAS, // V2-T07
+  ...WALLET_COMPONENT_SCHEMAS, // BE-11
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -57,6 +59,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   const registry = new OpenAPIRegistry()
   for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
   registerSessionPaths(registry) // V2-T07
+  registerWalletPaths(registry) // BE-11
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
