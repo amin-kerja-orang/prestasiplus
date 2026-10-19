@@ -13,7 +13,11 @@ import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
+<<<<<<< HEAD
 import { schoolPackagesSeed } from './core/school-packages'
+=======
+import { populationSeed } from './core/population'
+>>>>>>> c78f6827 (feat(BE-07): core population demo seed (students, teachers, school admins, parent, sponsor, PPD, JPN))
 import { schoolsSeed } from './core/schools'
 
 export const DEFAULT_PROFILE = 'poc'
@@ -42,6 +46,7 @@ export interface SeedModule {
   run(ctx: SeedContext): Promise<void>
 }
 
+<<<<<<< HEAD
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
  * The set is minimal and explicit: today it contains the school_packages catalogue only
@@ -52,6 +57,9 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  */
 export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed]
+=======
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, populationSeed]
+>>>>>>> c78f6827 (feat(BE-07): core population demo seed (students, teachers, school admins, parent, sponsor, PPD, JPN))
 
 /**
  * Demo seeds create demo accounts with a published password. They must never run against production
