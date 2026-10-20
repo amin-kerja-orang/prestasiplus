@@ -1,0 +1,385 @@
+// Gamification economy and rewards shop (BE-23: M14 beyond the wallet core, and M15): challenges,
+// achievements, learner badges, referrals, lucky draws, the Syiling reward catalogue, the token Hadiah
+// catalogue with its redemptions, mystery box openings and the gamification settings.
+// Credits and debits go through WalletService only (wallet.prisma, BE-11); these tables hold the rules,
+// the catalogues and the idempotency keys. The teacher economy (teacher wallets, ledger, rewards,
+// redemptions, cash withdrawals, teacher badges) is NOT built (D53/OWN-10, D28c).
+// Hand-written in migration 0019_gamification_shop: identity columns (GENERATED ALWAYS), CHECK constraints
+// (enums are text + check with English codes, no Postgres enum types) and foreign keys. Foreign keys to
+// `users` and `files` have no Prisma relation field on purpose: the User model (identity.prisma) belongs
+// to BE-03 and this card does not edit it; the database enforces them (fk_* in the migration).
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2; data model section 3.7.
+
+/// Platform daily challenge (teacher challenges are `missions`, BE-18).
+model Challenge {
+  id            BigInt   @id @default(autoincrement())
+  title         String
+  description   String   @default("")
+  icon          String   @default("")
+  /// quiz_count, accuracy, topic_variety, streak, time_spent (check).
+  challengeType String   @map("challenge_type")
+  /// sessions, correct, best_accuracy, best_correct_in_session, chapters, minutes, streak (check). Null for a migrated row whose metric could not be mapped (OD-25).
+  metric        String?
+  targetValue   Int      @map("target_value")
+  rewardSyiling Int      @default(0) @map("reward_syiling")
+  rewardXp      Int      @default(0) @map("reward_xp")
+  /// easy, medium, hard (check).
+  difficulty    String   @default("medium")
+  sortOrder     Int      @default(0) @map("sort_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource  String?  @map("legacy_source")
+  legacyId      String?  @map("legacy_id")
+
+  completions ChallengeCompletion[]
+
+  @@unique([legacySource, legacyId], map: "uq_challenges_legacy")
+  @@index([isActive, sortOrder, id], map: "ix_challenges_is_active_sort_order")
+  @@map("challenges")
+}
+
+/// One completion per user, challenge and Malaysia day: the unique key makes the claim idempotent (AC 2).
+model ChallengeCompletion {
+  id             BigInt   @id @default(autoincrement())
+  userId         BigInt   @map("user_id")
+  challengeId    BigInt   @map("challenge_id")
+  /// Malaysia calendar day (G-04).
+  completionDate DateTime @map("completion_date") @db.Date
+  completedAt    DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  /// Written while an admin is in Mod Pelajar (G-07).
+  isTest         Boolean  @default(false) @map("is_test")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource   String?  @map("legacy_source")
+  legacyId       String?  @map("legacy_id")
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade, map: "fk_challenge_completions_challenge_id")
+
+  @@unique([userId, challengeId, completionDate], map: "uq_challenge_completions_user_challenge_date")
+  @@unique([legacySource, legacyId], map: "uq_challenge_completions_legacy")
+  @@index([userId, completionDate], map: "ix_challenge_completions_user_id_completion_date")
+  @@index([challengeId], map: "ix_challenge_completions_challenge_id")
+  @@map("challenge_completions")
+}
+
+/// Achievement catalogue. The structured criterion drives auto-unlock; a migrated legacy row keeps only
+/// `legacy_criteria_text` and the criterion columns null (no auto-unlock, GAP-20).
+model Achievement {
+  id                 BigInt   @id @default(autoincrement())
+  name               String
+  description        String   @default("")
+  icon               String   @default("")
+  /// common, rare, epic, legendary (check).
+  rarity             String   @default("common")
+  rewardSyiling      Int      @default(0) @map("reward_syiling")
+  rewardXp           Int      @default(0) @map("reward_xp")
+  /// practice_sessions, streak, lifetime_syiling, accurate_sessions, subjects, mystery_openings, completions,
+  /// math_correct, science_correct, fast_answers, referrals, unlocked, answers_accuracy, perfect_days (check).
+  /// The mock camelCase identifiers are stored snake_case. Null together with `criterion_min` (check).
+  criterionKind      String?  @map("criterion_kind")
+  criterionMin       Int?     @map("criterion_min")
+  /// Only for answers_accuracy (check).
+  criterionAccuracy  Decimal? @map("criterion_accuracy") @db.Decimal(5, 2)
+  progressTarget     Int?     @map("progress_target")
+  legacyCriteriaText String?  @map("legacy_criteria_text")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource       String?  @map("legacy_source")
+  legacyId           String?  @map("legacy_id")
+
+  unlocks UserAchievement[]
+
+  @@unique([legacySource, legacyId], map: "uq_achievements_legacy")
+  @@index([name], map: "ix_achievements_name")
+  @@map("achievements")
+}
+
+/// One unlock per user and achievement (idempotent by the unique key).
+model UserAchievement {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  achievementId BigInt   @map("achievement_id")
+  unlockedAt    DateTime @default(now()) @map("unlocked_at") @db.Timestamptz(6)
+  isTest        Boolean  @default(false) @map("is_test")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource  String?  @map("legacy_source")
+  legacyId      String?  @map("legacy_id")
+
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, map: "fk_user_achievements_achievement_id")
+
+  @@unique([userId, achievementId], map: "uq_user_achievements_user_achievement")
+  @@unique([legacySource, legacyId], map: "uq_user_achievements_legacy")
+  @@index([achievementId], map: "ix_user_achievements_achievement_id")
+  @@map("user_achievements")
+}
+
+/// Learner badge catalogue (no .cloud source; teacher badges are not built).
+model LearnerBadge {
+  id          BigInt   @id @default(autoincrement())
+  name        String
+  icon        String
+  rarityLabel String?  @map("rarity_label")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  holdings LearnerBadgeHolding[]
+
+  @@index([name], map: "ix_learner_badges_name")
+  @@map("learner_badges")
+}
+
+model LearnerBadgeHolding {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  badgeId   BigInt   @map("badge_id")
+  awardedAt DateTime @default(now()) @map("awarded_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  badge LearnerBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade, map: "fk_learner_badge_holdings_badge_id")
+
+  @@unique([userId, badgeId], map: "uq_learner_badge_holdings_user_badge")
+  @@index([badgeId], map: "ix_learner_badge_holdings_badge_id")
+  @@map("learner_badge_holdings")
+}
+
+/// One referral code per user (the code is unique).
+model ReferralCode {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  code         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  @@unique([userId], map: "uq_referral_codes_user_id")
+  @@unique([code], map: "uq_referral_codes_code")
+  @@unique([legacySource, legacyId], map: "uq_referral_codes_legacy")
+  @@map("referral_codes")
+}
+
+/// A person is referred once (unique referee). `rewarded` flips when the referral bonus is paid.
+model Referral {
+  id           BigInt   @id @default(autoincrement())
+  referrerId   BigInt   @map("referrer_id")
+  refereeId    BigInt   @map("referee_id")
+  codeUsed     String   @map("code_used")
+  rewarded     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  @@unique([refereeId], map: "uq_referrals_referee_id")
+  @@unique([legacySource, legacyId], map: "uq_referrals_legacy")
+  @@index([referrerId], map: "ix_referrals_referrer_id")
+  @@map("referrals")
+}
+
+/// Lucky draw (Cabutan Bertuah). The prize pool is the ordered `draw_prizes` rows (OD-28).
+model Draw {
+  id                   BigInt    @id @default(autoincrement())
+  title                String
+  description          String    @default("")
+  ticketCostSyiling    Int       @map("ticket_cost_syiling")
+  maxTicketsPerStudent Int       @map("max_tickets_per_student")
+  closesAt             DateTime? @map("closes_at") @db.Timestamptz(6)
+  /// draft, open, closed (check).
+  status               String    @default("draft")
+  winnerUserId         BigInt?   @map("winner_user_id")
+  drawnAt              DateTime? @map("drawn_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource         String?   @map("legacy_source")
+  legacyId             String?   @map("legacy_id")
+
+  prizes  DrawPrize[]
+  tickets DrawTicket[]
+
+  @@unique([legacySource, legacyId], map: "uq_draws_legacy")
+  @@index([status, closesAt], map: "ix_draws_status_closes_at")
+  @@map("draws")
+}
+
+/// One prize line of a draw's pool (mock `prizePool[]`), ordered by `position` (0-based, unique per draw).
+model DrawPrize {
+  id        BigInt   @id @default(autoincrement())
+  drawId    BigInt   @map("draw_id")
+  label     String
+  /// Integer sen.
+  valueSen  Int      @map("value_sen")
+  qty       Int
+  position  Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade, map: "fk_draw_prizes_draw_id")
+
+  @@unique([drawId, position], map: "uq_draw_prizes_draw_position")
+  @@map("draw_prizes")
+}
+
+/// One row per ticket bought; `tickets_sold` and a user's count are COUNT(*) by (draw_id, user_id).
+/// RESTRICT on the draw: a draw with tickets cannot be deleted (the syiling is already spent).
+model DrawTicket {
+  id        BigInt   @id @default(autoincrement())
+  drawId    BigInt   @map("draw_id")
+  userId    BigInt   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
+
+  @@index([drawId, userId], map: "ix_draw_tickets_draw_id_user_id")
+  @@index([userId, createdAt], map: "ix_draw_tickets_user_id_created_at")
+  @@map("draw_tickets")
+}
+
+/// Syiling-priced reward catalogue of the Kawalan Reward screen (M14; budgeted in sen). No .cloud source.
+model SyilingReward {
+  id           BigInt   @id @default(autoincrement())
+  name         String
+  /// voucher, physical, experience, digital, subscription (check); the wire uses upper case.
+  type         String
+  priceSyiling Int      @map("price_syiling")
+  /// Integer sen; `costRm` is derived.
+  costValueSen Int      @map("cost_value_sen")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  claims RewardClaim[]
+
+  @@unique([legacySource, legacyId], map: "uq_syiling_rewards_legacy")
+  @@index([name], map: "ix_syiling_rewards_name")
+  @@map("syiling_rewards")
+}
+
+/// A Syiling reward claim; `cost_value_sen` is the snapshot at claim time (G-18) the session and month budgets sum.
+model RewardClaim {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  rewardId     BigInt   @map("reward_id")
+  costValueSen Int      @map("cost_value_sen")
+  claimedAt    DateTime @default(now()) @map("claimed_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  reward SyilingReward @relation(fields: [rewardId], references: [id], onDelete: Restrict, map: "fk_reward_claims_reward_id")
+
+  @@unique([legacySource, legacyId], map: "uq_reward_claims_legacy")
+  @@index([userId, claimedAt], map: "ix_reward_claims_user_id_claimed_at")
+  @@index([rewardId], map: "ix_reward_claims_reward_id")
+  @@map("reward_claims")
+}
+
+/// Token Hadiah catalogue (M15, mock `hadiah.rewards`). `stock_quantity` null = unlimited; a purchase takes
+/// one unit with `UPDATE rewards SET stock_quantity = stock_quantity - 1 WHERE id = $1 AND (stock_quantity IS NULL OR stock_quantity > 0)`
+/// (zero rows = OUT_OF_STOCK); the check keeps it non-negative. The monthly cap per student
+/// (`max_per_month_per_student`) is counted over `reward_redemptions` (index user_id, reward_id, created_at).
+model Reward {
+  id                    BigInt   @id @default(autoincrement())
+  /// flagship, ewallet, telco, gaming, streaming, food_beverage, ecommerce, education, entertainment (check).
+  category              String
+  vendor                String
+  title                 String
+  description           String?
+  denominationRm        Decimal  @map("denomination_rm") @db.Decimal(10, 2)
+  tokenCost             Int      @map("token_cost")
+  iconEmoji             String?  @map("icon_emoji")
+  stockQuantity         Int?     @map("stock_quantity")
+  maxPerMonthPerStudent Int?     @map("max_per_month_per_student") @db.SmallInt
+  voucherValidityDays   Int      @default(365) @map("voucher_validity_days") @db.SmallInt
+  /// manual, api, instant (check).
+  deliveryMethod        String   @default("manual") @map("delivery_method")
+  vendorSku             String?  @map("vendor_sku")
+  displayOrder          Int      @default(0) @map("display_order")
+  /// The mock keeps `imageUrl`; the real image is a files row.
+  imageFileId           BigInt?  @map("image_file_id")
+  termsText             String?  @map("terms_text")
+  isActive              Boolean  @default(true) @map("is_active")
+  requiresParentConsent Boolean  @default(false) @map("requires_parent_consent")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource          String?  @map("legacy_source")
+  legacyId              String?  @map("legacy_id")
+
+  redemptions RewardRedemption[]
+
+  @@unique([legacySource, legacyId], map: "uq_rewards_legacy")
+  @@index([category, isActive, displayOrder], map: "ix_rewards_category_is_active_display_order")
+  @@map("rewards")
+}
+
+/// A token redemption with the reward's title, vendor, icon, value and cost copied at purchase time (G-18).
+/// `voucher_code` is the deliverable: a secret, never logged.
+model RewardRedemption {
+  id                 BigInt    @id @default(autoincrement())
+  userId             BigInt    @map("user_id")
+  rewardId           BigInt?   @map("reward_id")
+  rewardTitle        String    @map("reward_title")
+  rewardVendor       String    @map("reward_vendor")
+  rewardIcon         String?   @map("reward_icon")
+  denominationRm     Decimal   @map("denomination_rm") @db.Decimal(10, 2)
+  tokenCost          Int       @map("token_cost")
+  /// pending_parent_consent, pending_admin, delivered, cancelled (check).
+  status             String
+  stockReserved      Boolean   @default(false) @map("stock_reserved")
+  /// The parent approval routes are not built in B1 (UD-3); the column stays for the data model.
+  parentDecisionById BigInt?   @map("parent_decision_by_id")
+  parentDecidedAt    DateTime? @map("parent_decided_at") @db.Timestamptz(6)
+  voucherCode        String?   @map("voucher_code")
+  deliveredAt        DateTime? @map("delivered_at") @db.Timestamptz(6)
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(6)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  /// admin, parent (check).
+  cancelledBy        String?   @map("cancelled_by")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource       String?   @map("legacy_source")
+  legacyId           String?   @map("legacy_id")
+
+  reward Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, map: "fk_reward_redemptions_reward_id")
+
+  @@unique([legacySource, legacyId], map: "uq_reward_redemptions_legacy")
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "ix_reward_redemptions_user_id_created_at")
+  @@index([userId, rewardId, createdAt], map: "ix_reward_redemptions_user_id_reward_id_created_at")
+  @@index([status, createdAt], map: "ix_reward_redemptions_status_created_at")
+  @@index([rewardId], map: "ix_reward_redemptions_reward_id")
+  @@map("reward_redemptions")
+}
+
+/// One mystery box opening. The four boxes are static constants in code (no table, as in the mock); `box_id` is the constant's id.
+model MysteryBoxOpening {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  boxId     Int      @map("box_id")
+  coins     Int
+  xp        Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, createdAt], map: "ix_mystery_box_openings_user_id_created_at")
+  @@map("mystery_box_openings")
+}
+
+/// Key/value gamification settings (mock `gamification.settings`); toggles are 0/1.
+model GamificationSetting {
+  id           BigInt   @id @default(autoincrement())
+  /// One of the ten setting keys (check).
+  key          String
+  value        Decimal  @db.Decimal(12, 2)
+  label        String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  @@unique([key], map: "uq_gamification_settings_key")
+  @@unique([legacySource, legacyId], map: "uq_gamification_settings_legacy")
+  @@map("gamification_settings")
+}
