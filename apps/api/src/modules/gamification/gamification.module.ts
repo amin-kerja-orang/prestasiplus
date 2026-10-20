@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
+import { ClassesModule } from '../classes'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
 import { GamificationAdminService } from './admin.service'
@@ -20,9 +21,10 @@ import { GamificationPorts } from './ports'
  *
  * `GamificationPorts` carries what M14 reads but M05 owns (practice day facts, mastery, session counts); BE-12/13
  * call `ports.providePracticeFacts(...)` from their own `onModuleInit`. Until then it answers "nothing yet".
+ * `ClassesModule` (BE-17, owner of classes and enrolments) gives the teacher's pupils for the leaderboard name scope (#76).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, WalletModule],
+  imports: [AuditModule, ThrottleModule, WalletModule, ClassesModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
   providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],

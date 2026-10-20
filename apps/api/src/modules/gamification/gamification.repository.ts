@@ -122,6 +122,8 @@ export interface SyilingRewardRecord {
 export interface RankedWallet {
   userId: string
   name: string
+  /** The holder's school (`users.school_id`), null when none; decides whether a school admin sees the name (#76). */
+  schoolId: string | null
   tierKey: string
   tierLabel: string
   tierIcon: string
@@ -525,9 +527,9 @@ export class GamificationRepository {
   /** Top `limit` visible wallets by lifetime syiling (ties: oldest wallet, then id), BR-M14-17. */
   async leaderboard(db: Db, limit: number): Promise<RankedWallet[]> {
     const rows = await db.$queryRaw<
-      { userId: bigint; name: string; tierKey: string | null; tierLabel: string | null; tierIcon: string | null; tierColor: string | null; level: number; total: bigint }[]
+      { userId: bigint; name: string; schoolId: bigint | null; tierKey: string | null; tierLabel: string | null; tierIcon: string | null; tierColor: string | null; level: number; total: bigint }[]
     >`${VISIBLE_WALLETS}
-      SELECT vw.user_id AS "userId", u.name, t.tier_name AS "tierKey", t.label_ms AS "tierLabel", t.icon AS "tierIcon", t.color AS "tierColor",
+      SELECT vw.user_id AS "userId", u.name, u.school_id AS "schoolId", t.tier_name AS "tierKey", t.label_ms AS "tierLabel", t.icon AS "tierIcon", t.color AS "tierColor",
              vw.level::int AS level, vw.shown_total AS total
         FROM vw JOIN users u ON u.id = vw.user_id LEFT JOIN tiers t ON t.id = vw.tier_id
        ORDER BY vw.shown_total DESC, vw.created_at ASC, vw.id ASC
@@ -535,6 +537,7 @@ export class GamificationRepository {
     return rows.map((r) => ({
       userId: idToString(r.userId),
       name: r.name,
+      schoolId: r.schoolId === null ? null : idToString(r.schoolId),
       tierKey: r.tierKey ?? '',
       tierLabel: r.tierLabel ?? r.tierKey ?? '',
       tierIcon: r.tierIcon ?? '',
