@@ -8,7 +8,7 @@ import PaperListPage from '../admin/papers/PaperListPage.vue'
 import type { AdminPaperSummary } from '../domain/admin-types'
 
 const server = vi.hoisted(() => ({ listAdminPapers: vi.fn(), deletePaper: vi.fn() }))
-vi.mock('../server/client', () => ({ bijakServer: () => server }))
+vi.mock('../server/client', () => ({ bijakServer: () => server, bijakAdminServer: () => server }))
 
 function paper(id: string, extra: Partial<AdminPaperSummary> = {}): AdminPaperSummary {
   return {
