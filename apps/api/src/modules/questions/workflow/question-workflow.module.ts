@@ -1,8 +1,21 @@
 import { Module } from '@nestjs/common'
 
+import { AiExplanationController, AiExplanationService } from './ai-explanation'
+import { DiagramAuditController, DiagramAuditService } from './diagram-audit'
+import { DskpController, DskpService } from './dskp'
+import { MasterNotesController, MasterNotesService } from './master-notes'
+import { QualityController, QualityService } from './quality'
+import { FilesModule } from '../../files'
+
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
+import { LifecycleService } from './lifecycle'
+import { CurriculumModule } from '../../curriculum'
+import { GuruQuestionImportController, QuestionImportsController, QuestionImportsService } from './imports'
+import { NotificationsModule } from '../../notifications'
 import { QuestionWorkflowPorts } from './ports'
+import { QuestionReportsController, QuestionReportsService } from './reports'
+import { ReportsRepository } from './reports/reports.repository'
 import { QuestionWorkflowService } from './question-workflow.service'
 
 /**
@@ -33,15 +46,32 @@ import { QuestionWorkflowService } from './question-workflow.service'
  * `onModuleInit` (see `ports.ts`); neither card edits the other's module file.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule],
+  imports: [AuditModule, ThrottleModule, NotificationsModule, CurriculumModule, FilesModule],
   controllers: [
     // --- controllers: one line per route group ---------------------------------------------
+    QualityController,
+    DiagramAuditController,
+    MasterNotesController,
+    AiExplanationController,
+    DskpController,
+    QuestionReportsController,
+    QuestionImportsController,
+    GuruQuestionImportController,
   ],
   providers: [
     QuestionWorkflowPorts,
     QuestionWorkflowService,
+    LifecycleService,
     // --- providers: one line per route group service ---------------------------------------
+    QualityService,
+    DiagramAuditService,
+    MasterNotesService,
+    AiExplanationService,
+    DskpService,
+    ReportsRepository,
+    QuestionReportsService,
+    QuestionImportsService,
   ],
-  exports: [QuestionWorkflowPorts, QuestionWorkflowService],
+  exports: [QuestionWorkflowPorts, QuestionWorkflowService, QuestionReportsService],
 })
 export class QuestionWorkflowModule {}

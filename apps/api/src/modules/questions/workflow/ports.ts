@@ -109,6 +109,8 @@ export interface ImportedQuestionInput {
   status: 'draft' | 'review'
   /** Free-text source label of the row (mock `sourceSet`), if the file had one. */
   sourceSet: string | null
+  /** `marks` column of the row (mock `pointsValue`, default 1); optional so older callers compile. */
+  marks?: number
 }
 
 /** Display facts about a question for lists (reports, master notes). */
@@ -171,6 +173,9 @@ export interface ExplanationSource {
   answerText: string | null
   /** The stored explanation; null when none. */
   explanation: string | null
+  /** Optional (BE-10 AI stub, non-MCQ table): legacy 1 to 5 difficulty and points; shown as "-" when absent. */
+  difficultyLevel?: number | null
+  pointsValue?: number | null
 }
 
 export interface QuestionBankPort {

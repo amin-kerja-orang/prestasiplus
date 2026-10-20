@@ -99,10 +99,12 @@ model QuestionReport {
   questionId        BigInt    @map("question_id")
   /// The version the student saw (AC-18.2, AC-19.2).
   questionVersionNo Int       @map("question_version_no")
+  /// mcq or structured (check constraint); decides the reason set and the deactivation rule.
+  questionType      String    @default("mcq") @map("question_type")
   /// FK users(id) ON DELETE SET NULL (migration SQL).
   reporterId        BigInt?   @map("reporter_id")
   /// Codes of E-report_reason (check constraint): wrong_answer, confusing_question, wrong_options,
-  /// missing_options, duplicate, typo, other. At least one.
+  /// missing_options, duplicate, typo, other, outdated. At least one.
   reasons           String[]
   /// At most 500 characters (check constraint); never sent to an AI service.
   comment           String?
@@ -112,6 +114,12 @@ model QuestionReport {
   practiceSessionId String?   @map("practice_session_id") @db.Uuid
   /// uuid of `exam_attempts` (BE-16); no FK yet.
   attemptId         String?   @map("attempt_id") @db.Uuid
+  /// Free session reference of the mock (1 to 64 of letters, digits, . _ : -); not a uuid.
+  quizSessionRef    String?   @map("quiz_session_ref")
+  /// Room code of the mock (same pattern).
+  roomCode          String?   @map("room_code")
+  /// Source set label of the mock (null until a source exists).
+  sourceSet         String?   @map("source_set")
   /// pending, reviewed, fixed, dismissed (check constraint); BM Menunggu, Disemak, Diperbaiki, Ditolak.
   status            String    @default("pending")
   /// At most 1000 characters (check constraint).

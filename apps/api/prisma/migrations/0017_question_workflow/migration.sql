@@ -55,12 +55,16 @@ CREATE TABLE "question_reports" (
     "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     "question_id" BIGINT NOT NULL,
     "question_version_no" INTEGER NOT NULL,
+    "question_type" TEXT NOT NULL DEFAULT 'mcq',
     "reporter_id" BIGINT,
     "reasons" TEXT[] NOT NULL,
     "comment" TEXT,
     "source" TEXT NOT NULL,
     "practice_session_id" UUID,
     "attempt_id" UUID,
+    "quiz_session_ref" TEXT,
+    "room_code" TEXT,
+    "source_set" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "admin_notes" TEXT,
     "resolved_by_id" BIGINT,
@@ -211,7 +215,7 @@ ALTER TABLE "question_status_events" ADD CONSTRAINT "ck_question_status_events_t
 ALTER TABLE "question_status_events" ADD CONSTRAINT "ck_question_status_events_version_no" CHECK ("version_no" >= 1);
 
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_reasons"
-  CHECK (cardinality("reasons") >= 1 AND "reasons" <@ ARRAY['wrong_answer', 'confusing_question', 'wrong_options', 'missing_options', 'duplicate', 'typo', 'other']::text[]);
+  CHECK (cardinality("reasons") >= 1 AND "reasons" <@ ARRAY['wrong_answer', 'confusing_question', 'wrong_options', 'missing_options', 'duplicate', 'typo', 'other', 'outdated']::text[]);
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_source"
   CHECK ("source" IN ('spm', 'structured_attempt', 'latihan', 'revision', 'teacher_databank', 'quiz', 'papan_bijak'));
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_status"
@@ -219,6 +223,8 @@ ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_status"
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_comment" CHECK ("comment" IS NULL OR char_length("comment") <= 500);
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_admin_notes" CHECK ("admin_notes" IS NULL OR char_length("admin_notes") <= 1000);
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_version_no" CHECK ("question_version_no" >= 1);
+ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_type" CHECK ("question_type" IN ('mcq', 'structured'));
+ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_refs" CHECK (char_length(coalesce("quiz_session_ref", '')) <= 64 AND char_length(coalesce("room_code", '')) <= 64);
 ALTER TABLE "question_reports" ADD CONSTRAINT "ck_question_reports_legacy_source" CHECK ("legacy_source" IN ('cloud', 'my'));
 
 ALTER TABLE "question_imports" ADD CONSTRAINT "ck_question_imports_counts" CHECK ("imported_count" >= 0 AND "failed_count" >= 0);

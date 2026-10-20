@@ -6,6 +6,7 @@ import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { schoolsScenarios } from './schools/schools'
 import { usersScenarios } from './users/users'
+import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -21,5 +22,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...questionsWorkflowScenarios,
   ]
 }
