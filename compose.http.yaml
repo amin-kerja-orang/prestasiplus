@@ -1,0 +1,29 @@
+# Real-API overlay (BE-32), for DEV and E2E only. Never use it for production.
+#   docker compose -f compose.yaml -f compose.http.yaml up -d --build      (npm run stack:up)
+#   docker compose -f compose.yaml -f compose.http.yaml down               (npm run stack:down)
+# What it changes compared with compose.yaml:
+#   frontend  built with VITE_API_MODE=http (same-origin /api through nginx), image tag :http
+#   migrate   after `prisma migrate deploy` also runs the demo seed (poc profile) with ALLOW_DEMO_SEED=true
+#   api       COOKIE_SECURE=false (plain http on localhost) and a higher login throttle for e2e runs
+# Secrets are not set here: .env.api and .env.db (git-ignored, copied from the .example files) hold them.
+services:
+  frontend:
+    build:
+      args:
+        BUILD_MODE: production
+        VITE_API_MODE: http
+        VITE_TEST_HOOKS: 'false'
+        VITE_API_BASE_URL: ''
+    image: pretasiplus-frontend:http
+
+  migrate:
+    command: ['sh', '-c', 'npm run be:db:migrate && npm run be:db:seed']
+    environment:
+      # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
+      ALLOW_DEMO_SEED: 'true'
+
+  api:
+    environment:
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # The e2e run logs in many times from one address (3 viewports); the default is 5 per minute.
+      THROTTLE_LOGIN_PER_MINUTE: ${E2E_THROTTLE_LOGIN_PER_MINUTE:-200}
