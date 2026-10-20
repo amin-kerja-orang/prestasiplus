@@ -659,6 +659,7 @@ export class BijakAttemptsService {
           provisional: e.result.provisional,
           regraded: e.regraded,
           questions: e.result.questions.map((q) => ({ questionId: q.questionId, marks: q.marks, awarded: q.awarded, attempted: q.attempted, counted: q.counted })),
+          paperKind: a.paperKind, startedAt: a.startedAt, submittedAt: a.submittedAt,
         })
       } catch (err) {
         this.logger.warn(`Aggregate port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
