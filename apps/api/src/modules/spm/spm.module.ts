@@ -1,5 +1,6 @@
 import { Module, type OnModuleInit } from '@nestjs/common'
 
+import { ThrottleModule } from '../../common/throttle'
 import { CurriculumModule } from '../curriculum'
 import { PracticeModule, PracticePorts } from '../practice'
 import { QuestionsModule } from '../questions'
@@ -24,7 +25,7 @@ import { WalkthroughService } from './walkthrough.service'
  * `SpmPorts` (BE-13 plugs the structured-attempt adapter in from its own `onModuleInit`).
  */
 @Module({
-  imports: [CurriculumModule, QuestionsModule, PracticeModule],
+  imports: [ThrottleModule, CurriculumModule, QuestionsModule, PracticeModule],
   controllers: [SpmController, SpmMocksController, WalkthroughController, DutaController],
   providers: [
     SpmRepository,

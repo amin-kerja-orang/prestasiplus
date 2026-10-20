@@ -80,6 +80,9 @@ export async function bootSpmApp(opts: BootOptions = {}): Promise<SpmTestApp> {
     // Counts must follow the bank at once, and the simulated delay is off.
     SPM_POOL_CACHE_SECONDS: '0',
     SPM_WALKTHROUGH_DELAY_MS: '0',
+    // The clock is frozen, so a window never ends: lift the limits unless a test asks for a low one.
+    THROTTLE_SPM_MOCK_CREATE_PER_MINUTE: '100000',
+    THROTTLE_SPM_WALKTHROUGH_PER_MINUTE: '100000',
     ...opts.env,
   })
   const clock = new FixedClock(START)

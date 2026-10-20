@@ -7,11 +7,14 @@
  *   and production loading is the LEAD's call.
  * - `duta_profiles`: five FICTITIOUS ambassadors (invented names only; no real person).
  * - `spm_tracking_sets`: one Tracking A set (year 2026) per subject that has published questions in the seeded
- *   bank, built from those questions in id order. The demo bank is tiny, so the sets read as "Belum Cukup".
+ *   bank, built from the SPM-pool (single-leaf MCQ) questions in id order, read through the questions doorway. The demo bank is tiny, so the sets read as "Belum Cukup".
  * - Idempotent and deterministic: rows are matched by their natural key (subject, slug, subject+year+set) and
  *   left as they are; no randomness, no real time (times come from `ctx.clock`).
  */
 import type { PrismaClient } from '../../src/db/client'
+import type { PrismaService } from '../../src/db/prisma.service'
+import { QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { mcqItemOf } from '../../src/modules/spm/rules'
 import type { SeedModule } from './index'
 
 type TargetType = 'spm' | 'custom' | 'latihan'
@@ -105,6 +108,7 @@ async function seedDuta(db: PrismaClient, now: Date): Promise<void> {
 
 /** One set (set 1, year 2026) per configured subject with live-published active questions in the seeded bank. */
 async function seedSets(db: PrismaClient, now: Date): Promise<void> {
+  const questions = new QuestionsRepository({ client: db } as unknown as PrismaService)
   const configs = await db.spmSubjectConfig.findMany({ orderBy: { id: 'asc' } })
   for (const c of configs) {
     const existing = await db.spmTrackingSet.findUnique({
@@ -112,11 +116,13 @@ async function seedSets(db: PrismaClient, now: Date): Promise<void> {
       select: { id: true },
     })
     if (existing) continue
-    const rows = await db.$queryRaw<{ id: bigint }[]>`
-      SELECT q.id FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${c.subjectId}
-       ORDER BY q.id ASC`
+    // Other owner's data only through its doorway (ADR-0014): the SPM pool of the subject, in id order.
+    const ids = await questions.eligibleIds({ subjectId: String(c.subjectId), type: 'mcq' })
+    const rows: { id: bigint }[] = []
+    for (let i = 0; i < ids.length; i += 200) {
+      for (const r of await questions.getMany(ids.slice(i, i + 200), 'live')) if (r.spmPool && mcqItemOf(r.version.stemMs, r.version.parts) !== null) rows.push({ id: BigInt(r.id) })
+    }
+    rows.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
     if (rows.length === 0) continue
     await db.spmTrackingSet.create({
       data: {

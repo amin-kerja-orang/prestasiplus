@@ -28,6 +28,7 @@ const inPool = (r: QuestionRecord): boolean => r.spmPool && r.isActive && r.vers
  */
 @Injectable()
 export class SpmPoolService {
+  private readonly inflight = new Map<string, Promise<PoolFact[]>>()
   private readonly cache = new Map<string, { until: number; facts: PoolFact[] }>()
 
   constructor(
@@ -61,10 +62,21 @@ export class SpmPoolService {
     const now = this.clock.now().getTime()
     const hit = this.cache.get(subjectId)
     if (!options.fresh && ttl > 0 && hit && hit.until > now) return hit.facts
-    const records = await this.poolRecords(await this.candidateIds(subjectId))
-    const facts = records.map((r) => ({ id: r.id, levelId: r.version.educationLevelId, difficulty: difficultyOf(r.version.difficultyTp) }))
-    if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, facts })
-    return facts
+    // Single-flight: concurrent reads of one subject share one hydration.
+    const running = this.inflight.get(subjectId)
+    if (running) return running
+    const load = (async () => {
+      const records = await this.poolRecords(await this.candidateIds(subjectId))
+      const facts = records.map((r) => ({ id: r.id, levelId: r.version.educationLevelId, difficulty: difficultyOf(r.version.difficultyTp) }))
+      if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, facts })
+      return facts
+    })()
+    this.inflight.set(subjectId, load)
+    try {
+      return await load
+    } finally {
+      this.inflight.delete(subjectId)
+    }
   }
 
   /** Pool size of a subject, optionally of one level and one difficulty. */
@@ -73,11 +85,18 @@ export class SpmPoolService {
   }
 
   /**
-   * Up to `n` pool questions drawn with `rng` (Fisher-Yates over the ascending ids, like `QuestionsRepository.sample`),
-   * read fresh. A drawn question that stopped being eligible meanwhile is skipped and the next one is taken.
+   * Up to `n` pool questions drawn with `rng` (Fisher-Yates over the ascending ids, like `QuestionsRepository.sample`)
+   * from the cached facts. The 30 drawn records are re-read live, so a question that stopped being eligible is skipped
+   * and the next one taken. Only when that leaves fewer than `n` is the pool re-read fresh once.
    */
   async sample(subjectId: string, n: number, rng: Prng): Promise<QuestionRecord[]> {
-    const ids = (await this.facts(subjectId, { fresh: true })).map((f) => f.id)
+    const first = await this.draw(await this.facts(subjectId), n, rng)
+    if (first.length >= n || this.ttlMs() === 0) return first
+    return this.draw(await this.facts(subjectId, { fresh: true }), n, rng)
+  }
+
+  private async draw(facts: readonly PoolFact[], n: number, rng: Prng): Promise<QuestionRecord[]> {
+    const ids = facts.map((f) => f.id)
     for (let i = ids.length - 1; i > 0; i--) {
       const j = rng.int(0, i)
       const tmp = ids[i] as string

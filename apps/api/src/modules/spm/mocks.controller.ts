@@ -1,9 +1,11 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../common/http/no-store.interceptor'
+import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { ok } from '../../common/http/respond'
 import { type RequestWithAuth, ScopeContext } from '../../common/scope'
+import { SPM_LIMITS } from './config'
 import { type MockCaller, SpmMockService } from './mock.service'
 
 type Req = Request & RequestWithAuth
@@ -29,6 +31,8 @@ export class SpmMocksController {
   }
 
   @Post()
+  @UseGuards(RateLimitGuard)
+  @RateLimit(SPM_LIMITS.mockCreate)
   async create(@Body() body: unknown, @Req() req: Req) {
     return ok(await this.mocks.create(callerOf(req), body))
   }

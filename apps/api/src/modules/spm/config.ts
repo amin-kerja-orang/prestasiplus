@@ -4,6 +4,8 @@
  */
 import { SPM_MOCK_SUBJECTS } from '@pp/contract'
 
+import type { RateLimitSpec } from '../../common/throttle'
+
 /** BR-M06-04: size of a Tracking A set and of a Latih Tubi run when a subject has no target. */
 export const DEFAULT_SET_SIZE = 40
 /** Open question 9: the Tracking year is a module constant (no `settings` table in B1). */
@@ -70,3 +72,9 @@ export const WALKTHROUGH_DELAY_MS = 1500
 
 /** Seconds a per-subject SPM pool read is reused (`SPM_POOL_CACHE_SECONDS`; 0 turns the cache off). */
 export const POOL_CACHE_SECONDS = 60
+
+/** Per-user ceilings (requests per minute) on the two routes that cost a pool draw or a simulated solve. */
+export const SPM_LIMITS = {
+  mockCreate: { bucket: 'spm.mock-create', env: 'THROTTLE_SPM_MOCK_CREATE_PER_MINUTE', default: 10, per: 'user' },
+  walkthrough: { bucket: 'spm.walkthrough', env: 'THROTTLE_SPM_WALKTHROUGH_PER_MINUTE', default: 6, per: 'user' },
+} as const satisfies Record<string, RateLimitSpec>

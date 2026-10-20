@@ -2,6 +2,7 @@ import {
   type CallHandler,
   Body,
   Controller,
+  UseGuards,
   type ExecutionContext,
   HttpCode,
   Inject,
@@ -19,6 +20,8 @@ import type { Request } from 'express'
 import type { Observable } from 'rxjs'
 
 import { NoStoreInterceptor } from '../../common/http/no-store.interceptor'
+import { RateLimit, RateLimitGuard } from '../../common/throttle'
+import { SPM_LIMITS } from './config'
 import { WalkthroughService } from './walkthrough.service'
 
 /** Marker the interceptor leaves on the request when the upload was cut off by the size limit. */
@@ -63,6 +66,8 @@ export class WalkthroughController {
   constructor(@Inject(WalkthroughService) private readonly walkthrough: WalkthroughService) {}
 
   @Post('solve')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(SPM_LIMITS.walkthrough)
   @HttpCode(200)
   @UseInterceptors(WalkthroughUploadInterceptor)
   solve(@UploadedFile() file: { size?: number; mimetype?: string } | undefined, @Body() body: unknown, @Req() req: Request) {

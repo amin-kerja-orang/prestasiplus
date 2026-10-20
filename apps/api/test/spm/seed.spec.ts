@@ -66,10 +66,17 @@ describe('SPM seed', () => {
     )
     expect(sets.length).toBeGreaterThan(0)
     expect(sets.every((s) => s.year === 2026 && s.set_no === 1 && Number(s.n) >= 1)).toBe(true)
-    const published = await db.query<{ code: string; n: string }>(
-      `select s.code, count(*)::text n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no join subjects s on s.id = v.subject_id where q.is_active and v.status = 'published' and s.code in (select s2.code from spm_subject_configs c join subjects s2 on s2.id = c.subject_id) group by s.code order by s.code`,
+    // Only SPM-pool multiple-choice questions (read through the questions doorway), live-published, in id order.
+    const bad = await db.query<{ n: string }>(
+      `select count(*)::text n from spm_tracking_set_questions sq
+         join questions q on q.id = sq.question_id join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+        where not (q.is_active and v.status = 'published' and v.type = 'mcq')`,
     )
-    expect(sets.map((s) => [s.code, s.n])).toEqual(published.map((p) => [p.code, p.n]))
+    expect(bad[0]?.n).toBe('0')
+    const unordered = await db.query<{ n: string }>(
+      `select count(*)::text n from spm_tracking_set_questions a join spm_tracking_set_questions b on b.set_id = a.set_id and b.position = a.position + 1 where b.question_id < a.question_id`,
+    )
+    expect(unordered[0]?.n).toBe('0')
   })
 
   it('is idempotent: a second run changes nothing', async () => {
