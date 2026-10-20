@@ -1,4 +1,7 @@
 /** Security-review fixes on BE-16: marking hang (F1), scheme-then-rewrite (F2), latihan reward (F3), late photo (F4). */
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -10,41 +13,32 @@ const GRACE = 300
 const iso = (ms: number) => new Date(ms).toISOString()
 
 describe('F1: defuse of the engine root-index hang', () => {
-  const HANG = ['\\sqrt[\\sqrt[', '\\sqrt[a\\sqrt[', '\\sqrt[\\sqrt[\\sqrt[', '\\sqrt[\\sqrt[2]]', '\\sqrt[', '\\sqrt [', '\\sqrt\\,[', '\\sqrt\\left[', '$\\sqrt$[', '\\sqrt\\text{ }[', '\\text{\\sqrt[}', '\\frac{\\sqrt[2}{3]}', '{\\sqrt[}', '\\sqrt[{]}']
 
-  it('the hang strings finish at once through the wrappers', () => {
-    const t0 = Date.now()
-    for (const h of HANG) {
-      numericValue(h)
-      isBlank({ final: h, steps: [h], text: h, unit: h, choice: h, plain: { steps: [h], final: h } })
-      gradePart({ part: { id: 'p', label: 'a', prompt: '', marks: 1, kind: 'numeric' }, scheme: { kind: 'points', model: '', points: [], final: { display: '1', value: 1, tolerance: 0 } } as never, answer: { final: h, steps: [h], plain: { steps: [h], final: h } }, ctx: { finals: {} } as never })
-    }
-    expect(Date.now() - t0).toBeLessThan(2000)
-  })
+  it('random root, bracket, brace and \\text tokens never hang the RAW engine once defused (child process, hard timeout)', () => {
+    const run = spawnSync('npx', ['tsx', fileURLToPath(new URL('./fuzz-worker.ts', import.meta.url))], { timeout: 25_000, killSignal: 'SIGKILL', encoding: 'utf8' })
+    expect(run.error, 'the fuzz child timed out (engine hang)').toBeUndefined()
+    expect(run.stdout + run.stderr).toContain('fuzz-ok')
+    expect(run.status).toBe(0)
+  }, 30_000)
 
-  it('a random mix of root, bracket and brace tokens never hangs', () => {
-    const tokens = ['\\sqrt', '[', ']', '{', '}', '\\frac', '2', 'x', '^', '\\sqrt[', ' ', '\\,', '\\left', '$', '\\text{', '_', '(', ')']
-    let seed = 12345
-    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
-    const t0 = Date.now()
-    for (let n = 0; n < 2000; n++) {
-      const len = 1 + Math.floor(rnd() * 14)
-      let str = ''
-      for (let k = 0; k < len; k++) str += tokens[Math.floor(rnd() * tokens.length)]
-      const started = Date.now()
-      numericValue(str)
-      isBlank({ final: str })
-      expect(Date.now() - started, JSON.stringify(str)).toBeLessThan(500)
+  it('explicit repros finish through the wrappers (join of final and steps included)', () => {
+    const part = { id: 'p', label: 'a', prompt: '', marks: 1, kind: 'numeric' } as const
+    const scheme = { kind: 'points', model: '', points: [], final: { display: '1', accept: ['1'], tolerance: 0 } } as never
+    for (const answer of [{ final: '\\sqrt', steps: ['['] }, { final: '\\mathrm{\\sqrt\\text{}\\text{}[' }, { text: '\\sqrt', final: '[', steps: ['\\sqrt', '[\\sqrt['] }]) {
+      isBlank(answer)
+      gradePart({ part, scheme, answer, ctx: { finals: {} } as never })
     }
-    expect(Date.now() - t0).toBeLessThan(8000)
+    expect(numericValue('\\mathrm{\\sqrt\\text{}\\text{}[')).toBeNull()
   })
 
   it('well-formed input is unchanged and still evaluates', () => {
     expect(numericValue('\\sqrt[3]{8}')).toBe(2)
     expect(numericValue('\\sqrt{16}')).toBe(4)
     expect(defuseRootIndex('\\sqrt[3]{8} + x')).toBe('\\sqrt[3]{8} + x')
-    expect(defuseRootIndex('a[1] and b')).toBe('a[1] and b')
+    expect(defuseRootIndex('a[1] and b')).toBe('a1] and b')
     expect(defuseRootIndex('\\sqrt[\\sqrt[')).toBe('\\sqrt\\sqrt')
+    expect(defuseRootIndex('\\sqrt[12]{x} \\sqrt [n]{x}')).toBe('\\sqrt[12]{x} \\sqrt [n]{x}')
+    expect(defuseRootIndex('\\sqrt[1234]{x}')).toBe('\\sqrt1234]{x}')
     expect(defuseAnswer({ choice: 'A', steps: ['\\sqrt['] }).steps).toEqual(['\\sqrt'])
   })
 
@@ -91,6 +85,7 @@ describe('F2, F3, F4: closing rules', () => {
     t.clock.set(START)
     await t.db.query('truncate exam_attempts cascade')
     t.reward.calls.length = 0
+    t.aggregate.calls.length = 0
   })
   const view = async (id: string) => BijakAttemptPaperViewSchema.parse((await me.get(`/api/bijak/attempts/${id}`)).body.data)
   const result = async (id: string) => BijakAttemptResultViewSchema.parse((await me.get(`/api/bijak/attempts/${id}/result`)).body.data)
@@ -133,6 +128,35 @@ describe('F2, F3, F4: closing rules', () => {
     expect((await result(lat)).attempt.status).toBe('submitted')
   })
 
+  it('F2a boundary: exactly 30 s before the deadline is honoured, 31 s is not', async () => {
+    for (const [offset, status] of [[30_000, 'auto_submitted'], [31_000, 'submitted']] as const) {
+      const id = await startAttempt(me, PAPER.matK1, 'exam', true)
+      const v = await view(id)
+      t.clock.set(iso(new Date(v.attempt.deadline!).getTime() - offset))
+      expect((await submit(id, { idempotencyKey: `b${offset}`, changes: [], auto: true })).status).toBe(200)
+      expect((await t.db.query<{ status: string }>('select status from exam_attempts where id = $1', [id]))[0]!.status).toBe(status)
+      t.clock.set(START)
+    }
+  })
+
+  it('F2c: an EARLIER attempt on the same paper does not block the late sync', async () => {
+    const first = await startAttempt(me, PAPER.matK1, 'latihan')
+    await submit(first, { idempotencyKey: 'l', changes: [] })
+    t.clock.advance(60_000)
+    const { id, q, deadline } = await swept()
+    const res = await save(id, early(q[0]!, deadline))
+    expect(res.body.data).toMatchObject({ closed: true, regraded: true })
+  })
+
+  it('F2c: an attempt without a paper id (migrated) is never late-synced', async () => {
+    const { id, q, deadline } = await swept()
+    expect((await view(id)).attempt.status).toBe('auto_submitted')
+    await t.db.query('update exam_attempts set paper_id = null where id = $1', [id])
+    const res = await save(id, early(q[0]!, deadline))
+    expect(res.body.data.closed).toBe(true)
+    expect(res.body.data.regraded).toBeUndefined()
+  })
+
   it('F2b: once the result was shown, a late sync with an old savedAt is not applied', async () => {
     const { id, q, deadline } = await swept()
     expect((await result(id)).result.score).toBe(0)
@@ -171,7 +195,7 @@ describe('F2, F3, F4: closing rules', () => {
     expect(t.reward.calls).toHaveLength(1)
     expect(t.reward.calls[0]).toMatchObject({ attemptId: ex })
     // the aggregate port still sees both
-    expect(t.aggregate.calls.length).toBeGreaterThanOrEqual(2)
+    expect(t.aggregate.calls).toHaveLength(2)
   })
 
   it('F4: a photo upload after deadline + grace closes the attempt and answers 409', async () => {

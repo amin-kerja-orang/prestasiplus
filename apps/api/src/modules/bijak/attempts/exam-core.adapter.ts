@@ -19,53 +19,17 @@ import type { PartAnswer } from '../../../../../../src/modules/m28-bijak-spm/dom
  * Student text reaches the engine's LaTeX reader. Its `\sqrt[...]` branch never terminates on an
  * unterminated index (`\sqrt[`) or one that nests another root (`\sqrt[\sqrt[2]]`), which would pin
  * a worker (marking DoS). The engine is not ours to edit, so every student-supplied string is
- * "defused" first: a `[` that follows `\sqrt` is dropped unless a `]` closes it with no `\sqrt`,
- * `{` or `}` in between (a brace could split the index from its `\sqrt` inside a group). Well-formed
- * input is untouched. The wrappers below stay when `@pp/exam-core` replaces the engine import.
+ * "defused" with a strict allowlist: a `[` survives ONLY inside `\sqrt[<1-3 digits or one ASCII
+ * letter>]`; every other `[` is deleted. Whatever the engine does before reading a root (its own
+ * clean-up passes, or the join of text, final and steps in grading), every `[` it can meet is then
+ * followed at once by a short index and `]`, so `indexOf(']')` is never -1 and the index never holds
+ * a `\sqrt`. Well-formed `\sqrt[3]{8}` is untouched. The wrappers below stay when `@pp/exam-core`
+ * replaces the engine import.
  */
-
-/** The engine's own first pass (it runs before the root is read), so a root hidden behind it is seen. */
-function normalise(input: string): string {
-  let s = input
-  for (let n = 0; n < 8; n++) {
-    const before = s
-    s = s.replace(/\$/g, '').replace(/\\left|\\right/g, '').replace(/\\[,;:! ]/g, ' ')
-    s = s.replace(/\\(?:text|mathrm)\s*\{([^}]*)\}/g, ' $1 ')
-    if (s === before) break
-  }
-  return s
-}
-
-/** One pass; the caller repeats it, because dropping a bracket can make a later `[` follow a `\sqrt`. */
-function dropOnce(s: string): string {
-  const drop: number[] = []
-  for (const m of s.matchAll(/\\sqrt\s*\[/g)) {
-    const open = m.index + m[0].length - 1
-    const close = s.indexOf(']', open + 1)
-    if (close < 0 || /\\sqrt|[{}]/.test(s.slice(open + 1, close))) drop.push(open)
-  }
-  if (!drop.length) return s
-  let out = ''
-  let from = 0
-  for (const at of drop) {
-    out += s.slice(from, at)
-    from = at + 1
-  }
-  return out + s.slice(from)
-}
-
-function dropUnsafeRootBrackets(s: string): string {
-  for (let prev = ''; prev !== s; ) {
-    prev = s
-    s = dropOnce(s)
-  }
-  return s
-}
+const ALLOWED_ROOT_INDEX = /\\sqrt *\[(?:\d{1,3}|[A-Za-z])\]|\[/g
 
 export function defuseRootIndex(input: string): string {
-  const safe = dropUnsafeRootBrackets(normalise(input))
-  // Unchanged after the engine's first pass: nothing risky; keep the student's text exactly as sent.
-  return safe === normalise(input) ? dropUnsafeRootBrackets(input) : safe
+  return input.replace(ALLOWED_ROOT_INDEX, (m) => (m.length > 1 ? m : ''))
 }
 
 export function defuseAnswer(a: PartAnswer): PartAnswer {

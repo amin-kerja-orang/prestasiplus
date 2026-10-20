@@ -276,8 +276,8 @@ export class BijakAttemptsService {
     }
     const result = await this.repo.result(row.id)
     if (!result) throw new ApiError({ code: 'NOT_SUBMITTED', status: 409, message: MSG.schemeAfterSubmit })
-    const paper = await this.buildView(row, false)
     if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
+    const paper = await this.buildView(row, false)
     return { attempt: paper.attempt, result, paper }
   }
 
@@ -375,7 +375,8 @@ export class BijakAttemptsService {
     // The scheme may already be known: this result was shown, or a later attempt on the paper
     // (e.g. a latihan with "Semak") could have shown it. Rewriting answers then would be copying.
     if (row.resultViewedAt) return false
-    if (row.paperId !== null && (await this.repo.hasLaterAttempt(row.userId, row.paperId, row.startedAt, row.id))) return false
+    if (row.paperId === null) return false // unknown paper: cannot rule out a later look at the scheme
+    if (await this.repo.hasLaterAttempt(row.userId, row.paperId, row.startedAt, row.id)) return false
     const ok = changes.filter((c) => Math.min(new Date(c.savedAt).getTime(), now) <= (row.deadlineAt as Date).getTime())
     if (!ok.length) return false
     const index = await this.leafIndexOf(row, load)
