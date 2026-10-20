@@ -66,6 +66,7 @@
     "@lucide/vue": "^1.48.0",
     "@nuxt/ui": "^4.12.0",
     "@pp/contract": "*",
+    "@pp/exam-core": "*",
     "chart.js": "^4.5.1",
     "html2canvas": "1.4.1",
     "idb-keyval": "^6.3.0",
