@@ -130,7 +130,10 @@ describe('BE-09 hardening (real database)', () => {
     expect((await make(teacher, orphan)).version.status).toBe('draft')
     const err = await apiError(() => make(teacher, theirs))
     expect(err.getStatus()).toBe(422)
-    expect(Object.keys(err.fields ?? {})).toEqual(['imageIds'])
+    // Same key and message as a missing file or a wrong purpose: no existence oracle.
+    const missing = await apiError(() => make(teacher, '999999999'))
+    expect(err.fields).toEqual(missing.fields)
+    expect(Object.keys(err.fields ?? {})).toEqual(['optionImages.0'])
     expect((await make(admin, theirs)).version.status).toBe('draft')
     expect(Object.keys((await apiError(() => make(admin, wrongPurpose))).fields ?? {})).toEqual(['optionImages.0'])
   })
@@ -174,6 +177,38 @@ describe('BE-09 hardening (real database)', () => {
     // An invalid key (wrong kind for the mode) never reaches the gate: 422 from the schema.
     const wrong = [{ label: '1', prompt: rich('x'), mode: 'mcq', marks: 1, options: [], key: { kind: 'accepted', values: ['x'] } }] as unknown as QuestionPart[]
     expect((await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', status: 'published', tag: tagBody(tag), parts: wrong }), admin))).getStatus()).toBe(422)
+  })
+
+  const badTree = [{
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
+  }] as unknown as QuestionPart[]
+  const goodTree = [{
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
+  }] as unknown as QuestionPart[]
+  async function approvedWith(parts: QuestionPart[]): Promise<string> {
+    const id = (await svc.create(mcqInput(tag, { questionType: 'essay', tag: tagBody(tag), parts }), admin)).id
+    await svc.setStatus(id, 'review', admin.userId)
+    await svc.setStatus(id, 'approved', admin.userId)
+    return id
+  }
+
+  it('setStatus approved to published runs the keys gate: mismatched point marks are 422 and nothing changes', async () => {
+    const id = await approvedWith(badTree)
+    const err = await apiError(() => svc.setStatus(id, 'published', admin.userId))
+    expect(err.getStatus()).toBe(422)
+    expect(Object.keys(err.fields ?? {})).toEqual(['parts.1.key'])
+    expect(await svc.getStatus(id)).toMatchObject({ status: 'approved', liveVersionNo: null })
+    expect((await svc.setStatus(await approvedWith(goodTree), 'published', admin.userId)).version.status).toBe('published')
+  })
+
+  it('bulk publish skips the invalid-key row and counts only the valid one', async () => {
+    const bad = await approvedWith(badTree)
+    const good = await approvedWith(goodTree)
+    expect(await svc.bulkAction('published', [bad, good], admin)).toEqual({ affected: 1, ids: [good] })
+    expect((await svc.getStatus(bad)).status).toBe('approved')
+    expect((await svc.getStatus(good)).status).toBe('published')
   })
 
   it('every seeded published question passes the keys gate', async () => {

@@ -289,6 +289,7 @@ export class QuestionsService {
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
       if (status === 'published') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
+        Object.assign(fields, checkKeysGate(v.parts))
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -605,10 +606,10 @@ export class QuestionsService {
     } else {
       for (const imageId of imageIds) {
         const meta = await this.files.metaOf(imageId)
-        if (!meta || meta.purpose !== 'question_image') {
+        // Missing, wrong purpose and someone else's file all answer alike (no existence oracle).
+        const foreign = meta !== null && meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin'
+        if (!meta || meta.purpose !== 'question_image' || foreign) {
           fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
-        } else if (meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin') {
-          fields.imageIds = QUESTION_MESSAGES.image
         }
       }
     }
