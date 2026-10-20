@@ -24,6 +24,7 @@ import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gam
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
+import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeacherPaths } from './school-admin/pending-teachers'
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
@@ -95,6 +96,7 @@ export const COMPONENT_SCHEMAS = {
   ...ACCOUNT_COMPONENT_SCHEMAS, // BE-06 (M01 account)
   ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
+  ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
@@ -156,6 +158,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerAccountPaths(registry) // BE-06 (M01 account)
   registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
+  registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
   registerQuestionsPaths(registry) // BE-09
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)

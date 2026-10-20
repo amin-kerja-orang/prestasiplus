@@ -19,6 +19,8 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       LOG_LEVEL: 'silent',
+      // BE-33 global per-address ceiling: raised so specs that send many requests from one address are not throttled.
+      THROTTLE_GLOBAL_PER_MINUTE: '100000',
       // Importing app.module validates the env; a closed port keeps tests without a DB honest.
       DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/none',
     },
