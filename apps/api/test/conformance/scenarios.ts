@@ -9,14 +9,16 @@ import { articleScenarios } from './content/articles'
 import { audioScenarios } from './content/audio'
 import { perutusanScenarios } from './content/perutusan'
 import { videosScenarios } from './content/videos'
-import { classesScenarios } from './classes/classes'
 import { bijakPapersScenarios } from './bijak/papers'
+import { classesScenarios } from './classes/classes'
 import { filesScenarios } from './files/files'
 import { missionsScenarios } from './missions/missions'
 import { questionSetsScenarios } from './missions/question-sets'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
+import { performanceScenarios } from './performance/performance'
+import { schoolAdminScenarios } from './school-admin/school-admin'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
@@ -44,12 +46,14 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...supportTicketScenarios,
     ...videosScenarios,
     ...perutusanScenarios,
-    ...classesScenarios,
     ...bijakPapersScenarios,
     ...bijakAttemptsScenarios,
     ...practiceScenarios,
     ...bijakIntegrationScenarios,
     ...questionsWorkflowScenarios,
+    ...classesScenarios,
+    ...performanceScenarios,
+    ...schoolAdminScenarios,
     ...bijakBuilderScenarios,
     ...missionsScenarios,
     ...questionSetsScenarios,
