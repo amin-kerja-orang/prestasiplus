@@ -292,6 +292,18 @@ export class FilesService {
     return bytes ? { ...this.summary(row), bytes } : null
   }
 
+  /** Purpose and owner of a stored file by internal id: reads the row only, never the object bytes. */
+  async metaOf(idText: string): Promise<{ purpose: string; ownerUserId: string | null } | null> {
+    let id: bigint
+    try {
+      id = idFromString(idText)
+    } catch {
+      return null
+    }
+    const row = await this.prisma.client.file.findUnique({ where: { id }, select: { purpose: true, ownerUserId: true } })
+    return row ? { purpose: row.purpose, ownerUserId: row.ownerUserId === null ? null : idToString(row.ownerUserId) } : null
+  }
+
   /** `DELETE /files/:token`: the owner only; someone else's file is 404. */
   async remove(auth: AuthContext, token: string, who: CallerInfo): Promise<void> {
     const row = await this.findByToken(token)
