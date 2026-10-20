@@ -18,7 +18,7 @@ import type { MonthRange } from './month'
 
 /** Review states of an item still in the queue (contract INTAKE_OPEN_STATES). */
 const OPEN_ITEM_STATES = ['generated', 'needs_review', 'duplicate'] as const
-/** Edit events of an item field. `edited` is the contract action (BE-38 IntakeEventAction); `field_edited` the data-model enum. */
+/** Edit events of an item field (an edit of the whole `tag` object counts as an edit of every tag field). `edited` is the contract action (BE-38 IntakeEventAction); `field_edited` the data-model enum. */
 const EDIT_EVENTS = ['edited', 'field_edited'] as const
 /** Duplicate kinds that count (variant is informational). `near` is the contract code, `possible` the data-model one. */
 const DUPLICATE_KINDS = ['exact', 'near', 'possible'] as const
@@ -128,7 +128,7 @@ export class SqlIntakeDashboardSource implements IntakeDashboardSource {
           (p, idx) => Prisma.sql`count(*) FILTER (WHERE NOT EXISTS (
               SELECT 1 FROM intake_item_events e
               WHERE e.item_id = a.id AND e.event::text IN (${list(EDIT_EVENTS)})
-                AND (e.field = ${p} OR e.field LIKE ${`${p}.%`} OR e.field LIKE ${`${p}[%`})))::int AS ${Prisma.raw(`u${idx}`)}`,
+                AND (e.field = 'tag' OR e.field = ${p} OR e.field LIKE ${`${p}.%`} OR e.field LIKE ${`${p}[%`})))::int AS ${Prisma.raw(`u${idx}`)}`,
         )
         const accepted = await this.db.$queryRaw<Record<string, number>[]>`
           WITH a AS (

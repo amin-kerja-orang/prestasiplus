@@ -88,6 +88,7 @@ describe('GET /intake/dashboard with every store present', () => {
     await insertEvent(db, I11, 'accepted', A('2026-09-30T23:59:00'))
     const I12 = await insertItem(db, B0, 'accepted', A('2026-09-29T10:00:00'))
     await insertEvent(db, I12, 'edited', A('2026-09-29T11:00:00'), 'tag.subject')
+    await insertEvent(db, I12, 'edited', A('2026-09-29T11:30:00'), 'tag') // the whole tag object: every field changed
     await insertEvent(db, I12, 'accepted', A('2026-10-01T00:01:00'))
 
     await insertItem(db, T, 'generated', A('2026-10-02T11:00:00'))
@@ -157,10 +158,10 @@ describe('GET /intake/dashboard with every store present', () => {
     expect(d.tagAcceptance.acceptedItems).toBe(5)
     expect(d.tagAcceptance.fields).toEqual([
       { field: 'subject', path: 'tag.subject', unchanged: 4, ratePercent: 80 }, // I12 edited
-      { field: 'level', path: 'tag.level', unchanged: 5, ratePercent: 100 }, // tag.levelNote is another field
-      { field: 'chapter', path: 'tag.unit', unchanged: 3, ratePercent: 60 }, // I1, I4 edited
-      { field: 'dskpTopic', path: 'tag.sp', unchanged: 4, ratePercent: 80 }, // I2 edited tag.sp[0]
-      { field: 'difficulty', path: 'tag.tp', unchanged: 4, ratePercent: 80 }, // I4 edited
+      { field: 'level', path: 'tag.level', unchanged: 4, ratePercent: 80 }, // I12 (whole tag); tag.levelNote is another field
+      { field: 'chapter', path: 'tag.unit', unchanged: 2, ratePercent: 40 }, // I1, I4, I12 (whole tag)
+      { field: 'dskpTopic', path: 'tag.sp', unchanged: 3, ratePercent: 60 }, // I2 edited tag.sp[0], I12 (whole tag)
+      { field: 'difficulty', path: 'tag.tp', unchanged: 3, ratePercent: 60 }, // I4, I12 (whole tag)
     ])
   })
 
