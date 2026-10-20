@@ -32,6 +32,11 @@ model File {
   banners            Banner[]            @relation("BannerImage")
   perutusanFiles     PerutusanFile[]     @relation("PerutusanFileFile")
   screenshots        Screenshot[]        @relation("ScreenshotFile")
+  // BE-37 back-relations (intake.prisma owns the models).
+  intakeOriginals    IntakeFile[]        @relation("IntakeFileOriginal")
+  intakePageImages   IntakePage[]        @relation("IntakePageImage")
+  intakePageThumbs   IntakePage[]        @relation("IntakePageThumb")
+  intakeFigureCrops  IntakeFigure[]      @relation("IntakeFigureCrop")
 
   @@unique([legacySource, legacyId], map: "uq_files_legacy")
   @@index([ownerUserId, purpose], map: "ix_files_owner_user_id_purpose")
