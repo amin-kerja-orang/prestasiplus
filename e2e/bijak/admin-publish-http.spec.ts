@@ -11,13 +11,13 @@
  *   BIJAK_ADMIN_PUSAT_USER / BIJAK_ADMIN_PUSAT_PASS   (admin@demo.test)
  *   BIJAK_STUDENT_USER / BIJAK_STUDENT_PASS           (only for the "student sees it" step)
  *
- * What http mode does today (code, not a run): the admin Bijak pages call `bijakAdminServer()`
- * (src/modules/m28-bijak-spm/server/client.ts, 21fb311c) in script setup. In http mode it throws
- * "Bijak admin API is not available in http mode (student routes only)." because the admin routes
- * have no HTTP client yet (B3), so /admin/spm/kertas cannot render its list. B4 = the paper builder
- * serving questions in http mode (BE-39 paper builder is in the base, 88059c9f; the client and
- * question bridge are not). The steps that need B3/B4 are `test.fixme` with the expected behaviour
- * fully written: remove the fixme once both land.
+ * What http mode does (code, not a run): since B3 (003cff0b) `bijakAdminServer()` returns the admin
+ * http client (server/http-admin.ts, wired to BE-39: papers list/get/create/save/publish/unpublish/
+ * delete, blueprints). Intake, review-queue and bank methods have no backend route and REJECT with
+ * `BijakError('unavailable', 'Fungsi ini belum tersedia.')`; their pages show the generic load error.
+ * The demo path is Pembina Kertas. B4 = the builder needs PoC questions; without B4 a publish is
+ * refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39 contract, bijak/builder/paths.ts),
+ * so create + publish stays `test.fixme` (remove the fixme once B4 lands).
  */
 import type { Browser, Page, TestInfo } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -113,23 +113,71 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     await expect(link).toHaveAttribute('href', '/admin/spm/kertas')
   })
 
-  test.fixme('Pembina Kertas list renders (table or empty state, summary counts) @bijak', async ({
-    page,
-  }) => {
-    // FIXME(B3): needs the admin HTTP client; today bijakAdminServer() throws in http mode.
+  // Real (B3): GET /api/admin/papers behind the list (PaperListPage.vue: papers-page, papers-table, paper-new).
+  test('Pembina Kertas list renders through the admin http client @bijak', async ({ page }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
     await openPaperBuilder(page)
     await expect(page.getByTestId('papers-page')).toBeVisible()
     await expect(page.getByTestId('papers-table')).toBeVisible()
     await expect(page.getByTestId('paper-new')).toBeVisible()
+    // The generic load error ("Tidak dapat memuatkan senarai kertas.") must not be showing.
+    await expect(page.getByText('Tidak dapat memuatkan senarai kertas.')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
+
+  // Real, read-only: opens the first existing paper (no edit, no publish, no write).
+  test('opening an existing paper renders the editor read-only path @bijak', async ({ page }) => {
+    await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+    await page.goto('/admin/spm/kertas')
+    await expect(page.getByTestId('papers-page')).toBeVisible()
+    const open = page.locator('a[href^="/admin/spm/kertas/"]:not([href$="/baharu"])').first()
+    test.skip((await open.count()) === 0, 'no existing paper in this environment')
+    await open.click()
+    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+    await expect(page.getByTestId('budget-check')).toBeVisible()
+    await expect(page.getByTestId('paper-title')).toBeVisible()
+    await expect(page.getByTestId('section-0')).toBeVisible()
+    await expect(page.getByText('Tidak dapat memuatkan kertas.')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+  })
+
+  // Out of scope for the demo (no backend route yet): they reject with BijakError('unavailable',
+  // 'Fungsi ini belum tersedia.') and each page shows its generic load error, no crash.
+  test(
+    'Bank Soalan, Baris Gilir Semakan and Intake show a graceful unavailable state @bijak',
+    {
+      tag: '@provisional',
+      annotation: {
+        type: 'provisional',
+        description:
+          'known limitation, not a go/no-go blocker; post-demo follow-up (no Bijak backend route for bank, review queue, intake)',
+      },
+    },
+    async ({ page }) => {
+      const errors: string[] = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+      const screens = [
+        // [route, page test id (not for intake), message]
+        ['/admin/spm/soalan', 'bank-page', 'Tidak dapat memuatkan bank soalan.'],
+        ['/admin/spm/semakan', 'review-queue-page', 'Tidak dapat memuatkan baris gilir.'],
+        ['/admin/spm/soalan/ekstrak', '', 'Tidak dapat memuatkan senarai ekstrak.'],
+      ] as const
+      for (const [route, testId, message] of screens) {
+        await page.goto(route)
+        if (testId) await expect(page.getByTestId(testId)).toBeVisible()
+        await expect(page.getByText(message).first()).toBeVisible()
+        await expectNoHorizontalScroll(page)
+      }
+      expect(errors).toEqual([])
+    },
+  )
 
   test.fixme('Terbitkan on an empty draft is refused with the gap list, then cleaned up @bijak', async ({
     page,
   }) => {
-    // FIXME(B3/B4): needs B3 (admin HTTP client) and B4 (builder questions in http mode).
+    // FIXME(B4): builder needs PoC questions; without B4 publish is refused "Kurang 10 soalan".
     const title = `E2E-http refuse ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/spm/kertas')
@@ -139,7 +187,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
       await expect(page.getByTestId('publish-errors')).toContainText(
         'Kertas belum boleh diterbitkan: selesaikan',
       )
-      await expect(page.getByTestId('budget-issues')).toBeVisible()
+      await expect(page.getByTestId('budget-issues')).toContainText('Kurang') // e.g. "Objektif: Kurang 10 soalan (perlu 10, ada 0)" (Needs confirmation: exact numbers)
       await expect(page.getByTestId('paper-unpublish')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     } finally {
@@ -156,7 +204,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     browser,
   }, testInfo) => {
     test.skip(!STUDENT_USER || !STUDENT_PASS, 'needs BIJAK_STUDENT_USER and BIJAK_STUDENT_PASS')
-    // FIXME(B3/B4): needs B3 (admin HTTP client) and B4 (builder questions in http mode).
+    // FIXME(B4): builder needs PoC questions; without B4 publish is refused "Kurang 10 soalan".
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')

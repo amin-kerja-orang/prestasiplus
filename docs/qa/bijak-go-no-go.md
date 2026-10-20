@@ -42,7 +42,7 @@ Add `E2E_BOOT_TIMEOUT_MS=60000` on a busy machine. Projects run at 375, 768 and 
 | `http-autosave.spec.ts` | (a) autosave | PASS: answer sends `PUT /api/bijak/attempts/:id/answers` (2xx) and survives a reload. |
 | `student-http.spec.ts` | (a) | PASS: login, hub, cover, Mula, answer, server-side resume after reload, Hantar, result, history. |
 | `us33-http.spec.ts` | (b) | PASS: school dashboard badge and Guru class view show "Keputusan Bijak SPM" with figures or "Tiada data". Skips if the school-admin or guru credentials are missing (a skip is not a pass). |
-| `admin-publish-http.spec.ts` | (c) | 1 real test (login, menu offers Pembina Kertas at `/admin/spm/kertas`) PASS; the other 3 are `fixme` (skipped) until B3 (`be/demo-polish`) and B4. |
+| `admin-publish-http.spec.ts` | (c) | 1 real test (login, menu offers Pembina Kertas at `/admin/spm/kertas`) PASS; the other 3 stay `fixme` (skipped) until B4 (create and full publish need PoC questions). Needs confirmation: another agent may un-fixme the list test now that B3 landed. |
 
 Read the result: expected is 0 failed. Every `skipped` must be explained by a fixme or a missing credential, never silently. A failure on one size only is a responsive bug (High). A failure on all sizes at login or at a `/api/bijak/...` wait points at the API or deploy (compare with Step 1). Specs that only run in mock mode (`student`, `teacher`, `admin-mod-pelajar`, ...) are skipped in http mode.
 
@@ -61,10 +61,13 @@ Tick the box when every listed row passes at that size; run the rows from `bijak
 | (b) | Admin Sekolah | B-05, B-09 | `/spm/bijak` is 403; `/admin-sekolah` panel "Ringkasan Prestasi" shows the badge "Keputusan Bijak SPM", figures OR "Tiada data". | [ ] | [ ] | [ ] |
 | (b) | Admin Pusat | B-11 to B-14 | "Masuk Mod Pelajar" -> attempt -> result -> history -> "Keluar Mod Pelajar" returns to the admin portal. Mock-tested; run on http if the account allows. | [ ] | [ ] | [ ] |
 | (b) known gaps | Guru, Admin Sekolah, Admin Pusat | B-07, B-08, B-10, B-15, B-16 | **Blocked (known, accepted)**: no Analitik/Analisa Item/Monitoring view, no per-attempt drill-down, no Admin Pusat analytics (B-07, B-08, B-10); Mod Pelajar for Admin Sekolah (B-15) and the test-data flag (B-16) not built. | n/a | n/a | n/a |
-| (c) Admin Pusat publishes | Admin Pusat | C-01 to C-10, C-12 to C-15, C-17, C-19 | **Mock build only** until B3: list, new draft, assemble, gates, publish, "Tarik balik", delete. Paper then visible to Murid (C-13, C-18). | [ ] | [ ] | [ ] |
+| (c) Pembina Kertas, mandatory (http) | Admin Pusat | C-01, C-02, C-20 (+ C-17, C-19) | `/admin/spm/kertas` renders its list (rows or "Belum ada kertas"), and "Buka" on a ready-to-publish paper renders the editor with no error panel. Guru/Murid are refused (C-17). | [ ] | [ ] | [ ] |
+| (c) create + publish | Admin Pusat | C-03 to C-09, C-12 to C-15 | **Blocked-on-B4** (accepted, not a NO-GO): without PoC questions the builder cannot reach a publishable paper. Run on the mock build if a demo is wanted. | n/a | n/a | n/a |
 | (c) known gaps | Admin Pusat | C-11, C-16 | **Blocked (known, accepted)**: paper-level key re-check at "Terbitkan"; "Salin untuk sunting". | n/a | n/a | n/a |
 
-Objective (c) in http mode is **Blocked until B3** (`be/demo-polish`): `bijakAdminServer()` throws "Bijak admin API is not available in http mode (student routes only)." (`src/modules/m28-bijak-spm/server/client.ts` lines 51-54), so Pembina Kertas cannot render on staging. Until B3 lands, (c) can only be demonstrated on the mock build (`npm run test:e2e:bijak` or a mock preview). B4 (paper builder serving questions in http mode) is also needed before the full publish flow can run on staging. Needs confirmation: the B3/B4 landing status at the time of UAT.
+Objective (c), demo path: Pembina Kertas (`/admin/spm/kertas` list, `/admin/spm/kertas/baharu` create, then editor / save / check / publish). B3 landed (commit 003cff0b): the admin http client is wired to BE-39, so the list and the editor are read paths that should render once deployed. Creating a paper and publishing it need B4 (PoC questions in the builder); until then publish is refused for a shortage of questions (mock copy "Kurang {n} soalan (perlu {x}, ada {y})"; the exact BE-39 text, for example "Kurang 10 soalan", was not found: Needs confirmation). That is Blocked-on-B4, not a NO-GO. Needs confirmation: B4 status at UAT time.
+
+**Known limitations (not blockers; post-demo follow-up):** Bank Soalan SPM (`/admin/spm/soalan`), Baris Gilir Semakan (`/admin/spm/semakan`) and the intake pages (`/admin/spm/soalan/muat-naik`, `/ekstrak`, `/manual`) are out of scope for the demo. In http mode their methods reject with "Fungsi ini belum tersedia." and the pages should show a graceful error. One check only (UAT-C-21): the page shows the graceful state and does not crash. They are not part of the go/no-go rows.
 
 ## 4. Go/no-go decision (proposed; the lead decides)
 
@@ -74,10 +77,10 @@ Objective (c) in http mode is **Blocked until B3** (`be/demo-polish`): `bijakAdm
 | Step 2 | `http-autosave` and `student-http` PASS at 375/768/1280; `us33-http` PASS (not skipped); `admin-publish-http` 1 real test PASS, rest only fixme. |
 | Step 3 (a) | All required (a) rows Pass at all 3 sizes. |
 | Step 3 (b) | Built rows (B-01 to B-06, B-09, B-11 to B-14) Pass; label/figures rule holds; Blocked rows accepted. |
-| Step 3 (c) | If B3 has not landed: GO on the mock build only, with (c) recorded as not shown on staging. If B3 and B4 have landed: (c) http rows must Pass and the fixmes are removed and green. |
+| Step 3 (c) | In http mode the Pembina Kertas list (C-01, C-02) and the editor of a ready-to-publish paper (C-20) render and Pass at all 3 sizes. Create and full publish (C-03 to C-09, C-12 to C-15) are Blocked-on-B4: accepted. If B4 has landed, those rows must Pass in http mode. Known limitations (C-21) show a graceful state. |
 | Defects | No open Critical or High (any layout break at a width is High; no lost answer; no mark scheme visible before Hantar in exam mode). |
 
-NO-GO if any of: a smoke FAILs (Render ok but Pages fails = deploy blocker); an http e2e spec fails or skips without a known reason; any (a) row fails; figures and "Tiada data" shown together, or the label missing in http mode; the Guru can open a Bijak route; an unbuilt gate lets a paper publish without a mark scheme; B3/B4 landed but (c) http fails; a Pass is claimed for a Blocked row.
+NO-GO if any of: a smoke FAILs (Render ok but Pages fails = deploy blocker); an http e2e spec fails or skips without a known reason; any (a) row fails; figures and "Tiada data" shown together, or the label missing in http mode; the Guru can open a Bijak route; an unbuilt gate lets a paper publish without a mark scheme; the Pembina Kertas list or editor fails to render in http mode, or B4 has landed and create/publish fails, or an out-of-scope screen (Bank, Baris Gilir Semakan, intake) crashes instead of showing the graceful state; a Pass is claimed for a Blocked row.
 
 ## 5. Results log
 
