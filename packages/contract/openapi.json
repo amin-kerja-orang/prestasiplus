@@ -74100,6 +74100,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -74272,6 +74293,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -74280,7 +74322,7 @@
           "curriculum-admin"
         ],
         "summary": "Delete an education level",
-        "description": "Cascade (BR-10): subject links and every chapter of the level with topics and subtopics.",
+        "description": "409 CONFLICT (and nothing deleted) while the level still has linked subjects, chapters (in the tree or not) or DSKP nodes; only an empty level is deleted. Supersedes the BR-10 cascade (LEAD 2026-10-20).",
         "parameters": [
           {
             "schema": {
@@ -74349,6 +74391,37 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Tahap Pendidikan tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT with message \"Tahap Pendidikan ini masih mempunyai subjek, bab atau nod DSKP.\"; nothing is deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -74449,6 +74522,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -74588,6 +74682,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -74767,6 +74882,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -74775,7 +74911,7 @@
           "curriculum-admin"
         ],
         "summary": "Delete a subject",
-        "description": "Cascade (BR-10): level links and every chapter of the subject with topics and subtopics.",
+        "description": "409 CONFLICT (and nothing deleted) while the subject still has level links, chapters (in the tree or not), DSKP nodes or TP descriptors; only an empty subject is deleted. Supersedes the BR-10 cascade (LEAD 2026-10-20).",
         "parameters": [
           {
             "schema": {
@@ -74844,6 +74980,37 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Subjek tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT with message \"Subjek ini masih mempunyai tahap, bab atau nod DSKP.\"; nothing is deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -74944,6 +75111,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -75214,6 +75402,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -75221,7 +75430,8 @@
         "tags": [
           "curriculum-admin"
         ],
-        "summary": "Delete a chapter with its topics and subtopics",
+        "summary": "Delete a chapter",
+        "description": "409 CONFLICT (and nothing deleted) while the chapter still has topics, so `deleted.topics` and `deleted.subtopics` are always 0.",
         "parameters": [
           {
             "schema": {
@@ -75246,7 +75456,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Deleted with cascade counts; status \"Bab berjaya dipadam.\"",
+            "description": "Deleted; status \"Bab berjaya dipadam.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -75290,6 +75500,37 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Bab tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT with message \"Bab ini masih mempunyai topik.\"; nothing is deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -75376,6 +75617,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -75555,6 +75817,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -75562,7 +75845,8 @@
         "tags": [
           "curriculum-admin"
         ],
-        "summary": "Delete a topic with its subtopics",
+        "summary": "Delete a topic",
+        "description": "409 CONFLICT (and nothing deleted) while the topic still has subtopics, so `deleted.subtopics` is always 0.",
         "parameters": [
           {
             "schema": {
@@ -75587,7 +75871,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Deleted with cascade counts; status \"Topik berjaya dipadam.\"",
+            "description": "Deleted; status \"Topik berjaya dipadam.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -75631,6 +75915,37 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Topik tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT with message \"Topik ini masih mempunyai subtopik.\"; nothing is deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -75724,6 +76039,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -75803,6 +76139,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -75915,6 +76272,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -75991,6 +76369,27 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Subtopik tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
