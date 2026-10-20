@@ -20,6 +20,8 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 
+import { dateKey } from './windows'
+
 const TZ = 'Asia/Kuala_Lumpur'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -510,7 +512,7 @@ export class CommandCenterRepository {
              EXISTS (SELECT 1 FROM user_packages up WHERE up.user_id = u.id) AS has_package,
              false AS has_pksk,
              EXISTS (SELECT 1 FROM school_subscriptions ss WHERE ss.school_id = u.school_id AND ss.status IN ('active', 'grace')
-                      AND ss.starts_on <= ${window.to}::date AND ss.ends_on >= ${window.to}::date) AS school_subscribed
+                      AND ss.starts_on <= ${dateKey(window.to)}::date AND ss.ends_on >= ${dateKey(window.to)}::date) AS school_subscribed
         FROM users u LEFT JOIN schools sc ON sc.id = u.school_id
        WHERE u.last_login_at >= ${window.from} AND u.last_login_at <= ${window.to} ${school}
        ORDER BY u.last_login_at DESC, u.id DESC LIMIT ${Math.max(0, Math.trunc(limit))}`)
