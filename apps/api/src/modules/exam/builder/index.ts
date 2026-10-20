@@ -11,3 +11,4 @@ export {
   type BuilderQuestionRef,
   type BuilderQuestionSource,
 } from './ports'
+export { QuestionBankBuilderSource } from './question-bank.source'

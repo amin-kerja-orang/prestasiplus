@@ -18,7 +18,9 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, type BijakQuestionSource } from '../../src/modules/bijak/papers'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
-import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule } from '../../src/modules/exam/builder'
+import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule, QuestionBankBuilderSource } from '../../src/modules/exam/builder'
+import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { questionsSeed } from '../../prisma/seed/questions'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export const DEMO_PASSWORD = 'Demo1234'
@@ -45,6 +47,8 @@ export interface BuilderTestApp {
 export interface BootOptions {
   /** Paper builder question port (default: the PoC fixture). */
   builderSource?: BuilderQuestionSource
+  /** Keep the production BE-09 backed source (the wired-bank spec); also seeds the question bank. */
+  realBank?: boolean
   /** BE-15 student-side question port (default: the PoC fixture). Pass the same fake to keep both sides in step. */
   papersSource?: BijakQuestionSource
   /** Environment overrides for this app (rate limits). */
@@ -57,7 +61,7 @@ export interface BootOptions {
  */
 export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTestApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, examSeed], { prisma: db.prisma })
+  await runSeeds(opts.realBank ? [identitySeed, curriculumSeed, questionsSeed, examSeed] : [identitySeed, curriculumSeed, examSeed], { prisma: db.prisma })
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
@@ -72,17 +76,18 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
     ...opts.env,
   })
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({
+  // `ExamBuilderModule.onModuleInit` registers the BE-09 backed source once; the tests replace that provider.
+  const builder = Test.createTestingModule({
     imports: [defineAppModule([AuthModule, BijakPapersModule, ExamBuilderModule, ExamBlueprintsModule])],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .compile()
+  if (!opts.realBank) builder.overrideProvider(QuestionBankBuilderSource).useValue(opts.builderSource ?? new PocBuilderQuestionSource())
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   const builderPorts = app.get(BijakBuilderPorts)
   const papersPorts = app.get(BijakPapersPorts)
-  if (opts.builderSource) builderPorts.provideQuestionSource(opts.builderSource)
   if (opts.papersSource) papersPorts.provideQuestionSource(opts.papersSource)
   await app.init()
   return {

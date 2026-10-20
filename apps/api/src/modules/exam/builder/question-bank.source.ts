@@ -1,0 +1,261 @@
+/**
+ * The paper builder's question source backed by the BE-09 question bank (BE-39 wiring). Registered on
+ * `BijakBuilderPorts` by `ExamBuilderModule.onModuleInit`.
+ *
+ * Reads go through `QuestionsRepository` where it has the read (eligibility, the live part tree with keys).
+ * Three reads have no repository method and are read-only Prisma queries on BE-09 tables: a question at a
+ * PINNED version (the repository serves only the live and the latest version), the pool tags and paper
+ * code used for the kertas, and stimulus groups with their stimuli. Nothing here writes.
+ *
+ * - candidates: live version published AND active (BE-09 Q-2), subject = the paper subject, kertas from
+ *   `kertasOf`, in bank order (question id ascending).
+ * - describe: the pinned version when the ref has one, else the live version, else the latest (a question
+ *   that is not published yet can still be placed in a draft paper; publish refuses it). `status` is the
+ *   current status of the question.
+ */
+import { Inject, Injectable } from '@nestjs/common'
+import type { BijakAttemptOption, BijakAttemptStimulus, BijakBuilderReviewQuestion } from '@pp/contract'
+
+import { idFromString } from '../../../db/ids'
+import { PrismaService } from '../../../db/prisma.service'
+import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
+import { QuestionsRepository } from '../../questions'
+import { BuilderRepository } from './builder.repository'
+import {
+  formOriginWire,
+  kertasOf,
+  kindOfRows,
+  levelOf,
+  marksOfRows,
+  previewOfRows,
+  reviewQuestion,
+  statusOf,
+  stimulusOf,
+  type Curriculum,
+  type PartRow,
+} from './question-bank.mapping'
+import type {
+  BuilderCandidateScope,
+  BuilderGroupInfo,
+  BuilderPreview,
+  BuilderQuestionInfo,
+  BuilderQuestionRef,
+  BuilderQuestionSource,
+} from './ports'
+
+const toBigint = (id: string): bigint | null => {
+  try {
+    return idFromString(id)
+  } catch {
+    return null
+  }
+}
+
+@Injectable()
+export class QuestionBankBuilderSource implements BuilderQuestionSource {
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(BuilderRepository) private readonly builder: BuilderRepository,
+  ) {}
+
+  private get db() {
+    return this.prisma.client
+  }
+
+  async candidates(scope: BuilderCandidateScope): Promise<string[]> {
+    const subject = await this.builder.subjectByCode(curriculumCodeOf(scope.subject))
+    if (!subject) return []
+    const eligible = await this.questions.eligibleIds({ subjectId: subject.id.toString() })
+    const ids = eligible.flatMap((id) => {
+      const key = toBigint(id)
+      return key === null ? [] : [key]
+    })
+    if (ids.length === 0) return []
+    const tags = await this.db.questionTag.findMany({ where: { questionId: { in: ids }, kind: 'pool' }, select: { questionId: true, code: true } })
+    const versions = await this.db.questionVersion.findMany({
+      where: { questionId: { in: ids }, status: 'published' },
+      select: { questionId: true, versionNo: true, paperCode: true },
+    })
+    const live = await this.db.question.findMany({ where: { id: { in: ids } }, select: { id: true, liveVersionNo: true } })
+    const liveNo = new Map(live.map((q) => [q.id, q.liveVersionNo]))
+    const paperCode = new Map(versions.filter((v) => liveNo.get(v.questionId) === v.versionNo).map((v) => [v.questionId, v.paperCode]))
+    const pools = new Map<bigint, string[]>()
+    for (const t of tags) pools.set(t.questionId, [...(pools.get(t.questionId) ?? []), t.code])
+    return ids.filter((id) => kertasOf(pools.get(id) ?? [], paperCode.get(id) ?? null) === scope.kertas).map((id) => id.toString())
+  }
+
+  async describe(refs: readonly BuilderQuestionRef[]): Promise<ReadonlyMap<string, BuilderQuestionInfo>> {
+    const out = new Map<string, BuilderQuestionInfo>()
+    const wanted = new Map<bigint, number | undefined>()
+    for (const ref of refs) {
+      const key = toBigint(ref.id)
+      if (key !== null && !wanted.has(key)) wanted.set(key, ref.versionNo)
+    }
+    if (wanted.size === 0) return out
+    const questions = await this.db.question.findMany({
+      where: { id: { in: [...wanted.keys()] } },
+      select: {
+        id: true,
+        isActive: true,
+        groupId: true,
+        liveVersionNo: true,
+        latestVersionNo: true,
+        tags: { where: { kind: 'pool' }, select: { code: true } },
+        group: {
+          select: { stimuli: { orderBy: { position: 'asc' }, select: { stimulus: { select: { kind: true, label: true } } } } },
+        },
+      },
+    })
+    const picks = questions.map((q) => ({ q, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo }))
+    const statusNos = questions.flatMap((q) => [q.liveVersionNo, q.latestVersionNo].flatMap((n) => (n === null ? [] : [{ questionId: q.id, versionNo: n }])))
+    const versions = await this.db.questionVersion.findMany({
+      where: { OR: [...picks.map(({ q, versionNo }) => ({ questionId: q.id, versionNo })), ...statusNos] },
+      select: {
+        questionId: true,
+        versionNo: true,
+        status: true,
+        type: true,
+        stemMs: true,
+        paperCode: true,
+        subjectId: true,
+        unitNodeId: true,
+        formOrigin: true,
+        parts: {
+          orderBy: [{ depth: 'asc' }, { position: 'asc' }],
+          select: { id: true, parentPartId: true, position: true, label: true, promptMs: true, marks: true, mode: true, key: { select: { kind: true } } },
+        },
+      },
+    })
+    const byKey = new Map(versions.map((v) => [`${v.questionId}:${v.versionNo}`, v]))
+    const subjects = await this.builder.subjectsByIds(versions.flatMap((v) => (v.subjectId === null ? [] : [v.subjectId])))
+    const units = await this.unitNames(versions.flatMap((v) => (v.unitNodeId === null ? [] : [v.unitNodeId])))
+    for (const { q, versionNo } of picks) {
+      const v = byKey.get(`${q.id}:${versionNo}`)
+      if (!v) continue
+      const rows: PartRow[] = v.parts
+      const stimulusLabel = q.group?.stimuli.find((s) => s.stimulus.kind !== 'audio')?.stimulus.label
+      const subject = v.subjectId === null ? undefined : subjects.get(v.subjectId.toString())
+      out.set(q.id.toString(), {
+        id: q.id.toString(),
+        versionNo,
+        status: statusOf({
+          isActive: q.isActive,
+          liveStatus: q.liveVersionNo === null ? null : (byKey.get(`${q.id}:${q.liveVersionNo}`)?.status ?? null),
+          latestStatus: byKey.get(`${q.id}:${q.latestVersionNo}`)?.status ?? null,
+        }),
+        subject: subject ? bijakCodeOf(subject.code) : '',
+        // A question without a kertas can never be a candidate; 0 keeps it out of every blueprint match.
+        kertas: kertasOf(q.tags.map((t) => t.code), v.paperCode) ?? 0,
+        groupId: q.groupId === null ? null : q.groupId.toString(),
+        ...(stimulusLabel ? { stimulusLabel } : {}),
+        preview: previewOfRows(v.stemMs, rows),
+        marks: marksOfRows(rows),
+        kind: kindOfRows(v.type, rows),
+        topic: v.unitNodeId === null ? '' : (units.get(v.unitNodeId)?.title ?? ''),
+      })
+    }
+    return out
+  }
+
+  async groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>> {
+    const out = new Map<string, BuilderGroupInfo>()
+    const keys = groupIds.flatMap((id) => {
+      const k = toBigint(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return out
+    const groups = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      include: {
+        stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
+        questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
+      },
+    })
+    for (const g of groups) {
+      const stimulus = firstStimulus(g.stimuli.map((s) => s.stimulus))
+      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, questionIds: g.questions.map((m) => m.id.toString()) })
+    }
+    return out
+  }
+
+  async review(ids: readonly string[]): Promise<BuilderPreview> {
+    const unique = [...new Set(ids)]
+    const live = await this.questions.getMany(unique, 'live')
+    const have = new Set(live.map((r) => r.id))
+    const rest = unique.filter((id) => !have.has(id))
+    const latest = rest.length ? await this.questions.getMany(rest, 'latest') : []
+    const byId = new Map([...live, ...latest].map((r) => [r.id, r]))
+    const records = unique.flatMap((id) => {
+      const r = byId.get(id)
+      return r ? [r] : []
+    })
+    const subjects = await this.builder.subjectsByIds(records.flatMap((r) => (r.version.subjectId === null ? [] : [BigInt(r.version.subjectId)])))
+    const unitIds = records.flatMap((r) => (r.version.unitId === null ? [] : [BigInt(r.version.unitId)]))
+    const units = await this.unitNames(unitIds)
+    const spCodes = await this.nodeCodes(records.flatMap((r) => r.version.spIds.map((s) => BigInt(s))))
+    const levels = await this.levelCodes(records.flatMap((r) => (r.version.educationLevelId === null ? [] : [BigInt(r.version.educationLevelId)])))
+
+    const questions: BijakBuilderReviewQuestion[] = []
+    for (const r of records) {
+      const v = r.version
+      const subject = v.subjectId === null ? undefined : subjects.get(v.subjectId)
+      const unit = v.unitId === null ? undefined : units.get(BigInt(v.unitId))
+      const curriculum: Curriculum = {
+        subject: subject ? bijakCodeOf(subject.code) : '',
+        level: levelOf(v.educationLevelId === null ? null : (levels.get(BigInt(v.educationLevelId)) ?? null), v.formOrigin),
+        unit: unit?.code ?? null,
+        unitLabel: unit?.title ?? '',
+        sp: v.spIds.flatMap((s) => spCodes.get(BigInt(s)) ?? []),
+        tp: Math.min(6, Math.max(1, v.difficultyTp ?? 1)),
+        formOrigin: formOriginWire(v.formOrigin),
+      }
+      questions.push(reviewQuestion({ id: r.id, stem: v.stemMs, parts: v.parts, curriculum }))
+    }
+
+    const stimuli: Record<string, BijakAttemptStimulus> = {}
+    const optionBanks: Record<string, BijakAttemptOption[]> = {}
+    const groupKeys = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))].flatMap((id) => {
+      const k = toBigint(id)
+      return k === null ? [] : [k]
+    })
+    if (groupKeys.length) {
+      const groups = await this.db.stimulusGroup.findMany({
+        where: { id: { in: groupKeys } },
+        include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
+      })
+      for (const g of groups) {
+        const st = firstStimulus(g.stimuli.map((s) => s.stimulus))
+        if (st) stimuli[g.id.toString()] = st
+        if (g.options.length) optionBanks[g.id.toString()] = g.options.map((o) => ({ id: o.label, text: o.bodyMs ?? '' }))
+      }
+    }
+    return { questions, stimuli, optionBanks }
+  }
+
+  /** Curriculum unit title and code by node id (read-only; the curriculum module has no batch read by id). */
+  private async unitNames(ids: readonly bigint[]): Promise<Map<bigint, { code: string; title: string }>> {
+    if (ids.length === 0) return new Map()
+    const rows = await this.db.curriculumNode.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, code: true, title: true } })
+    return new Map(rows.map((r) => [r.id, { code: r.code, title: r.title }]))
+  }
+
+  private async nodeCodes(ids: readonly bigint[]): Promise<Map<bigint, string[]>> {
+    const names = await this.unitNames(ids)
+    return new Map([...names].map(([id, n]) => [id, [n.code]]))
+  }
+
+  private async levelCodes(ids: readonly bigint[]): Promise<Map<bigint, string>> {
+    if (ids.length === 0) return new Map()
+    const rows = await this.db.educationLevel.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, code: true } })
+    return new Map(rows.map((r) => [r.id, r.code]))
+  }
+}
+
+function firstStimulus(list: readonly Parameters<typeof stimulusOf>[0][]): BijakAttemptStimulus | undefined {
+  for (const s of list) {
+    const mapped = stimulusOf(s)
+    if (mapped) return mapped
+  }
+  return undefined
+}
