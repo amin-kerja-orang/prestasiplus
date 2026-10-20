@@ -9,6 +9,7 @@ The v2 frontend ships as a container image. This is release prep (G6); nothing i
 | `docker/frontend/Dockerfile` | Multi-stage: `node:22.22.2-alpine` builds with `npm ci` + `vite build`, then `nginx:1.27-alpine` serves `dist`. |
 | `docker/frontend/nginx.conf` | SPA fallback, gzip, immutable cache for `/assets/`, `no-cache` for `index.html`, security headers, `/healthz`. |
 | `compose.yaml` | `frontend` service (active) and commented `api` / `db` placeholders. |
+| `functions/api/[[path]].ts`, `render.yaml` | Cloudflare Pages proxy and Render blueprint (primary staging path). See `docs/ops/deploy-staging.md`. |
 | `compose.staging.yaml` | Staging overlay (http build, Secure cookie, loopback port). See `docs/ops/deploy-staging.md`. |
 | `.env.example` | Compose/build defaults. Copy to `.env` (git-ignored) to override. No secrets. |
 | `.dockerignore` | Keeps `node_modules`, `.git`, `.claude`, test output, `dist*`, docs and e2e out of the build context. |
