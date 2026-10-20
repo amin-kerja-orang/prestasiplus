@@ -63,7 +63,7 @@ export interface SchoolClassCountPort {
 
 export const SCHOOL_CLASS_COUNT_PORT = Symbol('SCHOOL_CLASS_COUNT_PORT')
 
-/** Default until BE-17 is merged and wired: no classes. */
+/** Fail-closed fake for tests: no classes. The module binds `SchoolClassesAdapter` (BE-17). */
 export class NoSchoolClasses implements SchoolClassCountPort {
   async activeClasses(): Promise<number> {
     return 0
@@ -75,8 +75,7 @@ export class NoSchoolClasses implements SchoolClassCountPort {
  * (reports/performance/services/school-performance.service.ts). `SchoolPerformanceService.school(ctx: Ctx): Promise<PerformanceSchool>`
  * is structurally a `SchoolPerformancePort` (the view is a subset of `PerformanceSchool`), so there is no mapping code. The ctx is
  * `{ userId, role, scope: auth.active.scope, isTest }`. BE-19 gives no non-zero `distribution` rows (the GPS is not Bijak: it stays
- * null until an SPM card wires a future SpmGradesPort) and its `levels` stay empty until BE-17 provides the classes port; report, do not derive.
+ * null until an SPM card wires a future SpmGradesPort) and its `levels` come from the BE-17 classes (grade 10/11 classes with pupils who sat); report, do not derive.
  *
- * TODO(BE-17 merge): register { provide: SCHOOL_CLASS_COUNT_PORT, useClass: <adapter over ClassesRepository> } where the adapter
- * returns the count of active classroom + school_class rows of the school (BE-17 ClassesRepository).
+ * BE-17 is wired: `SchoolClassesAdapter` (school-classes.adapter.ts) counts the active classes of the school over `ClassesRepository`.
  */
