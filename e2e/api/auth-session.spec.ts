@@ -7,12 +7,15 @@
  */
 
 import { API_PASSWORD, currentSession, expect, gotoApi, loginViaUi, test } from '../fixtures/api'
+import { HOME } from './helpers'
 
 test.describe('auth and session @api', () => {
   // bcrypt on the real API makes a login take several seconds on a busy machine.
   test.setTimeout(60_000)
 
-  test('login: bad password shows the server message and stays on /login @api', async ({ page }) => {
+  test('login: bad password shows the server message and stays on /login @api', async ({
+    page,
+  }) => {
     await gotoApi(page, '/login')
     const form = page.getByTestId('login-form')
     await form.getByLabel('Alamat Email').fill('pelajar@demo.test')
@@ -38,7 +41,8 @@ test.describe('auth and session @api', () => {
     const session = await currentSession(page)
     expect(session.active.role).toBe('student')
     const landing = new URL(page.url()).pathname
-    expect(landing).toBe(session.landingPath)
+    // The API landingPath is overridden by the FE prototype scope (prototype-scope.ts studentHomePath).
+    expect(landing).toBe(HOME.student)
 
     await page.reload()
     await expect(page).not.toHaveURL(/\/login/)
@@ -53,7 +57,9 @@ test.describe('auth and session @api', () => {
     await page.evaluate(() => localStorage.removeItem('pp.auth'))
     await page.goto(landing)
     await expect(page).not.toHaveURL(/\/login/)
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('pp.auth') !== null)).toBe(true)
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('pp.auth') !== null))
+      .toBe(true)
   })
 
   test('a write without the CSRF header is refused, with it the role switch works @api', async ({
@@ -88,8 +94,11 @@ test.describe('auth and session @api', () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (JSON.parse(localStorage.getItem('pp.auth') ?? 'null') as { user?: { role?: string } } | null)
-              ?.user?.role ?? null,
+            (
+              JSON.parse(localStorage.getItem('pp.auth') ?? 'null') as {
+                user?: { role?: string }
+              } | null
+            )?.user?.role ?? null,
         ),
       )
       .toBe(other)

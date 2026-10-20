@@ -55,6 +55,13 @@ export const HOME: Record<'student' | 'guru' | 'adminSekolah' | 'adminPusat', st
 
 /** Http-mode twin of `expectNoHorizontalScroll`: the app has booted when `#app.__vue_app__` exists. */
 export async function expectNoHScroll(page: Page): Promise<void> {
+  // TODO(d4 /login hero animate-ds-stamp overflow at 375): temporary; remove this wait once d4's FE fix lands (lead, 2026-10-21).
+  // Entry animations (e.g. the login hero chip) overflow briefly: wait until none is running.
+  await page
+    .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), null, {
+      timeout: 5000,
+    })
+    .catch(() => {})
   const samples: number[] = []
   for (let i = 0; i < H_SCROLL_SAMPLES; i++) {
     if (i > 0) await page.waitForTimeout(H_SCROLL_SAMPLE_GAP_MS)
@@ -109,9 +116,9 @@ export async function logoutViaMenu(
   if (shell === 'pembelajaran') {
     await page.getByTestId('pembelajaran-account-top').click()
   } else {
-    const account = page.getByTestId('pentadbiran-account')
-    if (!(await account.isVisible())) await page.getByTestId('pentadbiran-menu-button').click()
-    await account.click()
+    const account = page.locator('[data-testid=pentadbiran-account]:visible')
+    if ((await account.count()) === 0) await page.getByTestId('pentadbiran-menu-button').click()
+    await account.first().click()
   }
   await page.getByRole('menuitem', { name: 'Log Keluar' }).click()
 }
