@@ -84,14 +84,14 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-35 | full | 2026-10-20 | Group A (PC-4). Anonymiser tool + synthetic .cloud fixture generator. Opened after BE-27 merged. No folder overlap with BE-04, so it may run in parallel. Security review. LEAD runs the anonymiser (OD-18). |
 | BE-05 | full | 2026-10-19 | Group A (PC-1). Users & schools (M02). **DONE — merged 2ab7976f (2026-10-20).** Unblocked BE-17 (also needs BE-08 full), BE-25. |
 | BE-08 | full | 2026-10-19 | Group B (PC-2). Curriculum (M03): levels, subjects, chapters, topics, DSKP tree. Opened after S3; contract already merged. Unblocks BE-09 full. |
-| BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
+| BE-09 | full | 2026-10-20 | Question bank core (M04): schema, repository, question CRUD, eligibility. Depends BE-08 (done). Contract merged. **CLAIMED pc-aminfaudzi/S2 (61)** — LEAD assigned (critical bottleneck, unblocks BE-10/12/15). **Migration 0010** (after BE-24 0009). Branch `be/BE-09-question-bank-core`. Group B: do NOT take — 61 holds it. |
 | BE-11 | full | 2026-10-20 | **Group B.** Wallet, ledger and streak core (M14 core). Depends BE-03 (done). Contract merged. Opened for Group B (#29). Unblocks BE-12, BE-16, BE-23. Branch `be/BE-11-wallet-streak-core`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
 | BE-25 | full | 2026-10-20 | Group A (PC-1). Subscriptions, packages, parent invites/links, complimentary students (M02 rest). **DONE — merged 6f634d67 (2026-10-20).** Migration 0006. Unblocks BE-12. |
 | BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01). **DONE — merged b5d5d7d4 (2026-10-20).** Migration 0007. mustChangePassword guard; teacher self-register fail-closed; register throttle decoupled from login. Unblocks BE-24. |
 | BE-10 | contract-only | 2026-10-19 | Question workflow: `packages/contract/src/question-workflow/**`. |
 | BE-15 | contract-only | 2026-10-19 | Bijak papers: `packages/contract/src/bijak/papers/**`. |
-| BE-17 | contract-only | 2026-10-19 | Classes (teacher): `packages/contract/src/classes/**`, not `classes/{missions,question-sets}`. |
+| BE-17 | full | 2026-10-20 | Classes and teacher basics (M10 part A). Depends BE-05 + BE-08 (both done). Contract merged. Open for Group A (PC-6). Unblocks BE-18/19/22/28. Migration number from LEAD when claimed. Branch `be/BE-17-classes-teacher`. Also provides COMP_CLASSROOM_PORT (BE-25 comp-student class assignment) + verify-pending-teacher (BE-21 AC#13 lives here or BE-21). |
 | BE-19 | contract-only | 2026-10-19 | Performance reports: `packages/contract/src/reports/performance/**`. |
 | BE-21 | contract-only | 2026-10-19 | School admin: `packages/contract/src/school-admin/**`. |
 | BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
