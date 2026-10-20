@@ -247,3 +247,11 @@ export function keyPaths(value: unknown, re: RegExp, path = '$'): string[] {
   }
   return []
 }
+
+/** A logged-in agent and its CSRF token, for multipart requests (the `Client` helper sends JSON only). */
+export async function loginAgent(t: SpmTestApp, role: keyof typeof ACCOUNTS): Promise<{ agent: TestAgent; csrf: string }> {
+  const agent = t.agent()
+  const res = await agent.post('/api/auth/login').send({ identifier: ACCOUNTS[role], password: 'Demo1234', remember: false })
+  if (res.status !== 200) throw new Error(`login failed: ${JSON.stringify(res.body)}`)
+  return { agent: agent as unknown as TestAgent, csrf: (res.body.data as { csrf: string }).csrf }
+}
