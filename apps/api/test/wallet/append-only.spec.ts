@@ -41,7 +41,7 @@ describe('coin_ledger is append-only in code (AC2)', () => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
         const p = join(dir, e.name)
         if (e.isDirectory()) {
-          if (p === MODULE_DIR.replace(/\/$/, '') || e.name === 'generated') continue
+          if (p === MODULE_DIR.replace(/[\\/]+$/, '') || e.name === 'generated') continue
           walk(p)
         } else if (e.name.endsWith('.ts')) files.push(p)
       }
