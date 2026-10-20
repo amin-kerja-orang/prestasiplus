@@ -20043,7 +20043,14 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "example": "1042"
           },
           "name": {
             "type": "string",
@@ -20053,7 +20060,7 @@
           "initials": {
             "type": "string",
             "maxLength": 2,
-            "description": "First letters of up to two words, upper case."
+            "description": "First letters of up to two words of the shown name, upper case."
           },
           "menang": {
             "type": "integer",
@@ -20099,10 +20106,18 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "example": "1042"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Full name, or first name + initial (children's names rule)."
           },
           "value": {
             "type": "integer",
@@ -20310,7 +20325,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d))."
+            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
           },
           "grade": {
             "type": "string",
@@ -21941,11 +21956,18 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d))."
+            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule)."
           },
           "sesi": {
             "type": "integer",
@@ -82450,7 +82472,7 @@
           "games"
         ],
         "summary": "Lobby of a room game (M16-23)",
-        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)).",
+        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
         "parameters": [
           {
             "schema": {
@@ -84527,7 +84549,7 @@
           "games"
         ],
         "summary": "Weekly competition board (M16-40)",
-        "description": "`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)).",
+        "description": "`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
         "responses": {
           "200": {
             "description": "Weekly board.",
