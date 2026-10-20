@@ -29,6 +29,7 @@ import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
 import {
+  effectiveLandingPath,
   isPathAllowed,
   isPrototypeRole,
   isPrototypeScopeOn,
@@ -102,7 +103,12 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     // The server-given landing of a teacher / school admin is `/dashboard` (the student page, M01
     // BR-07, INFERRED); in the prototype they land on their own dashboard instead.
     const home = scopeHomePath(session.role)
-    if (to.path === '/dashboard' && home !== '/dashboard' && isPrototypeRole(session.role)) {
+    if (
+      to.path === '/dashboard' &&
+      session.role !== 'student' &&
+      home !== '/dashboard' &&
+      isPrototypeRole(session.role)
+    ) {
       return { kind: 'redirect', to: home }
     }
     if (!isPathAllowed(session.role, to.path)) {
@@ -196,7 +202,7 @@ export function resolvePostLoginTarget(
   redirect: unknown,
   session: GuardSession,
 ): string {
-  const landing = session.landingPath ?? '/'
+  const landing = effectiveLandingPath(session.role, session.landingPath) ?? '/'
   if (!isSafeRedirect(redirect)) return landing
   const resolved = router.resolve(redirect)
   if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing

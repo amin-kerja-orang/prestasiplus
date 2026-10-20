@@ -31,6 +31,7 @@
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
+import { effectiveLandingPath } from '@/app/prototype-scope'
 import { api, type Transport, type TransportRequest } from '@/api'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
@@ -209,7 +210,9 @@ export const useSessionStore = defineStore('session', () => {
   const token = computed<string | null>(() => auth.value?.token ?? null)
   const user = computed<UserMe | null>(() => auth.value?.user ?? null)
   const role = computed<Role | null>(() => auth.value?.user.role ?? null)
-  const landingPath = computed<string | null>(() => auth.value?.user.landingPath ?? null)
+  const landingPath = computed<string | null>(() =>
+    effectiveLandingPath(role.value, auth.value?.user.landingPath ?? null),
+  )
   const remember = computed(() => auth.value?.remember ?? false)
   const expiresAt = computed<string | null>(() => auth.value?.expiresAt ?? null)
   /** The actor of an impersonated session (XR-M27-21); `null` otherwise. The shell banner reads it. */

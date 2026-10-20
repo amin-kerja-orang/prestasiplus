@@ -170,7 +170,7 @@ function shortagesOf(e: ApiError): BijakGenerateShortage[] {
 /* ------------------------------------------------------------------------------- the client */
 
 export class HttpBijakServer implements BijakApi {
-  private readonly client: Pick<ApiClient, 'request'>
+  protected readonly client: Pick<ApiClient, 'request'>
   private readonly now: () => number
   private readonly csrfSource: (refresh: boolean) => Promise<string>
   private csrfCache: Promise<string> | null = null
@@ -202,7 +202,7 @@ export class HttpBijakServer implements BijakApi {
   }
 
   /** One request, the `ApiError` untouched: CSRF header on mutations, one refresh + retry on `CSRF_INVALID`. */
-  private async exec<T>(method: HttpMethod, url: string, body?: Body): Promise<T> {
+  protected async exec<T>(method: HttpMethod, url: string, body?: Body): Promise<T> {
     const run = (csrf?: string) =>
       this.client.request<{ data: T } | null>(method, url, {
         raw: true,
@@ -225,7 +225,7 @@ export class HttpBijakServer implements BijakApi {
   }
 
   /** `exec` with errors mapped to `BijakError` (what the pages read). */
-  private async send<T>(method: HttpMethod, url: string, body?: Body): Promise<T> {
+  protected async send<T>(method: HttpMethod, url: string, body?: Body): Promise<T> {
     try {
       return await this.exec<T>(method, url, body)
     } catch (e) {
