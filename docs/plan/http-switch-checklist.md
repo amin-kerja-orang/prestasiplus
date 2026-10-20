@@ -10,19 +10,18 @@ Dev loop without Docker for the SPA: `npm run be:dev` (API on 3000) and `VITE_AP
 
 ## Prerequisites that block every domain (LEAD L1 / V2-T31)
 
-Status when this file was written: L1 is **todo**; `createHttpTransport()` in `src/api/http-transport.ts` is called with
-no options in `src/app/bootstrap.ts`.
+Status 2026-10-21: L1 is **partly done** on the integration branch `be/integration-frontend` (not yet in `feature/v2-backend`): the http-only slice landed in 5cfb3d93 (cookie session, CSRF header, session restore, `e2e/fixtures/api.ts`). `HybridTransport` (T5) and the global 401 redirect are not built. Written originally with L1 todo.
 
 | # | Needed in `src/api` / `src/app` | Why | State |
 |---|---|---|---|
-| T1 | `credentials: 'include'` (same-origin default sends the cookie, but make it explicit for the Vite proxy and any `VITE_API_BASE_URL`) | session cookie `pp_session` is `HttpOnly; SameSite=Lax` | todo |
-| T2 | CSRF: read the token from the login / `GET /api/session` response and send `X-CSRF-Token` on every non-GET | the API answers 403 `CSRF_INVALID` otherwise (`apps/api/src/modules/auth/auth.constants.ts`) | todo |
-| T3 | 401 handling: clear the stored session and go to `/login` | session expires after 120 min idle | todo |
-| T4 | `requestId` logging: read `X-Request-Id` from responses | nginx sets one per request, the API echoes it | todo |
-| T5 | `HybridTransport` (`VITE_API_MODE=hybrid`, list of path prefixes served by the real API; the rest stays on the mock) | switch one domain at a time | todo |
-| T6 | `bootstrap.ts` builds `hybrid` mode and keeps the mock tree-shaken out of a pure `http` build | bundle size, no mock data in production | todo |
-| T7 | Session bootstrap in http mode: no `__MOCK_INIT__`; a reload restores the session from `GET /api/session` | `loginAs` fast login is mock-only | todo |
-| T8 | An e2e fixture for real-API specs (`e2e/fixtures/api.ts`: plain `@playwright/test` `test`, `page.goto`, wait for `#app`) | `e2e/fixtures/test.ts` installs the mock clock and `gotoApp` waits for `window.__mock.ready` | todo (LEAD owns `e2e/**`) |
+| T1 | `credentials: 'include'` (same-origin default sends the cookie, but make it explicit for the Vite proxy and any `VITE_API_BASE_URL`) | session cookie `pp_session` is `HttpOnly; SameSite=Lax` | done (5cfb3d93, `credentials` defaults to `include`) |
+| T2 | CSRF: read the token from the login / `GET /api/session` response and send `X-CSRF-Token` on every non-GET | the API answers 403 `CSRF_INVALID` otherwise (`apps/api/src/modules/auth/auth.constants.ts`) | done (5cfb3d93, `csrfToken` option + `storedCsrfToken` in bootstrap) |
+| T3 | 401 handling: clear the stored session and go to `/login` | session expires after 120 min idle | partial: 401 on session restore clears the store (5cfb3d93 `http-session.ts`); no global 401 handler or redirect to `/login` proven; 429 BM copy in 785e44ef |
+| T4 | `requestId` logging: read `X-Request-Id` from responses | nginx sets one per request, the API echoes it | partial: `onRequestId` hook in the transport (5cfb3d93); no caller in bootstrap proven |
+| T5 | `HybridTransport` (`VITE_API_MODE=hybrid`, list of path prefixes served by the real API; the rest stays on the mock) | switch one domain at a time | todo (no `HybridTransport`; `VITE_API_MODE=http` is all-or-nothing) |
+| T6 | `bootstrap.ts` builds `hybrid` mode and keeps the mock tree-shaken out of a pure `http` build | bundle size, no mock data in production | todo (not proven: no bundle check for a pure http build) |
+| T7 | Session bootstrap in http mode: no `__MOCK_INIT__`; a reload restores the session from `GET /api/session` | `loginAs` fast login is mock-only | done (5cfb3d93: `restoreHttpSession()` from `GET /api/session`; no `__MOCK_INIT__` in http mode) |
+| T8 | An e2e fixture for real-API specs (`e2e/fixtures/api.ts`: plain `@playwright/test` `test`, `page.goto`, wait for `#app`) | `e2e/fixtures/test.ts` installs the mock clock and `gotoApp` waits for `window.__mock.ready` | done (5cfb3d93 `e2e/fixtures/api.ts`, `e2e/api/auth-session.spec.ts`) |
 
 ## Per-domain checklist (copy for every new domain)
 
@@ -48,8 +47,24 @@ against the real stack once T1 to T8 exist.
 | Users and schools | BE-05 | M02 | `/api/admin/users`, `/api/admin/schools`, `/api/schools`, `/api/jpn`, `/api/students/search`, `/api/admin/teachers`, `/api/admin/schools/:id/students` | BE-07 | `users/`, `schools/` folders | Bulk import JSON up to 2200 kb (nginx allows 3 MB on `/api/`); admin-only writes; IC numbers never in responses | admin user list, school toggle |
 | Subscriptions, packages, parent invites | BE-25 | M02, M01 (invites) | `/api/admin/school-packages`, `/api/admin/school-subscriptions`, `/api/admin/users/:id/packages`, `/api/admin/students/import`, `/api/admin/schools/:id/quota`, `/api/me/parent-invite`, `/api/me/parent-links`, `/api/parent-invites/:token`, `/api/admin/parent-links` | BE-07 + reference packages | covered by the shared scenarios | The invite token is a path secret: nginx and the API both log it as `[redacted]`; do not put it in a `Referer`-bearing external link | parent invite preview |
 | Seed core population | BE-07 | all | n/a | `be:db:seed` (poc) | accounts table in `conformance/accounts.ts` | Demo accounts are dev/e2e only (`ALLOW_DEMO_SEED=true`), production loads the reference catalogue only | n/a |
+| Practice sessions | BE-12 | M05 | `/api/practice/sessions`, `/api/missions/today`, `/api/remedial-tests` | `seed/practice.ts` | `practice/`, `missions/` folders | Submit and check-answer are writes (CSRF); wallet/streak credit via BE-11. Not in the dry-run below: the student journey ran on the Bijak SPM landing, not the M05 practice flow | not run yet |
+| Practice reads | BE-13 | M05 | `/api/practice` (history, mastery, progress, revision, corrections, chapter-subjects), `/api/dashboard`, `/api/learning-map` | `seed/practice.ts` | `practice-reads/` folder | `/api/dashboard` is not used by the student landing in http mode (lands on Bijak SPM, tracker M1 fix c586b827) | not run yet |
+| Bijak papers | BE-15 | M28 | `/api/bijak/subjects`, `/api/bijak/papers`, `/api/bijak/papers/generate`, `/api/bijak/contracts`, `/api/admin/papers`, `/api/admin/blueprints` (reads) | `seed/exam.ts`, `seed/exam-demo-blueprints.ts` (poc: `BIJAK_POC_QUESTIONS=true` on the API) | `bijak/` folder | Admin screens without a backend route show the "belum tersedia dalam demo" state in http mode (550cfec6) | student journey (a), see dry-run |
+| Bijak attempts | BE-16 | M28 | `/api/bijak/attempts`, `/api/bijak/history`, `/api/bijak/papers/:paperId/in-progress` | `seed/poc/bijak-sittings.ts` | `bijak/` folder | Photo upload goes through `/api/bijak/attempts/:id/photos` (multipart; nginx 22m limit); client in 278cea12 | student journey (a), see dry-run |
+| Student performance and headcounts | BE-19 | M08 | `/api/analytics`, `/api/headcounts` | `seed/poc/classes.ts` | `performance/`, `analytics/` folders | Card still `in-progress` (slice merged). Teacher views are labelled "Bijak SPM" results in http mode (US-33, 8a55c244) | US-33 labels (b), see dry-run |
+| School admin dashboard | BE-21 | M27 | `/api/admin-sekolah` | BE-07 core + `seed/poc/classes.ts` | `school-admin/` folder | Card still `in-progress` (slice merged). Dashboard performance panel is labelled "Bijak SPM" in http mode (US-33, fe4313c0) | US-33 labels (b), see dry-run |
+| Paper builder and blueprints | BE-39 | M28 | `/api/admin/papers`, `/api/admin/blueprints` (create, sections, placements, conformance, publish, withdraw, retire) | `seed/exam-demo-blueprints.ts` | `bijak-builder/` folder | Admin writes need the CSRF header (T2) | Admin Pusat create/publish (c), see dry-run |
 
-Practice (BE-12), Bijak attempts (BE-16), intake and builder are not merged yet: add their rows when they land.
+Per-row evidence column "not run yet" means no http-mode run is recorded. Intake (BE-38/40) rows are still to be added.
+
+### Local dry-run evidence (2026-10-21, not CI)
+
+Compose stack (`compose.yaml` + `compose.http.yaml`) with frontend 550cfec6 / 785e44ef and API 31152277, seed profile poc.
+Result: smoke 8/8 and the `@bijak` http specs (a) student journey, (b) US-33 labels, (c) Admin Pusat create/publish, each at 375, 768 and 1280.
+Recorded from the lead's report; no log file is committed. The `migrate` job in that dry-run failed on the missing DSKP files until the
+`.dockerignore` and `docker/api/Dockerfile` fix in this branch (`docs/reference/dskp/*.json` copied into the build stage).
+
+Intake (BE-38, BE-40) is not in the table yet: add its rows when its http switch is done.
 
 ## First `@api` specs (agreed with the LEAD, Open question 1)
 
