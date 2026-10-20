@@ -265,6 +265,22 @@ describe('ApiClient: errors', () => {
     expect(err).toMatchObject({ status: 429, code: 'RATE_LIMITED', retryAfter: 60 })
   })
 
+  it('shows BM copy for an English 429 envelope in http mode, keeping retryAfter', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      const { c } = client(
+        json(429, {
+          error: { code: 'RATE_LIMITED', message: 'Too Many Attempts.', retryAfter: 30 },
+        }),
+      )
+      const err = await catchError(c.post('/api/auth/login'))
+      expect(err.message).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+      expect(err.retryAfter).toBe(30)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('falls back to the Retry-After header for retryAfter', async () => {
     const { c } = client(
       json(429, { error: { code: 'RATE_LIMITED', message: 'x' } }, { 'Retry-After': '42' }),
