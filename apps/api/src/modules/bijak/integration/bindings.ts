@@ -15,6 +15,9 @@ export const BIJAK_REWARD_SOURCE = 'quiz_spm'
 /** Static BM ledger text of a practice session credit (BE-12 `ports.ts`; PDPA: no name, no identifier). */
 export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
 
+/** A non-negative whole number of coins or points; anything not finite counts as 0 (never NaN into the wallet). */
+export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0)
+
 /**
  * BE-16 `BijakRewardPort` -> BE-11 `WalletService.credit`. BE-16 calls it once per closed EXAM attempt
  * (never a latihan, F3) after the commit; `sourceId = attemptId` makes a repeated call a replay that
@@ -25,7 +28,7 @@ export class WalletBijakReward implements BijakRewardPort {
   constructor(@Inject(WalletService) private readonly wallet: WalletService) {}
 
   async award(input: BijakRewardInput): Promise<void> {
-    const amount = Math.floor(input.coins)
+    const amount = wholeCount(input.coins)
     if (!(amount >= 1)) return // a zero score earns nothing; the wallet refuses a non-positive credit
     await this.wallet.credit({
       userId: input.userId,
@@ -54,7 +57,7 @@ export class WalletPracticeReward implements PracticeRewardPort {
 
   async onSessionCompleted(input: PracticeSessionCompleted, tx: TxClient): Promise<PracticeRewardResult> {
     const streak = input.isTest ? await this.streaks.get(input.userId, { tx }) : await this.streaks.touch(input.userId, { at: input.completedAt, tx })
-    const coins = Math.floor(input.sessionCoins)
+    const coins = wholeCount(input.sessionCoins)
     const totalBalance =
       coins >= 1
         ? (
@@ -68,8 +71,8 @@ export class WalletPracticeReward implements PracticeRewardPort {
       {
         sessionId: input.sessionId,
         userId: input.userId,
-        coinsEarned: Math.max(0, coins),
-        pointsEarned: Math.max(0, Math.floor(input.pointsEarned)),
+        coinsEarned: coins,
+        pointsEarned: wholeCount(input.pointsEarned),
         streakCount: streak.current,
         totalBalance,
         completedAt: input.completedAt,
