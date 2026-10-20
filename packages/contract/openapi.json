@@ -29078,6 +29078,108 @@
           "report"
         ]
       },
+      "SchoolAdminPendingTeacherRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2,
+            "description": "Up to two upper-case initials."
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "When the teacher registered.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "initials",
+          "email",
+          "phone",
+          "requestedAt"
+        ]
+      },
+      "SchoolAdminPendingTeacherListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminPendingTeacherRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SchoolAdminVerifyTeacherResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "isActive": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "schoolId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "The school of the admin: the teacher now has this school scope.",
+                "example": "1042"
+              }
+            },
+            "required": [
+              "id",
+              "isActive",
+              "schoolId"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Guru berjaya disahkan."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
       "QuestionStatus": {
         "type": "string",
         "enum": [
@@ -90751,6 +90853,152 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-sekolah/guru/pending": {
+      "get": {
+        "tags": [
+          "school-admin-pending"
+        ],
+        "summary": "Teachers waiting for verification",
+        "description": "The teachers who registered and asked for THIS school (users.pending_school_id equals the school of the caller), oldest request first. A pending teacher of another school is never listed. The school comes from the session; a schoolId in the query is ignored. Sent with Cache-Control: no-store. Rate limited (429).",
+        "responses": {
+          "200": {
+            "description": "The waiting teachers (empty list when none).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body holds names and e-mails).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolAdminPendingTeacherListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-sekolah/guru/{id}/verify": {
+      "post": {
+        "tags": [
+          "school-admin-pending"
+        ],
+        "summary": "Verify a pending teacher",
+        "description": "No body. In ONE transaction: the account becomes active, school_id is set to the school of the caller, pending_school_id is cleared (the teacher role is ensured) and an audit event with ids only is written; after the commit the teacher gets an inbox notice. ANTI-ENUMERATION: an unknown id, a teacher pending for another school, a teacher who is not pending (including one already verified: a repeat call is 404, never 409), a non-teacher and a suspended account are indistinguishable: 404 \"Not Found.\". Two concurrent calls: exactly one succeeds. Rate limited (429).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified; status \"Guru berjaya disahkan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolAdminVerifyTeacherResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (see the description).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
             "content": {
               "application/json": {
                 "schema": {
