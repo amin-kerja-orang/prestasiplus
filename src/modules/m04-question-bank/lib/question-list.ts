@@ -105,41 +105,47 @@ export const upperWords = (code: string): string => code.replaceAll('_', ' ').to
 export const sourceLabel = (type: string | null): string =>
   type === null ? 'TIADA' : upperWords(type)
 
-/** S1 status pill (BR-M04-02; archived is "Arkib" in the list, "Diarkibkan" on S3, as live). */
-const STATUS_LABEL: Record<QuestionStatus, string> = {
-  draft: 'Draf',
-  pending_review: 'Menunggu Semakan',
-  approved: 'Diluluskan',
-  rejected: 'Ditolak',
-  archived: 'Diarkibkan',
-  pending: 'Menunggu',
-}
-export const statusLabel = (status: QuestionStatus, short = false): string =>
-  short && status === 'archived' ? 'Arkib' : STATUS_LABEL[status]
-
-/** `DsStatusBadge` status of a question status; the live word is passed as the badge label. */
-const STATUS_DS: Record<QuestionStatus, DsStatus> = {
-  draft: 'draft',
-  pending_review: 'awaiting-review',
-  approved: 'approved',
-  rejected: 'rejected',
-  archived: 'inactive',
-  pending: 'pending-approval',
-}
-export const statusDs = (status: QuestionStatus): DsStatus => STATUS_DS[status]
+/**
+ * Question status as the screens may receive it: the mock vocabulary (`QuestionStatus`) or the v2 wire
+ * lifecycle (`draft | review | approved | published | archived`, BE-09 / D54a), or any unknown string.
+ * Every lookup below is fail-safe: an unknown value gets a neutral badge, never a crash.
+ */
+type AnyStatus = QuestionStatus | 'review' | 'published' | (string & {})
 
 export type BadgeColor = 'success' | 'warning' | 'error' | 'neutral'
 
-/** `UBadge` colour of a status (staff theme: tokens only, the word carries the meaning). */
-const STATUS_COLOR: Record<QuestionStatus, BadgeColor> = {
-  draft: 'neutral',
-  pending_review: 'warning',
-  approved: 'success',
-  rejected: 'error',
-  archived: 'neutral',
-  pending: 'warning',
+interface StatusMeta {
+  label: string
+  ds: DsStatus
+  color: BadgeColor
 }
-export const statusColor = (status: QuestionStatus): BadgeColor => STATUS_COLOR[status]
+
+const STATUS_META: Record<string, StatusMeta> = {
+  draft: { label: 'Draf', ds: 'draft', color: 'neutral' },
+  pending_review: { label: 'Menunggu Semakan', ds: 'awaiting-review', color: 'warning' },
+  review: { label: 'Menunggu Semakan', ds: 'awaiting-review', color: 'warning' },
+  approved: { label: 'Diluluskan', ds: 'approved', color: 'success' },
+  published: { label: 'Diterbitkan', ds: 'approved', color: 'success' },
+  rejected: { label: 'Ditolak', ds: 'rejected', color: 'error' },
+  archived: { label: 'Diarkibkan', ds: 'inactive', color: 'neutral' },
+  pending: { label: 'Menunggu', ds: 'pending-approval', color: 'warning' },
+}
+
+const UNKNOWN_STATUS: StatusMeta = { label: 'Tidak diketahui', ds: 'draft', color: 'neutral' }
+
+const metaOf = (status: AnyStatus | null | undefined): StatusMeta =>
+  (status != null && Object.hasOwn(STATUS_META, status) ? STATUS_META[status] : undefined) ??
+  UNKNOWN_STATUS
+
+/** S1 status pill (BR-M04-02; archived is "Arkib" in the list, "Diarkibkan" on S3, as live). */
+export const statusLabel = (status: AnyStatus, short = false): string =>
+  short && status === 'archived' ? 'Arkib' : metaOf(status).label
+
+/** `DsStatusBadge` status of a question status; the live word is passed as the badge label. */
+export const statusDs = (status: AnyStatus): DsStatus => metaOf(status).ds
+
+/** `UBadge` colour of a status (staff theme: tokens only, the word carries the meaning). */
+export const statusColor = (status: AnyStatus): BadgeColor => metaOf(status).color
 
 const COMPLIANCE_COLOR: Record<ComplianceStatus, BadgeColor> = {
   verified: 'success',
@@ -148,7 +154,9 @@ const COMPLIANCE_COLOR: Record<ComplianceStatus, BadgeColor> = {
   rejected: 'error',
   draft: 'neutral',
 }
-export const complianceColor = (status: ComplianceStatus): BadgeColor => COMPLIANCE_COLOR[status]
+export const complianceColor = (status: ComplianceStatus | (string & {})): BadgeColor =>
+  (Object.hasOwn(COMPLIANCE_COLOR, status) ? COMPLIANCE_COLOR[status as ComplianceStatus] : undefined) ??
+  'neutral'
 
 export const LANGUAGE_LABELS: Record<string, string> = { bm: 'Bahasa Melayu', en: 'English' }
 

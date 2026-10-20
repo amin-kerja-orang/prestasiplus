@@ -317,4 +317,18 @@ describe('QuestionListPage (M04 S1)', () => {
     expect(first.get('[data-testid="question-view"]').attributes('aria-label')).toBe('Lihat')
     expect(first.get('[data-testid="question-edit"]').attributes('aria-label')).toBe('Edit')
   })
+
+  it("renders v2 wire statuses (published, review, archived) and an unknown one without crashing (issue 61)", async () => {
+    questions.fetchQuestions.mockResolvedValue(
+      listResult([
+        row(1, { status: "published" as never }),
+        row(2, { status: "review" as never }),
+        row(3, { status: "archived" }),
+        row(4, { status: "mystery" as never, complianceStatus: "weird" as never }),
+      ]),
+    )
+    const w = await render()
+    const badges = w.findAll("[data-testid=\"question-status\"]").map((b) => b.text())
+    expect(badges).toEqual(["Diterbitkan", "Menunggu Semakan", "Arkib", "Tidak diketahui"])
+  })
 })

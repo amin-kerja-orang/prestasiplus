@@ -2,14 +2,37 @@ import { describe, expect, it } from 'vitest'
 
 import { parseMarkdown } from '../../lib/markdown'
 import {
+  complianceColor,
   cut,
   errorTextOf,
   excerpt,
   sourceLabel,
+  statusColor,
+  statusDs,
   statusLabel,
   tileName,
   upperWords,
 } from '../../lib/question-list'
+
+describe("status lookups accept the v2 wire lifecycle and never throw", () => {
+  it("maps wire values", () => {
+    expect(statusLabel("published")).toBe("Diterbitkan")
+    expect(statusLabel("review")).toBe("Menunggu Semakan")
+    expect(statusLabel("archived", true)).toBe("Arkib")
+    expect(statusDs("published")).toBe("approved")
+    expect(statusDs("review")).toBe("awaiting-review")
+    expect(statusColor("published")).toBe("success")
+  })
+  it("falls back to a neutral badge for unknown, empty and prototype-key values", () => {
+    for (const v of ["mystery", "", "constructor", undefined as unknown as string]) {
+      expect(statusLabel(v)).toBe("Tidak diketahui")
+      expect(statusDs(v)).toBe("draft")
+      expect(statusColor(v)).toBe("neutral")
+    }
+    expect(complianceColor("weird")).toBe("neutral")
+    expect(complianceColor(undefined as unknown as string)).toBe("neutral")
+  })
+})
 
 describe('question list helpers', () => {
   it('cuts tile names at 12 characters and texts at 80', () => {
