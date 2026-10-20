@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
@@ -28,11 +29,27 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:http": "playwright test -c playwright.http.config.ts",
+    "stack:up": "docker compose -f compose.yaml -f compose.http.yaml up -d --build --wait",
+    "stack:down": "docker compose -f compose.yaml -f compose.http.yaml down",
     "test:e2e:observed": "playwright test --grep-invert @provisional",
     "test:e2e:module": "node scripts/e2e-module.mjs",
     "check:trace": "node scripts/check-e2e-trace.mjs",
     "contract:emit": "npm run emit -w @pp/contract",
     "contract:check": "npm run check -w @pp/contract",
+    "conformance": "npm run test:mock -w @pp/contract-tests",
+    "conformance:api": "npm run be:test -- test/conformance",
+    "be:dev": "npm run dev -w @pp/api",
+    "be:build": "npm run build -w @pp/api",
+    "be:lint": "npm run lint -w @pp/api",
+    "be:lint:migration": "npm run lint:migration -w @pp/api",
+    "be:typecheck": "npm run typecheck -w @pp/api",
+    "be:test": "npm run test -w @pp/api --",
+    "be:db:migrate": "npm run db:migrate -w @pp/api --",
+    "be:db:reset": "npm run db:reset -w @pp/api --",
+    "be:db:seed": "npm run db:seed -w @pp/api --",
+    "contract:test": "vitest run --project unit packages/contract",
+    "be:verify": "npm run contract:check && npm test -w @pp/contract-tests && npm run be:lint && npm run be:lint:migration && npm run be:typecheck && npm run be:test && npm run be:build",
     "ds:debt": "node scripts/ds-debt.mjs",
     "ds:census": "node scripts/codemods/census.mjs",
     "page-shots": "node scripts/page-shots.mjs",
@@ -49,6 +66,7 @@
     "@lucide/vue": "^1.48.0",
     "@nuxt/ui": "^4.12.0",
     "@pp/contract": "*",
+    "@pp/exam-core": "*",
     "chart.js": "^4.5.1",
     "html2canvas": "1.4.1",
     "idb-keyval": "^6.3.0",
@@ -85,5 +103,8 @@
     "vite": "^8.3.1",
     "vitest": "^5.0.2",
     "vue-tsc": "^3.3.11"
+  },
+  "overrides": {
+    "@swc/core": "1.15.47"
   }
 }

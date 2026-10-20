@@ -1,10 +1,10 @@
-# Backend task cards (BE-01 to BE-40)
+# Backend task cards (BE-01 to BE-48)
 
 One card per task. Each card is self-contained: goal, inputs (exact paths), outputs, endpoints, tables, testable acceptance criteria, test commands, dependencies, size, and a **Prompt for Claude Code** block to paste as-is. Read [../../architecture/v2-backend-plan.md](../../architecture/v2-backend-plan.md) once before the first card. Sizes: S up to 0.5 day, M 1 to 2 days, L 3 to 5 days (one developer or one agent session).
 
 Requirements and handbook: every card is traced to a requirement ID (BE-FR / BE-NFR / BE-MIG / BE-OPS) in [../../requirements/v2-backend-urs.md](../../requirements/v2-backend-urs.md) (section 9.2 lists the requirements per card); how to write the code is in [../backend-dev-guide.md](../backend-dev-guide.md).
 
-Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder).
+Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder); BE-41 to BE-48 on 2026-10-19 (D53(a): every module reachable in the prototype is B1). Lanes of BE-41 to BE-48 approved by the LEAD 2026-10-19: BE-41 PC-3 P1; BE-42, BE-46, BE-47 PC-1 P2; BE-43 PC-5 P2; BE-48 PC-2 P1; BE-44, BE-45 new lane PC-7 "Games and competitions" P2.
 
 Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak attempts / teacher / reports / economy, 4 aggregates and integration, M = migration stream (independent of the API lanes, blocked only by OD-2 and OD-10).
 
@@ -50,10 +50,18 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | [BE-38](BE-38-intake-workflow.md) | Intake batches, review workflow, accept-to-Draf, duplicates | L | 3 | BE-09, BE-10, BE-36, BE-37 | BE-39, BE-12, BE-16 |
 | [BE-39](BE-39-paper-builder-blueprints.md) | Paper builder + blueprint admin (write side of M28 papers) | L | 3 | BE-15, BE-10 | BE-38, BE-16 |
 | [BE-40](BE-40-intake-dashboard-ai-usage.md) | Intake dashboard, AI usage and budget endpoints | S | 4 | BE-36, BE-38 | BE-20, BE-21, BE-22 |
+| [BE-41](BE-41-spm-hub.md) | SPM hub: Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exams (M06) | M | 3 | BE-03, BE-08, BE-09, BE-12, BE-13 | BE-16, BE-18, BE-19, BE-23, BE-42 |
+| [BE-42](BE-42-pksk.md) | PKSK: domains, practice, exam, access grants, admin questions (M07) | L | 3 | BE-03, BE-05, BE-09, BE-10, BE-12, BE-25 | BE-16, BE-18, BE-19, BE-23, BE-41 |
+| [BE-43](BE-43-cikgu-alesa.md) | Cikgu Alesa: chat, RPH, essay markings, PBD tags (M13) | L | 4 | BE-36, BE-03, BE-05, BE-08, BE-12, BE-17 | BE-20, BE-21, BE-22, BE-40, BE-46, BE-47, BE-48 |
+| [BE-44](BE-44-battle.md) | Battle arena, standings and tournaments (M16 part 1) | L | 4 | BE-03, BE-05, BE-08, BE-09, BE-12, BE-23 | BE-45, BE-20, BE-21, BE-22, BE-26 |
+| [BE-45](BE-45-papan-bijak-games-hub.md) | Permainan hub, Papan Bijak, room and solo games, leagues, Sekolah Bersaing (M16 part 2) | L | 4 | BE-03, BE-05, BE-08, BE-09, BE-11, BE-13, BE-23 (BE-44 stubbed) | BE-44, BE-20, BE-21, BE-22, BE-26 |
+| [BE-46](BE-46-marketplace.md) | Marketplace: buyer slice (M20) | M | 3 | BE-03, BE-05 | BE-16, BE-18, BE-19, BE-23, BE-47, BE-48 |
+| [BE-47](BE-47-keluarga-angkat.md) | Mohon Keluarga Angkat: student-side application (M21) | S | 3 | BE-03, BE-05 | BE-16, BE-18, BE-19, BE-23, BE-46, BE-48 |
+| [BE-48](BE-48-heatmap-topik-lemah.md) | Heatmap Topik Lemah read model (M25) | S | 3 | BE-12, BE-13, BE-08 | BE-15, BE-16, BE-17, BE-46, BE-47 |
 
-Totals: 40 cards. Sizes: S 3, M 22, L 15.
+Totals: 48 cards. Sizes: S 5, M 24, L 19.
 
-## Parallel lanes (superseded by [../sessions.md](../sessions.md): six lanes plus the lead lane; the list below is the original one-collaborator view)
+## Parallel lanes (superseded by [../sessions.md](../sessions.md): seven lanes (PC-7 "Games and competitions" opened 2026-10-19) plus the lead lane; the list below is the original one-collaborator view)
 
 1. **Critical path:** BE-01, BE-02, BE-03, then BE-05, BE-09 (via BE-08), BE-12, BE-13, BE-19, then the wave 4 reports.
 2. **Bijak lane (starts at BE-01):** BE-14, then BE-15 (after BE-09), BE-16.
@@ -63,17 +71,14 @@ Totals: 40 cards. Sizes: S 3, M 22, L 15.
 
 Never run two sessions that edit the same `apps/api/prisma/schema/<module>.prisma` at once (plan section 9: one migration PR per owner module at a time).
 
-## Wave 4+ backlog (no cards yet; the lead promotes items when the frontend needs them)
+## Wave 4+ backlog and routes not built by decision
 
-These are the only mock routes that no card builds. Counts were re-verified against the mock handlers on 2026-10-19: 488 routes in total; 381 are built by cards BE-03 to BE-25 (their endpoint tables list every one of them by full path); 107 are backlog, namely the 105 below plus the 2 student audio-play routes that BE-24 lists as not built. The session routes (`/api/session*`) and the new D52 routes are not in the 488 (they have no mock route).
+Since D53(a) (2026-10-19) every module reachable in the prototype is B1: the former backlog items M06, M07, M13, M16, M20, M21 (student side) and M25 are cards BE-41 to BE-48, and the M09 student Audio KBAT play is in BE-24. What is left:
 
-| Backlog item | Mock routes (count) | Notes |
+| Item | Mock routes (count) | Notes |
 |---|---|---|
-| M06 SPM classic (databank, latih tubi, tracking-a, subjektif, mocks, Duta, walkthrough) | 14 | Bijak SPM replaces most of it; confirm with the lead (OD-11) |
-| M07 PKSK (student, admin access, admin questions) | 21 | tags on the one bank in v2 (v2-question-bank A6) |
-| M16 battle, games, tournaments, leagues, Sekolah Bersaing, standings | 50 | needed for Admin Sekolah "Sekolah Bersaing" and Murid Permainan/Tournament/Kedudukan |
-| M13 Cikgu Alesa (M25 AI centre has no mock route) | 10 | external AI: out of B1 (OD-7) |
-| M09 student Audio KBAT play (`GET /api/audio-kbat-sets/:id`, `POST /api/audio-kbat-sets/:id/attempts`), M20 marketplace, M21 sponsorship, M18 PPD/JPN (amaran) | 2, 5, 1, 4 | roles/features outside the prototype scope |
+| Not built by user decision (2026-10-19, D53(b) to (g)) | UD-2: the 2 impersonation routes (BE-05, BE-21); UD-3: the 3 parent approval routes `/api/parent/hadiah-approvals*` | the mock routes are intentionally not ported; M18 Amaran (4 routes) is built by BE-21 (UD-4) |
+| Not in B1 (D53/OWN-10, D28c) | the teacher economy: 6 teacher routes and 7 admin routes of M14 | backlog; the frontend hides the entry points |
 | Sistem stores (`audit_logs` UI, `settings`, `feature_flags`, `ai_usage_logs`), Kewangan (`payments`, `invoices`, `dunning_logs`, `packages`) | new | V2-T27/V2-T28 in `docs/architecture/v2-frontend.md` |
 
 ## PR description template (copy into every PR)

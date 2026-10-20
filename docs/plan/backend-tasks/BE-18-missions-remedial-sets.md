@@ -21,11 +21,15 @@ Teacher-assigned work and its student side: class missions, remedial test genera
 - Mock: `src/modules/m10-teacher-class/mock/handlers/{command-center,command-center-remedial,questions,extras,csv,docx,lookups,student-side,dashboard}.ts`, repository `src/modules/m10-teacher-class/mock/repository/{missions,question-sets,remedial,dskp}.ts`, tables `src/modules/m10-teacher-class/mock/tables/tables.ts`: `m10.missions`, `m10.remedialTests`, `m10.questionSets`, `m10.dskpBidang`, `m10.dskpSk`, `m10.dskpSp`; M05 `src/modules/m05-practice/mock/handlers/assigned.ts` (the three assigned-work reads); client `src/modules/m10-teacher-class/api/*`, `src/modules/m10-teacher-class/api/command-center.ts`
 - Mock tests: `src/modules/m10-teacher-class/__tests__/mock/**`, `src/modules/m05-practice/__tests__/mock/structured-targets-assigned.test.ts`
 - BE-17, BE-12 outputs, BE-10 DSKP GET endpoints, BE-09 `QuestionsService`
+- Requirements: BE-FR-26; BE-NFR-20, BE-NFR-38 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
 - Contract: `packages/contract/src/classes/missions.ts` and `packages/contract/src/classes/question-sets.ts` (new files in the PC-6 `classes/` folder)
-- `apps/api/prisma/schema/classes.prisma` additions + migration: `missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `dskp_bidang`, `dskp_sk`, `dskp_sp`
+- `apps/api/prisma/schema/classes.prisma` additions + migration: `missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `dskp_bidang`, `dskp_sk`, `dskp_sp`; **OD-28 (2026-10-19, OWN-7):** also `remedial_test_items` (`remedial_test_id` FK cascade, `position` smallint, `question_id` FK, `question_version_no` int: the version served).
 - `apps/api/src/modules/missions/**` (missions, remedial tests, question sets, DSKP picks) exporting `MissionsService.forStudent(userId, today)` and `RemedialTestsService.forStudent(userId)` that BE-12 consumes
 - Tests under `apps/api/test/missions/**`
 
@@ -57,7 +61,7 @@ Every route below exists in the mock (verified) except the two marked provisiona
 
 ## DB tables touched
 
-`missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `dskp_*`, `practice_sessions` (read, to mark mission completion), `classrooms` (via BE-17 repository), `questions` (via BE-09 repository).
+`missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `dskp_*`, `practice_sessions` (read, to mark mission completion), `classrooms` (via BE-17 repository), `questions` (via BE-09 repository).; **OD-28 (2026-10-19, OWN-7):** `remedial_test_items`.
 
 ## Acceptance criteria
 
@@ -68,6 +72,7 @@ Every route below exists in the mock (verified) except the two marked provisiona
 5. Template downloads (`audio-kbat`) send the right `Content-Type` (XLSX or DOCX), `Content-Disposition: attachment` and a fixed header row copied from the mock; any generated CSV neutralises cells starting with `=`, `+`, `-`, `@`.
 6. `POST /api/guru/question-papers` accepts only the file types and size the mock accepts (read `extras.ts`), stores through BE-04 and creates a `pending` submission via BE-10's service (until BE-10 merges the PR says so).
 7. Roles: teacher routes need role `teacher`; the student reads need a session; other roles get 403; teachers act only on own classes and own records (404 otherwise); missing CSRF 403 `CSRF_INVALID`.
+8. **OD-28 (2026-10-19, OWN-7):** generating a remedial test stores its questions as ordered `remedial_test_items` rows (position, question id, version served), not as an id array; reading the test returns them in `position` order; deleting or cancelling the test cascades to its items; a generated test of N questions has exactly N rows.
 
 ## Test commands
 

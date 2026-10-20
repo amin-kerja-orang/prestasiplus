@@ -2,6 +2,49 @@
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.
 
+## Groups: who takes which lanes (user decision D56, 2026-10-19)
+
+Two groups of people work in parallel. Each session belongs to exactly one group, which is named in its first prompt ("Group A" or "Group B"). A session takes cards **only from its own group's lanes** (the tracker `Lane` column), so the two groups never edit the same folders.
+
+| Group | Who | Lanes |
+|---|---|---|
+| **A** | The project owner's PC (the LEAD's machine) | PC-1 Identity, PC-4 Migration, PC-6 Teacher/Reports/Seed |
+| **B** | The external collaborator's PCs | PC-2 Learning/Question bank, PC-3 Bijak/Paper builder, PC-5 AI intake, PC-7 Games |
+
+- No group named in your prompt? Ask the user which group before taking a card.
+- Cards claimed before D56 stay with their current holder until merged, even if they are in the other group's lane. Do not take over another group's claimed card.
+- Nothing left in your group? Report `idle`. Never take the other group's cards unless a Lead notice says so.
+
+## Quick start: many sessions in parallel (read this first)
+
+Many sessions work at the same time, on one PC or on many. Each session is an independent worker.
+
+1. **You are one session, not "the PC".** Make your own session name once:
+   ```
+   node -e "console.log('s-'+require('os').hostname().toLowerCase()+'-'+Math.random().toString(36).slice(2,6))"
+   ```
+   Use it as the Owner. Other sessions on the same PC are other workers: never continue their card and never wait for them.
+2. **The live board is the list of `be/*` branches on GitHub.**
+   ```
+   git fetch origin --prune && git ls-remote --heads origin "be/*"
+   ```
+   - A branch exists for a card: that card is **taken**, whatever `backend-tracker.md` on `feature/v2-backend` says. Tracker rows change on the claim branch and only reach `feature/v2-backend` when the LEAD merges.
+   - Do not ask other sessions what they are doing. GitHub is the only source.
+3. **Take the first free card of your group's lanes** (see Groups above) from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
+4. **Work in your own folder.** Several sessions must never share one checkout:
+   ```
+   git worktree add ../pp-<card-id> -b <branch> origin/feature/v2-backend
+   cd ../pp-<card-id>
+   npm ci
+   ```
+5. **Check `docs/plan/reviews/`** for a file named after any card you hold: fix those first.
+6. **Claim by pushing the branch** right away (section 2). The push is the claim:
+   - If the push is rejected because the branch exists, another session won. Remove your worktree and take the next free card.
+   - Add the draft PR when `gh` works.
+7. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
+
+**Resume** a card only when the user's prompt says so ("Continue BE-xx"). Then work in that card's existing branch.
+
 > **Standing rule for every PC and every session: commit, push and update the shared records regularly.**
 > - **Commit** after every green step.
 > - **Push** at least every hour and before the session stops.
@@ -31,11 +74,46 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | Card | Mode | Opened | Note |
 |---|---|---|---|
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
-| BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
-| BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
-| BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
-| BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
-| BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
+| BE-03 | full | 2026-10-19 | Group A (PC-1). Authentication, session, roles, scope and Mod Pelajar. Follow D55, D57, D59, UD-1 and UD-2 and the session contract in packages/contract/src/{session,auth,access}. **Security review required.** Unblocks most full cards. |
+| BE-34 | full | 2026-10-19 | Group A. Migration kit (branch `be/BE-34-migration-kit`). BE-02 is merged: merge origin/feature/v2-backend into the branch. |
+| BE-27 | full (stacked) | 2026-10-19 | Group A (PC-4). .cloud staging schema, loader and profiling report, stacked on `origin/be/BE-34-migration-kit`. Never connect to the .cloud DB: build against a staging schema and synthetic fixtures; the LEAD runs the real read-only profile. No real data, dumps or credentials in the repo. Adds the migration CLI npm script. |
+| BE-31 | full | 2026-10-20 | Group A (PC-6). Conformance suite + API target + be:verify gate. **DONE — merged 712f05ba (2026-10-20).** be:verify now runs contract-tests. |
+| BE-07 | full | 2026-10-20 | Group A (PC-1). Seed core population. **DONE — merged d5db2845 (2026-10-20).** Unblocked BE-32, BE-26. |
+| BE-32 | full | 2026-10-20 | Group A (PC-1) + **LEAD**. Compose stack, nginx /api proxy, Vite dev proxy, Playwright e2e vs the real API. **CLAIMED (PC-1 part)** s-aminfaudzi-e3m2, branch `be/BE-32-http-switch-e2e`. Depends BE-03/07/31 (done). Wires TRUST_PROXY_HOPS=1 + nginx client_max_body_size (closes BE-05/25/04 devops follow-ups). AC3 (@api e2e) blocks on L1/V2-T31 (HttpTransport, VITE_API_MODE=http) which the LEAD owns — PC-1 builds the scaffold + login/role-switch specs and reports AC3 blocked on L1. Unique compose project pp-be32, ports 5292/5293. |
+| BE-04 | full | 2026-10-19 | Group A (PC-1). File storage + upload handling. **DONE — merged 8536a37e (2026-10-20).** Migration 0005_files. F1 IDOR closed. Unblocks BE-37. |
+| BE-35 | full | 2026-10-20 | Group A (PC-4). Anonymiser tool + synthetic .cloud fixture generator. Opened after BE-27 merged. No folder overlap with BE-04, so it may run in parallel. Security review. LEAD runs the anonymiser (OD-18). |
+| BE-05 | full | 2026-10-19 | Group A (PC-1). Users & schools (M02). **DONE — merged 2ab7976f (2026-10-20).** Unblocked BE-17 (also needs BE-08 full), BE-25. |
+| BE-08 | full | 2026-10-19 | Group B (PC-2). Curriculum (M03): levels, subjects, chapters, topics, DSKP tree. Opened after S3; contract already merged. Unblocks BE-09 full. |
+| BE-09 | full | 2026-10-20 | Question bank core (M04): schema, repository, question CRUD, eligibility. Depends BE-08 (done). Contract merged. **ASSIGNED Group A S1 (bb / s-aminfaudzi-e3m2)** — LEAD reassigned 2026-10-20 (61 holds BE-24; BE-09 not yet started). Critical bottleneck, unblocks BE-10/12/15. **Migration 0011** (order: BE-24 0009 → BE-11 0010 → BE-09 0011). Branch `be/BE-09-question-bank-core`. Group B: do NOT take. |
+| BE-11 | full | 2026-10-20 | **Group B.** Wallet, ledger and streak core (M14 core). Depends BE-03 (done). Contract merged. Opened for Group B (#29). Unblocks BE-12, BE-16, BE-23. Branch `be/BE-11-wallet-streak-core`. |
+| BE-12 | full | 2026-10-20 | **Group B (s-vm-obgn).** Practice write path (M05): record answers, sessions. Depends BE-09 + BE-11 + BE-25 (BE-25 done; BE-09/BE-11 in sprint). **Migration 0014.** Branch `be/BE-12-practice-write`. **FULL security review (answer records / personal data).** Must define ON DELETE for answered questions (BE-09 DELETE is mock-parity; see BE-09 PR note). Part of 12h Bijak sprint. |
+| BE-25 | full | 2026-10-20 | Group A (PC-1). Subscriptions, packages, parent invites/links, complimentary students (M02 rest). **DONE — merged 6f634d67 (2026-10-20).** Migration 0006. Unblocks BE-12. |
+| BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01). **DONE — merged b5d5d7d4 (2026-10-20).** Migration 0007. mustChangePassword guard; teacher self-register fail-closed; register throttle decoupled from login. Unblocks BE-24. |
+| BE-10 | full | 2026-10-20 | **Group B (s-vm-obgn).** Question workflow (M04 rest): submit/approve/publish gates, status events, Admin Pusat publish. Depends BE-09. Owns `src/modules/questions/workflow/**` (BE-09 owns the rest). **MUST enforce `checkKeysGate` on create→published too** (BE-09 wires the tag gate there; see BE-09 PR note). **Migration 0017.** Branch `be/BE-10-question-workflow`. Part of 12h Bijak sprint. |
+| BE-15 | full | 2026-10-20 | **Group B (s-vm-obgn).** Bijak papers (M06): paper list, paper detail, start attempt eligibility. Depends BE-09 (question bank). Contract merged. **Migration 0012.** Branch `be/BE-15-bijak-papers`. Includes PoC paper + question seed from prototype (fictitious names only). Part of 6h Bijak sprint. |
+| BE-17 | full | 2026-10-20 | Classes and teacher basics (M10 part A). Depends BE-05 + BE-08 (both done). Contract merged. **Group A — START NOW (12h sprint; deps ready). CLAIMED by LEAD subagent 2026-10-20.** Unblocks BE-19/BE-21 (teacher/school visibility of Bijak results). **Migration 0015.** Branch `be/BE-17-classes-teacher`. Also provides COMP_CLASSROOM_PORT + verify-pending-teacher (BE-21 AC#13). |
+| BE-19 | full (slice) | 2026-10-20 | **Group A.** Performance reports (M11 slice): Prestasi, Analitik, Analisa Item reading the Bijak aggregate (US-33). Depends BE-16 (attempts) + BE-17 (classes). **Migration 0016.** Branch `be/BE-19-reports-slice`. Sprint slice only — teacher/school visibility of student Bijak results; full reports later. Part of 12h Bijak sprint. |
+| BE-21 | full (slice) | 2026-10-20 | **Group A.** School admin (M12 slice): school dashboard showing students' Bijak results. Depends BE-16 + BE-17 + BE-19. **No new migration if possible** (reads existing). Branch `be/BE-21-school-dashboard`. Includes verify-pending-teacher (AC#13). Sprint slice only. Part of 12h Bijak sprint. |
+| BE-23 | full | 2026-10-20 | **Group B (PC-2) — OPEN.** Gamification and shop (M14 rest): badges, leaderboards, shop/redeem. Depends BE-11 wallet (**merged ✓**). Contract merged. Migration # from LEAD at claim. Security review (coin/reward spend). Next card for a free Group B dev. |
+| BE-24 | full | 2026-10-20 | Group A (PC-1). Content (M09) + support tickets (M22). **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-24-content-support` from b5d5d7d4. Depends BE-03/04/05/06 (all done); uses BE-06 NotificationsService + BE-05 school scope. **Migration number 0009** (BE-08 curriculum holds 0008 and merges first; LEAD merges in numeric order). no-store/429 (D57). Security review. |
+| BE-36 | contract | 2026-10-19 | AI adapter wire types. **DONE — PR #27 merged 2026-10-20.** |
+| BE-37 | full | 2026-10-20 | **Group B (PC-5) — OPEN (resumed).** AI intake: files/OCR/job runner. Depends BE-04/BE-36/BE-38 (done). Migration # from LEAD at claim (renumber-at-merge). No real media/OCR output committed (source only). Security review (file uploads + external input). Next card for the PC-5 dev. |
+| BE-14 | full | 2026-10-20 | **Group B (s-vm-obgn).** `@pp/exam-core` shared package (no DB migration). **OD-5 APPROVED by LEAD 2026-10-20** — may touch `src/modules/m28-bijak-spm`, follow `sessions.md §5`. Unblocks BE-15/BE-16 (Bijak). Part of 6h Bijak sprint. |
+| BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
+| BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
+| BE-13 | full | 2026-10-20 | **Group B (PC-2) — OPEN.** Practice read models: `practice/reads/**` only; do NOT edit BE-12's `practice/` files. Depends BE-12 (in #46, merging). Likely no migration (reads BE-12 tables). Contract merged. Migration # from LEAD if any. Next card for a free Group B dev. |
+| BE-16 | full | 2026-10-20 | **Group B (s-vm-obgn).** Bijak attempts (M06): start, autosave, submit, result. `bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). Depends BE-11 (wallet, for reward on submit) + BE-15. **Migration 0013.** Branch `be/BE-16-bijak-attempts`. **FULL security review (submit answers / marks).** Part of 6h Bijak sprint. |
+| BE-18 | full | 2026-10-20 | **Group B (PC-3) — OPEN.** Missions and question sets: `classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). Depends BE-17 (ready, merging) + BE-09 (merged). Contract merged. Migration # from LEAD at claim. Next card for a free Group B dev. |
+| BE-20 | full | 2026-10-20 | **Group B — OPEN.** Analytics and Kirkpatrick: `reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). Depends BE-16 (in #46) + BE-19 (slice). Reads aggregates; likely no migration. Contract merged. Next card for a free Group B dev. |
+| BE-22 | contract-only | 2026-10-19 | Command Center and admin dashboard: `packages/contract/src/admin/command-center/**`. |
+| BE-38 | contract | 2026-10-19 | Intake batches and review contract. **DONE — PR #35 merged 2026-10-20** (combined with #28, openapi.json regenerated). |
+| BE-39 | full | 2026-10-20 | **Group B (s-vm-obgn).** Paper builder + blueprints (M06): Admin Pusat builds/publishes Bijak papers. Contract merged (#28). Depends BE-09 + BE-15. **No migration if possible** (reuses paper tables). Branch `be/BE-39-paper-builder`. Part of 12h Bijak sprint. |
+| BE-42 | contract-only | 2026-10-19 | PKSK: `packages/contract/src/pksk/**`. |
+| BE-43 | contract-only | 2026-10-19 | Cikgu Alesa: `packages/contract/src/cikgu/**`. |
+| BE-44 | contract-only | 2026-10-19 | Battle: `packages/contract/src/battle/**`. |
+| BE-45 | contract-only | 2026-10-19 | Papan Bijak, games hub, leagues: `packages/contract/src/games/**`. |
+| BE-46 | full | 2026-10-20 | Group A (PC-1). Marketplace (M15 rest). Depends BE-03/05 (done). Contract merged. **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** Migration renumber-at-merge. Branch `be/BE-46-marketplace`. |
+| BE-47 | full | 2026-10-20 | Group A (PC-1). Keluarga Angkat / sponsorship (student side). Depends BE-03/05 (done). Contract merged. **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** Migration renumber-at-merge. Branch `be/BE-47-sponsorship`. |
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
@@ -49,8 +127,43 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-20 16:xx **NEXT-CARD QUEUE for Group B (so no dev idles).** Beyond the Bijak critical path (#46 → Dev1 question-connector → #44 BE-10 → #47 BE-39 → #48), these are **OPEN now** for any free Group B dev, deps already met: **BE-23** gamification/shop (dep BE-11 merged), **BE-13** practice reads (dep BE-12/#46), **BE-18** missions/question-sets (dep BE-17), **BE-20** analytics/Kirkpatrick (dep BE-16/BE-19), **BE-37** AI intake (resumed, PC-5). Take the first that fits your lane; migration # from LEAD at claim. LEAD will keep opening the next batch as deps clear — do not wait to be asked.
+
+- 2026-10-20 **12-HOUR BIJAK SPM SPRINT (target ~23:00; supersedes the 6h plan).** Goal: (a) students use Bijak SPM on the real API (milestone 17:00 staging); (b) teachers + school admins SEE their students' Bijak results (US-33 → Prestasi/Analitik/school dashboard); (c) Admin Pusat can publish papers. **Per D43 teachers have NO Bijak screen (403) — "teacher uses Bijak" = sees results via the teacher module.** Defer BE-46/47 and all other cards.
+  - **Group B (s-vm-obgn) — open full:** BE-14 `@pp/exam-core` (no migration, **OD-5 approved**), BE-15 Bijak papers (**0012**), BE-16 Bijak attempts (**0013**, full security review), BE-12 practice write (**0014**, full security review — answer records), BE-10 question workflow (**0017**, enforce checkKeysGate on create too), BE-39 paper builder (no migration, Admin Pusat publish).
+  - **Group A:** finish BE-09 (bb, **0011**) + BE-24 (61, **0009**); **START BE-17 NOW** (classes/teacher, **0015**, deps ready — LEAD subagent); then BE-19 slice (**0016**, Prestasi/Analitik/Analisa Item reading Bijak aggregate) + BE-21 slice (school dashboard, no new migration).
+  - **Migration allocation (LEAD merges in numeric order):** 0009 BE-24 · 0010 BE-11 (#36) · 0011 BE-09 · 0012 BE-15 · 0013 BE-16 · 0014 BE-12 · 0015 BE-17 · 0016 BE-19 · 0017 BE-10. BE-14 & BE-39 no migration. (BE-37's old 0015 reservation released — renumber-at-merge.)
+  - **Merge order (LEAD):** #37 → BE-24 → #36 BE-11 → BE-09 → BE-14 → BE-15 → BE-16 → BE-12 → BE-17 → BE-19 → BE-10 → BE-39 → BE-21.
+  - **LEAD own work:** L1/V2-T31 HTTP transport **DONE** (branch `lead/v2-t31-hybrid-transport`, 785e9e70); switch M28 Bijak to `VITE_API_MODE=http` FIRST (17:00 students-live milestone), then teacher module (Prestasi/Analitik) + Admin Sekolah; BE-32 e2e Playwright 3 roles × 375/768/1280.
+  - **Process:** be:verify locally, push ONCE per card, light review; **full security review for BE-16 (marks) AND BE-12 (answer records).** Seed PoC paper + Bijak questions from prototype (BE-15), fictitious names only.
+  - **Schedule:** 17:00 students live on staging · 20:00 BE-33 minimum (security headers, rate limit, backup) + deploy · 22:00 UAT all roles · 23:00 go/no-go.
+
+- 2026-10-20 **MANDATORY — read before any push**:
+  1. **GitHub Actions billing hit 90% (1800/2000 free min).** A $0 Actions budget is set, so overage is BLOCKED (no charge) and runs stop when the limit is reached. CI is advisory, not a gate — the LEAD verifies every merge LOCALLY with be:verify. Do NOT rely on GitHub CI; do NOT push WIP repeatedly (each push burns minutes).
+  2. **Before EVERY push / PR:** `git fetch origin && git rebase origin/feature/v2-backend`, then `npm run contract:emit` (regenerate `packages/contract/openapi.json` on the CURRENT base). The 4 Group B PRs conflicted badly because each regenerated openapi.json on a stale base. Rebase + regenerate first, then push ONCE.
+  3. **Group B PRs all merged** (2026-10-20): #27 BE-36, #31 BE-08 (curriculum, migration 0008), #35 BE-38, #28 BE-39 (contract-breaking). Base CI fixed directly by the LEAD (untracked .claude/worktrees gitlinks + gitleaks allowlist for PASSWORD_ALPHABET & .env.api.example false positives). #33 redundant; close it.
+  4. **Opened:** BE-46 (Marketplace), BE-47 (Keluarga Angkat) full for Group A.
+
+- 2026-10-20: **BE-06 merged** (b5d5d7d4; account, mustChangePassword guard, teacher self-register fail-closed, register throttle decoupled from the login brute-force throttle). **BE-24 opened + claimed** (pc-aminfaudzi/S2, migration 0009). Done: 12/48 (BE-01,02,03,04,05,06,07,25,27,31,34,35); P0 9/13, P1 3/23. **Migrations merged 0001-0007; allocated: 0008 = BE-08 curriculum (Group B, merges next, critical path), 0009 = BE-24.** LEAD merges in numeric order. **Group B coordinates migration numbers via git** (BE-08 correctly took 0008 after 0007=BE-06). Teacher self-register verification flow recorded as BE-21 AC#13.
+- 2026-10-20: **BE-07, BE-31 merged + LEAD contract change (session.mustChangePassword + PASSWORD_CHANGE_REQUIRED, a6c16790).** be:verify now runs `npm test -w @pp/contract-tests` (gate gap closed). **BE-32 opened + claimed (PC-1 part, e3m2); LEAD owns L1/V2-T31.** BE-06 (61) rebasing onto the contract change to build the mustChangePassword guard. Done: BE-01,02,03,04,05,07,25,27,31,34,35 (11/48); P0 9/13. **Group B (collaborator PC): active today — BE-08 curriculum (full, critical path) pushed, last at ~03:51; BE-36/39 contracts ~05:01.** Group B coordination is via the project owner (relay), not GitHub issues (gh not available to the LEAD here).
+- 2026-10-20: **BE-25 merged** (6f634d67, subscriptions + parents; migration 0006; H1 invite-token-in-logs fixed). **BE-06 opened + claimed** (pc-aminfaudzi/S2, migration 0007). BE-07 (seed, e3m2) being rebased onto BE-25 (shared seed framework). Done so far: BE-01, 02, 03, 34, 27, 05, 35, 04, 25 (9/48). Migrations merged: 0001-0006; next allocated 0007 = BE-06.
+- 2026-10-20: **BE-04 merged** (8536a37e, file storage; F1 IDOR closed, opaque ids, migration 0005_files). LEAD verify caught a flaky files.spec assertion — fixed before merge. **BE-07 opened + BE-31 reopened as full, both to s-aminfaudzi-e3m2** (parallel, no folder overlap). Done so far: BE-01, 02, 03, 34, 27, 05, 35, 04 (8/48). Still blocked: BE-28 (needs BE-08+BE-17 full), BE-06 (PC-1, free for whoever finishes — depends BE-03/04/05, all done).
+- 2026-10-20: **BE-05 merged** (2ab7976f, users & schools). LEAD independent 2-layer verify green (be:verify 553 passed + 1188 contract tests; focused security review no Crit/High, parent visibility fail-closed confirmed). **BE-25 opened + claimed** (pc-aminfaudzi/S2). **Migration numbering:** 0001-0004 merged (0004 = BE-05); 0005 = BE-04 (merges first), 0006 = BE-25. Ask the LEAD for a number before creating a migration folder. BE-17 still needs BE-08 full before it can start. Done so far: BE-01, 02, 03, 34, 27, 05 (6/48).
+- 2026-10-20: **BE-34 + BE-27 merged** (migration kit + .cloud staging/profiling). LEAD independent verify green for each (contract:check + be:lint:migration + be:verify, real Testcontainers). Apply guard now enforced at Runner level (hard condition). **BE-35 opened** (Group A/PC-4, anonymiser + synthetic fixtures — no overlap with BE-04, parallel OK). **BE-04 claimed** (s-aminfaudzi-e3m2). **Migration numbering:** 0001_init, 0002_identity, 0003_etl_control_tables merged; 0004 reserved for BE-05 (merges first); BE-04 uses 0005 if it needs a table. LEAD allocates every migration number and merges in numeric order — ask before using a new number. Done so far: BE-01, 02, 03, 34, 27 (5/48).
+- 2026-10-19 (S3): **BE-03 merged — gate S3 passed** (squash b85df54a, tracker 41b4e6a9). LEAD independent verify green (contract:check + be:verify, 24 files / 195 passed, real Testcontainers Postgres). **Full cards opened:** BE-04 (Group A/PC-1), BE-05 (Group A/PC-1, **CLAIMED** pc-aminfaudzi/S2), BE-08 (Group B/PC-2). BE-36 still waits on BE-06 (full). Rebase on origin/feature/v2-backend before starting.
+- 2026-10-19 18:15: **BE-02 merged (S2).** **BE-03 (auth) is open** for Group A, as a full card with a security review. BE-34 is no longer stacked; merge the base in.
+- 2026-10-19 17:45: **BE-39 mock reference is now on this branch:** `docs/reference/bijak-paper-builder-mock/` (read-only snapshot of the prototype paper-builder mock). BE-39 must match it. **D59a accepted risk:** IC self-reset for pupils was flagged High by security review; the user kept it (D59a) with the D55 limits plus notifications, recorded as an accepted risk.
+- 2026-10-19 17:00: **D59 (user):** IC reset stays for all roles (with D55 limits and a notification); initial passwords are random per account, shown once, with mustChangePassword (no shared default); Battle search covers all schools; the shared 429 response is coming to common/ (LEAD). **Reviewers are now read-only** (no worktrees, no npm); the LEAD runs the checks at merge.
+- 2026-10-19 16:20: **Group A opened:** BE-02 (database, stacked on the BE-01 branch, for BE-01's holder) and BE-31 harness-only (conformance runner against the mock). New mode `harness-only` means only the parts that need no unmerged dependency.
+- 2026-10-19 16:05: **D58 (TRACKER)** covers BE-45 server-checked solo games, BE-39 [PROPOSED] copy, the BE-06 rate-limit copy, and the BE-05 and BE-25 rules. The base lint failure (`_stats` in the BE-12 test) is fixed here. **Worktree rule:** before `npm ci` or `npm install` in a worktree, check `(Get-Item node_modules -Force).LinkType`; if it is a junction, delete the link with `.Delete()` first. A junctioned install wiped the main node_modules today.
+- 2026-10-19 15:45: **Review feedback now lives in `docs/plan/reviews/<card>.md`** on this branch. Changes are requested for BE-05, BE-09, BE-19 and BE-25 (Group A) and for BE-06 and BE-21 (Group B). The holder fixes the branch, rebases on origin/feature/v2-backend, and sets the row back to `review`. **D57 security defaults** (TRACKER) apply to every contract: 429 on writes and public lookups, no-store on credentials and tokens, role and scope limits, and parent-invite PDPA rules. **Opened for Group B:** BE-13 contract-only (`packages/contract/src/practice/reads/**` only; BE-12 is merged). Merged so far: BE-08, 10, 11, 12, 15, 17, 23, 24, 41, 48.
+- 2026-10-19: **Decisions D55 (security):** BE-06 reset-ic has an attempt limit (5 per 15 min per account and IP, 429 RATE_LIMITED, BM message); unknown e-mail answers with the invalid-token message (no enumeration); BE-21 student-create returns the password once to the creating admin only, never logged, and the account must change its password at first login. Contracts and cards BE-03, BE-06, BE-21 and BE-33 follow D55.
+- 2026-10-19 14:40: **12 more contract-only cards opened:** BE-16, 18, 20, 22, 38, 39, 42, 43, 44, 45, 46, 47. Only BE-19 and BE-36 were left before. Same rules: one branch `be/<card>-contract` per card, push = claim.
+- 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.
+- 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire: Draf, Semakan, Lulus, Diterbitkan, Diarkib (codes draft, review, approved, published, archived); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
 - 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
 
+- 2026-10-19: **Parallel sessions fixed:** read the Quick start at the top. Each session has its own name and its own worktree; a `be/*` branch on GitHub means the card is taken. 17 contract-only cards are open, so every session has work.
 - 2026-10-19: **S0 is open, start now.** Defaults in force until the LEAD says otherwise:
   - Stack: NestJS 11 + Prisma + Vitest (OD-3).
   - The LEAD reviews and merges every PR (OD-12).
@@ -61,7 +174,7 @@ Rules for `contract-only`:
 ## 0b. Any number of PCs
 
 - There is no fixed number of PCs and no fixed PC-to-lane split. Every PC **pulls** the next ready card from the whole tracker (section 1). A PC can join or leave at any time; a new PC only needs the setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1.
-- **PC name (automatic):** the agent names its PC itself: `pc-` plus the computer name in lower case (run `hostname`, e.g. `pc-desktop-7h2k`). It writes the tracker Owner as `<pc-name>/S<n>` (n = session number on that PC). Nobody has to choose a name.
+- **Session name (automatic):** each session makes its own name (Quick start step 1, e.g. `s-desktop-7h2k-q3x9`) and writes the tracker Owner as that name. Two sessions on one PC have different names.
 - **Lanes are file-ownership groups, not people.** The lane of a card (tracker column `Lane`) tells you which lane prompt to read and which folders you may edit while you hold that card.
 - More PCs help only while there are ready cards. When none is ready, a PC does the "blocked" work of [sessions.md](sessions.md) section 2 or stops and reports `idle`.
 
@@ -96,10 +209,10 @@ gh pr list --base feature/v2-backend --state open --json number,title,headRefNam
 gh issue list --label lead --state open      # LEAD instructions; if the label does not exist yet, ignore the error
 ```
 
-1. **Unfinished card of yours first:** if this PC already holds a card (its branch or draft PR, Owner = your PC name), continue it.
+1. **Resume only when told:** if the user's prompt says "Continue BE-xx", continue that card in its existing branch (in its own worktree). Otherwise always take a new free card. A card with a branch is never yours just because it was claimed from this PC.
 2. Otherwise open [backend-tracker.md](backend-tracker.md) **on `origin/feature/v2-backend`** and list the cards that are **ready**:
    - listed in the **Open list** (section 0); `contract-only` rows skip the dependency check below;
-   - status `todo`, and no open PR or `origin/be/<card>-*` branch exists for it (that would mean it is taken);
+   - **no `origin/be/<card-id>-*` branch exists** (`git ls-remote --heads origin "be/*"`) and no open PR. This is the real "taken" test, because tracker status on `feature/v2-backend` lags until merge;
    - every card in `Depends on` is `done`;
    - **no clash:** no card currently `in-progress` or `review` in the same lane touches the same module folder or Prisma file (check the "Files" or scope section of both card files). Two cards of one lane may run in parallel only when neither depends on the other and their files do not overlap (example: BE-08 curriculum and BE-11 wallet).
 3. Take the ready card with the **highest priority** (P0, then P1, then P2); on a tie, the one that unblocks the most other cards (the most cards list it in `Depends on`); then the lowest card number.
@@ -108,8 +221,9 @@ gh issue list --label lead --state open      # LEAD instructions; if the label d
 ## 2. Claim it immediately (before writing code)
 
 ```
-git switch -c be/<card-id>-<slug> origin/feature/v2-backend     # contract-only: be/<card-id>-contract
-# edit the card's row in docs/plan/backend-tracker.md: Status in-progress, Owner <pc-name>/S<n>, Branch
+git worktree add ../pp-<card-id> -b be/<card-id>-<slug> origin/feature/v2-backend   # contract-only: be/<card-id>-contract
+cd ../pp-<card-id> && npm ci
+# edit the card's row in docs/plan/backend-tracker.md: Status in-progress, Owner <session-name>, Branch
 git add docs/plan/backend-tracker.md
 git commit -m "chore(<card-id>): claim card" && git push -u origin HEAD
 gh pr create --draft --base feature/v2-backend --title "[PC-n] <card-id>: <title>" --body-file .github/pull_request_template.md
@@ -118,7 +232,7 @@ gh pr edit --add-label lane:PC-n || true     # add `contract` for contract-only;
 
 `PC-n` is the card's `Lane` column. The `[PC-n]` title prefix always carries the lane, so a missing label costs nothing. Always `git add` explicit paths, never `git commit -a`: the full test run rewrites a tracked snapshot under `src/`, and it must not enter your PR.
 
-**The draft PR is the claim.** Other PCs see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1. If `gh` says you are not logged in, run `gh auth login` once; do not skip the PR.
+**The pushed branch is the claim** (the draft PR adds detail). Other sessions see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1. If `gh` says you are not logged in, run `gh auth login` once; do not skip the PR.
 
 ## 3. While working: commit and push often
 

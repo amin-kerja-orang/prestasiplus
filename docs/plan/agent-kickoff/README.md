@@ -1,6 +1,6 @@
 # Starting a new PC (Claude Code kickoff)
 
-Each backend lane has a paste-ready prompt: [PC-1](PC-1.md) Foundation to Identity, [PC-2](PC-2.md) Learning and Question bank, [PC-3](PC-3.md) Bijak and Paper builder, [PC-4](PC-4.md) Migration and ETL, [PC-5](PC-5.md) AI intake, [PC-6](PC-6.md) Teacher, Reports, Conformance and Seed, and [LEAD](LEAD.md) for the lead's integration assistant. The programme overview is [../sessions.md](../sessions.md); card status is [../backend-tracker.md](../backend-tracker.md).
+Each backend lane has a paste-ready prompt: [PC-1](PC-1.md) Foundation to Identity, [PC-2](PC-2.md) Learning and Question bank, [PC-3](PC-3.md) Bijak and Paper builder, [PC-4](PC-4.md) Migration and ETL, [PC-5](PC-5.md) AI intake, [PC-6](PC-6.md) Teacher, Reports, Conformance and Seed, [PC-7](PC-7.md) Games and competitions, and [LEAD](LEAD.md) for the lead's integration assistant. The programme overview is [../sessions.md](../sessions.md); card status is [../backend-tracker.md](../backend-tracker.md).
 
 ## 0. Before anyone starts (lead, once)
 
@@ -51,10 +51,12 @@ Never commit `.env.api`, `.env.db`, API keys, dumps or `.migration-out/`. If you
 4. Paste this as the first message (the same text on every PC):
 
    ```text
-   Read docs/plan/AGENT-SYNC.md on origin/feature/v2-backend and follow it exactly. Continue the card this PC holds, or take the next ready card, then read that card's lane prompt in docs/plan/agent-kickoff/ and its card file before working. Commit after each green step, push at least hourly and before you stop, and end with the 5-line report.
+   Read docs/plan/AGENT-SYNC.md on origin/feature/v2-backend and follow it exactly. You are in Group <A or B>; take cards only from your group's lanes. Then follow it, starting with its Quick start. You are one of many sessions working in parallel: make your own session name, take the first free card from the Open list (a be/* branch on GitHub means taken), claim it by pushing its branch, and work in your own git worktree. Read that card's lane prompt in docs/plan/agent-kickoff/ and its card file before working. Commit after each green step, push at least hourly and before you stop, and end with the 5-line report.
    ```
 
-   The full lane prompts (PC-1.md to PC-6.md) are references the agent reads for the lane of the card it takes.
+   To continue an unfinished card in a later session, add one line at the end: `Continue BE-xx.`
+
+   The full lane prompts (PC-1.md to PC-7.md) are references the agent reads for the lane of the card it takes.
 5. Let it finish one or two cards. At the end it prints the report; check that the PR is open (draft or ready) and that the tracker row on the branch is updated.
 6. Start a **fresh** Claude Code session for the next card (keeps the context small and focused).
 

@@ -13,7 +13,7 @@
 
 ## Goal
 
-(D52) Connect upload, OCR and the AI service to the question bank: an extraction job turns a batch into reviewable **items**; reviewers edit, accept (creating a Draf question through the M04 owner service), reject or mark duplicates; the existing BE-10 lifecycle then carries Draf -> Semakan -> Lulus -> Terbit. The AI never approves.
+(D52) Connect upload, OCR and the AI service to the question bank: an extraction job turns a batch into reviewable **items**; reviewers edit, accept (creating a Draf question through the M04 owner service), reject or mark duplicates; the existing BE-10 lifecycle then carries Draf -> Semakan -> Lulus -> Terbit (D54(a): on the wire these are the v2 codes `draft`, `review`, `approved`, `published`, BE-09 open question 1; the mock's `pending_review`/`approved` statuses are not used). The AI never approves.
 
 ## Inputs (read these)
 
@@ -23,6 +23,9 @@
 - `docs/requirements/v2-exam-schema.md`: D1 to D12 (types, keys, mark-scheme points, stimulus groups, tags, duplicates D11, lifecycle D12)
 - BE-09 (`QuestionsService`, tables), BE-10 (lifecycle, quality gates, audit), BE-36 (extraction contract), BE-37 (batches, pages, figures, jobs)
 - The frontend review/queue screens and mock handlers: `src/modules/m28-bijak-spm/admin/intake/pages/{IntakeListPage,IntakeReviewPage,IntakeUploadPage}.vue`, `admin/intake/components/{QuestionEditor,SchemeEditor}.vue`, `admin/intake/domain/{grouping,marks,validation}.ts`, `admin/intake/types.ts` (`IntakeQuestion`, `IntakeStimulus`, `lowFields`, `confirmed`, `needsManual`), the store methods `listIntakeBatches`, `getIntakeBatch`, `saveExtracted`, `submitForReview` in `src/modules/m28-bijak-spm/server/store.ts` (messages "Kumpulan ekstrak tidak ditemui", "Kumpulan sudah dihantar untuk semakan"), and `src/modules/m28-bijak-spm/__tests__/intake.test.ts`
+- Requirements: BE-FR-23; BE-NFR-08, BE-NFR-14, BE-NFR-15, BE-NFR-17, BE-NFR-18, BE-NFR-33, BE-NFR-34, BE-NFR-36 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -59,7 +62,7 @@ Submit, approve and publish of the resulting questions use the BE-10 endpoints; 
 
 ## DB tables touched
 
-New: `intake_items`, `intake_item_events`, `duplicate_links`. Writes questions only through `QuestionsService`.
+New: `intake_items`, `intake_item_events`, `duplicate_links`; adds the nullable `intake_batches.source_paper_id` pointer to `source_papers` (BE-10; D53/OWN-1: `intake_batches` is the Submission, `source_papers` the paper identity and rights registry). Frontend routes of the D52 review flow (UI, not API): intake list `/admin/spm/soalan/ekstrak`, review `/admin/spm/soalan/ekstrak/:batchId`, review queue `/admin/spm/semakan`, bank `/admin/spm/soalan`. Writes questions only through `QuestionsService`.
 
 ## Acceptance criteria
 
@@ -71,6 +74,7 @@ New: `intake_items`, `intake_item_events`, `duplicate_links`. Writes questions o
 6. Editing keeps the previous AI text in `intake_item_events`; every transition is audit-logged (who, when, from, to, reason).
 7. Provider failure or budget exhaustion leaves the batch recoverable (status and reason visible, retry works, no duplicate items after retry).
 8. No student, teacher or school identifier is stored in the extracted payload or sent to the provider (reuses BE-36 redaction; test with a planted cover page).
+9. **D54(a) (2026-10-19):** accepting an item creates a question whose wire status is the v2 `draft` code (BM Draf); no response, event or filter of this card carries a mock question status (`pending_review`, `rejected`, or `approved` meaning live); the item review states (`generated | needs_review | accepted | rejected | duplicate`) are a separate set and are not question statuses.
 
 ## Test commands
 
@@ -97,6 +101,8 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 - Enums are `text` + `check` with English codes (no Postgres enum types); anything the source may lack is nullable or has a documented default; seeds never set `legacy_*` and are idempotent.
 - Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR.
 - Not migrated from .cloud (pipeline tables are archived): these tables are NOT in `migratable-models.json` and have no `legacy_*` columns; state that in the PR. Provenance fields on questions follow the BE-09 and BE-10 mapping rows (`source_papers.natural_key`, `content_hash`) so the BE-30 backfill can match later; do not drop them.
+
+**Status note (LEAD 2026-10-19, D54(a) corrected):** questions have five wire states `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Diterbitkan, Diarkib). The prototype review action "Lulus & Terbit" moves a question through `approved` and then `published` in one step; both states still exist on the wire.
 
 ## Open questions
 

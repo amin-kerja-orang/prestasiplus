@@ -31,5 +31,20 @@ Start with [TRACKER.md](TRACKER.md) (progress and decisions) and the repo-level 
 | [discovery/BIJAK-SPM-cloud.md](discovery/BIJAK-SPM-cloud.md) | Written: .cloud Bijak SPM / Simulasi discovery (student, admin, panel; flows, grading, data model, defects N-01..N-21, diff vs .my SPM Mock) |
 | [requirements/v2-bijak-spm.md](requirements/v2-bijak-spm.md) | Draft G1: Bijak SPM v2 (Kertas Pilihan + Jana Kertas under Kontrak Blueprint), 33 stories, replicate-vs-redesign table, 4 blocking questions |
 
+## v2 fullstack reference (build kit for every PC and session)
+
+Read [plan/onboarding.md](plan/onboarding.md) first on a new PC, then the guide for your side.
+
+| Doc | Use it for |
+|---|---|
+| [plan/onboarding.md](plan/onboarding.md) | Setup from zero: prerequisites, worktrees, env files (names only), Docker preview and compose, common errors |
+| [requirements/v2-backend-urs.md](requirements/v2-backend-urs.md) | Backend requirements (BE-FR/NFR/MIG/OPS), testable, traced to cards BE-01..BE-40; open questions |
+| [plan/backend-dev-guide.md](plan/backend-dev-guide.md) | Backend handbook: layout, module anatomy, contract-first steps, errors and BM copy, Prisma, tests, checklist per card |
+| [plan/frontend-dev-guide.md](plan/frontend-dev-guide.md) | Frontend handbook: module anatomy, `src/ds` rules and ratchets, data access and mock handlers, responsive 375/768/1280, testids, commands |
+| [architecture/v2-api-catalogue.md](architecture/v2-api-catalogue.md) | Every mock endpoint (491 routes + 4 contract-only + Bijak/intake operations): roles, request/response, errors with exact BM messages, card, contract status; uncovered list |
+| [architecture/v2-data-model.md](architecture/v2-data-model.md) | Consolidated data model: ERD per domain, table list with store owner (D12), legacy columns, mapping-matrix gaps |
+| [plan/fullstack-integration-guide.md](plan/fullstack-integration-guide.md) | Contract → mock → http/hybrid switch (V2-T31), cookies, CSRF, 401, requestId, compose e2e, per-domain switch checklist |
+| [qa/v2-test-strategy.md](qa/v2-test-strategy.md) | Test levels (unit, Testcontainers integration, conformance, e2e, migration), gate matrix G3–G6, test data, severity |
+
 Reading order for newcomers: TRACKER decisions D28–D38, then `requirements/v2-portals.md`,
 `requirements/v2-cloud-gap.md`, `architecture/overview.md`, `architecture/v2-data-migration.md`.

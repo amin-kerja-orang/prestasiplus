@@ -24,12 +24,15 @@
 - The frontend extractor contract the output must equal (the review UI already consumes it): `src/modules/m28-bijak-spm/admin/intake/types.ts` (`QuestionExtractor`, `ExtractInput`, `ExtractedPaper`, `IntakeQuestion`, `IntakeStimulus`, `lowFields`), `src/modules/m28-bijak-spm/admin/intake/ai/{index,mock-extractor,providers,registry}.ts`, `src/modules/m28-bijak-spm/admin/intake/domain/{grouping,marks,validation}.ts`, and the mock test `src/modules/m28-bijak-spm/__tests__/intake.test.ts`
 - ADR-0019 (SPM intake, provider-agnostic AI) is being written by the lead and may not be in `docs/adr/` yet; follow the TRACKER D52 text and plan section 15 where it is silent
 - BE-06 `NotificationsService`, BE-03 guards
+- Requirements: BE-FR-21; BE-NFR-31, BE-NFR-32, BE-NFR-33, BE-NFR-34, BE-NFR-35, BE-NFR-36; BE-OPS-03 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
 - Contract: `packages/contract/src/ai/**` (extraction input/output items with confidence and region, usage summary, provider status)
 - `apps/api/prisma/schema/ai.prisma` + migration: `ai_extraction_runs` (batch/file ref, provider, model, status, timing, cost), `ai_usage_logs` (provider, model, run id, actor id, pages, tokens in/out, cost_sen, created_at; **no content**), `ai_settings` (monthly budget, notification flags)
-- `apps/api/src/modules/ai-extraction/**`: `ExtractionProvider` interface (`id`, `capabilities`, `extractPaper`, `suggestTags`, `healthCheck`), adapters `mock`, `anthropic`, `openai`, `gemini`, `openai-compatible` (HTTP via `fetch`, no vendor SDK required), registry selected by `AI_PROVIDER`, redaction step, concurrency/rate limiter, retry with backoff, price table, budget guard, usage logger
+- `apps/api/src/modules/ai-extraction/**`: `ExtractionProvider` interface (`id`, `capabilities`, `extractPaper`, `suggestTags`, `generateText`, `healthCheck`; `generateText({purpose, system, input})` returns `{text, tokensIn, tokensOut}` and is provider-agnostic, approved by the LEAD 2026-10-19 for BE-43), adapters `mock`, `anthropic`, `openai`, `gemini`, `openai-compatible` (HTTP via `fetch`, no vendor SDK required), registry selected by `AI_PROVIDER`, redaction step, concurrency/rate limiter, retry with backoff, price table, budget guard, usage logger
 - Recorded-response fixtures for each adapter under `apps/api/test/ai/fixtures/` (fictitious paper content only); no network in CI
 - `.env.api.example` additions (names only, plan 15.3) in the PC-5 block
 - Tests under `apps/api/test/ai/**`
@@ -72,7 +75,8 @@ New: `ai_extraction_runs`, `ai_usage_logs`, `ai_settings`.
 6. Budget: the month is the Malaysia calendar month; at 80% of `AI_MONTHLY_BUDGET_SEN` one notification per month is created for each active Admin Pusat through `NotificationsService`; at 100% `extractPaper` refuses with `AI_BUDGET_EXHAUSTED` and the caller can queue (AC-29.2).
 7. The service can only return drafts: its output type has no status beyond `draft` and there is no approval operation (AC-05.6; a type-level test and a runtime check).
 8. `AI_BASE_URL` for the openai-compatible adapter must be https, on the allow-list, and not a private or loopback address, including after DNS resolution (SSRF tests).
-9. Role checks: Guru and Murid get 403 on all `/api/ai/*` endpoints; no session 401; missing CSRF 403 `CSRF_INVALID` on `PUT` and `POST`.
+9. `generateText` (LEAD 2026-10-19, URS OQ-29 closed): the `mock` adapter returns deterministic canned text for a given `purpose` with no network call, and a test with a mock provider proves that `generateText` goes through the same redaction step, the same `AI_RATE_LIMIT_PER_MIN` / `AI_MAX_CONCURRENCY` / retry rules and the same budget guard as `extractPaper` (at 100% of `AI_MONTHLY_BUDGET_SEN` it refuses with `AI_BUDGET_EXHAUSTED`); each call writes exactly one `ai_usage_logs` row (provider, model, actor id, tokens in/out, `cost_sen`; no text); the key and the prompt text never appear in logs or error messages; the AC 1 contract-test suite covers `generateText` for every adapter with recorded fixtures.
+10. Role checks: Guru and Murid get 403 on all `/api/ai/*` endpoints; no session 401; missing CSRF 403 `CSRF_INVALID` on `PUT` and `POST`.
 
 ## Test commands
 
@@ -106,6 +110,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. Final provider and region are the user's decision (v2-question-bank Q5); the default stays `mock` until then.
 2. The price table values (`AI_PRICE_TABLE_JSON`) are configuration supplied by the lead, not invented in the repo.
+3. Closed (LEAD 2026-10-19, URS OQ-29): `generateText` is part of this card (Outputs and AC 9); BE-43 depends on it and does not edit `ai-extraction/**`.
 
 ## Prompt for Claude Code
 

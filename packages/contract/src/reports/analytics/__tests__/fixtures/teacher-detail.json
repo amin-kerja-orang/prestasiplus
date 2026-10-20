@@ -1,0 +1,24 @@
+{
+  "school": {
+    "id": 5183,
+    "name": "SEKOLAH KEBANGSAAN TOK JEMBAL"
+  },
+  "teacher": {
+    "id": 827,
+    "name": "Guru Demo 0827",
+    "email": "guru0827@demo.test",
+    "lastLoginAt": "2026-02-14T15:20:00+08:00"
+  },
+  "cards": {
+    "students": 0,
+    "engaged": 0,
+    "pct": 0,
+    "needAttention": 0
+  },
+  "students": [],
+  "suggestions": {
+    "neverLoggedIn": 0,
+    "lowAccuracy": 0,
+    "answered": 0
+  }
+}

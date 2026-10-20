@@ -227,6 +227,8 @@ export default defineConfigWithVueTs(
   {
     name: 'app/ignores',
     ignores: [
+      // Build output of backend workspaces (BE-01).
+      'apps/*/dist/**',
       'dist/**',
       'dist-*/**',
       'coverage/**',
@@ -354,6 +356,29 @@ export default defineConfigWithVueTs(
         ...dsRawElements(RAW_ELEMENT_NAMES.filter((n) => n !== 'a' && n !== 'img')),
       ],
       'no-restricted-imports': ['error', { patterns: DS_IMPORT_PATTERNS }],
+    },
+  },
+
+  // Boundary rule: @pp/exam-core is pure TypeScript shared by the server and the UI (BE-14, ADR-0021).
+  {
+    name: 'app/boundaries-exam-core',
+    files: ['packages/exam-core/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: String.raw`^(?:@|/src)/|^(?:\.\.?/)+(?:.*/)?src/(?:modules|mock|ds|components|app)/`,
+              message: '@pp/exam-core must not import application code from `src/**`.',
+            },
+            {
+              regex: String.raw`^(?:vue|vue-router|pinia|@vue/|@nuxt/|node:)`,
+              message: '@pp/exam-core must not import Vue, the DOM or Node-only APIs.',
+            },
+          ],
+        },
+      ],
     },
   },
 

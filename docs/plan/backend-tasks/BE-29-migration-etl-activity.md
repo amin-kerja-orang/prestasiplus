@@ -20,6 +20,7 @@ Load the activity and operations groups of `v2-data-migration.md` section 6.1 st
 - `docs/architecture/v2-data-migration.md` sections 3 (question-dependent data), 4.3 to 4.12, 5 (ledger integrity, derived data drift, timestamps), 6.1 steps 3 and 4, 7; `docs/architecture/v2-backend-plan.md` section 14 and the matrix rows marked BE-29 in 14.7
 - v2 schema from BE-11, 12, 16, 23, 24 (`apps/api/prisma/schema/{wallet,practice,exam,gamification,content}.prisma`)
 - BE-27, BE-28 and BE-34 outputs
+- Requirements: BE-NFR-15; BE-MIG-03, BE-MIG-07, BE-MIG-09, BE-MIG-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 
@@ -61,6 +62,7 @@ v2 targets: `practice_sessions`, `practice_answers`, `exam_attempts`, `attempt_r
 6. Idempotent apply (twice gives the same content hash), dry-run without writes outside `etl_*`, and per-table checkpoint resume after an injected failure (test kills the run after batch N and resumes at N+1 with identical final data).
 7. Load throughput for 1M synthetic answer rows (bulk `COPY`, indexes created after the load) is measured and written in the PR (a number to record, not a pass/fail threshold).
 8. No personal data in logs or reports (log-capture test on the fixtures).
+9. Content files (BE-MIG-09, T-10): file-backed content (article and banner images, note and video files, ticket attachments) is copied from the .cloud storage with a SHA-256 checksum to a `FileStorage` key (BE-04), and the path on the migrated row is rewritten to that key only after the copy and checksum succeed; a missing or checksum-mismatched file goes to `etl_rejects` (reason `INVALID_VALUE`) and the row keeps no dangling path; a second run copies nothing already present (test with synthetic files). (added 2026-10-19)
 
 ## Test commands
 

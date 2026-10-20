@@ -24,11 +24,14 @@ Own the curriculum store: education levels, subjects, subject-levels (derived), 
 - `docs/reference/dskp/*.json` (13 subject files) and `docs/reference/dskp/README.md`
 - `docs/architecture/v2-data-migration.md` section 4.2 (M03 realign: `strand`, `dskpCode`, `inTree` rule, derived subject-levels)
 - BE-03 outputs (guards, `ScopeFilter`)
+- Requirements: BE-FR-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
 - Contract: `packages/contract/src/curriculum/**`
-- `apps/api/prisma/schema/curriculum.prisma` + migration: `education_levels`, `subjects`, `subject_levels`, `chapters`, `topics`, `subtopics`, `curriculum_nodes`
+- `apps/api/prisma/schema/curriculum.prisma` + migration: `education_levels`, `subjects`, `subject_levels`, `chapters`, `topics`, `subtopics`, `curriculum_nodes`; **OD-28 (2026-10-19, OWN-7):** also `curriculum_tp_descriptors` (`subject_id` FK, `node_id` FK to `curriculum_nodes`, null = the subject's general performance levels, `tp` smallint check 1 to 6, `descriptor` text; data-model section 3).
 - `apps/api/src/modules/curriculum/**`; repository methods other cards use: `subjects()`, `levels()`, `chapters(subjectId, levelId)`, `node(code)`. `topicProgress(userId)` is **not** here (derived in BE-13 from the answer log, BR-19)
 - Seed `apps/api/prisma/seed/curriculum.ts`, reading JSON snapshots under `apps/api/prisma/seed/curriculum-data/` (the mock seeds exported once, by a throw-away script, to JSON; the seed never imports from `src/**`) and `docs/reference/dskp/*.json` for the DSKP nodes
 - Tests under `apps/api/test/curriculum/**`
@@ -60,7 +63,7 @@ Teacher DSKP routes (`/api/guru/dskp/*`): the GETs are in BE-10, the POSTs in BE
 
 ## DB tables touched
 
-`education_levels`, `subjects`, `subject_levels`, `chapters`, `topics`, `subtopics`, `curriculum_nodes`.
+`education_levels`, `subjects`, `subject_levels`, `chapters`, `topics`, `subtopics`, `curriculum_nodes`.; **OD-28 (2026-10-19, OWN-7):** `curriculum_tp_descriptors`.
 
 ## Acceptance criteria
 
@@ -73,6 +76,7 @@ Teacher DSKP routes (`/api/guru/dskp/*`): the GETs are in BE-10, the POSTs in BE
 7. `GET /api/topics?gradeLevel=&subject=` is case-insensitive, combines filters with AND, orders by `sequence` then id and returns nothing for an unknown code (SRS FR-M03-72); `GET /api/topics/:id` for an unknown id is 404 "Topik tidak dijumpai.".
 8. Topic progress: `GET /api/learning-map` and `GET /api/topics` carry per-user progress fields (SRS BR-14 island states, BR-19 progress). This card reads them through a provider interface `TopicProgressProvider.topicProgress(userId)` that BE-13 implements from the answer log; until BE-13 merges the default provider returns "no progress", which gives the mock's initial state (first two topics open, SRS BR-14), and a test covers that default.
 9. Roles: every `/api/admin/*` route gives 403 to non-admin; the learner reads give 401 without a session; a mutating call without CSRF gives 403 `CSRF_INVALID`.
+10. **OD-28 (2026-10-19, OWN-7):** `curriculum_tp_descriptors` is seeded from the TP descriptors of the DSKP JSON files (unit or SK level, plus the subject's general levels with `node_id` null); `tp` is checked 1 to 6; a descriptor row cannot exist without a subject; the table is not migrated from .cloud.
 
 ## Test commands
 

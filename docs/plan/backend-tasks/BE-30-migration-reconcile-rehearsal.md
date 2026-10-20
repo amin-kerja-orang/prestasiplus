@@ -20,6 +20,7 @@ Prove the migration end to end on a staging copy: full-run orchestrator, reconci
 - `docs/architecture/v2-data-migration.md` sections 3.3 (backfill), 5 (cutover), 6; `docs/architecture/v2-backend-plan.md` section 14.6 (reconciliation contract) and 14.8
 - `docs/architecture/v2-migration-runbook.md` (created by BE-27; BE-35 adds fixture and dump sections), BE-28/29 CLIs, BE-35 fixtures
 - `docs/ops/containers.md`
+- Requirements: BE-MIG-04, BE-MIG-11, BE-MIG-12, BE-MIG-13, BE-MIG-16; BE-OPS-07 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

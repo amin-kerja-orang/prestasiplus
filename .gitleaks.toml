@@ -1,0 +1,24 @@
+# Secret scan config (CI: .github/workflows/api.yml). Extends the default rules; no rule is disabled.
+title = "PrestasiPlus gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives (generic-api-key on non-secret identifiers)"
+paths = [
+  # Discovery inventories and screen lists: JSON "key" fields such as "S1-ppd-dashboard".
+  '''^docs/discovery/''',
+  # Backend test fixtures (BE-03 auth tests and others): fake credentials, tokens and hashes
+  # used only in unit/integration tests, never real secrets. Source code is still scanned.
+  '''^apps/api/test/''',
+  # Example env template: placeholder/commented values (e.g. SEED_DEMO_PASSWORD_HASH), not real secrets.
+  '''\.env\.api\.example$''',
+]
+regexTarget = "line"
+regexes = [
+  # Mock handler constants AI_LATENCY_KEY = 'm04.aiLatencyMs' / 'm13.aiLatencyMs': store key names, not credentials.
+  '''AI_LATENCY_KEY\s*=\s*.m(04|13)\.aiLatencyMs.''',
+  # PASSWORD_ALPHABET: public character set for CSPRNG password generation (high entropy, not a secret).
+  '''PASSWORD_ALPHABET\s*=''',
+]

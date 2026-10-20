@@ -1,0 +1,299 @@
+// Identity and session tables (BE-03). BE-05 / BE-06 extend `users` and add their own models here.
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2, data model section 3.1.
+// Not expressible in Prisma and written by hand in migration 0002_identity: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), partial / functional unique
+// indexes on lower(email) and (school_id, lower(username)), DEFERRABLE self FK created_by_id.
+
+model User {
+  id                 BigInt    @id @default(autoincrement())
+  name               String
+  email              String?
+  username           String?
+  /// argon2id for new hashes; legacy bcrypt `$2y$` kept as is (verify, rehash on login). Null: cannot log in.
+  passwordHash       String?   @map("password_hash")
+  mustResetPassword  Boolean   @default(false) @map("must_reset_password")
+  /// Keyed HMAC-SHA-256 of the IC number (lookup for the reset flow). Never the plain IC.
+  icHash             String?   @map("ic_hash")
+  /// Only value that leaves the API.
+  icMasked           String?   @map("ic_masked")
+  phone              String?
+  schoolId           BigInt?   @map("school_id")
+  /// School a self-registered teacher asked for; becomes school_id when a school_admin verifies the account (BE-21). No scope until then.
+  pendingSchoolId    BigInt?   @map("pending_school_id")
+  grade              Int?      @db.SmallInt
+  classLabel         String?   @map("class_label")
+  bio                String?
+  idDelima           String?   @map("id_delima")
+  isActive           Boolean   @default(true) @map("is_active")
+  isSuspended        Boolean   @default(false) @map("is_suspended")
+  isComplimentary    Boolean   @default(false) @map("is_complimentary")
+  trialQuestionsUsed Int       @default(0) @map("trial_questions_used")
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(6)
+  lastActiveAt       DateTime? @map("last_active_at") @db.Timestamptz(6)
+  createdById        BigInt?   @map("created_by_id")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource       String?   @map("legacy_source")
+  legacyId           String?   @map("legacy_id")
+  legacyHash         String?   @map("legacy_hash")
+
+  school                School?         @relation(fields: [schoolId], references: [id], onDelete: Restrict, map: "fk_users_school_id")
+  pendingSchool         School?         @relation("UserPendingSchool", fields: [pendingSchoolId], references: [id], onDelete: SetNull, map: "fk_users_pending_school_id")
+  createdBy             User?           @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, map: "fk_users_created_by_id")
+  createdUsers          User[]          @relation("UserCreatedBy")
+  roles                 UserRole[]
+  scopes                UserScope[]
+  sessions              Session[]
+  auditEvents           AuditEvent[]
+  importJobs            ImportJob[]
+  // BE-25 back-relations (schools.prisma owns the models).
+  userPackages          UserPackage[]
+  parentLinksAsParent   ParentLink[]    @relation("ParentLinkParent")
+  parentLinksAsStudent  ParentLink[]    @relation("ParentLinkStudent")
+  parentInvite          ParentInvite?   @relation("ParentInviteStudent")
+  acceptedParentInvites ParentInvite[]  @relation("ParentInviteAcceptedBy")
+  compStudent           CompStudent?
+  files                 File[]
+  // BE-06 back-relations.
+  passwordResets        PasswordReset[]
+  settings              UserSettings?
+  notifications         Notification[]
+  // BE-11 back-relations (wallet.prisma owns the models).
+  wallet                Wallet?
+  coinLedger            CoinLedger[]
+  streak                Streak?
+  sessionCredits        SessionCredit[]
+  dailyLoginMarks       DailyLoginMark[]
+  tokenMovements        TokenMovement[]
+  // BE-24 back-relations (content.prisma owns the models).
+  articles              Article[]           @relation("ArticleAuthor")
+  notes                 Note[]              @relation("NoteAuthor")
+  videos                Video[]             @relation("VideoUploader")
+  perutusan             Perutusan[]         @relation("PerutusanAuthor")
+  perutusanComments     PerutusanComment[]  @relation("PerutusanCommentUser")
+  perutusanReactions    PerutusanReaction[] @relation("PerutusanReactionUser")
+  perutusanReads        PerutusanRead[]     @relation("PerutusanReadUser")
+  screenshots           Screenshot[]        @relation("ScreenshotUploader")
+  audioKbatSets         AudioKbatSet[]      @relation("AudioKbatSetCreator")
+  audioKbatAttempts     AudioKbatAttempt[]  @relation("AudioKbatAttemptUser")
+  supportTickets        SupportTicket[]     @relation("SupportTicketUser")
+
+  @@unique([legacySource, legacyId], map: "uq_users_legacy")
+  @@index([schoolId], map: "ix_users_school_id")
+  @@index([pendingSchoolId], map: "ix_users_pending_school_id")
+  @@index([icHash], map: "ix_users_ic_hash")
+  @@index([isActive, schoolId], map: "ix_users_is_active_school_id")
+  @@index([createdById], map: "ix_users_created_by_id")
+  @@map("users")
+}
+
+model UserRole {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// admin, school_admin, ppd_officer, teacher, student, parent, sponsor (check constraint).
+  role         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_roles_user_id")
+
+  @@unique([userId, role], map: "uq_user_roles_user_id_role")
+  @@unique([legacySource, legacyId], map: "uq_user_roles_legacy")
+  @@map("user_roles")
+}
+
+model UserScope {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// The grant this scope belongs to (one scope per role grant).
+  role         String
+  /// national, state, district, school, class, self (check constraint).
+  level        String
+  stateCode    String?  @map("state_code")
+  districtCode String?  @map("district_code")
+  schoolId     BigInt?  @map("school_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_scopes_user_id")
+  school School? @relation(fields: [schoolId], references: [id], onDelete: Restrict, map: "fk_user_scopes_school_id")
+
+  @@unique([userId, role], map: "uq_user_scopes_user_id_role")
+  @@unique([legacySource, legacyId], map: "uq_user_scopes_legacy")
+  @@index([schoolId], map: "ix_user_scopes_school_id")
+  @@map("user_scopes")
+}
+
+/// One bulk import run (users or students) with its per-row result. Not migrated (no legacy columns).
+/// `failures` is `[{row, message}]` (the mock ImportRun.failures); row numbers are 1-based data rows.
+/// `source_file_id` (FK files) is added once `files` exists (BE-04 / BE-25).
+model ImportJob {
+  id            BigInt   @id @default(autoincrement())
+  /// users, students (check constraint).
+  kind          String
+  /// paste, csv (check constraint).
+  mode          String
+  createdById   BigInt?  @map("created_by_id")
+  /// Scope of the importer; null for a national admin.
+  schoolId      BigInt?  @map("school_id")
+  totalRows     Int      @default(0) @map("total_rows")
+  importedCount Int      @default(0) @map("imported_count")
+  failedCount   Int      @default(0) @map("failed_count")
+  failures      Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull, map: "fk_import_jobs_created_by_id")
+  school    School? @relation(fields: [schoolId], references: [id], onDelete: SetNull, map: "fk_import_jobs_school_id")
+
+  @@index([createdById, createdAt], map: "ix_import_jobs_created_by_id_created_at")
+  @@index([schoolId], map: "ix_import_jobs_school_id")
+  @@map("import_jobs")
+}
+
+/// Server-side session. The cookie value is opaque random; only its SHA-256 (`token_hash`) is stored.
+/// The row is replaced (new row, old row deleted) on login, role switch and mode change.
+model Session {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         BigInt    @map("user_id")
+  tokenHash      String    @unique(map: "uq_sessions_token_hash") @map("token_hash")
+  /// SHA-256 of the CSRF token returned in the body; compared with X-CSRF-Token.
+  csrfHash       String    @map("csrf_hash")
+  /// The one active role of the role list of the user.
+  activeRole     String    @map("active_role")
+  /// `mod_pelajar` while the student mode is on; the three mode_* columns are all null or all set.
+  modeKind       String?   @map("mode_kind")
+  modeReturnRole String?   @map("mode_return_role")
+  modeSince      DateTime? @map("mode_since") @db.Timestamptz(6)
+  remember       Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt     DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(6)
+  /// Truncated User-Agent (informational).
+  userAgent      String?   @map("user_agent")
+  /// Keyed hash of the client address (no raw IP stored).
+  ipHash         String?   @map("ip_hash")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_sessions_user_id")
+
+  @@index([userId], map: "ix_sessions_user_id")
+  @@index([expiresAt], map: "ix_sessions_expires_at")
+  @@map("sessions")
+}
+
+/// Login throttle counter per identifier + client address (5 failures per 60 s). Both keys are keyed
+/// hashes, so no e-mail, username or IP is stored. The window starts at the first failure.
+model LoginAttempt {
+  id             BigInt   @id @default(autoincrement())
+  identifierHash String   @map("identifier_hash")
+  ipHash         String   @map("ip_hash")
+  attempts       Int      @default(0)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([identifierHash, ipHash], map: "uq_login_attempts_identifier_ip")
+  @@index([expiresAt], map: "ix_login_attempts_expires_at")
+  @@map("login_attempts")
+}
+
+/// Append-only (no UPDATE or DELETE path in code, G-17). No personal content in `detail`.
+model AuditEvent {
+  id            BigInt   @id @default(autoincrement())
+  actorUserId   BigInt?  @map("actor_user_id")
+  actorRole     String?  @map("actor_role")
+  scopeLevel    String?  @map("scope_level")
+  scopeSchoolId BigInt?  @map("scope_school_id")
+  /// Reference list, not a check: role_switch, mode_enter, mode_exit, login_failure, ...
+  action        String
+  targetType    String?  @map("target_type")
+  /// Polymorphic soft reference (decimal string or uuid).
+  targetId      String?  @map("target_id")
+  requestId     String?  @map("request_id")
+  /// Small structured facts; never secrets or personal content.
+  detail        Json?
+  /// Keyed hash of the client address.
+  ipHash        String?  @map("ip_hash")
+  isTest        Boolean  @default(false) @map("is_test")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor  User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull, map: "fk_audit_events_actor_user_id")
+  school School? @relation(fields: [scopeSchoolId], references: [id], onDelete: SetNull, map: "fk_audit_events_scope_school_id")
+
+  @@index([action, createdAt], map: "ix_audit_events_action_created_at")
+  @@index([actorUserId, createdAt], map: "ix_audit_events_actor_user_id_created_at")
+  @@index([targetType, targetId], map: "ix_audit_events_target")
+  @@index([scopeSchoolId], map: "ix_audit_events_scope_school_id")
+  @@map("audit_events")
+}
+
+/// Password reset token (mock BR-10, BR-11; D55). Only the hash of the token is stored; the raw token is
+/// logged by the MailPort in dev and never persisted. Not migrated. The "one request per 60 s per e-mail"
+/// throttle reads the newest `created_at` of the user (ix_password_resets_user_id_created_at); the D55
+/// attempt limit (5 per 15 min per account and per IP) reuses `login_attempts` rows with a `reset:` key
+/// prefix, so no counter column lives here.
+model PasswordReset {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  /// Hash of the random token. Unique. There is no raw token column.
+  tokenHash String    @unique(map: "uq_password_resets_token_hash") @map("token_hash")
+  /// email | ic (check).
+  channel   String
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  /// Single use: set when the token is spent.
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_password_resets_user_id")
+
+  @@index([userId, createdAt], map: "ix_password_resets_user_id_created_at")
+  @@index([expiresAt], map: "ix_password_resets_expires_at")
+  @@map("password_resets")
+}
+
+/// Personal settings (mock BR-17), 1:1 with the user. A user without a row gets the defaults.
+/// `faith` is sensitive (OQ-DM-13): nullable and never migrated, so there is no legacy pair.
+model UserSettings {
+  id                  BigInt   @id @default(autoincrement())
+  userId              BigInt   @unique(map: "uq_user_settings_user_id") @map("user_id")
+  spiritualMode       Boolean  @default(false) @map("spiritual_mode")
+  showBismillahSplash Boolean  @default(false) @map("show_bismillah_splash")
+  subuhPushEnabled    Boolean  @default(false) @map("subuh_push_enabled")
+  subuhPushTime       DateTime @default(dbgenerated("'05:30:00'::time")) @map("subuh_push_time") @db.Time(0)
+  ramadanModeEnabled  Boolean  @default(false) @map("ramadan_mode_enabled")
+  sahurPushTime       DateTime @default(dbgenerated("'04:30:00'::time")) @map("sahur_push_time") @db.Time(0)
+  /// muslim | hindu | buddhist | christian | none (check), or null.
+  faith               String?
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_settings_user_id")
+
+  @@map("user_settings")
+}
+
+/// Per-user notification inbox (visible only to the owner). `type` is an open lower-case code;
+/// `category` is system | reminder | milestone (check) or null (admin live items).
+model Notification {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @map("user_id")
+  type         String
+  category     String?
+  title        String
+  body         String
+  /// null = unread.
+  readAt       DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_notifications_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_notifications_legacy")
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "ix_notifications_user_id_created_at_id")
+  @@map("notifications")
+}

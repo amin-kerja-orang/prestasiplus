@@ -23,6 +23,9 @@
 - `docs/requirements/v2-exam-schema.md`: D5 (sections model), D6 (stimulus groups stay together), D7 (blueprints and provenance tags), section 6 (entities)
 - BE-15 (tables incl. `papers.status`, blueprint `version`/`status`; endpoints; generation), BE-09/BE-10 (question lifecycle, `QuestionsService`), BE-14 (`@pp/exam-core` blueprint engine)
 - No paper builder or blueprint admin screens exist in `src/` yet (checked: only `domain/blueprint.ts`, `domain/paper-model.ts`, `data/registry.ts` and the `BijakServer` read methods). The wire shapes are therefore defined by this card's contract PR from `src/modules/m28-bijak-spm/domain/{types,blueprint,paper-model}.ts` and the requirements above; the lead aligns the future UI through that PR.
+- Requirements: BE-FR-20; BE-NFR-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -86,6 +89,8 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 4. This card creates no tables; the migration-first checklist (plan section 14.9) does not apply, but no change may break `npm run be:lint:migration` (once BE-34 is merged).
 5. Label `security-review` on the PR; list the security decisions and the tests that prove them.
 6. The card's tracker row is updated (status, PR number, one-line note) and the PR description follows the template in `docs/plan/backend-tasks/README.md`. Nothing stays only on your PC (AGENT-SYNC.md section 4).
+
+**Status note (LEAD 2026-10-19, D54(a) corrected):** questions have five wire states `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Diterbitkan, Diarkib). The prototype review action "Lulus & Terbit" moves a question through `approved` and then `published` in one step; both states still exist on the wire.
 
 ## Open questions
 

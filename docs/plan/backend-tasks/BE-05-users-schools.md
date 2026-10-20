@@ -13,7 +13,7 @@
 
 ## Goal
 
-Persist and serve the M02 user and school management used by Admin Pusat and Admin Sekolah: user list/filters/detail/create/update/delete/toggle-active, bulk delete and bulk import, school list/options/search/create, impersonation entry used by Mod Pelajar, all scope-filtered.
+Persist and serve the M02 user and school management used by Admin Pusat and Admin Sekolah: user list/filters/detail/create/update/delete/toggle-active, bulk delete and bulk import, school list/options/search/create, all scope-filtered.
 
 ## Inputs (read these)
 
@@ -25,11 +25,14 @@ Persist and serve the M02 user and school management used by Admin Pusat and Adm
 - `docs/architecture/v2-data-migration.md` section 4.1 (M01/M02 realignments), section 5 (IC, faith, roles)
 - `docs/architecture/v2-frontend.md` section 6 (M02 row: `roles[]`, `username`, nullable e-mail, two status flags, masked IC, `joinCode`)
 - BE-03 outputs (`identity.prisma`, `schools.prisma`, guards, `ScopeFilter`, `AuditService`)
+- Requirements: BE-FR-03, BE-FR-34; BE-NFR-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
 - Contract: `packages/contract/src/users/**`, `packages/contract/src/schools/**` (users and schools files only; BE-25 adds its own files in `schools/`)
-- `apps/api/prisma/schema/identity.prisma` (extends `users`: profile fields, `is_active`, `is_suspended`, `join_code`, `class_label`, `ic_hash`, `ic_masked`, `trial_questions_used integer not null default 0` (mock BR-07 trial counter, used by BE-25/BE-12); no plaintext IC, no `faith`; adds `import_jobs` with per-row results) and `apps/api/prisma/schema/schools.prisma` (extends `schools`), one migration
+- `apps/api/prisma/schema/identity.prisma` (extends `users`: profile fields, `is_active`, `is_suspended`, `join_code`, `class_label`, `ic_hash`, `ic_masked`, `trial_questions_used integer not null default 0` (mock BR-07 trial counter, used by BE-25/BE-12); no plaintext IC, no `faith`; adds `import_jobs` with per-row results) and `apps/api/prisma/schema/schools.prisma` (extends `schools`), one migration **OD-28 (2026-10-19, OWN-4):** `schools.prisma` also creates `jpns` (`code` unique, `name`) and `ppds` (`jpn_id` FK, `code` unique and stored exactly as the school `district` value, `name`), both with the `legacy_*` columns; `schools.jpn_id` and `schools.ppd_id` reference them. The seed derives the rows from the distinct state and district of the seeded schools (plan 14.7 T-09 rule); `GET /api/jpn` reads `jpns` and `ppds`.
 - `apps/api/src/modules/{users,schools}/**`: repositories are the only doorway to these tables (ADR-0014): `users.get`, `findByEmail`, `search`, `schools.search`, `schools.options`, for other cards
 - Import service for CSV with a per-row result report (used by `bulk-import` here and by the student import in BE-25)
 - Seed `apps/api/prisma/seed/core/schools.ts` (a small fictitious set of schools across 2 states and 2 districts)
@@ -56,7 +59,7 @@ Every route below exists in the mock handlers (verified).
 | `GET /api/admin/users`, `GET /api/admin/users/filters`, `GET /api/admin/users/:id` | list with filters, pagination meta with `counts`; scope-filtered |
 | `POST /api/admin/users`, `PUT /api/admin/users/:id`, `DELETE /api/admin/users/:id` | create/update/delete; rules from `users-rules.ts` |
 | `POST /api/admin/users/:id/toggle-active`, `POST /api/admin/users/bulk-delete`, `POST /api/admin/users/bulk-import` | bulk operations with a result report; `bulk-import` creates teacher, parent, school_admin and ppd_officer accounts (mock `BULK_IMPORT_ROLES`; school required for teacher and school_admin) |
-| `POST /api/admin/users/:id/impersonate` | the "Login As" entry; implemented on top of the BE-03 session mode, not as a second mechanism; flag conflicts |
+| ~~`POST /api/admin/users/:id/impersonate`~~ | **Not built: user decision 2026-10-19 (UD-2).** The mock "Login As" route is intentionally not ported; Mod Pelajar is `POST /api/session/mode` (BE-03). |
 | `GET /api/admin/schools`, `GET /api/admin/schools/options`, `GET /api/admin/schools/:id`, `POST /api/admin/schools`, `PUT /api/admin/schools/:id`, `POST /api/admin/schools/:id/toggle` | admin school management |
 | `GET /api/admin/schools/:id/students` | existing students of a school (`search`, `classLevel` filters; at most 200 rows, name A to Z) used by the import screen |
 | `GET /api/schools`, `GET /api/schools/search`, `GET /api/jpn`, `GET /api/jpn/:id/ppd` | public school/JPN/PPD pickers (used by login and register) |
@@ -66,7 +69,7 @@ Subscriptions, packages, parent invites, complimentary students, **`POST /api/ad
 
 ## DB tables touched
 
-`users`, `user_roles`, `user_scopes`, `schools`, `import_jobs` (new, per-row results).
+`users`, `user_roles`, `user_scopes`, `schools`, `import_jobs` (new, per-row results).; **OD-28 (2026-10-19, OWN-4):** `jpns`, `ppds` (new, `schools.prisma`).
 
 ## Acceptance criteria
 
@@ -78,8 +81,9 @@ Subscriptions, packages, parent invites, complimentary students, **`POST /api/ad
 6. Bulk user import (`POST /api/admin/users/bulk-import`, mock BR-14): an empty file gives 422 "Tiada data untuk diimport."; the import is atomic in the mock (a failure rolls the whole import back), so a malformed line is reported in the result and valid lines import only as the mock's `planUserImport` decides (replay `src/modules/m02-users-schools/__tests__/mock/**` import cases); the roles are limited to teacher, parent, school_admin, ppd_officer; the file size and row limits equal the constants in `src/modules/m02-users-schools/mock/import/*.ts` (read them, do not guess).
 7. Deleting a user with dependent rows follows the mock rule in `users-admin.ts` (block or cascade); the rule you implement is stated in the PR and covered by a test.
 8. List pagination `meta` (`page`, `pageSize`, `totalItems`, `totalPages`, `from`, `to`, `counts`) is exact for the seeded data; a test recomputes the counts from the table.
-9. `POST /api/admin/users/:id/impersonate` starts the BE-03 `mod_pelajar` mode with `isTest = true` and an audit row; the returned message equals the mock's (`MSG_IMPERSONATE...` in M27 for school admins; for admin read `users-admin.ts`).
+9. ~~`POST /api/admin/users/:id/impersonate`~~ is not built (user decision 2026-10-19, UD-2): there is one mechanism only, Mod Pelajar via `POST /api/session/mode` (D31c). A test asserts that the route does not exist (404).
 10. Roles: only `admin` may use `/api/admin/users*`, `/api/admin/schools*`, `/api/admin/teachers*`, `/api/admin/config/defaults` except where the mock allows `school_admin` (per `requireAdmin`/`requireSchoolAdmin` guards in the handlers); everyone else gets 403; no session 401; missing CSRF 403 `CSRF_INVALID`.
+11. **OD-28 (2026-10-19, OWN-4):** `jpns` and `ppds` exist and are filled by the seed from the distinct state and district of the seeded schools (one `jpns` row per state, one `ppds` row per district under its JPN, `ppds.code` equal to the school `district` value); every seeded school resolves to one JPN and one PPD; `GET /api/jpn` returns the JPN list with its PPDs in the mock shape; `jpns.code` and `ppds.code` are unique; both tables carry `legacy_source`/`legacy_id` with the unique pair and are listed in `migratable-models.json`.
 
 ## Test commands
 
@@ -105,6 +109,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 - Each table that could receive .cloud rows has `legacy_source text null`, `legacy_id text null` and `unique (legacy_source, legacy_id)`, and is listed in `apps/api/prisma/migratable-models.json`. These columns never appear in the contract or in an API response.
 - Enums are `text` + `check` with English codes (no Postgres enum types); anything the source may lack is nullable or has a documented default; seeds never set `legacy_*` and are idempotent.
 - Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR.
+- **OD-28 (2026-10-19, OWN-4):** the matrix rows `jpns` and `ppds` (derived from distinct `schools.state` and `schools.district`, T-09) are owned by this card.
 
 ## Open questions
 

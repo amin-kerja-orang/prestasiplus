@@ -1,0 +1,8 @@
+{"id":1,"user_id":2,"practice_session_id":1,"question_id":1,"selected_option":"A","is_correct":"0","time_seconds":11,"created_at":"2026-01-01T00:00:00Z"}
+{"id":2,"user_id":3,"practice_session_id":2,"question_id":2,"selected_option":"A","is_correct":"1","time_seconds":12,"created_at":"2026-01-01T00:00:00Z"}
+{"id":3,"user_id":4,"practice_session_id":3,"question_id":3,"selected_option":"A","is_correct":"0","time_seconds":13,"created_at":"2026-01-01T00:00:00Z"}
+{"id":4,"user_id":5,"practice_session_id":4,"question_id":4,"selected_option":"A","is_correct":"1","time_seconds":14,"created_at":"2026-01-01T00:00:00Z"}
+{"id":5,"user_id":6,"practice_session_id":5,"question_id":5,"selected_option":"A","is_correct":"0","time_seconds":15,"created_at":"2026-01-01T00:00:00Z"}
+{"id":6,"user_id":1,"practice_session_id":1,"question_id":6,"selected_option":"A","is_correct":"1","time_seconds":16,"created_at":"2026-01-01T00:00:00Z"}
+{"id":7,"user_id":2,"practice_session_id":2,"question_id":31337,"selected_option":"A","is_correct":"0","time_seconds":17,"created_at":"2026-01-01T00:00:00Z"}
+{"id":8,"user_id":3,"practice_session_id":404,"question_id":2,"selected_option":"A","is_correct":"1","time_seconds":18,"created_at":"2026-01-01T00:00:00Z"}

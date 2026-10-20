@@ -21,6 +21,7 @@ One command (`npm run be:db:reset && npm run be:db:seed`) that builds a coherent
 - Seed modules created by earlier cards under `apps/api/prisma/seed/` (BE-03 `core/identity.ts`, BE-05 `core/schools.ts`, BE-07 `core/population.ts`, BE-08 `curriculum.ts`, BE-09 `questions.ts`, BE-11 `wallet.ts`, BE-12 `practice.ts`, BE-15 `exam.ts`, BE-17 `poc/classes.ts`, BE-19 `poc/performance.ts`, BE-23 `gamification.ts`, BE-24 `content.ts`)
 - `docs/adr/0006-determinism-seeds-clock-ids.md`, `docs/adr/0013-virtual-datasets.md` (rules about coherence)
 - `e2e/fixtures/**`, `e2e/global/**` (what the frontend e2e expects of the demo data)
+- Requirements: BE-FR-32; BE-NFR-15, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 
@@ -56,7 +57,7 @@ All seeded tables.
 2. `verify.ts` passes: wallet balance equals ledger sum for every user; every answer row has valid dimensions; enrolments reference existing classes and students; each paper placement references a published question; no orphan rows (one SQL assertion per rule, each with a failing-fixture test).
 3. Every demo account in `docs/AKAUN-DEMO.md` can log in and has the data its landing page needs: students have practice sessions, teachers have classes with rosters, school admins have a school with classes, admin sees non-empty aggregates (test logs in as each and calls one read endpoint per role).
 4. Counts match D45 (about 20 students, a few papers) and the `docs/plan/seed-profile.md` table equals the actual counts (a test regenerates the table and compares); every gap versus `e2e/fixtures/**` expectations is listed in that document.
-5. No real names, e-mails, phone numbers or IC in any seed; a guard test scans seed files for e-mail domains other than `example.test`.
+5. No real names, e-mails, phone numbers or IC in any seed; a guard test scans seed files for e-mail domains other than the allowed reserved domains `example.test` and `demo.test` (the canonical demo accounts of `docs/AKAUN-DEMO.md` use `demo.test`).
 6. Seed time is under 60 seconds on a developer laptop (measured and written in `seed-profile.md`).
 7. The seed refuses to run when `NODE_ENV=production` unless `--force-demo` is passed explicitly (test for both).
 

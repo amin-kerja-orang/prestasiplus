@@ -1,6 +1,6 @@
 # PC-2 kickoff: Learning and Question bank
 
-Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-08, BE-09, BE-11, BE-12, BE-13, BE-23.
+Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-08, BE-09, BE-11, BE-12, BE-13, BE-48, BE-23.
 
 How to use: open Claude Code in the repo root on this PC (branch feature/v2-backend, `npm ci` done), then paste everything inside the block below as the first message. Start one fresh Claude Code session per session row of your lane in `../sessions.md` section 7; the prompt tells the agent which card to take next from the tracker.
 
@@ -23,14 +23,15 @@ YOUR LANE: PC-2, ordered card list (work strictly in this order; each card is it
 3. BE-11 Wallet, ledger and streak core (M14 core) | branch be/BE-11-wallet-streak-core | depends on: BE-03 | card file: docs/plan/backend-tasks/BE-11-wallet-streak-core.md
 4. BE-12 Practice sessions and answer log (M05 write path) | branch be/BE-12-practice-sessions | depends on: BE-09, BE-11, BE-25 | card file: docs/plan/backend-tasks/BE-12-practice-sessions.md
 5. BE-13 Practice read models: dashboard, subjects, mastery, revision, targets | branch be/BE-13-practice-reads | depends on: BE-12 | card file: docs/plan/backend-tasks/BE-13-practice-reads.md
-6. BE-23 Gamification economy and rewards shop (M14 rest, M15) | branch be/BE-23-gamification-shop | depends on: BE-11, BE-12 | card file: docs/plan/backend-tasks/BE-23-gamification-shop.md
+6. BE-48 Heatmap Topik Lemah read model (M25) | branch be/BE-48-heatmap-topik-lemah | depends on: BE-12, BE-13, BE-08 | card file: docs/plan/backend-tasks/BE-48-heatmap-topik-lemah.md
+7. BE-23 Gamification economy and rewards shop (M14 rest, M15) | branch be/BE-23-gamification-shop | depends on: BE-11, BE-12 | card file: docs/plan/backend-tasks/BE-23-gamification-shop.md
 
 FOLDERS YOU MAY EDIT (and only these)
-- apps/api/src/modules/{curriculum,questions,practice,wallet,gamification,shop}/** EXCEPT apps/api/src/modules/questions/workflow/** (lane PC-5)
+- apps/api/src/modules/{curriculum,questions,practice,wallet,gamification,shop,heatmap}/** (BE-48 also adds one method, PracticeRepository.chapterAnswerCounts, inside apps/api/src/modules/practice/reads/**) EXCEPT apps/api/src/modules/questions/workflow/** (lane PC-5)
 - apps/api/prisma/schema/{curriculum,questions,practice,wallet,gamification}.prisma and migrations (never questions-workflow.prisma)
-- packages/contract/src/{curriculum,questions,practice,wallet,gamification}/**
+- packages/contract/src/{curriculum,questions,practice,wallet,gamification,heatmap}/**
 - apps/api/prisma/seed/{curriculum,questions,practice,wallet,gamification}.ts and apps/api/prisma/seed/curriculum-data/**
-- apps/api/test/{curriculum,questions,practice,wallet,gamification}/**
+- apps/api/test/{curriculum,questions,practice,wallet,gamification,heatmap}/** and new scenario files in apps/api/test/conformance/heatmap/ (after BE-31)
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
 
 NEVER EDIT
@@ -44,7 +45,7 @@ RULES
 2. Migration-first (plan section 14): every table that could receive old-system rows has legacy_source, legacy_id (text), the unique pair (legacy_source, legacy_id), is listed in apps/api/prisma/migratable-models.json, uses text+check instead of Postgres enums, is nullable where the source may lack a value, and has its row in the mapping matrix. Seeds never set legacy_* and are idempotent. Never use legacy ids as primary keys and never expose legacy_* in the contract or API.
 3. Secrets and data: no secrets, keys, passwords (except the documented demo password Demo1234 in seeds for demo accounts), connection strings, real names, e-mails, phone numbers, IC numbers or real data anywhere (code, seeds, fixtures, tests, logs, docs, PR text). You never receive or request credentials for prestasiplus.cloud or prestasiplus.my and never connect to them. Real data reaches the programme only as an anonymised dump produced by the lead out-of-band; it never enters the repo. Use obviously fictitious data.
 4. Tests: unit tests for rules; integration tests with supertest against a real PostgreSQL via Testcontainers (Docker must be running); parse every response with the contract schema; test wrong role 403, out-of-scope id 404, no session 401, missing CSRF 403. Compare behaviour with the mock handler tests where they exist. Never mock the database layer.
-5. Definition of Done is plan section 10. Run npm run be:verify (it includes contract:check, lint, typecheck, tests, build and, once BE-34 is merged, the migration lint) and, once BE-31 is merged, npm run be:test -- apps/api/test/conformance. Paste the REAL tail of the output in the PR; never claim green without it. If you touched packages/**, also run the root npm run typecheck and npm test.
+5. Definition of Done is plan section 10. Run npm run be:verify (it includes contract:check, lint, typecheck, tests, build and, once BE-34 is merged, the migration lint) and, once BE-31 is merged, npm run conformance:api. Paste the REAL tail of the output in the PR; never claim green without it. If you touched packages/**, also run the root npm run typecheck and npm test.
 6. Git: branch be/<card-id>-<slug> (names above) from the latest origin/feature/v2-backend; one card per branch and PR; PR into feature/v2-backend; open it as a DRAFT early. Rebase on origin/feature/v2-backend every day and before marking ready (git fetch origin && git rebase origin/feature/v2-backend; git push --force-with-lease on your own branch only). Commits are conventional and imperative in English: feat(api): ..., fix(api): ..., chore(contract): ..., test(api): ..., docs(plan): ... PR title: "BE-05: users and schools admin API". PRs stay small (under about 600 changed lines excluding generated openapi.json, lockfile and migrations); if a card is bigger, tell the lead before splitting. The attribution trailer for Claude Code is allowed. Do NOT commit directly to feature/v2-backend and do NOT merge your own PR; the lead merges.
 7. Tracker: in your branch update your card row in docs/plan/backend-tracker.md: todo to in-progress when you start (Owner = your PC and session, for example PC-2/S1), to review when you open the PR for review (fill PR number), to blocked with a one-line reason if blocked. Edit only your own rows; never the Summary, Lead tasks or Change log (the lead does). The lead sets done after merging.
 8. Security review: cards marked in the tracker Notes need the security-engineer review; add the label security-review and list the security-relevant decisions in the PR.

@@ -22,6 +22,7 @@ Transform and load the first groups of `v2-data-migration.md` section 6.1 from `
 - `docs/requirements/v2-cloud-gap.md`
 - v2 schema from BE-03, 05, 08, 17, 25 (`apps/api/prisma/schema/{identity,schools,curriculum,classes}.prisma`)
 - BE-27 outputs (`staging_cloud`, profile report) and BE-34 outputs (`etl_*` tables, `upsertByLegacy`, runner)
+- Requirements: BE-NFR-06, BE-NFR-10; BE-MIG-03, BE-MIG-07, BE-MIG-08, BE-MIG-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

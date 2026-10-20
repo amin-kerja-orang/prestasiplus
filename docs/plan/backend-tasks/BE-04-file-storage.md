@@ -24,6 +24,9 @@ A `FileStorage` abstraction with a local-volume implementation, an authenticated
 - `docs/requirements/v2-bijak-spm.md` (photo-of-working limits; search "photo")
 - `docs/architecture/v2-data-migration.md` section 5 ("Files")
 - BE-03 outputs (guards, `ScopeFilter`)
+- Requirements: BE-FR-07; BE-NFR-29, BE-NFR-40 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

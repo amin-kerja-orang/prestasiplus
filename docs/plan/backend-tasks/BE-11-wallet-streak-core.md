@@ -22,6 +22,10 @@ The owner service for coins (Syiling), tokens and the daily streak that practice
 - `docs/adr/0014-store-ownership-and-repositories.md` (`wallet.credit`, `wallet.summary`, `streak.get`, session write path steps 6 to 8)
 - `docs/architecture/v2-data-migration.md` section 4.9 and section 5 ("Ledger integrity"), Q8 and Q10 (OD-8)
 - BE-03 outputs (guards, `Clock` from BE-02)
+- Requirements: BE-FR-13; BE-NFR-17, BE-NFR-18, BE-NFR-19 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- API catalogue part B4 (economy, content, games): [economy-content-games.md](../../architecture/v2-api-catalogue/economy-content-games.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

@@ -22,11 +22,14 @@ The practice write path in one transaction, as specified by ADR-0014 section 2: 
 - Trial rule (mock): `src/modules/m01-authentication/mock/repository/users.ts` (`TRIAL_LIMIT = 50`, `trial()`, `incrementTrialUsed()`)
 - `docs/architecture/v2-data-migration.md` section 4.4 (M05 realign: nullable `questionId`, `selectedLabel`, `historical`, dimensions on the answer row, `clientUuid`) and section 3
 - BE-09 `QuestionsRepository`, BE-11 `WalletService`/`StreakService`, BE-25 `SubscriptionService` (trial and `isSubscribed`)
+- Requirements: BE-FR-14, BE-FR-33; BE-NFR-17, BE-NFR-18, BE-NFR-19, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
 - Contract: `packages/contract/src/practice/**` (start request/response, check, submit, session, answer row)
-- `apps/api/prisma/schema/practice.prisma` + migration: `practice_sessions` (uuid), `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`
+- `apps/api/prisma/schema/practice.prisma` + migration: `practice_sessions` (uuid), `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`; **OD-28 (2026-10-19, OWN-7):** also `practice_session_questions` (`session_id` uuid FK cascade, `position` smallint with `unique (session_id, position)`, `question_id` FK, `question_version_no` int: the version served; data-model section 3).
 - `apps/api/src/modules/practice/**`: `PracticeRepository` (only doorway: `startSession`, `checkAnswer`, `completeSession`, `history`, `answers`, `queue`, `mastery`)
 - Seed: `apps/api/prisma/seed/practice.ts` (a few completed sessions and answers for seeded students)
 - Tests under `apps/api/test/practice/**`
@@ -59,7 +62,7 @@ Learner read endpoints (dashboard, subjects, mastery, revision lists, targets, s
 
 ## DB tables touched
 
-`practice_sessions`, `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`, `wallets`/`coin_ledger`/`streaks` (via BE-11 service), `questions` (via repository only).
+`practice_sessions`, `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`, `wallets`/`coin_ledger`/`streaks` (via BE-11 service), `questions` (via repository only).; **OD-28 (2026-10-19, OWN-7):** `practice_session_questions`.
 
 ## Acceptance criteria
 
@@ -73,6 +76,7 @@ Learner read endpoints (dashboard, subjects, mastery, revision lists, targets, s
 8. Writes under Mod Pelajar are stamped `is_test`.
 9. Mock parity: for identical seeded inputs the responses equal the mock handler's outputs on the fields asserted in `src/modules/m05-practice/__tests__/mock/practice-store.test.ts` (document any intentional difference in the PR and the deviations log).
 10. Roles: no session 401; missing CSRF 403 `CSRF_INVALID`; every route needs a signed-in user (any role).
+11. **OD-28 (2026-10-19, OWN-7):** a started session stores its served questions in `practice_session_questions` in order with the version served; `check` and `submit` grade against that version even after the question is edited (version n+1) in between; positions are unique per session; deleting the session cascades; a session started with 10 questions reads back the same 10 ids in the same order.
 
 ## Test commands
 
@@ -105,6 +109,8 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. The trial limit of 50 and the +1-per-checked-answer rule are a provisional M19 rule in the mock (overview 6.7); the real subscription derivation is Q6. Working assumption: keep the mock rule.
 2. Points and coins per session come from the mock `sessionCoins` curve; confirm the v2 economy (BE-23 may change it).
+3. Later tables (URS 13.4 item 4): assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) read tables created by BE-18, and quest rewards are credited through BE-23. Until those cards merge, keep the fields in the contract and put each behind a port with a no-op default (an unknown assignment returns the mock's not-found error; the quest reward port credits nothing). BE-18 and BE-23 enable them when they merge. (added 2026-10-19)
+4. Cross-card notes (2026-10-19): (a) the `ramalan` practice mode selects its questions through `SpmTrackingService.ramalanQuestionIds(subjectId, year, setNo)` served by BE-41 (M06 set service), see BE-41 AC 6; until BE-41 merges `ramalan` returns the mock's empty-set behaviour behind a port. (b) `PracticeRepository` also needs the direct-completion method (`completeDirect`: a session completed without the start and check flow, mode `pksk`, no revision queue, no subject mastery, no trial counter) that BE-42 (M07-07) calls; BE-42 open question 4 says who adds it, and the tier rate (`flat_quiz_reward` or `pksk_reward_correct`) is decided in BE-23.
 
 ## Prompt for Claude Code
 

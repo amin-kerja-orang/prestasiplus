@@ -11,6 +11,12 @@
 | Backend requirements (BE-FR, BE-NFR, BE-MIG, BE-OPS, traceability to cards) | [../requirements/v2-backend-urs.md](../requirements/v2-backend-urs.md) |
 | Developer handbook (layout, module anatomy, mock-to-endpoint worked example, errors, Prisma, tests, Definition of Done) | [backend-dev-guide.md](backend-dev-guide.md) |
 | Design: migration-first (section 14), SPM intake and AI (section 15), open decisions OD-1 to OD-20 | [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) |
+| New PC setup from zero (prerequisites, worktrees, env names, Docker, common errors) | [onboarding.md](onboarding.md) |
+| Every endpoint the mock serves: roles, shapes, errors with exact BM messages, card, contract status | [../architecture/v2-api-catalogue.md](../architecture/v2-api-catalogue.md) |
+| Data model: ERD per domain, store owners, legacy columns, mapping-matrix gaps | [../architecture/v2-data-model.md](../architecture/v2-data-model.md) |
+| Frontend/backend integration: contract, mock, hybrid/http switch, cookies, CSRF, compose e2e | [fullstack-integration-guide.md](fullstack-integration-guide.md) |
+| Frontend handbook (design system, ratchets, responsive, testids) | [frontend-dev-guide.md](frontend-dev-guide.md) |
+| Test strategy and what each gate requires | [../qa/v2-test-strategy.md](../qa/v2-test-strategy.md) |
 
 If you are one of several people or PCs, read [sessions.md](sessions.md) and your lane prompt instead of section 3 below ("pick the first task"); the sections here still apply.
 

@@ -1,6 +1,6 @@
 # PC-3 kickoff: Bijak and Paper builder
 
-Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-14, BE-15, BE-16, BE-39.
+Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-14, BE-15, BE-16, BE-39, BE-41.
 
 How to use: open Claude Code in the repo root on this PC (branch feature/v2-backend, `npm ci` done), then paste everything inside the block below as the first message. Start one fresh Claude Code session per session row of your lane in `../sessions.md` section 7; the prompt tells the agent which card to take next from the tracker.
 
@@ -22,14 +22,15 @@ YOUR LANE: PC-3, ordered card list (work strictly in this order; each card is it
 2. BE-15 Bijak SPM: papers, sections, blueprints, paper generation (read side) | branch be/BE-15-bijak-papers | depends on: BE-09, BE-14 | card file: docs/plan/backend-tasks/BE-15-bijak-papers.md
 3. BE-16 Bijak SPM: attempts, autosave, timer, marking, results, history | branch be/BE-16-bijak-attempts | depends on: BE-15, BE-14, BE-04, BE-11 | card file: docs/plan/backend-tasks/BE-16-bijak-attempts.md
 4. BE-39 Paper builder and blueprint admin (write side of M28 papers) | branch be/BE-39-paper-builder-blueprints | depends on: BE-15, BE-10 | card file: docs/plan/backend-tasks/BE-39-paper-builder-blueprints.md
+5. BE-41 SPM hub: Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exams (M06) | branch be/BE-41-spm-hub | depends on: BE-03, BE-08, BE-09, BE-12, BE-13 | card file: docs/plan/backend-tasks/BE-41-spm-hub.md
 
 FOLDERS YOU MAY EDIT (and only these)
 - packages/exam-core/**
 - apps/api/src/modules/exam/**
-- apps/api/prisma/schema/exam.prisma and migrations
-- packages/contract/src/bijak/**
-- apps/api/prisma/seed/exam.ts
-- apps/api/test/{exam-papers,exam-attempts,exam-builder}/**
+- apps/api/prisma/schema/{exam,spm}.prisma and migrations
+- packages/contract/src/{bijak,spm}/**
+- apps/api/prisma/seed/{exam,spm}.ts
+- apps/api/test/{exam-papers,exam-attempts,exam-builder,spm}/** and new scenario files in apps/api/test/conformance/spm/ (after BE-31)
 - One-time exception in BE-14 only: the coordinated move of src/modules/m28-bijak-spm/domain/{grading,math-expr,blueprint,paper-model,types}.ts into packages/exam-core, approved by the lead (OD-5).
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
 
@@ -44,7 +45,7 @@ RULES
 2. Migration-first (plan section 14): every table that could receive old-system rows has legacy_source, legacy_id (text), the unique pair (legacy_source, legacy_id), is listed in apps/api/prisma/migratable-models.json, uses text+check instead of Postgres enums, is nullable where the source may lack a value, and has its row in the mapping matrix. Seeds never set legacy_* and are idempotent. Never use legacy ids as primary keys and never expose legacy_* in the contract or API.
 3. Secrets and data: no secrets, keys, passwords (except the documented demo password Demo1234 in seeds for demo accounts), connection strings, real names, e-mails, phone numbers, IC numbers or real data anywhere (code, seeds, fixtures, tests, logs, docs, PR text). You never receive or request credentials for prestasiplus.cloud or prestasiplus.my and never connect to them. Real data reaches the programme only as an anonymised dump produced by the lead out-of-band; it never enters the repo. Use obviously fictitious data.
 4. Tests: unit tests for rules; integration tests with supertest against a real PostgreSQL via Testcontainers (Docker must be running); parse every response with the contract schema; test wrong role 403, out-of-scope id 404, no session 401, missing CSRF 403. Compare behaviour with the mock handler tests where they exist. Never mock the database layer.
-5. Definition of Done is plan section 10. Run npm run be:verify (it includes contract:check, lint, typecheck, tests, build and, once BE-34 is merged, the migration lint) and, once BE-31 is merged, npm run be:test -- apps/api/test/conformance. Paste the REAL tail of the output in the PR; never claim green without it. If you touched packages/**, also run the root npm run typecheck and npm test.
+5. Definition of Done is plan section 10. Run npm run be:verify (it includes contract:check, lint, typecheck, tests, build and, once BE-34 is merged, the migration lint) and, once BE-31 is merged, npm run conformance:api. Paste the REAL tail of the output in the PR; never claim green without it. If you touched packages/**, also run the root npm run typecheck and npm test.
 6. Git: branch be/<card-id>-<slug> (names above) from the latest origin/feature/v2-backend; one card per branch and PR; PR into feature/v2-backend; open it as a DRAFT early. Rebase on origin/feature/v2-backend every day and before marking ready (git fetch origin && git rebase origin/feature/v2-backend; git push --force-with-lease on your own branch only). Commits are conventional and imperative in English: feat(api): ..., fix(api): ..., chore(contract): ..., test(api): ..., docs(plan): ... PR title: "BE-05: users and schools admin API". PRs stay small (under about 600 changed lines excluding generated openapi.json, lockfile and migrations); if a card is bigger, tell the lead before splitting. The attribution trailer for Claude Code is allowed. Do NOT commit directly to feature/v2-backend and do NOT merge your own PR; the lead merges.
 7. Tracker: in your branch update your card row in docs/plan/backend-tracker.md: todo to in-progress when you start (Owner = your PC and session, for example PC-3/S1), to review when you open the PR for review (fill PR number), to blocked with a one-line reason if blocked. Edit only your own rows; never the Summary, Lead tasks or Change log (the lead does). The lead sets done after merging.
 8. Security review: cards marked in the tracker Notes need the security-engineer review; add the label security-review and list the security-relevant decisions in the PR.
@@ -56,6 +57,7 @@ LANE-SPECIFIC NOTES
 - BE-15 is the read side; BE-39 is the write side (admin builder and blueprints) and shares its tables: design BE-15 tables so BE-39 only adds endpoints and statuses.
 - BE-16 touches photos (security review) and the server-side timer (sweeper via @nestjs/schedule).
 - Questions are read only through QuestionsService (BE-09).
+- BE-41 (SPM hub, P1) is a separate module and Prisma file from Bijak: spm_mock_exams is NOT exam_attempts (BE-16 owns that table); the two never share rows or code. Do not touch apps/api/src/modules/{questions,practice,curriculum}/** (PC-2).
 
 HOW TO PICK THE NEXT CARD
 1. git fetch origin; git switch feature/v2-backend; git pull --ff-only. Read docs/plan/backend-tracker.md.

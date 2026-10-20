@@ -6,7 +6,7 @@
 | Lane | PC-1 + LEAD (folders: sessions.md section 5) |
 | Priority | P1 |
 | Wave | 4 (can start a first version after BE-03 + BE-07; repeat per domain) |
-| Depends on | BE-03, BE-07, BE-31 (domains as they land); **lead task V2-T31 (HttpTransport hardening + hybrid mode)** |
+| Depends on | BE-03, BE-07, BE-31 (domains as they land); **LEAD L1 / V2-T31 (HttpTransport hardening + HybridTransport; a lead task, not part of this card)** |
 | Parallel with | domain cards |
 | Owner module | integration (joint card: collaborator + lead) |
 
@@ -22,6 +22,7 @@ Make the real stack runnable and testable: `docker compose up` brings up `db`, `
 - `playwright.config.ts`, `e2e/fixtures/*`, `e2e/support/*`, `scripts/e2e-module.mjs`, `docs/adr/0011-testing-strategy.md`
 - `docs/architecture/v2-frontend.md` task V2-T31 (HybridTransport)
 - Prerequisite: lead task L1 (V2-T31, tracker "Lead tasks") is done and the lead tells you to start
+- Requirements: BE-OPS-04, BE-OPS-05, BE-OPS-09 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

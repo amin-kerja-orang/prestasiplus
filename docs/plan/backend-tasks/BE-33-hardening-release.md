@@ -24,6 +24,8 @@ Close the gap between "works" and "can be deployed": global security headers and
 - `docs/architecture/v2-data-migration.md` section 5 (PII)
 - OWASP ASVS L1 checklist (summarise what you covered; do not copy it)
 - The merged domain modules (BE-03 to BE-25 as available) for the sampled-route tests
+- Requirements: BE-FR-34; BE-NFR-01, BE-NFR-02, BE-NFR-03, BE-NFR-04, BE-NFR-07, BE-NFR-08, BE-NFR-09, BE-NFR-11, BE-NFR-21, BE-NFR-27, BE-NFR-28, BE-NFR-35, BE-NFR-40; BE-OPS-01, BE-OPS-07, BE-OPS-08, BE-OPS-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 
@@ -63,7 +65,7 @@ Everything a PC may write for this card. A path outside this list needs a `cross
 1. Security tests: a mutating request without a valid CSRF token gives 403 `CSRF_INVALID` on one route of every mutating route group (the list of groups is the set of modules registered in `modules/index.ts`); a cross-user id gives 404 on one sampled route per domain; mass assignment (an extra field in a body) is rejected 422 by the strict schemas on the same sampled routes; an oversized body is rejected 413; SQL-injection strings in filters of the search endpoints (users, schools, questions, articles) return normal results and change nothing (parameterised, tested on each).
 2. Rate limits exist for login, password reset, registration, file upload and ticket creation; `RATE_LIMITED` (429) includes `retryAfter`; defaults are the mock's where it has one (login 5 failed attempts per 60 s; reset one request per e-mail per 60 s) and configurable otherwise; the chosen numbers are in the runbook.
 3. Cookies: `HttpOnly`, `Secure` (production), `SameSite=Lax`, domain from env; no token in any response body (a recursive scan over the login, session and role-switch responses).
-4. Every item of the audit list writes a row with actor, role, scope, action, target and request id and never personal content, one test per item: role switch, mode enter/exit (`audit_events`), user create/delete/toggle (BE-05), subscription changes (BE-25), question publish (`question_status_events`, BE-10), password reset (BE-06), impersonation or Mod Pelajar (BE-03/BE-21). A missing audit call is fixed by the owning lane before the release gate.
+4. Every item of the audit list writes a row with actor, role, scope, action, target and request id and never personal content, one test per item: role switch, mode enter/exit (`audit_events`), user create/delete/toggle (BE-05), subscription changes (BE-25), question publish (`question_status_events`, BE-10), password reset (BE-06) or Mod Pelajar (BE-03/BE-21). A missing audit call is fixed by the owning lane before the release gate.
 5. `docker run --read-only --tmpfs /tmp` of the api image as non-root works; `SIGTERM` finishes in-flight requests and closes the pool (test: start a slow request, send SIGTERM, the request completes and the process exits 0).
 6. CI fails on high or critical vulnerabilities in production dependencies or the image, with a documented allow-list file; a deliberately vulnerable dev branch shows the failure (documented in the PR, not left in the repo).
 7. The runbook was executed once: a `pg_dump` backup restored into a fresh database passes a row-count comparison (output pasted in the PR).
