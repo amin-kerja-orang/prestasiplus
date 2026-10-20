@@ -153,6 +153,17 @@ describe('M15 admin routes (BE-23)', () => {
       expect(RewardItemSchema.parse(digits.body.data)).toMatchObject({ denominationRm: 25, tokenCost: 30, stockQuantity: 3 })
     })
 
+    it('stores imageUrl (http/https only) and returns it on create, read and replace', async () => {
+      const res = await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: 'https://cdn.example.test/a.png' })
+      expect(RewardItemSchema.parse(res.body.data).imageUrl).toBe('https://cdn.example.test/a.png')
+      const id = res.body.data.id as string
+      expect(RewardItemSchema.parse((await admin.get(`/admin/hadiah/${id}`)).body.data).imageUrl).toBe('https://cdn.example.test/a.png')
+      expect(RewardItemSchema.parse((await admin.put(`/admin/hadiah/${id}`, MINIMAL)).body.data).imageUrl).toBeNull()
+      for (const bad of ['javascript:alert(1)', 'data:image/png;base64,AAAA', 'ftp://x']) {
+        expect(expectError(await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: bad }), 422, 'VALIDATION_ERROR').fields).toEqual({ imageUrl: 'The image url field must be a valid URL.' })
+      }
+    })
+
     it('422 with a field per problem and the Laravel-style summary; nothing is created', async () => {
       const before = (await t.db.query<{ n: string }>(`select count(*)::text as n from rewards`))[0]!.n
       const res = await admin.post('/admin/hadiah', { category: 'nope', title: 'x'.repeat(201), denominationRm: 0, tokenCost: 10001, maxPerMonthPerStudent: 100, voucherValidityDays: 1826, displayOrder: 10000, imageUrl: 'ftp://x' })

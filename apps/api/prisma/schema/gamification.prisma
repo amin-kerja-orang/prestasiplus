@@ -301,6 +301,8 @@ model Reward {
   displayOrder          Int      @default(0) @map("display_order")
   /// The mock keeps `imageUrl`; the real image is a files row.
   imageFileId           BigInt?  @map("image_file_id")
+  /// The address the admin form posts (http/https only, check); returned as `imageUrl`.
+  imageUrl              String?  @map("image_url")
   termsText             String?  @map("terms_text")
   isActive              Boolean  @default(true) @map("is_active")
   requiresParentConsent Boolean  @default(false) @map("requires_parent_consent")

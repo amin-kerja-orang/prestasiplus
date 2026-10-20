@@ -88,7 +88,6 @@ export class ShopRepository {
     return this.db.reward.update({ where: { id }, data: { ...this.columns(f), updatedAt: at } })
   }
 
-  /** `imageUrl` has no column in `rewards` (only `image_file_id`), so it is not stored. */
   private columns(f: HadiahFields) {
     return {
       category: f.category,
@@ -104,6 +103,7 @@ export class ShopRepository {
       deliveryMethod: f.deliveryMethod,
       vendorSku: f.vendorSku,
       displayOrder: f.displayOrder,
+      imageUrl: f.imageUrl === null ? null : f.imageUrl.trim(),
       termsText: f.termsText,
       isActive: f.isActive,
       requiresParentConsent: f.requiresParentConsent,

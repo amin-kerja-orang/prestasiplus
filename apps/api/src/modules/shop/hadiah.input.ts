@@ -12,7 +12,7 @@ import { isIdString } from '../../db/ids'
 export type Fields = Record<string, string>
 type Raw = Record<string, unknown>
 
-/** The writable fields of a reward after defaults (BR-M15-13). `imageUrl` is validated but has no column (see report). */
+/** The writable fields of a reward after defaults (BR-M15-13). `imageUrl` is http(s) only. */
 export interface HadiahFields {
   category: RewardCategory
   vendor: string

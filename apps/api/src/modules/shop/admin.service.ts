@@ -61,8 +61,7 @@ export const rewardView = (r: Reward): RewardItem => ({
   deliveryMethod: r.deliveryMethod as RewardItem['deliveryMethod'],
   vendorSku: r.vendorSku,
   displayOrder: r.displayOrder,
-  // `rewards` has no image_url column (only image_file_id), so the address of the mock is not kept.
-  imageUrl: null,
+  imageUrl: r.imageUrl,
   termsText: r.termsText,
   isActive: r.isActive,
   requiresParentConsent: r.requiresParentConsent,

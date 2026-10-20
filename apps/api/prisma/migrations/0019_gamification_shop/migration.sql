@@ -229,6 +229,7 @@ CREATE TABLE "rewards" (
     "vendor_sku" TEXT,
     "display_order" INTEGER NOT NULL DEFAULT 0,
     "image_file_id" BIGINT,
+    "image_url" TEXT,
     "terms_text" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "requires_parent_consent" BOOLEAN NOT NULL DEFAULT false,
@@ -523,6 +524,7 @@ ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_category" CHECK ("category" IN 
 ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_delivery_method" CHECK ("delivery_method" IN ('manual', 'api', 'instant'));
 -- Stock and limits: stock_quantity null = unlimited; the conditional decrement
 -- (WHERE stock_quantity IS NULL OR stock_quantity > 0) plus this check make the stock race-safe.
+ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_image_url" CHECK ("image_url" IS NULL OR "image_url" ~* '^https?://');
 ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_stock_quantity" CHECK ("stock_quantity" IS NULL OR "stock_quantity" >= 0);
 ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_max_per_month" CHECK ("max_per_month_per_student" IS NULL OR "max_per_month_per_student" >= 0);
 ALTER TABLE "rewards" ADD CONSTRAINT "ck_rewards_amounts" CHECK ("denomination_rm" >= 0 AND "token_cost" >= 0 AND "voucher_validity_days" >= 0);
