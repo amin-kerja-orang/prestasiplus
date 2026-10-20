@@ -108,6 +108,40 @@ describe('wallet schema (migration 0010_wallet_streak)', () => {
       expect(await rejects(`delete from coin_ledger where legacy_id = 'cl-1'`)).toMatch(/append-only/)
     })
 
+    it('a migrated row may be rewritten only while its identity (legacy_source, legacy_id, user_id) stays the same', async () => {
+      const [u, other] = [await user(), await user()]
+      await db.query(
+        `insert into coin_ledger (user_id, type, source, amount, balance_after, description, legacy_source, legacy_id) values ($1, 'earn', 'legacy', 5, 5, 'd', 'cloud', 'cl-id')`,
+        [u],
+      )
+      expect(await rejects(`update coin_ledger set legacy_id = 'cl-other' where legacy_id = 'cl-id'`)).toMatch(/append-only/)
+      expect(await rejects(`update coin_ledger set legacy_source = 'my' where legacy_id = 'cl-id'`)).toMatch(/append-only/)
+      expect(await rejects(`update coin_ledger set legacy_source = null, legacy_id = null where legacy_id = 'cl-id'`)).toMatch(/append-only/)
+      expect(await rejects(`update coin_ledger set user_id = $1 where legacy_id = 'cl-id'`, [other])).toMatch(/append-only/)
+      expect(await db.query(`select user_id::text from coin_ledger where legacy_id = 'cl-id'`)).toEqual([{ user_id: u }])
+    })
+
+    it('a DELETE is allowed only for the user cascade: a nested delete while the user exists is refused (no call-depth door)', async () => {
+      const u = await user()
+      await ledger(u, 'earn', 3, { sourceId: 'nested' })
+      await db.query(`create table tmp_nested_probe (user_id bigint)`)
+      await db.query(`create function tmp_nested_probe_fn() returns trigger language plpgsql as $$ begin delete from coin_ledger where user_id = new.user_id; return new; end; $$`)
+      await db.query(`create trigger tmp_nested_probe_trg after insert on tmp_nested_probe for each row execute function tmp_nested_probe_fn()`)
+      expect(await rejects(`insert into tmp_nested_probe (user_id) values ($1)`, [u])).toMatch(/append-only/)
+      expect(await db.query(`select 1 from coin_ledger where user_id = $1`, [u])).toHaveLength(1)
+      await db.query(`drop table tmp_nested_probe`)
+      await db.query(`drop function tmp_nested_probe_fn()`)
+    })
+
+    it('refuses TRUNCATE of the ledger, also through a cascade from users', async () => {
+      const u = await user()
+      await ledger(u, 'earn', 1, { sourceId: 'trunc' })
+      expect(await rejects(`truncate coin_ledger`)).toMatch(/cannot be truncated/)
+      expect(await rejects(`truncate users cascade`)).toMatch(/cannot be truncated/)
+      expect(await db.query(`select 1 from coin_ledger where user_id = $1`, [u])).toHaveLength(1)
+      expect(await db.query(`select 1 from users where id = $1`, [u])).toHaveLength(1)
+    })
+
     it('a user delete takes that user ledger with it (foreign key cascade), and only that', async () => {
       const [a, b] = [await user(), await user()]
       await ledger(a, 'earn', 1, { sourceId: 'c1' })

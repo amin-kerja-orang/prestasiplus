@@ -225,21 +225,26 @@ ALTER TABLE "session_credits" ADD CONSTRAINT "ck_session_credits_counts" CHECK (
 ALTER TABLE "token_movements" ADD CONSTRAINT "ck_token_movements_delta" CHECK ("delta" <> 0);
 ALTER TABLE "token_movements" ADD CONSTRAINT "ck_token_movements_source" CHECK (char_length("source") BETWEEN 1 AND 100);
 
--- Append-only ledger: no UPDATE and no DELETE of a coin_ledger row. Two doors stay open, on purpose:
---  1. A DELETE that comes from the foreign key of users (ON DELETE CASCADE) runs inside the RI trigger
---     of users, so pg_trigger_depth() is above 1; deleting a user removes that user's ledger with it.
+-- Append-only ledger: no UPDATE, no DELETE and no TRUNCATE of coin_ledger. Two narrow doors stay open, on purpose:
+--  1. A DELETE is allowed only when the owning user no longer exists (NOT EXISTS on users): that is the
+--     ON DELETE CASCADE of a user erasure, whose RI trigger runs after the user row is gone. Deleting a
+--     ledger row of a live user is refused, whatever the call depth.
 --  2. An UPDATE of a migrated row (legacy_source set) is allowed, because the ETL upsert
---     (BE-34 upsertByLegacy) rewrites a row whose source changed. Rows born in v2 can never change.
+--     (BE-34 upsertByLegacy) rewrites a row whose source changed; but its identity (legacy_source,
+--     legacy_id, user_id) must stay the same. Rows born in v2 can never change.
 -- The application code has no method that updates or deletes a ledger row either (test/wallet).
 CREATE FUNCTION "coin_ledger_append_only"() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'DELETE' THEN
-        IF pg_trigger_depth() > 1 THEN
+        IF NOT EXISTS (SELECT 1 FROM "users" WHERE "id" = OLD."user_id") THEN
             RETURN OLD;
         END IF;
         RAISE EXCEPTION 'coin_ledger is append-only: a row cannot be deleted' USING ERRCODE = 'restrict_violation';
     END IF;
-    IF OLD."legacy_source" IS NOT NULL THEN
+    IF OLD."legacy_source" IS NOT NULL
+       AND NEW."legacy_source" IS NOT DISTINCT FROM OLD."legacy_source"
+       AND NEW."legacy_id" IS NOT DISTINCT FROM OLD."legacy_id"
+       AND NEW."user_id" = OLD."user_id" THEN
         RETURN NEW;
     END IF;
     RAISE EXCEPTION 'coin_ledger is append-only: a row cannot be updated' USING ERRCODE = 'restrict_violation';
@@ -248,3 +253,12 @@ $$;
 
 CREATE TRIGGER "trg_coin_ledger_append_only" BEFORE UPDATE OR DELETE ON "coin_ledger"
     FOR EACH ROW EXECUTE FUNCTION "coin_ledger_append_only"();
+
+CREATE FUNCTION "coin_ledger_no_truncate"() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'coin_ledger is append-only: the table cannot be truncated' USING ERRCODE = 'restrict_violation';
+END;
+$$;
+
+CREATE TRIGGER "trg_coin_ledger_no_truncate" BEFORE TRUNCATE ON "coin_ledger"
+    FOR EACH STATEMENT EXECUTE FUNCTION "coin_ledger_no_truncate"();

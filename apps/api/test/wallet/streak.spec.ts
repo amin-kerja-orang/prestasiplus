@@ -149,4 +149,23 @@ describe('StreakService (AC3): streak by Malaysia day', () => {
       expect(all.filter((r) => r.firstToday)).toHaveLength(1)
     })
   })
+
+  it('M3: a late touch dated before the last activity leaves the state unchanged (the streak never rewinds)', async () => {
+    const u = await fresh()
+    for (let day = 12; day <= 18; day++) {
+      t.clock.set(`2026-10-${String(day)}T09:00:00+08:00`)
+      await t.streak.touch(u)
+    }
+    const before = await row(u)
+    expect(before).toEqual({ current: 7, best: 7, last_activity_date: '2026-10-18', total_days: 7 })
+    // A session completed yesterday (17th) is reported late: it must not reset or move anything.
+    const late = await t.streak.touch(u, { at: new Date('2026-10-17T20:00:00+08:00') })
+    expect(late).toEqual({ current: 7, best: 7, lastActivityDate: '2026-10-18', totalDays: 7, multiplier: 1, changed: false })
+    const muchLater = await t.streak.touch(u, { at: new Date('2026-09-01T09:00:00+08:00') })
+    expect(muchLater.changed).toBe(false)
+    expect(await row(u)).toEqual(before)
+    // The next real day still continues the streak.
+    t.clock.set('2026-10-19T09:00:00+08:00')
+    expect(await t.streak.touch(u)).toMatchObject({ current: 8, best: 8, changed: true })
+  })
 })

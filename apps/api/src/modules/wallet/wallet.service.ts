@@ -13,7 +13,7 @@ import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, startOfMytDay } from '../../db/clock'
 import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { insufficientBalance } from './errors'
+import { idempotencyConflict, insufficientBalance, sessionCreditOwnerConflict } from './errors'
 import { levelProgressPct, nextTierOf, nextTierProgress, nextTitleOf, titleOf, upgradedTierId, defaultTier, xpNeeded } from './rules'
 import {
   CREDIT_TYPES,
@@ -89,6 +89,21 @@ export const toLedgerEntry = (r: LedgerRow): WalletLedgerEntry => ({
  * a row lock on the user's wallet, so `balance_after` is always the running balance and two concurrent
  * credits with the same key write one row.
  *
+ * LOCK ORDER (`LOCK_ORDER` in wallet.constants.ts): a caller that touches both the streak and the wallet of
+ * one user in a transaction calls `StreakService` first (it locks the `streaks` row), then this service (it
+ * locks the `wallets` row). This service never locks a streak and `StreakService` never locks a wallet, so
+ * two transactions can only wait on each other in that one direction and cannot deadlock.
+ *
+ * CHAIN ORDER. `balance_after` chains by `id` (the order of the wallet lock), not by clock: the row timestamp is
+ * read AFTER the lock is held, so `created_at` follows the same order as `id` (a clock that moves forward) and
+ * "newest first" (`created_at` desc, `id` desc) is the reverse of the balance chain.
+ *
+ * REPLAY. A call whose key `(userId, source, sourceId)` already holds a movement of the SAME type and amount
+ * (and token count) is a replay: it writes nothing and returns the FIRST entry (`entryId`, `amount`,
+ * `balanceAfter`) together with the CURRENT totals of the wallet (`currentSyiling`, `totalSyilingEarned`,
+ * `tokenBalance`, `tierKey`), which may be newer than that entry. A call that reuses the key for a different
+ * movement (a refund with the key of a spend, another amount) throws 409 `CONFLICT` and writes nothing.
+ *
  * LEDGER. `coin_ledger` is append-only: a movement is a new row, never an edit. The wallet row is a stored
  * balance kept in step with the ledger inside the same transaction (card open question 2): for rows born in
  * v2, `wallets.current_syiling` equals the sum of the user's ledger amounts (test/wallet/reconcile.spec.ts).
@@ -111,7 +126,8 @@ export class WalletService {
   /**
    * Adds syiling (BR-M14-22): one ledger row, balance and lifetime up, the tier moved up when a higher active
    * tier is reached (BR-M14-08, never down). Creates the wallet on the first credit (BR-M14-02).
-   * Idempotent per `(userId, source, sourceId)`: a replay returns the first result and writes nothing.
+   * Idempotent per `(userId, source, sourceId)`: a replay (same type and amount) returns the FIRST entry with the
+   * CURRENT wallet totals and writes nothing; the same key with another type or amount is a 409 `CONFLICT`.
    * The lifetime total grows with every credit type, as the mock does (a `refund` too).
    */
   async credit(input: CreditInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
@@ -121,11 +137,11 @@ export class WalletService {
     if (!(CREDIT_TYPES as readonly string[]).includes(type)) throw new RangeError('WalletService.credit: type must be earn, bonus or refund')
     if (!isPositive(input.amount)) throw new RangeError('WalletService.credit: amount must be a positive integer')
     return this.run(options.tx, async (db) => {
-      const at = this.clock.now()
       const tiers = await this.repo.tiers(db)
-      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, at)
+      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, this.clock.now())
       const wallet = await this.lockedWallet(db, input.userId)
-      const replay = await this.replayOf(db, wallet, input.source, input.sourceId)
+      const at = this.clock.now() // after the lock: created_at follows the lock order, like id
+      const replay = await this.replayOf(db, wallet, input.source, input.sourceId, { type, amount: input.amount, tokens: null })
       if (replay) return replay
       const balance = wallet.currentSyiling + input.amount
       const lifetime = wallet.totalSyilingEarned + input.amount
@@ -152,7 +168,7 @@ export class WalletService {
    * Removes syiling (BR-M14-22, BR-M14-30): one `spend` or `convert` row with a negative amount. Refused with
    * 409 `INSUFFICIENT_BALANCE` ("Baki syiling tidak mencukupi.") when the balance is smaller than `amount`;
    * nothing is written then. Lifetime total and tier do not change. A `convert` also pays `tokens` into the
-   * token balance. Idempotent per `(userId, source, sourceId)` like `credit`.
+   * token balance. Idempotent per `(userId, source, sourceId)` like `credit` (a replay needs the same type, amount and tokens).
    */
   async debit(input: DebitInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
     assertUser(input.userId)
@@ -163,15 +179,15 @@ export class WalletService {
     if (type === 'convert' && !isPositive(input.tokens)) throw new RangeError('WalletService.debit: a convert needs a positive integer tokens')
     if (type === 'spend' && input.tokens !== undefined) throw new RangeError('WalletService.debit: tokens belong to a convert')
     return this.run(options.tx, async (db) => {
-      const at = this.clock.now()
       const wallet = await this.repo.lockWallet(db, input.userId)
+      const at = this.clock.now() // after the lock: created_at follows the lock order, like id
+      const tokens = type === 'convert' ? (input.tokens as number) : null
       if (wallet) {
-        const replay = await this.replayOf(db, wallet, input.source, input.sourceId)
+        const replay = await this.replayOf(db, wallet, input.source, input.sourceId, { type, amount: -input.amount, tokens })
         if (replay) return replay
       }
       if (!wallet || wallet.currentSyiling < input.amount) throw insufficientBalance('syiling')
       const balance = wallet.currentSyiling - input.amount
-      const tokens = type === 'convert' ? (input.tokens as number) : null
       const tokenBalance = wallet.tokenBalance + (tokens ?? 0)
       if (tokenBalance > INT_MAX) throw new RangeError('WalletService.debit: the token balance would exceed the integer range')
       const row = await this.repo.appendLedger(db, {
@@ -195,10 +211,10 @@ export class WalletService {
   async creditTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number }> {
     this.assertTokenInput(input)
     return this.run(options.tx, async (db) => {
-      const at = this.clock.now()
       const tiers = await this.repo.tiers(db)
-      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, at)
+      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, this.clock.now())
       const wallet = await this.lockedWallet(db, input.userId)
+      const at = this.clock.now() // after the lock
       const tokenBalance = wallet.tokenBalance + input.amount
       if (tokenBalance > INT_MAX) throw new RangeError('WalletService.creditTokens: the token balance would exceed the integer range')
       await this.moveTokens(db, input, input.amount, tokenBalance, at)
@@ -210,8 +226,8 @@ export class WalletService {
   async debitTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number }> {
     this.assertTokenInput(input)
     return this.run(options.tx, async (db) => {
-      const at = this.clock.now()
       const wallet = await this.repo.lockWallet(db, input.userId)
+      const at = this.clock.now() // after the lock
       if (!wallet || wallet.tokenBalance < input.amount) throw insufficientBalance('token')
       const tokenBalance = wallet.tokenBalance - input.amount
       await this.moveTokens(db, input, -input.amount, tokenBalance, at)
@@ -225,10 +241,10 @@ export class WalletService {
     if (!isCount(input.amount)) throw new RangeError('WalletService.addXp: amount must be a non-negative integer')
     return this.run(options.tx, async (db) => {
       if (input.amount === 0) return { xp: (await this.repo.wallet(db, input.userId))?.xp ?? 0 }
-      const at = this.clock.now()
       const tiers = await this.repo.tiers(db)
-      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, at)
+      await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, this.clock.now())
       const wallet = await this.lockedWallet(db, input.userId)
+      const at = this.clock.now() // after the lock
       const xp = wallet.xp + input.amount
       if (xp > INT_MAX) throw new RangeError('WalletService.addXp: xp would exceed the integer range')
       await this.repo.saveWallet(db, input.userId, { xp }, at)
@@ -239,7 +255,8 @@ export class WalletService {
   /**
    * Stores the result of one credited session (idempotency of the session credit, mock `sessionCredits`).
    * Returns `recorded: true` the first time; a second call for the same session writes nothing and returns the
-   * stored result (a retried submit never pays twice).
+   * stored result (a retried submit never pays twice). A session already credited to ANOTHER user is a 409
+   * `CONFLICT`, never that user's data.
    */
   async recordSessionCredit(input: SessionCreditInput, options: { tx?: TxClient } = {}): Promise<{ recorded: boolean; result: SessionCreditResult }> {
     assertUser(input.userId)
@@ -251,15 +268,18 @@ export class WalletService {
       const recorded = await this.repo.insertSessionCredit(db, { ...input, isTest: input.isTest ?? false }, this.clock.now())
       const stored = await this.repo.sessionCredit(db, input.sessionId)
       if (!stored) throw new Error('WalletService.recordSessionCredit: the stored result is missing')
+      if (stored.userId !== input.userId) throw sessionCreditOwnerConflict() // never hand back another user's result
       const { coinsEarned, pointsEarned, streakCount, totalBalance } = stored
       return { recorded, result: { sessionId: stored.sessionId, coinsEarned, pointsEarned, streakCount, totalBalance } }
     })
   }
 
-  /** The stored result of a session, or null when it has not been credited. */
-  async sessionCredit(sessionId: string, options: { tx?: TxClient } = {}): Promise<SessionCreditResult | null> {
+  /** The stored result of a session of `userId`, or null when it has not been credited. A session credited to another user is a 409 `CONFLICT`. */
+  async sessionCredit(sessionId: string, userId: string, options: { tx?: TxClient } = {}): Promise<SessionCreditResult | null> {
+    assertUser(userId)
     if (!UUID.test(sessionId)) return null
     const r = await this.repo.sessionCredit(this.repo.handle(options.tx), sessionId)
+    if (r && r.userId !== userId) throw sessionCreditOwnerConflict()
     return r ? { sessionId: r.sessionId, coinsEarned: r.coinsEarned, pointsEarned: r.pointsEarned, streakCount: r.streakCount, totalBalance: r.totalBalance } : null
   }
 
@@ -335,11 +355,23 @@ export class WalletService {
     return wallet
   }
 
-  /** The first result of an idempotency key, or null when the key is new (or there is none). */
-  private async replayOf(db: Db, wallet: WalletRow, source: string, sourceId: string | null | undefined): Promise<LedgerOutcome | null> {
+  /**
+   * The first result of an idempotency key, or null when the key is new (or there is none). The stored row
+   * must be the same movement (`type`, signed `amount`, `tokens`); otherwise the key was reused for a
+   * different request and the call is refused with 409 `CONFLICT` (nothing written).
+   */
+  private async replayOf(
+    db: Db,
+    wallet: WalletRow,
+    source: string,
+    sourceId: string | null | undefined,
+    expected: { type: string; amount: number; tokens: number | null },
+  ): Promise<LedgerOutcome | null> {
     if (sourceId === undefined || sourceId === null) return null
     const first = await this.repo.ledgerByKey(db, wallet.userId, source, sourceId)
-    return first ? this.outcome(first, true, wallet, await this.repo.tiers(db)) : null
+    if (!first) return null
+    if (first.type !== expected.type || first.amount !== expected.amount || (first.tokens ?? null) !== expected.tokens) throw idempotencyConflict()
+    return this.outcome(first, true, wallet, await this.repo.tiers(db))
   }
 
   private outcome(row: LedgerRow, replayed: boolean, wallet: Pick<WalletRow, 'currentSyiling' | 'totalSyilingEarned' | 'tokenBalance' | 'tierId'>, tiers: TierRow[]): LedgerOutcome {

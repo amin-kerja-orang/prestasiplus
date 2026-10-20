@@ -42,7 +42,11 @@ export interface DebitInput {
 }
 
 export interface LedgerOutcome {
-  /** True when the key was already used: nothing was written and the first result is returned. */
+  /**
+   * True when the key was already used by the SAME movement: nothing was written and the FIRST entry
+   * (`entryId`, `amount`, `balanceAfter`) is returned together with the CURRENT wallet totals below (which
+   * may be newer than that entry). The same key with another type, amount or token count is a 409 `CONFLICT`.
+   */
   replayed: boolean
   entryId: string
   type: string

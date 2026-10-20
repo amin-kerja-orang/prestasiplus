@@ -103,10 +103,11 @@ export function previousDay(date: string): string {
 /**
  * BR-M14-14 (mock `stepStreak`) for an activity on Malaysia day `date`: the same day changes nothing;
  * the day after the last activity adds 1; any other gap restarts at 1. `best` is the maximum and
- * `totalDays` grows by 1 on each new streak day.
+ * `totalDays` grows by 1 on each new streak day. A day BEFORE the last activity (a late or replayed event)
+ * changes nothing and returns the same state: the streak never rewinds.
  */
 export function stepStreak(state: StreakState, date: string): StreakState {
-  if (state.lastActivityDate === date) return state
+  if (state.lastActivityDate !== null && date <= state.lastActivityDate) return state
   const current = state.lastActivityDate === previousDay(date) ? state.current + 1 : 1
   return { current, best: Math.max(state.best, current), lastActivityDate: date, totalDays: state.totalDays + 1 }
 }

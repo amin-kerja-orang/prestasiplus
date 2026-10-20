@@ -102,8 +102,10 @@ describe('wallet rules (pure, mock rules.ts)', () => {
       expect(stepStreak(at(2, 2, '2026-09-30'), '2026-10-01').current).toBe(3)
       expect(stepStreak(at(2, 2, '2026-12-31'), '2027-01-01').current).toBe(3)
     })
-    it('an activity dated before the last one is a gap in the mock (it restarts at 1)', () => {
-      expect(stepStreak(at(5, 5, '2026-10-19'), '2026-10-10').current).toBe(1)
+    it('an activity dated before the last one changes nothing (the streak never rewinds; the mock restarted at 1)', () => {
+      const s = at(5, 5, '2026-10-19', 12)
+      expect(stepStreak(s, '2026-10-10')).toBe(s)
+      expect(stepStreak(s, '2026-10-18')).toBe(s)
     })
   })
 })

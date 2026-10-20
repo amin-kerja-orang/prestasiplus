@@ -16,8 +16,8 @@ import { identitySeed } from './core/identity'
 import { populationSeed } from './core/population'
 import { schoolPackagesSeed } from './core/school-packages'
 import { schoolsSeed } from './core/schools'
-import { walletSeed } from './wallet'
 import { assertSeedAllowed } from './guard'
+import { walletSeed } from './wallet'
 
 export { assertSeedAllowed }
 

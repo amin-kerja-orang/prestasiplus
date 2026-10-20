@@ -23,6 +23,9 @@ const view = (s: StreakState): StreakView => ({ ...s, multiplier: STREAK_MULTIPL
  *
  * Like `WalletService`, every write uses the caller's transaction (`tx`, else the ambient one, else its own)
  * and locks the user's streak row, so two activities of one user cannot lose an update.
+ *
+ * LOCK ORDER (`LOCK_ORDER` in wallet.constants.ts): streak first, then wallet. A caller that updates both in one
+ * transaction calls `touch` BEFORE `WalletService.credit`. This service never locks a wallet.
  */
 @Injectable()
 export class StreakService {
@@ -43,6 +46,8 @@ export class StreakService {
    * Records a qualifying activity (a completed session, a student's password login) and returns the new
    * streak. On the same Malaysia day nothing changes (`changed: false`); on the next day `current` + 1;
    * after a gap `current` restarts at 1; `best` is the maximum; `totalDays` grows on each new streak day.
+   * An `at` on a day BEFORE the last activity (a late or replayed event) changes nothing (`changed: false`):
+   * the streak never moves backwards.
    */
   async touch(userId: string, options: { at?: Date; tx?: TxClient } = {}): Promise<StreakView & { changed: boolean }> {
     assertUser(userId)

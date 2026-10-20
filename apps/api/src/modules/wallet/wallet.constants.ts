@@ -23,6 +23,13 @@ export const TITLES: readonly { name: string; emoji: string; threshold: number }
 export const INSUFFICIENT_SYILING = 'Baki syiling tidak mencukupi.'
 export const INSUFFICIENT_TOKENS = 'Baki token tidak mencukupi.'
 
+/**
+ * Canonical row-lock order when ONE transaction needs both rows of a user: the streak first, then the wallet.
+ * `StreakService` locks only `streaks`, `WalletService` only `wallets`; a caller (practice completion, login,
+ * missions...) calls them in this order, so no two transactions can wait on each other in a cycle.
+ */
+export const LOCK_ORDER = ['streaks', 'wallets'] as const
+
 /** Column limits (the checks of migration 0010). */
 export const SOURCE_MAX = 100
 export const SOURCE_ID_MAX = 200
