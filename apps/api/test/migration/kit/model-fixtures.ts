@@ -54,6 +54,15 @@ async function parentChapter(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-17: a class needs a level (and a valid academic year, ck_classrooms_academic_year). */
+async function parentClassroom(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into classrooms (name, education_level_id, academic_year) values ('Kelas Contoh', $1, 2026) returning id::text as id`,
+    [await parentLevel(query)],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
@@ -68,6 +77,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
   exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
+  // classrooms (BE-17): the level must exist; the academic year has a check.
+  classrooms: async (query) => ({ name: 'Kelas Contoh', education_level_id: await parentLevel(query), academic_year: 2026 }),
+  // enrolments (BE-17): the class and the pupil must exist.
+  enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
@@ -104,6 +117,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   // streaks and wallets (BE-11): one row per user, so a parent user is all they need.
   streaks: async (query) => ({ user_id: await parentUser(query) }),
+  // teacher_profiles (BE-17): the user must exist.
+  teacher_profiles: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
   // users: name (text) is generated; nothing else is required.
