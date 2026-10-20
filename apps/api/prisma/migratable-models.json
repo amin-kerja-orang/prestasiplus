@@ -1,5 +1,7 @@
 [
+  "chapters",
   "comp_students",
+  "education_levels",
   "files",
   "jpns",
   "notifications",
@@ -9,6 +11,9 @@
   "school_packages",
   "school_subscriptions",
   "schools",
+  "subject_levels",
+  "subjects",
+  "topics",
   "user_roles",
   "user_scopes",
   "users"

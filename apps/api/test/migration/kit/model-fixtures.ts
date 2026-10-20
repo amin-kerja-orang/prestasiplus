@@ -13,6 +13,9 @@ async function parentUser(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+let seq = 0
+const next = (prefix: string): string => `${prefix}${(seq += 1)}`
+
 async function parentSchool(query: FixtureQuery): Promise<string> {
   const rows = await query<{ id: string }>(`insert into schools (name) values ('Sekolah Contoh') returning id::text as id`)
   return (rows[0] as { id: string }).id
@@ -26,8 +29,39 @@ async function parentPackage(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-08: curriculum parents (codes are stored upper-case, a CHECK enforces it; fictitious names). */
+async function parentLevel(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into education_levels (code, name, name_en, stage, curriculum) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR') returning id::text as id`,
+    [next('FXL')],
+  )
+  return (rows[0] as { id: string }).id
+}
+
+async function parentSubject(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into subjects (code, name, name_en, color) values ($1, 'Subjek Contoh', 'Sample Subject', '#4f46e5') returning id::text as id`,
+    [next('FXS')],
+  )
+  return (rows[0] as { id: string }).id
+}
+
+async function parentChapter(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into chapters (subject_id, education_level_id, name) values ($1, $2, 'Bab Contoh') returning id::text as id`,
+    [await parentSubject(query), await parentLevel(query)],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
+  chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
+  // education_levels (BE-08): code must be upper-case, stage one of three.
+  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  // files (BE-04): mime, sha256 and purpose have check constraints.
+  files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
@@ -44,9 +78,13 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     starts_on: '2026-01-01',
     ends_on: '2026-12-31',
   }),
-  // files (BE-04): mime, sha256 and purpose have check constraints.
-  files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // schools: name (text) is generated; nothing else is required.
+  // subject_levels (BE-08): both parents must exist.
+  subject_levels: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query) }),
+  // subjects (BE-08): code must be upper-case.
+  subjects: async () => ({ code: next('FXS') }),
+  // topics (BE-08): the chapter must exist.
+  topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
   // users: name (text) is generated; nothing else is required.
