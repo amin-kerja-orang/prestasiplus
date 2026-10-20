@@ -7,3 +7,5 @@
 export * from './question'
 export * from './items'
 export * from './review'
+export * from './files'
+export * from './dashboard'
