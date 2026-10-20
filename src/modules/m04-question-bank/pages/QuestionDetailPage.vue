@@ -10,7 +10,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { isApiError } from '@/api'
+import { isApiError, isHttpMode } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash } from '@/composables'
 import {
@@ -31,6 +31,7 @@ import {
   cut,
   DELETE_CONFIRM,
   LANGUAGE_LABELS,
+  notUpdatedLines,
   QUESTIONS_LIST_PATH,
   questionEditPath,
   STATUS_CONFIRM,
@@ -113,13 +114,23 @@ async function remove(): Promise<void> {
   }
 }
 
-async function changeStatus(action: 'pending_review' | 'approve'): Promise<void> {
+/** http mode only: an approved question can be published (mock "Luluskan" already meant live). */
+const canPublish = computed(() => isHttpMode() && question.value?.status === 'approved')
+
+async function changeStatus(action: 'pending_review' | 'approve' | 'publish'): Promise<void> {
   if (busy.value || !(await confirm({ message: STATUS_CONFIRM }))) return
   busy.value = true
   try {
     const result = await bulkQuestionAction(action, [props.id])
     await reload()
-    flash.show({ type: 'success', message: result.status })
+    if (result.notUpdated && result.notUpdated.length > 0) {
+      flash.show({
+        type: 'error',
+        message: notUpdatedLines(result.data.affected, result.notUpdated, 'dikemaskini'),
+      })
+    } else {
+      flash.show({ type: 'success', message: result.status })
+    }
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {
@@ -404,7 +415,8 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
         <div
           v-if="question.status === 'draft' ||
             question.status === 'pending_review' ||
-            question.status === 'review'"
+            question.status === 'review' ||
+            canPublish"
           class="flex flex-wrap gap-2"
           data-testid="quick-actions"
         >
@@ -421,6 +433,18 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
             Hantar untuk Semakan
           </UButton>
           <UButton
+            v-if="canPublish"
+            type="button"
+            color="success"
+            :disabled="busy"
+            class="min-h-11"
+            data-testid="status-publish"
+            @click="changeStatus('publish')"
+          >
+            Terbitkan
+          </UButton>
+          <UButton
+            v-if="!canPublish"
             type="button"
             color="success"
             :disabled="busy"

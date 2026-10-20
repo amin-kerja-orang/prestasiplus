@@ -5,6 +5,7 @@ import { parseMarkdown } from '../../lib/markdown'
 import {
   complianceColor,
   bulkOptionsFor,
+  notUpdatedLines,
   cut,
   statusOptionsFor,
   errorTextOf,
@@ -125,7 +126,8 @@ describe('http mode wire values (BE-09 status, bulk actions)', () => {
     })
     expect(BULK_ACTION_TO_WIRE).toEqual({
       pending_review: 'review',
-      approve: 'published',
+      approve: 'approved',
+      publish: 'published',
       archive: 'archived',
       delete: 'delete',
     })
@@ -146,6 +148,23 @@ describe('http mode wire values (BE-09 status, bulk actions)', () => {
     expect(statusOptionsFor(false).map((o) => o.value)).toContain('rejected')
     expect(bulkOptionsFor(true).map((o) => o.value)).not.toContain('reject')
     expect(bulkOptionsFor(false).map((o) => o.value)).toContain('reject')
-    expect(bulkOptionsFor(true).map((o) => o.value)).toEqual(['approve', 'archive', 'delete'])
+    expect(bulkOptionsFor(true).map((o) => o.value)).toEqual([
+      'approve',
+      'publish',
+      'archive',
+      'delete',
+    ])
+    expect(bulkOptionsFor(true).find((o) => o.value === 'publish')?.label).toBe('Terbitkan')
+    expect(bulkOptionsFor(false).map((o) => o.value)).not.toContain('publish')
+  })
+})
+
+describe('notUpdatedLines', () => {
+  it('lists one line per question not updated', () => {
+    const lines = notUpdatedLines(1, [8, 9], 'menerbitkan')
+    expect(lines[0]).toBe('1 soalan berjaya dikemaskini, 2 tidak dikemaskini.')
+    expect(lines).toHaveLength(3)
+    expect(lines[1]).toContain('#8')
+    expect(lines[2]).toContain('#9')
   })
 })

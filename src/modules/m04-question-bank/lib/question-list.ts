@@ -76,10 +76,14 @@ export const SOURCE_OPTIONS = [
 
 export const BULK_OPTIONS: readonly { value: BulkAction; label: string; verb: string }[] = [
   { value: 'approve', label: 'Luluskan', verb: 'meluluskan' },
+  { value: 'publish', label: 'Terbitkan', verb: 'menerbitkan' },
   { value: 'reject', label: 'Tolak', verb: 'menolak' },
   { value: 'archive', label: 'Arkibkan', verb: 'mengarkibkan' },
   { value: 'delete', label: 'Padam', verb: 'memadamkan' },
 ]
+
+/** Bulk actions that exist only in http mode (no mock equivalent). */
+const HTTP_ONLY_BULK_ACTIONS: readonly string[] = ['publish']
 
 /** The status filter options; http mode hides those with no v2 wire equivalent and adds Diterbitkan. */
 export const statusOptionsFor = (
@@ -91,9 +95,11 @@ export const statusOptionsFor = (
   return [...kept.slice(0, at), { value: 'published', label: 'Diterbitkan' }, ...kept.slice(at)]
 }
 
-/** The bulk actions; http mode hides those with no v2 wire equivalent. */
+/** The bulk actions; http mode hides those with no v2 wire equivalent and adds Terbitkan. */
 export const bulkOptionsFor = (http: boolean = isHttpMode()) =>
-  http ? BULK_OPTIONS.filter((o) => !NO_WIRE_BULK_ACTIONS.includes(o.value)) : BULK_OPTIONS
+  BULK_OPTIONS.filter((o) =>
+    http ? !NO_WIRE_BULK_ACTIONS.includes(o.value) : !HTTP_ONLY_BULK_ACTIONS.includes(o.value),
+  )
 
 export const bulkConfirmText = (verb: string, n: number): string =>
   `Adakah anda pasti mahu ${verb} ${String(n)} soalan?`
@@ -210,4 +216,18 @@ export function errorTextOf(reply: { status: number; body: unknown }): string {
   const message =
     typeof data === 'object' && data !== null ? (data as { message?: unknown }).message : undefined
   return typeof message === 'string' && message !== '' ? message : `HTTP ${String(reply.status)}`
+}
+
+/**
+ * http mode: the lines for questions the API left untouched (it gives no per-question reason, see
+ * `bulkQuestionAction`). One line per question; `updated` is the affected count.
+ */
+export function notUpdatedLines(updated: number, ids: readonly number[], verb: string): string[] {
+  return [
+    `${String(updated)} soalan berjaya dikemaskini, ${String(ids.length)} tidak dikemaskini.`,
+    ...ids.map(
+      (id) =>
+        `Soalan #${String(id)} tidak dapat ${verb}: syarat belum dipenuhi atau peralihan status tidak dibenarkan.`,
+    ),
+  ]
 }

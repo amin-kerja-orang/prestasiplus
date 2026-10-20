@@ -27,7 +27,7 @@ export type SourceType = 'textbook' | 'dskp' | 'trial' | 'marking_scheme' | 'ai_
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
 export type QuestionLanguage = 'bm' | 'en'
-export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review'
+export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review' | 'publish'
 
 /**
  * http mode only (BE-09 `QuestionStatus`, BE-09 bulk actions): the mock vocabulary of the filter and
@@ -42,12 +42,20 @@ export const STATUS_FILTER_TO_WIRE: Readonly<Record<string, string>> = {
 }
 export const BULK_ACTION_TO_WIRE: Readonly<Record<string, string>> = {
   pending_review: 'review',
-  approve: 'published',
+  approve: 'approved',
+  publish: 'published',
   archive: 'archived',
   delete: 'delete',
 }
 /** Mock values with no wire equivalent; hidden from the UI in http mode. */
 export const NO_WIRE_STATUS_FILTERS: readonly string[] = ['rejected']
+/** http mode only: the wire status an action should leave a question in (gate check target). */
+const BULK_TARGET_STATUS: Readonly<Record<string, string>> = {
+  pending_review: 'review',
+  approve: 'approved',
+  publish: 'published',
+  archive: 'archived',
+}
 export const NO_WIRE_BULK_ACTIONS: readonly string[] = ['reject']
 
 const wire = (map: Readonly<Record<string, string>>, v: string): string =>
@@ -336,30 +344,38 @@ export function deleteQuestion(id: number): Promise<QuestionMutation<{ deleted: 
   })
 }
 
-/** #7 `POST /api/questions/bulk-action` (422 when no action or no ids). */
-export function bulkQuestionAction(
+/**
+ * #7 `POST /api/questions/bulk-action` (422 when no action or no ids).
+ *
+ * http mode: the API answers only `{affected}` and silently leaves an id untouched when its transition
+ * is refused or the publish/approve gate fails (BE-09 `bulkAction`, 2f3b8311); it returns no per-id
+ * reason. So when `affected` is below the number of distinct ids, each id is re-read and the ones not in
+ * the target status come back in `notUpdated` for the screen to list one by one. Mock mode: never set.
+ */
+export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
-): Promise<QuestionMutation<{ affected: number }>> {
-  return api.post<QuestionMutation<{ affected: number }>>('/api/questions/bulk-action', {
-    body: { action: isHttpMode() ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
-    raw: true,
-  })
+): Promise<QuestionMutation<{ affected: number }> & { notUpdated?: number[] }> {
+  const http = isHttpMode()
+  const result = await api.post<QuestionMutation<{ affected: number }>>(
+    '/api/questions/bulk-action',
+    {
+      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
+      raw: true,
+    },
+  )
+  const target = BULK_TARGET_STATUS[action]
+  const distinct = [...new Set(ids)]
+  if (!http || target === undefined || result.data.affected >= distinct.length) return result
+  const notUpdated: number[] = []
+  for (const id of distinct) {
+    try {
+      if ((await fetchQuestion(id)).status !== target) notUpdated.push(id)
+    } catch {
+      notUpdated.push(id)
+    }
+  }
+  return { ...result, notUpdated }
 }
 
-/**
- * #8 `POST /api/questions/:id/ai-explanation`. Resolves for every HTTP status with
- * `{status, headers, body}` (`api.raw`), because the card reads the reply exactly as the live script
- * does (FR-M04-46): JSON with `message`, JSON without one ("HTTP {status}"), a non-JSON body (the
- * caller parses it) or, for a network failure, a rejected `ApiError` (`NETWORK_ERROR`).
- * Success is HTTP 200 `{ok: true, message}`.
- */
-export function generateAiExplanation(
-  id: number,
-  options: { force?: boolean; signal?: AbortSignal } = {},
-): Promise<{ status: number; headers: Record<string, string>; body: unknown }> {
-  return api.raw('POST', `/api/questions/${String(id)}/ai-explanation`, undefined, {
-    ...(options.force ? { query: { force: 1 } } : {}),
-    ...(options.signal ? { signal: options.signal } : {}),
-  })
-}
+
