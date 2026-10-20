@@ -83,15 +83,18 @@ describe('exam seed (BE-15)', () => {
   })
 
   describe('question step (BE-09 wire-up)', () => {
+    // Both cases must hold with and without BE-09 (migration 0011 creates the real `questions` table).
     it('does not run while the questions table does not exist', async () => {
-      expect(await questionTableExists(db.prisma)).toBe(false)
+      if (await questionTableExists(db.prisma)) return // BE-09 is merged: the "no table" case cannot occur
       const loader = vi.fn()
       await runSeeds([createExamSeed({ questionLoader: loader })], { prisma: db.prisma })
       expect(loader).not.toHaveBeenCalled()
     })
 
     it('hands the PoC bank and the reserved ids to the loader once the questions table exists; says so when none is wired', async () => {
-      await db.query(`create table questions (id bigint generated always as identity primary key)`)
+      // Create a stub table only when BE-09's real one is absent, and drop only the table this test created.
+      const preexisting = await questionTableExists(db.prisma)
+      if (!preexisting) await db.query(`create table questions (id bigint generated always as identity primary key)`)
       try {
         expect(await questionTableExists(db.prisma)).toBe(true)
         const loader = vi.fn().mockResolvedValue(undefined)
@@ -106,7 +109,7 @@ describe('exam seed (BE-15)', () => {
         expect(info).toHaveBeenCalledWith(expect.stringContaining('no PocQuestionLoader is wired'))
         info.mockRestore()
       } finally {
-        await db.query(`drop table questions`)
+        if (!preexisting) await db.query(`drop table questions`)
       }
     })
   })
