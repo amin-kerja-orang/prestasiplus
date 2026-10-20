@@ -11,7 +11,8 @@ import type { Ctx } from '../services'
 
 /** Longest query-string value read (BE-NFR-25); a longer one is a 422 on that key. */
 export const QUERY_VALUE_MAX = 64
-/** Most distinct query keys read; more is a 422. */export const QUERY_KEYS_MAX = 20
+/** Most distinct query keys read; more is a 422. */
+export const QUERY_KEYS_MAX = 20
 /** Seconds a client is told to wait after an overload answer. */
 export const OVERLOAD_RETRY_AFTER = 5
 

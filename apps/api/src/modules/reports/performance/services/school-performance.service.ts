@@ -215,7 +215,12 @@ export class SchoolPerformanceService {
     const fr = await this.frame(ctx)
     const lc = fr.classes.filter((c) => c.levelSlug === level)
     const students = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))].sort(compareIds)
-    const total = shown(ctx, sumOf(students, fr.byUser))
+    // Non-staff: a class row hidden for having 1 to 4 pupils would be recovered as total minus shown rows, so the total is hidden too.
+    const hiddenClass = !isStaff(ctx.role) && lc.some((c) => {
+      const n = sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors
+      return n > 0 && !meetsCohort(ctx.role, n)
+    })
+    const total = hiddenClass ? { sessions: 0, accuracy: 0 } : shown(ctx, sumOf(students, fr.byUser))
 
     const groupKey = (c: ClassInfo): [number, string] =>
       c.kind === 'school_class' ? [2, ''] : c.subjectId === null ? [0, ''] : [1, c.subjectName ?? '']

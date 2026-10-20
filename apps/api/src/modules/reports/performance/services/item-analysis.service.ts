@@ -136,24 +136,6 @@ export class ItemAnalysisService {
     const suppressed = !meetsCohort(ctx.role, contributors)
     const usable = suppressed ? [] : items
 
-    const correct = usable.filter(isCorrect).length
-    const answers = hasSittings && !suppressed ? usable.length : null
-    const subjects = [...groupBy(usable, (i) => i.subjectId)]
-      .map(([subjectId, list]) => {
-        const p = new Set(list.map((i) => i.userId)).size
-        const ok = meetsCohort(ctx.role, p)
-        const good = list.filter(isCorrect).length
-        return {
-          subjectId,
-          name: (list[0] as BijakItemFact).subjectName,
-          pupils: ok ? p : 0,
-          questions: ok ? new Set(list.map((i) => i.questionId)).size : 0,
-          accuracy: ok ? round(capPercent(pct(good, list.length)), 1) : 0,
-          wrong: ok ? list.length - good : 0,
-        }
-      })
-      .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId))
-
     // Questions: one row per question, hardest first.
     const denominator = Math.max(1, pupils.length)
     const labels = await this.classLabels(usable)
@@ -181,6 +163,26 @@ export class ItemAnalysisService {
       else if (level === 'Sederhana') difficulty.sederhana++
       else difficulty.sukar++
     }
+    // Non-staff totals cover only the questions that are shown, so none can be recovered by subtraction.
+    const basis = isStaff(ctx.role) ? usable : all.slice(0, SCHOOL_QUESTION_CAP).flatMap((q) => q.facts)
+    const correct = basis.filter(isCorrect).length
+    const answers = hasSittings && !suppressed ? basis.length : null
+    const subjects = [...groupBy(basis, (i) => i.subjectId)]
+      .map(([subjectId, list]) => {
+        const p = new Set(list.map((i) => i.userId)).size
+        const ok = meetsCohort(ctx.role, p)
+        const good = list.filter(isCorrect).length
+        return {
+          subjectId,
+          name: (list[0] as BijakItemFact).subjectName,
+          pupils: ok ? p : 0,
+          questions: ok ? new Set(list.map((i) => i.questionId)).size : 0,
+          accuracy: ok ? round(capPercent(pct(good, list.length)), 1) : 0,
+          wrong: ok ? list.length - good : 0,
+        }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId))
+
     const questions = all.slice(0, SCHOOL_QUESTION_CAP).map((q, i) => {
       const wrong = q.facts.filter((f) => !isCorrect(f))
       const byPupil = groupBy(wrong, (f) => f.userId)
@@ -227,7 +229,7 @@ export class ItemAnalysisService {
       students: pupils.length,
       answers,
       correct: answers === null ? null : correct,
-      accuracy: answers === null ? null : round(capPercent(pct(correct, usable.length)), 1),
+      accuracy: answers === null ? null : round(capPercent(pct(correct, basis.length)), 1),
       difficulty,
       gps: { value: null, band: null, entries: 0, years: [] },
       subjects,

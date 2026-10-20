@@ -149,6 +149,26 @@ describe('Cohort rules on the school totals (M1)', () => {
   })
 })
 
+describe('Level detail: class remainder rule', () => {
+  it('a hidden class of 3 pupils cannot be recovered as level total minus shown class rows', async () => {
+    const x = world()
+    x.directory.addSchool({ id: 's1' })
+    const a = ['21', '22', '23', '24', '25', '26', '27']
+    const c = ['31', '32', '33']
+    x.classes.add({ id: 'A', schoolId: 's1', name: 'Kelas A' }, a).add({ id: 'C', schoolId: 's1', name: 'Kelas C' }, c)
+    for (const id of [...a, ...c]) {
+      x.directory.addPupil({ id, schoolId: 's1' })
+      x.bijak.addSitting(sitting({ userId: id, score: 5 }))
+    }
+    const r = await x.school.level(ctxOf('student', '21'), 't4')
+    expect(r.classRows.map((row) => [row.classId, row.sessions])).toEqual([['A', 7], ['C', 0]])
+    expect(r).toMatchObject({ students: 10, sessions: 0, accuracy: 0 })
+    const staff = await x.school.level(ctxOf('school_admin', 'sa1'), 't4')
+    expect(staff).toMatchObject({ sessions: 10, accuracy: 50 })
+    expect(staff.classRows.map((row) => row.sessions)).toEqual([7, 3])
+  })
+})
+
 describe('Tingkatan', () => {
   it('cards list t4 and t5 with distinct active members', async () => {
     expect(await w.school.levels(schoolAdmin)).toEqual([

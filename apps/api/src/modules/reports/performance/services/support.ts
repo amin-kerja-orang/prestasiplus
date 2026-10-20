@@ -26,10 +26,10 @@ export function toCard(c: ClassInfo): PerformanceClassCard {
   }
 }
 
-/** Pupils of the classes a teacher owns (empty for other roles): who the teacher may see by name. */
+/** Pupils of the ACTIVE classes a teacher owns (empty for other roles): who the teacher may see by name. */
 export async function ownPupilIds(ports: PerformancePorts, ctx: Ctx): Promise<Set<string>> {
   if (ctx.role !== 'teacher') return new Set()
-  const classes = await ports.classes.classesForTeacher(ctx.userId, { includeInactive: true })
+  const classes = await ports.classes.classesForTeacher(ctx.userId)
   const rosters = await ports.classes.membersOf(classes.map((c) => c.id))
   return new Set([...rosters.values()].flat())
 }

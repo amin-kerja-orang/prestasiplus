@@ -74,6 +74,25 @@ describe('Analisa Item: school', () => {
     expect(r.difficulty).toEqual({ mudah: 0, sederhana: 1, sukar: 0 })
   })
 
+  it('non-staff totals cover only the shown questions, so none can be recovered by subtraction', async () => {
+    const r = await w.items.school(ctxOf('student', '1'), {})
+    expect(r.questions.map((q) => q.questionId)).toEqual(['100'])
+    expect(r).toMatchObject({ answers: 6, correct: 2, accuracy: 33.3 })
+    expect(r.subjects).toEqual([{ subjectId: '1', name: 'Bahasa Melayu', pupils: 6, questions: 1, accuracy: 33.3, wrong: 4 }])
+    expect(r.answers).toBe(r.questions.reduce((n, q) => n + q.attempts, 0))
+    const staff = await w.items.school(sa, {})
+    expect(staff).toMatchObject({ answers: 8, correct: 4 })
+  })
+
+  it('a teacher whose only class is inactive sees no names (active classes only)', async () => {
+    w.classes.add({ id: '90', schoolId: 's1', teacherId: 't5', isActive: false }, ['2', '3', '4'])
+    const r = await w.items.school(ctxOf('teacher', 't5'), {})
+    expect(r.questions[0]?.wrongPupils.every((p) => p.name === 'Murid' && p.userId === '0')).toBe(true)
+    w.classes.add({ id: '91', schoolId: 's1', teacherId: 't5' }, ['2'])
+    const after = await w.items.school(ctxOf('teacher', 't5'), {})
+    expect(after.questions[0]?.wrongPupils.map((p) => p.name)).toEqual(['Murid Ujian 2', 'Murid', 'Murid'])
+  })
+
   it('privacy: an officer sees class labels but neither names nor ids', async () => {
     const r = await w.items.school(officer('Daerah A'), {}, 's1')
     expect(r.variant).toBe('byId')

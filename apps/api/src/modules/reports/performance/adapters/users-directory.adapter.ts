@@ -5,6 +5,8 @@ import { SchoolsRepository, type SchoolRow } from '../../../schools'
 import { UsersRepository } from '../../../users'
 import type { DirectoryPort, PupilRef, SchoolRef } from '../ports'
 
+/** Ids per batched user read. */
+export const USER_CHUNK = 1000
 const PAGE = 500
 const TEACHER_LIMIT = 5000
 
@@ -29,10 +31,15 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
   ) {}
 
+  /** Overridden by tests; production uses USER_CHUNK. */
+  chunk = USER_CHUNK
+
   /** One batched user read; one level lookup per distinct grade. */
   async users(ids: readonly string[]): Promise<Map<string, PupilRef>> {
     const out = new Map<string, PupilRef>()
-    const records = await this.userRepo.getMany(ids)
+    const unique = [...new Set(ids)]
+    const records = []
+    for (let i = 0; i < unique.length; i += this.chunk) records.push(...(await this.userRepo.getMany(unique.slice(i, i + this.chunk))))
     const levels = new Map<number, { id: string; slug: string } | null>()
     for (const u of records) {
       let level: { id: string; slug: string } | null = null
