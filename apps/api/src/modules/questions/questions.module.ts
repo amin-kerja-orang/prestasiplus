@@ -1,10 +1,12 @@
 import { Module, type OnModuleInit } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit'
+import { ThrottleModule } from '../../common/throttle'
 import { CurriculumModule, CurriculumPorts } from '../curriculum'
 import { FilesModule } from '../files'
 import { UsersModule } from '../users'
 import { QuestionCountsAdapter } from './curriculum-bridge'
+import { AdminQuestionsController, GuruQuestionsController, StructuredQuestionsController } from './http'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
 
@@ -13,11 +15,11 @@ import { QuestionsService } from './questions.service'
  * (BE-10 workflow, BE-12 practice, BE-15, BE-17, BE-18, BE-41). It plugs its active-question counts
  * into the curriculum catalogue through `CurriculumPorts` (no curriculum file is edited).
  *
- * Part C adds the three controllers (`http/index.ts`) to `controllers` below.
+ * The three controllers live in `http/` (BE-09 Part C).
  */
 @Module({
-  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule],
-  controllers: [],
+  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController],
   providers: [QuestionsRepository, QuestionsService, QuestionCountsAdapter],
   exports: [QuestionsRepository, QuestionsService],
 })
