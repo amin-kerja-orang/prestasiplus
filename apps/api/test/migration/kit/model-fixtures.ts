@@ -71,6 +71,14 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
   notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
+  // chat_messages (BE-43): the thread and its owner must exist; role has a check.
+  chat_messages: async (query) => {
+    const user = await parentUser(query)
+    const thread = await query<{ id: string }>(`insert into chat_threads (user_id) values ($1) returning id::text as id`, [user])
+    return { thread_id: (thread[0] as { id: string }).id, user_id: user, role: 'user' }
+  },
+  // chat_threads (BE-43): the owner must exist.
+  chat_threads: async (query) => ({ user_id: await parentUser(query) }),
   // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
   // classrooms (BE-17): the level must exist; the academic year has a check.

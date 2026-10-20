@@ -6,6 +6,8 @@
   "challenge_completions",
   "challenges",
   "chapters",
+  "chat_messages",
+  "chat_threads",
   "classrooms",
   "coin_ledger",
   "comp_students",

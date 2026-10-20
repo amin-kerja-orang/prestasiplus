@@ -154,6 +154,11 @@ export const EnvSchema = z.object({
   THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-20 (M11 monitoring and teacher report). Throttle per user; the code applies the default when unset.
   THROTTLE_ANALYTICS_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-43 (Cikgu Alesa). Throttles per user; the code applies the defaults when unset (send 20, read 120, write 30, CSV export 10 per minute).
+  THROTTLE_CIKGU_SEND_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
