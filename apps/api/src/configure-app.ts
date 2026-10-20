@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
+import { securityHeaders } from './common/security/security-headers'
 import { requestIdMiddleware } from './common/request/request-id'
 import { DEFAULT_COOKIE_NAME } from './modules/auth/auth.constants'
 import { readCookie } from './modules/auth/cookies'
@@ -53,6 +54,7 @@ export function configureApp(app: INestApplication): void {
   const hops = trustProxyHops(app.get(ConfigService).get('TRUST_PROXY_HOPS'))
   ;(app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set('trust proxy', hops)
   app.setGlobalPrefix('api')
+  app.use(securityHeaders({ production: app.get(ConfigService).get('NODE_ENV') === 'production' }))
   app.use(requestIdMiddleware) // before pino-http, so `req.id` is set when it logs
   // A larger JSON parser for the import route ONLY. `app.use` runs now, before Nest registers its own
   // parsers at init; a parser that has read the body sets `req._body`, so the later (100kb) parser skips it.

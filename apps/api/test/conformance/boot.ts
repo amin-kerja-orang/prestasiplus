@@ -65,11 +65,15 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_IMPORT_PER_HOUR: '100000',
     THROTTLE_BIJAK_PAPERS_READ_PER_MINUTE: '100000',
     THROTTLE_BIJAK_GENERATE_PER_MINUTE: '100000',
+    THROTTLE_CLASSES_READ_PER_MINUTE: '100000',
+    THROTTLE_CLASSES_WRITE_PER_MINUTE: '100000',
+    THROTTLE_CLASS_JOIN_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
+    BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
   }
 }
 

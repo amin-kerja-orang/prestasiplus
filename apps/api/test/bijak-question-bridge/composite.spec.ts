@@ -163,3 +163,31 @@ describe('CompositePaperQuestionSource', () => {
     expect(bank.getMany).not.toHaveBeenCalled()
   })
 })
+
+describe('BIJAK_POC_QUESTIONS off (production: no PoC source)', () => {
+  it('attempts: reserved PoC ids are not served and never reach BE-09; bank ids still are', async () => {
+    const bank = fakeAttemptSource('bank')
+    const out = await new CompositeBijakQuestionSource(null, bank).loadQuestions(['9000000001', '501', '9000000002'])
+    expect([...out.keys()]).toEqual(['501'])
+    expect(bank.loadQuestions).toHaveBeenCalledTimes(1)
+    expect(bank.loadQuestions).toHaveBeenCalledWith(['501'])
+  })
+
+  it('attempts: a paper of PoC ids only loads nothing and calls no source', async () => {
+    const bank = fakeAttemptSource('bank')
+    const out = await new CompositeBijakQuestionSource(null, bank).loadQuestions(['9000000001'])
+    expect(out.size).toBe(0)
+    expect(bank.loadQuestions).not.toHaveBeenCalled()
+  })
+
+  it('papers: getMany omits reserved PoC ids, pool is empty', async () => {
+    const bank = fakePaperSource('bank')
+    const src = new CompositePaperQuestionSource(null, bank)
+    const out = await src.getMany(['9000000001', '7'])
+    expect([...out.keys()]).toEqual(['7'])
+    expect(bank.getMany).toHaveBeenCalledWith(['7'])
+    const p = await src.pool('MAT1-A', SCOPE)
+    expect(p.entries).toEqual([])
+    expect(p.groups.size).toBe(0)
+  })
+})
