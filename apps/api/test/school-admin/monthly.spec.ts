@@ -55,7 +55,7 @@ describe('GET /admin-sekolah/laporan-bulanan', () => {
     expect(r.subjects.rows).toEqual([{ name: 'Matematik Ujian', accuracy: 80, answers: 50, pupils: 5 }])
     expect(r.subjects.strongest?.name).toBe('Matematik Ujian')
     // generatedAt is the request minute.
-    expect(r.generatedAt).toMatch(/:00\+08:00$/)
+    expect(r.generatedAt).toMatch(/:00\.000\+08:00$/)
   })
 
   it('a past month: prev and next, its own subject rows', async () => {

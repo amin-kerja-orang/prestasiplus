@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminActivityReportSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { activePupilCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
+import { activePupilCount, addPupil, addSubject, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
 describe('GET /admin-sekolah/laporan-aktiviti', () => {
@@ -20,7 +20,9 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     s2 = await schoolIdOf(t.db, 'DEMO002')
     await addSchoolAdmin(t.db, s2, 'admin.b@report.test')
     // School A: 5 pupils with sessions today, one that never logged in, one teacher who never logged in.
-    await addPupilsWithSessions(t.db, s1, 5, { mode: 'chapter', questions: 10, correct: 7, completedAt: '2026-10-19T08:00:00+08:00', seconds: 120 }, 'Murid Aktiviti')
+    // A subject makes the seed write practice_answers: the pills count "aktif" from the answer log.
+    const subject = await addSubject(t.db, 'AKT', 'Subjek Aktiviti')
+    await addPupilsWithSessions(t.db, s1, 5, { subjectId: subject, mode: 'chapter', questions: 10, correct: 7, completedAt: '2026-10-19T08:00:00+08:00', seconds: 120 }, 'Murid Aktiviti')
     neverLoggedPupil = await addPupil(t.db, s1, 'Murid Belum Masuk', { loggedIn: false })
     neverLoggedTeacher = await addTeacher(t.db, s1, 'Guru Belum Masuk', false)
     // School B: one pupil and one session.

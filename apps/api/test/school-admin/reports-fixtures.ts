@@ -74,7 +74,7 @@ export async function addSubject(db: TestDatabase, code: string, name: string): 
 export async function addLevel(db: TestDatabase, code: string, name: string, grade: number): Promise<string> {
   const rows = await db.query<{ id: string }>(
     `insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active, grade, created_at, updated_at)
-     values ($1, $2, $2, 'upper_secondary', 'KSSM', $3, true, $3, now(), now()) returning id::text`,
+     values ($1, $2, $2, 'upper_secondary', 'KSSM', $3::int, true, $3::int, now(), now()) returning id::text`,
     [code, name, grade],
   )
   return rows[0]?.id as string
