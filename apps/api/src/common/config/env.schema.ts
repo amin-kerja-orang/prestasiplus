@@ -162,6 +162,13 @@ export const EnvSchema = z.object({
   THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-33 (runtime): HTTP server timeouts, graceful shutdown, metrics switch. Optional; the code applies the defaults
+  // (REQUEST_TIMEOUT_MS 120000, HEADERS_TIMEOUT_MS 60000, KEEP_ALIVE_TIMEOUT_MS 65000, SHUTDOWN_GRACE_MS 25000, METRICS_ENABLED true).
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().min(0).max(3_600_000).optional(),
+  HEADERS_TIMEOUT_MS: z.coerce.number().int().min(0).max(3_600_000).optional(),
+  KEEP_ALIVE_TIMEOUT_MS: z.coerce.number().int().min(0).max(3_600_000).optional(),
+  SHUTDOWN_GRACE_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  METRICS_ENABLED: z.enum(['true', 'false']).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 

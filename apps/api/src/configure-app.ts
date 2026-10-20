@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
+import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
 import { requestIdMiddleware } from './common/request/request-id'
 import { DEFAULT_COOKIE_NAME } from './modules/auth/auth.constants'
@@ -55,6 +56,8 @@ export function configureApp(app: INestApplication): void {
   ;(app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set('trust proxy', hops)
   app.setGlobalPrefix('api')
   app.use(securityHeaders({ production: app.get(ConfigService).get('NODE_ENV') === 'production' }))
+  // Before everything else that can answer, so 4xx from guards and 404s are counted too.
+  if (app.get(ConfigService).get('METRICS_ENABLED') !== 'false') app.use(app.get(MetricsService).middleware)
   app.use(requestIdMiddleware) // before pino-http, so `req.id` is set when it logs
   // A larger JSON parser for the import route ONLY. `app.use` runs now, before Nest registers its own
   // parsers at init; a parser that has read the body sets `req._body`, so the later (100kb) parser skips it.

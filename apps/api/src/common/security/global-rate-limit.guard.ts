@@ -3,7 +3,10 @@ import type { Request } from 'express'
 
 import { RateLimiter, type RateLimitSpec } from '../throttle/rate-limit'
 
-/** Default ceiling per client address per minute on every `/api` route except the health check. */
+/** Probe and scrape routes: never throttled (orchestrator and Prometheus poll them). */
+const EXEMPT_PATHS = new Set(['/api/health', '/api/ready', '/api/metrics'])
+
+/** Default ceiling per client address per minute on every `/api` route except health, ready and metrics. */
 export const GLOBAL_RATE_SPEC: RateLimitSpec = {
   bucket: 'global',
   env: 'THROTTLE_GLOBAL_PER_MINUTE',
@@ -22,7 +25,7 @@ export class GlobalRateLimitGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>()
     const path = (req.originalUrl ?? req.url).split('?')[0]
-    if (path === '/api/health' || path === '/api/health/') return true
+    if (EXEMPT_PATHS.has((path ?? '').replace(/\/$/, ''))) return true
     this.limiter.consume(GLOBAL_RATE_SPEC, req.ip ?? req.socket.remoteAddress ?? 'unknown')
     return true
   }
