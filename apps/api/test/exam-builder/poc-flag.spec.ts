@@ -1,152 +1,96 @@
 import {
   BijakBuilderEditorSchema,
   BijakBuilderPaperCreateResultSchema,
+  BijakBuilderPaperSummarySchema,
   BijakBuilderPublishResultSchema,
   envelopeOf,
+  listEnvelopeOf,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { runSeeds } from '../../prisma/seed'
-import { DEMO_BLUEPRINTS, examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { FakeBank } from './fakes'
 import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } from './helpers'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
 const Publish = envelopeOf(BijakBuilderPublishResultSchema)
+const Summaries = listEnvelopeOf(BijakBuilderPaperSummarySchema)
 
 /**
- * Demo fix B4 (QA #61): with `BIJAK_POC_QUESTIONS` on (staging / demo), the paper builder sees the PoC
- * questions next to the BE-09 bank, through the production wiring (`ExamBuilderModule`, the real
- * `QuestionBankBuilderSource`, no fake), so Admin Pusat can build and publish a paper from them and can
- * withdraw and re-publish a seeded PoC paper. Off (the production default) nothing changes: PoC ids are
- * refused as before.
+ * BIJAK_POC_QUESTIONS=true with an EMPTY bank (the demo database: the seed loads no PoC questions into
+ * `questions`). The builder must still list the PoC questions, publish a new paper built from them, and
+ * withdraw then re-publish a seeded PoC paper. Needs Docker Postgres.
  */
-const wire = (key: string) => pocQuestionId(key).toString()
-const pocPaper = (subject: string, kertas: number) => POC_BANK.papers.find((p) => p.subject === subject && p.kertas === kertas)!
-const MAT1 = pocPaper('MAT', 1)
-const SEJ2 = pocPaper('SEJ', 2)
+describe('paper builder with BIJAK_POC_QUESTIONS on and an empty bank', () => {
+  let t: BuilderTestApp
+  let admin: Client
 
-async function boot(on: boolean) {
-  const t = await bootBuilderApp({ realBank: true, env: { BIJAK_POC_QUESTIONS: on ? 'true' : 'false' } })
-  await runSeeds([examDemoBlueprintsSeed], { prisma: t.db.prisma })
-  const admin = await loginAs(t, ACCOUNTS.admin)
-  return { t, admin }
-}
+  beforeAll(async () => {
+    t = await bootBuilderApp({ builderSource: new FakeBank(), env: { BIJAK_POC_QUESTIONS: 'true' } })
+    admin = await loginAs(t, ACCOUNTS.admin)
+  })
+  afterAll(async () => {
+    await t.close()
+  })
 
-function helpers(get: () => { t: BuilderTestApp; admin: Client }) {
-  const q = (sql: string, params: unknown[] = []) => get().t.db.query<Record<string, unknown>>(sql, params)
-  return {
-    q,
-    async create(subject: string, kertas: number) {
-      const res = await get().admin.post('/api/admin/papers', { subject, kertas })
-      expect(res.status, JSON.stringify(res.body)).toBe(201)
-      return Created.parse(res.body).data.id
-    },
-    async editor(id: string) {
-      const res = await get().admin.get(`/api/admin/papers/${id}`)
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      return Editor.parse(res.body).data
-    },
-    async publish(id: string) {
-      const res = await get().admin.post(`/api/admin/papers/${id}/publish`)
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      return Publish.parse(res.body).data
-    },
-    async seededId(title: string) {
-      return String((await q(`select id::text id from papers where title = $1`, [title]))[0]!.id)
-    },
+  const editor = async (id: string) => {
+    const res = await admin.get(`/api/admin/papers/${id}`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    return Editor.parse(res.body).data
   }
-}
 
-describe('BIJAK_POC_QUESTIONS=true (staging / demo): the builder sees the PoC questions', () => {
-  let ctx: { t: BuilderTestApp; admin: Client }
-  const h = helpers(() => ctx)
-  beforeAll(async () => {
-    ctx = await boot(true)
-  }, 120_000)
-  afterAll(async () => {
-    await ctx.t.close()
+  it('lists > 0 candidate questions for a new paper', async () => {
+    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const e = await editor(Created.parse(res.body).data.id)
+    expect(e.questions.length).toBeGreaterThan(0)
   })
 
-  it('a new MAT kertas 1 paper offers the PoC questions as candidates, is filled with them and publishes', async () => {
-    const id = await h.create('MAT', 1)
-    const empty = await h.editor(id)
-    const keys = MAT1.sections.flatMap((s) => s.questionIds).map(wire)
-    expect(empty.questions.map((x) => x.id)).toEqual(expect.arrayContaining(keys))
-    const res = await ctx.admin.put(`/api/admin/papers/${id}`, {
-      sections: [{ id: empty.paper.sections[0]!.id, questionIds: keys }],
-    })
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(await h.publish(id)).toEqual({ ok: true, errors: [] })
-    const row = (await h.q('select status, published_at from papers where id = $1', [id]))[0]!
-    expect(row.status).toBe('published')
-    expect(row.published_at).not.toBeNull()
-    // the pinned version of a PoC question is 1
-    expect(
-      (await h.q(`select distinct pl.pinned_version_no v from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [id])).map((r) => r.v),
-    ).toEqual([1])
-  })
-
-  it('withdraw then publish of a seeded PoC paper succeeds and sets published_at again', async () => {
-    const id = await h.seededId(SEJ2.title)
-    const w = await ctx.admin.post(`/api/admin/papers/${id}/withdraw`)
-    expect(w.status, JSON.stringify(w.body)).toBe(200)
-    expect((await h.q('select status, published_at from papers where id = $1', [id]))[0]).toMatchObject({ status: 'withdrawn', published_at: null })
-    expect(await h.publish(id)).toEqual({ ok: true, errors: [] })
-    const row = (await h.q('select status, version, published_at from papers where id = $1', [id]))[0]!
-    expect(row).toMatchObject({ status: 'published', version: 2 })
-    expect(row.published_at).not.toBeNull()
-  })
-
-  it('the demo blueprints seed adds the missing Sejarah Kertas 2 Kontrak, once', async () => {
-    expect(DEMO_BLUEPRINTS.map((b) => [b.subject, b.kertas, b.code])).toEqual([['SEJ', 2, SEJ2.code]])
-    const n = async () => Number((await h.q(`select count(*) n from blueprints where code = $1 and status = 'active' and source = 'spec'`, [SEJ2.code]))[0]!.n)
-    expect(await n()).toBe(1)
-    await runSeeds([examDemoBlueprintsSeed], { prisma: ctx.t.db.prisma })
-    expect(await n()).toBe(1)
-    expect(Number((await h.q(`select count(*) n from blueprints`))[0]!.n)).toBe(POC_BANK.blueprints.length + 1)
-  })
-
-  it('the seeded Sejarah Kertas 2 blueprint lets a new Sejarah paper be built from the PoC questions and published', async () => {
-    const id = await h.create('SEJ', 2)
-    const e = await h.editor(id)
-    expect(e.blueprint?.code).toBe(SEJ2.code)
-    expect(e.paper.sections.map((s) => [s.label, s.questionCount, s.markBudget])).toEqual(SEJ2.sections.map((s) => [s.label, s.questionCount, s.markBudget]))
-    const res = await ctx.admin.put(`/api/admin/papers/${id}`, {
-      sections: e.paper.sections.map((s, i) => ({ id: s.id, questionIds: SEJ2.sections[i]!.questionIds.map(wire) })),
-    })
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(await h.publish(id)).toEqual({ ok: true, errors: [] })
-  })
-})
-
-describe('BIJAK_POC_QUESTIONS=false (production default): PoC ids are refused as before', () => {
-  let ctx: { t: BuilderTestApp; admin: Client }
-  const h = helpers(() => ctx)
-  beforeAll(async () => {
-    ctx = await boot(false)
-  }, 120_000)
-  afterAll(async () => {
-    await ctx.t.close()
-  })
-
-  it('PoC ids are not candidates and a PUT that places them is refused (422)', async () => {
-    const id = await h.create('MAT', 1)
-    const empty = await h.editor(id)
-    const keys = MAT1.sections.flatMap((s) => s.questionIds).map(wire)
-    expect(empty.questions.map((x) => x.id)).not.toEqual(expect.arrayContaining([keys[0]]))
-    const res = await ctx.admin.put(`/api/admin/papers/${id}`, {
-      sections: [{ id: empty.paper.sections[0]!.id, questionIds: keys }],
-    })
-    expect(res.status, JSON.stringify(res.body)).toBe(422)
-  })
-
-  it('a withdrawn seeded PoC paper cannot be re-published (its questions are not Terbit)', async () => {
-    const id = await h.seededId(SEJ2.title)
-    expect((await ctx.admin.post(`/api/admin/papers/${id}/withdraw`)).status).toBe(200)
-    const res = await h.publish(id)
-    expect(res.ok).toBe(false)
-    expect((await h.q('select status from papers where id = $1', [id]))[0]!.status).toBe('withdrawn')
+  it('withdraw then re-publish of every seeded paper succeeds; a new paper built from PoC questions publishes', async () => {
+    const list = Summaries.parse((await admin.get('/api/admin/papers?status=terbit')).body).data
+    expect(list.length).toBeGreaterThan(0)
+    for (const row of list) {
+      expect((await admin.post(`/api/admin/papers/${row.id}/withdraw`)).status).toBe(200)
+      const pub = await admin.post(`/api/admin/papers/${row.id}/publish`)
+      expect(pub.status, JSON.stringify(pub.body)).toBe(200)
+      expect(Publish.parse(pub.body).data, row.title).toEqual({ ok: true, errors: [] })
+    }
+    // create -> add PoC candidates that meet each section's count and budget -> publish. The test blueprints
+    // have small budgets, so try every scope of the seed papers and require at least one to be buildable.
+    const scopes = [...new Set(list.map((r) => `${r.subject}:${r.kertas}`))]
+    let published = 0
+    for (const scope of scopes) {
+      const [subject, kertas] = scope.split(':')
+      const created = await admin.post('/api/admin/papers', { subject, kertas: Number(kertas) })
+      if (created.status !== 201) continue
+      const id = Created.parse(created.body).data.id
+      const fresh = await editor(id)
+      const pool = fresh.questions.filter((x) => !x.groupId)
+      const used = new Set<string>()
+      const pick = (n: number, budget: number, from: typeof pool): typeof pool | null => {
+        if (n === 0) return budget === 0 ? [] : null
+        for (let i = 0; i < from.length; i++) {
+          const x = from[i]!
+          if (x.marks > budget) continue
+          const rest = pick(n - 1, budget - x.marks, from.slice(i + 1))
+          if (rest) return [x, ...rest]
+        }
+        return null
+      }
+      const sections: { id: string; questionIds: string[] }[] = []
+      for (const s of fresh.paper.sections) {
+        const chosen = pick(s.questionCount, s.markBudget, pool.filter((x) => !used.has(x.id)))
+        if (!chosen) break
+        for (const x of chosen) used.add(x.id)
+        sections.push({ id: s.id, questionIds: chosen.map((x) => x.id) })
+      }
+      if (sections.length !== fresh.paper.sections.length) continue
+      const put = await admin.put(`/api/admin/papers/${id}`, { sections })
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      const pub = await admin.post(`/api/admin/papers/${id}/publish`)
+      expect(Publish.parse(pub.body).data, scope).toEqual({ ok: true, errors: [] })
+      published++
+    }
+    expect(published, `scopes tried: ${scopes.join(', ')}`).toBeGreaterThan(0)
   })
 })

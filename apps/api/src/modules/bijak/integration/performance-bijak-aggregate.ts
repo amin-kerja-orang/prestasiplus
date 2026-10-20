@@ -6,6 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { QuestionsRepository } from '../../questions'
 import type { QuestionRecord } from '../../questions/types'
+import { bijakCodeOf } from '../papers/subject-codes'
 import { compareIds } from '../../reports/performance/domain/rules'
 import type {
   BijakAggregatePort,
@@ -126,7 +127,8 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
   ) {}
 
-  async sittings(q: BijakSittingQuery): Promise<BijakSittingFact[]> {
+  async sittings(query: BijakSittingQuery): Promise<BijakSittingFact[]> {
+    const q = await withSubjectCode(query, this.curriculum)
     const out: BijakSittingFact[] = []
     for (const where of this.wheres(q, true)) {
       const rows = await this.prisma.client.$queryRaw<SittingRow[]>`
@@ -161,7 +163,8 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
     return out.sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime() || compareIds(a.attemptId, b.attemptId))
   }
 
-  async totals(q: BijakSittingQuery, groupBy: BijakGroupBy): Promise<BijakTotals[]> {
+  async totals(query: BijakSittingQuery, groupBy: BijakGroupBy): Promise<BijakTotals[]> {
+    const q = await withSubjectCode(query, this.curriculum)
     const key = KEYS[groupBy]
     const named = groupBy === 'subject' || groupBy === 'user_subject'
     const merged = new Map<string, BijakTotals>()
@@ -222,7 +225,8 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
     )
   }
 
-  async items(q: BijakItemQuery): Promise<BijakItemFact[]> {
+  async items(query: BijakItemQuery): Promise<BijakItemFact[]> {
+    const q = await withSubjectCode(query, this.curriculum)
     const { questionIds, ...sittingQuery } = q
     const wantedQuestions = cleanIds(questionIds)
     if (wantedQuestions !== undefined && wantedQuestions.length === 0) return []
@@ -336,4 +340,18 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
     }
     return out
   }
+}
+
+/**
+ * A class (BE-17) stores its subject as a curriculum `subjects.id` (decimal string); a sitting stores the Bijak subject
+ * CODE (`exam_attempts.subject`, e.g. MAT). A decimal `subjectId` in a query is therefore translated to the Bijak code
+ * before filtering (an unknown id becomes '' and matches nothing); a code is left as it is.
+ */
+export async function withSubjectCode<T extends { subjectId?: string }>(
+  q: T,
+  curriculum: { subject(id: bigint): Promise<{ code: string } | null> },
+): Promise<T> {
+  if (q.subjectId === undefined || !/^\d+$/.test(q.subjectId)) return q
+  const subject = await curriculum.subject(idFromString(q.subjectId))
+  return { ...q, subjectId: subject ? bijakCodeOf(subject.code) : '' }
 }
