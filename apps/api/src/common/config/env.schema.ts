@@ -122,6 +122,9 @@ export const EnvSchema = z.object({
   // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.
   THROTTLE_CLASSES_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CLASSES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-42 (PKSK). Learner throttles per user; the admin PKSK screens reuse THROTTLE_ADMIN_READ/WRITE_PER_MINUTE.
+  THROTTLE_PKSK_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_PKSK_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   PUBLIC_BASE_URL: z.url().optional(),
   // BE-37 (jobs, OCR, intake files). All optional: the code applies the defaults named in .env.api.example (PC-5 block).

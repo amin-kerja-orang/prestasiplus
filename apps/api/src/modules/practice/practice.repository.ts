@@ -155,6 +155,27 @@ export interface CompletedSession {
   answers: readonly GradedAnswer[]
 }
 
+/** BE-42 (`completeDirect`): a PKSK practice set that is already scored. */
+export interface DirectCompletion {
+  userId: string
+  isTest: boolean
+  domainCode: string
+  level: 'T1' | 'T4'
+  startedAt: Date
+  completedAt: Date
+  answers: { questionId: string; isCorrect: boolean; optionIndex: number | null }[]
+}
+
+export interface DirectCompleted {
+  session: SessionRecord
+  correct: number
+  total: number
+  timeSpentSec: number
+  coinsEarned: number
+  pointsEarned: number
+  completedAt: Date
+}
+
 export interface CompleteInput {
   sessionId: string
   userId: string
@@ -502,6 +523,57 @@ export class PracticeRepository {
       return { done, result }
     })
   }
+  /**
+   * BE-42: records ONE already-completed `pksk` session (mode `pksk`, domain code, target level) with its answer rows, in
+   * ONE transaction (it joins an open one), then runs the caller's `completed` hook (reward). No served list, checks,
+   * revision queue, subject mastery or trial counter (M07 BR-M07-26). Answer rows carry the PKSK question id and the chosen
+   * label only (no curriculum dimensions: a PKSK question has none).
+   */
+  completeDirect<T>(
+    input: DirectCompletion,
+    completed: (done: DirectCompleted, tx: TxClient) => Promise<T>,
+  ): Promise<{ done: DirectCompleted; result: T }> {
+    return this.prisma.transaction(async (tx) => {
+      const total = input.answers.length
+      const correct = input.answers.filter((a) => a.isCorrect).length
+      const cap = MAX_SECONDS_PER_QUESTION * total
+      const spent = Math.max(0, Math.min(cap, Math.round((input.completedAt.getTime() - input.startedAt.getTime()) / 1000)))
+      const coins = sessionCoins('pksk', correct)
+      const points = POINTS_PER_CORRECT * correct
+      const row = await this.db.practiceSession.create({
+        data: {
+          userId: idFromString(input.userId),
+          mode: 'pksk',
+          pkskDomain: input.domainCode,
+          pkskTargetLevel: input.level,
+          questionCount: total,
+          status: 'completed',
+          correctCount: correct,
+          timeSpentSec: spent,
+          coinsEarned: coins,
+          pointsEarned: points,
+          startedAt: input.startedAt,
+          completedAt: input.completedAt,
+          isTest: input.isTest,
+        },
+      })
+      await this.db.practiceAnswer.createMany({
+        data: input.answers.map((a) => ({
+          sessionId: row.id,
+          userId: idFromString(input.userId),
+          questionId: idFromString(a.questionId),
+          selectedLabel: a.optionIndex === null ? null : String.fromCharCode(65 + a.optionIndex),
+          isCorrect: a.isCorrect,
+          answeredAt: input.completedAt,
+          historical: false,
+          isTest: input.isTest,
+        })),
+      })
+      const done: DirectCompleted = { session: toSession(row), correct, total, timeSpentSec: spent, coinsEarned: coins, pointsEarned: points, completedAt: input.completedAt }
+      return { done, result: await completed(done, tx) }
+    })
+  }
+
 
   /** BR-14: a wrong answer adds one to `wrong_times` (or queues the question), a right answer removes it. */
   private async writeQueue(userId: bigint, graded: readonly GradedAnswer[], at: Date): Promise<void> {

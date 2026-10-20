@@ -29240,7 +29240,8 @@
           "working",
           "essay",
           "drawing",
-          "table_fill"
+          "table_fill",
+          "pksk_choice"
         ]
       },
       "QuestionMarkPoint": {
@@ -29472,6 +29473,76 @@
                 },
                 "minItems": 3,
                 "maxItems": 8
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "key",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "pksk_choice"
+                ]
+              },
+              "key": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "options"
+                    ]
+                  },
+                  "correct": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-H]$"
+                    },
+                    "maxItems": 6
+                  }
+                },
+                "required": [
+                  "kind",
+                  "correct"
+                ]
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionOption"
+                },
+                "maxItems": 6
               }
             },
             "required": [
@@ -30581,6 +30652,76 @@
               "mode": {
                 "type": "string",
                 "enum": [
+                  "pksk_choice"
+                ]
+              },
+              "key": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "options"
+                    ]
+                  },
+                  "correct": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-H]$"
+                    },
+                    "maxItems": 6
+                  }
+                },
+                "required": [
+                  "kind",
+                  "correct"
+                ]
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionOption"
+                },
+                "maxItems": 6
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "key",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
                   "match_letter"
                 ]
               },
@@ -31595,6 +31736,76 @@
                           },
                           "minItems": 3,
                           "maxItems": 8
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "prompt",
+                        "marks",
+                        "mode",
+                        "key",
+                        "options"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        "prompt": {
+                          "$ref": "#/components/schemas/QuestionRichText"
+                        },
+                        "marks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stimulusId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "reveal": {
+                          "type": "string",
+                          "enum": [
+                            "after_submit",
+                            "never"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "pksk_choice"
+                          ]
+                        },
+                        "key": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "options"
+                              ]
+                            },
+                            "correct": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-H]$"
+                              },
+                              "maxItems": 6
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "correct"
+                          ]
+                        },
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/QuestionOption"
+                          },
+                          "maxItems": 6
                         }
                       },
                       "required": [
@@ -32692,6 +32903,52 @@
               "mode": {
                 "type": "string",
                 "enum": [
+                  "pksk_choice"
+                ]
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QuestionOption"
+                },
+                "maxItems": 6
+              }
+            },
+            "required": [
+              "label",
+              "prompt",
+              "marks",
+              "mode",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "after_submit",
+                  "never"
+                ]
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
                   "match_letter"
                 ]
               }
@@ -33038,6 +33295,52 @@
                         "mode": {
                           "type": "string",
                           "enum": [
+                            "pksk_choice"
+                          ]
+                        },
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/QuestionOption"
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "prompt",
+                        "marks",
+                        "mode",
+                        "options"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        "prompt": {
+                          "$ref": "#/components/schemas/QuestionRichText"
+                        },
+                        "marks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stimulusId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "reveal": {
+                          "type": "string",
+                          "enum": [
+                            "after_submit",
+                            "never"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
                             "match_letter"
                           ]
                         }
@@ -33347,6 +33650,52 @@
                                     },
                                     "minItems": 3,
                                     "maxItems": 8
+                                  }
+                                },
+                                "required": [
+                                  "label",
+                                  "prompt",
+                                  "marks",
+                                  "mode",
+                                  "options"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "type": "string",
+                                    "maxLength": 10
+                                  },
+                                  "prompt": {
+                                    "$ref": "#/components/schemas/QuestionRichText"
+                                  },
+                                  "marks": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "stimulusId": {
+                                    "$ref": "#/components/schemas/Id"
+                                  },
+                                  "reveal": {
+                                    "type": "string",
+                                    "enum": [
+                                      "after_submit",
+                                      "never"
+                                    ]
+                                  },
+                                  "mode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pksk_choice"
+                                    ]
+                                  },
+                                  "options": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/components/schemas/QuestionOption"
+                                    },
+                                    "maxItems": 6
                                   }
                                 },
                                 "required": [
