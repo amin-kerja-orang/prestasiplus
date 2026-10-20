@@ -8,7 +8,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsFeedbackSheet, DsQuizHeader, DsLoadError } from '@/ds'
+import { DsEmptyState, DsFeedbackSheet, DsQuizHeader, DsLoadError } from '@/ds'
 
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
@@ -29,6 +29,8 @@ const attemptId = computed(() => String(route.params.attemptId))
 
 const view = ref<AttemptPaperView | null>(null)
 const loadError = ref('')
+/** The server refused (403) or has no such attempt (404): same screen for both, no exam shell. */
+const refused = ref(false)
 const answers = ref<Record<string, PartAnswer>>({})
 const flags = ref<string[]>([])
 const picks = ref<Record<string, string[]>>({})
@@ -140,6 +142,7 @@ watch(remaining, (r) => {
 /* ------------------------------------------------------------------------------ load */
 async function load(): Promise<void> {
   loadError.value = ''
+  refused.value = false
   try {
     const v = await server.getAttemptView(user.value, attemptId.value)
     if (v.attempt.status !== 'in_progress') {
@@ -168,10 +171,9 @@ async function load(): Promise<void> {
     clockOffset.value = server.serverNow() - Date.now()
     view.value = v
   } catch (e) {
-    loadError.value =
-      (e as { code?: string }).code === 'not_found'
-        ? 'Percubaan tidak ditemui.'
-        : 'Percubaan tidak dapat dimuatkan.'
+    const code = (e as { code?: string }).code
+    if (code === 'not_found' || code === 'forbidden') refused.value = true
+    else loadError.value = 'Percubaan tidak dapat dimuatkan.'
   }
 }
 
@@ -279,7 +281,7 @@ const flaggedCount = computed(() => flags.value.length)
  * idempotency key, so nothing typed before the tap can be missing from grading (AC-13.2).
  */
 async function submit(auto = false): Promise<void> {
-  if (submitting.value || !autosave) return
+  if (submitting.value || !autosave || !view.value || questions.value.length === 0) return
   submitting.value = true
   submitError.value = ''
   confirmSubmit.value = false
@@ -409,7 +411,20 @@ const feedback = computed(() => {
     </template>
 
     <template #main>
-      <DsLoadError v-if="loadError" class="my-8" :message="loadError" @retry="load" />
+      <DsEmptyState
+        v-if="refused"
+        class="my-8"
+        title="Percubaan ini tidak dijumpai."
+        icon="i-ph-file-x"
+        data-testid="attempt-not-found"
+      >
+        <template #actions>
+          <UButton :to="{ name: 'm28.bijak' }" class="min-h-11" data-testid="attempt-back"
+            >Kembali ke Bijak SPM</UButton
+          >
+        </template>
+      </DsEmptyState>
+      <DsLoadError v-else-if="loadError" class="my-8" :message="loadError" @retry="load" />
       <div
         v-else-if="!view || !current"
         class="flex flex-col gap-3 py-4"
@@ -488,7 +503,7 @@ const feedback = computed(() => {
     </template>
 
     <template #footer>
-      <div class="mx-auto flex w-full max-w-7xl items-center gap-2">
+      <div v-if="view && current" class="mx-auto flex w-full max-w-7xl items-center gap-2">
         <UButton
           type="button"
           color="neutral"
