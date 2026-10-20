@@ -159,6 +159,10 @@ export const EnvSchema = z.object({
   THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-46 (marketplace). WhatsApp number (digits, country code first) for PLATFORM products; the dev default is fictitious. Throttles are per user, counted per process.
+  MARKETPLACE_PLATFORM_WHATSAPP: z.string().trim().regex(/^\d{8,15}$/, 'must be 8 to 15 digits').default('60000000000'),
+  THROTTLE_MARKETPLACE_VIEW_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_MARKETPLACE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
 })
 export type Env = z.infer<typeof EnvSchema>
 
