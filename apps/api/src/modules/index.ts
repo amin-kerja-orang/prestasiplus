@@ -14,10 +14,11 @@ import { SchoolsModule } from './schools'
 import { SubscriptionsModule } from './subscriptions'
 import { UsersModule } from './users'
 import { CurriculumModule } from './curriculum'
+import { QuestionsModule } from './questions'
 import { WalletModule } from './wallet'
 
 /**
  * Module registry. Each lane adds ONE import and ONE array entry for its Nest module
  * (append-only; never reorder). `app.module.ts` imports this list.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule]
