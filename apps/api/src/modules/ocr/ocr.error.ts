@@ -18,3 +18,11 @@ export class OcrError extends Error {
     this.name = 'OcrError'
   }
 }
+
+/** The RSS watchdog stopped a worker (TOO_COMPLEX). The growth is process-wide, so a caller may retry once. */
+export class OcrWatchdogError extends OcrError {
+  constructor() {
+    super('TOO_COMPLEX', 'memory')
+    this.name = 'OcrWatchdogError'
+  }
+}

@@ -5,7 +5,7 @@ import { Worker } from 'node:worker_threads'
 
 import { Inject, Injectable } from '@nestjs/common'
 
-import { OcrError, type OcrErrorCode } from './ocr.error'
+import { OcrError, OcrWatchdogError, type OcrErrorCode } from './ocr.error'
 import { OcrConfig } from './ocr.config'
 import type { PageExtraction, PdfEngine, PdfInspection, RenderedPage } from './ocr.types'
 import { PDF_WORKER_CODE } from './pdf-worker-code'
@@ -62,9 +62,12 @@ interface WorkerMessage {
 @Injectable()
 export class PdfjsEngine implements PdfEngine {
   private readonly slots: Semaphore
+  /** Own pool for the upload-time inspect, so a queue of page jobs can never starve uploads. */
+  private readonly inspectSlots: Semaphore
 
   constructor(@Inject(OcrConfig) private readonly config: OcrConfig) {
     this.slots = new Semaphore(config.workers)
+    this.inspectSlots = new Semaphore(config.workers)
   }
 
   async inspect(bytes: Buffer, signal?: AbortSignal): Promise<PdfInspection> {
@@ -96,7 +99,7 @@ export class PdfjsEngine implements PdfEngine {
   }
 
   private async run<T>(op: Op, bytes: Buffer, extra: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
-    const release = await this.slots.acquire(signal)
+    const release = await (op === 'inspect' ? this.inspectSlots : this.slots).acquire(signal)
     try {
       return await this.execute<T>(op, bytes, extra, signal)
     } finally {
@@ -118,6 +121,7 @@ export class PdfjsEngine implements PdfEngine {
       data.set(bytes)
       const worker = new Worker(PDF_WORKER_CODE, {
         eval: true,
+        env: {}, // the worker sees no variable of this process (no secrets, no DATABASE_URL)
         workerData: {
           op,
           bytes: data,
@@ -143,10 +147,10 @@ export class PdfjsEngine implements PdfEngine {
       // The V8 heap limit does not cover typed arrays (a FlateDecode bomb inflates into ArrayBuffers), and
       // arrayBuffers of a worker are invisible from the parent, so watch the process RSS growth instead.
       const rss0 = process.memoryUsage.rss()
-      const rssLimit = this.config.workerMemoryMb * 2 * 1024 * 1024
+      const rssLimit = this.config.workerRssLimitMb * 1024 * 1024
       const watchdog = setInterval(() => {
         if (process.memoryUsage.rss() - rss0 > rssLimit) {
-          finish(() => reject(new OcrError('TOO_COMPLEX', 'memory')))
+          finish(() => reject(new OcrWatchdogError()))
         }
       }, 25)
       const timer = setTimeout(() => finish(() => reject(new OcrError(timeoutCode, 'timeout'))), timeoutMs)

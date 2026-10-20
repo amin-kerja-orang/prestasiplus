@@ -92,6 +92,7 @@ export class IntakeFilesController {
   }
 
   @Get('batches')
+  @RateLimit(INTAKE_LIMITS.read)
   async list(@Req() req: Req, @Query(new ZodValidationPipe(IntakeBatchListQuerySchema)) query: IntakeBatchListQuery) {
     const { data, meta } = await this.batches.listBatches(authOf(req), query)
     return okList(
@@ -101,6 +102,7 @@ export class IntakeFilesController {
   }
 
   @Get('batches/:id')
+  @RateLimit(INTAKE_LIMITS.read)
   async one(@Req() req: Req, @Param('id') id: string) {
     return ok(IntakeBatchDetailSchema.parse(await this.batches.getBatch(authOf(req), id)))
   }
@@ -110,9 +112,19 @@ export class IntakeFilesController {
   @RateLimit(INTAKE_LIMITS.write)
   @UseGuards(IntakeUploadGuard)
   @UseInterceptors(IntakeUploadInterceptor)
-  async upload(@Req() req: Req, @Param('id') id: string, @UploadedFiles() files: UploadedPart[] | undefined) {
+  async upload(
+    @Req() req: Req,
+    @Param('id') id: string,
+    @UploadedFiles() files: UploadedPart[] | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Work stops when the client goes away before the answer was written.
+    const gone = new AbortController()
+    res.once('close', () => {
+      if (!res.writableFinished) gone.abort()
+    })
     const parts = (files ?? []).filter((f): f is UploadedPart => Boolean(f?.buffer))
-    return ok(IntakeUploadResultSchema.parse(await this.uploads.upload(authOf(req), id, parts, infoOf(req))))
+    return ok(IntakeUploadResultSchema.parse(await this.uploads.upload(authOf(req), id, parts, infoOf(req), gone.signal)))
   }
 
   @Post('batches/:id/cancel')
@@ -123,6 +135,7 @@ export class IntakeFilesController {
   }
 
   @Get('files/:id/pages')
+  @RateLimit(INTAKE_LIMITS.read)
   async pages(@Req() req: Req, @Param('id') id: string) {
     return ok(IntakePageListSchema.parse(await this.batches.listPages(authOf(req), id)))
   }

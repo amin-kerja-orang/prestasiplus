@@ -114,6 +114,10 @@ export const EnvSchema = z.object({
   OCR_RENDER_DPI: z.coerce.number().int().min(72).max(400).optional(),
   OCR_MAX_PIXELS: z.coerce.number().int().min(100_000).max(100_000_000).optional(),
   OCR_WORKER_MEMORY_MB: z.coerce.number().int().min(64).max(4096).optional(),
+  /** RSS growth (MB) of the process while one PDF worker runs before the watchdog stops it. Default 2 x OCR_WORKER_MEMORY_MB. */
+  OCR_WORKER_RSS_LIMIT_MB: z.coerce.number().int().min(64).max(16_384).optional(),
+  /** Uploads whose PDFs are inspected at the same time in this process (more wait). Default 2. */
+  INTAKE_UPLOAD_CONCURRENCY: z.coerce.number().int().min(1).max(16).optional(),
   INTAKE_MAX_FILES_PER_BATCH: z.coerce.number().int().min(1).max(50).optional(),
   INTAKE_MAX_ACTIVE_BATCHES: z.coerce.number().int().min(1).max(100).optional(),
   INTAKE_DAILY_PAGE_QUOTA: z.coerce.number().int().min(1).max(100_000).optional(),

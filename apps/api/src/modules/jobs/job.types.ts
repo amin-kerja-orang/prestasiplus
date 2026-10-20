@@ -16,6 +16,12 @@ export type JobHandler = (job: ClaimedJob, signal: AbortSignal) => Promise<void>
 export interface RegisterOptions {
   /** Hard wall-clock limit per run; on expiry the signal is aborted and the run fails with `TIMEOUT` (retryable). */
   timeoutMs?: number
+  /**
+   * Called once when a job ends in `failed` for good (out of attempts, a non-retryable error, or swept as
+   * `STUCK`), with the final error code. Lets the owner of the entity close what the job left open. Best
+   * effort: an error thrown here is logged and swallowed.
+   */
+  onExhausted?: (job: ClaimedJob, code: string) => Promise<void>
 }
 
 export interface EnqueueInput {

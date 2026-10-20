@@ -110,17 +110,19 @@ describe('refusals (AC3): exact BM message, nothing stored', () => {
   it('a decompression bomb never takes the worker or the API down', async () => {
     const bomb = await bombPdf(600)
     const res = await uploadFiles(teacher, batchId, [{ bytes: bomb }])
-    if (res.status === 422) {
-      expectFilesError(res, INTAKE_FILE_MESSAGES.tooComplex)
-      await nothingStored()
-    } else {
-      // The page tree is small, so the upload is accepted; the bomb is in the page content and the page job ends it.
-      expect(res.status).toBe(201)
+    // The page tree is small, so the upload is accepted (201); the bomb sits in the page content, and the page job
+    // ends it inside the worker limits: the page, the file and the batch fail, the process stays up.
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    // A first memory-watchdog trip is retried once (after its backoff, pulled forward here), then the page fails.
+    for (let i = 0; i < 5; i++) {
       await t.drain()
-      const detail = await getBatch(teacher, batchId)
-      expect(detail.files[0]).toMatchObject({ status: 'failed' })
-      expect(['TOO_COMPLEX', 'OCR_TIMEOUT']).toContain(detail.files[0]!.errorCode)
+      if ((await t.db.query(`select 1 from jobs where state = 'queued'`)).length === 0) break
+      await t.db.query(`update jobs set run_after = now() - interval '1 second' where state = 'queued'`)
     }
+    const detail = await getBatch(teacher, batchId)
+    expect(detail.status).toBe('failed')
+    expect(detail.files[0]).toMatchObject({ status: 'failed', progress: { total: 1, done: 0, failed: 1 } })
+    expect(['TOO_COMPLEX', 'OCR_TIMEOUT']).toContain(detail.files[0]!.errorCode)
     expect((await t.http().get('/api/health')).status).toBe(200)
   }, 90_000)
 })

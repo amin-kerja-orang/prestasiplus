@@ -1,4 +1,5 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common'
+import { IntakeFileErrorCodeSchema } from '@pp/contract'
 
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
@@ -10,6 +11,7 @@ import {
   OcrConfig,
   OcrError,
   OcrImageService,
+  OcrWatchdogError,
   PDF_ENGINE,
   isScannedPage,
   type OcrEngine,
@@ -19,11 +21,29 @@ import {
 } from '../../ocr'
 import { INTAKE_JOB_ENTITY, INTAKE_JOB_TYPES } from './intake-files.config'
 import { IntakeFiguresService } from './intake-figures.service'
-import { clampBlocks, stripNul } from './intake-mappers'
+import { capText, clampBlocks, MAX_PAGE_TEXT, stripNul } from './intake-mappers'
 import { discardStored } from './intake-storage'
 
 const ACTIVE = ['submitted', 'processing']
 const THUMB_WIDTH = 240
+/** Page codes that count towards the circuit breaker, and how many failed pages trip it. */
+const BREAKER_CODES = ['TOO_COMPLEX', 'OCR_TIMEOUT', 'RENDER_FAILED'] as const
+const BREAKER_PAGES = 2
+
+/** A job error code as a page/file error code of the contract. */
+function pageCodeOf(code: string): string {
+  switch (code) {
+    case 'TIMEOUT':
+    case 'STUCK':
+      return 'OCR_TIMEOUT'
+    case 'MEMORY_WATCHDOG':
+      return 'TOO_COMPLEX'
+    case 'CANCELLED':
+      return 'CANCELLED'
+    default:
+      return IntakeFileErrorCodeSchema.safeParse(code).success ? code : 'OCR_FAILED'
+  }
+}
 
 interface PagePayload {
   intakeFileId: bigint
@@ -70,8 +90,14 @@ export class IntakeProcessingService implements OnModuleInit {
 
   onModuleInit(): void {
     const pageBudget = this.ocrConfig.pageTimeoutMs * 4 + 30_000
-    this.jobs.register(INTAKE_JOB_TYPES.processFile, (job, signal) => this.processFile(job, signal), { timeoutMs: 120_000 })
-    this.jobs.register(INTAKE_JOB_TYPES.page, (job, signal) => this.processPage(job, signal), { timeoutMs: pageBudget })
+    this.jobs.register(INTAKE_JOB_TYPES.processFile, (job, signal) => this.processFile(job, signal), {
+      timeoutMs: 120_000,
+      onExhausted: (job, code) => this.onProcessFileExhausted(job, code),
+    })
+    this.jobs.register(INTAKE_JOB_TYPES.page, (job, signal) => this.processPage(job, signal), {
+      timeoutMs: pageBudget,
+      onExhausted: (job, code) => this.onPageExhausted(job, code),
+    })
     this.jobs.register(INTAKE_JOB_TYPES.cropFigure, (job, signal) => this.cropFigure(job, signal), { timeoutMs: pageBudget })
   }
 
@@ -152,7 +178,7 @@ export class IntakeProcessingService implements OnModuleInit {
     try {
       const extraction = await this.pdf.extractText(original.bytes, pageNo, signal)
       if (!isScannedPage(extraction, this.ocrConfig.minTextChars)) {
-        result = { kind: 'text', text: stripNul(extraction.text), blocks: clampBlocks(extraction.blocks) }
+        result = { kind: 'text', text: capText(stripNul(extraction.text), MAX_PAGE_TEXT), blocks: clampBlocks(extraction.blocks) }
       } else if (!this.ocr.available) {
         result = { kind: 'failed', code: 'OCR_UNAVAILABLE' }
       } else {
@@ -161,12 +187,14 @@ export class IntakeProcessingService implements OnModuleInit {
           result = { kind: 'failed', code: 'RENDER_FAILED' }
         } else {
           const ocr = await this.ocr.recognize(image.png, signal)
-          result = { kind: 'ocr', text: stripNul(ocr.text), confidence: ocr.confidence, blocks: clampBlocks(ocr.blocks) }
+          result = { kind: 'ocr', text: capText(stripNul(ocr.text), MAX_PAGE_TEXT), confidence: ocr.confidence, blocks: clampBlocks(ocr.blocks) }
         }
       }
     } catch (err) {
       if (signal.aborted) throw signal.reason ?? err
       if (!(err instanceof OcrError)) throw err // unexpected: the runner retries with backoff
+      // The watchdog measures growth of the whole process, so a neighbour can trip it: retry once before blaming the page.
+      if (err instanceof OcrWatchdogError && job.attempts === 1) throw new JobError('MEMORY_WATCHDOG', true)
       result = { kind: 'failed', code: err.code }
     }
 
@@ -190,7 +218,57 @@ export class IntakeProcessingService implements OnModuleInit {
 
     const written = await this.writePage(page.id, result, image)
     if (!written) await discardStored(this.prisma, this.storage, stored) // lost a race with a cancel
+    if (written && result.kind === 'failed') await this.circuitBreaker(file.id)
     await this.finalizeIfDone(file.id)
+  }
+
+  // ---- terminal failures -----------------------------------------------------------------------
+
+  /** A page job that ran out of attempts: the page fails with the job's code so the file and batch can finish. */
+  async onPageExhausted(job: ClaimedJob, code: string): Promise<void> {
+    const { intakeFileId, pageNo } = readPagePayload(job)
+    await this.prisma.client.intakePage.updateMany({
+      where: { intakeFileId, pageNo, ocrStatus: 'pending' },
+      data: { ocrStatus: 'failed', errorCode: pageCodeOf(code) },
+    })
+    await this.circuitBreaker(intakeFileId)
+    await this.finalizeIfDone(intakeFileId)
+  }
+
+  /** A process_file job that ran out of attempts: the file fails (its pages never started) and the batch is closed if it was the last. */
+  async onProcessFileExhausted(job: ClaimedJob, code: string): Promise<void> {
+    const fileId = idFromString(String((job.payload as { intakeFileId?: unknown } | null)?.intakeFileId ?? job.entityId ?? ''))
+    await this.failFile(fileId, pageCodeOf(code))
+    await this.finalizeIfDone(fileId)
+  }
+
+  /**
+   * Circuit breaker (F1): when two pages of one file have failed with a resource code (TOO_COMPLEX, OCR_TIMEOUT,
+   * RENDER_FAILED), the file is treated as hostile or hopeless: it is marked failed (TOO_COMPLEX), its remaining
+   * pages fail with it and its queued and running jobs are cancelled.
+   */
+  private async circuitBreaker(fileId: bigint): Promise<void> {
+    const tripped = await this.prisma.client.intakePage.count({
+      where: { intakeFileId: fileId, ocrStatus: 'failed', errorCode: { in: [...BREAKER_CODES] } },
+    })
+    if (tripped < BREAKER_PAGES) return
+    await this.failFile(fileId, 'TOO_COMPLEX')
+  }
+
+  /** Marks an open file failed with `code`, fails its pending pages and cancels its jobs, under the batch lock. */
+  private async failFile(fileId: bigint, code: string): Promise<void> {
+    await this.prisma.transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: bigint; status: string }[]>`
+        SELECT b.id, b.status FROM intake_batches b JOIN intake_files f ON f.batch_id = b.id WHERE f.id = ${fileId} FOR UPDATE OF b`
+      if (!locked[0] || !ACTIVE.includes(locked[0].status)) return
+      const changed = await tx.intakeFile.updateMany({
+        where: { id: fileId, status: { in: ['uploaded', 'processing'] } },
+        data: { status: 'failed', errorCode: code },
+      })
+      if (changed.count === 0) return
+      await tx.intakePage.updateMany({ where: { intakeFileId: fileId, ocrStatus: 'pending' }, data: { ocrStatus: 'failed', errorCode: code } })
+      await this.jobs.cancelFor(INTAKE_JOB_ENTITY, [idToString(fileId)], tx)
+    })
   }
 
   private async storeImages(

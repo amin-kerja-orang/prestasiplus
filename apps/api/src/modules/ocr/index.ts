@@ -2,7 +2,7 @@ export { encodeImage, cropImage, loadCanvas, OcrImageService } from './images'
 export type { EncodedImage, EncodeOptions, FractionBox } from './images'
 export { DisabledOcrEngine, TesseractEngine, createOcrEngine, tesseractUnavailableReason } from './ocr-engine'
 export { OcrConfig } from './ocr.config'
-export { OcrError, type OcrErrorCode } from './ocr.error'
+export { OcrError, OcrWatchdogError, type OcrErrorCode } from './ocr.error'
 export { OcrModule } from './ocr.module'
 export {
   OCR_ENGINE,

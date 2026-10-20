@@ -17,6 +17,7 @@ import { FilesConfig } from '../../files/files.config'
 import { FilesService, type StoredFile } from '../../files'
 import { JobsService } from '../../jobs'
 import { OcrConfig, OcrError, PDF_ENGINE, type PdfEngine } from '../../ocr'
+import { Semaphore } from '../../ocr/semaphore'
 import { isAdmin, parseId, visibleBatches } from './intake-access'
 import { INTAKE_JOB_ENTITY, INTAKE_JOB_TYPES, IntakeFilesConfig } from './intake-files.config'
 import { type CallerInfo, IntakeFilesService } from './intake-files.service'
@@ -51,6 +52,9 @@ function invalid(message: string): ApiError {
  */
 @Injectable()
 export class IntakeUploadService {
+  /** Uploads being checked, stored and written at the same time in this process (the rest wait, F3). */
+  private readonly slots: Semaphore
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FilesService) private readonly files: FilesService,
@@ -63,7 +67,9 @@ export class IntakeUploadService {
     @Inject(PDF_ENGINE) private readonly pdf: PdfEngine,
     @Inject(IntakeFilesService) private readonly batches: IntakeFilesService,
     @Inject(CLOCK) private readonly clock: Clock,
-  ) {}
+  ) {
+    this.slots = new Semaphore(config.uploadConcurrency)
+  }
 
   /** Cheap pre-flight (route guard): 404 for an unknown or out-of-scope batch, 409 for one that no longer takes files. Reads no body. */
   async assertOpen(auth: AuthContext, idText: string): Promise<void> {
@@ -74,14 +80,26 @@ export class IntakeUploadService {
     if (!OPEN.includes(batch.status)) throw ApiError.of('CONFLICT', { message: INTAKE_FILE_MESSAGES.batchClosed })
   }
 
-  async upload(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo): Promise<IntakeUploadResult> {
+  async upload(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal?: AbortSignal): Promise<IntakeUploadResult> {
+    await this.assertOpen(auth, idText)
+    // Excess requests wait here (their bodies are already buffered, which multer bounds per request).
+    const release = await this.slots.acquire(signal)
+    try {
+      return await this.uploadLocked(auth, idText, parts, who, signal)
+    } finally {
+      release()
+    }
+  }
+
+  private async uploadLocked(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal?: AbortSignal): Promise<IntakeUploadResult> {
+    // The batch may have been closed while this request waited for a slot.
     await this.assertOpen(auth, idText)
     const batchId = idFromString(idText)
     if (parts.length === 0) throw invalid(INTAKE_FILE_MESSAGES.type)
     const max = this.config.maxFilesPerBatch
     if (parts.length > max) throw invalid(INTAKE_FILE_MESSAGES.tooManyFiles(max))
 
-    const checked = await this.validate(parts)
+    const checked = await this.validate(parts, signal)
     await this.admit(this.prisma.client, auth, batchId, checked)
 
     // Store the bytes (outside the transaction), then write the rows and the jobs in one transaction.
@@ -108,28 +126,29 @@ export class IntakeUploadService {
 
   // ---- validation (no storage) -----------------------------------------------------------------
 
-  private async validate(parts: UploadedPart[]): Promise<Checked[]> {
+  /** One file after the other, stopping at the first refusal, so a bad request costs at most one worker. */
+  private async validate(parts: UploadedPart[], signal?: AbortSignal): Promise<Checked[]> {
     const limit = this.filesConfig.intakeMaxBytes
-    const results = await Promise.all(parts.map((part) => this.checkOne(part, limit)))
-    const failed = results.find((r): r is { error: ApiError } => 'error' in r)
-    if (failed) throw failed.error
-    const checked = results as Checked[]
+    const checked: Checked[] = []
     const seen = new Set<string>()
-    for (const c of checked) {
-      if (seen.has(c.sha256)) throw invalid(INTAKE_FILE_MESSAGES.duplicate)
-      seen.add(c.sha256)
+    for (const part of parts) {
+      const result = await this.checkOne(part, limit, signal)
+      if ('error' in result) throw result.error
+      if (seen.has(result.sha256)) throw invalid(INTAKE_FILE_MESSAGES.duplicate)
+      seen.add(result.sha256)
+      checked.push(result)
     }
     return checked
   }
 
-  private async checkOne(part: UploadedPart, limit: number): Promise<Checked | { error: ApiError }> {
+  private async checkOne(part: UploadedPart, limit: number, signal?: AbortSignal): Promise<Checked | { error: ApiError }> {
     const buffer = part.buffer
     if (buffer.length > limit) return { error: invalid(INTAKE_FILE_MESSAGES.size(Math.floor(limit / (1024 * 1024)))) }
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') return { error: invalid(INTAKE_FILE_MESSAGES.type) }
     let pages: number
     try {
-      const info = await this.pdf.inspect(buffer)
+      const info = await this.pdf.inspect(buffer, signal)
       if (info.encrypted) return { error: invalid(INTAKE_FILE_MESSAGES.encrypted) }
       pages = info.pageCount
     } catch (err) {

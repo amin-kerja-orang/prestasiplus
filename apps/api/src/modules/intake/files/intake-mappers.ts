@@ -1,4 +1,5 @@
 import {
+  AI_MAX_PAGE_TEXT_CHARS,
   INTAKE_BATCH_STATUS_LABELS,
   IntakeBboxSchema,
   IntakeFileErrorCodeSchema,
@@ -121,12 +122,24 @@ export function bboxFromJson(value: unknown): IntakeBbox {
 /** PostgreSQL text and jsonb cannot hold U+0000; engines can emit it for broken fonts. */
 export const stripNul = (text: string): string => text.replaceAll('\u0000', '')
 
+/** Storage caps (F7): one page of text, blocks per page, characters per block. */
+export const MAX_PAGE_TEXT = AI_MAX_PAGE_TEXT_CHARS
+export const MAX_BLOCKS_PER_PAGE = 2000
+export const MAX_BLOCK_TEXT = 2000
+
+/** Cuts to at most `max` UTF-16 units without leaving half of a surrogate pair. */
+export function capText(text: string, max: number): string {
+  if (text.length <= max) return text
+  const end = text.charCodeAt(max - 1)
+  return text.slice(0, end >= 0xd800 && end <= 0xdbff ? max - 1 : max)
+}
+
 const unit = (n: number): number => Math.min(1, Math.max(0, Number.isFinite(n) ? n : 0))
 
 /** Engine blocks clamped to the wire bounds (fractions 0..1, confidence 0..100 or null) before they are stored. */
 export function clampBlocks(blocks: ReadonlyArray<{ text: string; bbox: { x: number; y: number; w: number; h: number }; confidence: number | null }>): IntakeTextBlock[] {
-  return blocks.map((b) => ({
-    text: stripNul(b.text),
+  return blocks.slice(0, MAX_BLOCKS_PER_PAGE).map((b) => ({
+    text: capText(stripNul(b.text), MAX_BLOCK_TEXT),
     bbox: { x: unit(b.bbox.x), y: unit(b.bbox.y), w: unit(b.bbox.w), h: unit(b.bbox.h) },
     confidence: b.confidence === null || !Number.isFinite(b.confidence) ? null : Math.min(100, Math.max(0, b.confidence)),
   }))

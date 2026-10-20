@@ -27,6 +27,8 @@ export class OcrConfig {
   readonly renderDpi: number
   readonly maxPixels: number
   readonly workerMemoryMb: number
+  /** RSS growth of the process, in MB, that the watchdog treats as a runaway worker. */
+  readonly workerRssLimitMb: number
 
   constructor(@Inject(ConfigService) config: ConfigService) {
     const str = (key: string): string | undefined => {
@@ -43,5 +45,6 @@ export class OcrConfig {
     this.renderDpi = positive(config.get('OCR_RENDER_DPI'), 150)
     this.maxPixels = Math.floor(positive(config.get('OCR_MAX_PIXELS'), 12_000_000))
     this.workerMemoryMb = Math.floor(positive(config.get('OCR_WORKER_MEMORY_MB'), 256))
+    this.workerRssLimitMb = Math.floor(positive(config.get('OCR_WORKER_RSS_LIMIT_MB'), this.workerMemoryMb * 2))
   }
 }

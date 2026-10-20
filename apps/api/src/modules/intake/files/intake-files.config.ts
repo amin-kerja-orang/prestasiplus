@@ -18,11 +18,13 @@ export class IntakeFilesConfig {
   readonly maxFilesPerBatch: number
   readonly maxActiveBatches: number
   readonly dailyPageQuota: number
+  readonly uploadConcurrency: number
 
   constructor(@Inject(ConfigService) config: ConfigService) {
     this.maxFilesPerBatch = intOr(config.get('INTAKE_MAX_FILES_PER_BATCH'), 10)
     this.maxActiveBatches = intOr(config.get('INTAKE_MAX_ACTIVE_BATCHES'), 5)
     this.dailyPageQuota = intOr(config.get('INTAKE_DAILY_PAGE_QUOTA'), 500)
+    this.uploadConcurrency = intOr(config.get('INTAKE_UPLOAD_CONCURRENCY'), 2)
   }
 }
 

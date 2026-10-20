@@ -479,3 +479,145 @@ describe('JobsWorker', () => {
     expect((await row(id)).state).toBe('succeeded')
   })
 })
+
+describe('terminal-failure hook (onExhausted)', () => {
+  it('runs once with the final code when a job fails for good, not on a retry or a success', async () => {
+    const svc = make()
+    const seen: Array<[string, string]> = []
+    svc.register(
+      't.hook',
+      async () => {
+        throw new JobError('UPSTREAM', true)
+      },
+      { onExhausted: async (job, code) => void seen.push([job.id, code]) },
+    )
+    const { id } = await svc.enqueue({ type: 't.hook', idempotencyKey: key(), maxAttempts: 2 })
+    await svc.runOnce()
+    expect(seen).toEqual([]) // retried, not exhausted
+    await makeDue(id)
+    await svc.runOnce()
+    expect(seen).toEqual([[id, 'UPSTREAM']])
+    expect((await row(id)).state).toBe('failed')
+
+    svc.register('t.hook2', async () => undefined, { onExhausted: async () => void seen.push(['x', 'x']) })
+    await svc.enqueue({ type: 't.hook2', idempotencyKey: key() })
+    await svc.runOnce()
+    expect(seen).toHaveLength(1)
+  })
+
+  it('also runs for a non-retryable error and for a swept STUCK job, and a throwing hook is swallowed', async () => {
+    const svc = make()
+    const seen: string[] = []
+    svc.register(
+      't.hook3',
+      async () => {
+        throw new JobError('FATAL', false)
+      },
+      {
+        onExhausted: async (_job, code) => {
+          seen.push(code)
+          throw new Error('hook bug')
+        },
+      },
+    )
+    const a = await svc.enqueue({ type: 't.hook3', idempotencyKey: key() })
+    await svc.runOnce()
+    expect((await row(a.id)).state).toBe('failed')
+    expect(seen).toEqual(['FATAL'])
+
+    const b = await svc.enqueue({ type: 't.hook3', idempotencyKey: key(), maxAttempts: 1 })
+    await db.query("UPDATE jobs SET state = 'running', attempts = 1, locked_by = 'ghost', locked_at = now() - interval '2 hours' WHERE id = $1", [b.id])
+    expect(await svc.sweepStuck()).toBe(1)
+    expect((await row(b.id)).state).toBe('failed')
+    expect(seen).toEqual(['FATAL', 'STUCK'])
+  })
+
+  it('does not run when the job was cancelled while it ran', async () => {
+    const svc = make()
+    const seen: string[] = []
+    const gate = deferred()
+    svc.register(
+      't.hook4',
+      async () => {
+        await gate.promise
+        throw new JobError('LATE', false)
+      },
+      { onExhausted: async (_j, code) => void seen.push(code) },
+    )
+    const { id } = await svc.enqueue({ type: 't.hook4', idempotencyKey: key(), entityType: 'thing', entityId: 'c1' })
+    const running = svc.runOnce()
+    await sleep(100)
+    await svc.cancelFor('thing', ['c1'])
+    gate.resolve()
+    await running
+    expect((await row(id)).state).toBe('cancelled')
+    expect(seen).toEqual([])
+  })
+})
+
+describe('claim fairness and per-claim tokens', () => {
+  it('skips a queued job while another job of the same entity runs; other entities proceed', async () => {
+    const svc = make({ JOBS_CONCURRENCY: '4' })
+    const gate = deferred()
+    const started: string[] = []
+    svc.register('t.fair', async (job) => {
+      started.push(job.entityId ?? '')
+      await gate.promise
+    })
+    await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'A' })
+    await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'A' })
+    await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'B' })
+    await svc.enqueue({ type: 't.fair', idempotencyKey: key() }) // no entity: never held back
+    const first = svc.runOnce(4)
+    await sleep(300)
+    expect(started.sort()).toEqual(['', 'A', 'B'])
+    expect(await db.query("SELECT 1 FROM jobs WHERE state = 'queued'")).toHaveLength(1)
+    gate.resolve()
+    await first
+    expect(await svc.runOnce(4)).toBe(1) // the second job of A runs once the first is done
+    expect(started.sort()).toEqual(['', 'A', 'A', 'B'])
+  })
+
+  it('a run that outlived a sweep cannot close the job after the same process claimed it again', async () => {
+    const svc = make({ JOBS_CONCURRENCY: '4', JOBS_LOCK_TIMEOUT_MS: '1000' })
+    const gates = [deferred(), deferred()]
+    let call = 0
+    svc.register('t.token', async () => {
+      const gate = gates[call++]!
+      await gate.promise
+    })
+    const { id } = await svc.enqueue({ type: 't.token', idempotencyKey: key(), maxAttempts: 5 })
+    const oldRun = svc.runOnce()
+    await sleep(100)
+    const firstToken = (await row(id)).locked_by
+    await db.query("UPDATE jobs SET locked_at = now() - interval '1 hour' WHERE id = $1", [id])
+    expect(await svc.sweepStuck()).toBe(1)
+    const newRun = svc.runOnce()
+    await sleep(100)
+    const secondToken = (await row(id)).locked_by
+    expect(secondToken).not.toBe(firstToken)
+    expect(secondToken?.split(':')[0]).toBe(firstToken?.split(':')[0]) // same process, new token
+    gates[0]!.resolve() // the old run finishes late
+    await oldRun
+    const mid = await row(id)
+    expect(mid.state).toBe('running')
+    expect(mid.locked_by).toBe(secondToken)
+    gates[1]!.resolve()
+    await newRun
+    expect((await row(id)).state).toBe('succeeded')
+  })
+
+  it('cancelFor joins the caller transaction', async () => {
+    const svc = make()
+    const { id } = await svc.enqueue({ type: 't.txc', idempotencyKey: key(), entityType: 'thing', entityId: 'tx1' })
+    await expect(
+      db.prisma.$transaction(async (tx) => {
+        expect(await svc.cancelFor('thing', ['tx1'], tx)).toBe(1)
+        throw new Error('rollback')
+      }),
+    ).rejects.toThrow('rollback')
+    expect((await row(id)).state).toBe('queued')
+    await db.prisma.$transaction((tx) => svc.cancelFor('thing', ['tx1'], tx))
+    expect((await row(id)).state).toBe('cancelled')
+  })
+})

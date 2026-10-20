@@ -15,8 +15,10 @@ import { JobError } from '../../jobs'
 
 // C0 and C1 controls except \n (0x0A) and \t (0x09).
 const CONTROLS = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g
-// Zero-width, bidi marks, embeddings, overrides and isolates, and the byte order mark.
-const INVISIBLES = /[​-‏‪-‮⁦-⁩﻿]/g
+// Invisible characters that can hide instructions from a reader: every format character (Unicode Cf: zero-width,
+// bidi marks and overrides, soft hyphen, word joiner, BOM, Arabic letter mark, tag characters) plus the ones
+// Unicode files elsewhere: Mongolian vowel separator, combining grapheme joiner, variation selectors.
+const INVISIBLES = /[\p{Cf}\u00ad\u180e\u2060-\u2064\u034f\u061c\ufe00-\ufe0f\u{e0100}-\u{e01ef}\u{e0000}-\u{e007f}]/gu
 
 /** Cuts to at most `max` UTF-16 units without leaving half of a surrogate pair. */
 function cut(text: string, max: number): string {

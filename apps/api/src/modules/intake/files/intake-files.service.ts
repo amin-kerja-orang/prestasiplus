@@ -175,7 +175,7 @@ export class IntakeFilesService {
       }
       await tx.intakeBatch.update({ where: { id }, data: { status: 'cancelled', statusReason: null } })
       // Every file id (not only the open ones): a job of a finished file has nothing left to cancel, and the call is cheap.
-      await this.jobs.cancelFor(INTAKE_JOB_ENTITY, files.map((f) => idToString(f.id)))
+      await this.jobs.cancelFor(INTAKE_JOB_ENTITY, files.map((f) => idToString(f.id)), tx)
       await this.record(AUDIT_ACTIONS.INTAKE_BATCH_CANCELLED, auth, id, who, { files: files.length }, tx)
     })
     return this.detail(auth, id)

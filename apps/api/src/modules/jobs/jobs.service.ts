@@ -1,7 +1,7 @@
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { hostname } from 'node:os'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { TxClient } from '../../db/client'
 import { PrismaService } from '../../db/prisma.service'
@@ -29,6 +29,7 @@ interface ClaimRow {
 interface Registered {
   handler: JobHandler
   timeoutMs?: number
+  onExhausted?: RegisterOptions['onExhausted']
 }
 
 type Db = Pick<TxClient, '$queryRaw' | '$executeRaw'>
@@ -52,6 +53,7 @@ export class JobsService {
   private readonly inFlight = new Set<Promise<void>>()
   private readonly workerId = `${hostname()}:${process.pid}:${randomBytes(4).toString('hex')}`
   private draining = false
+  private readonly logger = new Logger(JobsService.name)
 
   constructor(
     @Inject(PrismaService) private readonly prisma: Pick<PrismaService, 'client'>,
@@ -60,7 +62,7 @@ export class JobsService {
 
   register(type: string, handler: JobHandler, opts: RegisterOptions = {}): void {
     if (this.handlers.has(type)) throw new Error(`Job type already registered: ${type}`)
-    this.handlers.set(type, { handler, timeoutMs: opts.timeoutMs })
+    this.handlers.set(type, { handler, timeoutMs: opts.timeoutMs, onExhausted: opts.onExhausted })
   }
 
   async enqueue(input: EnqueueInput, tx?: Db): Promise<{ id: string; created: boolean }> {
@@ -84,9 +86,9 @@ export class JobsService {
   }
 
   /** Queued and running jobs of these entities become `cancelled`; running ones notice within `cancelCheckMs` and are aborted. */
-  async cancelFor(entityType: string, entityIds: string[]): Promise<number> {
+  async cancelFor(entityType: string, entityIds: string[], tx?: Db): Promise<number> {
     if (entityIds.length === 0) return 0
-    return this.prisma.client.$executeRaw`
+    return (tx ?? this.prisma.client).$executeRaw`
       UPDATE jobs SET state = 'cancelled', finished_at = now(), updated_at = now(), locked_at = NULL, locked_by = NULL
       WHERE entity_type = ${entityType} AND entity_id = ANY(${entityIds}::text[]) AND state IN ('queued', 'running')`
   }
@@ -103,25 +105,37 @@ export class JobsService {
     const free = this.config.concurrency - this.inFlight.size
     const n = Math.min(limit ?? this.config.concurrency, free)
     if (this.draining || n <= 0) return { count: 0, done: Promise.resolve() }
-    const rows = await this.prisma.client.$queryRaw<ClaimRow[]>`
-      UPDATE jobs SET state = 'running', attempts = attempts + 1, locked_at = now(), locked_by = ${this.workerId},
-                      started_at = COALESCE(started_at, now()), updated_at = now()
-      WHERE id IN (
-        SELECT id FROM jobs WHERE state = 'queued' AND run_after <= now()
-        ORDER BY run_after, id LIMIT ${n}::int FOR UPDATE SKIP LOCKED)
-      RETURNING id::text AS id, type, entity_type, entity_id, payload, attempts, max_attempts`
-    const runs = rows.map((row) => {
-      const p: Promise<void> = this.execute(row).finally(() => this.inFlight.delete(p))
+    // One job per statement, so the fairness test below sees the jobs this call has just started: a job is
+    // skipped while another job of the same entity (one file) is running, so one file cannot hold every slot.
+    // Every claim gets its own token in `locked_by`, so a run that outlived a sweep cannot close a later claim.
+    const claimed: Array<{ row: ClaimRow; token: string }> = []
+    for (let i = 0; i < n; i++) {
+      const token = `${this.workerId}:${randomUUID()}`
+      const rows = await this.prisma.client.$queryRaw<ClaimRow[]>`
+        UPDATE jobs SET state = 'running', attempts = attempts + 1, locked_at = now(), locked_by = ${token},
+                        started_at = COALESCE(started_at, now()), updated_at = now()
+        WHERE id IN (
+          SELECT j.id FROM jobs j
+          WHERE j.state = 'queued' AND j.run_after <= now()
+            AND (j.entity_id IS NULL OR NOT EXISTS (
+              SELECT 1 FROM jobs r WHERE r.state = 'running' AND r.entity_type = j.entity_type AND r.entity_id = j.entity_id))
+          ORDER BY j.run_after, j.id LIMIT 1 FOR UPDATE OF j SKIP LOCKED)
+        RETURNING id::text AS id, type, entity_type, entity_id, payload, attempts, max_attempts`
+      if (!rows[0]) break
+      claimed.push({ row: rows[0], token })
+    }
+    const runs = claimed.map(({ row, token }) => {
+      const p: Promise<void> = this.execute(row, token).finally(() => this.inFlight.delete(p))
       this.inFlight.add(p)
       return p
     })
-    return { count: rows.length, done: Promise.all(runs).then(() => undefined) }
+    return { count: claimed.length, done: Promise.all(runs).then(() => undefined) }
   }
 
   /** Running jobs whose lock is older than `JOBS_LOCK_TIMEOUT_MS` go back to `queued` (or `failed` `STUCK` when out of attempts). */
   async sweepStuck(now?: Date): Promise<number> {
     const at = now ? now.toISOString() : null
-    return this.prisma.client.$executeRaw`
+    const rows = await this.prisma.client.$queryRaw<(ClaimRow & { state: string })[]>`
       UPDATE jobs SET
         state = CASE WHEN attempts < max_attempts THEN 'queued' ELSE 'failed' END,
         error_code = CASE WHEN attempts < max_attempts THEN error_code ELSE 'STUCK' END,
@@ -129,7 +143,10 @@ export class JobsService {
         run_after = CASE WHEN attempts < max_attempts THEN COALESCE(${at}::timestamptz, now()) ELSE run_after END,
         locked_at = NULL, locked_by = NULL, updated_at = now()
       WHERE state = 'running'
-        AND locked_at < COALESCE(${at}::timestamptz, now()) - make_interval(secs => ${this.config.lockTimeoutMs}::float8 / 1000.0)`
+        AND locked_at < COALESCE(${at}::timestamptz, now()) - make_interval(secs => ${this.config.lockTimeoutMs}::float8 / 1000.0)
+      RETURNING id::text AS id, type, entity_type, entity_id, payload, attempts, max_attempts, state`
+    for (const row of rows) if (row.state === 'failed') await this.exhausted(toJob(row), 'STUCK')
+    return rows.length
   }
 
   /** Stops claiming and waits for in-flight runs (graceful shutdown). */
@@ -142,19 +159,11 @@ export class JobsService {
     return this.draining
   }
 
-  private async execute(row: ClaimRow): Promise<void> {
-    const job: ClaimedJob = {
-      id: row.id,
-      type: row.type,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      payload: row.payload,
-      attempts: row.attempts,
-      maxAttempts: row.max_attempts,
-    }
+  private async execute(row: ClaimRow, token: string): Promise<void> {
+    const job = toJob(row)
     const reg = this.handlers.get(job.type)
     if (!reg) {
-      await this.fail(job, new Outcome('UNKNOWN_TYPE', false))
+      await this.fail(job, token, new Outcome('UNKNOWN_TYPE', false))
       return
     }
     const controller = new AbortController()
@@ -172,14 +181,14 @@ export class JobsService {
           }),
         )
       }
-      watcher = setInterval(() => void this.checkStillOwned(job.id, controller), this.config.cancelCheckMs)
+      watcher = setInterval(() => void this.checkStillOwned(job.id, token, controller), this.config.cancelCheckMs)
       watcher.unref()
       await Promise.race([reg.handler(job, controller.signal), ...guards])
       // A handler that returns normally after an abort (timeout, cancel) must not count as success.
       if (controller.signal.aborted) throw controller.signal.reason
-      await this.complete(job)
+      await this.complete(job, token)
     } catch (err) {
-      await this.fail(job, toOutcome(err))
+      await this.fail(job, token, toOutcome(err))
     } finally {
       if (timer) clearTimeout(timer)
       if (watcher) clearInterval(watcher)
@@ -187,24 +196,24 @@ export class JobsService {
   }
 
   /** Aborts the handler when the row was cancelled, swept or taken over. */
-  private async checkStillOwned(id: string, controller: AbortController): Promise<void> {
+  private async checkStillOwned(id: string, token: string, controller: AbortController): Promise<void> {
     if (controller.signal.aborted) return
     try {
       const rows = await this.prisma.client.$queryRaw<{ ok: boolean }[]>`
-        SELECT (state = 'running' AND locked_by = ${this.workerId}) AS ok FROM jobs WHERE id = ${id}::bigint`
+        SELECT (state = 'running' AND locked_by = ${token}) AS ok FROM jobs WHERE id = ${id}::bigint`
       if (!rows[0]?.ok) controller.abort(new JobError('CANCELLED', false))
     } catch {
       // A failed check is retried on the next beat.
     }
   }
 
-  private async complete(job: ClaimedJob): Promise<void> {
+  private async complete(job: ClaimedJob, token: string): Promise<void> {
     await this.prisma.client.$executeRaw`
       UPDATE jobs SET state = 'succeeded', finished_at = now(), updated_at = now(), locked_at = NULL, locked_by = NULL, error_code = NULL
-      WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${this.workerId}`
+      WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${token}`
   }
 
-  private async fail(job: ClaimedJob, outcome: Outcome): Promise<void> {
+  private async fail(job: ClaimedJob, token: string, outcome: Outcome): Promise<void> {
     const code = outcome.code.slice(0, MAX_ERROR_CODE_LENGTH)
     const retry = outcome.retryable && job.attempts < job.maxAttempts
     try {
@@ -213,16 +222,41 @@ export class JobsService {
         await this.prisma.client.$executeRaw`
           UPDATE jobs SET state = 'queued', error_code = ${code}, run_after = now() + make_interval(secs => ${delay}::float8 / 1000.0),
                           locked_at = NULL, locked_by = NULL, updated_at = now()
-          WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${this.workerId}`
+          WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${token}`
       } else {
-        await this.prisma.client.$executeRaw`
+        const changed = await this.prisma.client.$executeRaw`
           UPDATE jobs SET state = 'failed', error_code = ${code}, finished_at = now(),
                           locked_at = NULL, locked_by = NULL, updated_at = now()
-          WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${this.workerId}`
+          WHERE id = ${job.id}::bigint AND state = 'running' AND locked_by = ${token}`
+        // Only when this run really ended the job (not when it was cancelled or swept meanwhile).
+        if (changed === 1) await this.exhausted(job, code)
       }
     } catch {
       // Could not record the failure: the stuck sweeper requeues the row later.
     }
+  }
+
+  /** Runs the type's `onExhausted` hook; never throws. */
+  private async exhausted(job: ClaimedJob, code: string): Promise<void> {
+    const hook = this.handlers.get(job.type)?.onExhausted
+    if (!hook) return
+    try {
+      await hook(job, code)
+    } catch {
+      this.logger.warn(`onExhausted hook failed for job type ${job.type}`)
+    }
+  }
+}
+
+function toJob(row: ClaimRow): ClaimedJob {
+  return {
+    id: row.id,
+    type: row.type,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    payload: row.payload,
+    attempts: row.attempts,
+    maxAttempts: row.max_attempts,
   }
 }
 

@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs'
 import { performance } from 'node:perf_hooks'
 
 import { describe, expect, it } from 'vitest'
@@ -47,7 +46,6 @@ describe('50-page fixture (AC-6)', () => {
     const elapsed = Math.round(performance.now() - started)
     const line = `[perf] pages=${rendered} workers=2 elapsed=${elapsed}ms maxEventLoopLag=${Math.round(maxLag)}ms rssStart=${Math.round(rss0 / 1048576)}MB peakRss=${Math.round(peakRss / 1048576)}MB growth=${Math.round((peakRss - rss0) / 1048576)}MB`
     console.log(line)
-    writeFileSync('/home/claude/be37-brief/agent-c/perf-last.txt', line + '\n')
     expect(rendered).toBe(50)
     expect(maxLag).toBeLessThan(200)
   }, 240_000)

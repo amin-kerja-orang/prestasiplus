@@ -142,7 +142,9 @@ describe('rate limits', () => {
     const limited = await reader.agent.get(url)
     expect(limited.status).toBe(429)
     expect(ErrorBodySchema.parse(limited.body).error.code).toBe('RATE_LIMITED')
-    // The page list is not a binary route.
-    expect((await reader.agent.get(`/api/intake/files/${up.files[0]!.id}/pages`)).status).toBe(200)
+    // The list, the detail and the page list share the same read bucket.
+    expect((await reader.agent.get(`/api/intake/files/${up.files[0]!.id}/pages`)).status).toBe(429)
+    expect((await reader.agent.get('/api/intake/batches')).status).toBe(429)
+    expect((await reader.agent.get(`/api/intake/batches/${b.id}`)).status).toBe(429)
   })
 })
