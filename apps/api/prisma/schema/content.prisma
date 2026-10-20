@@ -1,0 +1,369 @@
+// Content (M09) and support tickets (M22), BE-24. One Prisma file for both modules (data model 3.11).
+// Not expressible in Prisma and written by hand in migration 0009_content_support: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check, contract codes), partial indexes.
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2.
+// Curriculum ids (`videos.subject_id`, `audio_kbat_sets.education_level_id` / `subject_id`) are plain
+// bigint columns: the FK to the curriculum tables is added once BE-08 (0008_curriculum) merges.
+
+/// CMS article. `category` and `grade_level` are the contract codes (upper case). `content` is sanitised rich text.
+model Article {
+  id                  BigInt    @id @default(autoincrement())
+  title               String
+  slug                String
+  excerpt             String?
+  content             String
+  featuredImageFileId BigInt?   @map("featured_image_file_id")
+  youtubeUrl          String?   @map("youtube_url")
+  category            String
+  gradeLevel          String    @default("SEMUA") @map("grade_level")
+  isPublished         Boolean   @default(false) @map("is_published")
+  isFeatured          Boolean   @default(false) @map("is_featured")
+  views               Int       @default(0)
+  likes               Int       @default(0)
+  authorId            BigInt    @map("author_id")
+  publishedAt         DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource        String?   @map("legacy_source")
+  legacyId            String?   @map("legacy_id")
+
+  featuredImage File?               @relation("ArticleFeaturedImage", fields: [featuredImageFileId], references: [id], onDelete: SetNull, map: "fk_articles_featured_image_file_id")
+  author        User                @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict, map: "fk_articles_author_id")
+  attachments   ArticleAttachment[]
+
+  @@unique([slug], map: "uq_articles_slug")
+  @@unique([legacySource, legacyId], map: "uq_articles_legacy")
+  // Public lists: published rows, newest first.
+  @@index([isPublished, publishedAt(sort: Desc), id(sort: Desc)], map: "ix_articles_published")
+  @@index([category, isPublished], map: "ix_articles_category_published")
+  @@index([authorId], map: "ix_articles_author_id")
+  @@index([featuredImageFileId], map: "ix_articles_featured_image_file_id")
+  @@map("articles")
+}
+
+/// File attached to an article (name, mime and size live on `files`).
+model ArticleAttachment {
+  id        BigInt   @id @default(autoincrement())
+  articleId BigInt   @map("article_id")
+  fileId    BigInt   @map("file_id")
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade, map: "fk_article_attachments_article_id")
+  file    File    @relation("ArticleAttachmentFile", fields: [fileId], references: [id], onDelete: Restrict, map: "fk_article_attachments_file_id")
+
+  @@unique([articleId, fileId], map: "uq_article_attachments_article_file")
+  @@index([fileId], map: "ix_article_attachments_file_id")
+  @@map("article_attachments")
+}
+
+/// Home banner. `banner_type` (placement), `link_type` and `target_audience` are contract codes (upper case).
+model Banner {
+  id             BigInt    @id @default(autoincrement())
+  title          String
+  description    String?
+  imageFileId    BigInt?   @map("image_file_id")
+  bannerType     String    @map("banner_type")
+  linkType       String    @default("NONE") @map("link_type")
+  externalUrl    String?   @map("external_url")
+  targetAudience String    @default("ALL") @map("target_audience")
+  displayOrder   Int       @default(0) @map("display_order")
+  startDate      DateTime? @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource   String?   @map("legacy_source")
+  legacyId       String?   @map("legacy_id")
+
+  imageFile File? @relation("BannerImage", fields: [imageFileId], references: [id], onDelete: SetNull, map: "fk_banners_image_file_id")
+
+  @@unique([legacySource, legacyId], map: "uq_banners_legacy")
+  @@index([isActive, displayOrder], map: "ix_banners_active_order")
+  @@index([imageFileId], map: "ix_banners_image_file_id")
+  @@map("banners")
+}
+
+/// Video link (YouTube and others). `subject_id` is an optional FK to subjects (set null when the subject goes).
+model Video {
+  id           BigInt   @id @default(autoincrement())
+  videoUrl     String   @map("video_url")
+  /// `Youtube`, `Vimeo`, `Dailymotion`, `TikTok`, `Facebook`, `Other` (contract codes, check).
+  platform     String
+  externalId   String?  @map("external_id")
+  thumbnailUrl String?  @map("thumbnail_url")
+  title        String
+  description  String?
+  category     String
+  subjectId    BigInt?  @map("subject_id")
+  visibility   String   @default("global")
+  schoolId     BigInt?  @map("school_id")
+  uploaderId   BigInt   @map("uploader_id")
+  views        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  subject  Subject?      @relation(fields: [subjectId], references: [id], onDelete: SetNull, map: "fk_videos_subject_id")
+  school   School?       @relation("VideoSchool", fields: [schoolId], references: [id], onDelete: SetNull, map: "fk_videos_school_id")
+  uploader User          @relation("VideoUploader", fields: [uploaderId], references: [id], onDelete: Restrict, map: "fk_videos_uploader_id")
+  schools  VideoSchool[]
+
+  @@unique([legacySource, legacyId], map: "uq_videos_legacy")
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "ix_videos_created_at")
+  @@index([visibility, schoolId], map: "ix_videos_visibility_school")
+  @@index([uploaderId], map: "ix_videos_uploader_id")
+  @@index([subjectId], map: "ix_videos_subject_id")
+  @@index([schoolId], map: "ix_videos_school_id")
+  @@map("videos")
+}
+
+/// A school a video is shared with (visibility by school, AC 5). Keyed by video (see the deviations log).
+model VideoSchool {
+  id        BigInt   @id @default(autoincrement())
+  videoId   BigInt   @map("video_id")
+  schoolId  BigInt   @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  video  Video  @relation(fields: [videoId], references: [id], onDelete: Cascade, map: "fk_video_schools_video_id")
+  school School @relation("VideoSchoolShare", fields: [schoolId], references: [id], onDelete: Cascade, map: "fk_video_schools_school_id")
+
+  @@unique([videoId, schoolId], map: "uq_video_schools_video_school")
+  @@index([schoolId], map: "ix_video_schools_school_id")
+  @@map("video_schools")
+}
+
+/// Study note. `subject` is the mock fixed list, not a FK to `subjects`; `grade` is a free label.
+model Note {
+  id           BigInt   @id @default(autoincrement())
+  title        String
+  summary      String?
+  content      String
+  subject      String
+  noteType     String   @map("note_type")
+  grade        String
+  isPublished  Boolean  @default(false) @map("is_published")
+  views        Int      @default(0)
+  downloads    Int      @default(0)
+  authorId     BigInt   @map("author_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  author User @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: Restrict, map: "fk_notes_author_id")
+
+  @@unique([legacySource, legacyId], map: "uq_notes_legacy")
+  @@index([isPublished, createdAt(sort: Desc), id(sort: Desc)], map: "ix_notes_published")
+  @@index([authorId], map: "ix_notes_author_id")
+  @@map("notes")
+}
+
+/// Perutusan (message to a school or the nation). `reads` is computed from `perutusan_reads`.
+model Perutusan {
+  id          BigInt    @id @default(autoincrement())
+  title       String
+  body        String
+  youtubeUrl  String?   @map("youtube_url")
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  isPublic    Boolean   @default(false) @map("is_public")
+  /// `published`, `scheduled`, `draft` (check).
+  status      String    @default("draft")
+  scheduledAt DateTime? @map("scheduled_at") @db.Timestamptz(6)
+  /// `national`, `school` (check); `school_id` is required for `school`.
+  scope       String
+  schoolId    BigInt?   @map("school_id")
+  authorId    BigInt    @map("author_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  school    School?             @relation("PerutusanSchool", fields: [schoolId], references: [id], onDelete: SetNull, map: "fk_perutusan_school_id")
+  author    User                @relation("PerutusanAuthor", fields: [authorId], references: [id], onDelete: Restrict, map: "fk_perutusan_author_id")
+  comments  PerutusanComment[]
+  reactions PerutusanReaction[]
+  reads     PerutusanRead[]
+  files     PerutusanFile[]
+
+  @@index([status, createdAt(sort: Desc), id(sort: Desc)], map: "ix_perutusan_status_created")
+  @@index([scope, schoolId], map: "ix_perutusan_scope_school")
+  @@index([authorId], map: "ix_perutusan_author_id")
+  @@index([schoolId], map: "ix_perutusan_school_id")
+  @@map("perutusan")
+}
+
+/// Image or document of a perutusan (the mock embedded `images[]` and `documents[]`, OD-28).
+model PerutusanFile {
+  id          BigInt   @id @default(autoincrement())
+  perutusanId BigInt   @map("perutusan_id")
+  fileId      BigInt   @map("file_id")
+  /// `image`, `document` (check).
+  kind        String
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  perutusan Perutusan @relation(fields: [perutusanId], references: [id], onDelete: Cascade, map: "fk_perutusan_files_perutusan_id")
+  file      File      @relation("PerutusanFileFile", fields: [fileId], references: [id], onDelete: Restrict, map: "fk_perutusan_files_file_id")
+
+  @@index([perutusanId, kind, position], map: "ix_perutusan_files_perutusan_kind")
+  @@index([fileId], map: "ix_perutusan_files_file_id")
+  @@map("perutusan_files")
+}
+
+model PerutusanComment {
+  id          BigInt   @id @default(autoincrement())
+  perutusanId BigInt   @map("perutusan_id")
+  userId      BigInt   @map("user_id")
+  body        String
+  /// `pending`, `approved`, `rejected` (check).
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  perutusan Perutusan @relation(fields: [perutusanId], references: [id], onDelete: Cascade, map: "fk_perutusan_comments_perutusan_id")
+  user      User      @relation("PerutusanCommentUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_perutusan_comments_user_id")
+
+  @@index([perutusanId, status, createdAt], map: "ix_perutusan_comments_perutusan_status")
+  @@index([userId], map: "ix_perutusan_comments_user_id")
+  @@map("perutusan_comments")
+}
+
+/// One row per (perutusan, user, kind): a reaction is toggled and a user may hold several kinds (mock BR-M09-25).
+model PerutusanReaction {
+  id          BigInt   @id @default(autoincrement())
+  perutusanId BigInt   @map("perutusan_id")
+  userId      BigInt   @map("user_id")
+  /// `like`, `love`, `thanks` (check).
+  kind        String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  perutusan Perutusan @relation(fields: [perutusanId], references: [id], onDelete: Cascade, map: "fk_perutusan_reactions_perutusan_id")
+  user      User      @relation("PerutusanReactionUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_perutusan_reactions_user_id")
+
+  @@unique([perutusanId, userId, kind], map: "uq_perutusan_reactions_perutusan_user_kind")
+  @@index([userId], map: "ix_perutusan_reactions_user_id")
+  @@map("perutusan_reactions")
+}
+
+model PerutusanRead {
+  id          BigInt   @id @default(autoincrement())
+  perutusanId BigInt   @map("perutusan_id")
+  userId      BigInt   @map("user_id")
+  readAt      DateTime @default(now()) @map("read_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  perutusan Perutusan @relation(fields: [perutusanId], references: [id], onDelete: Cascade, map: "fk_perutusan_reads_perutusan_id")
+  user      User      @relation("PerutusanReadUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_perutusan_reads_user_id")
+
+  @@unique([perutusanId, userId], map: "uq_perutusan_reads_perutusan_user")
+  @@index([userId], map: "ix_perutusan_reads_user_id")
+  @@map("perutusan_reads")
+}
+
+/// Admin screenshot upload (the file is a `files` row, purpose `cms_image`).
+model Screenshot {
+  id           BigInt   @id @default(autoincrement())
+  fileId       BigInt   @map("file_id")
+  originalName String   @map("original_name")
+  uploadedById BigInt   @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  file       File @relation("ScreenshotFile", fields: [fileId], references: [id], onDelete: Restrict, map: "fk_screenshots_file_id")
+  uploadedBy User @relation("ScreenshotUploader", fields: [uploadedById], references: [id], onDelete: Restrict, map: "fk_screenshots_uploaded_by_id")
+
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "ix_screenshots_created_at")
+  @@index([fileId], map: "ix_screenshots_file_id")
+  @@index([uploadedById], map: "ix_screenshots_uploaded_by_id")
+  @@map("screenshots")
+}
+
+/// Audio KBAT set, authored and stored as one document (data model 3.11, G-11 exception):
+/// `sections` = [{no,title,audioFileId,transcript,questionFrom,questionTo}] (4 sections),
+/// `questions` = [{no,questionText,optionA..D,correctAnswer,marks,kbatLevel,dskpSpId,explanation}] (30).
+/// `education_level_id` and `subject_id` are plain ids until BE-08 merges.
+model AudioKbatSet {
+  id               BigInt   @id @default(autoincrement())
+  title            String
+  educationLevelId BigInt   @map("education_level_id")
+  subjectId        BigInt   @map("subject_id")
+  /// `draft`, `pending_review`, `approved`, `archived` (check).
+  status           String   @default("draft")
+  sourceLabel      String?  @map("source_label")
+  instructions     String?
+  sections         Json     @default("[]")
+  questions        Json     @default("[]")
+  createdById      BigInt   @map("created_by_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  educationLevel EducationLevel     @relation(fields: [educationLevelId], references: [id], onDelete: Restrict, map: "fk_audio_kbat_sets_education_level_id")
+  subject        Subject            @relation(fields: [subjectId], references: [id], onDelete: Restrict, map: "fk_audio_kbat_sets_subject_id")
+  createdBy      User               @relation("AudioKbatSetCreator", fields: [createdById], references: [id], onDelete: Restrict, map: "fk_audio_kbat_sets_created_by_id")
+  attempts       AudioKbatAttempt[]
+
+  @@unique([legacySource, legacyId], map: "uq_audio_kbat_sets_legacy")
+  @@index([status, educationLevelId, subjectId], map: "ix_audio_kbat_sets_status_level_subject")
+  @@index([createdById], map: "ix_audio_kbat_sets_created_by_id")
+  @@map("audio_kbat_sets")
+}
+
+/// One row per submit (BR-M09-16). `answers` = [{no, choice}]. `is_test` is stamped under Mod Pelajar (G-07).
+model AudioKbatAttempt {
+  id          BigInt   @id @default(autoincrement())
+  setId       BigInt   @map("set_id")
+  userId      BigInt   @map("user_id")
+  answers     Json
+  score       Int
+  totalMarks  Int      @map("total_marks")
+  isTest      Boolean  @default(false) @map("is_test")
+  submittedAt DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  set  AudioKbatSet @relation(fields: [setId], references: [id], onDelete: Cascade, map: "fk_audio_kbat_attempts_set_id")
+  user User         @relation("AudioKbatAttemptUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_audio_kbat_attempts_user_id")
+
+  @@index([userId, submittedAt(sort: Desc)], map: "ix_audio_kbat_attempts_user_submitted")
+  @@index([setId], map: "ix_audio_kbat_attempts_set_id")
+  @@map("audio_kbat_attempts")
+}
+
+/// Singleton (id = 1, check): the support contact shown to learners.
+model SupportConfig {
+  id             BigInt   @id
+  email          String
+  whatsappNumber String   @map("whatsapp_number")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("support_config")
+}
+
+/// Support ticket (M22). `status` keeps the contract BM codes (check); the user comes from the session.
+model SupportTicket {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  subject      String   @db.VarChar(255)
+  body         String
+  /// `dibuka`, `dalam_proses`, `menunggu_balas`, `selesai`, `ditutup` (check).
+  status       String   @default("dibuka")
+  adminReply   String?  @map("admin_reply")
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  user User @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_support_tickets_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_support_tickets_legacy")
+  @@index([userId, status, createdAt(sort: Desc)], map: "ix_support_tickets_user_status_created")
+  @@index([status, createdAt(sort: Desc), id(sort: Desc)], map: "ix_support_tickets_status_created")
+  @@map("support_tickets")
+}

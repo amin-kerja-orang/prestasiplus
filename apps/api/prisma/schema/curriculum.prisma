@@ -28,6 +28,7 @@ model EducationLevel {
   subjectLevels SubjectLevel[]
   chapters      Chapter[]
   nodes         CurriculumNode[]
+  audioKbatSets AudioKbatSet[]
 
   @@unique([code], map: "uq_education_levels_code")
   @@unique([legacySource, legacyId], map: "uq_education_levels_legacy")
@@ -56,6 +57,8 @@ model Subject {
   chapters      Chapter[]
   nodes         CurriculumNode[]
   tpDescriptors CurriculumTpDescriptor[]
+  videos        Video[]
+  audioKbatSets AudioKbatSet[]
 
   @@unique([code], map: "uq_subjects_code")
   @@unique([legacySource, legacyId], map: "uq_subjects_legacy")

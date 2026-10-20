@@ -2,6 +2,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
 import { z } from '../zod'
 import { ErrorBodySchema } from '../common/error'
+import { IdSchema } from '../common/ids'
 import { envelopeOf, listEnvelopeOf } from '../common/envelope'
 import {
   AUDIO_TEMPLATE_CONTENT_TYPES,
@@ -528,6 +529,29 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
       403: csrfInvalid,
       404: notFound,
       422: err('VALIDATION_ERROR fields.answers "Medan ini diperlukan." (missing) or "Medan ini tidak sah." (not an array, `no` outside 1..30, duplicate `no`, or `choice` outside A..D).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/audio-kbat-sets/{id}/sections/{no}/audio',
+    tags: ['content'],
+    summary: 'Stream the audio of one section of an approved set',
+    description:
+      'Any signed-in user (the only way a student reads Audio KBAT audio; the generic /files route refuses audio_kbat files to everyone but admin). Approved sets only: a draft, pending, archived or unknown set, a section number outside 1..4, or a section without audio is 404 "Not Found.". This is the `audioUrl` of the player data. Headers: `Content-Type` of the stored audio (audio/mpeg, audio/mp4, audio/wav, audio/ogg), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src \'none\'; sandbox`, `Cache-Control: private, no-store`, `Accept-Ranges: bytes`. One `Range: bytes=a-b` is honoured with 206 and `Content-Range`; a range whose start is past the end is 416 with `Content-Range: bytes */size`; a malformed range (for example end before start) is ignored and the whole body is served with 200 (RFC 7233).',
+    request: { params: z.object({ id: IdSchema, no: z.string().regex(/^[1-4]$/) }) },
+    responses: {
+      200: {
+        description: 'The whole audio file.',
+        content: { 'audio/*': { schema: z.string().meta({ type: 'string', format: 'binary' }) } },
+      },
+      206: {
+        description: 'The requested byte range, with Content-Range.',
+        content: { 'audio/*': { schema: z.string().meta({ type: 'string', format: 'binary' }) } },
+      },
+      401: unauthorized,
+      404: notFound,
+      416: { description: 'Range start is past the end of the file; Content-Range: bytes */size.' },
     },
   })
 
