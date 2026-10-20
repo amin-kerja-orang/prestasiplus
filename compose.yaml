@@ -4,6 +4,7 @@
 #   docker compose up -d     -> http://localhost:5192
 #   docker compose down
 # Real API (BE-32): docker compose -f compose.yaml -f compose.http.yaml up -d --build   (npm run stack:up)
+# Staging VPS: docker compose -f compose.yaml -f compose.staging.yaml up -d --build --wait   (docs/ops/deploy-staging.md)
 #   needs .env.api and .env.db (copy the .example files, set random secrets); see docs/ops/containers.md.
 # The older docker-compose.preview.yml (host-built dist-preview, port 5191) still works unchanged.
 name: pretasiplus
@@ -21,7 +22,6 @@ services:
         VITE_MOCK_LATENCY_MS: ${VITE_MOCK_LATENCY_MS:-400}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     image: pretasiplus-frontend:local
-    container_name: pretasiplus-frontend
     ports:
       - '${FRONTEND_PORT:-5192}:8080'
     read_only: true
@@ -39,7 +39,6 @@ services:
       context: .
       dockerfile: docker/api/Dockerfile
     image: pretasiplus-api:local
-    container_name: pretasiplus-api
     env_file:
       - path: .env.api              # secrets: DATABASE_URL, session secret; never committed
         required: false             # optional so `docker compose config -q` passes in CI
@@ -77,7 +76,6 @@ services:
       dockerfile: docker/api/Dockerfile
       target: build
     image: pretasiplus-api-migrate:local
-    container_name: pretasiplus-migrate
     working_dir: /app
     command: ['npm', 'run', 'be:db:migrate']
     user: node
@@ -105,7 +103,6 @@ services:
   # Optional loopback port for local tooling: see compose.override.example.yaml.
   db:
     image: postgres:16-alpine
-    container_name: pretasiplus-db
     env_file:
       - path: .env.db               # POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD; never committed
         required: false             # optional so `docker compose config -q` passes in CI
