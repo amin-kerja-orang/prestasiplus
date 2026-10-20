@@ -15,12 +15,17 @@ import { SubscriptionsModule } from './subscriptions'
 import { UsersModule } from './users'
 import { CurriculumModule } from './curriculum'
 import { QuestionsModule } from './questions'
-import { WalletModule } from './wallet'
 import { BijakPapersModule } from './bijak/papers'
+import { WalletModule } from './wallet'
 import { BijakAttemptsModule } from './bijak/attempts'
 import { PracticeModule } from './practice'
 import { BijakIntegrationModule } from './bijak/integration'
 import { QuestionWorkflowModule } from './questions/workflow'
+import { ClassesModule } from './classes'
+import { PerformanceModule } from './reports/performance'
+import { SchoolAdminModule } from './school-admin'
+import { ExamBuilderModule } from './exam/builder'
+import { ExamBlueprintsModule } from './exam/blueprints'
 import { GamificationModule } from './gamification'
 import { ShopModule } from './shop'
 
@@ -31,4 +36,4 @@ import { ShopModule } from './shop'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, GamificationModule, ShopModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamificationModule, ShopModule]

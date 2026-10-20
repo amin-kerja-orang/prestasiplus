@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino'
 
 import { type Env, loadEnv } from './common/config/env.schema'
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter'
+import { SecurityModule } from './common/security/security.module'
 import { HealthModule } from './common/health/health.module'
 import { DbModule } from './db/db.module'
 import { pinoHttpOptions } from './common/logging/logging'
@@ -41,6 +42,7 @@ export function defineAppModule(
       logger,
       DbModule,
       HealthModule,
+      SecurityModule,
       ...modules,
     ],
     providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
