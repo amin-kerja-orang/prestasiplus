@@ -39,9 +39,14 @@ export interface AggregateRow {
  * SCHOOL-SCOPED REPORTS (BE-19 student performance, BE-21 school admin): use `schoolId`. It filters on
  * `practice_attempt_aggregates.school_id`, the student's school SNAPSHOT at write time (migration 0018,
  * LEAD decision 4, 2026-10-20), served by the partial index (school_id, subject_code, submitted_at DESC)
- * WHERE NOT is_test. A student who moved school keeps old sittings under the old school. The caller must
- * have checked that the actor may see that school (this service does no authorisation).
- * `userIds[]` stays for class / per-student views (at most 5000 ids).
+ * WHERE NOT is_test. A student who moved school keeps old sittings under the old school, so a school report
+ * is historical by design (the old school still sees a transferred student's earlier sittings; rows that
+ * existed before 0018 were backfilled with the student's school at migration time). If product policy says
+ * an old school must not see a transferred student, the caller must also require users.school_id = schoolId
+ * (a product decision for BE-19 / BE-21). The caller must have checked that the actor may see that school
+ * (this service does no authorisation).
+ * `userIds[]` stays for class / per-student views (at most 5000 ids); the caller must have authorised every
+ * id. Return `AggregateRow.schoolId` to a client only when the screen needs it.
  */
 export interface AggregateScope {
   /** Decimal-string user ids. An empty list reads nothing. */
