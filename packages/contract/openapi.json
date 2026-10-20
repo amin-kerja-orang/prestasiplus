@@ -85249,6 +85249,14 @@
         "responses": {
           "200": {
             "description": "The product.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -85333,6 +85341,14 @@
         "responses": {
           "200": {
             "description": "The hand-off URL.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {

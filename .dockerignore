@@ -20,6 +20,9 @@ e2e
 roles-matrix
 docs
 *.md
+# The seed (apps/api/prisma/seed/curriculum.ts) reads the DSKP extracts: ship only the JSON, not the .md notes.
+# The negation must come after `docs`. No `!docs/reference/dskp` line: it would re-include the .md files too.
+!docs/reference/dskp/*.json
 !packages/**/*.md
 docker-compose*.yml
 compose*.yaml

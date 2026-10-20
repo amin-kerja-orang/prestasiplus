@@ -127,6 +127,13 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-21 ~07:xx **Migrations, staging-refresh blockers, cross-lane issues (tip `e6f52c6d`).**
+  - **Migration allocation update:** 0029 **released** (BE-28 needs no migration) · **0031 BE-42 `pksk_question_kind`** (Group A; lands with BE-42 together with the LEAD contract commit `pksk_choice` leaf) · **0032 BE-46 marketplace** (Group A, reusing the pre-sprint work). Next free: **0033**. 0024 still never to be used.
+  - **Merged since batch3:** LEAD contract `timeline_photo` (c41f8443, read rule = avatar), BE-32 DSKP files in the API build stage (e6f52c6d).
+  - **Paired staging refresh (Render + Supabase + Pages together) is BLOCKED until:** (1) **#76** BE-23 `/gamification/leaderboard` no longer exposes pupils' full names nationally (Group B), (2) BE-21 full and BE-19 full merged (Group A, in verify). Until then Pages live stays at most `785e44ef` (FE `00dd069f`+ calls batch3-only routes).
+  - **Cross-lane:** #75 BE-42 adds additive PKSK adapters in `questions` / `practice` (Group B files) — reply there if you are editing them. #76 as above.
+  - **Children's names rule (LEAD, applies to every ranking-like read):** full name + userId only within `canSeeName` scope (teacher: own classes; school_admin: own school; admin: all) and the viewer's own row; otherwise first name + initial, `userId: null`.
+
 - 2026-10-21 ~03:xx **BATCH3 MERGED (tip `2f3b8311`) + PLAN TO 100% + migration allocation.** batch3-reint (#52 #55 #57 #59 #64 #65 #66 + reviewed #53/#58) fast-forwarded after a full local be:verify (4982 tests, 0 failed). Tracker: 31/48 done + 4 slices (≈69%).
   - **Migration numbers (allocated, do not reuse):** 0025 BE-41 (Group B) · 0026 BE-43 (merged) · 0027 BE-44 (Group B, batch4) · **0028 BE-42 PKSK (Group A)** · **0029 BE-28 ETL (Group A, only if needed)** · **0030 BE-19 full — headcount + timeline (Group A)**. **0024 is NOT allocated — never use it** (it sorts below applied migrations). Next free: 0031.
   - **Group A building now:** BE-21 full (school admin people/reports/Amaran, no migration, security review), BE-19 full (social + headcount + timeline, 0030, security review), BE-42 (0028), BE-28 (0029), BE-32 rest (e2e vs real API + DSKP files in the API image). Then BE-26, BE-29/30, BE-33 rest, BE-46/47 (resumed — sprint over).

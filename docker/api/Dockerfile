@@ -23,6 +23,9 @@ COPY apps/api/package.json apps/api/
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY packages ./packages
 COPY apps/api ./apps/api
+# DSKP extracts read by the seed (curriculum.ts: ../../../../docs/reference/dskp = /app/docs/reference/dskp).
+# Build stage only (the migrate job); the runtime image does not read them.
+COPY docs/reference/dskp ./docs/reference/dskp
 # Lint, type-check and tests run in CI, not here.
 RUN npm run be:build
 
