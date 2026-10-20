@@ -37,17 +37,17 @@ export const practiceScenarios: Scenario[] = [
     },
   },
   {
-    id: 'practice-api/start: the defaults of the ports are SET_NOT_READY, a bad body is 422 "Nilai tidak sah.", an unknown subject is 404',
+    id: 'practice-api/start: an unknown assigned item is 404 (BE-18 bound), a bad body is 422 "Nilai tidak sah.", an unknown subject is 404',
     domain: 'practice',
     targets: API_ONLY,
     async run(ctx) {
       const student = await ctx.as('student')
-      // BE-18 is not merged: the assigned-work modes answer the mock's SET_NOT_READY.
-      const mission = await student.request('POST', '/practice/sessions', { body: { mode: 'mission', missionId: '1' } })
-      expectError(ctx, mission, 422, 'SET_NOT_READY')
-      ctx.check(errorOf(mission).message === 'Soalan tidak mencukupi.', 'SET_NOT_READY message differs')
-      for (const body of [{ mode: 'remedial', remedialTestId: '1' }, { mode: 'question_set', questionSetId: '1' }]) {
-        expectError(ctx, await student.request('POST', '/practice/sessions', { body }), 422, 'SET_NOT_READY')
+      // BE-18 binds the assignment source: an unknown assigned item (mission, remedial, question_set) is 404.
+      const mission = await student.request('POST', '/practice/sessions', { body: { mode: 'mission', missionId: '987654321' } })
+      expectError(ctx, mission, 404, 'NOT_FOUND')
+      ctx.check(errorOf(mission).message === 'Rekod tidak dijumpai.', 'unknown mission message differs')
+      for (const body of [{ mode: 'remedial', remedialTestId: '987654321' }, { mode: 'question_set', questionSetId: '987654321' }]) {
+        expectError(ctx, await student.request('POST', '/practice/sessions', { body }), 404, 'NOT_FOUND')
       }
       const bad = await student.request('POST', '/practice/sessions', { body: { mode: 'bogus' } })
       expectError(ctx, bad, 422, 'VALIDATION_ERROR')
