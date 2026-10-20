@@ -25,7 +25,7 @@ export type PracticeMode =
 
 /** A practice subject (BR-01): M03 fields plus the two M04 counts (BR-05). */
 export interface PracticeSubject {
-  id: number | string
+  id: number
   code: string
   name: string
   nameEn: string
@@ -440,8 +440,8 @@ export type StructuredTrack = 'bahasa'
 
 /** #15 one card of S10 and of its SPM variants. */
 export interface StructuredCard {
-  id: number | string
-  subjectId: number | string
+  id: number
+  subjectId: number
   subjectName: string
   /** 1–6 (LOTS 1–2, MOTS 3, HOTS 4–6, BR-23). */
   kbatLevel: number
@@ -475,8 +475,8 @@ export interface StructuredListMeta {
 
 /** #16 the answer page (Q3). */
 export interface StructuredDetail {
-  id: number | string
-  subjectId: number | string
+  id: number
+  subjectId: number
   subjectName: string
   levelName: string
   stimulus: string

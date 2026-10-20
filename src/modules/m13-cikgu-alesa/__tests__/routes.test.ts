@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteLocationNormalized } from 'vue-router'
 
 import { buildRoutes } from '@/app/router'
 
@@ -51,7 +51,7 @@ describe('M13 view routes (V1, V2): opaque ids (string from the API, digits from
     expect(r.name).toBe(name)
     expect(r.params.id).toBe(id)
     const props = r.matched[r.matched.length - 1]?.props.default
-    expect(typeof props === 'function' ? props(r) : props).toEqual({ id })
+    expect(typeof props === 'function' ? props(r as unknown as RouteLocationNormalized) : props).toEqual({ id })
   })
 
   it('keeps /baharu on the form', () => {
