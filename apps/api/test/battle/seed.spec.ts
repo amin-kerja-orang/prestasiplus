@@ -59,11 +59,12 @@ describe('battle demo seed (BE-44)', () => {
     await t.close()
   })
 
-  it('is a demo seed registered after the Bijak sittings, before practice (which stays last)', () => {
+  it('is a demo seed registered after the Bijak sittings, before practice', () => {
     expect(battleSeed.kind).toBe('demo')
     const names = seedModules.map((m) => m.name)
     expect(names.indexOf('battle')).toBe(names.indexOf('poc-bijak-sittings') + 1)
-    expect(names.indexOf('practice')).toBe(names.length - 1)
+    // BE-23 (#52) keeps `gamification` last, so practice is no longer the last module.
+    expect(names.indexOf('practice')).toBeGreaterThan(names.indexOf('battle'))
   })
 
   it('is refused in production without ALLOW_DEMO_SEED (the runner skips it)', async () => {
