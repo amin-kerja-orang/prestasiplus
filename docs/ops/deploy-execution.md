@@ -16,6 +16,10 @@ go only in the platform dashboards or your laptop shell, never in the repo. Plac
 2. Connect -> Session pooler -> copy the URI (port **5432**, IPv4). Not the transaction pooler (6543).
 3. Final value (URL-encode special characters in the password):
    `DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+   This `sslmode=require` form is for the laptop `be:db:migrate` (Prisma) only. node-postgres (the Render runtime
+   and the seed) treats `require` as verify-full and fails on Supabase's own CA: on Render use
+   `?sslmode=verify-full&sslrootcert=/etc/secrets/supabase-ca.crt` (CA as a Render secret file) or, as a fallback,
+   `?sslmode=no-verify`; for the seed use `?sslmode=no-verify`. Details: `docs/ops/demo-cloudflare-supabase.md` step 1.3.
 4. From a laptop checkout of the deploy SHA, after `npm ci` (this runs `prisma migrate deploy` and the seed runner via
    `apps/api/scripts/db.mjs`):
    ```
@@ -30,6 +34,9 @@ go only in the platform dashboards or your laptop shell, never in the repo. Plac
    select role, count(*) from user_roles group by role;   -- demo accounts exist, per role (prisma/schema/identity.prisma: UserRole -> user_roles)
    ```
    The migrations count should equal the number of folders in `apps/api/prisma/migrations`.
+6. **Lock down the Supabase Data API (required).** Turn the Data API off (Integrations -> Data API) and run
+   `scripts/supabase/lockdown-data-api.sql` in the SQL editor. Without it the public anon key can read and write
+   every table in `public` (no RLS). See `docs/ops/demo-cloudflare-supabase.md` step 3.
 
 ## 2. Render (API)
 Create from the Blueprint (`render.yaml`, New -> Blueprint, branch = deploy branch), or manually: New Web Service ->
@@ -110,18 +117,20 @@ Data stays in the browser.
 The chain is: Function sets `X-Forwarded-For` to the client, Render appends the Function's egress IP. Hop 2 should give
 the client address. Test: from two different networks, fail login 5+ times within a minute for a throwaway identifier
 (`THROTTLE_LOGIN_PER_MINUTE` default 5) and confirm the second network is not throttled by the first, and that Render
-request logs show the client address and not a Cloudflare one. If everyone shares a bucket, set `1`; if a client can
-change its bucket by sending `X-Forwarded-For`, raise it. Not yet measured.
+request logs show the client address and not a Cloudflare one. If everyone shares a bucket, the value is too LOW (raise
+it); if a client can change its bucket by sending `X-Forwarded-For`, it is too HIGH (lower it). `scripts/demo-smoke.sh`
+step 5 checks the second case automatically; it passed with 2 in a local rehearsal (wrangler pages dev), not yet on Render.
 
 ## 7. Rollback
 - SPA: Pages -> Deployments -> previous good deployment -> Rollback.
 - API: Render -> Deploys -> redeploy the previous commit.
-- Database: migrations are forward-only; if the bad release migrated, restore the Supabase backup (daily on free) rather than rolling the API back alone.
+- Database: migrations are forward-only; if the bad release migrated, restore a backup rather than rolling the API back alone. Supabase free has NO daily backups (Pro and up): take a
+  `pg_dump` from the laptop before a migrating deploy.
 
 ## 8. Known limitations (staging only)
 - Render free sleeps after 15 minutes idle (30-60 s cold start). Acceptable for a demo; use a paid always-on plan for production.
 - Render free storage is ephemeral: uploads vanish on restart or redeploy. Production needs a persistent disk or object storage.
-- Supabase free: daily backups only, projects pause after inactivity.
+- Supabase free: no daily backups (take a `pg_dump`), projects pause after 7 days of inactivity.
 - Pages Functions free: 100,000 requests per day.
 - Demo accounts have a published password: never seed them into production (`ALLOW_DEMO_SEED` stays unset there).
 - Open item: `VITE_PROTOTYPE_SCOPE=on` limits the UI to the prototype scope (D43). Confirm the Admin Pusat publish screen (objective c) is inside the scope, otherwise set `off` or the screen will be unreachable.

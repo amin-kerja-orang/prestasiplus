@@ -33,3 +33,4 @@ services:
       - { key: SESSION_SECRET, sync: false }   # random, 32+ characters
       - { key: IC_HASH_KEY, sync: false }      # random, 32+ characters, different from SESSION_SECRET
       - { key: PUBLIC_ORIGINS, sync: false }   # the Pages origin, https://<project>.pages.dev
+      - { key: PUBLIC_BASE_URL, sync: false }  # the same Pages origin (class QR join links). Must be a valid URL: an empty value fails the boot

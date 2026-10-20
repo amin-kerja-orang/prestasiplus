@@ -28,9 +28,8 @@ Browser --> https://<project>.pages.dev      static SPA, built with VITE_API_MOD
 
 **Laptop:** a checkout of the repo, Node 22, `npm ci` done, Git Bash (for the smoke test).
 
-**Which commits** (see "What must be merged first" at the end): the API is built from `feature/v2-backend`
-(with this PR merged). The SPA is built from the demo frontend branch the LEAD prepares
-(`be/integration-frontend` plus the items listed there). Decide the two branch names before step 4.
+**Which commit** (see "What must be merged first" at the end): Pages and Render both build the same SHA of the
+deploy branch `be/integration-frontend` (UI + backend), re-synced with `feature/v2-backend` after this PR merges.
 
 **Make three random secrets** now and keep them in a password manager (not in a file in the repo):
 ```
@@ -91,7 +90,7 @@ $env:DATABASE_URL=$env:DATABASE_URL.Replace('sslmode=require','sslmode=no-verify
 $env:ALLOW_DEMO_SEED='true'; npm run be:db:seed
 Remove-Item Env:DATABASE_URL, Env:ALLOW_DEMO_SEED
 ```
-Expected: `migrate deploy` lists the applied migrations (`0001_init` ... `0017_question_workflow`, more if later
+Expected: `migrate deploy` lists the applied migrations (`0001_init` ... `0017_question_workflow`, including `0015_classes`; more if later
 PRs merged) and ends with "All migrations have been successfully applied". `0001_init` prints a NOTICE that
 `pgcrypto` already exists (Supabase pre-installs it in the `extensions` schema): that is fine. The seed ends
 with `seed: profile=poc, 10 module(s): ...`. The line "PoC questions not loaded (BE-09 wire-up TODO)" is
@@ -134,7 +133,7 @@ anywhere; it is not needed.
 
 ## 4. Render: the API (10 min, of which ~6 min build)
 
-1. Dashboard -> **New** -> **Blueprint** -> pick the repo, branch `feature/v2-backend` (the API branch). Render reads
+1. Dashboard -> **New** -> **Blueprint** -> pick the repo, branch = the deploy branch (same SHA as Pages). Render reads
    [render.yaml](../../render.yaml): Docker, `docker/api/Dockerfile`, plan Free, region Singapore, health check
    `/api/health`, auto-deploy off.
    (Without a blueprint: New -> Web Service -> Docker, Dockerfile path `./docker/api/Dockerfile`, Docker context
@@ -147,6 +146,7 @@ anywhere; it is not needed.
    | `SESSION_SECRET` | `<SESSION_SECRET>` |
    | `IC_HASH_KEY` | `<IC_HASH_KEY>` |
    | `PUBLIC_ORIGINS` | `https://<project>.pages.dev` (fill after step 5 if you do not know the name yet; then redeploy) |
+   | `PUBLIC_BASE_URL` | the same `https://<project>.pages.dev` (class QR join links). Must be a valid URL: an empty value fails the boot. If the Pages name is not known yet, enter `https://<project>.pages.dev` with your planned project name |
 
    Fixed by the blueprint (check, do not change): `NODE_ENV=production`, `COOKIE_SECURE=true`,
    `TRUST_PROXY_HOPS=2`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `BIJAK_POC_QUESTIONS=true`,
@@ -199,7 +199,7 @@ smoke step 5 (start with 2). Then use the Koyeb URL as `API_ORIGIN` in step 5.
 
    `VITE_*` values are public in the bundle: never put a secret in one. `API_ORIGIN` is not secret either.
 4. Save and Deploy. When it is live, note `https://<project>.pages.dev`, then put exactly that origin into
-   Render `PUBLIC_ORIGINS` and redeploy Render (step 4.4) if it was not set yet.
+   Render `PUBLIC_ORIGINS` and `PUBLIC_BASE_URL` and redeploy Render (step 4.4) if it was not set yet.
 5. What is in place: `public/_routes.json` limits the Function to `/api/*` (static files never invoke it, which
    keeps the 100,000 Function requests/day free quota for the API). Unknown paths serve `index.html` (no
    `404.html` in the build), so deep links and reloads work without a `_redirects` file. The Function
@@ -225,13 +225,14 @@ BASE_URL=https://<project>.pages.dev DEMO_PASSWORD='<demo password from docs/AKA
 It checks: the SPA and a deep link; `/api/health` (db up), `no-store`, `X-Request-Id`; anonymous `/api/session`
 = 401; student login, `pp_session` = `HttpOnly; Secure; SameSite=Lax`, host-only; a wrong CSRF token = 403;
 Bijak papers, start (exam), autosave, the answer is on the server, submit, result, history, logout; Admin Pusat
-login, Bijak papers = 403 outside Mod Pelajar, enter Mod Pelajar, list papers, exit, logout; and that a spoofed
+login, Bijak papers = 403 outside Mod Pelajar, the Pembina Kertas list (`/api/admin/papers`), enter Mod
+Pelajar, list papers, exit, logout; and that a spoofed
 `X-Forwarded-For` does not change the throttle key. It never prints the password, cookies or tokens. Expected
-last line: `Result: 27 passed, 0 failed`. Then click through once in a browser as `pelajar@demo.test`.
+last line: `Result: 28 passed, 0 failed`. Then click through once in a browser as `pelajar@demo.test`.
 
-Admin Pusat note: on this base the Bijak API is student-only; Admin Pusat sees Bijak papers only in Mod Pelajar.
-The Admin Pusat paper builder (Pembina Kertas, BE-39, #47) is not merged, so the admin Bijak pages do not work
-in the http build (they throw "Bijak admin API is not available in http mode"). Do not show them in the demo.
+Admin Pusat note: the student Bijak API is student-only; Admin Pusat sees student papers only in Mod Pelajar.
+The paper builder API (BE-39, #47) is on the base, but the admin Bijak pages of the SPA have no http client yet
+(they throw "Bijak admin API is not available in http mode"). Do not show them in the demo.
 
 ## 8. Rollback and teardown
 
@@ -260,7 +261,7 @@ in the http build (they throw "Bijak admin API is not available in http mode"). 
 
 ## Migration compatibility (Supabase Postgres 15/17)
 
-Checked on 2026-10-20 against every `apps/api/prisma/migrations/*/migration.sql` (0001-0017):
+Checked on 2026-10-20 against every `apps/api/prisma/migrations/*/migration.sql` (0001-0017, incl. 0015_classes):
 - Only extension: `0001_init` `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`. On Supabase it already exists in the
   `extensions` schema, so this is a no-op NOTICE (the `postgres` role may run it). No migration or query calls a
   pgcrypto function (`crypt`, `digest`, `gen_salt`, `gen_random_bytes`); the only generator used is
@@ -272,30 +273,32 @@ Checked on 2026-10-20 against every `apps/api/prisma/migrations/*/migration.sql`
   only transaction-scoped, which is correct behind the session pooler.
 - Rehearsed on Postgres 16 with a Supabase-like layout: a NON-superuser `postgres` role owning the database,
   `pgcrypto` pre-installed in `extensions`, Supabase's default grants to `anon`/`authenticated`/`service_role`.
-  All migrations applied as that role, the seed ran, and the lockdown script removed all 2,037 Data API grants
+  All migrations applied as that role (100 tables), the seed ran, and the lockdown script removed all 2,100 Data API grants
   (before it, `anon` could read all 46 seeded `users` rows; after it, `permission denied`). Not rehearsed on 17
   (no PG17 locally); nothing in the SQL depends on 16 vs 17.
 - No migration needed changing; no new migration was added.
 
 ## What must be merged first (in this order)
 
-API (Render builds `feature/v2-backend`):
-1. **This PR** (`be/demo-deploy-cf-supabase`): `render.yaml` region/vars, `_routes.json`, the Function
-   `no-store` default, this runbook, the smoke test, the Supabase lockdown SQL. It includes `be/deploy-prep`
-   (the LEAD's 8bad5783), so that branch needs no separate PR.
-2. **#51** (`be/bijak-poc-flag`) if the LEAD wants the flag on the demo: needs a base merge first (conflict in
-   `docs/architecture/v2-backend-deviations.md` only). Without #51 the API serves the PoC questions anyway; with
-   it, `BIJAK_POC_QUESTIONS=true` (already in `render.yaml`) is required.
-   Nothing else is needed for the API: the Bijak backend (#49), auth/session and files are on the base.
+One deploy branch for both services, so the SPA and the API match: `be/integration-frontend` (the LEAD's
+UI + backend integration branch; 17f946b8 already carries `feature/v2-backend` 88059c9f, including #47).
+Pages and Render both build the same SHA (see also [deploy-execution.md](deploy-execution.md) section 0).
 
-SPA (Pages builds a demo frontend branch; the LEAD prepares it, e.g. `demo/frontend-2026-10-21`):
-3. Start from `be/integration-frontend` (21fb311c = `feature/student-prototype` + LEAD transport 5cfb3d93 + the
-   Bijak student http client 43568330 + the admin split fix).
-4. Add **278cea1** from #48 (`be/BE-16-http-client`): working photos upload to `/api/bijak/attempts/{id}/photos`
-   instead of staying in the browser's IndexedDB; also the clock midpoint and subjects retry. A cherry-pick needs a
-   manual resolution in `src/modules/m28-bijak-spm/server/http.ts` (both branches add the file). Without it the
-   demo works, but working photos never leave the device.
-5. Add the Pages files from this PR: `git checkout origin/be/demo-deploy-cf-supabase -- functions public/_routes.json`
-   and commit (do not merge the backend branch into the frontend branch).
-6. `vue-tsc -b` fails on `be/integration-frontend` (the contract package there has no Bijak types); the Pages
-   build command above does not type-check, so the build still succeeds. Fix before production, not for the demo.
+1. **This PR** into `feature/v2-backend` (`render.yaml` region and vars incl. `PUBLIC_BASE_URL`, `_routes.json`,
+   the Function hardening, this runbook, the smoke test, the Supabase lockdown SQL).
+2. **Re-sync `be/integration-frontend` with `feature/v2-backend`** after step 1 (it then also gets 729b7c20, the
+   Function and `render.yaml`; today 17f946b8 has neither).
+3. **#51** (`be/bijak-poc-flag`), optional: the only conflict with the base is in
+   `docs/architecture/v2-backend-deviations.md`. Without #51 the API serves the PoC questions anyway; with it,
+   `BIJAK_POC_QUESTIONS=true` (already in `render.yaml`) is required.
+4. **278cea1** from #48 into the deploy branch (cherry-pick, manual resolution in
+   `src/modules/m28-bijak-spm/server/http.ts`). Without it the demo works, but Bijak working photos stay in the
+   browser's IndexedDB and never reach the server. 17f946b8 does not have it.
+
+Known gaps on the deploy branch (not blockers for the student flow):
+- The Admin Pusat Bijak pages (Pembina Kertas, `m28-bijak-spm/admin/**`) still call the mock-only
+  `bijakAdminServer()`, which throws in http mode. The backend routes exist since #47 (`/api/admin/papers`,
+  `/api/admin/blueprints`; the smoke test lists them), but no frontend http client uses them yet, so
+  "Admin Pusat publishes a paper" cannot be shown in the browser on the http build.
+- `vue-tsc -b` may fail on the deploy branch; the Pages build command does not type-check, so the build still
+  succeeds. Fix before production, not for the demo.

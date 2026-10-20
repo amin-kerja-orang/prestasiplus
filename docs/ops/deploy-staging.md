@@ -51,7 +51,7 @@ export DATABASE_URL='<supabase session pooler url>'
 npm run be:db:migrate                          # prisma migrate deploy; safe to re-run
 ALLOW_DEMO_SEED=true npm run be:db:seed        # STAGING ONLY, explicit, idempotent
 ```
-Run migrations before deploying a release that carries a new migration, after taking a Supabase backup (Dashboard -> Database -> Backups; daily only on free). See BE-33 for the backup/restore procedure.
+Run migrations before deploying a release that carries a new migration, after taking a backup (free plan: no daily backups, so `pg_dump` the session pooler URL from the laptop). See BE-33 for the backup/restore procedure.
 
 ### 4. Cloudflare Pages (SPA + proxy)
 1. Workers & Pages -> Create -> Pages -> connect the Git repo, production branch = the release branch.
