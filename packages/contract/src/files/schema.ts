@@ -11,11 +11,11 @@ import { IdSchema } from '../common/ids'
  * attribute name `file` (BE-06 keeps `profilePicture` for `POST /me/picture`).
  */
 
-export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image'] as const
+export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot'] as const
 export const FilePurposeSchema = z.enum(FILE_PURPOSES).meta({ id: 'FilePurpose' })
 export type FilePurpose = z.infer<typeof FilePurposeSchema>
 
-export const FILE_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const
+export const FILE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'] as const
 export type FileMime = (typeof FILE_MIMES)[number]
 
 const AVATAR_LIKE = {
@@ -39,6 +39,20 @@ export const FILE_PURPOSE_RULES: Readonly<
   // No source for these two (URS OQ-23): same as avatar until confirmed.
   question_image: AVATAR_LIKE,
   cms_image: AVATAR_LIKE,
+  // BE-24: section audio of an Audio KBAT set (admin upload; read only by admin through /files, students use the stream route).
+  audio_kbat: {
+    mimes: ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'],
+    maxBytes: 20 * 1024 * 1024,
+    typeMessage: 'The file field must be a file of type: mp3, m4a, wav, ogg.',
+    sizeMessage: 'The file field must not be greater than 20480 kilobytes.',
+  },
+  // BE-24: private admin screenshots (read: admin only). Size of the screenshots contract; gif and bmp are not storable in files.
+  cms_screenshot: {
+    mimes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxBytes: 10 * 1024 * 1024,
+    typeMessage: 'The file field must be a file of type: jpeg, png, webp.',
+    sizeMessage: 'The file field must not be greater than 10240 kilobytes.',
+  },
 }
 
 export const FILE_MESSAGES = {
