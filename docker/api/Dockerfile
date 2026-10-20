@@ -3,11 +3,12 @@
 # Build from the repo root:  docker build -f docker/api/Dockerfile -t pretasiplus-api:local .
 # See docs/ops/containers.md. The root .dockerignore applies (context = repo root).
 
-# ---- production dependencies only (workspace @pp/api and its @pp/contract link) ----
+# ---- production dependencies only (workspace @pp/api and its @pp/contract + @pp/exam-core links) ----
 FROM node:22.22.2-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/contract/package.json packages/contract/
+COPY packages/exam-core/package.json packages/exam-core/
 COPY apps/api/package.json apps/api/
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --workspace @pp/api --include-workspace-root=false --no-audit --no-fund
@@ -17,6 +18,7 @@ FROM node:22.22.2-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/contract/package.json packages/contract/
+COPY packages/exam-core/package.json packages/exam-core/
 COPY apps/api/package.json apps/api/
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY packages ./packages
@@ -32,6 +34,8 @@ WORKDIR /app
 # Same layout as the repo so the node_modules/@pp/* workspace symlinks resolve.
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node packages/contract ./packages/contract
+# @pp/exam-core is bundled into dist/main.js (ssr.noExternal); copied only so its workspace symlink is not dangling.
+COPY --chown=node:node packages/exam-core ./packages/exam-core
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 WORKDIR /app/apps/api
