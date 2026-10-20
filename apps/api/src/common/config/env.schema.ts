@@ -55,6 +55,8 @@ export const EnvSchema = z.object({
   THROTTLE_PERFORMANCE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   // BE-19 headcount writes (create, auto-setup, drop, reset, delete): per user, counted per process.
   THROTTLE_PERFORMANCE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  // BE-19 timeline posts (POST /timeline, multipart with photos): per user, counted per process.
+  THROTTLE_TIMELINE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   // BE-21 (school admin): throttles per user, counted per process.
   THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),

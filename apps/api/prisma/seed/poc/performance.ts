@@ -10,6 +10,7 @@
  *
  * Idempotent: a config is found by (class, subject, year, mode), an entry by (config, pupil), a mark by (entry,
  * checkpoint); existing rows are left alone. Deterministic: fixed numbers, time from `ctx.clock`. `legacy_*` is never set.
+ * Also three text-only timeline posts for `pelajar@demo.test` (no photos: no generated media).
  * Needs the classes and Bijak sittings seeds (DEMO4S, DEMO4M and the pupils), so it runs after them.
  */
 import { assertSeedAllowed } from '../guard'
@@ -110,5 +111,40 @@ export const performanceSeed: SeedModule = {
         }
       }
     }
+
+    await seedTimeline(prisma, pupils, now)
   },
+}
+
+/**
+ * Demo timeline posts (S16): text posts with NO photos, because the seed never creates image files (project rule: no
+ * generated media). Fictitious content for pelajar@demo.test. Idempotent: a post is found by (pupil, title).
+ */
+const TIMELINE_POSTS = [
+  { title: 'Johan Pertandingan Kuiz Matematik', category: 'pencapaian', eventDate: '2026-08-14', story: 'Mewakili sekolah dalam kuiz peringkat daerah dan memperoleh tempat pertama.' },
+  { title: 'Gotong-royong kelas', category: 'aktiviti', eventDate: '2026-09-05', story: null },
+  { title: 'Azam tahun ini', category: 'cerita', eventDate: null, story: 'Mahu naik satu gred bagi Bahasa Melayu sebelum peperiksaan akhir tahun.' },
+] as const
+
+async function seedTimeline(prisma: Parameters<SeedModule['run']>[0]['prisma'], pupils: Map<string, bigint>, now: Date): Promise<void> {
+  const userId = pupils.get('pelajar@demo.test')
+  if (userId === undefined) return
+  for (const [i, post] of TIMELINE_POSTS.entries()) {
+    const exists = await prisma.timelinePost.findFirst({ where: { userId, title: post.title }, select: { id: true } })
+    if (exists) continue
+    // Spaced a day apart so the newest-first order is stable.
+    const at = new Date(now.getTime() - (TIMELINE_POSTS.length - i) * 86_400_000)
+    await prisma.timelinePost.create({
+      data: {
+        userId,
+        title: post.title,
+        category: post.category,
+        eventDate: post.eventDate === null ? null : new Date(post.eventDate + 'T00:00:00.000Z'),
+        story: post.story,
+        isTest: false,
+        createdAt: at,
+        updatedAt: at,
+      },
+    })
+  }
 }

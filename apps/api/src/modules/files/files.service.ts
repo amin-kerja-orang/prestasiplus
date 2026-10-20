@@ -43,6 +43,8 @@ export const UPLOAD_ROLES: Readonly<Record<FilePurpose, readonly RoleCode[] | 'a
   cms_image: ['admin'],
   audio_kbat: ['admin'],
   cms_screenshot: ['admin'],
+  // BE-19: written only by `POST /timeline` (storeManaged); no public upload route.
+  timeline_photo: [],
 }
 
 export function isFilePurpose(value: unknown): value is FilePurpose {
@@ -130,6 +132,9 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   audio_kbat: (c) => isRole(c, 'admin'),
   // BE-24: private admin screenshots.
   cms_screenshot: (c) => isRole(c, 'admin'),
+  // BE-19: photo of a pupil timeline post (OQ-5). Any signed-in user (a post is shown on the pupil's profile to signed-in
+  // viewers), never anonymous (fail closed). A file written under Mod Pelajar (is_test) is for its owner and admin only.
+  timeline_photo: (c) => c.auth !== null && (!c.row.isTest || c.owns || isRole(c, 'admin')),
   // Personal data of a minor: the owner, admin, and staff whose scope covers the owner.
   // Classmates and other users in the same school are NOT entitled here (leaderboards and class lists are the
   // user cards' job). A teacher of the owner's class is entitled once class membership exists.
