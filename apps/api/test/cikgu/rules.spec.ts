@@ -17,6 +17,15 @@ import { handoff } from './helpers'
 
 const SUBJECTS = ['Matematik', 'Matematik Tambahan', 'Kimia', 'Sejarah', 'Bahasa Melayu']
 
+describe('parseRphRequest caps (D9)', () => {
+  it('cuts tajuk to 200 and the subject to 100 code points', () => {
+    const p = parseRphRequest(`rph Matematik T4 ${'x'.repeat(300)}`, ['Matematik'])
+    expect([...(p?.tajuk ?? '')]).toHaveLength(200)
+    const s = parseRphRequest(`rph ${'S'.repeat(150)} T4 Bab`, ['S'.repeat(150)])
+    expect([...(s?.subject ?? '')]).toHaveLength(100)
+  })
+})
+
 describe('routing (BR-M13-04)', () => {
   it('picks the first match, case-insensitively', () => {
     expect(routeOf('Tolong mark karangan ini menggunakan rubric X')).toBe('mark_essay')

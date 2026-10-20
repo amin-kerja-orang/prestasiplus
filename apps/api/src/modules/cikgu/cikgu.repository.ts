@@ -154,7 +154,7 @@ export class CikguRepository {
     await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`cikgu.chat:${userId}`}, 0))`
   }
 
-  /** Serialises the roll-up and approval writes of one teacher (the unique key `(user, class, student, sp)` would otherwise race). Inside a transaction. */
+  /** Serialises the roll-up writes of one teacher (the unique key `(user, class, student, sp)` would otherwise race). Approval does not take it: it is one status-guarded UPDATE, and the roll-up refresh is status-guarded too. Inside a transaction. */
   async lockUserPbd(userId: string): Promise<void> {
     await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`cikgu.pbd:${userId}`}, 0))`
   }
@@ -258,7 +258,7 @@ export class CikguRepository {
     if (key === null) return { rows: [], total: 0 }
     const where = { userId: key }
     const [rows, total] = await Promise.all([
-      this.db.rphPlan.findMany({ where, orderBy: [{ lessonDate: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
+      this.db.rphPlan.findMany({ where, orderBy: [{ lessonDate: 'desc' }, { id: 'desc' }], skip: skipOf(page, pageSize), take: pageSize }),
       this.db.rphPlan.count({ where }),
     ])
     return { rows: rows.map(toRph), total }
@@ -300,7 +300,7 @@ export class CikguRepository {
     if (key === null) return { rows: [], total: 0 }
     const where = { userId: key }
     const [rows, total] = await Promise.all([
-      this.db.essayMarking.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
+      this.db.essayMarking.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: skipOf(page, pageSize), take: pageSize }),
       this.db.essayMarking.count({ where }),
     ])
     return { rows: rows.map(toEssay), total }
@@ -359,8 +359,10 @@ export class CikguRepository {
   }
 
   /** A re-run of the roll-up: the pending tag gets the new score and band and the roll-up time. */
-  async refreshPendingTag(id: string, skor: number, tp: number, now: Date): Promise<void> {
-    await this.db.pbdTag.update({ where: { id: idFromString(id) }, data: { skor, tp, createdAt: now } })
+  async refreshPendingTag(id: string, skor: number, tp: number, now: Date): Promise<boolean> {
+    // Guarded by status: a tag approved meanwhile is left alone (the caller counts it as skipped).
+    const res = await this.db.pbdTag.updateMany({ where: { id: idFromString(id), status: 'pending' }, data: { skor, tp, createdAt: now } })
+    return res.count > 0
   }
 
   /** Approves the owner's PENDING tags among `ids` in one statement; returns how many changed. Foreign and non-pending ids are ignored. */
@@ -462,3 +464,8 @@ const toTag = (r: {
   createdAt: r.createdAt,
   approvedAt: r.approvedAt,
 })
+
+/** Rows to skip for a page; capped so a huge page number stays a valid OFFSET (the page is simply empty). */
+function skipOf(page: number, pageSize: number): number {
+  return Math.min((page - 1) * pageSize, 2_000_000_000)
+}

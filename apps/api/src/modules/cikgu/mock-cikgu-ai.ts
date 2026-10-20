@@ -45,7 +45,7 @@ export class MockCikguAi implements CikguAiPort {
         durationMinutes: input.durationMinutes,
         timeSlot: input.timeSlot,
         tema: input.tema,
-        pengajaranKeperluan: input.pengajaranKeperluan,
+        pengajaranKeperluan: null,
       }),
     })
   }

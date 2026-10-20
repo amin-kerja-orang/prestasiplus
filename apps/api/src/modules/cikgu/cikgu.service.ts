@@ -72,6 +72,8 @@ export type SendOutcome =
   | { kind: 'quota' }
   | { kind: 'ok'; body: CikguSendResponse }
 
+const CIKGU_DATE_INVALID = 'Tarikh tidak sah.'
+
 const asRecord = (v: unknown): Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
 
@@ -80,7 +82,7 @@ export function pageOf(raw: unknown): number {
   const t = typeof raw === 'string' ? raw.trim() : ''
   if (!/^\d+$/.test(t)) return 1
   const n = Number(t)
-  return Number.isSafeInteger(n) && n >= 1 ? Math.min(n, 1_000_000) : 1
+  return Number.isSafeInteger(n) && n >= 1 ? n : 1
 }
 
 /** A class or tag id given as a digit string (trimmed) or a non-negative integer; null for anything else or an id out of range. */
@@ -308,7 +310,6 @@ export class CikguService {
           durationMinutes: 60,
           timeSlot: null,
           tema: null,
-          pengajaranKeperluan: null,
         })
         const reply = cikguRphConfirmation(p.tajuk, p.subject, p.level, label)
         return { reply, tool: 'rph', tokens: plan.tokens ?? estimate(reply), rph: { subject: p.subject, level: p.level, tajuk: p.tajuk, lessonDate, content: plan.text } }
@@ -346,6 +347,9 @@ export class CikguService {
       throw ApiError.of('VALIDATION_ERROR', { fields: fields as Record<string, string>, message: cikguSummarizeFieldErrors(fields) })
     }
     const v = CikguRphCreateRequestSchema.parse(input)
+    if (typeof v.lessonDate === 'string' && v.lessonDate !== '' && Number(v.lessonDate.slice(0, 4)) < 1) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { lessonDate: CIKGU_DATE_INVALID }, message: CIKGU_DATE_INVALID })
+    }
     const now = this.clock.now()
     const lessonDate = v.lessonDate === undefined || v.lessonDate === '' ? mytDay(now) : v.lessonDate
     const durationMinutes = v.durationMinutes ?? 60
@@ -367,13 +371,14 @@ export class CikguService {
           durationMinutes,
           timeSlot,
           tema,
-          pengajaranKeperluan: keperluan,
         })
       ).text
     } catch (err) {
       if (!(err instanceof CikguAiUnavailableError)) this.logger.warn(`AI provider failed (${err instanceof Error ? err.name : 'error'})`)
       throw aiUnavailable()
     }
+    // The special-needs text is appended here, never sent to the AI port; the last line of the plan.
+    if (keperluan) content = `${content}\nKeperluan Khas: ${keperluan}`
     const row = await this.write(() =>
       this.repo.createRph({
         userId: actor.userId,
@@ -465,8 +470,8 @@ export class CikguService {
         const tags = existing.filter((t) => t.studentId === s.studentId)
         const pending = tags.find((t) => t.status === 'pending')
         if (pending) {
-          await this.repo.refreshPendingTag(pending.id, s.skor, s.tp, now)
-          result.updated++
+          if (await this.repo.refreshPendingTag(pending.id, s.skor, s.tp, now)) result.updated++
+          else result.skipped++
         } else if (tags.length > 0) {
           result.skipped++
         } else {

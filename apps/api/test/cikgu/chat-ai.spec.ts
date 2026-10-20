@@ -112,6 +112,17 @@ describe('AI port: unavailable provider, swapped provider, failure stores nothin
     expect(await counts()).toEqual(before)
   })
 
+  it('the RPH plan input never carries pengajaranKeperluan; the service appends the Keperluan Khas line itself', async () => {
+    const teacher = await client(t, TEACHER_B)
+    ai.plans.length = 0
+    const res = await teacher.post('/cikgu/rph', { subjectName: 'Matematik', level: 'T4', tajuk: 'Bab 9', pengajaranKeperluan: 'Murid cerdik khas' })
+    expect(res.status).toBe(201)
+    expect(ai.plans).toHaveLength(1)
+    expect(Object.keys(ai.plans[0] as object)).not.toContain('pengajaranKeperluan')
+    expect(JSON.stringify(ai.plans[0])).not.toContain('Murid cerdik khas')
+    expect(res.body.data.content).toBe('FAKE-PLAN Bab 9\nKeperluan Khas: Murid cerdik khas')
+  })
+
   it('POST /cikgu/rph answers 503 AI_UNAVAILABLE in the standard envelope and stores nothing', async () => {
     const teacher = await client(t, TEACHER_B)
     const before = await counts()

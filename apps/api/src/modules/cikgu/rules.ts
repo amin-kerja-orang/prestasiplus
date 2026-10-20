@@ -123,7 +123,9 @@ export function parseRphRequest(message: string, subjectNames: readonly string[]
     .replace(/\s*\b(esok|hari ini)$/i, '')
     .trim()
   if (tajuk === '') tajuk = `${subject} ${cikguLevelLabel(level)}`
-  return { subject, level, tajuk, tomorrow: /\besok\b/i.test(message) }
+  // D9: the stored columns are capped (tajuk 200, subject 100 code points); the mock has no cap.
+  tajuk = [...tajuk].slice(0, 200).join('')
+  return { subject: [...subject].slice(0, 100).join(''), level, tajuk, tomorrow: /\besok\b/i.test(message) }
 }
 
 // --- RPH plan text (BR-M13-11) ------------------------------------------------------------------------

@@ -48,7 +48,7 @@ export async function bootCikguApp(opts: BootOptions = {}): Promise<CikguTestApp
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
-    SESSION_SECRET: 'test-secret-0123456789abcdef',
+    SESSION_SECRET: 'x'.repeat(32),
     IC_HASH_KEY: undefined,
     SESSION_COOKIE_NAME: undefined,
     COOKIE_DOMAIN: undefined,

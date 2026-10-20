@@ -174,6 +174,12 @@ describe('POST /api/cikgu/send: the chat turn', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ subject_name: 'Matematik', level: 'T4', tajuk: 'Bab 3', lesson_date: '2026-10-20', duration_minutes: 60, source: 'chat', status: 'generated', class_name: null })
     expect(rows[0]?.content).toBe(rphContent({ subjectName: 'Matematik', level: 'T4', tajuk: 'Bab 3', className: null, dateLabel: '20/10/2026', durationMinutes: 60, timeSlot: null, tema: null, pengajaranKeperluan: null }))
+    // D9: an over-long tajuk is cut to 200 code points (the column is capped), not a 500.
+    const long = await send(teacher, `Buat RPH Matematik T4 ${'é'.repeat(250)}`)
+    expect(long.status).toBe(200)
+    const longRow = await t.db.query<{ tajuk: string }>(`select tajuk from rph_plans where thread_id = $1`, [long.body.thread_id])
+    expect(longRow).toHaveLength(1)
+    expect([...(longRow[0]?.tajuk ?? '')]).toHaveLength(200)
     // Today and the longest subject name.
     const today = await send(teacher, 'jana rph Matematik Tambahan Tingkatan 5 Fungsi hari ini')
     expect(today.body.reply).toContain('"Fungsi" (Matematik Tambahan, Tingkatan 5) untuk 19/10/2026')

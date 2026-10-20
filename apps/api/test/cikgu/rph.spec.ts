@@ -189,6 +189,22 @@ describe('RPH routes: POST/GET /cikgu/rph, GET /cikgu/rph/:id', () => {
     expect(res.body.error.code).toBe('CSRF_INVALID')
   })
 
+  it('a lesson date in year 0000 is 422 "Tarikh tidak sah." and stores nothing', async () => {
+    const res = await teacher.post('/cikgu/rph', { ...valid, lessonDate: '0000-01-01' })
+    expect(fieldsOf(res)).toEqual({ lessonDate: 'Tarikh tidak sah.' })
+    expect(res.body.error.message).toBe('Tarikh tidak sah.')
+  })
+
+  it('a huge page number is an empty page and meta.page keeps the requested number', async () => {
+    const res = await teacher.get('/cikgu/rph?page=5000000')
+    expect(res.status).toBe(200)
+    expect(res.body.data).toEqual([])
+    expect(res.body.meta).toMatchObject({ page: 5000000, from: null, to: null })
+    const big = await teacher.get('/cikgu/rph?page=9007199254740991')
+    expect(big.status).toBe(200)
+    expect(big.body.data).toEqual([])
+  })
+
   it('AC9/10: the list is the caller\'s own, lesson date desc then id desc, 20 a page, a page beyond the last is empty and keeps the page; an invalid page is 1', async () => {
     // Fresh rows for teacher B: 45 plans over three dates (inserted directly), ids ascending within a date.
     for (let i = 0; i < 45; i++) {

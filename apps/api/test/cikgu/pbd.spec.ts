@@ -1,6 +1,7 @@
 import { CIKGU_BULK_IDS_TOO_MANY, CikguPbdQueueItemSchema, CikguRollupResultSchema, ErrorBodySchema, ListMetaSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { CikguRepository } from '../../src/modules/cikgu/cikgu.repository'
 import { ADMIN, TEACHER_A, TEACHER_B, addAnswers, bootCikguApp, client, idOfEmail, makeClass, subjectIdOf, type CikguTestApp, type Client } from './helpers'
 
 describe('PBD tags: roll-up, queue, bulk approve, CSV export', () => {
@@ -82,6 +83,18 @@ describe('PBD tags: roll-up, queue, bulk approve, CSV export', () => {
       const after = (await tags(aId)).map((r) => r.created_at)
       expect(after.every((c, i) => new Date(c).getTime() === new Date(before[i] as string).getTime() + 60_000)).toBe(true)
       expect((await rollup(teacher, Number(classId))).body.data).toEqual({ created: 0, updated: 3, skipped: 0 })
+    })
+
+    it('refreshPendingTag only touches a pending tag (status guard)', async () => {
+      const repo = t.app.get(CikguRepository)
+      const rows = await t.db.query<{ id: string }>(`select id::text from pbd_tags where user_id = $1 order by id limit 2`, [aId])
+      const [a, b] = rows.map((r) => r.id) as [string, string]
+      await t.db.query(`update pbd_tags set status = 'approved', approved_at = now() where id = $1`, [a])
+      expect(await repo.refreshPendingTag(a, 1, 1, new Date())).toBe(false)
+      expect((await t.db.query<{ tp: number }>(`select tp from pbd_tags where id = $1`, [a]))[0]?.tp).not.toBe(1)
+      const keep = (await t.db.query<{ skor: string; tp: number; created_at: Date }>(`select skor::text, tp, created_at from pbd_tags where id = $1`, [b]))[0] as { skor: string; tp: number; created_at: Date }
+      expect(await repo.refreshPendingTag(b, Number(keep.skor), keep.tp, keep.created_at)).toBe(true)
+      await t.db.query(`update pbd_tags set status = 'pending', approved_at = null where id = $1`, [a])
     })
 
     it('new answers change the score of the pending tag and a new student with answers gets a new tag; an approved tag is left alone (skipped)', async () => {

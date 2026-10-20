@@ -61,9 +61,15 @@ export interface CikguRphPlanInput {
   durationMinutes: number
   timeSlot: string | null
   tema: string | null
-  pengajaranKeperluan: string | null
+  // `pengajaranKeperluan` is deliberately absent: the service appends the `Keperluan Khas` line itself (free text that may
+  // describe a pupil's special needs never reaches a provider).
 }
 
+/**
+ * CONTRACT for every implementation other than the mock: each text input (chat `message`, `essay`, `title`, `tajuk`,
+ * `className`, `tema`, `timeSlot`) MUST go through BE-36 redaction and `generateText` (rate limit, cost log, budget) before
+ * it leaves the process. Inputs never contain a student's name or a user id, and an implementation must not look them up.
+ */
 export interface CikguAiPort {
   chatReply(input: CikguChatReplyInput): Promise<CikguAiText>
   markEssay(input: CikguMarkEssayInput): Promise<CikguMarkEssayOutput>
