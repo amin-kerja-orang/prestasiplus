@@ -11,6 +11,7 @@ import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
+import { questionsSeed } from '../../prisma/seed/questions'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
@@ -33,10 +34,14 @@ export interface IntegrationApp {
   close(): Promise<void>
 }
 
-/** The real wiring: auth + `BijakIntegrationModule` (papers, attempts, practice, wallet). No port is plugged by the test. */
+/**
+ * The real wiring: auth + `BijakIntegrationModule` (papers, attempts, practice, wallet, BE-09 question bridge).
+ * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
+ * (PoC papers on the reserved ids AND bank questions in `question_versions`).
+ */
 export async function bootIntegrationApp(): Promise<IntegrationApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, examSeed, walletSeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
