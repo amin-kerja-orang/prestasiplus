@@ -30,5 +30,10 @@ export const AUDIT_ACTIONS = {
   BIJAK_ATTEMPT_SUBMITTED: 'bijak.attempt.submitted',
   BIJAK_ATTEMPT_AUTO_SUBMITTED: 'bijak.attempt.auto_submitted',
   BIJAK_ATTEMPT_ABANDONED: 'bijak.attempt.abandoned',
+  QUESTION_CREATED: 'question.created',
+  QUESTION_UPDATED: 'question.updated',
+  QUESTION_DELETED: 'question.deleted',
+  QUESTION_BULK_ACTION: 'question.bulk_action',
+  QUESTION_STATUS_CHANGED: 'question.status.changed',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
