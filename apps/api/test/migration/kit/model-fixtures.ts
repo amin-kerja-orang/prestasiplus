@@ -66,6 +66,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
+  exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
@@ -75,6 +77,11 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     expires_at: '2027-01-01T00:00:00Z',
   }),
   parent_links: async (query) => ({ parent_id: await parentUser(query), student_id: await parentUser(query) }),
+  // practice_answers (BE-12): the user must exist; a row links to a question or a subject (ck_practice_answers_link).
+  // Linked by subject, not question: the FK to questions (BE-09) is deferred, so a fixed question id breaks once it lands.
+  practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: null, subject_id: await parentSubject(query) }),
+  // practice_sessions (BE-12): the user must exist; mode is one of the ten practice modes.
+  practice_sessions: async (query) => ({ user_id: await parentUser(query), mode: 'random' }),
   school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
   school_subscriptions: async (query) => ({
     school_id: await parentSchool(query),
