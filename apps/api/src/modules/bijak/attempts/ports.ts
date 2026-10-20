@@ -108,6 +108,10 @@ export interface BijakAttemptAggregateInput {
   attemptId: string
   userId: string
   isTest: boolean
+  /** Optional context BE-12 uses for `start_type` and `duration_sec` (AC-33.4). */
+  paperKind?: 'pilihan' | 'jana'
+  startedAt?: Date
+  submittedAt?: Date | null
   /** Decimal-string paper id; null for a migrated attempt. */
   paperId: string | null
   subject: string
@@ -120,18 +124,12 @@ export interface BijakAttemptAggregateInput {
   /** True when a late sync re-graded an attempt that was already counted (replace, do not add). */
   regraded: boolean
   questions: { questionId: string; marks: number; awarded: number; attempted: boolean; counted: boolean }[]
-  /** AC-33.4 "start type": the paper kind of the attempt (BE-12 open question 1). */
-  paperKind?: 'pilihan' | 'jana' | null
-  /** AC-33.4 "duration": when the attempt started. */
-  startedAt?: Date | null
-  /** AC-33.4 "duration": when it was closed (submitted or auto-submitted). */
-  submittedAt?: Date | null
 }
 
 export interface BijakAttemptAggregatePort {
   /**
    * Feeds teacher and school analytics (US-33). `isTest` rows must be excluded from other users'
-   * aggregates. Bound to BE-12's `PracticeAggregateService` by `BijakIntegrationModule`.
+   * aggregates. TODO(BE-12 / M05 owner): bind to the practice-store aggregate when it opens.
    */
   recordGraded(input: BijakAttemptAggregateInput): Promise<void>
 }

@@ -8,6 +8,7 @@ import { BijakAttemptsController, PhotoInterceptor } from './attempts.controller
 import { AttemptsRepository } from './attempts.repository'
 import { BijakAttemptsService } from './attempts.service'
 import { BijakAttemptPorts } from './ports'
+import { BijakAttemptProgress } from './progress-source'
 
 /**
  * Bijak SPM attempts (M28, BE-16): start and resume, the attempt view without keys, autosave,
@@ -21,7 +22,8 @@ import { BijakAttemptPorts } from './ports'
 @Module({
   imports: [AuditModule, ThrottleModule, FilesModule],
   controllers: [BijakAttemptsController],
-  providers: [BijakAttemptPorts, AttemptsRepository, BijakAttemptsService, AttemptSweeper, PhotoInterceptor],
-  exports: [BijakAttemptPorts, BijakAttemptsService],
+  // BijakAttemptProgress is exported but not bound to BE-15's ports here; a later integration PR binds it.
+  providers: [BijakAttemptPorts, BijakAttemptProgress, AttemptsRepository, BijakAttemptsService, AttemptSweeper, PhotoInterceptor],
+  exports: [BijakAttemptPorts, BijakAttemptProgress, BijakAttemptsService],
 })
 export class BijakAttemptsModule {}

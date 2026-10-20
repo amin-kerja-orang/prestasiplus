@@ -1,16 +1,17 @@
 /**
  * The ONE place the attempts module imports the marking engine from (BE-14 / ADR-0021).
  *
- * The engine is `@pp/exam-core` (BE-14; the workspace dependency and `ssr.noExternal` are in
- * `apps/api/package.json` and `vite.build.config.ts`). Names the root entry does not re-export
- * (`CurriculumTag`, `QuestionResult`, `SectionResult`, `StimulusDef`) come from the `types` subpath.
- * Nothing else in
- * `bijak/attempts` imports the engine, and the pure marking code (`marking.ts`) sees only the names
- * exported here.
+ * The engine is the `@pp/exam-core` workspace (BE-14), imported by its subpath exports and bundled
+ * into `dist/main.js` by `ssr.noExternal` in `apps/api/vite.build.config.ts`. Nothing under
+ * `apps/api` may import the repo-root `src/` (the API Docker image does not contain it; #45 C4).
+ * Nothing else in `bijak/attempts` imports the engine, and the pure marking code (`marking.ts`)
+ * sees only the names exported here.
  *
  * `gradePart`, `isBlank` and `numericValue` are WRAPPERS, not re-exports: see `defuseRootIndex`.
  */
-import { gradePart as engineGradePart, isBlank as engineIsBlank, numericValue as engineNumericValue, type PartAnswer } from '@pp/exam-core'
+import { gradePart as engineGradePart, isBlank as engineIsBlank } from '@pp/exam-core/grading'
+import { numericValue as engineNumericValue } from '@pp/exam-core/math-expr'
+import type { PartAnswer } from '@pp/exam-core/types'
 
 /**
  * Student text reaches the engine's LaTeX reader. Its `\sqrt[...]` branch never terminates on an
@@ -51,6 +52,18 @@ export function isBlank(a: PartAnswer | undefined): boolean {
 export function numericValue(raw: string): number | null {
   return engineNumericValue(defuseRootIndex(raw))
 }
-export { effectiveMarks, leavesOf, type Leaf } from '@pp/exam-core'
-export type { LeafKind, McqOption, PartAnswer, PartDef, PartResult, QuestionDef, SchemeDef, SectionSnapshot } from '@pp/exam-core'
-export type { CurriculumTag, QuestionResult, SectionResult, StimulusDef } from '@pp/exam-core/types'
+export { effectiveMarks, leavesOf, type Leaf } from '@pp/exam-core/paper-model'
+export type {
+  CurriculumTag,
+  LeafKind,
+  McqOption,
+  PartAnswer,
+  PartDef,
+  PartResult,
+  QuestionDef,
+  QuestionResult,
+  SchemeDef,
+  SectionResult,
+  SectionSnapshot,
+  StimulusDef,
+} from '@pp/exam-core/types'

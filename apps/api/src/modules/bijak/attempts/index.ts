@@ -14,3 +14,4 @@ export {
   type BijakRewardPort,
   type PaperResolution,
 } from './ports'
+export { BijakAttemptProgress, type BijakProgressSource, type BijakServedSource, type PaperProgress } from './progress-source'
