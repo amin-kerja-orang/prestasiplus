@@ -28,7 +28,11 @@ export const ACCEPTED_TYPES = ['application/pdf', 'image/png', 'image/jpeg']
 /** A page with fewer characters than this has no usable text layer and is OCR'd. */
 const MIN_TEXT_CHARS = 20
 
-export function checkFile(file: File): string | null {
+/** http mode: the server reads PDF only (BE-37), so other types are refused before the upload. */
+export const PDF_ONLY_MESSAGE = 'Jenis fail tidak disokong. Gunakan PDF.'
+
+export function checkFile(file: File, pdfOnly = false): string | null {
+  if (pdfOnly && file.type !== 'application/pdf') return PDF_ONLY_MESSAGE
   if (!ACCEPTED_TYPES.includes(file.type))
     return 'Jenis fail tidak disokong. Gunakan PDF, PNG atau JPG.'
   if (file.size > MAX_FILE_BYTES) return 'Fail melebihi had 20 MB.'

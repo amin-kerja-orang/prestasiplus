@@ -19,6 +19,9 @@ import { setPageImages } from '../lib/page-images'
 import { SAMPLE_PAGES } from '../lib/sample-paper'
 import { PAPER_TYPES, type PageImage, type PageText } from '../types'
 
+/** http mode: the server accepts PDF only (BE-37); the mock keeps PDF, PNG and JPG. */
+const pdfOnly = import.meta.env.VITE_API_MODE === 'http'
+
 const router = useRouter()
 const server = bijakAdminServer()
 const user = useBijakUser()
@@ -44,7 +47,7 @@ const failure = ref('')
 
 function onFile(v: File | File[] | null): void {
   const f = Array.isArray(v) ? (v[0] ?? null) : v
-  fileError.value = f ? (checkFile(f) ?? '') : ''
+  fileError.value = f ? (checkFile(f, pdfOnly) ?? '') : ''
   file.value = fileError.value ? null : f
 }
 
@@ -165,12 +168,17 @@ async function useSample(): Promise<void> {
 
       <DsFormSection
         title="Fail kertas"
-        description="PDF, PNG atau JPG, maksimum 20 MB. Halaman imbasan dibaca dengan OCR."
+        :description="
+          pdfOnly
+            ? 'PDF sahaja, maksimum 20 MB. Halaman imbasan dibaca dengan OCR.'
+            : 'PDF, PNG atau JPG, maksimum 20 MB. Halaman imbasan dibaca dengan OCR.'
+        "
         icon="upload-simple"
       >
         <DsFileField
           :model-value="file"
-          accept="application/pdf,image/png,image/jpeg"
+          :accept="pdfOnly ? '.pdf' : 'application/pdf,image/png,image/jpeg'"
+          :hint="pdfOnly ? 'Hanya PDF' : undefined"
           :max-size-mb="20"
           label="Pilih atau seret fail"
           :disabled="busy"
