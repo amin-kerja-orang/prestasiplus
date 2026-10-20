@@ -628,7 +628,7 @@
     "src/modules/m05-practice/pages/RemedialListPage.vue": 5,
     "src/modules/m05-practice/pages/RevisionListPage.vue": 8,
     "src/modules/m05-practice/pages/SpmTargetsPage.vue": 5,
-    "src/modules/m05-practice/pages/StructuredAnswerPage.vue": 17,
+    "src/modules/m05-practice/pages/StructuredAnswerPage.vue": 21,
     "src/modules/m05-practice/pages/StructuredListPage.vue": 19,
     "src/modules/m06-spm/components/DutaBlock.vue": 6,
     "src/modules/m06-spm/components/SkeletonCards.vue": 2,
