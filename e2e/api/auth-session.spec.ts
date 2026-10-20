@@ -3,11 +3,13 @@
  * the session, the CSRF rule, logout, and the role switch. Run against the stack:
  *   npm run stack:up && npm run test:e2e:http -- --grep @api
  * The accounts are the BE-07 seed (`pelajar@demo.test` student, `guruadmin@demo.test` teacher +
- * school admin), password `Demo1234`.
+ * school admin). Password: `E2E_DEMO_PASSWORD` when set (staging), else the local seed password.
  */
 
 import { API_PASSWORD, currentSession, expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 import { HOME } from './helpers'
+
+const PASSWORD = process.env.E2E_DEMO_PASSWORD || API_PASSWORD
 
 test.describe('auth and session @api', () => {
   // bcrypt on the real API makes a login take several seconds on a busy machine.
@@ -30,7 +32,7 @@ test.describe('auth and session @api', () => {
     page,
     context,
   }) => {
-    await loginViaUi(page, 'pelajar@demo.test')
+    await loginViaUi(page, 'pelajar@demo.test', PASSWORD)
 
     const cookie = (await context.cookies()).find((c) => c.name === 'pp_session')
     expect(cookie, 'pp_session cookie').toBeDefined()
@@ -52,7 +54,7 @@ test.describe('auth and session @api', () => {
   test('the app restores the session from the cookie when localStorage is empty @api', async ({
     page,
   }) => {
-    await loginViaUi(page, 'pelajar@demo.test')
+    await loginViaUi(page, 'pelajar@demo.test', PASSWORD)
     const landing = new URL(page.url()).pathname
     await page.evaluate(() => localStorage.removeItem('pp.auth'))
     await page.goto(landing)
@@ -69,7 +71,7 @@ test.describe('auth and session @api', () => {
     // reachable for that role in the SPA yet (frontend gap, see the T31 report). The SPA then picks the
     // cookie session up on its own (T7).
     const login = await page.request.post('/api/auth/login', {
-      data: { identifier: 'guruadmin@demo.test', password: API_PASSWORD },
+      data: { identifier: 'guruadmin@demo.test', password: PASSWORD },
     })
     expect(login.status()).toBe(200)
     await gotoApi(page, '/login')
@@ -105,7 +107,7 @@ test.describe('auth and session @api', () => {
   })
 
   test('logout from the app ends the cookie session @api', async ({ page }) => {
-    await loginViaUi(page, 'pelajar@demo.test')
+    await loginViaUi(page, 'pelajar@demo.test', PASSWORD)
     await page.goto('/logout')
     await expect(page).toHaveURL(/\/login/)
     const res = await page.request.get('/api/session')
