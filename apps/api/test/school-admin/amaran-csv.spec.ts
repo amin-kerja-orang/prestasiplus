@@ -94,8 +94,10 @@ describe('BE-21 Amaran CSV: GET /amaran/export/school/:id', () => {
 
   it('MYT date: at 16:30 UTC (00:30 MYT) the file name already carries the next Malaysia day', async () => {
     t.clock.set('2026-10-19T16:30:00Z')
+    const late = peopleApiOf(await login(t, SCHOOL_ADMIN)) // the earlier session has expired by now
     try {
-      const res = await schoolAdmin.get(`/amaran/export/school/${s1}`)
+      const res = await late.get(`/amaran/export/school/${s1}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.headers['content-disposition']).toContain(`-${s1}-20261020.csv`)
     } finally {
       t.clock.set('2026-10-19T09:00:00+08:00')

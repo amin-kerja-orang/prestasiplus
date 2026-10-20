@@ -12,6 +12,9 @@ import { addSession, addSubject } from './reports-fixtures'
 
 const mastery = (t: SchoolAdminTestApp, userId: string, subjectId: string, correct: number, answered: number, at = '2026-10-18T10:00:00+08:00') =>
   t.db.query(`insert into mastery (user_id, subject_id, correct, answered, last_answered_at) values ($1::bigint, $2::bigint, $3, $4, $5::timestamptz)`, [userId, subjectId, correct, answered, at])
+/** The error body without its per-request id (the rest must be byte-identical: no foreign/unknown oracle). */
+const noReq = (b: { error?: Record<string, unknown> }) => ({ ...b, error: { ...b.error, requestId: undefined } })
+
 
 describe('BE-21 Amaran access: /amaran/*', () => {
   let t: SchoolAdminTestApp
@@ -44,7 +47,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
       const id = await insertUser(t.db, { name: `Murid Amaran ${i}`, email: `amaran${i}@ujian.test`, roles: ['student'], schoolId: s1, grade: 10, phone: '0123334445' })
       pupilIds.push(id)
       await addSession(t.db, id, { mode: 'chapter', questions: 10, correct: i <= 3 ? 2 : 9, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
-      await mastery(t, id, subject, i <= 3 ? 2 : 60, 10)
+      await mastery(t, id, subject, i <= 3 ? 2 : 60, 100)
     }
     // The pupil of school 2 must never show on school 1.
     await insertUser(t.db, { name: 'Murid Sekolah Dua', email: 'dua@ujian.test', roles: ['student'], schoolId: s2, grade: 10 })
@@ -81,13 +84,13 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     }
     const unknown = await schoolAdmin.get(`/amaran/schools/${unknownSchool}`)
     const foreign = await schoolAdmin.get(`/amaran/schools/${s2}`)
-    expect(foreign.body).toEqual(unknown.body)
+    expect(noReq(foreign.body)).toEqual(noReq(unknown.body))
     const teacherForeign = await teacher.get(`/amaran/schools/${s2}`)
-    expect(teacherForeign.body).toEqual(unknown.body)
+    expect(noReq(teacherForeign.body)).toEqual(noReq(unknown.body))
     const exportForeign = await schoolAdmin.get(`/amaran/export/school/${s2}`)
     const exportUnknown = await schoolAdmin.get(`/amaran/export/school/${unknownSchool}`)
     errorOf(exportForeign, 404, 'NOT_FOUND', 'Not Found.')
-    expect(exportForeign.body).toEqual(exportUnknown.body)
+    expect(noReq(exportForeign.body)).toEqual(noReq(exportUnknown.body))
     // The other school admin cannot read school 1 either.
     errorOf(await otherAdmin.get(`/amaran/schools/${s1}`), 404, 'NOT_FOUND')
     errorOf(await otherAdmin.get(`/amaran/export/school/${s1}`), 404, 'NOT_FOUND')
@@ -217,7 +220,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const foreign = await schoolAdmin.get(`/amaran/summary?scope=school&schoolId=${s2}`)
     const unknown = await schoolAdmin.get(`/amaran/summary?scope=school&schoolId=${unknownSchool}`)
     errorOf(foreign, 404, 'NOT_FOUND', 'Not Found.')
-    expect(foreign.body).toEqual(unknown.body)
+    expect(noReq(foreign.body)).toEqual(noReq(unknown.body))
     expect((await admin.get(`/amaran/summary?scope=school&schoolId=${s2}`)).status).toBe(200)
   })
 
