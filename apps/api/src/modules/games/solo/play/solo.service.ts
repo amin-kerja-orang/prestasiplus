@@ -36,9 +36,9 @@ import {
   memoryAccuracy,
   normaliseAnswer,
   scoreRun,
+  hasFastGap,
   MIN_MS_PER_ITEM,
   SOLO_INFO,
-  tooFast,
 } from './solo.rules'
 
 const M = GAMES_MESSAGES
@@ -211,14 +211,19 @@ export class SoloService {
       if (a.matched || c.matched) throw soloCardMatched()
       if (s.openCardId !== null && s.openCardId !== a.cardId && s.openCardId !== c.cardId) throw soloCardOpen()
       const faces = await this.faces([a, c])
+      const at = this.clock.now()
+      const board = await this.repo.items(s.id)
+      const lastMove = board.reduce((m, i) => (i.checkedAt !== null && i.checkedAt > m ? i.checkedAt : m), s.createdAt)
+      const fastMove = at.getTime() - lastMove.getTime() < MIN_MS_PER_ITEM
       const match = a.pairKey !== null && a.pairKey === c.pairKey
       const seq = s.checks + 1
-      const at = this.clock.now()
       if (match) {
         await this.repo.storeCheck(a.id, { seq, correct: true, answer: d.other_card_id, at, matched: true })
         await this.repo.storeCheck(c.id, { seq, correct: true, answer: d.card_id, at, matched: true })
+      } else {
+        await this.repo.touch(a.id, at)
       }
-      await this.repo.updateSession(s.id, { checks: seq, moves: s.moves + 1, correctCount: s.correctCount + (match ? 1 : 0), openCardId: null })
+      await this.repo.updateSession(s.id, { fastMoves: s.fastMoves + (fastMove ? 1 : 0), checks: seq, moves: s.moves + 1, correctCount: s.correctCount + (match ? 1 : 0), openCardId: null })
       return { correct: match, pair_id: match ? a.pairKey : null, cards: faces }
     })
   }
@@ -255,7 +260,6 @@ export class SoloService {
       if (!s || s.game !== game) return refuse(422, M.soloInvalidResult)
       if (s.submittedAt !== null) return refuse(409, M.soloAlreadySubmitted)
       const at = this.clock.now()
-      const elapsed = at.getTime() - s.createdAt.getTime()
       const earn = await this.canEarn(caller, { tx })
       const report = async (coins: number, correct: number, total: number, detail: Record<string, unknown>): Promise<number> => {
         if (!earn) return 0
@@ -270,9 +274,10 @@ export class SoloService {
       if (game === 'kad-memori') {
         const items = await this.repo.items(s.id)
         if (items.filter((i) => i.matched).length < MEMORY_PAIRS * 2) return refuse(422, M.soloInvalidResult)
-        const fast = tooFast(elapsed, s.moves, MIN_MS_PER_ITEM)
+        // pacing guard: `fast_moves` counts the moves made less than 1 s after the previous one
+        const fast = s.fastMoves > 0
         const credited = fast ? 0 : await report(MEMORY_COINS, MEMORY_PAIRS, MEMORY_PAIRS, { moves: s.moves })
-        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: fast ? 0 : MEMORY_COINS, coinsCredited: credited })
+        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: MEMORY_COINS, coinsCredited: credited })
         return {
           status: 200,
           body: {
@@ -290,8 +295,8 @@ export class SoloService {
       if (checked.length === 0) return refuse(422, M.soloInvalidResult)
       const run = scoreRun(game, checked.map((c) => ({ correct: c.correct === true, points: c.points })))
       // pacing guard: a run faster than a human can play keeps its score but earns nothing and is no record
-      const fast = tooFast(elapsed, run.total, MIN_MS_PER_ITEM)
-      const coins = fast ? 0 : run.coins
+      const fast = hasFastGap(s.createdAt, checked.map((c) => c.checkedAt as Date), MIN_MS_PER_ITEM)
+      const coins = run.coins
       const isNewRecord = fast ? false : await this.repo.recordBest(caller.userId, game, run.score, s.isTest, at)
       const detail =
         game === 'betul-salah' ? { maxStreak: run.best } : game === 'cabaran-kilat' ? { maxCombo: run.best } : game === 'tembak-jawapan' ? { level: run.best } : { solved: run.best }

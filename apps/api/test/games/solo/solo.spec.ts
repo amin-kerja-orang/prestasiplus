@@ -286,11 +286,11 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     const play = async (c: Client, game: Exclude<GamesSoloGame, 'kad-memori'>, flags: string, query = '') => {
       const { sessionId, rows } = await open(c, game, query)
       for (const [i, f] of flags.split('').entries()) {
+        t.clock.advance(1000) // a human pace: the pacing guard wants 1 s between checks
         const res = await answerItem(c, game, sessionId, rows[i] as DbItem, f === 'T')
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         expect((res.body as { data: { correct: boolean } }).data.correct).toBe(f === 'T')
       }
-      t.clock.advance(1000 * flags.length) // a human pace: the pacing guard wants 1 s per checked item
       return { sessionId, rows }
     }
 
@@ -388,20 +388,32 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(best?.best_score).toBe(26)
     })
 
-    it('pacing guard: a run faster than 1 s per checked item keeps its score but earns nothing and is no record', async () => {
+    it('pacing guard: one check less than 1 s after the previous one in an otherwise paced run earns nothing and is no record', async () => {
       const fast = await open(student2, 'cabaran-kilat')
-      for (const item of fast.rows.slice(0, 3)) await answerItem(student2, 'cabaran-kilat', fast.sessionId, item, true)
-      t.clock.advance(2_999)
+      for (const [i, gap] of [1000, 999, 1000].entries()) {
+        t.clock.advance(gap)
+        await answerItem(student2, 'cabaran-kilat', fast.sessionId, fast.rows[i] as DbItem, true)
+      }
+      t.clock.advance(60_000)
       const res = await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: fast.sessionId })
       expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: false, syiling_awarded: 0, score: 60, correct_count: 3, total_answered: 3 })
       expect(rewards.calls).toHaveLength(0)
-      expect(await sessionRow(fast.sessionId)).toMatchObject({ score: 60, coins_computed: 0, coins_credited: 0, is_new_record: false })
+      expect(await sessionRow(fast.sessionId)).toMatchObject({ score: 60, coins_computed: 6, coins_credited: 0, is_new_record: false })
       const [none] = await t.db.query<{ n: string }>(`select count(*)::text as n from personal_bests where user_id = $1::bigint and game = 'cabaran-kilat'`, [student2.userId])
       expect(none?.n).toBe('0')
 
+      // a fast FIRST check (from the session creation) counts as well
+      const first = await open(student2, 'cabaran-kilat')
+      await answerItem(student2, 'cabaran-kilat', first.sessionId, first.rows[0] as DbItem, true)
+      t.clock.advance(60_000)
+      expect(GamesSoloSubmitResponseSchema.parse((await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: first.sessionId })).body)).toMatchObject({ syiling_awarded: 0 })
+      expect(rewards.calls).toHaveLength(0)
+
       const paced = await open(student2, 'cabaran-kilat')
-      for (const item of paced.rows.slice(0, 3)) await answerItem(student2, 'cabaran-kilat', paced.sessionId, item, true)
-      t.clock.advance(3_000)
+      for (const [i, gap] of [1000, 1000, 1000].entries()) {
+        t.clock.advance(gap)
+        await answerItem(student2, 'cabaran-kilat', paced.sessionId, paced.rows[i] as DbItem, true)
+      }
       const ok = await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: paced.sessionId })
       expect(GamesSoloSubmitResponseSchema.parse(ok.body)).toMatchObject({ is_new_record: true, syiling_awarded: 6, score: 60 })
       expect(rewards.calls).toHaveLength(1)
@@ -426,7 +438,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
         q: rows.find((r) => r.pair_key === p && r.face === 'question') as DbItem,
         a: rows.find((r) => r.pair_key === p && r.face === 'answer') as DbItem,
       }))
-      const check = (card: DbItem, other: DbItem) => student.post('/api/games/solo/kad-memori/check', { session_id: sessionId, card_id: card.card_id, other_card_id: other.card_id })
+      const check = (card: DbItem, other: DbItem) => (t.clock.advance(1000), student.post('/api/games/solo/kad-memori/check', { session_id: sessionId, card_id: card.card_id, other_card_id: other.card_id }))
       const submit = () => student.post('/api/games/solo/kad-memori/submit', { session_id: sessionId })
 
       // nothing matched yet: refused, raw
@@ -478,12 +490,29 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       t.clock.advance(90_000)
       const res = await submit()
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ results: { syiling_earned: 6, accuracy: 75, moves: 8, time_seconds: 90 } })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ results: { syiling_earned: 6, accuracy: 75, moves: 8, time_seconds: 100 } })
       expect(rewards.calls).toHaveLength(1)
       expect(rewards.calls[0]?.input).toMatchObject({ game: 'kad_memori', event: 'finish', coins: 6, correct: 6, total: 6, key: sessionId })
       expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 6, coins_credited: 6 })
       expect((await submit()).status).toBe(409)
       expectError(await student.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: pairs[0]?.q.card_id }), 'CONFLICT', M.soloAlreadySubmitted)
+    })
+  })
+
+  describe('Kad Memori pacing', () => {
+    it('one move less than 1 s after the previous one: the result is returned, nothing is credited', async () => {
+      const { sessionId, rows } = await open(student, 'kad-memori')
+      for (let p = 0; p < 6; p++) {
+        const q = rows.find((r) => r.pair_key === p && r.face === 'question') as DbItem
+        const a = rows.find((r) => r.pair_key === p && r.face === 'answer') as DbItem
+        t.clock.advance(p === 3 ? 500 : 1000)
+        const res = await student.post('/api/games/solo/kad-memori/check', { session_id: sessionId, card_id: q.card_id, other_card_id: a.card_id })
+        expect(res.status).toBe(200)
+      }
+      const res = await student.post('/api/games/solo/kad-memori/submit', { session_id: sessionId })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ results: { syiling_earned: 0, moves: 6, accuracy: 100 } })
+      expect(rewards.calls).toHaveLength(0)
+      expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 6, coins_credited: 0 })
     })
   })
 
@@ -493,9 +522,9 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       const { sessionId, rows, res } = await open(admin, 'betul-salah', '?darjah=10')
       expect(parseData(res, GamesBetulSalahPayloadSchema).canEarnSyiling).toBe(false)
       for (const item of rows.slice(0, 3)) {
+        t.clock.advance(1000)
         expect((await answerItem(admin, 'betul-salah', sessionId, item, true)).status).toBe(200)
       }
-      t.clock.advance(3000)
       const submit = await admin.post('/api/games/solo/betul-salah/submit', { session_id: sessionId })
       expect(GamesSoloSubmitResponseSchema.parse(submit.body)).toMatchObject({ score: 12 + 14 + 16, syiling_awarded: 0, correct_count: 3 })
       expect(rewards.calls).toHaveLength(0)

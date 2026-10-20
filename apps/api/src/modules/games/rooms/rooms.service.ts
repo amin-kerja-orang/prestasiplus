@@ -316,6 +316,7 @@ export class RoomsService {
         players: enginePlayers(players),
         humanId: caller.userId,
         seed: seedOf(room, this.secrets),
+        secretInt: (max) => this.secrets.int(max),
         pool,
         quizTiles: (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES,
         p: await this.botAccuracy(),

@@ -93,6 +93,12 @@ export class JutawanRepository {
     return r ? { id: r.id, position: r.position, questionId: idToString(r.questionId), keyIndex: r.keyIndex, difficulty: r.difficulty } : null
   }
 
+  /** When each answer was stored, in answer order. */
+  async answerTimes(sessionId: string): Promise<Date[]> {
+    const rows = await this.db.gameSessionItem.findMany({ where: { sessionId, checkedSeq: { not: null } }, orderBy: { checkedSeq: 'asc' }, select: { checkedAt: true } })
+    return rows.map((r) => r.checkedAt as Date)
+  }
+
   async storeAnswer(itemId: bigint, f: { seq: number; correct: boolean; optionId: number; at: Date }): Promise<void> {
     await this.db.gameSessionItem.update({ where: { id: itemId }, data: { checkedSeq: f.seq, correct: f.correct, answer: String(f.optionId), checkedAt: f.at } })
   }

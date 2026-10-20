@@ -16,7 +16,7 @@ import {
   susunGain,
   susunPoints,
   tembakLevel,
-  tooFast,
+  hasFastGap,
 } from '../../../src/modules/games/solo/play/solo.rules'
 import { shuffled } from '../../../src/modules/games/solo/play/solo-items'
 import { SpinDraw } from '../../../src/modules/games/solo/spin/spin-draw'
@@ -98,9 +98,12 @@ describe('Roda Nasib wheel', () => {
 })
 
 describe('pacing guard and scramble', () => {
-  it('tooFast compares the elapsed server time with the minimum per item', () => {
-    expect(tooFast(5_999, 6, MIN_MS_PER_ITEM)).toBe(true)
-    expect(tooFast(6_000, 6, MIN_MS_PER_ITEM)).toBe(false)
+  it('hasFastGap looks at every gap, the first one measured from the start', () => {
+    const at = (ms: number) => new Date(ms)
+    expect(hasFastGap(at(0), [at(1000), at(2000), at(3000)], MIN_MS_PER_ITEM)).toBe(false)
+    expect(hasFastGap(at(0), [at(999), at(2000)], MIN_MS_PER_ITEM)).toBe(true)
+    expect(hasFastGap(at(0), [at(1000), at(1999), at(3000)], MIN_MS_PER_ITEM)).toBe(true)
+    expect(hasFastGap(at(0), [], MIN_MS_PER_ITEM)).toBe(false)
   })
 })
 

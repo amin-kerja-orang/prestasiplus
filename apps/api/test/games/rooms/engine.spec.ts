@@ -335,6 +335,31 @@ describe('Papan Bijak', () => {
   })
 })
 
+describe('Perang Fakta secret truth bits', () => {
+  it('use the injected secret source when given (not the stream hash), and stay valid facts', () => {
+    const calls: number[] = []
+    let flip = 0
+    const o = startGame({
+      room: room('perang-fakta'),
+      players: players(2),
+      humanId: HOST,
+      seed: 'seed-a',
+      secretInt: (max) => {
+        calls.push(max)
+        return flip++ % max
+      },
+      pool: pool(PF_ROUNDS),
+      quizTiles: 35,
+      p: 0,
+      nowMs: T0,
+    })
+    expect(calls.length).toBeGreaterThanOrEqual(PF_ROUNDS)
+    expect(o.state.facts).toHaveLength(PF_ROUNDS)
+    expect(o.state.facts.some((f) => f.isTrue)).toBe(true)
+    expect(o.state.facts.some((f) => !f.isTrue)).toBe(true)
+  })
+})
+
 describe('Perang Fakta (15 rounds, 10 s)', () => {
   const r = room('perang-fakta')
   const vote = (o: EngineOut, value: unknown): RoomAction => ({

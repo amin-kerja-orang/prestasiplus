@@ -133,11 +133,20 @@ export const jutawanDifficulty = (n: number): number => (n <= 4 ? 1 : n <= 8 ? 2
 export const jutawanCoins = (level: number): number => (level >= 15 ? 1000 : level >= 10 ? 50 : 0)
 
 /**
- * [PROPOSED, LEAD to confirm] Pacing guard against reward farming by a scripted client. A run whose server time from creation
- * to submit is shorter than this per checked item is stored and returned, but earns 0 coins (no reward call) and is not a
- * personal-best record. Jutawan Ilmu: the same with its own per-question minimum.
+ * [PROPOSED, LEAD to confirm] Pacing guard against reward farming by a scripted client, per gap: a run earns coins (and can
+ * be a personal-best record) only when EVERY check is at least this long after the previous check (the first one after the
+ * session was created), by the server Clock and the stored `checked_at`. A run with a fast gap is still stored and returned,
+ * `coins_computed` keeps the computed value, but nothing is credited and no reward call is made. Jutawan Ilmu: the same with
+ * its own per-answer minimum. Kad Memori: per move, mismatches included.
  */
 export const MIN_MS_PER_ITEM = 1000
 export const JUTAWAN_MIN_MS_PER_QUESTION = 2000
-/** True when `elapsedMs` is too short for `items` checked items (a Kad Memori item is a move). */
-export const tooFast = (elapsedMs: number, items: number, msPerItem: number): boolean => elapsedMs < msPerItem * items
+/** True when `times` (in check order) has a gap shorter than `minMs`, the first measured from `start`. */
+export function hasFastGap(start: Date, times: readonly Date[], minMs: number): boolean {
+  let prev = start.getTime()
+  for (const t of times) {
+    if (t.getTime() - prev < minMs) return true
+    prev = t.getTime()
+  }
+  return false
+}

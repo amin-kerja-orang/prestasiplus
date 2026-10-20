@@ -109,6 +109,7 @@ CREATE TABLE "game_sessions" (
     "submitted_at" TIMESTAMPTZ(6),
     -- D58a stored checks (solo games)
     "moves" INTEGER NOT NULL DEFAULT 0,
+    "fast_moves" INTEGER NOT NULL DEFAULT 0,
     "open_card_id" TEXT,
     "checks" INTEGER NOT NULL DEFAULT 0,
     "correct_count" INTEGER NOT NULL DEFAULT 0,
@@ -126,7 +127,7 @@ CREATE TABLE "game_sessions" (
     CONSTRAINT "game_sessions_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "ck_game_sessions_game" CHECK ("game" IN ('betul-salah','cabaran-kilat','tembak-jawapan','susun-jawapan','kad-memori','jutawan')),
     CONSTRAINT "ck_game_sessions_darjah" CHECK ("darjah" IS NULL OR "darjah" BETWEEN 1 AND 11),
-    CONSTRAINT "ck_game_sessions_counts" CHECK ("score" >= 0 AND "coins_computed" >= 0 AND "coins_credited" >= 0 AND "moves" >= 0 AND "checks" >= 0 AND "correct_count" >= 0),
+    CONSTRAINT "ck_game_sessions_counts" CHECK ("score" >= 0 AND "coins_computed" >= 0 AND "coins_credited" >= 0 AND "moves" >= 0 AND "fast_moves" >= 0 AND "checks" >= 0 AND "correct_count" >= 0),
     CONSTRAINT "ck_game_sessions_jutawan_level" CHECK ("jutawan_level" IS NULL OR "jutawan_level" BETWEEN 0 AND 15),
     CONSTRAINT "ck_game_sessions_jutawan_lifelines" CHECK ("jutawan_lifelines" IS NULL OR "jutawan_lifelines" BETWEEN 0 AND 3),
     CONSTRAINT "ck_game_sessions_legacy_source" CHECK ("legacy_source" IS NULL OR "legacy_source" IN ('cloud', 'my'))

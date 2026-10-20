@@ -14,6 +14,7 @@ export interface SessionRecord {
   darjah: number | null
   itemCount: number | null
   maxScore: number | null
+  fastMoves: number
   submittedAt: Date | null
   moves: number
   openCardId: string | null
@@ -37,6 +38,7 @@ export interface ItemRecord {
   points: number | null
   checkedSeq: number | null
   correct: boolean | null
+  checkedAt: Date | null
 }
 
 /** Single-player sessions and their items (tables `game_sessions`, `game_session_items`, `personal_bests`). Joins the ambient transaction. */
@@ -104,6 +106,7 @@ export class SoloRepository {
       darjah: r.darjah,
       itemCount: r.itemCount,
       maxScore: r.maxScore,
+      fastMoves: r.fastMoves,
       submittedAt: r.submittedAt,
       moves: r.moves,
       openCardId: r.openCardId,
@@ -148,9 +151,14 @@ export class SoloRepository {
     })
   }
 
+  /** Kad Memori: marks the time of a mismatched move on a card (no `checked_seq`, so it is not a stored check). */
+  async touch(itemId: bigint, at: Date): Promise<void> {
+    await this.db.gameSessionItem.update({ where: { id: itemId }, data: { checkedAt: at } })
+  }
+
   async updateSession(
     id: string,
-    data: { checks?: number; correctCount?: number; moves?: number; openCardId?: string | null; submittedAt?: Date; score?: number; coinsComputed?: number; coinsCredited?: number; isNewRecord?: boolean },
+    data: { maxScore?: number; fastMoves?: number; checks?: number; correctCount?: number; moves?: number; openCardId?: string | null; submittedAt?: Date; score?: number; coinsComputed?: number; coinsCredited?: number; isNewRecord?: boolean },
   ): Promise<void> {
     await this.db.gameSession.update({ where: { id }, data })
   }
@@ -192,6 +200,7 @@ function toItem(r: {
   points: number | null
   checkedSeq: number | null
   correct: boolean | null
+  checkedAt: Date | null
 }): ItemRecord {
   return {
     id: r.id,
@@ -207,5 +216,6 @@ function toItem(r: {
     points: r.points,
     checkedSeq: r.checkedSeq,
     correct: r.correct,
+    checkedAt: r.checkedAt,
   }
 }

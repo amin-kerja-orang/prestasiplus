@@ -91,6 +91,11 @@ export interface StartInput {
   p: number
   nowMs: number
   streams?: StreamFactory
+  /**
+   * Secret integer in [0, max) (crypto) for the Perang Fakta truth bit and the shown wrong option; the 32-bit
+   * stream hash is not enough for these. Absent: the seeded stream (deterministic tests).
+   */
+  secretInt?: (max: number) => number
 }
 
 export function startGame(input: StartInput): EngineOut {
@@ -117,7 +122,7 @@ export function startGame(input: StartInput): EngineOut {
     }
     case 'perang-fakta': {
       c.s.total = pool.length
-      c.s.facts = pool.map((q) => factOf(q, draw(c)))
+      c.s.facts = pool.map((q) => factOf(q, draw(c), input.secretInt))
       c.s.pendingQ = pool[0]?.id ?? null
       c.s.awaiting = 'answer'
       for (const pl of c.players) c.s.meter[key(pl)] = 0
@@ -157,11 +162,17 @@ export function startGame(input: StartInput): EngineOut {
   return stamp(null, run(c), input.nowMs)
 }
 
-function factOf(q: PoolQuestion, rng: Prng): { qId: string; text: string; isTrue: boolean } {
+function factOf(
+  q: PoolQuestion,
+  rng: Prng,
+  secretInt?: (max: number) => number,
+): { qId: string; text: string; isTrue: boolean } {
   const options = q.options.map((o) => o.text).filter((t) => t !== '')
-  const isTrue = chance(rng, 0.5)
+  const isTrue = secretInt ? secretInt(2) === 0 : chance(rng, 0.5)
   const wrong = options.filter((t) => t !== q.keyText)
-  const shown = isTrue || wrong.length === 0 ? q.keyText : rng.pick(wrong)
+  const pickWrong = (): string =>
+    secretInt ? (wrong[secretInt(wrong.length)] as string) : rng.pick(wrong)
+  const shown = isTrue || wrong.length === 0 ? q.keyText : pickWrong()
   return { qId: q.id, text: `${q.text} → ${shown}`, isTrue: isTrue || wrong.length === 0 }
 }
 

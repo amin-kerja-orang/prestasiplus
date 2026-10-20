@@ -27,7 +27,7 @@ import {
 } from '../../errors'
 import { secretRng } from '../play/secret-rng'
 import { shuffled } from '../play/solo-items'
-import { JUTAWAN_LIFELINES, JUTAWAN_MIN_MS_PER_QUESTION, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty, tooFast } from '../play/solo.rules'
+import { JUTAWAN_LIFELINES, JUTAWAN_MIN_MS_PER_QUESTION, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty, hasFastGap } from '../play/solo.rules'
 import { JutawanRepository, type JutawanSession } from './jutawan.repository'
 
 /** Tile emoji and colour of the observed subjects (by curriculum code); every other subject gets the fallback. */
@@ -165,9 +165,9 @@ export class JutawanService {
     const sessionId = s.id
     const subjectId = s.subjectId
     const now = this.clock.now()
-    // pacing guard: a run faster than a human can read and answer keeps its level but is credited nothing
-    const fast = tooFast(now.getTime() - s.createdAt.getTime(), common.checks, JUTAWAN_MIN_MS_PER_QUESTION)
-    const coins = fast ? 0 : jutawanCoins(level)
+    // pacing guard: any answer less than 2 s after the previous one (the first: after the start) keeps the level but credits nothing
+    const fast = hasFastGap(s.createdAt, await this.repo.answerTimes(s.id), JUTAWAN_MIN_MS_PER_QUESTION)
+    const coins = jutawanCoins(level)
     let credited = 0
     if (!fast && !caller.isTest && (await this.ports.rewards.canEarnSyiling(caller.userId, { tx }))) {
       const subject = subjectId === null ? null : await this.curriculum.subject(idFromString(subjectId))

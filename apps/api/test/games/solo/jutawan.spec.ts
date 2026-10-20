@@ -188,16 +188,19 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expect(await sessionRow(sessionId)).toMatchObject({ jutawan_level: 15, jutawan_over: true })
     })
 
-    it('pacing guard: answering faster than 2 s per question keeps the level but credits nothing', async () => {
+    it('pacing guard: one answer less than 2 s after the previous one keeps the level but credits nothing', async () => {
       const { sessionId, items } = await startRun(student)
       for (let i = 0; i < 10; i++) {
-        const r = await student.post(`/api/games/jutawan/${sessionId}/answer`, { questionId: items[i]?.question_id, optionId: items[i]?.key_index })
-        expect(r.status).toBe(200)
+        if (i === 4) {
+          t.clock.advance(1999)
+          const r = await student.post(`/api/games/jutawan/${sessionId}/answer`, { questionId: items[i]?.question_id, optionId: items[i]?.key_index })
+          expect(r.status).toBe(200)
+        } else expect((await answer(student, sessionId, items[i] as DbItem, true)).status).toBe(200)
       }
-      const wrong = await student.post(`/api/games/jutawan/${sessionId}/answer`, { questionId: items[10]?.question_id, optionId: ((items[10]?.key_index as number) + 1) % 4 })
+      const wrong = await answer(student, sessionId, items[10] as DbItem, false)
       expect(parseData(wrong, GamesJutawanAnswerResponseSchema).result).toEqual({ level: 10, credited: 0 })
       expect(rewards.calls).toHaveLength(0)
-      expect(await sessionRow(sessionId)).toMatchObject({ score: 10, coins_computed: 0, coins_credited: 0, jutawan_over: true })
+      expect(await sessionRow(sessionId)).toMatchObject({ score: 10, coins_computed: 50, coins_credited: 0, jutawan_over: true })
       expect((await statsOf(student.userId))?.best_level).toBeGreaterThanOrEqual(10)
     })
 

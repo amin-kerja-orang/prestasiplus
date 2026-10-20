@@ -15,6 +15,11 @@ export class RoomSecrets {
     return randomBytes(16).toString('hex')
   }
 
+  /** Uniform integer in [0, max) from crypto (secret per-fact draws). */
+  int(max: number): number {
+    return randomInt(max)
+  }
+
   /** 6 characters from [A-Z0-9], uniformly. */
   roomCode(): string {
     let out = ''
