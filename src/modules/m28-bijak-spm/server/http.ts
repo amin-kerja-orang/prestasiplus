@@ -62,7 +62,7 @@ export interface HttpBijakOptions {
   now?: () => number
 }
 
-type Body = Record<string, unknown>
+type Body = Record<string, unknown> | FormData
 
 /* ------------------------------------------------------------------------------ wire mapping */
 

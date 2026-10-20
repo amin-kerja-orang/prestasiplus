@@ -181,7 +181,7 @@ describe('HttpBijakAdminServer', () => {
   it('rejects (never throws) methods without a backend route', async () => {
     const { server } = setup()
     const calls = [
-      () => server.listIntakeBatches(),
+      () => server.createManualBatch(1, {} as never),
       () => server.listReviewQueue(),
       () => server.listBank(),
       () => server.bankStats(),
@@ -284,8 +284,6 @@ describe('admin pages in http mode do not crash', () => {
     ['BankPage', BankPage, {}],
     ['ReviewQueuePage', ReviewQueuePage, {}],
     ['ReviewItemPage', ReviewItemPage, {}],
-    ['IntakeListPage', IntakeListPage, {}],
-    ['IntakeReviewPage', IntakeReviewPage, { batchId: 'b1' }],
   ] as [string, unknown, Record<string, unknown>][])(
     '%s shows the demo-unavailable state when its load has no backend route',
     async (_name, component, props) => {

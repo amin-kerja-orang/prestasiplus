@@ -74,7 +74,13 @@ const canSubmit = computed(
   () => !busy.value && form.source.trim().length > 0 && form.copyright !== '' && file.value !== null,
 )
 
-async function run(pages: PageText[], images: PageImage[], fileName: string, hash: string): Promise<void> {
+async function run(
+  pages: PageText[],
+  images: PageImage[],
+  fileName: string,
+  hash: string,
+  upload?: File,
+): Promise<void> {
   phase.value = 'ekstrak'
   const kertas = Number(form.kertas) === 1 ? 1 : 2
   const extracted = await extractor.extract({ pages, images, subject: form.subject, kertas })
@@ -95,6 +101,7 @@ async function run(pages: PageText[], images: PageImage[], fileName: string, has
     },
     extracted,
     pages,
+    upload,
   )
   setPageImages(batch.id, images)
   await router.push(intakeReviewPath(batch.id))
@@ -117,7 +124,7 @@ async function submit(): Promise<void> {
       page: p.page,
       source: p.source === 'ocr' ? 'OCR' : 'Lapisan teks',
     }))
-    await run(read.pages, read.images, file.value.name, read.fileHash)
+    await run(read.pages, read.images, file.value.name, read.fileHash, file.value)
   } catch (e) {
     failure.value = e instanceof Error ? e.message : 'Pengekstrakan gagal.'
     phase.value = 'idle'

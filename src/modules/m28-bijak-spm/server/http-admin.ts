@@ -3,7 +3,8 @@
  * list (`/api/admin/papers*`, `/api/admin/blueprints*`, BE-39). It extends the student client so
  * `bijakAdminServer()` is one object with both surfaces, sharing its CSRF and error handling.
  *
- * The intake, review-queue and question-bank admin screens have no Bijak backend route yet: those
+ * The intake list, detail and upload call the BE-37 routes (`/api/intake/*`, see ./intake-wire). The
+ * extracted-question, review-queue and question-bank screens have no Bijak backend route yet: those
  * methods REJECT (never throw synchronously) with `BijakError('unavailable')`, so each page shows
  * its own load/save error state instead of crashing.
  *
@@ -31,12 +32,24 @@ import type {
   ReviewQuestion,
 } from '../domain/admin-types'
 import type { StimulusDef, Subject, SubjectCode } from '../domain/types'
+import type { IntakeBatch, IntakeSummary, IntakeMeta, ExtractedPaper, PageText, IntakeStatus } from '../admin/intake/types'
 import { BijakError } from './errors'
+import {
+  batchFromWire,
+  pagesFromWire,
+  paperTypeToWire,
+  summaryFromWire as intakeSummaryFromWire,
+  type WireBatchDetail,
+  type WireBatchSummary,
+  type WirePage,
+} from './intake-wire'
+import { ApiError } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
 
 /** The admin methods of the mock server (the contract the admin pages read). */
-export type BijakAdminMethods = Pick<
+export type BijakAdminMethods = Omit<
+  Pick<
   BijakServer,
   | 'listAdminPapers'
   | 'getPaperEditor'
@@ -49,7 +62,6 @@ export type BijakAdminMethods = Pick<
   | 'listBlueprints'
   | 'listIntakeBatches'
   | 'getIntakeBatch'
-  | 'createIntakeBatch'
   | 'createManualBatch'
   | 'saveExtracted'
   | 'submitForReview'
@@ -63,7 +75,18 @@ export type BijakAdminMethods = Pick<
   | 'listBank'
   | 'bankStats'
   | 'getBankDetail'
->
+>,
+  'createIntakeBatch'
+> & {
+  /** `file` (http mode) is the PDF uploaded to the server; the mock reads the extraction instead. */
+  createIntakeBatch(
+    userId: number,
+    meta: IntakeMeta,
+    extracted: ExtractedPaper,
+    pages: PageText[],
+    file?: File,
+  ): Promise<IntakeBatch>
+}
 
 export const UNAVAILABLE_MESSAGE = 'Fungsi ini belum tersedia.'
 
@@ -142,6 +165,17 @@ const MAX_PAGES = 50
 
 function unavailable<T>(): Promise<T> {
   return Promise.reject(new BijakError('unavailable', UNAVAILABLE_MESSAGE))
+}
+
+/** 413 / 422 of the upload to the UI copy (the 422 body names the rule in `fields.files`). */
+export function uploadError(e: unknown): unknown {
+  if (e instanceof ApiError) {
+    if (e.status === 413) return new BijakError('bad_request', 'Fail melebihi had 20 MB.')
+    if (e.status === 422) {
+      return new BijakError('bad_request', e.fields?.files ?? e.message)
+    }
+  }
+  return toBijakError(e)
 }
 
 export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminMethods {
@@ -242,11 +276,78 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return rows.map(blueprintFromWire)
   }
 
+  /* ------------------------------------------------------- intake (BE-37 routes) */
+
+  async listIntakeBatches(
+    filter: { status?: IntakeStatus; subject?: SubjectCode; q?: string } = {},
+  ): Promise<IntakeSummary[]> {
+    const rows = await this.listAll<WireBatchSummary>('/api/intake/batches')
+    const nameOf = (code: string): string =>
+      this.subjectList.find((s) => s.code === code)?.name ?? code
+    const needle = filter.q?.trim().toLowerCase()
+    return rows
+      .map((b) => intakeSummaryFromWire(b, nameOf))
+      .filter((b) => !filter.status || b.status === filter.status)
+      .filter((b) => !filter.subject || b.subject === filter.subject)
+      .filter((b) => !needle || `${b.title} ${b.fileName}`.toLowerCase().includes(needle))
+  }
+
+  async getIntakeBatch(id: string): Promise<IntakeBatch> {
+    const detail = await this.send<WireBatchDetail>('GET', `/api/intake/batches/${enc(id)}`)
+    const lists: { pages: WirePage[] }[] = []
+    for (const f of detail.files) {
+      if (f.status !== 'done') {
+        lists.push({ pages: [] })
+        continue
+      }
+      try {
+        lists.push(
+          await this.send<{ pages: WirePage[] }>('GET', `/api/intake/files/${enc(f.id)}/pages`),
+        )
+      } catch {
+        lists.push({ pages: [] }) // the text is a convenience; the batch still opens
+      }
+    }
+    return batchFromWire(detail, pagesFromWire(lists))
+  }
+
+  /**
+   * Declaration (POST /intake/batches) then the PDF (multipart `files` part, POST
+   * /intake/batches/{id}/files). The browser extraction (`extracted`, `pages`) is not sent: the
+   * server reads the file itself. A failed upload cancels the new batch (best effort).
+   */
+  async createIntakeBatch(
+    _userId: number,
+    meta: IntakeMeta,
+    _extracted: ExtractedPaper,
+    _pages: PageText[],
+    file?: File,
+  ): Promise<IntakeBatch> {
+    const created = await this.send<WireBatchSummary>('POST', '/api/intake/batches', {
+      paperType: paperTypeToWire(meta.paperType),
+      subject: meta.subject,
+      kertas: meta.kertas,
+      year: meta.year,
+      source: meta.source,
+      copyright: meta.copyright,
+      ...(meta.notes.trim() ? { notes: meta.notes.trim() } : {}),
+      declaration: true,
+    })
+    if (file) {
+      const form = new FormData()
+      form.append('files', file, file.name)
+      try {
+        await this.exec('POST', `/api/intake/batches/${enc(created.id)}/files`, form)
+      } catch (e) {
+        await this.exec('POST', `/api/intake/batches/${enc(created.id)}/cancel`).catch(() => {})
+        throw uploadError(e)
+      }
+    }
+    return this.getIntakeBatch(created.id)
+  }
+
   /* ---------------------------------------------------- no backend route yet: not available */
 
-  listIntakeBatches: BijakAdminMethods['listIntakeBatches'] = () => unavailable()
-  getIntakeBatch: BijakAdminMethods['getIntakeBatch'] = () => unavailable()
-  createIntakeBatch: BijakAdminMethods['createIntakeBatch'] = () => unavailable()
   createManualBatch: BijakAdminMethods['createManualBatch'] = () => unavailable()
   saveExtracted: BijakAdminMethods['saveExtracted'] = () => unavailable()
   submitForReview: BijakAdminMethods['submitForReview'] = () => unavailable()

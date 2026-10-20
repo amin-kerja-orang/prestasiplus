@@ -167,6 +167,8 @@ export interface IntakeBatch extends IntakeMeta {
   stimuli: IntakeStimulus[]
   unmatched: string[]
   pages: PageText[]
+  /** http mode: the extracted questions have no backend route yet (the page says so). */
+  itemsUnavailable?: boolean
 }
 
 export interface IntakeSummary {

@@ -53,6 +53,7 @@ const open = ref<Set<string>>(new Set())
 const saveState = ref<'tersimpan' | 'belum' | 'menyimpan' | 'gagal'>('tersimpan')
 const submitting = ref(false)
 const submittedNote = ref(false)
+const stepUnavailable = ref(false)
 const serverIssues = ref<IntakeIssue[]>([])
 const groupNote = ref('')
 const showIssues = ref(false)
@@ -241,6 +242,9 @@ async function submit(): Promise<void> {
       serverIssues.value = res.issues
       showIssues.value = true
     }
+  } catch (e) {
+    if (!isUnavailable(e)) throw e
+    stepUnavailable.value = true
   } finally {
     submitting.value = false
   }
@@ -321,6 +325,17 @@ async function submit(): Promise<void> {
               </UButton>
             </div>
           </div>
+
+          <UAlert
+            v-if="batch.itemsUnavailable || stepUnavailable"
+            class="mt-4"
+            color="neutral"
+            variant="subtle"
+            icon="i-ph-info"
+            :title="UNAVAILABLE_TITLE"
+            description="Soalan yang diekstrak dan penyuntingan belum tersedia dalam demo. Halaman dan teks fail yang dimuat naik dipaparkan sahaja."
+            data-testid="step-unavailable"
+          />
 
           <UAlert
             v-if="submittedNote || readonly"
