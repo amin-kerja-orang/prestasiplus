@@ -1,7 +1,9 @@
 [
   "chapters",
+  "classrooms",
   "comp_students",
   "education_levels",
+  "enrolments",
   "files",
   "jpns",
   "notifications",
@@ -13,6 +15,7 @@
   "schools",
   "subject_levels",
   "subjects",
+  "teacher_profiles",
   "topics",
   "user_roles",
   "user_scopes",

@@ -1,0 +1,88 @@
+// Classes and teacher profile tables (BE-17, owner module M10). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2, data model section 3.9. BE-18 (missions, question sets) adds its models to this file later.
+// Not expressible in Prisma and written by hand in migration 0013_classes: identity columns (GENERATED ALWAYS),
+// CHECK constraints (enums are text + check), the case-insensitive unique index on classrooms.join_code and the
+// foreign keys to tables owned by other modules.
+//
+// Foreign keys to users, schools, subjects and education_levels exist in the database (migration 0013) but are
+// NOT declared as Prisma relations here: a relation needs a back-relation field in the other owner's schema file
+// (identity.prisma, schools.prisma, curriculum.prisma), which this card must not edit (parallel cards edit the
+// same lines). The repository therefore reads those tables with separate batch lookups, never with `include`.
+
+/// A class. One table for both kinds: `classroom` (created by a teacher, has `teacher_id` and a join code) and
+/// `school_class` (managed by the school, no teacher). The level slug (`tahun-1` ... `tingkatan-5`) is derived from
+/// `education_levels.grade`, never stored.
+model Classroom {
+  id               BigInt   @id @default(autoincrement())
+  /// classroom, school_class (check constraint).
+  kind             String   @default("classroom")
+  name             String
+  /// users.id of the owning teacher; null for a school class (or an orphaned class after the teacher is deleted).
+  teacherId        BigInt?  @map("teacher_id")
+  schoolId         BigInt?  @map("school_id")
+  /// null = "Tiada Subjek".
+  subjectId        BigInt?  @map("subject_id")
+  educationLevelId BigInt   @map("education_level_id")
+  academicYear     Int      @map("academic_year") @db.SmallInt
+  description      String?
+  /// Students join with it. Unique ignoring case (index on upper(join_code)); null for a migrated class without a code.
+  joinCode         String?  @map("join_code")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  enrolments Enrolment[]
+
+  @@unique([legacySource, legacyId], map: "uq_classrooms_legacy")
+  @@index([teacherId, createdAt], map: "ix_classrooms_teacher_id_created_at")
+  @@index([schoolId, isActive], map: "ix_classrooms_school_id_is_active")
+  @@index([subjectId], map: "ix_classrooms_subject_id")
+  @@index([educationLevelId], map: "ix_classrooms_education_level_id")
+  @@map("classrooms")
+}
+
+/// One student in one class (.cloud `classroom_student`). Removing a student sets `status` to `removed` and keeps the
+/// row (history); joining again reactivates it. `is_test` marks rows written under Mod Pelajar: they are excluded from
+/// every roster and count.
+model Enrolment {
+  id           BigInt   @id @default(autoincrement())
+  classroomId  BigInt   @map("classroom_id")
+  studentId    BigInt   @map("student_id")
+  /// active, removed (check constraint).
+  status       String   @default("active")
+  /// code, teacher, school_admin, complimentary (check constraint).
+  source       String   @default("code")
+  joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade, map: "fk_enrolments_classroom_id")
+
+  @@unique([classroomId, studentId], map: "uq_enrolments_classroom_id_student_id")
+  @@unique([legacySource, legacyId], map: "uq_enrolments_legacy")
+  @@index([studentId, status], map: "ix_enrolments_student_id_status")
+  @@index([classroomId, status], map: "ix_enrolments_classroom_id_status")
+  @@map("enrolments")
+}
+
+/// Teaching details of a teacher (.cloud `users.teaching_*`). `bio` stays on users and the school on users.school_id.
+model TeacherProfile {
+  id              BigInt   @id @default(autoincrement())
+  userId          BigInt   @map("user_id")
+  subject         String?
+  qualification   String?
+  experienceYears Int      @default(0) @map("experience_years") @db.SmallInt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource    String?  @map("legacy_source")
+  legacyId        String?  @map("legacy_id")
+
+  @@unique([userId], map: "uq_teacher_profiles_user_id")
+  @@unique([legacySource, legacyId], map: "uq_teacher_profiles_legacy")
+  @@map("teacher_profiles")
+}
