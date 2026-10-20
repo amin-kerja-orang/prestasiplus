@@ -3,12 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName } from '../../src/modules/gamification/name-privacy'
 import { SCHOOL_ADMIN } from '../users/helpers'
-import { ADMIN, STUDENT, TEACHER, bootGamificationApp, dataOf, signIn, signInMod, userIdOf, type Client, type GamificationTestApp } from './helpers'
+import { ADMIN, STUDENT, TEACHER, bootGamificationApp, dataOf, fail, signIn, signInMod, userIdOf, type Client, type GamificationTestApp } from './helpers'
 
 /**
  * #76 (LEAD): the national leaderboard shows the full name and the user id only within the viewer's scope (teacher:
  * pupils of the own active classes; school admin: the own school; admin: everyone; anyone: the own row). Every other
- * row shows first name + initial and the redacted id. Ranks and totals do not depend on the viewer.
+ * row shows first name + initial and `userId: null`. Ranks and totals do not depend on the viewer.
  */
 describe('GET /api/gamification/leaderboard: names only within scope (#76)', () => {
   let t: GamificationTestApp
@@ -21,7 +21,7 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     inactiveClass: 'Siti Hajar',
   }
 
-  type Row = { userId: string; name: string; initials: string; totalSyilingEarned: number }
+  type Row = { userId: string | null; name: string; initials: string; totalSyilingEarned: number }
   async function board(who: Client): Promise<Row[]> {
     const d = GamificationLeaderboardSchema.parse(dataOf(await who.get('/gamification/leaderboard')))
     return [...d.podium, ...d.rows]
@@ -33,6 +33,8 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     return r!
   }
   const TOTAL = { inClass: 9001, sameSchool: 9002, otherSchool: 9003, testEnrolled: 9004, inactiveClass: 9005 }
+  /** The teacher's own wallet: the own row is shown in full although the teacher is not a pupil of the own classes. */
+  const TEACHER_TOTAL = 9006
 
   async function pupil(name: string, schoolId: string): Promise<string> {
     return (await t.db.query<{ id: string }>(`insert into users (name, school_id) values ($1, $2::bigint) returning id::text`, [name, schoolId]))[0]!.id
@@ -76,6 +78,7 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     await classOf(teacher, other, false, [{ id: ids.inactiveClass, isTest: false }])
     for (const k of Object.keys(TOTAL) as (keyof typeof TOTAL)[]) await credit(ids[k], TOTAL[k])
     await credit(ids.testOnly, 20_000, true)
+    await credit(ids.teacher, TEACHER_TOTAL)
   }, 120_000)
   afterAll(async () => {
     await t.close()
@@ -126,6 +129,25 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
   it('an admin in Mod Pelajar acts as a student: no other full name, no other id', async () => {
     const rows = await board(await signInMod(t, ADMIN))
     for (const k of Object.keys(TOTAL) as (keyof typeof TOTAL)[]) expect(byTotal(rows, TOTAL[k]).userId).toBe(RANKING_REDACTED_ID)
+  })
+
+  it('401 for an anonymous caller', async () => {
+    fail(await t.http().get('/api/gamification/leaderboard'), 401, 'UNAUTHORIZED')
+  })
+
+  it('redacted rows carry userId null (contract nullable) and the raw body holds no other full name or real id', async () => {
+    const res = await (await signIn(t, STUDENT)).get('/gamification/leaderboard')
+    const raw = JSON.stringify(res.body)
+    for (const k of Object.keys(TOTAL) as (keyof typeof TOTAL)[]) {
+      expect(raw).not.toContain(NAMES[k])
+      expect(raw).not.toContain(`"${ids[k]}"`)
+    }
+    expect(byTotal(await board(await signIn(t, STUDENT)), TOTAL.inClass).userId).toBeNull()
+  })
+
+  it('teacher: the own row stays full', async () => {
+    const rows = await board(await signIn(t, TEACHER))
+    expect(byTotal(rows, TEACHER_TOTAL)).toMatchObject({ userId: ids.teacher, name: 'Guru Demo' })
   })
 
   it('ranks and totals are the same whoever asks', async () => {

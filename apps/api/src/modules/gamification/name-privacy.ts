@@ -1,7 +1,6 @@
 import type { RoleCode } from '@pp/contract'
 
 import { canSeeName } from '../reports/performance/domain/privacy'
-import { REDACTED_ID } from '../reports/performance/domain/constants'
 
 /**
  * Who reads a ranking that lists other people (the leaderboard): the caller's own id, active role and the school of
@@ -22,8 +21,8 @@ export interface NameScope {
   schoolId: string | null
 }
 
-/** Shown instead of a pupil id on a redacted row (same value as the BE-19 reports; the contract id is not nullable yet). */
-export const RANKING_REDACTED_ID = REDACTED_ID
+/** The `userId` of a redacted row: null (LEAD children's names rule; the leaderboard contract `userId` is nullable). */
+export const RANKING_REDACTED_ID = null
 
 /**
  * May `viewer` see the full name and id of `pupil` (whose school is `pupilSchoolId`) on a national ranking?
