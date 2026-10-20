@@ -44162,6 +44162,2612 @@
           "file"
         ]
       },
+      "AiProviderId": {
+        "type": "string",
+        "enum": [
+          "mock",
+          "anthropic",
+          "openai",
+          "gemini",
+          "openai-compatible"
+        ],
+        "description": "Provider adapter id; selected server-side by AI_PROVIDER (default mock)."
+      },
+      "AiFailureCode": {
+        "type": "string",
+        "enum": [
+          "AI_UNAVAILABLE",
+          "AI_BUDGET_EXHAUSTED",
+          "RATE_LIMITED",
+          "AI_PROVIDER_ERROR",
+          "AI_TIMEOUT"
+        ],
+        "description": "AI_UNAVAILABLE: provider not configured (prototype message \"Dikonfigurasi di pelayan\") or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE."
+      },
+      "AiFailure": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/AiFailureCode"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "BM message, no secret and no content."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds, on RATE_LIMITED only."
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Attempts made before giving up (AC4)."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false,
+        "description": "In-process failure of an AI call."
+      },
+      "AiCapabilities": {
+        "type": "object",
+        "properties": {
+          "vision": {
+            "type": "boolean",
+            "description": "The adapter accepts page images."
+          },
+          "jsonMode": {
+            "type": "boolean",
+            "description": "The adapter can be asked for a JSON-only reply."
+          },
+          "maxPagesPerCall": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Pages the adapter accepts in one call."
+          }
+        },
+        "required": [
+          "vision",
+          "jsonMode",
+          "maxPagesPerCall"
+        ],
+        "additionalProperties": false,
+        "description": "Plan 15.2 `capabilities` of an ExtractionProvider."
+      },
+      "AiHealth": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "latencyMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checkedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "ok",
+          "latencyMs",
+          "checkedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Result of `ExtractionProvider.healthCheck()`."
+      },
+      "AiCallPurpose": {
+        "type": "string",
+        "enum": [
+          "extract_paper",
+          "suggest_tags",
+          "generate_text",
+          "health_check"
+        ],
+        "description": "Operation of the ExtractionProvider interface that produced a usage row."
+      },
+      "AiUsage": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Model id reported by the adapter (the mock reports its own id)."
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pages sent; 0 for text-only operations."
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Cost in sen from the configured price table (AI_PRICE_TABLE_JSON); 0 for the mock provider."
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "pages",
+          "tokensIn",
+          "tokensOut",
+          "costSen"
+        ],
+        "additionalProperties": false,
+        "description": "Cost summary of one call. No content, no identifier of a person."
+      },
+      "AiRedactionFlag": {
+        "type": "string",
+        "enum": [
+          "person_name",
+          "school_name",
+          "phone",
+          "email",
+          "ic_number",
+          "address"
+        ],
+        "description": "Kind of personal detail that the redaction step masked. [PROPOSED] list: the card names names, school and contacts; IC number and address are added as the obvious cover-page contact details."
+      },
+      "AiRedactionSummary": {
+        "type": "object",
+        "properties": {
+          "applied": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The redaction step ran before the call (always true on a success)."
+          },
+          "masked": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "flag": {
+                  "$ref": "#/components/schemas/AiRedactionFlag"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Number of spans masked."
+                }
+              },
+              "required": [
+                "flag",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "description": "One entry per flag that matched at least once. Never the masked text."
+          }
+        },
+        "required": [
+          "applied",
+          "masked"
+        ],
+        "additionalProperties": false,
+        "description": "What was masked, as counts only. The masked text is never returned or stored (BE-NFR-33)."
+      },
+      "AiCallContext": {
+        "type": "object",
+        "properties": {
+          "actorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Admin or Guru who triggered the call (logged in ai_usage_logs).",
+            "example": "1042"
+          },
+          "batchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Intake batch (BE-38), when the call belongs to one.",
+            "example": "1042"
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "ai_extraction_runs id, when the call belongs to a run.",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "actorId"
+        ],
+        "additionalProperties": false,
+        "description": "Audit context of a call. Never sent to a provider."
+      },
+      "AiPageText": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "text-layer",
+              "ocr"
+            ],
+            "description": "`text-layer` = digital-born PDF, `ocr` = scanned page read by Tesseract."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean OCR confidence 0-100 (OCR pages only)."
+          }
+        },
+        "required": [
+          "page",
+          "text",
+          "source"
+        ],
+        "additionalProperties": false,
+        "description": "Page text before redaction (prototype PageText)."
+      },
+      "AiPageImageRef": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fileId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "FileStorage id of the rendered page image.",
+            "example": "1042"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "page",
+          "fileId",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "description": "Reference to a stored page image (never inline bytes)."
+      },
+      "AiTaxonomyUnit": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ],
+            "description": "Tingkatan of the unit (DskpUnit.form); lets the model set the tag level."
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "AiStructureHint": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Section label, e.g. \"Bahagian A\"."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mcq",
+              "structured",
+              "short",
+              "essay"
+            ]
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "label",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "AiExtractRequest": {
+        "type": "object",
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPageText"
+            },
+            "maxItems": 200,
+            "description": "Page text, in page order."
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPageImageRef"
+            },
+            "maxItems": 200,
+            "description": "Page images by reference, for vision-capable adapters."
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Subject code (SubjectCode, an open dictionary), e.g. MAT.",
+            "example": "MAT"
+          },
+          "kertas": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "taxonomy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiTaxonomyUnit"
+            },
+            "maxItems": 500
+          },
+          "structure": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiStructureHint"
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "pages",
+          "subject",
+          "kertas"
+        ],
+        "additionalProperties": false,
+        "description": "Provider-neutral input of extractPaper (in-process, no HTTP route)."
+      },
+      "AiConfidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Confidence 0..1."
+      },
+      "AiRegion": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "w": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "h": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "page",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "additionalProperties": false,
+        "description": "Source region of a field or figure, as page fractions. [PROPOSED]"
+      },
+      "AiWarningCode": {
+        "type": "string",
+        "enum": [
+          "low_confidence",
+          "no_stem",
+          "no_marks",
+          "unmatched_scheme",
+          "figure_missing",
+          "redacted_content",
+          "truncated"
+        ],
+        "description": "[PROPOSED] codes of per-item warnings; the prototype has no per-item warning, only `lowFields` and `needsManual`."
+      },
+      "AiItemWarning": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/AiWarningCode"
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Draft field the warning is about, e.g. \"marks\"."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "BM message for the reviewer."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] per-item warning."
+      },
+      "AiDraftQuestionType": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "structured",
+          "short",
+          "essay"
+        ],
+        "description": "Prototype IntakeQType."
+      },
+      "AiLeafKind": {
+        "type": "string",
+        "enum": [
+          "working",
+          "numeric",
+          "short_text",
+          "match_letter",
+          "essay",
+          "drawing",
+          "table_fill"
+        ],
+        "description": "Prototype LeafKind."
+      },
+      "AiWordRange": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
+        "additionalProperties": false,
+        "description": "Word range of an essay leaf."
+      },
+      "AiMcqOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "description": "Option letter, e.g. \"A\"."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000,
+            "description": "May contain `$latex$` spans."
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype McqOption."
+      },
+      "AiPointCode": {
+        "type": "string",
+        "enum": [
+          "K",
+          "N",
+          "P",
+          "B",
+          "M",
+          "F",
+          "C"
+        ],
+        "description": "Prototype PointCode."
+      },
+      "AiPointMatch": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "step"
+                ]
+              },
+              "accept": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "accept"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all_of"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "final"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "unit"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "keywords"
+                ]
+              },
+              "anyOf": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "anyOf"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "manual"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype PointMatch."
+      },
+      "AiEcfRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "same"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "sub_from"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "add"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "mul"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype EcfRule."
+      },
+      "AiPointDef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "$ref": "#/components/schemas/AiPointCode"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Explicit marks: the digit of a tag is a sequence number, never the marks."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "match": {
+            "$ref": "#/components/schemas/AiPointMatch"
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Only awarded when every one of these other points was hit."
+          },
+          "ecf": {
+            "type": "object",
+            "properties": {
+              "fromPart": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "rule": {
+                "$ref": "#/components/schemas/AiEcfRule"
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "fromPart",
+              "rule",
+              "note"
+            ],
+            "additionalProperties": false,
+            "description": "Own figure carried forward from an earlier part."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "marks",
+          "label",
+          "match"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype PointDef."
+      },
+      "AiPointGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "anyN": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "pointIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "id",
+          "anyN",
+          "pointIds"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype PointGroup."
+      },
+      "AiFinalDef": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "maxItems": 50,
+            "description": "Accepted equivalent forms (plain or LaTeX); any one matches."
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Absolute tolerance for numeric answers."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "mustContain": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "The answer must contain this text, else it is wrong."
+          },
+          "formHint": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Reason shown when `mustContain` fails."
+          },
+          "display": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "LaTeX shown in the revealed scheme."
+          }
+        },
+        "required": [
+          "accept",
+          "display"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype FinalDef."
+      },
+      "AiRubricBand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "range": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            ]
+          },
+          "descriptor": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
+          "range",
+          "descriptor"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype RubricBand."
+      },
+      "AiSchemeDef": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "option"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "correct": {
+                "type": "string",
+                "maxLength": 16,
+                "description": "Id of the correct McqOption (e.g. \"B\")."
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "correct",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "mapping"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "map": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "map"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "accepted"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "v": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "tol": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "unit": {
+                      "type": "string",
+                      "maxLength": 32
+                    }
+                  },
+                  "required": [
+                    "v"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              },
+              "caseSensitive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "values"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "points"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiPointDef"
+                },
+                "maxItems": 50
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiPointGroup"
+                },
+                "maxItems": 20
+              },
+              "final": {
+                "$ref": "#/components/schemas/AiFinalDef"
+              },
+              "model": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rubric"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 20
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiRubricBand"
+                },
+                "maxItems": 20
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "criteria",
+              "bands"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype SchemeDef (answer key and mark-scheme points)."
+      },
+      "AiCurriculumTag": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "SubjectCode (open dictionary), e.g. MAT."
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5",
+              "T4+T5"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Unit code from the supplied taxonomy (never free text, AC-05.2), or null when the content lies outside it."
+          },
+          "unitLabel": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Display name of the unit."
+          },
+          "sp": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 20,
+            "description": "Standard pembelajaran codes."
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap penguasaan 1..6."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          }
+        },
+        "required": [
+          "subject",
+          "level",
+          "unit",
+          "unitLabel",
+          "sp",
+          "tp",
+          "formOrigin"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype CurriculumTag."
+      },
+      "AiDraftPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (not an entity id)."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "description": "Printed part label, e.g. \"(a)\" or \"(a)(i)\"."
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "0 when the paper shows none (the gate then asks for it)."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AiLeafKind"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/AiSchemeDef"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit shown after a numeric answer."
+          },
+          "wordRange": {
+            "$ref": "#/components/schemas/AiWordRange"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "prompt",
+          "marks",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakePart (extractor output)."
+      },
+      "AiQuestionDraft": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft"
+            ],
+            "description": "[PROPOSED] The only status. The prototype question has none."
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `q-<label>-<n>`); not an entity id."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Number label as printed on the paper, e.g. \"12\"."
+          },
+          "type": {
+            "$ref": "#/components/schemas/AiDraftQuestionType"
+          },
+          "stem": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiMcqOption"
+            },
+            "maxItems": 10,
+            "description": "MCQ options; empty for every other type."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Question marks. For a structured question it is the sum of the part marks; 0 when not found on the paper (the field is then in `lowFields`)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "working",
+              "numeric",
+              "short_text",
+              "match_letter",
+              "essay",
+              "drawing",
+              "table_fill"
+            ],
+            "description": "Leaf mode of a question without parts."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit of a question without parts."
+          },
+          "wordRange": {
+            "$ref": "#/components/schemas/AiWordRange"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiDraftPart"
+            },
+            "maxItems": 50
+          },
+          "scheme": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "option"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "correct": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "description": "Id of the correct McqOption (e.g. \"B\")."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "correct",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "mapping"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "map": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 500
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "map"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "accepted"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "v": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "tol": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "unit": {
+                          "type": "string",
+                          "maxLength": 32
+                        }
+                      },
+                      "required": [
+                        "v"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "caseSensitive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "values"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "points"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiPointDef"
+                    },
+                    "maxItems": 50
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiPointGroup"
+                    },
+                    "maxItems": 20
+                  },
+                  "final": {
+                    "$ref": "#/components/schemas/AiFinalDef"
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "rubric"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiRubricBand"
+                    },
+                    "maxItems": 20
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "maxItems": 20
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Answer key of a question without parts (MCQ key, short answer, essay points)."
+          },
+          "tag": {
+            "$ref": "#/components/schemas/AiCurriculumTag"
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "`id` of an entry of `stimuli` in the same result (not an entity id)."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Source page (1-based)."
+          },
+          "lowFields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Fields the extractor was unsure of; a person must confirm each (gate 4.8)."
+          },
+          "confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 0,
+            "description": "Always empty from the service (AC-05.6); the review screen fills it. Kept so the shape equals the prototype IntakeQuestion."
+          },
+          "needsManual": {
+            "type": "boolean",
+            "description": "Extractor could not parse it: \"Perlu semak manual\"."
+          },
+          "region": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "page",
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Source region of the question."
+          },
+          "fieldConfidence": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AiConfidence"
+            },
+            "description": "[PROPOSED] Field name to confidence."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiItemWarning"
+            },
+            "description": "[PROPOSED] Per-item warnings."
+          }
+        },
+        "required": [
+          "status",
+          "id",
+          "label",
+          "type",
+          "stem",
+          "options",
+          "marks",
+          "mode",
+          "parts",
+          "tag",
+          "page",
+          "lowFields",
+          "confirmed",
+          "fieldConfidence",
+          "warnings"
+        ],
+        "additionalProperties": false,
+        "description": "Extracted question draft (prototype IntakeQuestion). The only status is draft."
+      },
+      "AiStimulusDef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `stim-<n>`); referenced by `stimulusId`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Accessible description of the diagram."
+          },
+          "svg": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Inline SVG markup (prototype, bundled and trusted). Never emitted by an adapter; stripped by the intake worker."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype StimulusDef."
+      },
+      "AiIntakeStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `stim-<n>`); referenced by `stimulusId`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Accessible description of the diagram."
+          },
+          "svg": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Inline SVG markup (prototype, bundled and trusted). Never emitted by an adapter; stripped by the intake worker."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Source page the figure was cropped from."
+          },
+          "region": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "page",
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Figure crop region (BE-37 crops it server-side)."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakeStimulus (StimulusDef plus page)."
+      },
+      "AiExtractedPaper": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiQuestionDraft"
+            }
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiIntakeStimulus"
+            }
+          },
+          "unmatched": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Scheme entries whose question number was not found (AC-04.2), e.g. \"Jawapan 1-B\" or \"Skema 9(a)\" (`mock-extractor.ts` lines 259 and 270)."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Paper-level BM warnings, e.g. \"Tiada soalan dikesan dalam teks kertas.\" (`mock-extractor.ts` line 212)."
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "$ref": "#/components/schemas/AiProviderId"
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "description": "Model id reported by the adapter (the mock reports its own id)."
+              },
+              "pages": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pages sent; 0 for text-only operations."
+              },
+              "tokensIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensOut": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "costSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cost in sen from the configured price table (AI_PRICE_TABLE_JSON); 0 for the mock provider."
+              }
+            },
+            "required": [
+              "provider",
+              "model",
+              "pages",
+              "tokensIn",
+              "tokensOut",
+              "costSen"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Cost summary of the call."
+          },
+          "redaction": {
+            "type": "object",
+            "properties": {
+              "applied": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ],
+                "description": "The redaction step ran before the call (always true on a success)."
+              },
+              "masked": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "flag": {
+                      "$ref": "#/components/schemas/AiRedactionFlag"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Number of spans masked."
+                    }
+                  },
+                  "required": [
+                    "flag",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "One entry per flag that matched at least once. Never the masked text."
+              }
+            },
+            "required": [
+              "applied",
+              "masked"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] What was masked, counts only."
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "questions",
+          "stimuli",
+          "unmatched",
+          "warnings",
+          "usage",
+          "redaction"
+        ],
+        "additionalProperties": false,
+        "description": "Drafts only. In-process result of extractPaper (prototype ExtractedPaper)."
+      },
+      "AiTagSuggestItem": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Caller key echoed in the answer (not an entity id)."
+          },
+          "stem": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "type": {
+            "$ref": "#/components/schemas/AiDraftQuestionType"
+          }
+        },
+        "required": [
+          "ref",
+          "stem"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED]"
+      },
+      "AiSuggestTagsRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiTagSuggestItem"
+            },
+            "minItems": 1,
+            "maxItems": 200
+          },
+          "taxonomy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiTaxonomyUnit"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "subject",
+          "items",
+          "taxonomy"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Input of suggestTags (in-process, plan 15.2). Question text and taxonomy only."
+      },
+      "AiTagSuggestion": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "tag": {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32,
+                "description": "SubjectCode (open dictionary), e.g. MAT."
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "T4",
+                  "T5",
+                  "T4+T5"
+                ]
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Unit code from the supplied taxonomy (never free text, AC-05.2), or null when the content lies outside it."
+              },
+              "unitLabel": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Display name of the unit."
+              },
+              "sp": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "maxItems": 20,
+                "description": "Standard pembelajaran codes."
+              },
+              "tp": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6,
+                "description": "Tahap penguasaan 1..6."
+              },
+              "formOrigin": {
+                "type": "string",
+                "enum": [
+                  "T1-T3",
+                  "T4",
+                  "T5"
+                ]
+              }
+            },
+            "required": [
+              "subject",
+              "level",
+              "unit",
+              "unitLabel",
+              "sp",
+              "tp",
+              "formOrigin"
+            ],
+            "additionalProperties": false,
+            "description": "Suggested tag in the prototype CurriculumTag shape; `unit` is a taxonomy code or null, never free text."
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/AiConfidence"
+          }
+        },
+        "required": [
+          "ref",
+          "tag",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] The prototype has no tag-suggestion call."
+      },
+      "AiSuggestTagsResult": {
+        "type": "object",
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiTagSuggestion"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiUsage"
+          },
+          "redaction": {
+            "$ref": "#/components/schemas/AiRedactionSummary"
+          }
+        },
+        "required": [
+          "suggestions",
+          "usage",
+          "redaction"
+        ],
+        "additionalProperties": false,
+        "description": "Tag suggestions; a human confirms every tag (AC-05.6)."
+      },
+      "AiGenerateTextRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "example": "cikgu.chat"
+          },
+          "system": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          }
+        },
+        "required": [
+          "purpose",
+          "system",
+          "input"
+        ],
+        "additionalProperties": false,
+        "description": "Input of generateText (in-process, no HTTP route)."
+      },
+      "AiGenerateTextResult": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "text",
+          "tokensIn",
+          "tokensOut"
+        ],
+        "additionalProperties": false,
+        "description": "Exactly the shape approved for BE-43. Cost goes to ai_usage_logs, not to the caller."
+      },
+      "AiMonth": {
+        "type": "string",
+        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+        "description": "Calendar month in Malaysia time (Asia/Kuala_Lumpur), YYYY-MM.",
+        "example": "2026-10"
+      },
+      "AiBudgetState": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "warning",
+          "exhausted"
+        ],
+        "description": "ok below 80%, warning from 80% to below 100%, exhausted at 100% or more (new extractions refused)."
+      },
+      "AiSettings": {
+        "type": "object",
+        "properties": {
+          "monthlyBudgetSen": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000,
+            "description": "Monthly cap in sen. Initial value comes from AI_MONTHLY_BUDGET_SEN; 0 means every new extraction is queued."
+          },
+          "notifyAt80": {
+            "type": "boolean",
+            "description": "Notify every active Admin Pusat once per month at 80% (AC6)."
+          },
+          "notifyAt100": {
+            "type": "boolean",
+            "description": "Notify every active Admin Pusat once per month at 100%. [PROPOSED] second toggle."
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Null until the first PUT.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "monthlyBudgetSen",
+          "notifyAt80",
+          "notifyAt100",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "description": "ai_settings. Contains no credential."
+      },
+      "AiStatus": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Configured model id; null when none is set."
+          },
+          "configured": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "vision": {
+                "type": "boolean",
+                "description": "The adapter accepts page images."
+              },
+              "jsonMode": {
+                "type": "boolean",
+                "description": "The adapter can be asked for a JSON-only reply."
+              },
+              "maxPagesPerCall": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Pages the adapter accepts in one call."
+              }
+            },
+            "required": [
+              "vision",
+              "jsonMode",
+              "maxPagesPerCall"
+            ],
+            "additionalProperties": false,
+            "description": "Null when the provider is not configured."
+          },
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Current Malaysia month the figures below belong to.",
+            "example": "2026-10"
+          },
+          "monthToDateCostSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "budgetSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remainingSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "max(0, budgetSen - monthToDateCostSen)."
+          },
+          "percentUsed": {
+            "type": "number",
+            "minimum": 0,
+            "description": "monthToDateCostSen / budgetSen * 100; 0 when budgetSen is 0 and cost is 0, 100 when budgetSen is 0 and cost > 0."
+          },
+          "budgetState": {
+            "$ref": "#/components/schemas/AiBudgetState"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/AiSettings"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "configured",
+          "capabilities",
+          "month",
+          "monthToDateCostSen",
+          "budgetSen",
+          "remainingSen",
+          "percentUsed",
+          "budgetState",
+          "settings"
+        ],
+        "additionalProperties": false,
+        "description": "Provider and budget status for Admin Pusat. No credential, no base URL."
+      },
+      "AiUsageQuery": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Defaults to the current Malaysia month.",
+            "example": "2026-10"
+          },
+          "batchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Intake batch id.",
+            "example": "1042"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "description": "Filters of GET /ai/usage. Newest row first."
+      },
+      "AiUsageRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/AiCallPurpose"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "runId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "batchId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "actorId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Caller id; the log stores no name.",
+            "example": "1042"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "purpose",
+          "provider",
+          "model",
+          "runId",
+          "batchId",
+          "actorId",
+          "pages",
+          "tokensIn",
+          "tokensOut",
+          "costSen"
+        ],
+        "additionalProperties": false,
+        "description": "One ai_usage_logs row. No document text, no prompt (AC5)."
+      },
+      "AiSettingsUpdate": {
+        "type": "object",
+        "properties": {
+          "monthlyBudgetSen": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "notifyAt80": {
+            "type": "boolean"
+          },
+          "notifyAt100": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "monthlyBudgetSen",
+          "notifyAt80",
+          "notifyAt100"
+        ],
+        "additionalProperties": false,
+        "description": "Body of PUT /ai/settings. Audit-logged (actor, old and new value)."
+      },
+      "AiTestRequest": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "Empty object. The health check uses a built-in sample, never user content."
+      },
+      "AiTestResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Always true: a 200 means the provider answered. A failed check is 503 AI_UNAVAILABLE or AI_BUDGET_EXHAUSTED, never a 200 with ok false."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AiProviderId"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "latencyMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checkedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiUsage"
+          }
+        },
+        "required": [
+          "ok",
+          "provider",
+          "model",
+          "latencyMs",
+          "checkedAt",
+          "usage"
+        ],
+        "additionalProperties": false,
+        "description": "Outcome of the admin health check on the built-in sample."
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -95441,6 +98047,434 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/status": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "AI service status: provider, model, configured, month-to-date cost, budget",
+        "description": "Provider id, model id, `configured` yes/no, the Malaysia month, month-to-date cost, budget, remaining, percent used, budget state (ok below 80%, warning from 80%, exhausted at 100%) and the current settings. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "responses": {
+          "200": {
+            "description": "Current status.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: provider and budget configuration of the platform (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AiStatus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/usage": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "AI usage log (paged, no content)",
+        "description": "Rows of ai_usage_logs, newest first, filtered by month (default the current Malaysia month), intake batch and provider. A row has provider, model, purpose, run id, batch id, actor id, pages, tokens in and out and cost in sen; it never has document text or a prompt (AC5). Mock-provider rows are included and carry cost 0, so a caller can filter by provider. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "description": "Defaults to the current Malaysia month.",
+              "example": "2026-10"
+            },
+            "required": false,
+            "description": "Defaults to the current Malaysia month.",
+            "name": "month",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Intake batch id.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Intake batch id.",
+            "name": "batchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/AiProviderId"
+            },
+            "required": false,
+            "description": "Provider adapter id; selected server-side by AI_PROVIDER (default mock).",
+            "name": "provider",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage rows (paged).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: provider and budget configuration of the platform (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AiUsageRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (month is not YYYY-MM, unknown provider, page or pageSize out of range).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/settings": {
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Set the monthly AI budget and the notification toggles",
+        "description": "Full replace of `monthlyBudgetSen`, `notifyAt80` and `notifyAt100`; unknown keys are 422 (strict body). Audit-logged (actor, old and new value). Raising the cap at or above the month-to-date cost lets queued extractions run (AC-29.2). Provider, model and key are environment configuration and cannot be set here. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored settings.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: provider and budget configuration of the platform (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AiSettings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (negative or non-integer budget, budget above the sanity cap, non-boolean toggle, unknown key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/test": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Admin health check of the configured provider on a built-in sample",
+        "description": "Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); a provider without server configuration is 503 AI_UNAVAILABLE \"Dikonfigurasi di pelayan\" (prototype copy), an unreachable one is 503 AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" and a reached cap is 503 AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\". The body is an empty object; any field is 422. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The provider answered.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: provider and budget configuration of the platform (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AiTestResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (the body is not an empty object).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI_UNAVAILABLE \"Dikonfigurasi di pelayan\" (provider not configured) or \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" (unreachable or still failing after the retries) or AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\".",
             "content": {
               "application/json": {
                 "schema": {
