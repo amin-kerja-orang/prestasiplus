@@ -128,6 +128,30 @@ describe('arena (M16-16, M16-17)', () => {
       expect(t.reports.at(-1)).toEqual({ userId: a.id, game: 'battle', event: 'win', coins: 0, xp: 0, correct: 7, total: 10, isTest: false })
     })
 
+    it('time is the server\'s: the client cannot answer faster than the clock (question 1 from the battle start, then from the previous answer)', async () => {
+      const uuid = await botBattle(a, s.math)
+      t.clock.advance(8_000)
+      const r1 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
+      expect(parseData(BattleAnswerResultSchema, r1).points).toBe(battleArenaPoints(8))
+      // a slower client claim is kept
+      t.clock.advance(2_000)
+      const r2 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 6 })
+      expect(parseData(BattleAnswerResultSchema, r2).points).toBe(battleArenaPoints(6))
+      // exactly 18 s is still an answer (15 + 3 s grace), clamped to 15
+      t.clock.advance(18_000)
+      const r3 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
+      expect(parseData(BattleAnswerResultSchema, r3).points).toBe(battleArenaPoints(15))
+      // 19 s: a timeout, still stored, the battle moves on
+      t.clock.advance(19_000)
+      const r4 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
+      expect(parseData(BattleAnswerResultSchema, r4)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
+      const stored = await rows<{ seconds: number; points: number; option_id: number | null; created_at: Date }>(`select seconds, points, option_id, created_at from battle_answers where battle_id = $1 and user_id = $2 order by position`, [uuid, a.id])
+      expect(stored.map((r) => r.seconds)).toEqual([8, 6, 15, 15])
+      expect(stored[3]).toMatchObject({ points: 0, option_id: null })
+      expect(stored[3]?.created_at.toISOString()).toBe(t.clock.now().toISOString())
+      expect(parseData(BattleArenaViewSchema, await view(a, uuid)).index).toBe(5)
+    })
+
     it('an omitted optionId is a timeout', async () => {
       const uuid = await botBattle(a, s.math)
       const res = await answer(a, uuid, { questionId: await questionOf(a, uuid), seconds: 15 })

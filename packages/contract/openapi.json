@@ -18306,7 +18306,8 @@
         "properties": {
           "q": {
             "type": "string",
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+            "maxLength": 100,
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
           }
         }
       },
@@ -19541,7 +19542,8 @@
             "maxLength": 255
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "education_level_id": {
             "type": "string",
@@ -79664,10 +79666,11 @@
           {
             "schema": {
               "type": "string",
-              "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+              "maxLength": 100,
+              "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
             },
             "required": false,
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters.",
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject).",
             "name": "q",
             "in": "query"
           }

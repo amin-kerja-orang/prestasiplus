@@ -13,6 +13,11 @@ import { PrismaService } from '../../../db/prisma.service'
 import type { ArenaQuestionView } from '../battle.deps'
 import { BattleEngine, botAnswers, gradeLabel, isUuid } from '../engine'
 
+/** Subjects whose SPM pool the lobby counts at the same time. */
+const LOBBY_PARALLEL = 4
+/** Time allowed past the 15 s of a question before the answer counts as a timeout. */
+const GRACE_SECONDS = 3
+
 type Side = 'A' | 'B'
 interface Result {
   winner: Side | null
@@ -48,9 +53,14 @@ export class ArenaService {
       pkskDomains: deps.pkskDomains().map((d) => ({ id: d.id, name: d.name, icon: '', colour: '' })),
     }
     if (!unlocked) return out
-    const spm: { id: string; name: string }[] = []
-    for (const s of subjects) if ((await deps.spmPoolCount(s.id)) > 0) spm.push({ id: s.id, name: s.name })
-    return { ...out, spmSubjects: spm }
+    // Bounded parallelism: a few subjects at a time (the counts are cached by the deps).
+    const withPool = new Set<string>()
+    for (let i = 0; i < subjects.length; i += LOBBY_PARALLEL) {
+      const batch = subjects.slice(i, i + LOBBY_PARALLEL)
+      const counts = await Promise.all(batch.map((s) => deps.spmPoolCount(s.id)))
+      batch.forEach((s, j) => (counts[j] ?? 0) > 0 && withPool.add(s.id))
+    }
+    return { ...out, spmSubjects: subjects.filter((s) => withPool.has(s.id)).map((s) => ({ id: s.id, name: s.name })) }
   }
 
   private async load(uuid: string, userId: string) {
@@ -120,7 +130,15 @@ export class ArenaService {
     if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > BATTLE_RULES.questionSeconds) {
       throw invalid('seconds', BATTLE_MESSAGES.timeInvalid)
     }
-    const graded = await this.engine.deps.gradeAnswer(questionId, optionId)
+    // Time is the server's: the question was served when the battle started (question 1) or when the previous answer
+    // was stored. The client's `seconds` can only make the answer slower, never faster.
+    const now = this.clock.now()
+    const previous = done === 0 ? null : await this.prisma.client.battleAnswer.findUnique({ where: { battleId_userId_position: { battleId: uuid, userId: mine.userId, position: done } }, select: { createdAt: true } })
+    const served = previous?.createdAt ?? battle.createdAt
+    const elapsed = Math.max(0, Math.floor((now.getTime() - served.getTime()) / 1000))
+    const timedOut = elapsed > BATTLE_RULES.questionSeconds + GRACE_SECONDS
+    const whole = timedOut ? BATTLE_RULES.questionSeconds : Math.min(BATTLE_RULES.questionSeconds, Math.max(Math.floor(seconds), elapsed))
+    const graded = await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)
     if (!graded) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const index = done + 1
     const last = index >= BATTLE_RULES.arenaQuestions
@@ -130,7 +148,6 @@ export class ArenaService {
     const bot = botAnswers(uuid, await this.engine.botAccuracy())[done]
     if (!bot) throw notFound()
 
-    const whole = Math.floor(seconds)
     const points = graded.correct ? battleArenaPoints(whole) : 0
     let ended: { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null = null
     const out = await this.prisma
@@ -143,9 +160,8 @@ export class ArenaService {
         if ((await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId } })) !== done) throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
         const opp = locked.participants.find((p) => p.userId !== mine.userId)
         if (!opp) throw notFound()
-        const now = this.clock.now()
         await this.prisma.client.battleAnswer.create({
-          data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId, correct: graded.correct, seconds: whole, points, createdAt: now },
+          data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId: timedOut ? null : optionId, correct: graded.correct, seconds: whole, points, createdAt: now },
         })
         // The opponent is simulated from its pre-drawn list (D53(a)); a row already there for this position is kept as it is.
         const simulated = await this.prisma.client.battleAnswer.createMany({

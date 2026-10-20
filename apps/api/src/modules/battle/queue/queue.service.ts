@@ -115,7 +115,7 @@ export class QueueService {
 
   private async challengerOf(userId: bigint): Promise<Challenger> {
     const p = await this.engine.player(idToString(userId))
-    if (!p) throw rawNotFound('Pengguna tidak dijumpai.')
+    if (!p) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
     return { name: p.name, grade_label: gradeLabel(p.grade), school: p.schoolName ?? '' }
   }
 
@@ -179,7 +179,7 @@ export class QueueService {
   private async matchWithBot(q: QueueRow, ownerId: string, isTest: boolean, prefetched: Prefetch | null): Promise<string> {
     const ready = prefetched !== null && prefetched.forQueue === q.id && prefetched.bot !== null ? prefetched : null
     const owner = ready?.owner ?? (await this.engine.player(ownerId))
-    if (!owner) throw rawNotFound('Pengguna tidak dijumpai.')
+    if (!owner) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
     const bot = ready?.bot ?? (await this.engine.pickOpponent(idToString(q.id), owner, q.mode as QueueMode, q.openToAll))
     if (!bot) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
     const battleId = await this.engine.createBattle({
@@ -228,7 +228,7 @@ export class QueueService {
   private async createWithJoiner(q: QueueRow, ownerId: string, otherId: bigint, isTest: boolean, ids?: string[] | null): Promise<string> {
     const owner = await this.engine.player(ownerId)
     const other = await this.engine.player(idToString(otherId))
-    if (!owner || !other) throw rawNotFound('Pengguna tidak dijumpai.')
+    if (!owner || !other) throw rawNotFound(BATTLE_MESSAGES.queueNotFound)
     return this.engine.createBattle({
       mode: q.mode as QueueMode,
       params: paramsOf(q),

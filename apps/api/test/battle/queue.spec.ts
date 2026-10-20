@@ -264,6 +264,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
     it('no student to pick: 404 {error: "Tiada lawan dijumpai."}', async () => {
       const qid = await startQueue(a, s.math)
       await rows(`update users set is_active = false where id <> $1`, [a.id])
+      t.get(BattleDeps).invalidateCache()
       await a.get(`/battle/poll-match/${qid}`)
       await a.get(`/battle/poll-match/${qid}`)
       const res = await a.get(`/battle/poll-match/${qid}`)
@@ -271,6 +272,19 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Tiada lawan dijumpai.' })
       await rows(`update users set is_active = true`)
       await rows(`update users set is_active = false where email = 'tidakaktif@demo.test'`)
+      t.get(BattleDeps).invalidateCache()
+    })
+
+    it('the student pool of the bot pick is cached for 60 s (read through the Clock)', async () => {
+      const deps = t.get(BattleDeps)
+      const first = await deps.activeStudents({})
+      const victim = first.find((u) => u.id !== a.id)!
+      await rows(`update users set is_active = false where id = $1`, [victim.id])
+      expect((await deps.activeStudents({})).map((u) => u.id)).toContain(victim.id)
+      t.clock.advance(61_000)
+      expect((await deps.activeStudents({})).map((u) => u.id)).not.toContain(victim.id)
+      await rows(`update users set is_active = true where id = $1`, [victim.id])
+      deps.invalidateCache()
     })
   })
 
@@ -297,6 +311,18 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       const test2 = await startQueue(admin, s.math)
       expect((await b.post(`/battle/join-queue/${test2}`)).status).toBe(404)
       expect((await b.get(`/battle/poll-challenger/${test2}`)).body).toEqual({ status: 'not_found' })
+    })
+
+    it('staff in their own role (not Mod Pelajar) also write is_test rows and never meet real pupils', async () => {
+      const staff = await client(t, 'guru@demo.test')
+      const qid = await startQueue(staff, s.math)
+      expect((await rows<{ is_test: boolean }>(`select is_test from battle_queues where id = $1`, [qid]))[0]?.is_test).toBe(true)
+      const uuid = await matchBot(staff, qid)
+      expect((await rows<{ is_test: boolean }>(`select is_test from battles where id = $1`, [uuid]))[0]?.is_test).toBe(true)
+      expect((await b.post(`/battle/join-queue/${qid}`)).status).toBe(404)
+      expect((await staff.post('/battle/invite', { question_type: 'biasa', subject_id: s.math, receiver_id: b.id })).status).toBe(200)
+      expect((await rows<{ is_test: boolean }>(`select is_test from battle_invitations order by created_at desc limit 1`))[0]?.is_test).toBe(true)
+      expect((await b.get('/battle/invitations')).body.invitations).toEqual([])
     })
 
     it('no staff account is ever picked as a bot', async () => {

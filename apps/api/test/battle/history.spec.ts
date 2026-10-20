@@ -71,6 +71,12 @@ describe('own battle history (M16-21)', () => {
     expect(new Set(names.map((n) => n.name))).toEqual(new Set([rows[0]!.playerA.name, rows[0]!.playerB.name]))
   })
 
+  it('a pupil who was only the bot side never sees that battle; the human side does', async () => {
+    const id = await addBattle(t.db, { a: S.D1(1), b: S.PELAJAR, scoreA: 3000, scoreB: 9000, at: '2026-10-20T10:00:00+08:00', botB: true })
+    expect(await history()).toEqual([])
+    expect((await history(await t.login(S.D1(1)))).map((r) => r.uuid)).toEqual([id])
+  })
+
   it('both sides see the same battle in their own history', async () => {
     const id = await addBattle(t.db, { a: S.PELAJAR, b: S.D1(1), scoreA: 7000, scoreB: 3000, at: '2026-10-20T10:00:00+08:00' })
     const other = await t.login(S.D1(1))

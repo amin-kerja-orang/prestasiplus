@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { LoggedIn } from '../auth/helpers'
+import { StandingsService } from '../../src/modules/battle/standings/standings.service'
 import { addBattle, bootStandings, getAs, S, schoolIdOf, userIdOf, type StandingsApp } from './standings-helpers'
 
 // Wednesday 2026-10-21 10:00 MYT: the week runs from Monday 2026-10-19 00:00 MYT, the month from 2026-10-01 00:00 MYT.
@@ -190,6 +191,17 @@ describe('battle standings (M16-18, M16-19)', () => {
       expect(rows.map((r) => r.rank)).toEqual(rows.map((_, i) => i + 1))
     })
 
+    it('a bot side earns no standing; the human side of the same battle counts normally', async () => {
+      const at = '2026-10-20T10:00:00+08:00'
+      // D1(2) is only the simulated opponent and wins on points: no row for D1(2).
+      await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 3000, scoreB: 9000, at, botB: true })
+      const rows = await students()
+      expect(rows.map((r) => [r.userId, r.menang, r.kalah, r.skor])).toEqual([[await userIdOf(t.db, S.D1(1)), 0, 1, 30]])
+      // The same pupil playing as a human elsewhere still ranks.
+      await addBattle(t.db, { a: S.D1(2), b: S.D1(3), scoreA: 5000, scoreB: 100, at })
+      expect((await students()).map((r) => r.userId)).toContain(await userIdOf(t.db, S.D1(2)))
+    })
+
     it('shows the CURRENT school of the student, whatever school the participant row stored', async () => {
       await addBattle(t.db, { a: S.D1(1), b: S.D2(1), scoreA: 7000, scoreB: 3000, at: '2026-10-20T10:00:00+08:00', schoolA: 'DEMO004', schoolB: null })
       const rows = await students()
@@ -242,6 +254,35 @@ describe('battle standings (M16-18, M16-19)', () => {
       await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 7000, scoreB: 3000, at, schoolA: 'DEMO004', schoolB: null })
       const data = await schools()
       expect(data.rows.map((r) => [r.name, r.battles, r.menang, r.pelajar])).toEqual([['SJK(C) Demo Empat', 1, 1, 1]])
+    })
+
+    it('a bot side gives its stored school no battle, win, pelajar or skor', async () => {
+      // Bot side B belongs to DEMO002 (stored); only the human side (DEMO001) is counted.
+      await addBattle(t.db, { a: S.D1(1), b: S.D2(1), scoreA: 3000, scoreB: 9000, at: '2026-10-20T10:00:00+08:00', botB: true })
+      const data = await schools()
+      expect(data.rows.map((r) => [r.name, r.battles, r.menang, r.kalah, r.pelajar, r.skor])).toEqual([['SMK Demo Satu', 1, 0, 1, 1, 30]])
+    })
+
+    it('the national aggregation is cached for 30 s of the clock and shared across callers', async () => {
+      const svc = t.get(StandingsService)
+      svc.cacheTtlSeconds = 30
+      try {
+        await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 7000, scoreB: 3000, at: '2026-10-20T10:00:00+08:00' })
+        expect((await schools()).rows).toHaveLength(1)
+        expect(await students()).toHaveLength(2)
+        await addBattle(t.db, { a: S.D2(1), b: S.D2(2), scoreA: 7000, scoreB: 3000, at: '2026-10-20T11:00:00+08:00' })
+        const other = await t.login(S.D1(2))
+        const stale = SchoolsEnvelope.parse((await getAs(other, '/battle/standings/schools')).body).data
+        expect(stale.rows).toHaveLength(1) // another caller, same cached figures
+        expect(await students()).toHaveLength(2)
+        t.clock.advance(29_000)
+        expect((await schools()).rows).toHaveLength(1)
+        t.clock.advance(1_001)
+        expect((await schools()).rows).toHaveLength(2)
+        expect(await students()).toHaveLength(4)
+      } finally {
+        svc.cacheTtlSeconds = 0
+      }
     })
 
     it('excludes is_test, active and abandoned battles', async () => {

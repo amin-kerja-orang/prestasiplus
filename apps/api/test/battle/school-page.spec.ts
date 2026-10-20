@@ -102,6 +102,22 @@ describe('school battle page (M16-20)', () => {
     expect(data.recent.slice(1).map((r) => r.uuid)).toEqual([...ids].reverse().slice(0, 9))
   })
 
+  it('bot sides: not fighters, no school credit; recent keeps a battle only through a non-bot side of the school', async () => {
+    const at = '2026-10-20T10:00:00+08:00'
+    // DEMO001 pupil D1(1) is the bot side against a DEMO002 human: DEMO001 gets nothing, the battle is not in its recent list.
+    await addBattle(t.db, { a: S.D2(1), b: S.D1(1), scoreA: 3000, scoreB: 9000, at, schoolA: 'DEMO002', schoolB: 'DEMO001', botB: true })
+    // A DEMO001 human against a DEMO002 bot: counted and shown for DEMO001.
+    const shown = await addBattle(t.db, { a: S.D1(2), b: S.D2(2), scoreA: 5000, scoreB: 100, at: '2026-10-19T10:00:00+08:00', schoolA: 'DEMO001', schoolB: 'DEMO002', botB: true })
+    const d1page = await page(d1)
+    expect(d1page.fighters.map((f) => f.userId)).toEqual([await userIdOf(t.db, S.D1(2))])
+    expect(d1page.allTime).toMatchObject({ battles: 1, menang: 1, pelajar: 1 })
+    expect(d1page.recent.map((r) => r.uuid)).toEqual([shown])
+    const d2page = await page(await schoolIdOf(t.db, 'DEMO002'))
+    expect(d2page.allTime).toMatchObject({ battles: 1, menang: 0, pelajar: 1 }) // only the human D2(1)
+    expect(d2page.fighters.map((f) => f.userId)).toEqual([await userIdOf(t.db, S.D2(1))])
+    expect(d2page.recent).toHaveLength(1) // the battle through its human side only
+  })
+
   it('recent rows: homeHere is true when player A currently belongs to this school', async () => {
     await addBattle(t.db, { a: S.D1(1), b: S.D2(1), scoreA: 5000, scoreB: 100, at: '2026-10-20T21:00:00+08:00', schoolA: 'DEMO001', schoolB: 'DEMO002' })
     await addBattle(t.db, { a: S.D2(2), b: S.D1(2), scoreA: 5000, scoreB: 100, at: '2026-10-19T21:00:00+08:00', schoolA: 'DEMO002', schoolB: 'DEMO001' })

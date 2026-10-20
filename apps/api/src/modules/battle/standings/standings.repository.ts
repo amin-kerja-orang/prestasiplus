@@ -55,7 +55,7 @@ interface RawBattle {
   school_b: bigint | null
 }
 
-const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND p.is_test = false`
+const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND p.is_test = false AND p.is_bot = false`
 
 const windowSql = (w: PeriodWindow): Prisma.Sql => {
   const parts: Prisma.Sql[] = []
@@ -66,6 +66,7 @@ const windowSql = (w: PeriodWindow): Prisma.Sql => {
 
 const num = (v: bigint | number | null): number => Number(v ?? 0)
 
+/** Bot sides (`is_bot`, real pupils used as simulated opponents) never earn standings, history or school credit. */
 /** Aggregations over `battle_participants` / `battles` (BE-44 AC 13). Reads only the battle tables. */
 @Injectable()
 export class StandingsRepository {
@@ -188,7 +189,7 @@ export class StandingsRepository {
       JOIN battle_participants a ON a.battle_id = b.id AND a.side = 'A'
       JOIN battle_participants c ON c.battle_id = b.id AND c.side = 'B'
       WHERE b.status IN ('finished', 'forfeited') AND b.is_test = false
-        AND (a.user_id = ${idFromString(userId)} OR c.user_id = ${idFromString(userId)})
+        AND ((a.user_id = ${idFromString(userId)} AND NOT a.is_bot) OR (c.user_id = ${idFromString(userId)} AND NOT c.is_bot))
       ORDER BY b.created_at DESC, b.id DESC`)
     return rows.map((r) => this.toBattle(r))
   }
@@ -201,7 +202,7 @@ export class StandingsRepository {
       JOIN battle_participants a ON a.battle_id = b.id AND a.side = 'A'
       JOIN battle_participants c ON c.battle_id = b.id AND c.side = 'B'
       WHERE b.status = 'finished' AND b.is_test = false
-        AND (a.school_id = ${idFromString(schoolId)} OR c.school_id = ${idFromString(schoolId)})
+        AND ((a.school_id = ${idFromString(schoolId)} AND NOT a.is_bot) OR (c.school_id = ${idFromString(schoolId)} AND NOT c.is_bot))
       ORDER BY b.created_at DESC, b.id DESC
       LIMIT ${limit}`)
     return rows.map((r) => this.toBattle(r))

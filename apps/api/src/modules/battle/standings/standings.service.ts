@@ -15,8 +15,8 @@ import { toMytTimestamp } from '../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { BattleDeps, type BattleSchool } from '../battle.deps'
+import { type PeriodWindow, periodWindow, isStandingPeriod, type StandingPeriod } from './standings.windows'
 import { type BattleRowData, type SchoolTotals, StandingsRepository, type StudentTotals } from './standings.repository'
-import { isStandingPeriod, periodWindow, type StandingPeriod } from './standings.windows'
 
 export type StudentStanding = z.infer<typeof BattleStudentStandingSchema>
 export type SchoolStanding = z.infer<typeof BattleSchoolStandingSchema>
@@ -30,6 +30,26 @@ const pct = (correct: number, answered: number): number => (answered === 0 ? 0 :
 /** M16-18..21 (BE-44 AC 13): standings computed from finished and forfeited battles, in Asia/Kuala_Lumpur windows. */
 @Injectable()
 export class StandingsService {
+  /** Seconds a national aggregation is reused across callers (`BATTLE_STANDINGS_CACHE_SECONDS`, default 30; 0 = off). */
+  cacheTtlSeconds = Number.isFinite(Number(process.env.BATTLE_STANDINGS_CACHE_SECONDS ?? '')) && process.env.BATTLE_STANDINGS_CACHE_SECONDS !== undefined && process.env.BATTLE_STANDINGS_CACHE_SECONDS !== '' ? Math.max(0, Number(process.env.BATTLE_STANDINGS_CACHE_SECONDS)) : 30
+  private readonly cache = new Map<string, { expires: number; value: Promise<unknown> }>()
+
+  /** Clock-based TTL cache of the national aggregations, keyed by kind and window (the state filter is applied after). */
+  private cached<T>(kind: 'students' | 'schools', w: PeriodWindow, load: () => Promise<T>): Promise<T> {
+    if (this.cacheTtlSeconds <= 0) return load()
+    const now = this.clock.now().getTime()
+    const key = `${kind}|${w.from?.toISOString() ?? ''}|${w.to?.toISOString() ?? ''}`
+    const hit = this.cache.get(key)
+    if (hit && hit.expires > now) return hit.value as Promise<T>
+    if (this.cache.size >= 50) for (const [k, v] of this.cache) if (v.expires <= now) this.cache.delete(k)
+    const value = load()
+    this.cache.set(key, { expires: now + this.cacheTtlSeconds * 1000, value })
+    value.catch(() => {
+      if (this.cache.get(key)?.value === value) this.cache.delete(key)
+    })
+    return value
+  }
+
   constructor(
     @Inject(StandingsRepository) private readonly repo: StandingsRepository,
     @Inject(BattleDeps) private readonly deps: BattleDeps,
@@ -38,7 +58,8 @@ export class StandingsService {
 
   /** Ranked students of a period with the CURRENT school of each (internal; the route drops `schoolId`). */
   private async rankedStudents(period: StandingPeriod): Promise<(StudentStanding & { schoolId: string | null })[]> {
-    const totals = await this.repo.studentTotals(periodWindow(period, this.clock.now()))
+    const w = periodWindow(period, this.clock.now())
+    const totals = await this.cached('students', w, () => this.repo.studentTotals(w))
     const players = await this.deps.players(totals.map((t) => t.userId))
     return totals.map((t: StudentTotals, i) => {
       const p = players.get(t.userId)
@@ -68,7 +89,8 @@ export class StandingsService {
   }
 
   private async nationalSchools(period: StandingPeriod): Promise<{ rows: SchoolStanding[]; totals: SchoolTotals[] }> {
-    const totals = await this.repo.schoolTotals(periodWindow(period, this.clock.now()))
+    const w = periodWindow(period, this.clock.now())
+    const totals = await this.cached('schools', w, () => this.repo.schoolTotals(w))
     const info = await this.deps.schoolsByIds(totals.map((t) => t.schoolId))
     const rows = totals.map((t, i): SchoolStanding => {
       const s = info.get(t.schoolId)

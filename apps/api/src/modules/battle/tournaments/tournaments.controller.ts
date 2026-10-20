@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import {
+  BattleTournamentCreatedSchema,
   BattleTournamentDetailSchema,
   BattleTournamentActiveSchema,
   BattleTournamentFormOptionsSchema,
@@ -50,7 +51,7 @@ export class TournamentsController {
   @Roles('admin')
   @RateLimit(BATTLE_LIMITS.write)
   async create(@Req() req: Request & RequestWithAuth, @Body() body: unknown) {
-    return ok(await this.tournaments.create(viewerOf(req), body))
+    return ok(BattleTournamentCreatedSchema.parse(await this.tournaments.create(viewerOf(req), body)))
   }
 
   @Get('tournaments/:uuid')

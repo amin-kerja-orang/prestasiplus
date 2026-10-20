@@ -14,10 +14,15 @@
  *  4. Platform answer accuracy: BE-12 exports only per-user reads (`PracticeRepository.answers(userId)`), no platform
  *     total (so no `PracticeRepository` is injected here). `platformAccuracy()` returns 0 (the SRS value for "no answers"), so bots answer wrong until BE-12 adds one.
  *  5. Avatar: no owner serves a user avatar yet; `avatar` is always null.
+ *  5b. OPEN QUESTION for the lead: BE-05 should export a bounded read of active students (grade, school, exclude ids,
+ *     limit) and BE-09 a bounded SPM-pool id/count read. Until then the reads in 1 and 2 are cached in process for
+ *     `CACHE_TTL_MS` (read through the Clock) so polls and the lobby do not rescan the tables; `invalidateCache()` is for tests.
  *  6. PKSK: no owner serves PKSK domains or tagged questions (Open question 6): `pkskDomains()` is `[]` and a PKSK
  *     draw returns `null` (callers answer 422 `{}`).
  */
 import { Inject, Injectable } from '@nestjs/common'
+import type { AuthContext } from '../../common/scope/auth-context'
+import { CLOCK, type Clock } from '../../db/clock'
 import type { Prng } from '../../db/prng'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { CurriculumRepository } from '../curriculum'
@@ -25,10 +30,15 @@ import { QuestionsRepository } from '../questions'
 import { flatFromVersion } from '../questions/projection'
 import { SchoolsRepository } from '../schools'
 import { UsersRepository, type UserRecord } from '../users'
+import type { Caller } from '../users/caller'
 
 /** Most users one student read looks at (see fallback 1). */
 export const STUDENT_POOL_CAP = 5000
 const SPM_CHUNK = 200
+/** Student pool and SPM pool reads are reused this long (see 5b). */
+export const CACHE_TTL_MS = 60_000
+/** Rows read by the name search before the active / not-suspended filter (the caller sees at most `limit`). */
+const SEARCH_OVER_READ = 40
 const ARENA_OPTIONS = 4
 const LABELS = ['A', 'B', 'C', 'D'] as const
 
@@ -92,7 +102,25 @@ export class BattleDeps {
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
+
+  private readonly cache = new Map<string, { at: number; value: unknown }>()
+
+  /** Runs `read` unless the same key was read less than `CACHE_TTL_MS` ago (Clock time). */
+  private async cached<T>(key: string, read: () => Promise<T>): Promise<T> {
+    const now = this.clock.now().getTime()
+    const hit = this.cache.get(key)
+    if (hit && now - hit.at < CACHE_TTL_MS && now >= hit.at) return hit.value as T
+    const value = await read()
+    this.cache.set(key, { at: now, value })
+    return value
+  }
+
+  /** Forgets every cached read (tests that change users or questions behind the service). */
+  invalidateCache(): void {
+    this.cache.clear()
+  }
 
   // --- students (BE-05, BE-06 schools) ---------------------------------------------------------------
 
@@ -129,7 +157,9 @@ export class BattleDeps {
 
   /** Active students, name A-Z then id (deterministic), after the filters. For the bot pick. */
   async activeStudents(filter: StudentFilter = {}, limit: number = STUDENT_POOL_CAP): Promise<BattleStudent[]> {
-    const rows = await this.users.search({ q: '', role: 'student', ...(filter.schoolId === undefined ? {} : { schoolId: filter.schoolId }), limit: STUDENT_POOL_CAP })
+    const rows = await this.cached(`students:${filter.schoolId ?? '*'}`, () =>
+      this.users.search({ q: '', role: 'student', ...(filter.schoolId === undefined ? {} : { schoolId: filter.schoolId }), limit: STUDENT_POOL_CAP }),
+    )
     const kept = rows.filter(
       (u) =>
         this.isActiveStudent(u) &&
@@ -140,12 +170,17 @@ export class BattleDeps {
     return this.toStudents(kept.slice(0, limit))
   }
 
-  /** M16-07 search: active students whose NAME contains `q` (case-insensitive), not `excludeId`, name A-Z then id. */
+  /**
+   * M16-07 search: active students whose NAME contains `q` (case-insensitive), not `excludeId`, name A-Z (`ms` collation)
+   * then id. A bounded database read (`searchStudentsByName`, name only) with a national read scope; the active /
+   * not-suspended / student check runs on the rows it returns.
+   */
   async searchStudents(q: string, excludeId: string, limit: number): Promise<BattleStudent[]> {
-    const needle = q.toLowerCase()
-    const rows = await this.users.search({ q, role: 'student', limit: STUDENT_POOL_CAP })
-    const kept = rows.filter((u) => u.id !== excludeId && this.isActiveStudent(u) && u.name.toLowerCase().includes(needle))
-    kept.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
+    const everyone = { auth: { active: { scope: { level: 'national' } } } as unknown as AuthContext, userId: excludeId, role: 'admin', schoolId: null, isAdmin: true, requestId: null, ip: null } satisfies Caller
+    const found = await this.users.searchStudentsByName(everyone, q, limit + SEARCH_OVER_READ)
+    const full = await this.users.getMany(found.filter((r) => r.id !== excludeId).map((r) => r.id))
+    const kept = full.filter((u) => this.isActiveStudent(u))
+    kept.sort((a, b) => a.name.localeCompare(b.name, 'ms') || (BigInt(a.id) < BigInt(b.id) ? -1 : 1))
     return this.toStudents(kept.slice(0, limit))
   }
 
@@ -188,7 +223,11 @@ export class BattleDeps {
   // --- questions (BE-09) -------------------------------------------------------------------------------
 
   /** Live-published, active SPM-pool MCQ ids of a subject, ascending (fallback 2). */
-  private async spmPoolIds(subjectId: string): Promise<string[]> {
+  private spmPoolIds(subjectId: string): Promise<string[]> {
+    return this.cached(`spm:${subjectId}`, () => this.readSpmPoolIds(subjectId))
+  }
+
+  private async readSpmPoolIds(subjectId: string): Promise<string[]> {
     const ids = await this.questions.eligibleIds({ subjectId, type: 'mcq' })
     const out: string[] = []
     for (let i = 0; i < ids.length; i += SPM_CHUNK) {
@@ -215,11 +254,12 @@ export class BattleDeps {
    */
   async drawQuestions(spec: PoolSpec, n: number, rng: Prng): Promise<string[] | null> {
     if (spec.questionType === 'pksk' || spec.subjectId === null) return null
-    const ids =
+    let ids =
       spec.questionType === 'spm'
         ? await this.spmPoolIds(spec.subjectId)
         : await this.questions.eligibleIds({ subjectId: spec.subjectId, type: 'mcq', ...(spec.levelId === null ? {} : { educationLevelId: spec.levelId }) })
     if (ids.length < n) return null
+    ids = [...ids]
     for (let i = ids.length - 1; i > 0; i--) {
       const j = rng.int(0, i)
       const tmp = ids[i] as string

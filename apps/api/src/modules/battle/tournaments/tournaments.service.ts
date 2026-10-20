@@ -3,7 +3,6 @@ import type { z } from 'zod'
 import {
   BATTLE_MESSAGES,
   BattleTournamentActiveSchema,
-  BattleTournamentCreatedSchema,
   BattleTournamentFormOptionsSchema,
   BattleTournamentListItemSchema,
 } from '@pp/contract'
@@ -112,7 +111,7 @@ export class TournamentsService {
         },
       }),
     )
-    return BattleTournamentCreatedSchema.parse({ uuid: row.id, status })
+    return { uuid: row.id, status }
   }
 
   async detail(viewer: TournamentViewer, uuid: string) {

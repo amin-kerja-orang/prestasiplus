@@ -6,7 +6,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { idFromString, idToString } from '../../../db/ids'
+import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { prngStream } from '../../../db/prng'
 import { BattleDeps, type BattleStudent } from '../battle.deps'
@@ -121,10 +121,5 @@ export class BattleEngine {
     const won = args.winner === args.side
     const event: GameResultEvent = args.forfeited ? (won ? 'forfeit_win' : 'forfeit') : won ? 'win' : 'finish'
     await this.port.onGameResult({ userId: args.userId, game: 'battle', event, coins: 0, xp: 0, correct: args.correct, total: args.total, isTest: args.isTest })
-  }
-
-  /** Decimal string of a BigInt id. */
-  static id(v: bigint): string {
-    return idToString(v)
   }
 }

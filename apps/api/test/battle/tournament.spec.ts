@@ -262,6 +262,13 @@ describe('battle tournaments (M16-01, M16-42..45)', () => {
       error(await post(admin, '/tournaments', { ...VALID, subject_id: '999999999' }), 422, 'VALIDATION_ERROR', 'Sila pilih sumber soalan.')
     })
 
+    it('description is capped at 5000 characters', async () => {
+      const ok5000 = { ...VALID, subject_id: subjectIds[0], description: 'x'.repeat(5000) }
+      expect((await post(admin, '/tournaments', ok5000)).status).toBe(201)
+      const e = error(await post(admin, '/tournaments', { ...ok5000, description: 'x'.repeat(5001) }), 422, 'VALIDATION_ERROR', 'Nilai di luar julat.')
+      expect(e.fields).toEqual({ description: 'Nilai di luar julat.' })
+    })
+
     it('range bounds are inclusive and the close date must be after the open date (table CHECK is strict)', async () => {
       const lo = { ...VALID, subject_id: subjectIds[0], total_questions: 5, time_window_minutes: 10, top_n_scoring: 1, min_participants: 1 }
       const hi = { ...VALID, subject_id: subjectIds[0], total_questions: 100, time_window_minutes: 180, top_n_scoring: 50, min_participants: 100 }

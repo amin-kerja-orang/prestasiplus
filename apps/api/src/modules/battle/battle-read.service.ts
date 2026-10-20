@@ -1,6 +1,7 @@
 /**
  * Read service other modules use (BE-44; SRS XR-M16-05, XR-M16-09): M11 (BE-20), M17 (BE-22) and the BE-45 hub chip.
- * Exported from `BattleModule`. Battles written under Mod Pelajar (`is_test`) never count.
+ * Exported from `BattleModule`. Battles written under Mod Pelajar (`is_test`) never count, and neither does a bot side (`is_bot`: a real pupil used as a
+ * simulated opponent earns nothing).
  */
 import { Inject, Injectable } from '@nestjs/common'
 import { CLOCK, type Clock } from '../../db/clock'
@@ -35,6 +36,7 @@ export class BattleReadService {
       where: {
         userId: { in: ids },
         isTest: false,
+        isBot: false,
         battle: { isTest: false, status: { in: COUNTED }, createdAt: { gte: range.from, lt: range.to } },
       },
       select: { userId: true, correct: true, battle: { select: { answered: true } } },
@@ -58,7 +60,7 @@ export class BattleReadService {
     const now = this.clock.now()
     const from = new Date(now.getTime() - days * DAY_MS)
     const battles = await this.prisma.client.battle.count({
-      where: { isTest: false, createdAt: { gte: from, lte: now }, participants: { some: { side: 'A', isTest: false } } },
+      where: { isTest: false, createdAt: { gte: from, lte: now }, participants: { some: { side: 'A', isTest: false, isBot: false } } },
     })
     return { battles }
   }
@@ -67,7 +69,7 @@ export class BattleReadService {
   async hasBattled(userId: string): Promise<boolean> {
     if (!isIdString(userId)) return false
     const n = await this.prisma.client.battle.count({
-      where: { isTest: false, status: { in: COUNTED }, participants: { some: { userId: idFromString(userId) } } },
+      where: { isTest: false, status: { in: COUNTED }, participants: { some: { userId: idFromString(userId), isBot: false } } },
       take: 1,
     })
     return n > 0

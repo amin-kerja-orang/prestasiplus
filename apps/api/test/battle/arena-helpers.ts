@@ -21,6 +21,8 @@ import { questionsSeed } from '../../prisma/seed/questions'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
+import { PrismaService } from '../../src/db/prisma.service'
+import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { AuthModule } from '../../src/modules/auth'
 import { BattleModule } from '../../src/modules/battle'
 import { GAME_RESULT_PORT, type GameResultReport } from '../../src/modules/battle/game-result.port'
@@ -94,7 +96,12 @@ export async function bootBattleApp(opts: { env?: Record<string, string | undefi
     agent: () => request.agent(app.getHttpServer()),
     get: <T>(token: abstract new (...args: never[]) => T): T => app.get(token as never, { strict: false }),
     async close() {
+      // Every connection must be closed before the database is dropped (DROP ... FORCE would kill an open one and
+      // pg would report 57P01 as an unhandled error): the app's own client first, then the seed client and the query pool.
+      const prisma = app.get(PrismaService, { strict: false })
       await app.close()
+      await prisma.$disconnect()
+      await new Promise((resolve) => setTimeout(resolve, 25))
       await db.drop()
     },
   }
@@ -177,6 +184,7 @@ export async function addMcqs(t: BattleTestApp, subjectId: string, levelId: stri
     await t.db.prisma.answerKey.create({ data: { partId: part.id, kind: 'option', content: { kind: 'option', correct: 'B' } } })
     ids.push(String(q.id))
   }
+  t.get(BattleDeps).invalidateCache()
   return ids
 }
 

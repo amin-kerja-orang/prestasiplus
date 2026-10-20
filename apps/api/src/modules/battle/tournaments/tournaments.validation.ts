@@ -58,7 +58,8 @@ function localToInstant(value: string): number {
 }
 
 /**
- * Deviation from the mock: the close date must be strictly after the open date (the table CHECK
+ * Deviations from the mock: `description` over 5000 characters is refused (field `description`, "Nilai di luar julat."; the mock has no cap); and
+ *  the close date must be strictly after the open date (the table CHECK
  * `ck_tournaments_registration_window` is strict; the mock accepted equal dates).
  *
  * Validates the M16-44 body exactly as the mock does (SRS V-M16-07..12): every failing field is collected, the
@@ -70,6 +71,8 @@ export function parseTournamentBody(body: unknown, activeSubjectIds: ReadonlySet
 
   const title = typeof b.title === 'string' ? b.title.trim() : ''
   if (title === '' || title.length > 255) f.title = BATTLE_MESSAGES.titleRequired
+
+  if (typeof b.description === 'string' && b.description.length > 5000) f.description = BATTLE_MESSAGES.outOfRange
 
   const level = b.education_level_id
   if (!(BATTLE_TOURNAMENT_LEVELS as readonly unknown[]).includes(level)) f.education_level_id = BATTLE_MESSAGES.levelRequired

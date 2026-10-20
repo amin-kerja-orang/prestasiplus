@@ -21,6 +21,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 export { schoolIdOf, userIdOf }
 
 export interface StandingsApp {
+  get<T>(token: abstract new (...args: never[]) => T): T
   db: TestDatabase
   clock: FixedClock
   http(): TestAgent
@@ -40,6 +41,7 @@ export async function bootStandings(start: string, extraSeeds: SeedModule[] = []
     COOKIE_DOMAIN: undefined,
     THROTTLE_LOGIN_PER_MINUTE: undefined,
     THROTTLE_BATTLE_READ_PER_MINUTE: '100000',
+    BATTLE_STANDINGS_CACHE_SECONDS: '0',
     TRUST_PROXY_HOPS: undefined,
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
@@ -60,6 +62,7 @@ export async function bootStandings(start: string, extraSeeds: SeedModule[] = []
   const t: StandingsApp = {
     db,
     clock,
+    get: <T>(token: abstract new (...args: never[]) => T): T => app.get(token as never),
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     login: (email) => loginAs({ app, db, clock, http: t.http, agent: () => request.agent(app.getHttpServer()), close: async () => undefined } as never, email),
     async close() {
@@ -86,6 +89,9 @@ export interface FixtureBattle {
   correctB?: number
   isTest?: boolean
   partIsTest?: boolean
+  /** The listed side is a simulated opponent (a real pupil used as a bot). */
+  botA?: boolean
+  botB?: boolean
 }
 
 /** Inserts a battle with both participants; students and schools by e-mail / code. Returns the battle uuid. */
@@ -107,9 +113,9 @@ export async function addBattle(db: TestDatabase, f: FixtureBattle): Promise<str
   const id = row!.id
   const part = f.partIsTest ?? false
   await db.query(
-    `insert into battle_participants (battle_id, side, user_id, school_id, score, correct, is_test)
-     values ($1, 'A', $2, $3, $4, $5, $9), ($1, 'B', $6, $7, $8, $10, $9)`,
-    [id, userA, await code(f.schoolA, f.a), f.scoreA, f.correctA ?? 0, userB, await code(f.schoolB, f.b), f.scoreB, part, f.correctB ?? 0],
+    `insert into battle_participants (battle_id, side, user_id, school_id, score, correct, is_test, is_bot)
+     values ($1, 'A', $2, $3, $4, $5, $9, $11), ($1, 'B', $6, $7, $8, $10, $9, $12)`,
+    [id, userA, await code(f.schoolA, f.a), f.scoreA, f.correctA ?? 0, userB, await code(f.schoolB, f.b), f.scoreB, part, f.correctB ?? 0, f.botA ?? false, f.botB ?? false],
   )
   return id
 }

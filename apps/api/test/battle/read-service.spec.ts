@@ -66,6 +66,20 @@ describe('BattleReadService', () => {
     expect(await svc.hasBattled(u3)).toBe(false)
     expect(await svc.hasBattled('not-an-id')).toBe(false)
   })
+
+  it('a bot side (a real pupil used as a simulated opponent) earns nothing: countFor, hasBattled, windowCounts', async () => {
+    const u4 = await user('Pelajar Empat')
+    const [row] = await db.query<{ id: string }>(`insert into battles (mode, question_type, status, answered, created_at) values ('quick_match', 'biasa', 'finished', 10, '2026-09-24T10:00:00+08:00') returning id::text`)
+    await db.query(`insert into battle_participants (battle_id, side, user_id, correct, is_bot) values ($1, 'A', $2, 5, true), ($1, 'B', $3, 5, false)`, [row!.id, u4, u3])
+    const range = { from: new Date('2026-09-01T00:00:00+08:00'), to: new Date('2026-10-01T00:00:00+08:00') }
+    const m = await svc.countFor([u3, u4], range)
+    expect(m.get(u3)).toEqual({ count: 1, correct: 5, answered: 10 }) // the human side still counts
+    expect(m.has(u4)).toBe(false)
+    expect(await svc.hasBattled(u4)).toBe(false)
+    expect(await svc.hasBattled(u3)).toBe(true)
+    // Side A is the bot: the battle is not counted for M17 either.
+    expect(await svc.windowCounts(7)).toEqual({ battles: 3 })
+  })
 })
 
 describe('BattleModule wiring', () => {

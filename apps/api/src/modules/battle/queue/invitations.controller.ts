@@ -2,19 +2,17 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UseFilters, U
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../../common/http'
-import { ScopeContext, type RequestWithAuth } from '../../../common/scope'
+import type { RequestWithAuth } from '../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { BATTLE_LIMITS } from '../battle.limits'
+import { battleCaller } from '../engine'
 import { BattleRawErrorFilter } from '../raw-response'
 import { ForfeitService } from './forfeit.service'
 import { InvitationsService } from './invitations.service'
 
 type Req = Request & RequestWithAuth
 
-const who = (req: Req) => {
-  const s = ScopeContext.fromRequest(req)
-  return { userId: s.userId, isTest: s.isTest }
-}
+const who = (req: Req) => battleCaller(req)
 
 /** Search, invitations (M16-07 to M16-11) and forfeit (M16-14): raw bodies, raw `{error}`. */
 @Controller('battle')
