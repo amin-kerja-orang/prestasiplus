@@ -44,6 +44,7 @@ export class HeadcountFactsService implements HeadcountFacts {
     if (entries.length === 0) return []
     const byId = new Map(configs.map((c) => [c.id, c]))
     const schools = await this.repo.schoolOfConfigs(configs)
+    const subjects = await this.repo.subjectNames(configs.map((c) => c.subjectId))
     return entries.flatMap((e): HeadcountEntryView[] => {
       const c = byId.get(e.configId)
       if (!c) return []
@@ -53,6 +54,7 @@ export class HeadcountFactsService implements HeadcountFacts {
           studentId: e.studentId,
           classroomId: c.classroomId,
           subjectId: c.subjectId,
+          ...(subjects.has(c.subjectId) ? { subjectName: subjects.get(c.subjectId) as string } : {}),
           levelId: c.educationLevelId,
           schoolId: schools.get(c.id) ?? null,
           teacherId: c.teacherId,

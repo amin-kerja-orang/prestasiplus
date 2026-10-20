@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Optional } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../../common/time/myt'
@@ -8,7 +8,11 @@ import { ACTIVE_DAYS, ATTENTION_BELOW, COUNTED_MODES, TREND_WINDOW_DAYS } from '
 import { addFact, emptyFigures, figuresOf, type Figures } from '../domain/reduce'
 import { accuracyOf, compareIds, round } from '../domain/rules'
 import { startOfDaysAgo } from '../domain/windows'
+import { HeadcountFactsService } from '../headcount/headcount-facts.service'
+import { meanOrNull } from '../headcount/headcount.rules'
 import { DIRECTORY_PORT, PerformancePorts, type DirectoryPort } from '../ports'
+import { classBadge, liveEntries, newestConfigId } from './headcount-figures'
+import type { HeadcountFacts } from './headcount-facts.types'
 import { groupBy, nameMap, toCard } from './support'
 import type { Ctx, PerformanceClassCard, PerformanceClassDashboard } from './types'
 
@@ -28,12 +32,57 @@ export class ClassPerformanceService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
   async ownClasses(ctx: Ctx): Promise<PerformanceClassCard[]> {
     if (ctx.role !== 'teacher') return []
     const classes = await this.ports.classes.classesForTeacher(ctx.userId)
     return classes.filter((c) => c.kind === 'classroom' && c.isActive).map(toCard)
+  }
+
+  /**
+   * The newest config of the class (BR-M08-08 rule 2): above and on track both read "on"; members without a live entry are
+   * "no data"; dropped pupils are left out. Null when the class has no entries (the config is then not visible to this reader).
+   */
+  private async headcountBlock(
+    classId: string,
+    members: readonly string[],
+  ): Promise<{ block: PerformanceClassDashboard['headcount']; badges: Map<string, 'on' | 'below' | 'na'> }> {
+    const badges = new Map<string, 'on' | 'below' | 'na'>()
+    if (!this.facts) return { block: null, badges }
+    const all = await this.facts.entriesOfClasses([classId])
+    const configId = newestConfigId(all.filter((e) => e.classroomId === classId))
+    if (configId === null) return { block: null, badges }
+    const ofConfig = all.filter((e) => e.configId === configId)
+    const dropped = new Set(ofConfig.filter((e) => e.dropped).map((e) => e.studentId))
+    const live = liveEntries(ofConfig)
+    const byStudent = new Map(live.map((e) => [e.studentId, e]))
+    const roster = [...new Set([...members.filter((m) => !dropped.has(m)), ...byStudent.keys()])]
+    let on = 0
+    let below = 0
+    let none = 0
+    for (const id of roster) {
+      const b = classBadge(byStudent.get(id))
+      badges.set(id, b)
+      if (b === 'on') on++
+      else if (b === 'below') below++
+      else none++
+    }
+    const total = roster.length
+    const share = (n: number): number => (total === 0 ? 0 : round((n / total) * 100, 1))
+    return {
+      block: {
+        configId,
+        onTrack: on,
+        below,
+        noData: none,
+        pct: { on: share(on), below: share(below), none: share(none) },
+        avgTov: meanOrNull(live.map((e) => e.tov)),
+        avgEtr: meanOrNull(live.map((e) => e.etr)),
+      },
+      badges,
+    }
   }
 
   async classDashboard(ctx: Ctx, id: string): Promise<PerformanceClassDashboard> {
@@ -86,6 +135,7 @@ export class ClassPerformanceService {
         }
       })
 
+    const hc = await this.headcountBlock(cls.id, members)
     const names = await nameMap(this.directory, members)
     const nameOf = (id: string): string => names.get(id) ?? ''
     // Accuracy descending (uncapped for the order), ties by user id; members without graded marks last.
@@ -102,7 +152,7 @@ export class ClassPerformanceService {
       sessions: r.f.sittings,
       answered: r.f.max,
       accuracy: r.accuracy,
-      headcount: 'na' as const,
+      headcount: hc.badges.get(r.userId) ?? ('na' as const),
       lastActiveAt: r.last ? toMytTimestamp(r.last) : null,
     }))
     const attention = [
@@ -126,7 +176,7 @@ export class ClassPerformanceService {
         avgMinutes: total.sittings === 0 ? 0 : round(total.seconds / total.sittings / 60, 1),
         active7d,
       },
-      headcount: null,
+      headcount: hc.block,
       attention,
       trend,
       ranking,

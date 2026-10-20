@@ -8,6 +8,8 @@ export interface HeadcountEntryView {
   studentId: string
   classroomId: string
   subjectId: string
+  /** Display name of the subject, when the reader resolved it. */
+  subjectName?: string
   /** Education level id: Tingkatan 4 or 5 (BR-M08-22). */
   levelId: string
   schoolId: string | null
