@@ -226,4 +226,49 @@ describe('admin pages in http mode do not crash', () => {
     expect(w.html().length).toBeGreaterThan(0)
     w.unmount()
   })
+
+  async function renderPage(component: unknown, props: Record<string, unknown>, server: unknown) {
+    setBijakServerForTests(server as never)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<i/>' } },
+        ...adminPaperRoutes,
+        ...adminIntakeRoutes,
+      ],
+    })
+    await router.push('/')
+    const w = mount(component as never, {
+      props: props as never,
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+    const html = w.html()
+    w.unmount()
+    return html
+  }
+
+  it.each([
+    ['BankPage', BankPage, {}],
+    ['ReviewQueuePage', ReviewQueuePage, {}],
+    ['ReviewItemPage', ReviewItemPage, {}],
+    ['IntakeListPage', IntakeListPage, {}],
+    ['IntakeReviewPage', IntakeReviewPage, { batchId: 'b1' }],
+  ] as [string, unknown, Record<string, unknown>][])(
+    '%s shows the demo-unavailable state when its load has no backend route',
+    async (_name, component, props) => {
+      const html = await renderPage(component, props, setup().server)
+      expect(html).toContain('Fungsi ini belum tersedia dalam demo')
+      expect(html).not.toContain('Tidak dapat memuatkan')
+    },
+  )
+
+  it('keeps the generic load error for any other failure', async () => {
+    const server = setup().server as unknown as Record<string, unknown>
+    server.listBank = () => Promise.reject(new Error('boom'))
+    const html = await renderPage(BankPage, {}, server)
+    expect(html).toContain('Tidak dapat memuatkan bank soalan.')
+    expect(html).not.toContain('belum tersedia dalam demo')
+  })
 })

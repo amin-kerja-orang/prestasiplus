@@ -8,15 +8,22 @@ import { useRouter } from 'vue-router'
 
 import { useSessionStore } from '@/stores/session'
 
-import { leaveModPelajar } from './mod-pelajar'
+import { useFlash } from '@/composables/useFlash'
+
+import { exitModPelajar } from './mod-pelajar'
 
 const session = useSessionStore()
 const router = useRouter()
+const flash = useFlash()
 const active = computed(() => session.mode !== null)
 const studentName = computed(() => session.user?.name ?? '')
 
 async function leave(): Promise<void> {
-  await router.replace(leaveModPelajar())
+  try {
+    await router.replace(await exitModPelajar())
+  } catch {
+    flash.show({ type: 'error', message: 'Mod Pelajar tidak dapat ditutup. Sila cuba lagi.' })
+  }
 }
 </script>
 

@@ -9,12 +9,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsDialog, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import { DsDialog, DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { DecisionAction } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, CONFIDENCE_LABEL, KIND_LABEL, STATUS_BADGE, ageText } from './ui'
 
@@ -114,7 +115,8 @@ async function resubmit(): Promise<void> {
     back-label="Baris Gilir Semakan"
     data-testid="review-item-page"
   >
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan item semakan." @retry="reload()" />
+    <DsEmptyState v-if="isUnavailable(error)" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
+    <DsLoadError v-else-if="error"  message="Tidak dapat memuatkan item semakan." @retry="reload()" />
 
     <template v-else-if="data">
       <DsPanel data-testid="review-meta">

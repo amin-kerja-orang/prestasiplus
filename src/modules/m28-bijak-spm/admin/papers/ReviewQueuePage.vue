@@ -11,6 +11,7 @@ import { useApi } from '@/composables/useApi'
 import {
   DsDataTable,
   DsFilterBar,
+  DsEmptyState,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -22,6 +23,7 @@ import {
 import RichText from '../../components/RichText.vue'
 import type { QuestionStatus, QueueItem } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import {
   ADMIN_ROUTES,
   CONFIDENCE_LABEL,
@@ -190,7 +192,8 @@ function open(row: Row): void {
       </DsNativeSelect>
     </DsFilterBar>
 
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan baris gilir." @retry="reload()" />
+    <DsEmptyState v-if="isUnavailable(error)" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
+    <DsLoadError v-else-if="error"  message="Tidak dapat memuatkan baris gilir." @retry="reload()" />
     <DsDataTable
       v-else
       :data="rows"

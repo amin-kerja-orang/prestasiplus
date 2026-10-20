@@ -12,6 +12,7 @@ import { useApi } from '@/composables/useApi'
 import {
   DsDataTable,
   DsFilterBar,
+  DsEmptyState,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -25,6 +26,7 @@ import RichText from '../../components/RichText.vue'
 import type { BankRow, QuestionStatus } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE } from './ui'
 
@@ -234,7 +236,8 @@ const {
       </DsNativeSelect>
     </DsFilterBar>
 
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan bank soalan." @retry="reload()" />
+    <DsEmptyState v-if="isUnavailable(error)" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
+    <DsLoadError v-else-if="error"  message="Tidak dapat memuatkan bank soalan." @retry="reload()" />
     <DsDataTable
       v-else
       :data="rows"
