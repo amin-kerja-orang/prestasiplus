@@ -12,8 +12,16 @@ describe('server timeouts (BE-33)', () => {
 
   it('reads the env values and keeps headersTimeout <= requestTimeout', () => {
     expect(resolveServerTimeouts({ REQUEST_TIMEOUT_MS: 30_000, HEADERS_TIMEOUT_MS: 90_000 })).toMatchObject({ requestTimeout: 30_000, headersTimeout: 30_000 })
-    expect(resolveServerTimeouts({ REQUEST_TIMEOUT_MS: '0', HEADERS_TIMEOUT_MS: '90000' })).toMatchObject({ requestTimeout: 0, headersTimeout: 90_000 })
+    expect(resolveServerTimeouts({ REQUEST_TIMEOUT_MS: '200000', HEADERS_TIMEOUT_MS: '90000' })).toMatchObject({ requestTimeout: 200_000, headersTimeout: 90_000 })
     expect(resolveServerTimeouts({ KEEP_ALIVE_TIMEOUT_MS: '70000', SHUTDOWN_GRACE_MS: '10000' })).toMatchObject({ keepAliveTimeout: 70_000, shutdownGraceMs: 10_000 })
+  })
+
+  it('refuses to disable the timeouts: 0 or below 1 s falls back to the default, and the env schema rejects it', () => {
+    expect(resolveServerTimeouts({ REQUEST_TIMEOUT_MS: 0, HEADERS_TIMEOUT_MS: 0 })).toMatchObject({ requestTimeout: 120_000, headersTimeout: 60_000 })
+    expect(resolveServerTimeouts({ REQUEST_TIMEOUT_MS: 500 })).toMatchObject({ requestTimeout: 120_000 })
+    const base = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://u:p@localhost:5432/x' }
+    expect(() => loadEnv({ ...base, REQUEST_TIMEOUT_MS: '0' })).toThrow(/REQUEST_TIMEOUT_MS/)
+    expect(() => loadEnv({ ...base, HEADERS_TIMEOUT_MS: '999' })).toThrow(/HEADERS_TIMEOUT_MS/)
   })
 
   it('falls back to the defaults for garbage and never allows a grace below 1 s', () => {

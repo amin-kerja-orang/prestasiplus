@@ -2,6 +2,9 @@ import { isIPv4, isIPv6 } from 'node:net'
 
 import type { Request } from 'express'
 
+import { addressInCidrs } from './cidr'
+import type { BlockList } from 'node:net'
+
 /** Headers a reverse proxy / CDN adds; their presence means the request did not come straight from the internal network. */
 export function hasForwardingHeaders(headers: Request['headers']): boolean {
   return Object.keys(headers).some((h) => h === 'x-real-ip' || h === 'forwarded' || h.startsWith('x-forwarded-'))
@@ -23,7 +26,12 @@ export function isPrivateAddress(raw: string | undefined): boolean {
   return false
 }
 
-/** True only for a DIRECT internal peer: the socket address (never `req.ip` / X-Forwarded-For) is private and no proxy header is present. */
-export function isInternalRequest(req: Pick<Request, 'socket' | 'headers'>): boolean {
-  return isPrivateAddress(req.socket.remoteAddress) && !hasForwardingHeaders(req.headers)
+/** Who counts as the internal network: `private` (loopback/RFC1918/ULA), an explicit CIDR list, or `off` (admin session only). */
+export type InternalPolicy = 'private' | 'off' | { cidrs: BlockList }
+
+/** True only for a DIRECT internal peer: the socket address (never `req.ip` / X-Forwarded-For) matches the policy and no proxy header is present. */
+export function isInternalRequest(req: Pick<Request, 'socket' | 'headers'>, policy: InternalPolicy = 'private'): boolean {
+  if (policy === 'off' || hasForwardingHeaders(req.headers)) return false
+  const peer = req.socket.remoteAddress
+  return policy === 'private' ? isPrivateAddress(peer) : addressInCidrs(policy.cidrs, peer)
 }

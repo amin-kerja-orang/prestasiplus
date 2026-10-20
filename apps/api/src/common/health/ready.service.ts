@@ -7,6 +7,8 @@ import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../../db/prisma.service'
 
 export const READY_DB_TIMEOUT_MS = 3_000
+/** A result (ok or not) is reused for this long, so an anonymous caller cannot turn the route into a DB load. */
+export const READY_CACHE_TTL_MS = 3_000
 
 interface MigrationRow {
   migration_name: string
@@ -55,10 +57,24 @@ export type ReadyResult = { ok: true } | { ok: false; reason: string }
 export class ReadyService {
   private readonly logger = new Logger(ReadyService.name)
   private warnedNoDir = false
+  private shipped: string[] | null | undefined // undefined = not read yet; read once per process
+  private cached: { result: Promise<ReadyResult>; expiresAt: number } | undefined
+  /** Overridable in tests. */
+  ttlMs = READY_CACHE_TTL_MS
+  now: () => number = () => Date.now()
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async check(): Promise<ReadyResult> {
+  /** Concurrent callers share one in-flight check; the result is cached for `ttlMs`. */
+  check(): Promise<ReadyResult> {
+    const t = this.now()
+    if (this.cached && t < this.cached.expiresAt) return this.cached.result
+    const result = this.run()
+    this.cached = { result, expiresAt: t + this.ttlMs }
+    return result
+  }
+
+  private async run(): Promise<ReadyResult> {
     let timer: NodeJS.Timeout | undefined
     try {
       const rows = await Promise.race([
@@ -81,7 +97,8 @@ export class ReadyService {
     if (failed.length > 0) return { ok: false, reason: `${failed.length} migration(s) unfinished or failed` }
     const applied = new Set(rows.filter((r) => r.finished_at !== null && r.rolled_back_at === null).map((r) => r.migration_name))
     if (applied.size === 0) return { ok: false, reason: 'no migration applied' }
-    const shipped = shippedMigrationNames()
+    if (this.shipped === undefined) this.shipped = shippedMigrationNames()
+    const shipped = this.shipped
     if (shipped === null) {
       if (!this.warnedNoDir) {
         this.warnedNoDir = true

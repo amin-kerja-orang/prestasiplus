@@ -5,6 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
+import { loadEnv } from '../../src/common/config/env.schema'
+import { parseCidrList } from '../../src/common/metrics/cidr'
 import { hasForwardingHeaders, isInternalRequest, isPrivateAddress } from '../../src/common/metrics/internal-network'
 import { MetricsService, routeLabel } from '../../src/common/metrics/metrics.service'
 import { Public } from '../../src/common/guards/decorators'
@@ -123,18 +125,74 @@ describe('GET /api/metrics (BE-33)', () => {
     }
   })
 
+  describe('production policy (METRICS_INTERNAL_CIDRS)', () => {
+    async function withProd(extra: Record<string, string | undefined>, fn: (a: INestApplication) => Promise<void>): Promise<void> {
+      const saved = { NODE_ENV: process.env.NODE_ENV, IC_HASH_KEY: process.env.IC_HASH_KEY, FILE_STORAGE_DIR: process.env.FILE_STORAGE_DIR, SESSION_SECRET: process.env.SESSION_SECRET, MAIL_LOG_RESET_LINKS: process.env.MAIL_LOG_RESET_LINKS }
+      let a: INestApplication | undefined
+      try {
+        Object.assign(process.env, { NODE_ENV: 'production', IC_HASH_KEY: 'i'.repeat(40), SESSION_SECRET: 's'.repeat(40), FILE_STORAGE_DIR: '/tmp/pp-metrics-test' })
+        delete process.env.MAIL_LOG_RESET_LINKS
+        a = await boot(db, { METRICS_INTERNAL_CIDRS: undefined, ...extra })
+        await fn(a)
+      } finally {
+        await a?.close()
+        for (const [k, v] of Object.entries(saved)) {
+          if (v === undefined) delete process.env[k]
+          else process.env[k] = v
+        }
+        delete process.env.METRICS_INTERNAL_CIDRS
+      }
+    }
+
+    it('without the key the internal path is off: loopback is 403, an admin session is 200', async () => {
+      await withProd({}, async (a) => {
+        expect((await request(a.getHttpServer()).get('/api/metrics')).status).toBe(403)
+        const res = await request(a.getHttpServer()).post('/api/auth/login').send({ identifier: 'admin@demo.test', password: DEMO_PASSWORD, remember: false })
+        const cookie = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith(`${COOKIE_NAME}=`))!.split(';')[0]!
+        expect((await request(a.getHttpServer()).get('/api/metrics').set('Cookie', cookie)).status).toBe(200)
+      })
+    })
+
+    it('with 127.0.0.1/32 a loopback peer is 200; a CIDR that does not contain it is 403', async () => {
+      await withProd({ METRICS_INTERNAL_CIDRS: '127.0.0.1/32' }, async (a) => {
+        expect((await request(a.getHttpServer()).get('/api/metrics')).status).toBe(200)
+        expect((await request(a.getHttpServer()).get('/api/metrics').set('X-Forwarded-For', '127.0.0.1')).status).toBe(403)
+      })
+      await withProd({ METRICS_INTERNAL_CIDRS: '10.0.0.0/8, fd00::/8' }, async (a) => {
+        expect((await request(a.getHttpServer()).get('/api/metrics')).status).toBe(403)
+      })
+    })
+  })
+
   it('is not rate limited by the global ceiling', async () => {
-    const tight = await boot(db, { THROTTLE_GLOBAL_PER_MINUTE: '2' })
+    let tight: INestApplication | undefined
     try {
+      tight = await boot(db, { THROTTLE_GLOBAL_PER_MINUTE: '2' })
       for (let i = 0; i < 6; i++) expect((await request(tight.getHttpServer()).get('/api/metrics')).status).toBe(200)
     } finally {
-      await tight.close()
+      await tight?.close()
       process.env.THROTTLE_GLOBAL_PER_MINUTE = '100000'
     }
   })
 })
 
 describe('internal network rule (unit)', () => {
+  it('CIDR policy: matches by direct peer, unwraps ::ffff: mapped addresses, rejects invalid lists', () => {
+    const cidrs = parseCidrList('10.0.0.0/8, 127.0.0.1/32, fd00::/8')
+    const req = (addr: string, headers = {}) => ({ socket: { remoteAddress: addr }, headers }) as never
+    expect(isInternalRequest(req('::ffff:10.1.2.3'), { cidrs })).toBe(true)
+    expect(isInternalRequest(req('::ffff:127.0.0.1'), { cidrs })).toBe(true)
+    expect(isInternalRequest(req('fd12::1'), { cidrs })).toBe(true)
+    expect(isInternalRequest(req('192.168.1.1'), { cidrs })).toBe(false) // private, but not in the list
+    expect(isInternalRequest(req('10.1.2.3', { 'x-forwarded-for': '1.2.3.4' }), { cidrs })).toBe(false)
+    expect(isInternalRequest(req('127.0.0.1'), 'off')).toBe(false)
+    for (const bad of ['', 'nonsense', '10.0.0.1', '10.0.0.0/33', '::1/129', '10.0.0.0/8/1', '10.0.0.0/x', '10.0.0.0/8,,zz'])
+      expect(() => parseCidrList(bad), bad).toThrow()
+    const base = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://u:p@localhost:5432/x' }
+    expect(() => loadEnv({ ...base, METRICS_INTERNAL_CIDRS: '10.0.0.0/99' })).toThrow(/METRICS_INTERNAL_CIDRS/)
+    expect(loadEnv({ ...base, METRICS_INTERNAL_CIDRS: '10.0.0.0/8' }).METRICS_INTERNAL_CIDRS).toBe('10.0.0.0/8')
+  })
+
   it('accepts loopback and private peers only', () => {
     for (const a of ['127.0.0.1', '::1', '::ffff:127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.1', 'fd12:3456::1', '::ffff:10.0.0.5'])
       expect(isPrivateAddress(a), a).toBe(true)

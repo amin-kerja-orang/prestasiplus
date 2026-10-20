@@ -3,8 +3,10 @@ import { fileURLToPath } from 'node:url'
 
 import type { INestApplication } from '@nestjs/common'
 import request from 'supertest'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, vi, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { ReadyService } from '../../src/common/health/ready.service'
+import { PrismaService } from '../../src/db/prisma.service'
 import { createTestApp } from '../support/app'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -18,6 +20,7 @@ describe('GET /api/ready (BE-33)', () => {
   beforeAll(async () => {
     db = await createTestDatabase()
     app = await createTestApp({ db })
+    app.get(ReadyService).ttlMs = 0 // these cases change the DB state between calls
   })
   afterAll(async () => {
     await app.close()
@@ -86,20 +89,50 @@ describe('GET /api/ready (BE-33)', () => {
     }
   })
 
-  it('is not rate limited (exempt from the global ceiling)', async () => {
-    const limited = await createTestApp({ db })
+  it('runs one DB query for concurrent and repeated calls within the TTL, and re-checks after it', async () => {
+    const svc = app.get(ReadyService)
+    const prisma = app.get(PrismaService)
+    const spy = vi.spyOn(prisma, '$queryRaw')
+    let clock = Date.now() + 10_000
+    svc.ttlMs = 3_000
+    svc.now = () => clock
     try {
-      const prev = process.env.THROTTLE_GLOBAL_PER_MINUTE
-      process.env.THROTTLE_GLOBAL_PER_MINUTE = '2'
-      const tight = await createTestApp({ db })
-      process.env.THROTTLE_GLOBAL_PER_MINUTE = prev
-      try {
-        for (let i = 0; i < 6; i++) expect((await request(tight.getHttpServer()).get('/api/ready')).status).toBe(200)
-      } finally {
-        await tight.close()
-      }
+      const first = await Promise.all(Array.from({ length: 10 }, () => request(app.getHttpServer()).get('/api/ready')))
+      expect(first.map((r) => r.status)).toEqual(Array(10).fill(200))
+      clock += 2_999
+      expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(200)
+      expect(spy).toHaveBeenCalledTimes(1)
+      // a failed result is cached for the same TTL too
+      clock += 3_001
+      await setState('no-table')
+      expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(503)
+      await setState(allApplied())
+      clock += 2_000
+      expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(503)
+      expect(spy).toHaveBeenCalledTimes(2)
+      clock += 1_001
+      expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(200)
+      expect(spy).toHaveBeenCalledTimes(3)
     } finally {
-      await limited.close()
+      spy.mockRestore()
+      svc.ttlMs = 0
+      svc.now = () => Date.now()
+    }
+  })
+
+  it('is not rate limited (exempt from the global ceiling)', async () => {
+    const prev = process.env.THROTTLE_GLOBAL_PER_MINUTE
+    process.env.THROTTLE_GLOBAL_PER_MINUTE = '2'
+    let tight: INestApplication | undefined
+    try {
+      tight = await createTestApp({ db })
+    } finally {
+      process.env.THROTTLE_GLOBAL_PER_MINUTE = prev
+    }
+    try {
+      for (let i = 0; i < 6; i++) expect((await request(tight.getHttpServer()).get('/api/ready')).status).toBe(200)
+    } finally {
+      await tight.close()
     }
   })
 })

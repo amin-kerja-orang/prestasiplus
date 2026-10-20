@@ -9,7 +9,7 @@
     {
       "id": "GHSA-587h-7wmj-h5pm",
       "package": "vite",
-      "reason": "Vite dev server (launch-editor, Windows only). vite is a dev/build tool of the frontend and a devDependency of @pp/api; it is not in the API runtime image (docker/api/Dockerfile installs --omit=dev for @pp/api and bundles nothing of vite).",
+      "reason": "Vite dev server (launch-editor, Windows only). vite is a root (frontend build) dependency, which is why --omit=dev at the root reports it; the advisory affects the dev server only, and vite is not in the API runtime image (docker/api/Dockerfile installs --workspace @pp/api --omit=dev).",
       "expires": "2026-11-19"
     }
   ]

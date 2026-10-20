@@ -7,7 +7,8 @@ import type { Env } from '../config/env.schema'
 import { ApiError } from '../errors/api-error'
 import { Public } from '../guards/decorators'
 import { SESSION_RESOLVER, type SessionResolver } from '../guards/session-resolver'
-import { isInternalRequest } from './internal-network'
+import { parseCidrList } from './cidr'
+import { type InternalPolicy, isInternalRequest } from './internal-network'
 import { MetricsService } from './metrics.service'
 
 /**
@@ -24,10 +25,17 @@ export class MetricsController {
     @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
   ) {}
 
+  /** METRICS_INTERNAL_CIDRS set: only those peers. Unset: production = off (admin only), otherwise loopback/private. */
+  private policy(): InternalPolicy {
+    const raw = this.config.get('METRICS_INTERNAL_CIDRS', { infer: true })
+    if (raw) return { cidrs: parseCidrList(raw) }
+    return this.config.get('NODE_ENV', { infer: true }) === 'production' ? 'off' : 'private'
+  }
+
   @Get()
   async get(@Req() req: Request, @Res() res: Response): Promise<void> {
     if (this.config.get('METRICS_ENABLED', { infer: true }) === 'false') throw ApiError.of('NOT_FOUND')
-    if (!isInternalRequest(req)) {
+    if (!isInternalRequest(req, this.policy())) {
       // Looked up lazily across modules: importing AuthModule here would install its global guards in every app that has health/metrics.
       let resolver: SessionResolver | undefined
       try {

@@ -7,6 +7,7 @@ export interface ServerTimeouts {
   shutdownGraceMs: number
 }
 
+export const MIN_TIMEOUT_MS = 1000
 export const DEFAULT_REQUEST_TIMEOUT_MS = 120_000
 export const DEFAULT_HEADERS_TIMEOUT_MS = 60_000
 export const DEFAULT_KEEP_ALIVE_TIMEOUT_MS = 65_000
@@ -20,11 +21,15 @@ function num(value: unknown, fallback: number): number {
   return Number.isInteger(n) && n >= 0 ? n : fallback
 }
 
-/** Timeouts from the (validated) env with the defaults. Node needs headersTimeout <= requestTimeout unless requestTimeout is 0 (off). */
+/** Timeouts from the (validated) env with the defaults. Both have a 1 s floor (0 = off is refused); headersTimeout is clamped to requestTimeout. */
 export function resolveServerTimeouts(raw: Raw): ServerTimeouts {
-  const requestTimeout = num(raw.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS)
-  let headersTimeout = num(raw.HEADERS_TIMEOUT_MS, DEFAULT_HEADERS_TIMEOUT_MS)
-  if (requestTimeout > 0 && (headersTimeout === 0 || headersTimeout > requestTimeout)) headersTimeout = requestTimeout
+  // 0 would disable slowloris protection: below the 1 s floor falls back to the default.
+  const floored = (v: unknown, fallback: number): number => {
+    const n = num(v, fallback)
+    return n < MIN_TIMEOUT_MS ? fallback : n
+  }
+  const requestTimeout = floored(raw.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS)
+  const headersTimeout = Math.min(floored(raw.HEADERS_TIMEOUT_MS, DEFAULT_HEADERS_TIMEOUT_MS), requestTimeout)
   const shutdownGraceMs = Math.max(1000, num(raw.SHUTDOWN_GRACE_MS, DEFAULT_SHUTDOWN_GRACE_MS))
   return { requestTimeout, headersTimeout, keepAliveTimeout: num(raw.KEEP_ALIVE_TIMEOUT_MS, DEFAULT_KEEP_ALIVE_TIMEOUT_MS), shutdownGraceMs }
 }

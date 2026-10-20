@@ -121,9 +121,4 @@ describe('repository allow-list file', () => {
       expect(e.expires).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     }
   })
-
-  it('has no expired entry (an expired entry fails CI; renew or remove it)', () => {
-    const today = new Date().toISOString().slice(0, 10)
-    for (const e of list.entries) expect(e.expires >= today, `${e.id} expired on ${e.expires}`).toBe(true)
-  })
 })

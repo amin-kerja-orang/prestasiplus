@@ -46,14 +46,14 @@ Optional keys (defaults in brackets):
 | Session and cookies | `SESSION_COOKIE_NAME`, `COOKIE_DOMAIN`, `COOKIE_SECURE` [true unless set to `false`; the dev overlay compose.http.yaml sets false], `SESSION_REMEMBER_DAYS` [30], `SESSION_REMEMBER_DAYS_STAFF` [1; 0 = off] |
 | Login hardening | `THROTTLE_LOGIN_PER_MINUTE` [5], `LOGIN_IDENTIFIER_FAIL_LIMIT` [100 per 15 min], `LOGIN_FAILURE_FLOOR_MS` [1500], `LEGACY_BCRYPT_DUMMY_COST` [12] |
 | Seeds | `ALLOW_DEMO_SEED` [false], `BIJAK_POC_QUESTIONS` [false; staging only] |
-| Runtime (BE-33) | `REQUEST_TIMEOUT_MS` [120000], `HEADERS_TIMEOUT_MS` [60000], `KEEP_ALIVE_TIMEOUT_MS` [65000], `SHUTDOWN_GRACE_MS` [25000], `METRICS_ENABLED` [true; `false` makes `/api/metrics` 404] |
+| Runtime (BE-33) | `REQUEST_TIMEOUT_MS` [120000], `HEADERS_TIMEOUT_MS` [60000], `KEEP_ALIVE_TIMEOUT_MS` [65000], `SHUTDOWN_GRACE_MS` [25000], `METRICS_ENABLED` [true; `false` makes `/api/metrics` 404], `METRICS_INTERNAL_CIDRS` [unset; comma list of IPv4/IPv6 CIDRs, invalid value fails the boot] |
 | Files | `MAX_UPLOAD_MB` [10], `INTAKE_MAX_FILE_MB` [20], `UPLOAD_RATE_PER_MINUTE` [30], `FILE_READS_PER_MINUTE` [120] |
 | Jobs and OCR | `JOBS_WORKER_ENABLED` [false], `JOBS_POLL_MS`, `JOBS_CONCURRENCY`, `JOBS_LOCK_TIMEOUT_MS`, `JOBS_BACKOFF_BASE_MS`, `OCR_ENGINE` [none; tesseract needs `OCR_LANG_DIR`], `OCR_LANG_DIR`, `OCR_WORKERS`, `OCR_PAGE_TIMEOUT_MS`, `OCR_INSPECT_TIMEOUT_MS`, `OCR_MAX_PAGES`, `OCR_MIN_TEXT_CHARS`, `OCR_RENDER_DPI`, `OCR_MAX_PIXELS`, `OCR_WORKER_MEMORY_MB`, `OCR_WORKER_RSS_LIMIT_MB` |
 | Intake | `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
 | Misc | `BIJAK_SWEEP_INTERVAL_SECONDS`, `MAIL_LOG_RESET_LINKS` (development only) |
 | Rate limits | every `THROTTLE_*` key; see section 9 and `.env.api.example` (each line states the unit and the key: user or address). All optional. |
 
-Every value is an integer unless stated. Timeout notes: nginx `proxy_read_timeout` is 120 s on `/api/` and 300 s on `/api/files`; keep `REQUEST_TIMEOUT_MS` at or below the matching nginx value, and `HEADERS_TIMEOUT_MS` at or below `REQUEST_TIMEOUT_MS`.
+Every value is an integer unless stated. Timeout notes: `REQUEST_TIMEOUT_MS` and `HEADERS_TIMEOUT_MS` must be at least 1000 (0 is refused, it would disable slowloris protection). nginx `proxy_read_timeout` is 120 s on `/api/` and 300 s on `/api/files`; keep `REQUEST_TIMEOUT_MS` at or below the matching nginx value, and `HEADERS_TIMEOUT_MS` at or below `REQUEST_TIMEOUT_MS`.
 
 ## 3. Start and stop
 
@@ -71,7 +71,7 @@ Graceful shutdown (`apps/api/src/common/health/graceful-shutdown.ts`): on SIGTER
 | Route | Auth | Meaning |
 |---|---|---|
 | `GET /api/health` | none | Liveness: the process answers. Used by the image `HEALTHCHECK` and load balancers. Not access-logged, not rate-limited. |
-| `GET /api/ready` | none | Readiness. `200 {"data":{"status":"ready","db":"up","migrations":"applied","time":...}}` only when the database answers within 3 s and every shipped migration is applied and none is failed. Otherwise `503` with code `SERVER_ERROR` and no detail (the reason is in the log as `not ready: ...`). `Cache-Control: no-store`. Not rate-limited. |
+| `GET /api/ready` | none | Readiness. `200 {"data":{"status":"ready","db":"up","migrations":"applied","time":...}}` only when the database answers within 3 s and every shipped migration is applied and none is failed. Otherwise `503` with code `SERVER_ERROR` and no detail (the reason is in the log as `not ready: ...`). `Cache-Control: no-store`. Not rate-limited. The result (ok or not) is cached for 3 s and concurrent callers share one check, so at most one DB query per 3 s per process; the migration folder is read once per process. |
 
 Use `/api/ready` for the deploy smoke test and for traffic switching; use `/api/health` for restart decisions only (a database outage must not restart-loop the API).
 
@@ -79,7 +79,10 @@ Use `/api/ready` for the deploy smoke test and for traffic switching; use `/api/
 
 `GET /api/metrics` returns Prometheus text (`text/plain; version=0.0.4`, `no-store`).
 
-- Allowed: a direct internal peer (the socket address is loopback or private: 127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, `::1`, `fc00::/7`, `fe80::/10`) with no `X-Forwarded-For`, `X-Real-IP` or `Forwarded` header, or a valid session whose active role is `admin`. Everything else gets 403 `FORBIDDEN`.
+- Allowed: (a) a direct internal peer with no `X-Forwarded-*`, `X-Real-IP` or `Forwarded` header, or (b) a valid session whose active role is `admin`. Everything else gets 403 `FORBIDDEN`. Who is an "internal peer" (the socket address, never `X-Forwarded-For`; `::ffff:` mapped addresses are matched as IPv4):
+  - `METRICS_INTERNAL_CIDRS` set: only peers inside one of those CIDRs (set it to the Docker network of the scraper, for example `172.18.0.0/16`).
+  - not set and `NODE_ENV=production`: nobody; the internal path is OFF and only an admin session works. This avoids failing open when a proxy forwards without forwarding headers.
+  - not set and not production: loopback and private ranges (127/8, 10/8, 172.16/12, 192.168/16, 169.254/16, `::1`, `fc00::/7`, `fe80::/10`).
 - `METRICS_ENABLED=false` makes the route 404.
 - Labels are route templates (for example `/api/classes/:id`), method and status class. No user id, e-mail, IC, token or query value is ever a label.
 - nginx adds `X-Real-IP` and `X-Forwarded-For` on every proxied call, so a request that went through nginx is only served to an admin session. Scrape from inside the Docker network (`http://api:3000/api/metrics`, from a sidecar or Prometheus on the same network). Best practice: add `location = /api/metrics { return 404; }` to `docker/frontend/nginx.conf` so it is never reachable from the internet (requested from the lead; the file is outside this card's list).
@@ -201,7 +204,7 @@ Allow-list process (an exception is a risk acceptance, not a fix):
 2. npm advisories: add an entry to `.github/security/npm-audit-allowlist.json` with `id` (GHSA id), `package`, `reason` (why it is not exploitable here, naming the code path), and `expires` (ISO date, at most 30 days ahead). Image findings: add the id to `.trivyignore` on its own line with `exp:YYYY-MM-DD` and a comment line above it with the reason, date and owner.
 3. The `devops-engineer` owns both files; each new or renewed entry needs the lead's approval in the PR and a security-review comment.
 4. An expired entry fails CI on purpose (the npm gate fails on any expired entry, Trivy stops ignoring an expired id). Renew with a fresh reason, or fix the dependency. Renewal more than twice is escalated to the lead.
-5. Entries active at BE-33 (expire 2026-11-19): `GHSA-68fv-2mgg-jv7q` (`source-map-js`, reached only through postcss in sanitize-html, which parses with `{ map: false }`) and `GHSA-587h-7wmj-h5pm` (`vite` dev server on Windows; vite is a build tool and not in the runtime image). `.trivyignore` has no active entries.
+5. Expiry is enforced by the CI `deps-audit` gate itself, not by `be:test` (so a date never breaks the local gate). Entries active at BE-33 (expire 2026-11-19): `GHSA-68fv-2mgg-jv7q` (`source-map-js`, reached only through postcss in sanitize-html, which parses with `{ map: false }`) and `GHSA-587h-7wmj-h5pm` (`vite` dev server on Windows; vite is a build tool and not in the runtime image). `.trivyignore` has no active entries.
 6. The gate is unit-tested (`apps/api/test/security/npm-audit-gate.spec.ts`) and the workflow shape is tested (`apps/api/test/security/ci-workflow.spec.ts`).
 
 Run the audit gate locally:
