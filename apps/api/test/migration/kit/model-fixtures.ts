@@ -121,6 +121,26 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   teacher_profiles: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
+  // BE-23 gamification and shop: parents and the checked text columns.
+  challenge_completions: async (query) => ({
+    user_id: await parentUser(query),
+    challenge_id: (await query<{ id: string }>(`insert into challenges (title, challenge_type, target_value) values ('Cabaran Contoh', 'quiz_count', 1) returning id::text as id`))[0]!.id,
+  }),
+  challenges: { challenge_type: 'quiz_count' },
+  gamification_settings: { key: 'coins_per_question' },
+  referral_codes: async (query) => ({ user_id: await parentUser(query) }),
+  referrals: async (query) => ({ referrer_id: await parentUser(query), referee_id: await parentUser(query) }),
+  reward_claims: async (query) => ({
+    user_id: await parentUser(query),
+    reward_id: (await query<{ id: string }>(`insert into syiling_rewards (name, type, price_syiling, cost_value_sen) values ('Hadiah Contoh', 'voucher', 1, 1) returning id::text as id`))[0]!.id,
+  }),
+  reward_redemptions: async (query) => ({ user_id: await parentUser(query), status: 'pending_admin' }),
+  rewards: { category: 'telco' },
+  syiling_rewards: { type: 'voucher' },
+  user_achievements: async (query) => ({
+    user_id: await parentUser(query),
+    achievement_id: (await query<{ id: string }>(`insert into achievements (name) values ('Pencapaian Contoh') returning id::text as id`))[0]!.id,
+  }),
   // users: name (text) is generated; nothing else is required.
   wallets: async (query) => ({ user_id: await parentUser(query) }),
 }

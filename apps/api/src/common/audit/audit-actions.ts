@@ -43,5 +43,23 @@ export const AUDIT_ACTIONS = {
   BIJAK_BLUEPRINT_CREATED: 'bijak.blueprint.created',
   BIJAK_BLUEPRINT_VERSION_CREATED: 'bijak.blueprint.version_created',
   BIJAK_BLUEPRINT_RETIRED: 'bijak.blueprint.retired',
+  // BE-23 gamification (M14 admin economy and operations).
+  GAMIFICATION_AWARD_GRANTED: 'gamification.award.granted',
+  GAMIFICATION_TIER_CREATED: 'gamification.tier.created',
+  GAMIFICATION_TIER_UPDATED: 'gamification.tier.updated',
+  GAMIFICATION_TIER_ACTIVE_CHANGED: 'gamification.tier.active_changed',
+  GAMIFICATION_CHALLENGE_CREATED: 'gamification.challenge.created',
+  GAMIFICATION_CHALLENGE_UPDATED: 'gamification.challenge.updated',
+  GAMIFICATION_CHALLENGE_DELETED: 'gamification.challenge.deleted',
+  GAMIFICATION_CHALLENGE_ACTIVE_CHANGED: 'gamification.challenge.active_changed',
+  GAMIFICATION_SETTINGS_UPDATED: 'gamification.settings.updated',
+  GAMIFICATION_REWARD_COST_UPDATED: 'gamification.reward_cost.updated',
+  GAMIFICATION_DRAW_CREATED: 'gamification.draw.created',
+  GAMIFICATION_DRAW_DRAWN: 'gamification.draw.drawn',
+  SHOP_REWARD_CREATED: 'shop.reward.created',
+  SHOP_REWARD_UPDATED: 'shop.reward.updated',
+  SHOP_REWARD_BULK_ACTION: 'shop.reward.bulk_action',
+  SHOP_REDEMPTION_DELIVERED: 'shop.redemption.delivered',
+  SHOP_REDEMPTION_CANCELLED: 'shop.redemption.cancelled',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
