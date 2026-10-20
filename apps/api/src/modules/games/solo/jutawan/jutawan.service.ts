@@ -28,6 +28,7 @@ import {
 import { secretRng } from '../play/secret-rng'
 import { shuffled } from '../play/solo-items'
 import { JUTAWAN_LIFELINES, JUTAWAN_MIN_MS_PER_QUESTION, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty, hasFastGap } from '../play/solo.rules'
+import { SoloRepository } from '../play/solo.repository'
 import { JutawanRepository, type JutawanSession } from './jutawan.repository'
 
 /** Tile emoji and colour of the observed subjects (by curriculum code); every other subject gets the fallback. */
@@ -61,6 +62,7 @@ export class JutawanService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JutawanRepository) private readonly repo: JutawanRepository,
+    @Inject(SoloRepository) private readonly solo: SoloRepository,
     @Inject(GameQuestions) private readonly questions: GameQuestions,
     @Inject(GameSubjects) private readonly subjects: GameSubjects,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
@@ -110,16 +112,17 @@ export class JutawanService {
     }
     if (picked.length < JUTAWAN_QUESTIONS) throw jutawanNotEnoughQuestions()
     const run = picked.slice(0, JUTAWAN_QUESTIONS)
-    const sessionId = await this.prisma.transaction(() =>
-      this.repo.create({
+    const sessionId = await this.prisma.transaction(async () => {
+      await this.solo.supersede(caller.userId, 'jutawan', this.clock.now())
+      return this.repo.create({
         userId: caller.userId,
         darjah,
         subjectId,
         isTest: caller.isTest,
         createdAt: this.clock.now(),
         items: run.map((q, i) => ({ questionId: q.question.id, keyIndex: q.keyIndex, difficulty: q.difficultyTp ?? jutawanDifficulty(i + 1) })),
-      }),
-    )
+      })
+    })
     return { sessionId, index: 1, question: (run[0] as ServedQuestion).question, lifelines: JUTAWAN_LIFELINES }
   }
 

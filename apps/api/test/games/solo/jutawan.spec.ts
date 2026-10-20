@@ -222,6 +222,24 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
     })
   })
 
+  describe('one open run per user', () => {
+    it('a new start ends the earlier unfinished run ("Permainan sudah tamat."), the new one plays', async () => {
+      const a = await startRun(student)
+      const b = await startRun(student)
+      expectError(await answer(student, a.sessionId, a.items[0] as DbItem, true), 'CONFLICT', M.jutawanOver)
+      expectError(await student.post(`/api/games/jutawan/${a.sessionId}/lifeline`, { type: '50:50' }), 'CONFLICT', M.jutawanOver)
+      expect(rewards.calls).toHaveLength(0)
+      expect((await answer(student, b.sessionId, b.items[0] as DbItem, true)).status).toBe(200)
+    })
+
+    it('concurrent starts leave exactly one open run', async () => {
+      const out = await Promise.all([1, 2, 3].map(() => student2.post('/api/games/jutawan/start', { subject: mathId, darjah: 10 })))
+      expect(out.map((r) => r.status)).toEqual([200, 200, 200])
+      const [row] = await t.db.query<{ n: string }>(`select count(*)::text as n from game_sessions where user_id = $1::bigint and game = 'jutawan' and jutawan_over = false and closed_at is null`, [student2.userId])
+      expect(row?.n).toBe('1')
+    })
+  })
+
   describe('lifeline (M16-39)', () => {
     it('50:50 removes two wrong options, once per question, three in all', async () => {
       const { sessionId, items } = await startRun(student)

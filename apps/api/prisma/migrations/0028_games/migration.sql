@@ -107,6 +107,7 @@ CREATE TABLE "game_sessions" (
     "coins_credited" INTEGER NOT NULL DEFAULT 0,
     "is_new_record" BOOLEAN NOT NULL DEFAULT false,
     "submitted_at" TIMESTAMPTZ(6),
+    "closed_at" TIMESTAMPTZ(6),
     -- D58a stored checks (solo games)
     "moves" INTEGER NOT NULL DEFAULT 0,
     "fast_moves" INTEGER NOT NULL DEFAULT 0,

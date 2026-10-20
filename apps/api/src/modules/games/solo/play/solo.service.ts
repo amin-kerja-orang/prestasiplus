@@ -107,6 +107,7 @@ export class SoloService {
     const built = await this.builder.build(game, levelIds, prngStream(stem))
     const itemCount = game === 'kad-memori' ? built.rows.length / 2 : built.rows.length
     const sessionId = await this.prisma.transaction(async () => {
+      await this.repo.supersede(caller.userId, game, this.clock.now())
       const id = await this.repo.createSession({ userId: caller.userId, game, darjah, itemCount, maxScore: built.maxScore, isTest: caller.isTest, createdAt: this.clock.now() })
       await this.repo.addItems(id, built.rows)
       return id
@@ -173,7 +174,7 @@ export class SoloService {
   ): Promise<Record<string, unknown>> {
     return this.prisma.transaction(async () => {
       const s = await this.repo.lockOwn(sessionId, caller.userId)
-      if (!s || s.game !== game) throw soloSessionNotFound()
+      if (!s || s.game !== game || s.closedAt !== null) throw soloSessionNotFound()
       if (s.submittedAt !== null) throw alreadySubmitted()
       const item = await this.repo.itemByQuestion(s.id, itemId)
       if (!item) throw soloItemNotFound()
@@ -203,7 +204,7 @@ export class SoloService {
   private checkPair(caller: GamesCaller, d: { session_id: string; card_id: string; other_card_id: string }): Promise<Record<string, unknown>> {
     return this.prisma.transaction(async () => {
       const s = await this.repo.lockOwn(d.session_id, caller.userId)
-      if (!s || s.game !== 'kad-memori') throw soloSessionNotFound()
+      if (!s || s.game !== 'kad-memori' || s.closedAt !== null) throw soloSessionNotFound()
       if (s.submittedAt !== null) throw alreadySubmitted()
       const a = await this.repo.itemByCard(s.id, d.card_id)
       const c = await this.repo.itemByCard(s.id, d.other_card_id)
@@ -236,7 +237,7 @@ export class SoloService {
     const d = parseCheck(GamesKadMemoriRevealRequestSchema, b)
     return this.prisma.transaction(async () => {
       const s = await this.repo.lockOwn(d.session_id, caller.userId)
-      if (!s || s.game !== 'kad-memori') throw soloSessionNotFound()
+      if (!s || s.game !== 'kad-memori' || s.closedAt !== null) throw soloSessionNotFound()
       if (s.submittedAt !== null) throw alreadySubmitted()
       const item = await this.repo.itemByCard(s.id, d.card_id)
       if (!item) throw soloItemNotFound()
@@ -258,6 +259,7 @@ export class SoloService {
     return this.prisma.transaction(async (tx): Promise<SubmitOutcome> => {
       const s = await this.repo.lockOwn(parsed.data.session_id, caller.userId)
       if (!s || s.game !== game) return refuse(422, M.soloInvalidResult)
+      if (s.closedAt !== null) return refuse(404, M.soloSessionNotFound)
       if (s.submittedAt !== null) return refuse(409, M.soloAlreadySubmitted)
       const at = this.clock.now()
       const earn = await this.canEarn(caller, { tx })

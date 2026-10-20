@@ -98,6 +98,8 @@ model GameSession {
   isNewRecord           Boolean   @default(false) @map("is_new_record")
   /// Null until submitted; the submit is guarded by a row lock and this column (one submit per session).
   submittedAt           DateTime? @map("submitted_at") @db.Timestamptz(6)
+  /// Set when a newer session of the same user and game superseded this unsubmitted one (one open session per user and game).
+  closedAt              DateTime? @map("closed_at") @db.Timestamptz(6)
   /// Kad Memori pair checks so far.
   moves                 Int       @default(0)
   /// Pacing guard [PROPOSED]: moves/checks made faster than the minimum gap (no coins when > 0).

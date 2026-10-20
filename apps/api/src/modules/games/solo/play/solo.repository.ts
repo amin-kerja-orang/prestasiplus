@@ -14,9 +14,10 @@ export interface SessionRecord {
   darjah: number | null
   itemCount: number | null
   maxScore: number | null
-  fastMoves: number
   submittedAt: Date | null
   moves: number
+  fastMoves: number
+  closedAt: Date | null
   openCardId: string | null
   checks: number
   correctCount: number
@@ -48,6 +49,16 @@ export class SoloRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /**
+   * One open session per user and game: serialises starts of the pair (advisory lock until the end of the transaction),
+   * then closes every unsubmitted, unclosed session of it. Call first inside the starting transaction.
+   */
+  async supersede(userId: string, game: string, at: Date): Promise<void> {
+    const uid = idFromString(userId)
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'games:session:' + userId + ':' + game}))`
+    await this.db.$executeRaw`UPDATE game_sessions SET closed_at = ${at}, jutawan_over = (jutawan_over OR game = 'jutawan') WHERE user_id = ${uid}::bigint AND game = ${game} AND submitted_at IS NULL AND closed_at IS NULL`
   }
 
   async createSession(input: { userId: string; game: string; darjah: number | null; itemCount: number; maxScore: number; isTest: boolean; createdAt: Date }): Promise<string> {
@@ -106,9 +117,10 @@ export class SoloRepository {
       darjah: r.darjah,
       itemCount: r.itemCount,
       maxScore: r.maxScore,
-      fastMoves: r.fastMoves,
       submittedAt: r.submittedAt,
       moves: r.moves,
+      fastMoves: r.fastMoves,
+      closedAt: r.closedAt,
       openCardId: r.openCardId,
       checks: r.checks,
       correctCount: r.correctCount,
@@ -158,7 +170,7 @@ export class SoloRepository {
 
   async updateSession(
     id: string,
-    data: { maxScore?: number; fastMoves?: number; checks?: number; correctCount?: number; moves?: number; openCardId?: string | null; submittedAt?: Date; score?: number; coinsComputed?: number; coinsCredited?: number; isNewRecord?: boolean },
+    data: { fastMoves?: number; checks?: number; correctCount?: number; moves?: number; openCardId?: string | null; submittedAt?: Date; score?: number; coinsComputed?: number; coinsCredited?: number; isNewRecord?: boolean },
   ): Promise<void> {
     await this.db.gameSession.update({ where: { id }, data })
   }

@@ -499,6 +499,49 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     })
   })
 
+  describe('one open session per user and game', () => {
+    const openCount = async (userId: string, game: string) =>
+      Number((await t.db.query<{ n: string }>(`select count(*)::text as n from game_sessions where user_id = $1::bigint and game = $2 and submitted_at is null and closed_at is null`, [userId, game]))[0]?.n)
+
+    it('a new session closes the earlier open one: its check and reveal are 404, its submit is raw 404, the new one works', async () => {
+      const a = await open(student, 'betul-salah')
+      const k = await open(student, 'kad-memori')
+      const b = await open(student, 'betul-salah')
+      expectError(await answerItem(student, 'betul-salah', a.sessionId, a.rows[0] as DbItem, true), 'NOT_FOUND', M.soloSessionNotFound)
+      const submitA = await student.post('/api/games/solo/betul-salah/submit', { session_id: a.sessionId })
+      expect(submitA.status).toBe(404)
+      expect(GamesRawMessageSchema.parse(submitA.body)).toEqual({ message: M.soloSessionNotFound })
+      expect((await sessionRow(a.sessionId))?.submitted_at).toBeNull()
+      expect(rewards.calls).toHaveLength(0)
+      // another game and another user are not affected
+      expect((await t.db.query<{ closed_at: Date | null }>(`select closed_at from game_sessions where id = $1::uuid`, [k.sessionId]))[0]?.closed_at).toBeNull()
+      const other = await open(student2, 'betul-salah')
+      // the new session works end to end
+      t.clock.advance(1000)
+      expect((await answerItem(student, 'betul-salah', b.sessionId, b.rows[0] as DbItem, true)).status).toBe(200)
+      t.clock.advance(1000)
+      expect((await student.post('/api/games/solo/betul-salah/submit', { session_id: b.sessionId })).status).toBe(200)
+      expect((await t.db.query<{ closed_at: Date | null }>(`select closed_at from game_sessions where id = $1::uuid`, [other.sessionId]))[0]?.closed_at).toBeNull()
+      // a submitted session is never "closed" by the next start
+      await open(student, 'betul-salah')
+      expect((await t.db.query<{ closed_at: Date | null }>(`select closed_at from game_sessions where id = $1::uuid`, [b.sessionId]))[0]?.closed_at).toBeNull()
+    })
+
+    it('Kad Memori: reveal and check on a superseded board are 404', async () => {
+      const a = await open(student, 'kad-memori')
+      await open(student, 'kad-memori')
+      const [x, y] = a.rows as [DbItem, DbItem]
+      expectError(await student.post('/api/games/solo/kad-memori/reveal', { session_id: a.sessionId, card_id: x.card_id }), 'NOT_FOUND', M.soloSessionNotFound)
+      expectError(await student.post('/api/games/solo/kad-memori/check', { session_id: a.sessionId, card_id: x.card_id, other_card_id: y.card_id }), 'NOT_FOUND', M.soloSessionNotFound)
+    })
+
+    it('concurrent starts leave exactly one open session', async () => {
+      const out = await Promise.all([1, 2, 3, 4].map(() => student2.get('/api/games/solo/cabaran-kilat')))
+      expect(out.map((r) => r.status)).toEqual([200, 200, 200, 200])
+      expect(await openCount(student2.userId, 'cabaran-kilat')).toBe(1)
+    })
+  })
+
   describe('Kad Memori pacing', () => {
     it('one move less than 1 s after the previous one: the result is returned, nothing is credited', async () => {
       const { sessionId, rows } = await open(student, 'kad-memori')
