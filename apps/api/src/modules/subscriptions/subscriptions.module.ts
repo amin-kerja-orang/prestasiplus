@@ -3,10 +3,10 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AuthModule } from '../auth'
+import { ClassesModule } from '../classes'
 import { SchoolsModule } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersModule } from '../users'
-import { COMP_CLASSROOM_PORT, NoClassroomsPort } from './comp-students/classroom.port'
 import { CompStudentsController } from './comp-students/comp-students.controller'
 import { CompStudentsRepository } from './comp-students/comp-students.repository'
 import { CompStudentsService } from './comp-students/comp-students.service'
@@ -24,10 +24,10 @@ import { UserPackagesService } from './user-packages.service'
  * School subscriptions, quota, student import, user packages and complimentary students (BE-25
  * part A). Exports `SubscriptionService` (`isSubscribed`, `trial`, `incrementTrialUsed`) for BE-12 and
  * the other cards, `QuotaService` and `SubscriptionsRepository` (ADR-0014 doorway to its tables).
- * `COMP_CLASSROOM_PORT` is the seam to the classroom owner (BE-17); the default finds no classroom.
+ * `COMP_CLASSROOM_PORT` is the seam to the classroom owner: ClassesModule (BE-17) provides and exports the real one.
  */
 @Module({
-  imports: [AuditModule, AuthModule, SchoolsModule, ThrottleModule, UsersModule],
+  imports: [AuditModule, AuthModule, ClassesModule, SchoolsModule, ThrottleModule, UsersModule],
   controllers: [SubscriptionsController, QuotaController, UserPackagesController, CompStudentsController],
   providers: [
     SubscriptionsRepository,
@@ -39,8 +39,7 @@ import { UserPackagesService } from './user-packages.service'
     CompStudentsService,
     SubscriptionService,
     IcService,
-    { provide: COMP_CLASSROOM_PORT, useClass: NoClassroomsPort },
   ],
-  exports: [SubscriptionService, QuotaService, SubscriptionsRepository, COMP_CLASSROOM_PORT],
+  exports: [SubscriptionService, QuotaService, SubscriptionsRepository],
 })
 export class SubscriptionsModule {}
