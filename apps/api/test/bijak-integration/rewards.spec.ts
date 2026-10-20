@@ -110,7 +110,7 @@ describe('WalletPracticeReward.onSessionCompleted', () => {
     expect(await streak(adminId)).toEqual(streakBefore)
   })
 
-  it('7. the ledger source follows the mode (practiceRewardSource, M14 BR-M14-03)', async () => {
+  it('6. the ledger source follows the mode (practiceRewardSource, M14 BR-M14-03)', async () => {
     for (const [mode, source] of [
       ['latih_tubi', 'quiz_spm'],
       ['pksk', 'quiz_pksk'],
@@ -125,7 +125,7 @@ describe('WalletPracticeReward.onSessionCompleted', () => {
     }
   })
 
-  it('6. a throw after the call rolls the ledger row and the session credit back', async () => {
+  it('7. a throw after the call rolls the ledger row and the session credit back', async () => {
     const i = input()
     const before = await balance(studentId)
     await expect(
