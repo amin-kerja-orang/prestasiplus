@@ -76,6 +76,7 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_CIKGU_READ_PER_MINUTE: '100000',
     THROTTLE_CIKGU_WRITE_PER_MINUTE: '100000',
     THROTTLE_CIKGU_EXPORT_PER_MINUTE: '100000',
+    THROTTLE_FOSTER_APPLICATION_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,

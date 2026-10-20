@@ -162,6 +162,8 @@ export const EnvSchema = z.object({
   THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-47 (Mohon Keluarga Angkat). Throttle per user; the code applies the default when unset (5 per minute).
+  THROTTLE_FOSTER_APPLICATION_PER_MINUTE: z.coerce.number().int().min(1).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
