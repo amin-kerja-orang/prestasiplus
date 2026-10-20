@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
 import { QuestionsRepository } from '../../questions'
-import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
+import type { QuestionRecord } from '../../questions/types'
 import type {
   BijakQuestionBundle,
   BijakQuestionSource as AttemptQuestionSource,
@@ -29,7 +29,11 @@ import {
  * - Papers (BE-15 `BijakQuestionSource.getMany`): marks, group and live `versionNo` of the same mapped
  *   question, so a question the attempt side cannot serve is also not eligible on the paper side.
  *
- * A question without a published live version is absent. `is_active` is NOT checked: a question placed
+ * Papers see only a `published` live version; attempts see any live version BE-09 returns (see `load`).
+ * A withdrawn question (no live version) is still served to attempts from its last published version
+ * while that is the latest version; once a newer draft exists on top it is absent (known gap until
+ * BE-09 offers a pinned read, #45 M7) and the attempts holding it fail closed.
+ * `is_active` is NOT checked: a question placed
  * on a published paper stays servable (the placement is what the paper froze). A question the mapper
  * refuses is absent too, and the refusal is logged with its id, part and reason (never its content).
  */
@@ -51,7 +55,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
 
   /** BE-15 `getMany`: structure only (never content or keys). */
   async getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
-    const mapped = await this.load(questionIds)
+    const mapped = await this.load(questionIds, true)
     return new Map([...mapped].map(([id, m]) => [id, infoOf(m.bundle, m.groupId)]))
   }
 
@@ -61,20 +65,60 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     return new Map([...mapped].map(([id, m]) => [id, m.bundle.versionNo]))
   }
 
+  /**
+   * `published: true` (BE-15 eligibility) keeps only a live version whose status is `published`.
+   * Attempts pass `false`: a question already placed on a paper keeps being served from whatever live
+   * version BE-09 still returns, so a status change does not break running or graded attempts.
+   * Groups and curriculum labels are fetched once per distinct key, in parallel.
+   */
   private async load(
     questionIds: readonly string[],
+    published = false,
   ): Promise<Map<string, { bundle: Be09QuestionBundle; groupId: string | null }>> {
     const ids = [...new Set(questionIds)].filter(isIdString)
     const out = new Map<string, { bundle: Be09QuestionBundle; groupId: string | null }>()
     if (ids.length === 0) return out
-    const records = await this.questions.getMany(ids, 'live')
-    const groups = new Map<string, StimulusGroupRecord | null>()
-    const labels = new Map<string, CurriculumLabels>()
+    let records = (await this.questions.getMany(ids, 'live')).filter(
+      (r) => !published || r.version.status === 'published',
+    )
+    if (!published && records.length < ids.length) {
+      // Withdrawn since the paper was built (BE-09 clears the live version): keep serving the version
+      // that WAS live when it is still the latest one (archived, once published), so the attempts that
+      // hold it can still be shown, graded and auto-submitted. A newer draft on top is not served.
+      const have = new Set(records.map((r) => r.id))
+      const withdrawn = (
+        await this.questions.getMany(
+          ids.filter((id) => !have.has(id)),
+          'latest',
+        )
+      ).filter((r) => r.version.status === 'archived' && r.version.publishedAt !== null)
+      records = [...records, ...withdrawn]
+    }
+    const groupOwner = new Map<string, string>()
+    const labelKeys = new Map<string, QuestionRecord>()
+    for (const r of records) {
+      if (r.groupId && !groupOwner.has(r.groupId)) groupOwner.set(r.groupId, r.id)
+      const k = labelKey(r)
+      if (!labelKeys.has(k)) labelKeys.set(k, r)
+    }
+    const [groups, labels] = await Promise.all([
+      Promise.all(
+        [...groupOwner].map(
+          async ([gid, qid]) => [gid, await this.questions.groupOf(qid)] as const,
+        ),
+      ).then((e) => new Map(e)),
+      Promise.all([...labelKeys].map(async ([k, r]) => [k, await this.labelsOf(r)] as const)).then(
+        (e) => new Map(e),
+      ),
+    ])
     for (const record of records) {
-      if (record.version.status !== 'published') continue
       try {
-        const group = await this.groupFor(record, groups)
-        const bundle = mapBe09Question(record, group, await this.labelsFor(record, labels))
+        const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
+        const bundle = mapBe09Question(
+          record,
+          group,
+          labels.get(labelKey(record)) as CurriculumLabels,
+        )
         out.set(record.id, { bundle, groupId: bundle.question.groupId ?? null })
       } catch (e) {
         if (!(e instanceof UnsupportedQuestionError)) throw e
@@ -84,34 +128,19 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     return out
   }
 
-  private async groupFor(
-    record: QuestionRecord,
-    cache: Map<string, StimulusGroupRecord | null>,
-  ): Promise<StimulusGroupRecord | null> {
-    if (!record.groupId) return null
-    const hit = cache.get(record.groupId)
-    if (hit !== undefined) return hit
-    const group = await this.questions.groupOf(record.id)
-    cache.set(record.groupId, group)
-    return group
-  }
-
-  private async labelsFor(
-    record: QuestionRecord,
-    cache: Map<string, CurriculumLabels>,
-  ): Promise<CurriculumLabels> {
+  private async labelsOf(record: QuestionRecord): Promise<CurriculumLabels> {
     const v = record.version
-    const key = `${v.subjectId ?? ''}:${v.unitId ?? ''}`
-    const hit = cache.get(key)
-    if (hit) return hit
-    const subject = v.subjectId ? await this.curriculum.subject(idFromString(v.subjectId)) : null
-    const unit = v.unitId ? await this.curriculum.nodeById(idFromString(v.unitId)) : null
-    const labels: CurriculumLabels = {
+    const [subject, unit] = await Promise.all([
+      v.subjectId ? this.curriculum.subject(idFromString(v.subjectId)) : null,
+      v.unitId ? this.curriculum.nodeById(idFromString(v.unitId)) : null,
+    ])
+    return {
       subjectCode: subject ? bijakCodeOf(subject.code) : '',
       unitLabel: unit?.title ?? subject?.name ?? '',
       unitCode: unit?.code ?? null,
     }
-    cache.set(key, labels)
-    return labels
   }
 }
+
+const labelKey = (r: QuestionRecord): string =>
+  `${r.version.subjectId ?? ''}:${r.version.unitId ?? ''}`

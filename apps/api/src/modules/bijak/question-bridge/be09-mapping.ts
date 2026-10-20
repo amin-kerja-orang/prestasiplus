@@ -82,6 +82,9 @@ export interface Be09QuestionBundle extends BijakQuestionBundle {
 
 const isLeaf = (p: QuestionPart): p is Leaf => 'mode' in p
 
+/** Contract `IdSchema` max length: every id the bridge puts on the wire must fit. */
+const MAX_WIRE_ID = 64
+
 const FORM_ORIGIN = { t1_t3: 'T1-T3', t4: 'T4', t5: 'T5' } as const
 const LEVEL = { t1_t3: 'T4+T5', t4: 'T4', t5: 'T5' } as const
 
@@ -352,6 +355,8 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
         const tol =
           a.tol === undefined ? undefined : a.tolKind === 'rel' ? a.tol * Math.abs(a.v) : a.tol
         const v = String(a.v)
+        if (/e/i.test(v))
+          refuse(`numeric value ${v} in exponent form is not supported by the exam-core matcher`)
         // Alternative units become alternative accepted values (same number, same tolerance).
         const units = a.unit === undefined ? [undefined] : [a.unit, ...(a.unitAlt ?? [])]
         for (const unit of units)
@@ -427,13 +432,17 @@ function rubricScheme(
  * - `accept` on a K, N, P or B point -> `step` (working-line equivalence);
  *   `accept` on an M, F or C point -> `keywords` (science / fact / content points are phrases);
  * - `allOf` -> `all_of`;
- * - an `ecf` point, or an N / B point without `accept`, when the key has a `final` -> `final`
+ * - an `ecf` point, or an N point without `accept` / `allOf`, when the key has a `final` -> `final`
  *   (exam-core applies ECF only to final-answer points);
- * - a point with only a mandatory `unit` -> `unit` (the key's final unit defaults to it);
- * - anything else -> `manual` (a teacher marks it; the attempt result is provisional).
+ * - a point whose only criterion is a mandatory `unit` -> `unit` (sets the key's final unit);
+ * - anything else (including a B point without a criterion) -> `manual` (a teacher marks it; the
+ *   attempt result is provisional).
+ * A point tolerance becomes the final tolerance (relative: times the numeric final answer).
  * Refused: alternative paths that differ (exam-core adds points, it cannot pick the best path),
- * deductions, point sig-figs / decimals, a mandatory unit on a point that also has `accept`, an
- * `eachMarks` that differs from a grouped point's marks, an ECF reference to an unknown part.
+ * deductions, point sig-figs / decimals, a mandatory unit on any point but a unit-only one (exam-core
+ * would not enforce it), alternative units on a unit point, a tolerance on a non-final point, an
+ * `eachMarks` that differs from a grouped point's marks, an ECF reference to an unknown part, a point
+ * id longer than the wire id limit (64).
  */
 function pointsScheme(ctx: Ctx, key: PointsKey, marks: number, path: string): PointsScheme {
   const refuse = (reason: string): never => {
@@ -466,17 +475,31 @@ function pointsScheme(ctx: Ctx, key: PointsKey, marks: number, path: string): Po
   const points = key.points.map((p): ExamPoint => {
     if (p.sigFigs != null || p.decimals != null)
       refuse(`point ${p.id}: significant figures / decimal places are not supported`)
+    if (p.id.length > MAX_WIRE_ID)
+      refuse(`point id "${p.id.slice(0, 16)}..." is longer than ${String(MAX_WIRE_ID)} characters`)
     const match = matchOf(p, final !== undefined, refuse)
-    if (match.type === 'unit' && final && final.unit === undefined && p.unit)
+    if (match.type === 'unit' && final && p.unit) {
+      if (p.unit.alt && p.unit.alt.length > 0)
+        refuse(`point ${p.id}: alternative units are not supported by the exam-core unit check`)
+      if (final.unit !== undefined && final.unit !== p.unit.value)
+        refuse(`point ${p.id}: the unit differs from the final answer unit`)
       final = { ...final, unit: p.unit.value }
-    // An absolute point tolerance on a final-answer point becomes the final tolerance (exam-core has one per part).
-    if (
-      match.type === 'final' &&
-      final &&
-      final.tolerance === undefined &&
-      p.tolerance?.kind === 'abs'
-    )
-      final = { ...final, tolerance: p.tolerance.value }
+    }
+    if (p.tolerance) {
+      // exam-core has ONE tolerance per part (the final answer); a point tolerance is only representable there.
+      if (match.type !== 'final' || !final)
+        refuse(`point ${p.id}: a tolerance on a non-final point is not supported`)
+      if (final && final.tolerance === undefined) {
+        const base = Number(final.accept[0])
+        const tol =
+          p.tolerance.kind === 'abs'
+            ? p.tolerance.value
+            : Number.isFinite(base)
+              ? p.tolerance.value * Math.abs(base)
+              : refuse(`point ${p.id}: a relative tolerance needs a numeric final answer`)
+        final = { ...final, tolerance: tol }
+      }
+    }
     const ecf =
       p.ecf && match.type === 'final'
         ? {
@@ -513,16 +536,32 @@ function matchOf(
   refuse: (reason: string) => never,
 ): ExamPoint['match'] {
   const accept = p.accept?.filter((a) => a.trim() !== '') ?? []
-  if (p.ecf && hasFinal) return { type: 'final' }
-  if (p.unit?.mandatory && accept.length > 0)
-    refuse(`point ${p.id}: a mandatory unit on a step point is not supported`)
-  if (accept.length > 0)
+  const mandatoryUnit = p.unit?.mandatory === true
+  // A mandatory unit is only enforced by a dedicated exam-core `unit` point; anywhere else it would be ignored (over-award).
+  const noUnit = (): void => {
+    if (mandatoryUnit)
+      refuse(`point ${p.id}: a mandatory unit is only supported on a unit-only point`)
+  }
+  if (p.ecf && hasFinal) {
+    noUnit()
+    return { type: 'final' }
+  }
+  if (accept.length > 0) {
+    noUnit()
     return p.code === 'M' || p.code === 'F' || p.code === 'C'
       ? { type: 'keywords', anyOf: accept }
       : { type: 'step', accept }
-  if (p.allOf && p.allOf.length > 0) return { type: 'all_of', items: [...p.allOf] }
-  if ((p.code === 'N' || p.code === 'B') && hasFinal) return { type: 'final' }
-  if (p.unit?.mandatory && hasFinal) return { type: 'unit' }
+  }
+  if (p.allOf && p.allOf.length > 0) {
+    noUnit()
+    return { type: 'all_of', items: [...p.allOf] }
+  }
+  if (mandatoryUnit) {
+    if (!hasFinal) refuse(`point ${p.id}: a unit point needs the key's final answer`)
+    return { type: 'unit' }
+  }
+  // Only an accuracy point (N) is the final-answer check; an independent B point without a criterion is manual.
+  if (p.code === 'N' && hasFinal) return { type: 'final' }
   return { type: 'manual' }
 }
 

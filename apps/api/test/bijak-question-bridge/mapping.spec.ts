@@ -1,3 +1,4 @@
+import { QuestionPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -56,7 +57,7 @@ function record(
     sourceFile: null,
     spIds: ['11', '12'],
     stimulusIds: [],
-    parts,
+    parts: parts.map((p) => QuestionPartSchema.parse(p)),
     createdAt: now,
     updatedAt: now,
   }
@@ -429,7 +430,7 @@ describe('mapBe09Question: working points', () => {
             point('p4', 'C', 1, { accept: ['content'] }),
             point('p5', 'P', 1, { allOf: ['a', 'b'] }),
             point('p6', 'N', 1),
-            point('p7', 'B', 1, { unit: { value: 'cm', mandatory: true } }),
+            point('p7', 'B', 1),
             point('p8', 'P', 1),
             point('p9', 'K', 1, { accept: ['  '] }),
           ],
@@ -446,7 +447,7 @@ describe('mapBe09Question: working points', () => {
       { type: 'keywords', anyOf: ['content'] },
       { type: 'all_of', items: ['a', 'b'] },
       { type: 'final' },
-      { type: 'final' },
+      { type: 'manual' },
       { type: 'manual' },
       { type: 'manual' },
     ])
@@ -467,16 +468,9 @@ describe('mapBe09Question: working points', () => {
     expect(s.final).toEqual({ accept: ['5'], display: '5', unit: 'cm' })
   })
 
-  it('without a final, N/B and unit-only points are manual', () => {
+  it('without a final, an N point is manual', () => {
     const b = map([
-      leaf(
-        'working',
-        pointsKey([
-          point('p1', 'N', 1),
-          point('p2', 'P', 1, { unit: { value: 'cm', mandatory: true } }),
-        ]),
-        { marks: 2 },
-      ),
+      leaf('working', pointsKey([point('p1', 'N', 1), point('p2', 'B', 1)]), { marks: 2 }),
     ])
     expect(pointsScheme(b, '501.a').points.map((p) => p.match.type)).toEqual(['manual', 'manual'])
     expect(pointsScheme(b, '501.a').final).toBeUndefined()
@@ -714,24 +708,22 @@ describe('mapBe09Question: essay and drawing', () => {
 
 describe('mapBe09Question: nested parts', () => {
   const nested = [
-    branch('1', [
-      branch('(a)', [
-        leaf('short_text', { kind: 'accepted', values: ['x'] }, { label: '(i)', marks: 1 }),
-        branch('(ii)', [
-          leaf('short_text', { kind: 'accepted', values: ['y'] }, { label: '(A)', marks: 2 }),
-        ]),
+    branch('(a)', [
+      leaf('short_text', { kind: 'accepted', values: ['x'] }, { label: '(i)', marks: 1 }),
+      branch('(ii)', [
+        leaf('short_text', { kind: 'accepted', values: ['y'] }, { label: '(A)', marks: 2 }),
       ]),
-      leaf('numeric', { kind: 'accepted', values: [{ v: 1 }] }, { label: '(b)', marks: 3 }),
     ]),
+    leaf('numeric', { kind: 'accepted', values: [{ v: 1 }] }, { label: '(b)', marks: 3 }),
   ]
 
   it('builds ids from the stripped label path; branches carry no marks and no scheme', () => {
     const b = map(nested)
     const root = b.question.parts?.[0]
-    expect(root).toMatchObject({ id: '501.1', label: '1', marks: 0 })
-    expect(Object.keys(b.schemes).sort()).toEqual(['501.1.a.i', '501.1.a.ii.A', '501.1.b'])
+    expect(root).toMatchObject({ id: '501.a', label: '(a)', marks: 0 })
+    expect(Object.keys(b.schemes).sort()).toEqual(['501.a.i', '501.a.ii.A', '501.b'])
     const ids = leavesOf(b.question.parts ?? []).map((l) => l.id)
-    expect(ids).toEqual(['501.1.a.i', '501.1.a.ii.A', '501.1.b'])
+    expect(ids).toEqual(['501.a.i', '501.a.ii.A', '501.b'])
   })
 
   it('a (a)(i)(A) tree gives 501.a.i.A', () => {
@@ -1003,5 +995,190 @@ describe('mapBe09Question: refusals', () => {
   it('reports the question id of the record', () => {
     const e = refusal([leaf('table_fill', { kind: 'mapping', cells: { r: ['x'] } })], { id: '777' })
     expect(e.questionId).toBe('777')
+  })
+})
+
+/* ------------------------------------------------------------------------------ points rules (review fixes) */
+
+describe('mapBe09Question: unit, tolerance and id rules of points', () => {
+  const finalDef = { display: '12', accept: ['12'] }
+  const unitCm = { value: 'cm', mandatory: true }
+  const refused = (parts: unknown[], reason: RegExp, path = '(a)') => {
+    const e = refusal(parts)
+    expect(e.questionId).toBe('501')
+    expect(e.path).toBe(path)
+    expect(e.reason).toMatch(reason)
+  }
+  const working = (points: unknown[], extra: Record<string, unknown> = {}, marks = 2) =>
+    leaf('working', pointsKey(points, { final: finalDef, ...extra }), { marks })
+
+  it('a B point without a criterion is manual even when the key has a final', () => {
+    const b = map([working([point('p1', 'B', 1)], {}, 1)])
+    expect(pointsScheme(b, '501.a').points[0]?.match).toEqual({ type: 'manual' })
+  })
+
+  it('a unit-only point is refused when the key has no final', () => {
+    refused(
+      [leaf('working', pointsKey([point('p1', 'P', 1, { unit: unitCm })]), { marks: 1 })],
+      /needs the key's final/,
+    )
+  })
+
+  it('a unit-only point is refused when final.unit differs, or the unit has alternatives', () => {
+    refused(
+      [working([point('p1', 'P', 1, { unit: unitCm })], { final: { ...finalDef, unit: 'm' } }, 1)],
+      /unit differs/,
+    )
+    refused(
+      [working([point('p1', 'P', 1, { unit: { ...unitCm, alt: ['centimetre'] } })], {}, 1)],
+      /alternative units/,
+    )
+  })
+
+  it('a unit-only point agrees with an equal final.unit', () => {
+    const b = map([
+      working([point('p1', 'P', 1, { unit: unitCm })], { final: { ...finalDef, unit: 'cm' } }, 1),
+    ])
+    expect(pointsScheme(b, '501.a').final?.unit).toBe('cm')
+  })
+
+  it('a non-mandatory unit is ignored', () => {
+    const b = map([
+      working([point('p1', 'P', 1, { unit: { value: 'cm', mandatory: false } })], {}, 1),
+    ])
+    expect(pointsScheme(b, '501.a').points[0]?.match).toEqual({ type: 'manual' })
+  })
+
+  it('a mandatory unit on a step, keywords, all_of or ecf point is refused', () => {
+    refused(
+      [working([point('p1', 'K', 1, { accept: ['x'], unit: unitCm })], {}, 1)],
+      /mandatory unit/,
+    )
+    refused(
+      [working([point('p1', 'F', 1, { accept: ['x'], unit: unitCm })], {}, 1)],
+      /mandatory unit/,
+    )
+    refused(
+      [working([point('p1', 'P', 1, { allOf: ['x'], unit: unitCm })], {}, 1)],
+      /mandatory unit/,
+    )
+    refused(
+      [
+        branch('1', [
+          leaf('numeric', { kind: 'accepted', values: [{ v: 1 }] }, { label: '(a)' }),
+          leaf(
+            'working',
+            pointsKey(
+              [
+                point('p1', 'N', 1, {
+                  ecf: { fromPart: '(a)', rule: { op: 'same' } },
+                  unit: unitCm,
+                }),
+              ],
+              { final: finalDef },
+            ),
+            { label: '(b)', marks: 1 },
+          ),
+        ]),
+      ],
+      /mandatory unit/,
+      '1.(b)',
+    )
+  })
+
+  it('an absolute point tolerance sets the final tolerance; a relative one is scaled by |final|', () => {
+    const abs = map([
+      working([point('p1', 'N', 1, { tolerance: { kind: 'abs', value: 0.3 } })], {}, 1),
+    ])
+    expect(pointsScheme(abs, '501.a').final?.tolerance).toBe(0.3)
+    const rel = map([
+      working([point('p1', 'N', 1, { tolerance: { kind: 'rel', value: 0.1 } })], {}, 1),
+    ])
+    expect(pointsScheme(rel, '501.a').final?.tolerance).toBeCloseTo(1.2)
+    const neg = map([
+      working(
+        [point('p1', 'N', 1, { tolerance: { kind: 'rel', value: 0.5 } })],
+        {
+          final: { display: '-4', accept: ['-4'] },
+        },
+        1,
+      ),
+    ])
+    expect(pointsScheme(neg, '501.a').final?.tolerance).toBe(2)
+  })
+
+  it('a key-level final tolerance wins over a point tolerance', () => {
+    const b = map([
+      working(
+        [point('p1', 'N', 1, { tolerance: { kind: 'abs', value: 9 } })],
+        {
+          final: { ...finalDef, tolerance: 0.5 },
+        },
+        1,
+      ),
+    ])
+    expect(pointsScheme(b, '501.a').final?.tolerance).toBe(0.5)
+  })
+
+  it('a relative tolerance with a non-numeric final is refused', () => {
+    refused(
+      [
+        working(
+          [point('p1', 'N', 1, { tolerance: { kind: 'rel', value: 0.1 } })],
+          {
+            final: { display: 'x', accept: ['x+1'] },
+          },
+          1,
+        ),
+      ],
+      /numeric final/,
+    )
+  })
+
+  it('a tolerance on a non-final point is refused', () => {
+    refused(
+      [
+        working(
+          [point('p1', 'K', 1, { accept: ['x'], tolerance: { kind: 'abs', value: 1 } })],
+          {},
+          1,
+        ),
+      ],
+      /tolerance on a non-final/,
+    )
+    refused(
+      [
+        leaf(
+          'drawing',
+          pointsKey([point('p1', 'B', 1, { tolerance: { kind: 'abs', value: 1 } })]),
+          {
+            marks: 1,
+          },
+        ),
+      ],
+      /tolerance on a non-final/,
+    )
+  })
+
+  it('a point id longer than 64 characters is refused (64 is fine)', () => {
+    refused([working([point('p'.repeat(65), 'N', 1)], {}, 1)], /longer than 64/)
+    expect(() => map([working([point('p'.repeat(64), 'N', 1)], {}, 1)])).not.toThrow()
+  })
+
+  it('a numeric value in exponent form is refused', () => {
+    refused([leaf('numeric', { kind: 'accepted', values: [{ v: 1e21 }] })], /exponent form/)
+    refused([leaf('numeric', { kind: 'accepted', values: [{ v: 1e-7 }] })], /exponent form/)
+    expect(() =>
+      map([leaf('numeric', { kind: 'accepted', values: [{ v: 0.000001 }] })]),
+    ).not.toThrow()
+  })
+
+  it('grades N (final) plus a mandatory-unit point: "12" without a unit earns only the N mark', () => {
+    const b = map([working([point('p1', 'N', 1), point('p2', 'P', 1, { unit: unitCm })], {}, 2)])
+    const s = pointsScheme(b, '501.a')
+    expect(s.points.map((p) => p.match.type)).toEqual(['final', 'unit'])
+    expect(s.final?.unit).toBe('cm')
+    expect(grade(b, '501.a', 'working', { final: '12' }).awarded).toBe(1)
+    expect(grade(b, '501.a', 'working', { final: '12', unit: 'cm' }).awarded).toBe(2)
   })
 })

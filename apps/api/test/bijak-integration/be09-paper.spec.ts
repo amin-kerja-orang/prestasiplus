@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema } from '@pp/contract'
 
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge'
+import { QuestionsService } from '../../src/modules/questions'
 import {
   bootIntegrationApp,
   type Client,
@@ -117,7 +118,21 @@ describe('a paper built from BE-09 questions', () => {
     const v = await student.get(`/api/bijak/attempts/${attemptId}`)
     expect(v.status, JSON.stringify(v.body)).toBe(200)
     const raw = JSON.stringify(v.body)
-    for (const k of ['correct', 'scheme', 'correctOption', 'accept', 'points', 'rubric'])
+    for (const k of [
+      'correct',
+      'scheme',
+      'correctOption',
+      'accept',
+      'points',
+      'rubric',
+      'values',
+      'final',
+      'map',
+      'model',
+      'modelText',
+      'reason',
+      'key',
+    ])
       expect(raw).not.toContain(`"${k}"`)
     const view = BijakAttemptPaperViewSchema.parse(v.body.data)
     expect(view.questions.map((q) => q.id)).toEqual([
@@ -142,15 +157,21 @@ describe('a paper built from BE-09 questions', () => {
 
   it('3. autosaves, submits and grades with the BE-09 keys (MCQ, match letter, numeric, working with ECF)', async () => {
     const ecf = id('SEED-STR-ECF')
-    const a1 = await t.db.query<{ map: Record<string, string> }>(
-      `select k.content->'map' as map from answer_keys k join question_parts p on p.id = k.part_id
-       join question_versions v on v.id = p.question_version_id where v.number_label = 'SEED-GRP-AYAT-1'`,
-    )
-    const letter1 = Object.values(a1[0]!.map)[0]!
+    const keyOf = async (ref: string): Promise<string> => {
+      const rows = await t.db.query<{ map: Record<string, string> }>(
+        `select k.content->'map' as map from answer_keys k join question_parts p on p.id = k.part_id
+         join question_versions v on v.id = p.question_version_id where v.number_label = $1`,
+        [ref],
+      )
+      return Object.values(rows[0]!.map)[0]!
+    }
+    const letter1 = await keyOf('SEED-GRP-AYAT-1')
+    const key2 = await keyOf('SEED-GRP-AYAT-2')
+    const wrong2 = ['A', 'B', 'C', 'D'].find((l) => l !== key2)!
     const saved = await save(attemptId, [
       { partId: id('SEED-MCQ-MATH-T4'), answer: { choice: 'B' } },
       { partId: `${id('SEED-GRP-AYAT-1')}.1`, answer: { choice: letter1 } },
-      { partId: `${id('SEED-GRP-AYAT-2')}.2`, answer: { choice: letter1 === 'A' ? 'D' : 'A' } },
+      { partId: `${id('SEED-GRP-AYAT-2')}.2`, answer: { choice: wrong2 } },
       { partId: `${ecf}.a`, answer: { final: '5', unit: 'cm' } },
       { partId: `${ecf}.b`, answer: { steps: ['3 + 4 + 5'], final: '12', unit: 'cm' } },
       {
@@ -173,14 +194,14 @@ describe('a paper built from BE-09 questions', () => {
     const byId = new Map(result.questions.map((q) => [q.questionId, q]))
     expect(byId.get(id('SEED-MCQ-MATH-T4'))).toMatchObject({ marks: 1, awarded: 1 })
     expect(byId.get(id('SEED-GRP-AYAT-1'))).toMatchObject({ marks: 1, awarded: 1 })
-    // The second match item was answered with a wrong letter on purpose (unless the key is that letter).
-    expect(byId.get(id('SEED-GRP-AYAT-2'))?.marks).toBe(1)
+    // The second match item was answered with a wrong letter on purpose.
+    expect(byId.get(id('SEED-GRP-AYAT-2'))).toMatchObject({ marks: 1, awarded: 0 })
     expect(byId.get(ecf)).toMatchObject({ marks: 4, awarded: 4 })
     // The answered essay (points without accept = manual) waits for a teacher: 0 now, result provisional.
     expect(byId.get(id('SEED-STR-ANYN'))).toMatchObject({ marks: 3, awarded: 0 })
     expect(result.provisional).toBe(true)
     expect(result.max).toBe(1 + 1 + 1 + 4 + 3)
-    expect(result.score).toBeGreaterThanOrEqual(6)
+    expect(result.score).toBe(1 + 1 + 0 + 4 + 0)
   })
 
   it('4. closes the loop: one aggregate row and one wallet credit for the attempt', async () => {
@@ -225,5 +246,19 @@ describe('a paper built from BE-09 questions', () => {
       poc,
       id('SEED-MCQ-MATH-T4'),
     ])
+  })
+
+  it('7. withdrawing a placed question keeps its graded attempt readable, but a new start is not eligible', async () => {
+    const qid = id('SEED-MCQ-MATH-T4')
+    // Through BE-09's own service: published -> archived clears the live version (withdrawn).
+    await t.app.get(QuestionsService).setStatus(qid, 'archived', '1')
+    expect(
+      (await t.db.query('select live_version_no from questions where id = $1', [qid]))[0],
+    ).toEqual({ live_version_no: null })
+    const r = await student.get(`/api/bijak/attempts/${attemptId}/result`)
+    expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect(BijakAttemptResultViewSchema.parse(r.body.data).result.score).toBe(6)
+    const res = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(res.status, JSON.stringify(res.body)).toBe(403)
   })
 })
