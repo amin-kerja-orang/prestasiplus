@@ -158,6 +158,9 @@ const DASH = [
   'jpn_officer',
 ] as const satisfies readonly Role[]
 
+// Shared icon colour (was repeated as a literal on 11 entries).
+const C_INDIGO = 'text-indigo-500'
+
 // ---------------------------------------------------------------------------------------------
 // Badge class strings (design-system §4, copied from the capture)
 
@@ -218,7 +221,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'section', id: 'sec-spm', label: 'SPM', text: 'text-amber-700', rule: 'from-amber-300', roles: SA_ },
   { kind: 'item', id: 'spm', label: 'SPM', to: '/spm', fa: 'fa-graduation-cap', color: 'text-amber-500', badge: { text: 'SPM', cls: B_SPM }, roles: SA_ },
   // Bijak SPM has its own sidebar entry on .cloud ("Simulasi Peperiksaan", badge "BARU"); v2 keeps the one name "Bijak SPM" (v2-bijak-spm AC-01.1).
-  { kind: 'item', id: 'bijak-spm', label: 'Bijak SPM', to: '/spm/bijak', fa: 'fa-file-pen', color: 'text-indigo-500', badge: { text: 'BARU', cls: B_BARU }, roles: S },
+  { kind: 'item', id: 'bijak-spm', label: 'Bijak SPM', to: '/spm/bijak', fa: 'fa-file-pen', color: C_INDIGO, badge: { text: 'BARU', cls: B_BARU }, roles: S },
   { kind: 'item', id: 'headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: SA_ },
   { kind: 'item', id: 'prestasi', label: 'Prestasi', to: '/prestasi', fa: 'fa-chart-bar', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SA_ },
@@ -226,7 +229,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // Drawer-only on live (admin capture, SPM block).
   { kind: 'item', id: 'amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: A },
   { kind: 'item', id: 'kombo', label: 'Kombo', to: '/kombo', fa: 'fa-fire', color: 'text-orange-500', roles: SA_ },
-  { kind: 'item', id: 'laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-file-lines', color: 'text-indigo-500', roles: SA_ },
+  { kind: 'item', id: 'laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-file-lines', color: C_INDIGO, roles: SA_ },
 
   // ── School admin: first entry (admin-sekolah screenshot). Href INFERRED. ──
   { kind: 'item', id: 'sa-command-center', label: 'Command Center', to: '/admin-sekolah/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: SCH },
@@ -306,7 +309,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   { kind: 'subheading', id: 'sub-visi-ai', label: '✨ Visi & Pertandingan', cls: sub('text-indigo-600/80'), roles: AI_ALL },
   // Student only (murid screenshot); INFERRED href (same page as the "Profil Cerah" item below).
-  { kind: 'item', id: 'profil-cerah-ai', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: 'text-indigo-500', variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PURPLE_INFERRED }, roles: S },
+  { kind: 'item', id: 'profil-cerah-ai', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PURPLE_INFERRED }, roles: S },
   { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Leaderboard mingguan sekolah-sekolah Malaysia', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: AI_ALL },
   { kind: 'item', id: 'tetapan-peribadi', label: 'Tetapan Peribadi', to: '/tetapan', fa: 'fa-cog', color: 'text-slate-600', variant: 'ai', tip: 'Tetapan rohani, masa Subuh, mod Ramadan', roles: AI_ALL },
 
@@ -364,7 +367,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // in its account section instead, so they are sidebar-only (as the general ones).
   { kind: 'item', id: 't-profil-saya', label: 'Profil Saya', to: '/profile', fa: 'fa-id-card', color: 'text-emerald-600', surfaces: ['sidebar'], roles: T },
   { kind: 'item', id: 't-panduan', label: 'Panduan', to: '/panduan', fa: 'fa-book', color: 'text-indigo-400', surfaces: ['sidebar'], roles: T },
-  { kind: 'item', id: 't-analisis-item', label: 'Analisis Item', to: '/guru/analisis-item', fa: 'fa-chart-pie', color: 'text-indigo-500', roles: T },
+  { kind: 'item', id: 't-analisis-item', label: 'Analisis Item', to: '/guru/analisis-item', fa: 'fa-chart-pie', color: C_INDIGO, roles: T },
 
   // ── School admin (admin-sekolah screenshots, after Pusat AI … Kawalan Kualiti). Labels and order
   //    OBSERVED; hrefs INFERRED under `/admin-sekolah/` (only `/admin-sekolah` itself, the active
@@ -372,11 +375,11 @@ export const USER_NAV: readonly NavEntry[] = [
   //    INFERRED from the screenshot. ──
   { kind: 'section', id: 'sa-sec-harian', label: 'HARIAN', text: 'text-teal-700', rule: 'from-teal-300', roles: SCH },
   { kind: 'item', id: 'sa-dashboard', label: 'Dashboard', to: '/admin-sekolah', fa: 'fa-home', color: '', roles: SCH },
-  { kind: 'item', id: 'sa-senarai-pelajar', label: 'Senarai Pelajar', to: '/admin-sekolah/pelajar', fa: 'fa-user-graduate', color: 'text-indigo-500', roles: SCH },
+  { kind: 'item', id: 'sa-senarai-pelajar', label: 'Senarai Pelajar', to: '/admin-sekolah/pelajar', fa: 'fa-user-graduate', color: C_INDIGO, roles: SCH },
   { kind: 'item', id: 'sa-senarai-guru', label: 'Senarai Guru', to: '/admin-sekolah/guru', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: SCH },
   { kind: 'item', id: 'sa-kelas-sekolah', label: 'Kelas Sekolah', to: '/admin-sekolah/kelas', fa: 'fa-door-open', color: 'text-red-500', roles: SCH },
   { kind: 'section', id: 'sa-sec-pengurusan', label: 'PENGURUSAN', text: 'text-blue-700', rule: 'from-blue-300', roles: SCH },
-  { kind: 'item', id: 'sa-urus-pengguna', label: 'Urus Pengguna', to: '/admin-sekolah/pengguna', fa: 'fa-users', color: 'text-indigo-500', roles: SCH },
+  { kind: 'item', id: 'sa-urus-pengguna', label: 'Urus Pengguna', to: '/admin-sekolah/pengguna', fa: 'fa-users', color: C_INDIGO, roles: SCH },
   { kind: 'item', id: 'sa-import-pelajar', label: 'Import Pelajar', to: '/admin-sekolah/import-pelajar', fa: 'fa-file-import', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-aktiviti-guru', label: 'Aktiviti Guru', to: '/admin-sekolah/aktiviti-guru', fa: 'fa-users', color: 'text-teal-500', roles: SCH },
   { kind: 'item', id: 'sa-langganan', label: 'Langganan', to: '/admin-sekolah/langganan', fa: 'fa-file-contract', color: 'text-emerald-500', roles: SCH },
@@ -416,7 +419,7 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── ✨ Visi & Pertandingan ──
   { kind: 'section', id: 'sec-visi', label: '✨ Visi & Pertandingan', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SA_ },
-  { kind: 'item', id: 'profil-cerah', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: 'text-indigo-500', roles: SA_ },
+  { kind: 'item', id: 'profil-cerah', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, roles: SA_ },
   { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
   { kind: 'item', id: 'cita-cita-hijrah', label: 'Cita-Cita Hijrah', to: '/cita-cita', fa: 'fa-star', color: 'text-pink-500', roles: SA_ },
 
@@ -438,7 +441,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'soalan-by-chapter', label: 'Soalan by Chapter', to: '/practice/chapter', fa: 'fa-layer-group', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'soalan-berstruktur', label: 'Soalan Berstruktur', to: '/latihan-berstruktur', fa: 'fa-list-ol', color: 'text-cyan-500', roles: SA_ },
   { kind: 'item', id: 'kedudukan', label: 'Kedudukan', to: '/ranking', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
-  { kind: 'item', id: 'pksk', label: 'PKSK', to: '/pksk', fa: 'fa-shield-halved', color: 'text-indigo-500', badge: { text: 'PRO', cls: B_PRO }, roles: SA_ },
+  { kind: 'item', id: 'pksk', label: 'PKSK', to: '/pksk', fa: 'fa-shield-halved', color: C_INDIGO, badge: { text: 'PRO', cls: B_PRO }, roles: SA_ },
   { kind: 'item', id: 'artikel', label: 'Artikel', to: '/artikel', fa: 'fa-newspaper', color: 'text-pink-500', roles: SA_ },
   { kind: 'item', id: 'video', label: 'Video', to: '/video', fa: 'fa-play-circle', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'permainan', label: 'Permainan', to: '/permainan', fa: 'fa-gamepad', color: 'text-purple-500', badge: { text: '🎮', cls: B_GAME }, roles: SA_ },
@@ -458,7 +461,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'marketplace', label: 'Marketplace', to: '/marketplace', fa: 'fa-shopping-bag', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'papan-pendahulu', label: 'Papan Pendahulu', to: '/gamification/leaderboard', fa: 'fa-trophy', color: 'icon-trophy', roles: SA_ },
   { kind: 'item', id: 'pencapaian', label: 'Pencapaian', to: '/gamification/achievements', fa: 'fa-medal', color: 'text-purple-500', roles: SA_ },
-  { kind: 'item', id: 'kotak-misteri', label: 'Kotak Misteri', to: '/gamification/mystery-box', fa: 'fa-box-open', color: 'text-indigo-500', roles: SA_ },
+  { kind: 'item', id: 'kotak-misteri', label: 'Kotak Misteri', to: '/gamification/mystery-box', fa: 'fa-box-open', color: C_INDIGO, roles: SA_ },
   { kind: 'item', id: 'rujuk-kawan', label: 'Rujuk Kawan', to: '/gamification/referral', fa: 'fa-user-plus', color: 'text-green-500', roles: SA_ },
   { kind: 'item', id: 'cikgu-alesa', label: 'Cikgu Alesa', to: '/cikgu', fa: 'fa-robot', color: 'text-purple-500', badge: { text: 'AI', cls: B_AI }, roles: SA_ },
   // Student only (murid screenshot); label (with 🎁) and "DIGITAL" OBSERVED; href `/cikgu/hadiah` per L43 discovery
@@ -522,7 +525,7 @@ export const USER_NAV: readonly NavEntry[] = [
       { kind: 'item', id: 'kirk-intervensi', label: 'Intervensi', to: '/guru/kirkpatrick/interventions', fa: 'fa-hand-holding-medical', color: '' },
     ],
   },
-  { kind: 'item', id: 'guru-analisis-item', label: 'Analisis Item', to: '/guru/analisis-item', fa: 'fa-chart-pie', color: 'text-indigo-500', roles: A },
+  { kind: 'item', id: 'guru-analisis-item', label: 'Analisis Item', to: '/guru/analisis-item', fa: 'fa-chart-pie', color: C_INDIGO, roles: A },
   { kind: 'item', id: 'guru-perbandingan-kelas', label: 'Perbandingan Kelas', to: '/guru/perbandingan-kelas', fa: 'fa-balance-scale', color: 'text-purple-500', roles: A },
   { kind: 'item', id: 'guru-laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: A },
   { kind: 'section', id: 'sec-bank-soalan', label: 'BANK SOALAN', text: 'text-emerald-700', rule: 'from-emerald-300', roles: A },
@@ -541,7 +544,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },
   { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
-  { kind: 'item', id: 'dashboard-ppd', label: 'Dashboard PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: 'text-indigo-500', roles: ['admin', 'ppd_officer'] },
+  { kind: 'item', id: 'dashboard-ppd', label: 'Dashboard PPD', to: '/ppd/dashboard', fa: 'fa-building-columns', color: C_INDIGO, roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'statistik-ppd', label: 'Statistik PPD', to: '/ppd/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-violet-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'ranking-kebangsaan-ppd', label: 'Ranking Kebangsaan', to: '/ppd/ranking-kebangsaan', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },
   { kind: 'item', id: 'benchmark-sekolah', label: 'Benchmark Sekolah', to: '/ppd/benchmark-sekolah', fa: 'fa-ranking-star', color: 'text-amber-500', roles: ['admin', 'ppd_officer'] },

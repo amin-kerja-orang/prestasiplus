@@ -381,16 +381,14 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
                     >{{ crumb }} <span aria-hidden="true">/</span></span
                   >
-                  <p
-                    v-if="title && route.meta.ownsH1"
+                  <component
+                    :is="route.meta.ownsH1 ? 'p' : 'h1'"
+                    v-if="title"
                     class="truncate text-subheading text-highlighted"
-                    data-testid="shell-title"
+                    :data-testid="route.meta.ownsH1 ? 'shell-title' : undefined"
                   >
                     {{ title }}
-                  </p>
-                  <h1 v-else-if="title" class="truncate text-subheading text-highlighted">
-                    {{ title }}
-                  </h1>
+                  </component>
                 </div>
               </template>
               <template #right>

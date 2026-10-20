@@ -2480,7 +2480,7 @@
     "src/shells/admin/AdminServerStatus.vue": 6,
     "src/shells/admin/server-status.ts": 3,
     "src/shells/admin/useMinWidth.ts": 1,
-    "src/shells/nav/user-nav.ts": 319,
+    "src/shells/nav/user-nav.ts": 310,
     "src/shells/pembelajaran/PembelajaranLayout.vue": 7,
     "src/shells/pembelajaran/pembelajaran-nav.ts": 8,
     "src/shells/pentadbiran/PentadbiranLayout.vue": 3,
