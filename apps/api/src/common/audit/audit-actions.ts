@@ -35,5 +35,8 @@ export const AUDIT_ACTIONS = {
   QUESTION_DELETED: 'question.deleted',
   QUESTION_BULK_ACTION: 'question.bulk_action',
   QUESTION_STATUS_CHANGED: 'question.status.changed',
+  INTAKE_BATCH_CREATED: 'intake.batch_created',
+  INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
+  INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

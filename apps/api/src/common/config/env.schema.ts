@@ -95,6 +95,30 @@ export const EnvSchema = z.object({
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
+  // BE-37 (jobs, OCR, intake files). All optional: the code applies the defaults named in .env.api.example (PC-5 block).
+  /** true starts the in-process job worker tick; false (default) runs nothing in this process. */
+  JOBS_WORKER_ENABLED: z.enum(['true', 'false']).optional(),
+  JOBS_POLL_MS: z.coerce.number().int().min(100).max(60_000).optional(),
+  JOBS_CONCURRENCY: z.coerce.number().int().min(1).max(32).optional(),
+  JOBS_LOCK_TIMEOUT_MS: z.coerce.number().int().min(1000).max(3_600_000).optional(),
+  JOBS_BACKOFF_BASE_MS: z.coerce.number().int().min(100).max(600_000).optional(),
+  /** none = no OCR (scanned pages fail with OCR_UNAVAILABLE); tesseract needs OCR_LANG_DIR with msa and eng traineddata. */
+  OCR_ENGINE: z.enum(['none', 'tesseract']).optional(),
+  /** Empty = unset. When OCR_ENGINE=tesseract: an absolute folder with msa.traineddata and eng.traineddata. */
+  OCR_LANG_DIR: z.string().trim().optional(),
+  OCR_WORKERS: z.coerce.number().int().min(1).max(16).optional(),
+  OCR_PAGE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  OCR_INSPECT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  OCR_MAX_PAGES: z.coerce.number().int().min(1).max(2000).optional(),
+  OCR_MIN_TEXT_CHARS: z.coerce.number().int().min(0).max(10_000).optional(),
+  OCR_RENDER_DPI: z.coerce.number().int().min(72).max(400).optional(),
+  OCR_MAX_PIXELS: z.coerce.number().int().min(100_000).max(100_000_000).optional(),
+  OCR_WORKER_MEMORY_MB: z.coerce.number().int().min(64).max(4096).optional(),
+  INTAKE_MAX_FILES_PER_BATCH: z.coerce.number().int().min(1).max(50).optional(),
+  INTAKE_MAX_ACTIVE_BATCHES: z.coerce.number().int().min(1).max(100).optional(),
+  INTAKE_DAILY_PAGE_QUOTA: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
+  INTAKE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 

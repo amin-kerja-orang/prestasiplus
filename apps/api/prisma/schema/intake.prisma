@@ -1,0 +1,142 @@
+// Intake files and processing (BE-37): the question-paper submission (batch), its stored PDFs, pages,
+// figure crops, and the platform job table. Hand-written in migration 0020_ai_intake (identity columns,
+// text + CHECK enums, named constraints). BE-38 appends the item/workflow tables to this file.
+// NOT migratable: no .cloud data lands here, so there are no legacy_* columns and no entry in
+// migratable-models.json. `jobs` is a platform table and carries no migration state.
+
+model IntakeBatch {
+  id           BigInt    @id @default(autoincrement())
+  /// Uploader. Set null when the user is deleted (the batch stays for the audit trail).
+  ownerUserId  BigInt?   @map("owner_user_id")
+  /// submitted, processing, ready_for_review, failed, cancelled (check constraint).
+  status       String    @default("submitted")
+  /// trial, general, exam, exercise_book, other (check constraint).
+  paperType    String    @map("paper_type")
+  /// Subject code (upper-case, ^[A-Z0-9]{2,32}$). No FK to subjects yet (deferred).
+  subject      String
+  /// 1 or 2 (Kertas).
+  kertas       Int       @db.SmallInt
+  year         Int       @db.SmallInt
+  /// Source declaration text (max 200).
+  sourceText   String    @map("source_text")
+  /// own, official_lpm, third_party (the wire codes sendiri, rasmi, pihak-ketiga are mapped in the service).
+  rightsStatus String    @map("rights_status")
+  /// Uploader notes (max 1000). Never sent to an AI provider.
+  note         String?
+  /// Edited by Admin Pusat (max 1000; OQ3).
+  adminNotes   String?   @map("admin_notes")
+  statusReason String?   @map("status_reason")
+  /// Written while an admin is in Mod Pelajar (G-07).
+  isTest       Boolean   @default(false) @map("is_test")
+  submittedAt  DateTime? @map("submitted_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner User?        @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, map: "fk_intake_batches_owner_user_id")
+  files IntakeFile[]
+
+  @@index([ownerUserId, status], map: "ix_intake_batches_owner_user_id_status")
+  @@index([status, createdAt], map: "ix_intake_batches_status_created_at")
+  @@map("intake_batches")
+}
+
+model IntakeFile {
+  id           BigInt   @id @default(autoincrement())
+  batchId      BigInt   @map("batch_id")
+  /// The stored original (purpose intake_original). RESTRICT: a file in use cannot be deleted.
+  fileId       BigInt   @map("file_id")
+  /// Sanitised client name (basename only, max 255). Never used for storage keys.
+  originalName String   @map("original_name")
+  /// SHA-256 (hex) of the original; duplicate detection across batches. Never in a response.
+  sha256       String
+  sizeBytes    BigInt   @map("size_bytes")
+  pageCount    Int?     @map("page_count")
+  /// uploaded, processing, done, failed, cancelled (check constraint).
+  status       String   @default("uploaded")
+  /// ENCRYPTED, CORRUPT, TOO_MANY_PAGES, TOO_COMPLEX, OCR_TIMEOUT, OCR_FAILED, OCR_UNAVAILABLE, RENDER_FAILED, CANCELLED.
+  errorCode    String?  @map("error_code")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batch IntakeBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "fk_intake_files_batch_id")
+  file  File         @relation("IntakeFileOriginal", fields: [fileId], references: [id], onDelete: Restrict, map: "fk_intake_files_file_id")
+  pages IntakePage[]
+
+  @@index([sha256], map: "ix_intake_files_sha256")
+  @@index([batchId], map: "ix_intake_files_batch_id")
+  @@map("intake_files")
+}
+
+model IntakePage {
+  id            BigInt   @id @default(autoincrement())
+  intakeFileId  BigInt   @map("intake_file_id")
+  pageNo        Int      @map("page_no")
+  imageFileId   BigInt?  @map("image_file_id")
+  thumbFileId   BigInt?  @map("thumb_file_id")
+  /// Pixels of the stored page image.
+  width         Int?
+  height        Int?
+  text          String?
+  /// text_layer or ocr (wire: text-layer | ocr).
+  textSource    String?  @map("text_source")
+  ocrConfidence Decimal? @map("ocr_confidence") @db.Decimal(5, 2)
+  hasTextLayer  Boolean  @default(false) @map("has_text_layer")
+  /// pending, not_needed, done, failed (check constraint).
+  ocrStatus     String   @default("pending") @map("ocr_status")
+  /// TextBlock[] ({ text, bbox fractions, confidence }).
+  ocrBlocks     Json?    @map("ocr_blocks")
+  errorCode     String?  @map("error_code")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  intakeFile IntakeFile     @relation(fields: [intakeFileId], references: [id], onDelete: Cascade, map: "fk_intake_pages_intake_file_id")
+  imageFile  File?          @relation("IntakePageImage", fields: [imageFileId], references: [id], onDelete: SetNull, map: "fk_intake_pages_image_file_id")
+  thumbFile  File?          @relation("IntakePageThumb", fields: [thumbFileId], references: [id], onDelete: SetNull, map: "fk_intake_pages_thumb_file_id")
+  figures    IntakeFigure[]
+
+  @@unique([intakeFileId, pageNo], map: "uq_intake_pages_intake_file_id_page_no")
+  @@map("intake_pages")
+}
+
+model IntakeFigure {
+  id                BigInt   @id @default(autoincrement())
+  intakePageId      BigInt   @map("intake_page_id")
+  /// { x, y, w, h } as page fractions 0..1.
+  bbox              Json
+  cropFileId        BigInt?  @map("crop_file_id")
+  altTextSuggestion String?  @map("alt_text_suggestion")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  intakePage IntakePage @relation(fields: [intakePageId], references: [id], onDelete: Cascade, map: "fk_intake_figures_intake_page_id")
+  cropFile   File?      @relation("IntakeFigureCrop", fields: [cropFileId], references: [id], onDelete: SetNull, map: "fk_intake_figures_crop_file_id")
+
+  @@index([intakePageId], map: "ix_intake_figures_intake_page_id")
+  @@map("intake_figures")
+}
+
+/// Platform job table (durable background jobs; FOR UPDATE SKIP LOCKED claim). Payload holds small ids only.
+model Job {
+  id             BigInt    @id @default(autoincrement())
+  /// ^[a-z][a-z0-9_.]{1,63}$, e.g. intake.process_file.
+  type           String
+  entityType     String?   @map("entity_type")
+  entityId       String?   @map("entity_id")
+  payload        Json?
+  /// queued, running, succeeded, failed, cancelled (check constraint).
+  state          String    @default("queued")
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3) @map("max_attempts")
+  runAfter       DateTime  @default(now()) @map("run_after") @db.Timestamptz(6)
+  idempotencyKey String    @unique(map: "uq_jobs_idempotency_key") @map("idempotency_key")
+  lockedAt       DateTime? @map("locked_at") @db.Timestamptz(6)
+  lockedBy       String?   @map("locked_by")
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz(6)
+  errorCode      String?   @map("error_code")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([entityType, entityId], map: "ix_jobs_entity_type_entity_id")
+  // The partial index ix_jobs_queued (run_after) WHERE state = 'queued' exists only in the migration.
+  @@map("jobs")
+}

@@ -687,12 +687,26 @@ describe('OpenAPI registration', () => {
   const withId = ROUTES.filter(([, p]) => p.includes('{id}'))
   const withBody = ROUTES.filter(([m, p]) => op(m, p).requestBody !== undefined)
 
+  const BE37_ROUTES = new Set([
+    'post /intake/batches',
+    'get /intake/batches',
+    'get /intake/batches/{id}',
+    'post /intake/batches/{id}/files',
+    'post /intake/batches/{id}/cancel',
+    'get /intake/files/{id}/pages',
+    'get /intake/files/{id}/pages/{n}/image',
+    'get /intake/files/{id}/pages/{n}/thumb',
+    'get /intake/figures/{id}/image',
+    'get /intake/files/{id}/original',
+  ])
+
   it('registers the 13 routes and no other /intake route', () => {
     expect(ROUTES).toHaveLength(13)
     for (const [m, p] of ROUTES) expect(doc.paths[p]?.[m], `${m} ${p}`).toBeDefined()
     const registered = Object.entries(doc.paths)
       .filter(([p]) => p.startsWith('/intake'))
       .flatMap(([p, ops]) => Object.keys(ops).map((m) => `${m} ${p}`))
+      .filter((r) => !BE37_ROUTES.has(r)) // BE-37 routes are covered by files.test.ts
       .sort()
     expect(registered).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort())
   })
