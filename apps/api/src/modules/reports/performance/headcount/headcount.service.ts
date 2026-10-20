@@ -229,9 +229,14 @@ export class HeadcountService {
       now: this.clock.now(),
     }
     const duplicate = (): ApiError => ApiError.of('CONFLICT', { message: MSG.duplicate[row.mode] })
-    if (await this.repo.duplicateOf(row)) throw duplicate()
     try {
-      return { id: await this.repo.createConfig(row) }
+      // The key lock serialises this with a concurrent create or auto-setup of the same (class, subject, year);
+      // the unique index stays the backstop for the same mode.
+      return await this.prisma.transaction(async () => {
+        await this.repo.lockConfigKey(row.classroomId, row.subjectId, row.academicYear)
+        if (await this.repo.duplicateOf(row)) throw duplicate()
+        return { id: await this.repo.createConfig(row) }
+      })
     } catch (err) {
       // A concurrent twin won the unique index.
       if (isUniqueViolation(err)) throw duplicate()
@@ -262,25 +267,36 @@ export class HeadcountService {
     if (classes.length === 0) return { created: 0 }
     const year = this.currentYear()
     const now = this.clock.now()
-    const existing = new Set(
-      (await this.repo.configsOfClassrooms(classes.map((c) => c.id)))
-        .filter((c) => c.academicYear === year)
-        .map((c) => `${c.classroomId}:${c.subjectId}`),
-    )
-    const rows: NewHeadcountConfig[] = classes
-      .filter((c) => !existing.has(`${c.id}:${c.subjectId as string}`))
-      .map((c) => ({
-        teacherId: ctx.userId,
-        classroomId: c.id,
-        subjectId: c.subjectId as string,
-        educationLevelId: bySlug.get(c.levelSlug) as string,
-        academicYear: year,
-        activeOtrs: 3,
-        mode: 'auto' as const,
-        now,
-      }))
-    // ON CONFLICT DO NOTHING: a concurrent run or a create of the same Auto config yields exactly one row.
-    return { created: await this.prisma.transaction(() => this.repo.createConfigsIfAbsent(rows)) }
+    // Under the per-(class, subject, year) locks (sorted, so two runs cannot deadlock) the existence read is final: a
+    // concurrent manual or auto create of the same key is either already committed here or waits for this run.
+    return {
+      created: await this.prisma.transaction(async () => {
+        const keys = [...new Set(classes.map((c) => `${c.id}:${c.subjectId as string}`))].sort()
+        for (const key of keys) {
+          const [classroomId, subjectId] = key.split(':') as [string, string]
+          await this.repo.lockConfigKey(classroomId, subjectId, year)
+        }
+        const existing = new Set(
+          (await this.repo.configsOfClassrooms(classes.map((c) => c.id)))
+            .filter((c) => c.academicYear === year)
+            .map((c) => `${c.classroomId}:${c.subjectId}`),
+        )
+        const rows: NewHeadcountConfig[] = classes
+          .filter((c) => !existing.has(`${c.id}:${c.subjectId as string}`))
+          .map((c) => ({
+            teacherId: ctx.userId,
+            classroomId: c.id,
+            subjectId: c.subjectId as string,
+            educationLevelId: bySlug.get(c.levelSlug) as string,
+            academicYear: year,
+            activeOtrs: 3,
+            mode: 'auto' as const,
+            now,
+          }))
+        // ON CONFLICT DO NOTHING stays as the backstop for the unique index.
+        return this.repo.createConfigsIfAbsent(rows)
+      }),
+    }
   }
 
   async dropStudents(ctx: Ctx, id: string, body: unknown): Promise<{ updated: number }> {

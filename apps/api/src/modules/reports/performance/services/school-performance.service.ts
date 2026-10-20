@@ -91,10 +91,27 @@ export class SchoolPerformanceService {
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
+  /** Per-request memo: a `Ctx` object lives for one request, so a scope is read from the database once per request however many of school(), levels() and level() run with it. */
+  private readonly memo = new WeakMap<Ctx, Map<string, Promise<HeadcountEntryView[]>>>()
+
   /** Live headcount entries of the view scope; [] without the reader or a scope. */
-  private async entriesOf(scope: ViewScope): Promise<HeadcountEntryView[]> {
-    if (!this.facts || scope.kind === 'none') return []
-    return liveEntries(await this.facts.entriesInScope(scope.kind === 'platform' ? { kind: 'platform' } : { kind: 'school', schoolId: scope.schoolId }))
+  private entriesOf(ctx: Ctx, scope: ViewScope): Promise<HeadcountEntryView[]> {
+    const facts = this.facts
+    if (!facts || scope.kind === 'none') return Promise.resolve([])
+    const key = scope.kind === 'platform' ? 'platform' : `school:${scope.schoolId}`
+    const perCtx = this.memo.get(ctx) ?? new Map<string, Promise<HeadcountEntryView[]>>()
+    this.memo.set(ctx, perCtx)
+    let hit = perCtx.get(key)
+    if (!hit) {
+      const loaded = facts
+        .entriesInScope(scope.kind === 'platform' ? { kind: 'platform' } : { kind: 'school', schoolId: scope.schoolId })
+        .then(liveEntries)
+      perCtx.set(key, loaded)
+      // A failed read is not kept: a later call with the same ctx tries again.
+      loaded.catch(() => perCtx.delete(key))
+      hit = loaded
+    }
+    return hit
   }
 
   private query(scope: ViewScope): BijakSittingQuery {
@@ -142,7 +159,7 @@ export class SchoolPerformanceService {
       subjectRows = await this.ports.bijak.totals(q, 'subject')
     }
 
-    const entries = await this.entriesOf(scope)
+    const entries = await this.entriesOf(ctx, scope)
     const levelSums = LEVEL_CODES.map((code) => {
       const lc = fr.classes.filter((c) => c.levelSlug === code)
       const ids = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))]
@@ -312,7 +329,7 @@ export class SchoolPerformanceService {
     const total = !visible ? { sessions: 0, accuracy: 0 } : shown(ctx, sumOf(students, fr.byUser))
 
     const classIds = new Set(lc.filter((c) => c.kind === 'classroom').map((c) => c.id))
-    const levelEntries = (await this.entriesOf(viewScope(ctx))).filter((e) => classIds.has(e.classroomId))
+    const levelEntries = (await this.entriesOf(ctx, viewScope(ctx))).filter((e) => classIds.has(e.classroomId))
     // Non-staff: the same remainder rule as for the practice figures, over the pupils holding headcount entries.
     const hcVisible =
       visible &&

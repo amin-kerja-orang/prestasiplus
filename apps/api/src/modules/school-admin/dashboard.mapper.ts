@@ -1,5 +1,6 @@
 import type { SchoolAdminDashboard } from '@pp/contract'
 
+import { gradeOfPoints } from '../reports/performance/services/headcount-figures'
 import { K_COHORT } from './school-admin.constants'
 import type { SchoolPerformanceView } from './school-admin.ports'
 
@@ -16,7 +17,8 @@ const LEVELS = [
  * k-cohort suppression (BE-19 OQ-7): a group of fewer than `K_COHORT` pupils is shown as empty, the school admin included.
  * No pupil name is ever on this block.
  *
- * The whole `gps` block is always neutral (null): the GPS comes from SPM grades, not Bijak marks, and BE-19 will not fill it. A future SPM card wires an `SpmGradesPort` here without a shape change. `risk` stays
+ * `gps` is BE-19's headcount GPS (value, band, entries; the k = 5 rule is already applied there and the school admin counts as staff). The grade is
+ * derived with the same `gradeOfPoints` helper the service uses. No GPS is null with 0 entries. `risk` stays
  * null (the panel is hidden): the Amaran Awal tally belongs to the M18 routes, which are outside this slice.
  */
 export function performanceBlock(view: SchoolPerformanceView): Performance {
@@ -28,7 +30,10 @@ export function performanceBlock(view: SchoolPerformanceView): Performance {
   )
 
   return {
-    gps: { value: null, grade: null, band: null, entries: 0 },
+    gps:
+      view.gps.value === null
+        ? { value: null, grade: null, band: null, entries: 0 }
+        : { value: view.gps.value, grade: gradeOfPoints(view.gps.value), band: view.gps.band, entries: view.gps.entries },
     risk: null,
     practice: {
       accuracy: sessions === 0 ? null : view.stats.accuracy,

@@ -159,8 +159,17 @@ describe('timeline upload: multer failures become the contract 422', () => {
     expect(fieldsOf422(new BadRequestException('Unexpected field'))).toEqual({ photos: MSG.photosRequired })
   })
 
-  it('maps a text field over its limit to the story message', () => {
-    expect(fieldsOf422(new BadRequestException('Field value too long'))).toEqual({ story: MSG.storyTooLong })
+  it('maps a text field over its limit by the actual field name, with the contract copy', () => {
+    expect(fieldsOf422(new BadRequestException('Field value too long - story'))).toEqual({ story: MSG.storyTooLong })
+    expect(fieldsOf422(new BadRequestException('Field value too long - title'))).toEqual({ title: MSG.titleTooLong })
+    expect(fieldsOf422(new BadRequestException('Field value too long - eventDate'))).toEqual({ eventDate: MSG.dateInvalid })
+    expect(fieldsOf422(new BadRequestException('Field value too long - category'))).toEqual({ category: MSG.categoryInvalid })
+    expect(Object.keys(fieldsOf422(new BadRequestException('Field value too long - captions[2]')) ?? {})).toEqual(['captions[2]'])
+  })
+
+  it('a too-long value of an unknown or unnamed field is the generic photos error, never the story message', () => {
+    expect(fieldsOf422(new BadRequestException('Field value too long - nonsense'))).toEqual({ photos: MSG.photosRequired })
+    expect(fieldsOf422(new BadRequestException('Field value too long'))).toEqual({ photos: MSG.photosRequired })
   })
 
   it('leaves other errors alone', () => {

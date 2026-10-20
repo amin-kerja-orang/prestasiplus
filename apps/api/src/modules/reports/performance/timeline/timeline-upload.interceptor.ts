@@ -42,6 +42,26 @@ export const TIMELINE_MAX_BODY_BYTES =
 /** Uploads one user may have in flight at once (memory bound: this x 10 MB). */
 export const TIMELINE_INFLIGHT_PER_USER = 2
 
+/** Contract copy has none for a caption; captions are cut at 200 characters, so this only fires for a body far over that (limit: 8192 bytes). */
+const CAPTION_TOO_LONG = 'Kapsyen terlalu panjang (maks 200 aksara).'
+
+/**
+ * Nest appends the offending part name to multer's message ("Field value too long - <name>"). The error is keyed by that
+ * name with the contract's copy; a name the form does not use (or none) is the generic "no usable photo set" error.
+ */
+function tooLongFieldError(name: string | undefined): ApiError {
+  const key = name?.trim() ?? ''
+  const copy: Record<string, string> = {
+    title: MSG.titleTooLong,
+    story: MSG.storyTooLong,
+    category: MSG.categoryInvalid,
+    eventDate: MSG.dateInvalid,
+  }
+  const message = copy[key] ?? (/^captions(\[\d{1,2}\]|\.\d{1,2})?$/.test(key) ? CAPTION_TOO_LONG : undefined)
+  if (message === undefined) return ApiError.of('VALIDATION_ERROR', { fields: { photos: MSG.photosRequired }, message: MSG.photosRequired })
+  return ApiError.of('VALIDATION_ERROR', { fields: { [key]: message }, message })
+}
+
 /** Maps a multer failure to the contract's 422 `fields.photos` / `fields.story`. Exported for the unit test. */
 export function multerFailureToApiError(err: unknown): ApiError | null {
   if (err instanceof PayloadTooLargeException) {
@@ -49,9 +69,8 @@ export function multerFailureToApiError(err: unknown): ApiError | null {
   }
   if (err instanceof BadRequestException) {
     const message = err.message
-    if (/field value too long/i.test(message)) {
-      return ApiError.of('VALIDATION_ERROR', { fields: { story: MSG.storyTooLong }, message: MSG.storyTooLong })
-    }
+    const tooLong = /^field value too long(?: - (.*))?$/i.exec(message)
+    if (tooLong) return tooLongFieldError(tooLong[1])
     // too many files / parts / fields, a file in the wrong part, a malformed body: no usable photo set.
     return ApiError.of('VALIDATION_ERROR', { fields: { photos: MSG.photosRequired }, message: MSG.photosRequired })
   }

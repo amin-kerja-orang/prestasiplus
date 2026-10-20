@@ -50,6 +50,28 @@ describe('privacy 13: concurrent writes keep the unique key', () => {
     expect(await count(`select 1 from headcount_configs where classroom_id = $1 and academic_year = $2`, [w.classId2, year])).toBeLessThanOrEqual(1)
   })
 
+  it('a manual create racing auto-setup runs under the (class, subject, year) lock: auto-setup never adds a second config next to a manual one that won', async () => {
+    const year = 2026
+    await w.db.query(`delete from headcount_configs where classroom_id = $1 and academic_year = $2`, [w.classId, year])
+    const manual = guru.post('/api/headcounts', {
+      classroomId: w.classId,
+      subjectId: w.subjectId,
+      educationLevelId: w.levelId,
+      academicYear: year,
+      activeOtrs: 3,
+      mode: 'manual',
+    })
+    const setups = Array.from({ length: 3 }, () => guru.post('/api/headcounts/auto-setup', { levels: ['T4'] }))
+    const results = await Promise.all([manual, ...setups])
+    for (const r of results) expect([200, 201, 409], JSON.stringify(r.body)).toContain(r.status)
+    expect(results[0]?.status).toBe(201)
+    const modes = (await w.db.query<{ mode: string }>(`select mode from headcount_configs where classroom_id = $1 and subject_id = $2 and academic_year = $3 order by mode`, [w.classId, w.subjectId, year])).map((r) => r.mode)
+    // Serial outcomes only: manual alone, or auto first and then manual. Never two autos, never two manuals.
+    expect(['manual'], modes.join()).toContain(modes.at(-1))
+    expect(modes.filter((m) => m === 'auto').length).toBeLessThanOrEqual(1)
+    expect(modes.filter((m) => m === 'manual')).toHaveLength(1)
+  })
+
   it('concurrent drops of the same pupil leave one entry', async () => {
     const created = await guru.post('/api/headcounts', {
       classroomId: w.classId,

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type {
   GamificationBadge,
@@ -23,7 +23,15 @@ const FALLBACK_TIER: GamificationTier = { key: '', name: '', emoji: '', ordinal:
  */
 @Injectable()
 export class PerformanceGamificationAdapter implements GamificationReadPort {
+  private readonly logger = new Logger(PerformanceGamificationAdapter.name)
+
   constructor(@Inject(GamificationRepository) private readonly repo: GamificationRepository) {}
+
+  /** Log the failure without PII (error name and code only, never the message, which may carry values). */
+  private logFailure(what: string, err: unknown): void {
+    const e = err as { name?: unknown; code?: unknown } | null
+    this.logger.error(`${what} failed: ${typeof e?.name === 'string' ? e.name : 'Error'}${typeof e?.code === 'string' ? ` ${e.code}` : ''}`)
+  }
 
   async profile(userId: string): Promise<GamificationProfile | null> {
     return (await this.profiles([userId])).get(userId) ?? null
@@ -33,8 +41,18 @@ export class PerformanceGamificationAdapter implements GamificationReadPort {
     const out = new Map<string, GamificationProfile>()
     const unique = [...new Set(userIds)]
     if (unique.length === 0) return out
-    const db = this.repo.handle()
-    const [tiers, wallets, streaks] = await Promise.all([this.repo.tiers(db), this.repo.levelsOf(db, unique), this.repo.streaksOf(db, unique)])
+    let tiers: TierRecord[]
+    let wallets: Awaited<ReturnType<GamificationRepository['levelsOf']>>
+    let streaks: Awaited<ReturnType<GamificationRepository['streaksOf']>>
+    try {
+      const db = this.repo.handle()
+      ;[tiers, wallets, streaks] = await Promise.all([this.repo.tiers(db), this.repo.levelsOf(db, unique), this.repo.streaksOf(db, unique)])
+    } catch (err) {
+      // Documented fallback: syiling 0, level 1, ordinal 1, no streak. A read failure must not turn a report into a 500.
+      this.logFailure('gamification profiles read', err)
+      for (const id of unique) out.set(id, { userId: id, syiling: 0, level: 1, tier: FALLBACK_TIER, streak: { current: 0, best: 0 } })
+      return out
+    }
     const active = tiers.filter((t) => t.isActive).sort((a, b) => a.minSyiling - b.minSyiling || a.sortOrder - b.sortOrder)
     for (const id of unique) {
       const w = wallets.get(id) ?? { level: 1, syiling: 0, tierId: null }
@@ -45,7 +63,12 @@ export class PerformanceGamificationAdapter implements GamificationReadPort {
   }
 
   async badges(userId: string): Promise<GamificationBadge[]> {
-    return this.repo.badgesOf(this.repo.handle(), userId)
+    try {
+      return await this.repo.badgesOf(this.repo.handle(), userId)
+    } catch (err) {
+      this.logFailure('gamification badges read', err)
+      return []
+    }
   }
 
   private tierOf(all: TierRecord[], active: TierRecord[], tierId: string | null, syiling: number): GamificationTier {

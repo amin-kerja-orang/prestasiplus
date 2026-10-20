@@ -166,6 +166,15 @@ export class HeadcountRepository {
     return (await this.db.headcountConfig.count({ where: { classroomId: c, subjectId: s, academicYear: input.academicYear, mode: input.mode } })) > 0
   }
 
+  /**
+   * Transaction-scoped advisory lock on (class, subject, year), any mode. Taken by the create and auto-setup paths before
+   * their existence checks, so a manual create and an auto-setup of the same key run one after the other (a read check alone
+   * lets both pass). Must be called inside `prisma.transaction`; callers lock several keys in sorted order (no deadlock).
+   */
+  async lockConfigKey(classroomId: string, subjectId: string, academicYear: number): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`headcount-config:${classroomId}:${subjectId}:${String(academicYear)}`}, 0))`
+  }
+
   /** Same class, subject and year in any mode (auto-setup, BR-M08-21). */
   async existsForClass(classroomId: string, subjectId: string, academicYear: number): Promise<boolean> {
     const c = idOf(classroomId)

@@ -1,5 +1,5 @@
 import { PerformanceClassDashboardSchema, PerformanceLevelDetailSchema, PerformanceSchoolSchema, PerformanceStudentSchema } from '@pp/contract'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ctxOf, sitting, world, type World } from '../fakes/fixtures'
 import { entry } from '../fakes/in-memory-headcount-facts'
@@ -100,6 +100,18 @@ describe('Class dashboard: headcount block', () => {
     PerformanceClassDashboardSchema.parse(r)
   })
 
+  it('a teacher sees only the own configs: a co-teacher\'s newer config of the same class neither replaces the block nor the badges', async () => {
+    w.facts.add(
+      entry({ studentId: '1', configId: '8', teacherId: 't2', configUpdatedAt: new Date('2026-10-01T10:00:00+08:00'), targets: [null, 80], actuals: [null, 10] }),
+    )
+    const own = await w.klass.classDashboard(teacher, '10')
+    expect(own.headcount).toMatchObject({ configId: '1', onTrack: 2, below: 3, noData: 1 })
+    expect(own.ranking.find((x) => x.userId === '1')?.headcount).toBe('on')
+    // Staff read the newest config of the class, whoever made it.
+    const staff = await w.klass.classDashboard(schoolAdmin, '10')
+    expect(staff.headcount?.configId).toBe('8')
+  })
+
   it('ranking rows carry the pupil badge; a class without entries has no block', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
     expect(r.headcount).toMatchObject({ onTrack: 2, below: 3, noData: 1 })
@@ -127,6 +139,17 @@ describe('School: GPS, distribution, subjects and teachers', () => {
     ])
     expect(r.teachers[0]).toMatchObject({ userId: 't1', onTrack: 2, below: 3 })
     PerformanceSchoolSchema.parse(r)
+  })
+
+  it('the same scope is read once per request (the Ctx object), a new request reads again', async () => {
+    const spy = vi.spyOn(w.facts, 'entriesInScope')
+    const ctx = ctxOf('school_admin', 'sa1')
+    await w.school.school(ctx)
+    await w.school.level(ctx, 't4')
+    await w.school.level(ctx, 't5')
+    expect(spy).toHaveBeenCalledTimes(1)
+    await w.school.school(ctxOf('school_admin', 'sa1'))
+    expect(spy).toHaveBeenCalledTimes(2)
   })
 
   it('platform scope reads every school', async () => {

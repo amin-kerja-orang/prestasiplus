@@ -44,14 +44,18 @@ export class ClassPerformanceService {
   /**
    * The newest config of the class (BR-M08-08 rule 2): above and on track both read "on"; members without a live entry are
    * "no data"; dropped pupils are left out. Null when the class has no entries (the config is then not visible to this reader).
+   * The k = 5 cohort rule is deliberately not applied here: the viewers are the admin, the owner teacher and the school admin (all staff).
+   * Teacher: own configs only (teacherId = the viewer).
    */
   private async headcountBlock(
+    ctx: Ctx,
     classId: string,
     members: readonly string[],
   ): Promise<{ block: PerformanceClassDashboard['headcount']; badges: Map<string, 'on' | 'below' | 'na'> }> {
     const badges = new Map<string, 'on' | 'below' | 'na'>()
     if (!this.facts) return { block: null, badges }
-    const all = await this.facts.entriesOfClasses([classId])
+    // A teacher sees only the own configs: a co-teaching colleague's newest config of the same class must not stand in for it.
+    const all = (await this.facts.entriesOfClasses([classId])).filter((e) => ctx.role !== 'teacher' || e.teacherId === ctx.userId)
     const configId = newestConfigId(all.filter((e) => e.classroomId === classId))
     if (configId === null) return { block: null, badges }
     const ofConfig = all.filter((e) => e.configId === configId)
@@ -135,7 +139,7 @@ export class ClassPerformanceService {
         }
       })
 
-    const hc = await this.headcountBlock(cls.id, members)
+    const hc = await this.headcountBlock(ctx, cls.id, members)
     const names = await nameMap(this.directory, members)
     const nameOf = (id: string): string => names.get(id) ?? ''
     // Accuracy descending (uncapped for the order), ties by user id; members without graded marks last.
