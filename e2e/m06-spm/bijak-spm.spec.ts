@@ -42,7 +42,7 @@ async function startPaper(
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
 }
 
-test.describe('Bijak SPM', () => {
+test.describe('Bijak SPM @bijak', () => {
   test('hub from SPM, stimulus group with pinned Rajah, submit and per-point result', async ({
     page,
     loginAs,
