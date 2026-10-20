@@ -4,7 +4,9 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
+import { PracticeModule } from '../practice'
 import { UsersModule } from '../users'
+import { PkskPracticeAdapter } from './practice.adapter'
 import { PkskAccessRepository } from './pksk-access.repository'
 import { PkskAccessService } from './pksk-access.service'
 import { PkskAdminAccessController, PkskAdminQuestionsController, PkskPackagesController } from './pksk-admin.controller'
@@ -20,7 +22,6 @@ import {
   PKSK_QUESTIONS_PORT,
   PKSK_SHUFFLE,
   PKSK_SUBSCRIPTION_PORT,
-  UnavailablePkskPractice,
   UnavailablePkskQuestions,
   type Shuffle,
 } from './ports'
@@ -39,12 +40,12 @@ export const shuffleCopy: Shuffle = <T>(items: readonly T[]): T[] => {
  * PKSK (M07, BE-42): the learner area, the PKSK question bank screens, the access grants and the packages.
  * Exports `PkskAccessService` (the level gate) for other modules.
  *
- * Three seams are provided with FAIL-CLOSED defaults until their owners offer the methods (see ports.ts and the BE-42
- * report): the PKSK questions of BE-09, the direct practice completion of BE-12 and the PKSK subscription flag of
- * BE-25. When an owner lands its adapter, only the `useClass` of that provider below changes.
+ * Seams: the practice completion is the real BE-12 adapter. The PKSK questions (BE-09) and the PKSK subscription flag
+ * (BE-25) keep FAIL-CLOSED defaults (see ports.ts and the BE-42 report); when an owner lands its adapter, only the
+ * `useClass` of that provider below changes.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, UsersModule],
+  imports: [AuditModule, ThrottleModule, UsersModule, PracticeModule],
   controllers: [PkskStudentController, PkskAdminQuestionsController, PkskAdminAccessController, PkskPackagesController],
   providers: [
     PkskDomainsRepository,
@@ -55,7 +56,7 @@ export const shuffleCopy: Shuffle = <T>(items: readonly T[]): T[] => {
     PkskAdminAccessService,
     PkskAdminQuestionsService,
     { provide: PKSK_QUESTIONS_PORT, useClass: UnavailablePkskQuestions },
-    { provide: PKSK_PRACTICE_PORT, useClass: UnavailablePkskPractice },
+    { provide: PKSK_PRACTICE_PORT, useClass: PkskPracticeAdapter },
     { provide: PKSK_SUBSCRIPTION_PORT, useClass: NoPkskSubscription },
     { provide: PKSK_SHUFFLE, useValue: shuffleCopy },
   ],
