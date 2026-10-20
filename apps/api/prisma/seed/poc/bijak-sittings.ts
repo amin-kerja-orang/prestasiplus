@@ -21,7 +21,7 @@
  * a demo seed must not move balances, so no ledger row is written (`attempt_results.coins/points` keep their display
  * values).
  *
- * Item analysis: PoC options are ids like `mat1-pecahan-v1-o3`, not letters, so the BE-19/BE-20 item analysis ignores them. A second demo paper ("Latihan Demo Matematik Bank Soalan (Contoh)", the published BE-09 seed MCQ SEED-MCQ-MATH-T4 and -T5, marks pinned as publish does) is therefore sat by 6 pupils, marked through the BE-09 bridge (`Be09BijakQuestionSource`) with lettered options. Needs the questions seed before this one.
+ * Item analysis: PoC options are ids like `mat1-pecahan-v1-o3`, not letters, so the BE-19/BE-20 item analysis ignores them. A second demo paper ("Latihan Demo Matematik Bank Soalan (Contoh)", the published BE-09 seed MCQ SEED-MCQ-MATH-T4 and -T5 plus 4 fictitious DEMO-BIJAK-MCQ-1..4 written by this seed, marks pinned as publish does) is therefore sat by 6 pupils, marked through the BE-09 bridge (`Be09BijakQuestionSource`) with lettered options. Needs the questions seed before this one.
  *
  * Idempotent: the sitting id is a deterministic uuid of (pupil, paper, mode), an existing sitting is left alone and the
  * aggregate insert is `ON CONFLICT DO NOTHING`. Deterministic: randomness from `ctx.prng`, time from `ctx.clock`.
@@ -147,6 +147,8 @@ interface Target {
   plans: readonly Sitting[]
   /** Chance that a question is left blank. */
   blank: number
+  /** Right-answer factor per question (paper order); missing = 1. */
+  hardness?: readonly number[]
 }
 
 const correctOf = (bundles: Bundles, qid: string): string => (bundles.get(qid)?.schemes[qid] as { correct?: string } | undefined)?.correct as string
@@ -181,7 +183,7 @@ async function writeSittings(ctx: SeedContext, pupils: Map<string, bigint>, aggr
       const correct = correctOf(t.bundles, qid)
       const roll = rng.next()
       if (roll < t.blank) continue // left blank
-      const right = roll < t.blank + plan.skill * (1 - t.blank)
+      const right = roll < t.blank + Math.min(0.98, plan.skill * (t.hardness?.[i] ?? 1)) * (1 - t.blank)
       const options = (t.bundles.get(qid)?.question.mcq?.options ?? []).map((o) => o.id)
       const wrongPick = rng.next() < 0.6 ? (popular.get(qid) as string) : rng.pick(options.filter((id) => id !== correct))
       answers.set(qid, { choice: right ? correct : wrongPick })
@@ -270,16 +272,95 @@ export const BIJAK_BANK_SITTINGS: readonly Sitting[] = [
   { email: 'murid7@demo.test', mode: 'exam', skill: 0.35, daysAgo: 7 },
   { email: 'murid8@demo.test', mode: 'exam', skill: 0.2, daysAgo: 9 },
 ]
-
 /** Demo paper on published BE-09 bank questions (lettered options): the item analysis reads these. */
 export const BANK_PAPER_TITLE = 'Latihan Demo Matematik Bank Soalan (Contoh)'
-export const BANK_QUESTION_LABELS = ['SEED-MCQ-MATH-T4', 'SEED-MCQ-MATH-T5'] as const
 
-async function ensureBankPaper(
-  ctx: SeedContext,
-  subjectId: bigint,
-): Promise<{ id: bigint; title: string; kertas: number; paperCode: string | null; printedDurationMin: number; sectionId: bigint; questions: { id: bigint; versionNo: number }[] }> {
+interface DemoMcq {
+  ref: string
+  level: 'T4' | 'T5'
+  stem: string
+  options: [string, string, string, string]
+  correct: 'A' | 'B' | 'C' | 'D'
+}
+
+/** Fictitious Matematik MCQ added by this seed (the BE-09 seed is not touched). Natural key: `number_label`. */
+export const DEMO_BANK_QUESTIONS: readonly DemoMcq[] = [
+  { ref: 'DEMO-BIJAK-MCQ-1', level: 'T4', stem: 'Selesaikan 2x + 5 = 17.', options: ['x = 4', 'x = 6', 'x = 11', 'x = 12'], correct: 'B' },
+  { ref: 'DEMO-BIJAK-MCQ-2', level: 'T4', stem: 'Hitung nilai 3² + 4².', options: ['14', '25', '49', '7'], correct: 'B' },
+  { ref: 'DEMO-BIJAK-MCQ-3', level: 'T5', stem: 'Nilai cos 60 darjah ialah', options: ['1/2', '√3/2', '1', '0'], correct: 'A' },
+  { ref: 'DEMO-BIJAK-MCQ-4', level: 'T5', stem: 'Hasil tambah dua sudut pelengkap ialah', options: ['45°', '180°', '90°', '360°'], correct: 'C' },
+]
+
+/** Labels of the bank questions placed on the demo paper, in paper order (sorted by label). */
+export const BANK_QUESTION_LABELS = [...DEMO_BANK_QUESTIONS.map((q) => q.ref), 'SEED-MCQ-MATH-T4', 'SEED-MCQ-MATH-T5'] as const
+
+/** Right-answer factor per bank question (paper order), so each question gets its own wrong share. */
+const BANK_HARDNESS: readonly number[] = [1, 0.8, 0.9, 0.6, 0.95, 0.7]
+
+/** Writes the demo MCQ the way the BE-09 seed writes a published version tree (question, version, SP tag, part, options, key). */
+async function ensureDemoQuestions(ctx: SeedContext, subjectId: bigint): Promise<void> {
   const { prisma } = ctx
+  const now = ctx.clock.now()
+  const prng = ctx.prng('poc-bijak-sittings:bank-questions')
+  const draws = DEMO_BANK_QUESTIONS.map(() => ({ tp: prng.int(2, 5), cognitive: prng.int(1, 4) }))
+  const owner = await prisma.userRole.findFirst({ where: { role: 'admin' }, orderBy: { userId: 'asc' } })
+  if (!owner) throw new Error('Bijak sittings seed: the identity seed must run first (needs an admin account).')
+  const levels = new Map((await prisma.educationLevel.findMany({ where: { code: { in: ['T4', 'T5'] } } })).map((l) => [l.code, l.id]))
+
+  for (const [i, q] of DEMO_BANK_QUESTIONS.entries()) {
+    if (await prisma.questionVersion.findFirst({ where: { numberLabel: q.ref }, select: { id: true } })) continue
+    const levelId = levels.get(q.level)
+    if (levelId === undefined) throw new Error(`Bijak sittings seed: education level ${q.level} is missing; run the curriculum seed first.`)
+    // The unit after the one the BE-09 seed uses, with its first SP (publish gate: unit, SP, TP).
+    const nodes = await prisma.curriculumNode.findMany({
+      where: { subjectId, educationLevelId: levelId, kind: { in: ['unit', 'sk', 'sp'] } },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      select: { id: true, kind: true, parentId: true },
+    })
+    const skByUnit = new Map<bigint, bigint[]>()
+    const spBySk = new Map<bigint, bigint[]>()
+    for (const n of nodes) {
+      if (n.parentId === null) continue
+      const target = n.kind === 'sk' ? skByUnit : n.kind === 'sp' ? spBySk : undefined
+      if (target) target.set(n.parentId, [...(target.get(n.parentId) ?? []), n.id])
+    }
+    const tags = nodes
+      .filter((n) => n.kind === 'unit')
+      .flatMap((u) => {
+        const sp = (skByUnit.get(u.id) ?? []).flatMap((sk) => spBySk.get(sk) ?? [])[0]
+        return sp === undefined ? [] : [{ unitNodeId: u.id, spNodeId: sp }]
+      })
+    if (tags.length === 0) throw new Error(`Bijak sittings seed: no DSKP unit/SP for MATH ${q.level}; run the curriculum seed first.`)
+    const tag = tags[(i + 1) % tags.length] as { unitNodeId: bigint; spNodeId: bigint }
+    const draw = draws[i] as { tp: number; cognitive: number }
+
+    await prisma.$transaction(async (tx) => {
+      const question = await tx.question.create({
+        data: { sourceType: 'manual', createdById: owner.userId, latestVersionNo: 1, liveVersionNo: 1, isActive: true, createdAt: now, updatedAt: now },
+      })
+      const version = await tx.questionVersion.create({
+        data: {
+          questionId: question.id, versionNo: 1, status: 'published', publishedAt: now,
+          type: 'mcq', stemMs: q.stem, numberLabel: q.ref, language: 'ms',
+          subjectId, educationLevelId: levelId, unitNodeId: tag.unitNodeId, formOrigin: q.level === 'T5' ? 't5' : 't4',
+          cognitiveLevel: draw.cognitive, difficultyTp: draw.tp, sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
+        },
+      })
+      await tx.questionVersionSpNode.create({ data: { questionVersionId: version.id, nodeId: tag.spNodeId, createdAt: now } })
+      const part = await tx.questionPart.create({
+        data: { questionVersionId: version.id, parentPartId: null, position: 1, depth: 1, label: '1', promptMs: q.stem, marks: 1, mode: 'mcq', reveal: 'after_submit' },
+      })
+      await tx.partOption.createMany({ data: q.options.map((body, k) => ({ partId: part.id, label: 'ABCD'[k] as string, bodyMs: body, position: k + 1 })) })
+      await tx.answerKey.create({ data: { partId: part.id, kind: 'option', content: { kind: 'option', correct: q.correct } } })
+    })
+  }
+}
+
+type BankPaper = { id: bigint; title: string; kertas: number; paperCode: string | null; printedDurationMin: number; sectionId: bigint; questions: { id: bigint; versionNo: number }[] }
+
+async function ensureBankPaper(ctx: SeedContext, subjectId: bigint): Promise<BankPaper> {
+  const { prisma } = ctx
+  await ensureDemoQuestions(ctx, subjectId)
   const rows = await prisma.$queryRaw<{ id: bigint; version_no: number; label: string }[]>`
     select q.id, q.live_version_no as version_no, v.number_label as label
       from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
@@ -287,11 +368,10 @@ async function ensureBankPaper(
      order by v.number_label`
   if (rows.length !== BANK_QUESTION_LABELS.length) throw new Error('Bijak sittings seed needs the published BE-09 seed questions; run the questions seed first.')
   const questions = rows.map((r) => ({ id: r.id, versionNo: r.version_no }))
-  const include = { sections: { orderBy: { position: 'asc' as const }, include: { placements: { orderBy: { position: 'asc' as const } } } } }
   const now = ctx.clock.now()
-  let paper = await prisma.paper.findFirst({ where: { kind: 'pilihan', title: BANK_PAPER_TITLE, subjectId }, include })
-  if (!paper) {
-    paper = await prisma.paper.create({
+  const found = await prisma.paper.findFirst({ where: { kind: 'pilihan', title: BANK_PAPER_TITLE, subjectId }, select: { id: true } })
+  if (!found) {
+    await prisma.paper.create({
       data: {
         kind: 'pilihan',
         title: BANK_PAPER_TITLE,
@@ -301,7 +381,7 @@ async function ensureBankPaper(
         paperCode: 'DEMO/1',
         levelScope: 't4_t5',
         printedDurationMin: 20,
-        instructions: ['Kertas contoh ini mengandungi 2 soalan objektif.', 'Jawab semua soalan.'],
+        instructions: [`Kertas contoh ini mengandungi ${String(questions.length)} soalan objektif.`, 'Jawab semua soalan.'],
         referenceSheets: [],
         status: 'published',
         version: 1,
@@ -322,12 +402,29 @@ async function ensureBankPaper(
           ],
         },
       },
-      include,
     })
   }
+  const paper = await prisma.paper.findFirstOrThrow({
+    where: { kind: 'pilihan', title: BANK_PAPER_TITLE, subjectId },
+    include: { sections: { orderBy: { position: 'asc' }, include: { placements: { orderBy: { position: 'asc' } } } } },
+  })
   const section = paper.sections[0]
   if (!section) throw new Error('Bijak sittings seed: the bank demo paper has no section.')
-  return { id: paper.id, title: paper.title, kertas: paper.kertas, paperCode: paper.paperCode, printedDurationMin: paper.printedDurationMin, sectionId: section.id, questions }
+  // A paper made by an earlier run of this seed with fewer questions: add the missing placements after the existing ones.
+  const placed = new Set(section.placements.map((p) => p.questionId))
+  const missing = questions.filter((q) => !placed.has(q.id))
+  if (missing.length > 0) {
+    let position = section.placements.reduce((m, p) => Math.max(m, p.position), 0)
+    await prisma.paperPlacement.createMany({
+      data: missing.map((q) => ({ paperSectionId: section.id, questionId: q.id, pinnedVersionNo: q.versionNo, position: ++position, marksOverride: 1 })),
+    })
+    await prisma.paperSection.update({ where: { id: section.id }, data: { questionCount: position, markBudget: position } })
+  }
+  // The paper's own placement order is what a sitting freezes.
+  const ordered = (
+    await prisma.paperPlacement.findMany({ where: { paperSectionId: section.id }, orderBy: { position: 'asc' }, select: { questionId: true, pinnedVersionNo: true } })
+  ).map((p) => ({ id: p.questionId, versionNo: p.pinnedVersionNo }))
+  return { id: paper.id, title: paper.title, kertas: paper.kertas, paperCode: paper.paperCode, printedDurationMin: paper.printedDurationMin, sectionId: section.id, questions: ordered }
 }
 
 export const bijakSittingsSeed: SeedModule = {
@@ -372,6 +469,6 @@ export const bijakSittingsSeed: SeedModule = {
     const bankSource = new Be09BijakQuestionSource(new QuestionsRepository(service), new CurriculumRepository(service))
     const bankBundles = await bankSource.loadQuestions(bankComposition.flatMap((s) => s.questionIds))
     if (bankBundles.size !== bank.questions.length) throw new Error('Bijak sittings seed: the BE-09 bridge did not serve the bank questions.')
-    await writeSittings(ctx, pupils, aggregates, { key: 'bank-mat-demo', paper: bank, subjectName: subjectRow.name, subject, composition: bankComposition, bundles: bankBundles, plans: BIJAK_BANK_SITTINGS, blank: 0 })
+    await writeSittings(ctx, pupils, aggregates, { key: 'bank-mat-demo', paper: bank, subjectName: subjectRow.name, subject, composition: bankComposition, bundles: bankBundles, plans: BIJAK_BANK_SITTINGS, blank: 0, hardness: BANK_HARDNESS })
   },
 }

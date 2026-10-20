@@ -83,7 +83,7 @@ describe('PoC Bijak sittings seed', () => {
     const rows = await t.db.query<{ score: string; max_score: string }>(`select score::text, max_score::text from attempt_results`)
     const scores = new Set(rows.map((r) => Number(r.score)))
     expect(scores.size).toBeGreaterThanOrEqual(4)
-    expect(rows.map((r) => Number(r.max_score)).sort((a, b) => a - b)).toEqual([...Array(BIJAK_BANK_SITTINGS.length).fill(2), ...Array(BIJAK_DEMO_SITTINGS.length).fill(10)])
+    expect(rows.map((r) => Number(r.max_score)).sort((a, b) => a - b)).toEqual([...Array(BIJAK_BANK_SITTINGS.length).fill(6), ...Array(BIJAK_DEMO_SITTINGS.length).fill(10)])
     const [wrong] = await t.db.query<{ n: string }>(
       `select count(*)::text n from attempt_results r, jsonb_array_elements(r.graded->'questions') q where (q->>'attempted')::boolean and (q->>'awarded')::numeric = 0`,
     )
@@ -123,7 +123,7 @@ describe('PoC Bijak sittings seed', () => {
       {} as never,
       school!.id,
     )
-    expect(res.questions.length).toBeGreaterThanOrEqual(1)
+    expect(res.questions.filter((x) => x.attempts >= 5).length).toBeGreaterThanOrEqual(4)
     const q = res.questions.find((x) => x.attempts >= 5)
     expect(q, JSON.stringify(res.questions)).toBeDefined()
     expect(q?.correctOption.letter).toMatch(/^[A-D]$/)
