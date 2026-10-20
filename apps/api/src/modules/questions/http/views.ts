@@ -34,6 +34,9 @@ export const statusLabel = (status: QuestionStatus): string => QUESTION_WORKFLOW
 /** Id of a row whose creator account was removed: the wire needs an id, so a fixed placeholder. */
 const NO_CREATOR = '0'
 
+/** The read URL of a stored image (BE-04); the service already swapped internal ids for public tokens. */
+const fileUrl = (token: string | null): string | null => (token === null ? null : `/api/files/${token}`)
+
 const flatOf = (q: QuestionView) => flatFromVersion(q.version)
 
 /** The flat objective shape both the admin and the Guru views build on. */
@@ -48,10 +51,10 @@ function flatBase(q: QuestionView) {
     difficultyLevel: f.difficultyLevel,
     questionType: f.questionType,
     questionText: f.questionText,
-    // Images are existing `question_image` files referenced by id (Q-10): no upload on these routes.
+    // Images are existing `question_image` files referenced by public token (Q-10): no upload on these routes.
     questionImage: null,
     options: f.options,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    optionImages: f.options === null ? [] : f.optionImageIds.map(fileUrl),
     correctAnswer: f.correctAnswer,
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
@@ -177,7 +180,7 @@ export function guruDetailView(q: QuestionView): z.output<typeof QuestionGuruDet
   return QuestionGuruDetailSchema.parse({
     ...guruSummaryView(q),
     questionImage: null,
-    optionImages: f.options === null ? [] : f.optionImageIds,
+    optionImages: f.options === null ? [] : f.optionImageIds.map(fileUrl),
     tfAnswer: f.tfAnswer,
     correctAnswerText: f.correctAnswerText,
     altAnswers: f.altAnswers,

@@ -97,15 +97,17 @@ describe('BE-09 hardening (real database)', () => {
     expect(Object.keys(err.fields ?? {})).toEqual(['imageIds'])
   })
 
-  async function fileFor(owner: string | null, purpose = 'question_image'): Promise<string> {
+  /** Inserts a file row; returns its public token (the wire reference) and the internal id. */
+  async function fileRow(owner: string | null, purpose = 'question_image'): Promise<{ token: string; id: string }> {
     const n = String(++fileSeq)
     const rows = await t.db.query<{ id: string }>(
       `insert into files (public_id, owner_user_id, purpose, mime, size_bytes, sha256, storage_key)
        values ($1, $2, $3, 'image/png', 10, $4, $5) returning id::text`,
       [`p${n}`.padEnd(22, 'A'), owner, purpose, 'a'.repeat(64), `key-${n}`],
     )
-    return rows[0]!.id
+    return { token: `p${n}`.padEnd(22, 'A'), id: rows[0]!.id }
   }
+  const fileFor = async (owner: string | null, purpose = 'question_image'): Promise<string> => (await fileRow(owner, purpose)).token
   const withImage = (imageId: string): QuestionPart[] => [{
     label: '1', prompt: rich('q'), mode: 'mcq', marks: 1,
     options: ['A', 'B', 'C'].map((l) => ({ label: l, body: rich(l), imageId: l === 'A' ? imageId : null })),
@@ -113,7 +115,7 @@ describe('BE-09 hardening (real database)', () => {
   }] as unknown as QuestionPart[]
 
   it('metaOf reads the row only: purpose and owner, null for an unknown or malformed id', async () => {
-    const id = await fileFor(teacher.userId)
+    const { id } = await fileRow(teacher.userId)
     expect(await t.app.get(FilesService).metaOf(id)).toEqual({ purpose: 'question_image', ownerUserId: teacher.userId })
     expect(await t.app.get(FilesService).metaOf('999999999')).toBeNull()
     expect(await t.app.get(FilesService).metaOf('abc')).toBeNull()
@@ -131,7 +133,7 @@ describe('BE-09 hardening (real database)', () => {
     const err = await apiError(() => make(teacher, theirs))
     expect(err.getStatus()).toBe(422)
     // Same key and message as a missing file or a wrong purpose: no existence oracle.
-    const missing = await apiError(() => make(teacher, '999999999'))
+    const missing = await apiError(() => make(teacher, 'unknownTokenAAAAAAAAAA'))
     expect(err.fields).toEqual(missing.fields)
     expect(Object.keys(err.fields ?? {})).toEqual(['optionImages.0'])
     expect((await make(admin, theirs)).version.status).toBe('draft')

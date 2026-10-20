@@ -292,6 +292,32 @@ export class FilesService {
     return bytes ? { ...this.summary(row), bytes } : null
   }
 
+  /**
+   * Batch lookup by public token for a service that references files: internal id, purpose and owner
+   * of each found file. Unknown or malformed tokens are absent from the map (one query, rows only).
+   */
+  async resolveTokens(tokens: readonly string[]): Promise<Map<string, { id: string; purpose: string; ownerUserId: string | null }>> {
+    const unique = [...new Set(tokens)].filter((t) => /^[A-Za-z0-9_-]{22}$/.test(t))
+    if (unique.length === 0) return new Map()
+    const rows = await this.prisma.client.file.findMany({ where: { publicId: { in: unique } }, select: { id: true, publicId: true, purpose: true, ownerUserId: true } })
+    return new Map(rows.map((r) => [r.publicId, { id: idToString(r.id), purpose: r.purpose, ownerUserId: r.ownerUserId === null ? null : idToString(r.ownerUserId) }]))
+  }
+
+  /** Batch internal id (decimal string) to public token, one query. Missing or malformed ids are absent. */
+  async publicIdsOf(ids: readonly string[]): Promise<Map<string, string>> {
+    const keys: bigint[] = []
+    for (const id of new Set(ids)) {
+      try {
+        keys.push(idFromString(id))
+      } catch {
+        // malformed: absent from the result
+      }
+    }
+    if (keys.length === 0) return new Map()
+    const rows = await this.prisma.client.file.findMany({ where: { id: { in: keys } }, select: { id: true, publicId: true } })
+    return new Map(rows.map((r) => [idToString(r.id), r.publicId]))
+  }
+
   /** Purpose and owner of a stored file by internal id: reads the row only, never the object bytes. */
   async metaOf(idText: string): Promise<{ purpose: string; ownerUserId: string | null } | null> {
     let id: bigint

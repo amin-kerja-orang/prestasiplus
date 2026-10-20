@@ -27,7 +27,7 @@ import {
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, mapImageIds, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf } from './grading'
 import type {
   AdminListFilter,
@@ -53,6 +53,7 @@ import type {
   QuestionView,
   SetStatusOptions,
   StructuredListFilter,
+  StimulusGroupRecord,
   StructuredListResult,
 } from './types'
 
@@ -445,7 +446,8 @@ export class QuestionsService {
   async getPublicForLearner(id: string): Promise<PublicQuestion> {
     const record = await this.repo.get(id, 'live')
     if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
-    return toPublic(record)
+    const [pub] = await this.tokenized([record]) as [QuestionRecord]
+    return toPublic(pub)
   }
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
@@ -601,15 +603,18 @@ export class QuestionsService {
     // Images are existing `question_image` files; stimuli and the group must exist.
     const refs = referencedIds(n.parts)
     const imageIds = [...new Set(refs.imageIds)]
+    let imageKeys: Awaited<ReturnType<FilesService['resolveTokens']>> = new Map()
     if (imageIds.length > MAX_IMAGES) {
       fields.imageIds = 'Satu soalan boleh mempunyai paling banyak ' + String(MAX_IMAGES) + ' imej.'
     } else {
-      for (const imageId of imageIds) {
-        const meta = await this.files.metaOf(imageId)
+      // The wire carries public tokens (BE-04); one batched lookup turns them into internal keys.
+      imageKeys = await this.files.resolveTokens(imageIds)
+      for (const token of imageIds) {
+        const meta = imageKeys.get(token)
         // Missing, wrong purpose and someone else's file all answer alike (no existence oracle).
-        const foreign = meta !== null && meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin'
+        const foreign = meta !== undefined && meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin'
         if (!meta || meta.purpose !== 'question_image' || foreign) {
-          fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
+          fields[this.imageKey(n.parts, token)] = QUESTION_MESSAGES.image
         }
       }
     }
@@ -640,7 +645,8 @@ export class QuestionsService {
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
       stimulusIds: v?.stimulusIds.map((s) => BigInt(s)) ?? [],
-      parts: draftsFromParts(n.parts),
+      // Tokens back to internal file ids: they never leave the service.
+      parts: draftsFromParts(mapImageIds(n.parts, (token) => imageKeys.get(token)?.id ?? null)),
     }
   }
 
@@ -666,7 +672,9 @@ export class QuestionsService {
   }
 
   /** PUT: merge the body over the stored latest version and write it (new version when published). */
-  private async applyUpdate(record: QuestionRecord, input: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
+  private async applyUpdate(stored: QuestionRecord, input: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
+    // The merge baseline speaks tokens, like the input; draftOf maps everything back to internal ids.
+    const [record] = await this.tokenized([stored]) as [QuestionRecord]
     const v = record.version
     const flat = flatFromVersion(v)
     const single = v.parts.length === 1 ? v.parts[0] : undefined
@@ -758,11 +766,28 @@ export class QuestionsService {
   private async named(records: QuestionRecord[]): Promise<QuestionView[]> {
     if (records.length === 0) return []
     const refs = await this.refs()
-    return records.map((r) => ({
+    return (await this.tokenized(records)).map((r) => ({
       ...r,
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
     }))
+  }
+
+  /** Records with internal file ids swapped for public tokens: one batched lookup for all of them. */
+  private async tokenized(records: QuestionRecord[]): Promise<QuestionRecord[]> {
+    const ids = new Set<string>()
+    for (const r of records) mapImageIds(r.version.parts, (id) => (ids.add(id), id))
+    if (ids.size === 0) return records
+    const tokens = await this.files.publicIdsOf([...ids])
+    return records.map((r) => ({ ...r, version: { ...r.version, parts: mapImageIds(r.version.parts, (id) => tokens.get(id) ?? null) } }))
+  }
+
+  private async tokenizedGroup(group: StimulusGroupRecord | null): Promise<StimulusGroupRecord | null> {
+    if (group === null) return null
+    const ids = group.stimuli.flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    if (ids.length === 0) return group
+    const tokens = await this.files.publicIdsOf(ids)
+    return { ...group, stimuli: group.stimuli.map((s) => ({ ...s, assetFileId: s.assetFileId === null ? null : (tokens.get(s.assetFileId) ?? null) })) }
   }
 
   private async viewOf(record: QuestionRecord): Promise<QuestionView> {
@@ -777,7 +802,7 @@ export class QuestionsService {
       ...view,
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup: record.groupId ? await this.tokenizedGroup(await this.repo.groupOf(record.id)) : null,
     }
   }
 

@@ -196,3 +196,12 @@ export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' |
       return 'table'
   }
 }
+
+/** A copy of the tree with every option `imageId` passed through `fn` (null drops the image). */
+export function mapImageIds(parts: readonly QuestionPart[], fn: (id: string) => string | null): QuestionPart[] {
+  return parts.map((part) => {
+    if (!isLeaf(part)) return { ...part, children: mapImageIds(part.children as QuestionPart[], fn) } as QuestionPart
+    if (part.mode !== 'mcq') return part
+    return { ...part, options: part.options.map((o) => (o.imageId == null ? o : { ...o, imageId: fn(o.imageId) })) } as QuestionPart
+  })
+}
