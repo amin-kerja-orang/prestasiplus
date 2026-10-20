@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common'
 
+import { ThrottleModule } from '../../../common/throttle'
 import { BattleCoreModule } from '../battle-core.module'
+import { BattleEngineModule } from '../engine'
+import { ArenaController } from './arena.controller'
+import { ArenaService } from './arena.service'
 
-/**
- * Battle arena (BE-44). Skeleton: the owner of this folder adds its controllers and providers here and nothing else
- * (no edit of `battle.module.ts`). Shared providers (`BattleDeps`, `BattleReadService`, `GAME_RESULT_PORT`,
- * `BattleRawErrorFilter`) come from `BattleCoreModule`.
- */
+/** Battle lobby and arena (BE-44, routes M16-15 to M16-17). */
 @Module({
-  imports: [BattleCoreModule],
-  controllers: [],
-  providers: [],
+  imports: [ThrottleModule, BattleCoreModule, BattleEngineModule],
+  controllers: [ArenaController],
+  providers: [ArenaService],
 })
 export class BattleArenaModule {}

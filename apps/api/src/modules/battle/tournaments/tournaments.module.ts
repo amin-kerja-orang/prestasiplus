@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common'
 
+import { ThrottleModule } from '../../../common/throttle'
 import { BattleCoreModule } from '../battle-core.module'
+import { TournamentsController } from './tournaments.controller'
+import { TournamentsService } from './tournaments.service'
 
-/**
- * Battle tournaments (BE-44). Skeleton: the owner of this folder adds its controllers and providers here and nothing else
- * (no edit of `battle.module.ts`). Shared providers (`BattleDeps`, `BattleReadService`, `GAME_RESULT_PORT`,
- * `BattleRawErrorFilter`) come from `BattleCoreModule`.
- */
+/** Battle tournaments (BE-44): banner, list, form options, create (admin) and detail. Shared providers come from `BattleCoreModule`. */
 @Module({
-  imports: [BattleCoreModule],
-  controllers: [],
-  providers: [],
+  imports: [BattleCoreModule, ThrottleModule],
+  controllers: [TournamentsController],
+  providers: [TournamentsService],
 })
 export class BattleTournamentsModule {}

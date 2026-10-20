@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common'
 
+import { ThrottleModule } from '../../../common/throttle'
 import { BattleCoreModule } from '../battle-core.module'
+import { StandingsController } from './standings.controller'
+import { StandingsRepository } from './standings.repository'
+import { StandingsService } from './standings.service'
 
 /**
- * Battle standings (BE-44). Skeleton: the owner of this folder adds its controllers and providers here and nothing else
- * (no edit of `battle.module.ts`). Shared providers (`BattleDeps`, `BattleReadService`, `GAME_RESULT_PORT`,
- * `BattleRawErrorFilter`) come from `BattleCoreModule`.
+ * Battle standings, school page and history (BE-44, M16-18..21). Shared providers (`BattleDeps`, `BattleReadService`)
+ * come from `BattleCoreModule`; `PrismaService` and `CLOCK` from the global `DbModule`.
  */
 @Module({
-  imports: [BattleCoreModule],
-  controllers: [],
-  providers: [],
+  imports: [BattleCoreModule, ThrottleModule],
+  controllers: [StandingsController],
+  providers: [StandingsRepository, StandingsService],
 })
 export class BattleStandingsModule {}

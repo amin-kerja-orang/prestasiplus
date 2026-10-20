@@ -46,12 +46,19 @@ export interface BattleSubject {
   code: string
   name: string
   core: boolean
+  /** Glyph name or emoji, null when the subject has none (lobby only). */
+  icon: string | null
+  /** `#RRGGBB` (lobby only). */
+  colour: string
 }
 
 export interface BattleSchool {
   id: string
   name: string
   state: string | null
+  type: string | null
+  /** The PPD / district name as the owner stores it. */
+  district: string | null
 }
 
 export interface StudentFilter {
@@ -149,12 +156,12 @@ export class BattleDeps {
 
   async school(id: string): Promise<BattleSchool | null> {
     const s = await this.schools.get(id)
-    return s ? { id: s.id, name: s.name, state: s.state } : null
+    return s ? { id: s.id, name: s.name, state: s.state, type: s.type, district: s.district } : null
   }
 
   async schoolsByIds(ids: readonly string[]): Promise<Map<string, BattleSchool>> {
     const rows = await this.schools.getMany([...new Set(ids)])
-    return new Map(rows.map((s) => [s.id, { id: s.id, name: s.name, state: s.state }]))
+    return new Map(rows.map((s) => [s.id, { id: s.id, name: s.name, state: s.state, type: s.type, district: s.district }]))
   }
 
   // --- curriculum (BE-08) ------------------------------------------------------------------------------
@@ -162,13 +169,13 @@ export class BattleDeps {
   /** Active subjects with the `core` flag (Open question 4: the battle subject set is what BE-08 serves). */
   async subjects(): Promise<BattleSubject[]> {
     const rows = await this.curriculum.subjects({ active: true })
-    return rows.map((s) => ({ id: idToString(s.id), code: s.code, name: s.name, core: s.isCore }))
+    return rows.map((s) => ({ id: idToString(s.id), code: s.code, name: s.name, core: s.isCore, icon: s.icon, colour: s.color }))
   }
 
   async subject(id: string): Promise<BattleSubject | null> {
     if (!isIdString(id)) return null
     const s = await this.curriculum.subject(idFromString(id))
-    return s && s.isActive ? { id: idToString(s.id), code: s.code, name: s.name, core: s.isCore } : null
+    return s && s.isActive ? { id: idToString(s.id), code: s.code, name: s.name, core: s.isCore, icon: s.icon, colour: s.color } : null
   }
 
   /** The education level id of a grade (BR-M16-02), or null. */

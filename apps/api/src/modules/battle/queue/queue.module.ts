@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common'
 
+import { ThrottleModule } from '../../../common/throttle'
 import { BattleCoreModule } from '../battle-core.module'
+import { BattleEngineModule } from '../engine'
+import { ForfeitService } from './forfeit.service'
+import { InvitationsController } from './invitations.controller'
+import { InvitationsService } from './invitations.service'
+import { QueueController } from './queue.controller'
+import { QueueService } from './queue.service'
 
-/**
- * Battle queue (BE-44). Skeleton: the owner of this folder adds its controllers and providers here and nothing else
- * (no edit of `battle.module.ts`). Shared providers (`BattleDeps`, `BattleReadService`, `GAME_RESULT_PORT`,
- * `BattleRawErrorFilter`) come from `BattleCoreModule`.
- */
+/** Battle queue, invitations and forfeit (BE-44, routes M16-02 to M16-14). */
 @Module({
-  imports: [BattleCoreModule],
-  controllers: [],
-  providers: [],
+  imports: [ThrottleModule, BattleCoreModule, BattleEngineModule],
+  controllers: [QueueController, InvitationsController],
+  providers: [QueueService, InvitationsService, ForfeitService],
 })
 export class BattleQueueModule {}
