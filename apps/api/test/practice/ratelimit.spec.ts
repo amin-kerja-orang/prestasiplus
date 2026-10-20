@@ -9,7 +9,7 @@ let pelajar: Client
 let maju: Client
 
 beforeAll(async () => {
-  t = await bootPracticeApp({ env: { THROTTLE_PRACTICE_WRITE_PER_MINUTE: '3' } })
+  t = await bootPracticeApp({ env: { THROTTLE_PRACTICE_WRITE_PER_MINUTE: '3', THROTTLE_PRACTICE_READ_PER_MINUTE: '2' } })
   w = await loadWorld(t.db)
   fillBank(t.bank, w)
   pelajar = await loginAs(t, 'pelajar@demo.test')
@@ -33,10 +33,22 @@ describe('rate limit on the three writes', () => {
     expect(limited.body.error.code).toBe('RATE_LIMITED')
     expect(typeof limited.body.error.retryAfter).toBe('number')
     expect(limited.headers['retry-after']).toBe(String(limited.body.error.retryAfter))
-    expect((await pelajar.get('/api/practice/sessions?modes=random')).status).toBe(200)
     expect((await maju.post('/api/practice/sessions', body)).status).toBe(201)
     // The window moves with the clock.
     t.clock.advance(61_000)
     expect((await pelajar.post('/api/practice/sessions', body)).status).toBe(201)
+  })
+
+  it('the history read is limited per user too (bucket practice.read): the 3rd read is 429, a write and another user are unaffected', async () => {
+    t.clock.advance(120_000)
+    const url = '/api/practice/sessions?modes=random'
+    expect((await pelajar.get(url)).status).toBe(200)
+    expect((await pelajar.get(url)).status).toBe(200)
+    const limited = await pelajar.get(url)
+    expect(limited.status).toBe(429)
+    expect(limited.body.error.code).toBe('RATE_LIMITED')
+    expect(limited.headers['retry-after']).toBe(String(limited.body.error.retryAfter))
+    expect((await maju.get(url)).status).toBe(200)
+    expect((await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })).status).toBe(201)
   })
 })

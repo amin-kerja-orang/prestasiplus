@@ -17,10 +17,11 @@ import { PrismaService } from '../../db/prisma.service'
 import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
-import { SubscriptionService } from '../subscriptions'
-import { alreadySubmitted, invalidAnswer, isUniqueViolation, notFound } from './errors'
+import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
+import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
 import { type PracticeQuestion, PracticePorts, versionKey } from './ports'
 import {
+  HISTORY_MAX_ROWS,
   type CompletedSession,
   type GradedAnswer,
   PracticeRepository,
@@ -108,11 +109,19 @@ export class PracticeService {
       })
       return this.startResponse(caller.userId, session, plan.served, plan.revisionMeta)
     }
-    // BR-32: two parallel mission starts must not both create a session; the advisory lock serializes them.
-    if (req.mode === 'mission' && req.missionId !== undefined) {
-      const missionId = req.missionId
+    // BR-32 and the attempt limits: parallel starts of one mission, remedial test or question set are serialized
+    // by an advisory lock, and the planner resumes the session the first one created.
+    const assigned =
+      req.mode === 'mission' && req.missionId !== undefined
+        ? ({ kind: 'mission', id: req.missionId } as const)
+        : req.mode === 'remedial' && req.remedialTestId !== undefined
+          ? ({ kind: 'remedial', id: req.remedialTestId } as const)
+          : req.mode === 'question_set' && req.questionSetId !== undefined
+            ? ({ kind: 'question_set', id: req.questionSetId } as const)
+            : null
+    if (assigned) {
       return this.prisma.transaction(async () => {
-        await this.repo.lockMissionStart(caller.userId, missionId)
+        await this.repo.lockAssigned(caller.userId, assigned.kind, assigned.id)
         return run()
       })
     }
@@ -171,7 +180,7 @@ export class PracticeService {
   async check(caller: Caller, sessionId: string, req: CheckAnswerRequest): Promise<CheckAnswerResponse> {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
-      const session = await this.repo.lockSession(sessionId, caller.userId, 'share')
+      const session = await this.repo.lockSession(sessionId, caller.userId, 'update')
       if (!session) throw notFound()
       if (session.status !== 'in_progress') throw alreadySubmitted()
 
@@ -215,7 +224,11 @@ export class PracticeService {
         return result(winner?.isCorrect ?? isCorrect)
       }
       // BR-07: +1 per first check while the user is not subscribed (same transaction as the check row).
-      if (!(await this.subscriptions.isSubscribed(caller.userId, now))) await this.subscriptions.incrementTrialUsed(caller.userId)
+      // A first check past the limit is refused and the whole transaction (the check row too) rolls back.
+      if (!(await this.subscriptions.isSubscribed(caller.userId, now))) {
+        const used = await this.subscriptions.incrementTrialUsed(caller.userId)
+        if (used > TRIAL_LIMIT) throw trialExhausted()
+      }
       return result(isCorrect)
     })
   }
@@ -227,6 +240,7 @@ export class PracticeService {
     const { done, result: reward } = await this.repo.completeSession(
       { sessionId, userId: caller.userId, now, timeSpent, isTest: caller.isTest },
       {
+        guard: (session) => this.guardSubmit(session),
         regrade: (_session, served, checks) => this.regrade(served, checks),
         completed: async (completed, tx) => {
           const s = completed.session
@@ -265,6 +279,29 @@ export class PracticeService {
       },
     )
     return this.submitResponse(done, reward)
+  }
+
+  /**
+   * Inside the locked submit transaction: the one-shot rules of assigned work are enforced again, so parallel
+   * starts that slipped past the start checks cannot all complete (remedial: one completion per test;
+   * question_set: at most maxAttempts completions).
+   */
+  private async guardSubmit(session: SessionRecord): Promise<void> {
+    if (session.mode === 'remedial' && session.remedialTestId) {
+      await this.repo.lockAssigned(session.userId, 'remedial', session.remedialTestId)
+      const others = await this.repo.linkedSessions(session.userId, 'remedialTestId', session.remedialTestId)
+      if (others.some((s) => s.id !== session.id && s.status === 'completed')) throw remedialDone()
+    }
+    if (session.mode === 'question_set' && session.questionSetId) {
+      await this.repo.lockAssigned(session.userId, 'question_set', session.questionSetId)
+      const res = await this.ports.assignments.resolve('question_set', { userId: session.userId, id: session.questionSetId, at: this.clock.now() })
+      if (res.status === 'ok' && (res.maxAttempts ?? 0) > 0) {
+        const done = (await this.repo.linkedSessions(session.userId, 'questionSetId', session.questionSetId)).filter(
+          (s) => s.id !== session.id && s.status === 'completed',
+        ).length
+        if (done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
+      }
+    }
   }
 
   private submitResponse(done: CompletedSession, reward: { coinsEarned: number; streakCount: number; totalBalance: number }): SubmitSessionResponse {
@@ -314,11 +351,13 @@ export class PracticeService {
     const stats = await this.repo.historyStats(caller.userId, { modes, includeTest: true })
     const total = activeType ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true }) : stats.sessions
     const page = paged ? (query.page ?? 1) : 1
-    const pageSize = paged ? (query.pageSize ?? HISTORY_PAGE_SIZE) : Math.max(1, total)
+    // The unpaged read is capped at HISTORY_MAX_ROWS rows (an account with a very long history is paged by the meta).
+    const pageSize = paged ? (query.pageSize ?? HISTORY_PAGE_SIZE) : Math.max(1, Math.min(total, HISTORY_MAX_ROWS))
     const rows = await this.repo.history(caller.userId, {
       modes: narrowed,
       includeTest: true,
-      ...(paged ? { skip: (page - 1) * pageSize, take: pageSize } : {}),
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     })
     const subjects = new Map((await this.curriculum.subjects()).map((s) => [idToString(s.id), s.code]))
     const data: SessionListItem[] = rows.map((s) => ({

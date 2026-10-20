@@ -103,6 +103,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(CheckAnswerResponseSchema), 'Result of the check; the key is revealed here by design.'),
       401: unauthorized,
+      402: err('TRIAL_EXHAUSTED "Baki percubaan percuma anda telah habis." (first check past the trial limit; nothing is stored).'),
       403: err(csrfInvalid),
       404: notYours,
       409: err('ALREADY_SUBMITTED "Sesi ini sudah dihantar.".'),
@@ -139,6 +140,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(SessionListResponseSchema, 'Sessions with meta.activeType and meta.stats.'),
       401: unauthorized,
+      429: RATE_LIMITED_RESPONSE,
       422: err('VALIDATION_ERROR "Mod tidak sah." with fields.modes.'),
     },
   })

@@ -197,8 +197,12 @@ describe('AC2 trial (BR-07)', () => {
     const blocked = await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })
     expect(blocked.status).toBe(402)
     expect(blocked.body.error).toMatchObject({ code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' })
-    // A session already started can still be checked and submitted.
-    expect((await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[4]?.id as string, true)).status).toBe(200)
+    // A first check in an already started session is refused too (402, nothing stored); a repeat still answers.
+    const over = await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[4]?.id as string, true)
+    expect(over.status).toBe(402)
+    expect(over.body.error).toMatchObject({ code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' })
+    expect(await trialUsed(t.db, ids.pelajar)).toBe(50)
+    expect((await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[3]?.id as string, true)).status).toBe(200)
     expect((await pelajar.post(`/api/practice/sessions/${s.sessionId}/submit`, { timeSpent: 5 })).status).toBe(200)
   })
 

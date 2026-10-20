@@ -50,6 +50,8 @@ export const POINTS_PER_CORRECT = 10
 export const MISSION_COINS_PER_CORRECT = 3
 /** BR-16: chapter unlock score (percent). */
 export const UNLOCK_SCORE = 70
+/** Largest page number the history accepts (a deeper page is 422, so a skip cannot be abused). */
+export const HISTORY_MAX_PAGE = 10_000
 /** Default page size of the history list. */
 export const HISTORY_PAGE_SIZE = 15
 
@@ -70,4 +72,5 @@ export function feedbackText(mode: PracticeMode, isCorrect: boolean): string {
 /** Every write is limited per user (checks are frequent in a quiz, so the ceiling is generous). */
 export const PRACTICE_LIMITS = {
   write: { bucket: 'practice.write', env: 'THROTTLE_PRACTICE_WRITE_PER_MINUTE', default: 120, per: 'user' },
+  read: { bucket: 'practice.read', env: 'THROTTLE_PRACTICE_READ_PER_MINUTE', default: 120, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>

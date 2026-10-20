@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { PracticeMode, StartSessionRequest } from '@pp/contract'
 
-import { idFromString, idToString } from '../../db/ids'
+import { idFromString, idToString, isIdString } from '../../db/ids'
 import { type Prng, prngStream } from '../../db/prng'
 import { CurriculumRepository, type SubjectWithLevels } from '../curriculum'
 import { SubscriptionService } from '../subscriptions'
@@ -76,6 +76,12 @@ const blank = (mode: PracticeMode): StartPlan => ({
 
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
 const cmpId = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
+
+/** An id in the path of the data model (bigint): anything else is an unknown record, never a 500. */
+function validId(v: string | undefined | null): string {
+  if (v == null || !isIdString(v)) throw notFound()
+  return v
+}
 
 function countIn(v: unknown, options: readonly number[]): number {
   if (!isInt(v) || !options.includes(v)) throw invalidField('count')
@@ -156,8 +162,8 @@ export class PracticeStartPlanner {
   }
 
   private async assigned(kind: AssignmentKind, userId: string, id: string | undefined, now: Date) {
-    if (id === undefined) throw notFound()
-    const res: AssignmentResolution = await this.ports.assignments.resolve(kind, { userId, id, at: now })
+    const itemId = validId(id)
+    const res: AssignmentResolution = await this.ports.assignments.resolve(kind, { userId, id: itemId, at: now })
     if (res.status === 'not_ready') throw setNotReady()
     if (res.status === 'not_found') throw notFound()
     return res
@@ -196,8 +202,7 @@ export class PracticeStartPlanner {
   }
 
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
-    if (req.chapterId === undefined) throw notFound()
-    const chapterId = idFromString(req.chapterId)
+    const chapterId = idFromString(validId(req.chapterId))
     const ch = await this.curriculum.chapter(chapterId, { active: true })
     if (!ch || ch.educationLevelId === null) throw notFound()
     const count = countIn(req.count, COUNT_OPTIONS)
@@ -273,6 +278,7 @@ export class PracticeStartPlanner {
     if (req.targetQuestionId !== undefined && req.targetQuestionId !== null) {
       // M04 BR-M04-17 "Buka Soalan Sama": one eligible SPM-pool question of the subject.
       if (req.count !== 1) throw invalidField('count')
+      if (!isIdString(req.targetQuestionId)) throw invalidField('targetQuestionId')
       const q = (await this.ports.questions.live([req.targetQuestionId])).get(req.targetQuestionId)
       if (!q?.spmPool || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
       return Object.assign(plan, { subjectId, targetQuestionId: q.id, served: [q] })
@@ -297,7 +303,7 @@ export class PracticeStartPlanner {
 
   private async ramalan(plan: StartPlan, req: StartSessionRequest): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    if (!isInt(req.year) || !isInt(req.setNo)) throw notFound()
+    if (!isInt(req.year) || !isInt(req.setNo) || req.year < 1900 || req.year > 2100 || req.setNo < 1 || req.setNo > 999) throw notFound()
     const subjectId = idToString(subject.id)
     const ids = await this.ports.ramalan.ramalanQuestionIds(subjectId, req.year, req.setNo)
     if (ids === null) throw notFound()
@@ -330,6 +336,11 @@ export class PracticeStartPlanner {
     const res = await this.assigned('remedial', userId, req.remedialTestId, now)
     if (res.status !== 'ok' || req.remedialTestId === undefined) throw notFound()
     if (res.completed) throw remedialDone()
+    const sessions = await this.repo.linkedSessions(userId, 'remedialTestId', req.remedialTestId as string)
+    if (sessions.some((s) => s.status === 'completed')) throw remedialDone()
+    // An in-progress session of the test is resumed, not duplicated (one attempt per test).
+    const open = sessions.find((s) => s.status === 'in_progress')
+    if (open) return { ...plan, remedialTestId: req.remedialTestId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
     const served = await this.serve(res.questionIds)
     if (served.length === 0) throw notEnoughQuestions()
@@ -342,6 +353,8 @@ export class PracticeStartPlanner {
     const sessions = await this.repo.linkedSessions(userId, 'questionSetId', req.questionSetId)
     const done = sessions.filter((s) => s.status === 'completed').length
     if ((res.maxAttempts ?? 0) > 0 && done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
+    const open = sessions.find((s) => s.status === 'in_progress')
+    if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
     const served = await this.serve(res.questionIds)
     if (served.length === 0) throw notEnoughQuestions()

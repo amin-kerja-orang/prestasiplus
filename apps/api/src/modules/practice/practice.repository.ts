@@ -158,6 +158,8 @@ export interface CompleteInput {
 }
 
 export interface CompleteHooks<T> {
+  /** Runs first inside the transaction, session row locked and still open: a throw refuses the submit (assigned-work races). */
+  guard?(session: SessionRecord): Promise<void>
   /** Step 1: regrade the stored checks against the versions the session served (called inside the transaction, session row locked). */
   regrade(session: SessionRecord, served: readonly ServedRef[], checks: readonly StoredCheck[]): Promise<GradedAnswer[]>
   /** Steps 6 and 7: reward and assigned-work hooks. Runs in the same transaction; a throw rolls everything back. */
@@ -171,6 +173,9 @@ export interface HistoryOptions {
   skip?: number
   take?: number
 }
+
+/** Hard cap of one history read (the unpaged list never returns more rows than this). */
+export const HISTORY_MAX_ROWS = 1000
 
 export interface HistoryStats {
   sessions: number
@@ -278,9 +283,12 @@ export class PracticeRepository {
     return rows.map(toSession)
   }
 
-  /** Serializes concurrent mission starts of one user (BR-32: one in-progress session per mission). */
-  async lockMissionStart(userId: string, missionId: string): Promise<void> {
-    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`practice:mission:${userId}:${missionId}`}, 0))`
+  /**
+   * Serializes the starts (and the submits) of one user on one assigned item (mission BR-32, remedial,
+   * question_set attempts): a transaction-scoped advisory lock keyed by kind, user and item.
+   */
+  async lockAssigned(userId: string, kind: 'mission' | 'remedial' | 'question_set', itemId: string): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`practice:${kind}:${userId}:${itemId}`}, 0))`
   }
 
   /**
@@ -415,6 +423,7 @@ export class PracticeRepository {
       const locked = await this.lockSession(input.sessionId, input.userId, 'update')
       if (!locked) throw notFound()
       if (locked.status !== 'in_progress') throw alreadySubmitted()
+      if (hooks.guard) await hooks.guard(locked)
 
       const served = await this.sessionQuestions(locked.id)
       const checks = await this.checks(locked.id)

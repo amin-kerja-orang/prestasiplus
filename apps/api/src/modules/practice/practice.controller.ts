@@ -17,7 +17,7 @@ import { type RequestWithAuth, ScopeContext } from '../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { invalidModes } from './errors'
 import { type Caller, PracticeService } from './practice.service'
-import { PRACTICE_LIMITS } from './rules'
+import { HISTORY_MAX_PAGE, PRACTICE_LIMITS } from './rules'
 
 type Req = Request & RequestWithAuth
 
@@ -74,6 +74,7 @@ export class PracticeController {
   }
 
   @Get()
+  @RateLimit(PRACTICE_LIMITS.read)
   async list(@Query() query: Record<string, unknown>, @Req() req: Req) {
     const raw = typeof query.modes === 'string' ? query.modes : ''
     const modes = raw
@@ -82,6 +83,9 @@ export class PracticeController {
       .filter((m) => m !== '')
     if (modes.length === 0 || !modes.every((m): m is PracticeMode => (PRACTICE_MODES as readonly string[]).includes(m))) throw invalidModes()
     const parsed = parseBody(ListSessionsQuerySchema, { ...query, modes: raw }, PRACTICE_MESSAGES.invalidValue)
+    if (parsed.page !== undefined && parsed.page > HISTORY_MAX_PAGE) {
+      throw ApiError.of('VALIDATION_ERROR', { message: PRACTICE_MESSAGES.invalidValue, fields: { page: PRACTICE_MESSAGES.invalidValue } })
+    }
     return this.practice.history(callerOf(req), {
       modes: modes as PracticeMode[],
       type: parsed.type ?? null,
