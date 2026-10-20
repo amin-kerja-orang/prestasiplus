@@ -25,7 +25,7 @@ import {
 } from '../../src/modules/school-admin'
 import { UsersModule } from '../../src/modules/users'
 import { createTestDatabase, type TestDatabase } from '../support/db'
-import { DEMO_PASSWORD, loginAs, START, type LoggedIn } from '../auth/helpers'
+import { loginAs, START, type LoggedIn } from '../auth/helpers'
 
 export { DEMO_PASSWORD, START, expectError, schoolIdOf, userIdOf, type LoggedIn } from '../auth/helpers'
 
