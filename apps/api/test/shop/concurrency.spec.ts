@@ -185,4 +185,51 @@ describe('M15 concurrency (BE-23, AC1)', () => {
       expect(await stockOf(t, reward)).toBe(2)
     }
   })
+
+  it('a user redeeming reward R in parallel with the admin cancelling an earlier reserved redemption of R: no 500, stock and tokens consistent', async () => {
+    const u = await bareUser(t, 'redeem lawan batal')
+    await fund(t, u, { tokens: 40 }, 'dl')
+    const reward = await insertReward(t, { tokenCost: 10, stock: 5 })
+    const admin = apiOf(await login(t, ADMIN))
+    for (let round = 0; round < 6; round++) {
+      const earlier = await t.shop.redeem(actorFor(u), { rewardId: reward })
+      const [again, cancel] = await Promise.all([settle([t.shop.redeem(actorFor(u), { rewardId: reward })]), admin.post(`/admin/hadiah/redemptions/${earlier.id}/cancel`)])
+      expect(cancel.status).toBe(200)
+      expect(again.codes).toEqual([])
+      // Free the new one again so every round starts from the same balance.
+      const [row] = await t.db.query<{ id: string }>(`select id::text from reward_redemptions where user_id = $1 and status = 'pending_admin'`, [u])
+      await admin.post(`/admin/hadiah/redemptions/${row!.id}/cancel`)
+    }
+    expect(await stockOf(t, reward)).toBe(5)
+    expect((await walletRow(t, u)).tokens).toBe(40)
+    expect(await tokenSum(t, u)).toBe(40)
+  })
+
+  it('a ticket sale waits for a draw run holding the draw row (FOR UPDATE) and re-checks the status afterwards', async () => {
+    const u = await bareUser(t, 'tiket lawan undi')
+    await fund(t, u, { syiling: 50 }, 'run')
+    const draw = await insertDraw(t, { cost: 5, max: 3 })
+    let release!: () => void
+    const held = new Promise<void>((r) => (release = r))
+    let locked!: () => void
+    const isLocked = new Promise<void>((r) => (locked = r))
+    const run = t.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM draws WHERE id = ${BigInt(draw)} FOR UPDATE`
+      locked()
+      await held
+      await tx.$executeRaw`UPDATE draws SET status = 'closed' WHERE id = ${BigInt(draw)}`
+    })
+    await isLocked
+    let done = false
+    const sale = settle([t.shop.buyTicket(actorFor(u), draw)]).then((r) => ((done = true), r))
+    await new Promise((r) => setTimeout(r, 400))
+    expect(done).toBe(false) // blocked behind the draw run
+    release()
+    await run
+    const { ok, codes } = await sale
+    expect(ok).toHaveLength(0)
+    expect(codes).toEqual(['DRAW_CLOSED'])
+    expect(await t.db.query(`select 1 from draw_tickets where draw_id = $1`, [draw])).toHaveLength(0)
+    expect((await walletRow(t, u)).syiling).toBe(50)
+  })
 })

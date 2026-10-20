@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
 import { WalletModule } from '../wallet'
+import { BOX_RANDOM, CsprngBoxRandom } from './box-random'
 import { ShopAdminController } from './admin.controller'
 import { ShopAdminService } from './admin.service'
 import { ShopController } from './shop.controller'
@@ -17,6 +18,6 @@ import { ShopService } from './shop.service'
 @Module({
   imports: [AuditModule, ThrottleModule, WalletModule],
   controllers: [ShopController, ShopAdminController],
-  providers: [ShopRepository, ShopService, ShopAdminService],
+  providers: [ShopRepository, ShopService, ShopAdminService, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
 })
 export class ShopModule {}

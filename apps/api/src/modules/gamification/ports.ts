@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto'
+
 import { Injectable } from '@nestjs/common'
 
 /**
@@ -57,8 +59,28 @@ export class NoPracticeFacts implements PracticeFactsProvider {
  * onModuleInit() { this.ports.providePracticeFacts(this.adapter) }
  * ```
  */
+/**
+ * Where lucky draw randomness comes from: `(drawId) => (maxInclusive) => integer in [0, maxInclusive]`. Production
+ * uses the operating system CSPRNG (`crypto.randomInt`) so winners are neither predictable nor choosable by an admin.
+ * Only tests replace it (seeded `prngStream`, for the AC5 determinism); no request input ever reaches it.
+ */
+export type DrawRandomSource = (drawId: string) => (maxInclusive: number) => number
+
+export const cryptoDrawRandom: DrawRandomSource = () => (maxInclusive) => randomInt(0, maxInclusive + 1)
+
 @Injectable()
 export class GamificationPorts {
+  private draw: DrawRandomSource = cryptoDrawRandom
+
+  get drawRandom(): DrawRandomSource {
+    return this.draw
+  }
+
+  /** Test seam: replaces the CSPRNG source of the lucky draw. Never called by application code. */
+  overrideDrawRandom(source: DrawRandomSource): void {
+    this.draw = source
+  }
+
   private practice: PracticeFactsProvider = new NoPracticeFacts()
   private set = false
 

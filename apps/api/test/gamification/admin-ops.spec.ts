@@ -1,6 +1,9 @@
 import { GamificationDrawSchema, GamificationEconomySettingsSchema, GamificationRewardControlSchema, GamificationSettingsListSchema, GamificationSyilingRewardSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { cryptoDrawRandom } from '../../src/modules/gamification/ports'
+import { prngStream } from '../../src/db/prng'
+import { GamificationPorts } from '../../src/modules/gamification'
 import { ADMIN, bareUser, bootGamificationApp, dataOf, fail, signIn, userIdOf, type Client, type GamificationTestApp } from './helpers'
 
 const KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling']
@@ -14,6 +17,12 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
   const settingRow = async (key: string) => Number((await t.db.query<{ v: string }>(`select value::text v from gamification_settings where key = $1`, [key]))[0]!.v)
   const prizeRows = (drawId: string) => t.db.query<{ label: string; value_sen: number; qty: number; position: number }>(`select label, value_sen, qty, position from draw_prizes where draw_id = $1 order by position`, [drawId])
   const auditCount = async (action: string) => Number((await t.db.query<{ n: string }>(`select count(*)::text n from audit_events where action = $1`, [action]))[0]!.n)
+
+  /** Test seam: the draw shuffles with a seeded stream instead of the CSPRNG (AC5 determinism). */
+  const seedDraws = (seed: number) => t.app.get(GamificationPorts).overrideDrawRandom((id) => {
+    const stream = prngStream(`draw:${id}`, seed)
+    return (max) => stream.int(0, max)
+  })
 
   beforeAll(async () => {
     t = await bootGamificationApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '1000' } })
@@ -197,6 +206,50 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       expect(ev.detail.awards).toHaveLength(3)
     })
 
+    it('the audit event holds what is needed to audit the result: all ticket ids, the shuffled order and the winning tickets', async () => {
+      const { id } = await newDraw([2], 5)
+      const r = await t.admin.runDraw(id, await actor())
+      const ev = (await t.db.query<{ detail: { ticketCount: number; ticketIds: string[]; shuffledTicketIds: string[]; winningTicketIds: string[] } }>(`select detail from audit_events where action = 'gamification.draw.drawn' and target_id = $1`, [id]))[0]!
+      const all = (await t.db.query<{ id: string }>(`select id::text from draw_tickets where draw_id = $1 order by id`, [id])).map((x) => x.id)
+      expect(ev.detail.ticketCount).toBe(5)
+      expect(ev.detail.ticketIds).toEqual(all)
+      expect([...ev.detail.shuffledTicketIds].sort()).toEqual([...all].sort())
+      expect(ev.detail.winningTicketIds).toEqual(r.awards.map((a) => a.ticketId))
+      expect(ev.detail.shuffledTicketIds.slice(0, 2)).toEqual(ev.detail.winningTicketIds)
+    })
+
+    it('production randomness is the CSPRNG, not the seeded stream: it is not repeatable and takes no seed input', async () => {
+      t.app.get(GamificationPorts).overrideDrawRandom(cryptoDrawRandom)
+      const { id } = await newDraw([1], 12)
+      const seen = new Set<string>()
+      for (let i = 0; i < 8; i++) {
+        await t.db.query(`update draws set status = 'open', drawn_at = null, winner_user_id = null where id = $1`, [id])
+        seen.add((await t.admin.runDraw(id, null)).awards[0]!.ticketId)
+      }
+      expect(seen.size).toBeGreaterThan(1)
+      expect(t.admin.runDraw.length).toBe(2)
+    })
+
+    it('locks the draw row FOR UPDATE: a concurrent FOR SHARE lock waits until the run commits', async () => {
+      const { id } = await newDraw([1], 3)
+      const events: string[] = []
+      const run = t.prisma.transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM draws WHERE id = ${BigInt(id)} FOR UPDATE`
+        events.push('locked')
+        await new Promise((r) => setTimeout(r, 300))
+        events.push('releasing')
+      })
+      await new Promise((r) => setTimeout(r, 100))
+      const share = t.prisma.transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM draws WHERE id = ${BigInt(id)} FOR SHARE`
+        events.push('shared')
+      })
+      await Promise.all([run, share])
+      expect(events).toEqual(['locked', 'releasing', 'shared'])
+      // and runDraw itself goes through the same lock without deadlocking against a share holder
+      await expect(t.admin.runDraw(id, null)).resolves.toBeDefined()
+    })
+
     it('fewer tickets than prizes: only as many awards as tickets (2 of 5); no tickets: no award but the draw still closes', async () => {
       const a = await newDraw([5], 2)
       expect((await t.admin.runDraw(a.id, null)).awards).toHaveLength(2)
@@ -210,15 +263,15 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       const tickets = (await t.db.query<{ id: string; user_id: string }>(`select id::text, user_id::text from draw_tickets where draw_id = $1 order by id`, [id])).map((x) => ({ id: x.id, userId: x.user_id }))
       // Run the same draw as a copy on another draw id with identical ticket order is not possible (the stream name holds the id), so
       // replay the SAME draw twice by reopening it between the runs.
-      const first = await t.admin.runDraw(id, null, { seed: 7 })
+      const first = await (seedDraws(7), t.admin.runDraw(id, null))
       await t.db.query(`update draws set status = 'open', drawn_at = null, winner_user_id = null where id = $1`, [id])
-      const second = await t.admin.runDraw(id, null, { seed: 7 })
+      const second = await (seedDraws(7), t.admin.runDraw(id, null))
       expect(second.awards).toEqual(first.awards)
       await t.db.query(`update draws set status = 'open', drawn_at = null, winner_user_id = null where id = $1`, [id])
       const outcomes = new Set<string>()
       for (const seed of [1, 2, 3, 4, 5, 6]) {
         await t.db.query(`update draws set status = 'open', drawn_at = null, winner_user_id = null where id = $1`, [id])
-        outcomes.add((await t.admin.runDraw(id, null, { seed })).awards.map((a) => a.ticketId).join(','))
+        outcomes.add((seedDraws(seed), await t.admin.runDraw(id, null)).awards.map((a) => a.ticketId).join(','))
       }
       expect(outcomes.size).toBeGreaterThan(1)
       for (const o of outcomes) expect(o.split(',').every((tid) => tickets.some((x) => x.id === tid))).toBe(true)

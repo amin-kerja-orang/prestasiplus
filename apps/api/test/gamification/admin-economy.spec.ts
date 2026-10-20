@@ -288,6 +288,44 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       expect(await auditCount('gamification.award.granted')).toBeGreaterThanOrEqual(1)
     })
 
+    it('POST award: a reason with personal data (e-mail, IC number, phone-like digits) is 422 fields.reason and writes nothing', async () => {
+      const id = await userIdOf(t.db, STUDENT)
+      const rows = (await ledgerOf(t, id)).length
+      for (const reason of ['Hubungi ali@contoh.test', 'IC 900101-01-1234', 'IC 900101011234', 'Telefon 012-345 6789', 'Telefon +60 12 3456 7890', 'No 0123456789']) {
+        const err = fail(await admin.post('/admin/gamification/award', { userId: id, amount: 5, reason }), 422, 'VALIDATION_ERROR')
+        expect(err.fields).toEqual({ reason: 'Sebab tidak boleh mengandungi maklumat peribadi.' })
+      }
+      expect(await ledgerOf(t, id)).toHaveLength(rows)
+      expect((await admin.post('/admin/gamification/award', { userId: id, amount: 1, reason: 'Pemenang 3 pertandingan 2026, 12345 markah' })).status).toBe(200)
+    })
+
+    it('POST award with Idempotency-Key: a replay returns the first result with no second credit; without the header every call is new', async () => {
+      const id = await bareUser(t, 'Award Berkunci')
+      const a = await admin.post('/admin/gamification/award', { userId: id, amount: 20, reason: 'Sekali' }, { 'Idempotency-Key': 'award-k1' })
+      const b = await admin.post('/admin/gamification/award', { userId: id, amount: 20, reason: 'Sekali' }, { 'Idempotency-Key': 'award-k1' })
+      expect(a.status).toBe(200)
+      expect(b.status).toBe(200)
+      expect(dataOf<{ transactionId: string }>(b).transactionId).toBe(dataOf<{ transactionId: string }>(a).transactionId)
+      expect(await walletOf(t, id)).toMatchObject({ current_syiling: 20 })
+      expect((await ledgerOf(t, id)).filter((r) => r.source === 'admin_award')).toHaveLength(1)
+      await admin.post('/admin/gamification/award', { userId: id, amount: 5, reason: 'Satu' })
+      await admin.post('/admin/gamification/award', { userId: id, amount: 5, reason: 'Satu' })
+      expect(await walletOf(t, id)).toMatchObject({ current_syiling: 30 })
+      fail(await admin.post('/admin/gamification/award', { userId: id, amount: 5, reason: 'x' }, { 'Idempotency-Key': 'bad key!' }), 422, 'VALIDATION_ERROR')
+    })
+
+    it('upper bounds: oversized numbers are 422, never a 500 (reward syiling/xp, conversion rate, int4 fields, flat quiz reward)', async () => {
+      const id = await userIdOf(t.db, STUDENT)
+      fail(await admin.post('/admin/gamification/award', { userId: id, amount: 100_001, reason: 'x' }), 422, 'VALIDATION_ERROR')
+      const c = fail(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Terlalu Besar', rewardSyiling: 100_001, rewardXp: 100_001, targetValue: 2_147_483_648, sortOrder: 2_147_483_648 }), 422, 'VALIDATION_ERROR')
+      expect(Object.keys(c.fields ?? {}).sort()).toEqual(['rewardSyiling', 'rewardXp', 'sortOrder', 'targetValue'])
+      const tid = String(dataOf<{ id: string }[]>(await admin.get('/admin/gamification/tiers'))[0]!.id)
+      const tr = fail(await admin.put(`/admin/gamification/tiers/${tid}`, { ...TIER_BODY, conversionRate: 1_000_000, quizRewardL1: 100_001, minSyiling: 2_147_483_648 }), 422, 'VALIDATION_ERROR')
+      expect(Object.keys(tr.fields ?? {}).sort()).toEqual(['conversionRate', 'minSyiling', 'quizRewardL1'])
+      fail(await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 100_001 }] }), 422, 'VALIDATION_ERROR')
+      fail(await admin.put('/admin/reward-control/settings', { flatQuizReward: 100_001 }), 422, 'VALIDATION_ERROR')
+    })
+
     it('POST award creates the wallet of a user who has none', async () => {
       const u = await bareUser(t, 'Tanpa Dompet Award')
       await admin.post('/admin/gamification/award', { userId: u, amount: 10, reason: 'Sambutan' })

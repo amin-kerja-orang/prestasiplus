@@ -5,6 +5,7 @@ import { Roles } from '../../common/guards'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { Actor, type ShopActor } from './actor'
 import { ShopAdminService } from './admin.service'
+import { retryable } from './shop.guard'
 import { SHOP_LIMITS } from './shop.constants'
 
 /**
@@ -16,6 +17,7 @@ import { SHOP_LIMITS } from './shop.constants'
 @Controller('admin/hadiah')
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
+@RateLimit(SHOP_LIMITS.adminRead)
 export class ShopAdminController {
   constructor(private readonly admin: ShopAdminService) {}
 
@@ -28,7 +30,7 @@ export class ShopAdminController {
   @HttpCode(200)
   @RateLimit(SHOP_LIMITS.adminWrite)
   async bulk(@Actor() actor: ShopActor, @Body() body: unknown) {
-    return ok(await this.admin.bulk(actor, body))
+    return ok(await retryable(() => this.admin.bulk(actor, body)))
   }
 
   @Get('redemptions')
@@ -40,14 +42,14 @@ export class ShopAdminController {
   @HttpCode(200)
   @RateLimit(SHOP_LIMITS.adminWrite)
   async deliver(@Actor() actor: ShopActor, @Param('id') id: string, @Body() body: unknown) {
-    return ok(await this.admin.deliver(actor, id, body))
+    return ok(await retryable(() => this.admin.deliver(actor, id, body)))
   }
 
   @Post('redemptions/:id/cancel')
   @HttpCode(200)
   @RateLimit(SHOP_LIMITS.adminWrite)
   async cancel(@Actor() actor: ShopActor, @Param('id') id: string) {
-    return ok(await this.admin.cancel(actor, id))
+    return ok(await retryable(() => this.admin.cancel(actor, id)))
   }
 
   @Get(':id')
@@ -58,12 +60,12 @@ export class ShopAdminController {
   @Post()
   @RateLimit(SHOP_LIMITS.adminWrite)
   async create(@Actor() actor: ShopActor, @Body() body: unknown) {
-    return ok(await this.admin.create(actor, body))
+    return ok(await retryable(() => this.admin.create(actor, body)))
   }
 
   @Put(':id')
   @RateLimit(SHOP_LIMITS.adminWrite)
   async update(@Actor() actor: ShopActor, @Param('id') id: string, @Body() body: unknown) {
-    return ok(await this.admin.update(actor, id, body))
+    return ok(await retryable(() => this.admin.update(actor, id, body)))
   }
 }

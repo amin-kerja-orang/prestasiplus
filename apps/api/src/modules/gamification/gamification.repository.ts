@@ -682,6 +682,11 @@ export class GamificationRepository {
     return rows.map((d) => toDraw(d, d._count.tickets))
   }
 
+  /** Row lock on the draw (`FOR UPDATE`): a ticket purchase (`FOR SHARE`) cannot slip in between the ticket read and the close. */
+  async lockDraw(db: Db, id: bigint): Promise<void> {
+    await db.$queryRaw(Prisma.sql`SELECT id FROM draws WHERE id = ${id} FOR UPDATE`)
+  }
+
   async draw(db: Db, id: bigint): Promise<DrawRecord | null> {
     const d = await db.draw.findUnique({ where: { id }, include: { prizes: { orderBy: { position: 'asc' } }, _count: { select: { tickets: true } } } })
     return d ? toDraw(d, d._count.tickets) : null

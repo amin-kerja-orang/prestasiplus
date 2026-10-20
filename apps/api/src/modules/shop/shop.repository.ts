@@ -221,6 +221,11 @@ export class ShopRepository {
     return this.db.draw.findUnique({ where: { id } })
   }
 
+  /** Share-locks the draw row until the transaction ends: a draw run (which takes the row FOR UPDATE) cannot interleave with a ticket sale. */
+  async lockDrawShared(id: bigint): Promise<void> {
+    await this.db.$queryRaw`SELECT id FROM draws WHERE id = ${id} FOR SHARE`
+  }
+
   countTickets(drawId: bigint, userId: bigint): Promise<number> {
     return this.db.drawTicket.count({ where: { drawId, userId } })
   }

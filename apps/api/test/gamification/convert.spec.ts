@@ -128,16 +128,15 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
   })
 
   describe('Mod Pelajar (admin impersonating a student)', () => {
-    it('the conversion is allowed and every row it writes is stamped is_test; the admin routes are closed while the mode is on', async () => {
+    it('convert is refused with 403 FORBIDDEN before anything is written; the admin routes are closed while the mode is on', async () => {
       const adminId = await userIdOf(t.db, ADMIN)
       const start = (await walletOf(t, adminId))!
+      const rows = (await ledgerOf(t, adminId)).length
       const mod = await signInMod(t, ADMIN)
-      const res = await mod.post('/gamification/convert', { syilingAmount: 100 })
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      const d = GamificationConvertResultSchema.parse(dataOf(res))
-      expect(d).toMatchObject({ tokensCredited: 2, currentSyiling: start.current_syiling - 100 })
-      const row = (await ledgerOf(t, adminId)).find((r) => r.id === d.transactionId)!
-      expect(row).toMatchObject({ type: 'convert', is_test: true })
+      fail(await mod.post('/gamification/convert', { syilingAmount: 100 }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
+      fail(await mod.post('/gamification/convert', { syilingAmount: 'abc' }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
+      expect(await walletOf(t, adminId)).toEqual(start)
+      expect(await ledgerOf(t, adminId)).toHaveLength(rows)
       fail(await mod.get('/admin/gamification/overview'), 403, 'FORBIDDEN')
     })
   })

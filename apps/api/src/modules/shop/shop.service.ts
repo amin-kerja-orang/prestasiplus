@@ -18,8 +18,8 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { fnv1a32, mulberry32 } from '../../db/prng'
 import { WalletService } from '../wallet'
+import { BOX_RANDOM, type BoxRandom } from './box-random'
 import { MYSTERY_BOXES, SOURCES } from './shop.constants'
 import { boxNotFound, modPelajarRefused, plainNotFound, rewardError, rewardNotFound, validation } from './shop.errors'
 import { ShopRepository, idOrNull } from './shop.repository'
@@ -65,6 +65,7 @@ export class ShopService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BOX_RANDOM) private readonly random: BoxRandom,
   ) {}
 
   // --- #9 redeem --------------------------------------------------------------------------------------
@@ -130,8 +131,8 @@ export class ShopService {
     const userId = idFromString(actor.userId)
     return this.prisma.transaction(async (tx) => {
       await this.repo.lockUser(actor.userId)
-      // Deterministic per (user, number of earlier openings) like the mock; the stream is the seeded PRNG of db/prng.
-      const rng = mulberry32(fnv1a32(`m15-mystery:${actor.userId}:${String(await this.repo.countOpenings(userId))}`))
+      // The outcome comes from the injected source: a CSPRNG in production, the seeded stream (key = user + opening number, like the mock) in tests.
+      const rng = this.random.stream(`m15-mystery:${actor.userId}:${String(await this.repo.countOpenings(userId))}`)
       const coins = rng.int(box.coinMin, box.coinMax)
       const xp = rng.int(box.xpMin, box.xpMax)
       const opening = await this.repo.insertOpening(userId, Number(box.id), coins, xp, this.clock.now())
@@ -185,6 +186,8 @@ export class ShopService {
     return this.prisma.transaction(async (tx) => {
       await this.repo.lockUser(actor.userId)
       const now = this.clock.now()
+      // Share-lock the draw row first, then read it: a draw run cannot start between the check and the ticket.
+      if (drawId !== null) await this.repo.lockDrawShared(drawId)
       const draw = drawId === null ? null : await this.repo.draw(drawId)
       if (!draw || draw.status !== 'open' || !drawStillOpen(draw.closesAt, now)) throw rewardError('DRAW_CLOSED')
       const owned = await this.repo.countTickets(draw.id, userId)

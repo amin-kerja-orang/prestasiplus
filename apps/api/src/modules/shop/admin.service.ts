@@ -264,18 +264,29 @@ export class ShopAdminService {
     })
   }
 
+  /**
+   * Cancels a `pending_admin` or `pending_parent_consent` redemption (the parent approval routes are not built, UD-3,
+   * so a consent row would otherwise strand the student's tokens). Lock order is the same as a redemption's:
+   * the user's shop lock, then the reward row, then the wallet (inside `WalletService`), so cancel and redeem never wait in a cycle.
+   */
   async cancel(actor: ShopActor, idText: string): Promise<RewardCancelResult> {
     const id = idOf(idText)
     if (id === null) throw plainNotFound()
+    const owner = await this.prisma.client.rewardRedemption.findUnique({ where: { id }, select: { userId: true } })
+    if (!owner) throw redemptionNotFound()
     return this.prisma.transaction(async (tx: TxClient) => {
+      await this.repo.lockUser(idToString(owner.userId))
       const row = await this.repo.lockRedemption(id)
       if (!row) throw redemptionNotFound()
-      if (row.status !== 'pending_admin') throw notPending()
+      if (row.status !== 'pending_admin' && row.status !== 'pending_parent_consent') throw notPending()
       const at = this.clock.now()
+      if (row.stockReserved && row.rewardId !== null) {
+        await this.repo.lockRewards([row.rewardId])
+        await this.repo.returnStock(row.rewardId, at)
+      }
       if (row.tokenCost > 0) {
         await this.wallet.creditTokens({ userId: idToString(row.userId), amount: row.tokenCost, source: SOURCES.refund, refId: `redemption:${idToString(row.id)}`, isTest: false }, { tx })
       }
-      if (row.stockReserved && row.rewardId !== null) await this.repo.returnStock(row.rewardId, at)
       await this.repo.updateRedemption(id, { status: 'cancelled', cancelledAt: at, cancelledBy: 'admin', stockReserved: false }, at)
       await this.record(actor, AUDIT_ACTIONS.SHOP_REDEMPTION_CANCELLED, 'reward_redemption', idToString(id), { refund: row.tokenCost })
       return { id: idToString(id), status: 'cancelled', refundedTokens: row.tokenCost }

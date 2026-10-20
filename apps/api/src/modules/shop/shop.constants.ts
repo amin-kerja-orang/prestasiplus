@@ -7,6 +7,8 @@ import type { RateLimitSpec } from '../../common/throttle'
  * share the admin write ceiling of the other admin modules (own bucket).
  */
 export const SHOP_LIMITS = {
+  read: { bucket: 'shop.read', env: 'THROTTLE_WALLET_READ_PER_MINUTE', default: 240, per: 'user' },
+  adminRead: { bucket: 'shop.admin.read', env: 'THROTTLE_ADMIN_READ_PER_MINUTE', default: 300, per: 'user' },
   write: { bucket: 'shop.write', env: 'THROTTLE_SHOP_WRITE_PER_MINUTE', default: 30, per: 'user' },
   adminWrite: { bucket: 'shop.admin.write', env: 'THROTTLE_ADMIN_WRITE_PER_MINUTE', default: 30, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>

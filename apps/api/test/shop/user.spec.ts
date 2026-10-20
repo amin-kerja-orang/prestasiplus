@@ -231,6 +231,18 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
+  describe('mystery box randomness', () => {
+    it('production binds the CSPRNG source: in range and not a function of the key', async () => {
+      const { CsprngBoxRandom, SeededBoxRandom } = await import('../../src/modules/shop/box-random')
+      const a = Array.from({ length: 40 }, () => CsprngBoxRandom.stream('same-key').int(1, 1000))
+      expect(a.every((n) => n >= 1 && n <= 1000)).toBe(true)
+      expect(new Set(a).size).toBeGreaterThan(1)
+      const s1 = Array.from({ length: 5 }, ((st) => () => st.int(1, 1000))(SeededBoxRandom.stream('k')))
+      const s2 = Array.from({ length: 5 }, ((st) => () => st.int(1, 1000))(SeededBoxRandom.stream('k')))
+      expect(s1).toEqual(s2)
+    })
+  })
+
   describe('Cabutan Bertuah', () => {
     it('lists only open, not-yet-closed draws ordered by closing date (null last) then id, with own ticket counts and the prize pool', async () => {
       const api = await as(STUDENT_2)

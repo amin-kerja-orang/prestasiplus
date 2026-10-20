@@ -12,6 +12,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { PrismaService } from '../../src/db/prisma.service'
 import { AuthModule } from '../../src/modules/auth'
+import { BOX_RANDOM, SeededBoxRandom } from '../../src/modules/shop/box-random'
 import { ShopModule } from '../../src/modules/shop'
 import { ShopAdminService } from '../../src/modules/shop/admin.service'
 import { ShopService } from '../../src/modules/shop/shop.service'
@@ -66,6 +67,8 @@ export async function bootShopApp(opts: { env?: Record<string, string | undefine
   const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, WalletModule, ShopModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(BOX_RANDOM)
+    .useValue(SeededBoxRandom)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

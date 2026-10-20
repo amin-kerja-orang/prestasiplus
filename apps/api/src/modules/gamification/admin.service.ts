@@ -22,8 +22,7 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { DEFAULT_SEED_BASE, prngStream } from '../../db/prng'
-import { WalletService } from '../wallet'
+import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { AuditActor } from './actor'
 import {
   DEFAULT_METRIC_BY_TYPE,
@@ -34,22 +33,35 @@ import {
   TOGGLE_SETTING_KEYS,
   TRANSACTIONS_PAGE_SIZE,
 } from './gamification.constants'
+import { GamificationPorts } from './ports'
 import { GamificationRepository, type ChallengeRecord, type DrawRecord, type Db, isStudentSort, type PrizeLine, type StudentSort, type SyilingRewardRecord, type TierInput, type TierRecord } from './gamification.repository'
 import { bodyOf, boolOf, idParam, intOf, isRealDate, notFoundError, pageOf, queryText, readFields, validationFailure, type FieldSpec } from './validation'
+
+const PERSONAL_DATA_REASON = 'Sebab tidak boleh mengandungi maklumat peribadi.'
+const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/
+const IC_RE = /(?<!\d)\d{6}-?\d{2}-?\d{4}(?!\d)/
+/** A phone-number-like run: nine or more digits once spaces, dashes, dots, brackets and a leading plus are ignored. */
+function containsPersonalData(text: string): boolean {
+  if (EMAIL_RE.test(text) || IC_RE.test(text)) return true
+  return /\d(?:[\s().-]*\d){8,}/.test(text)
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/
 const LEDGER_TYPES: readonly string[] = ['earn', 'spend', 'convert', 'bonus', 'refund']
 const MYT_OFFSET_MS = 8 * 3_600_000
 
-const reward: FieldSpec = { kind: 'int', min: 0 }
+const INT_MAX = 2_147_483_647
+/** Upper bounds (nothing may reach a DB overflow or a WalletService RangeError): syiling/xp rewards <= one wallet call, other ints <= int4. */
+const reward: FieldSpec = { kind: 'int', min: 0, max: MAX_AMOUNT_PER_CALL }
+const CONVERSION_RATE_MAX = 999_999
 const TIER_FIELDS = {
   labelMs: { kind: 'text', max: 60 },
   icon: { kind: 'text', max: 16 },
   color: { kind: 'text', max: 7, pattern: COLOR_RE, optional: true },
-  minSyiling: { kind: 'int', min: 0 },
-  conversionRate: { kind: 'int', min: 1 },
-  sortOrder: { kind: 'int', min: 0 },
+  minSyiling: { kind: 'int', min: 0, max: INT_MAX },
+  conversionRate: { kind: 'int', min: 1, max: CONVERSION_RATE_MAX },
+  sortOrder: { kind: 'int', min: 0, max: INT_MAX },
   quizRewardL1: reward,
   quizRewardL2: reward,
   quizRewardL3: reward,
@@ -65,11 +77,11 @@ const CHALLENGE_FIELDS = {
   description: { kind: 'text', max: 255 },
   icon: { kind: 'text', max: 16 },
   challengeType: { kind: 'enum', values: Object.keys(DEFAULT_METRIC_BY_TYPE) },
-  targetValue: { kind: 'int', min: 1 },
-  rewardSyiling: { kind: 'int', min: 0 },
-  rewardXp: { kind: 'int', min: 0 },
+  targetValue: { kind: 'int', min: 1, max: INT_MAX },
+  rewardSyiling: reward,
+  rewardXp: reward,
   difficulty: { kind: 'enum', values: ['easy', 'medium', 'hard'] },
-  sortOrder: { kind: 'int', min: 0 },
+  sortOrder: { kind: 'int', min: 0, max: INT_MAX },
 } as const satisfies Record<string, FieldSpec>
 
 /** `perks`: a JSON array (the hidden field of S2), a list of strings, or one text (S2 add form); `undefined` keeps the stored list. */
@@ -173,6 +185,7 @@ export class GamificationAdminService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GamificationPorts) private readonly ports: GamificationPorts,
   ) {}
 
   private async write<T>(actor: AuditActor, action: string, target: { type: string; id: string | null }, details: Record<string, unknown>, fn: (tx: TxClient) => Promise<T>): Promise<T> {
@@ -342,18 +355,31 @@ export class GamificationAdminService {
    * re-assigns the tier upward). The award has no natural key, so it is the explicit opt-out: a retry awards again.
    * The `reason` is the ledger description, as the contract fixes it.
    */
-  async award(actor: AuditActor, body: unknown): Promise<GamificationAdminAwardResult> {
+  /**
+   * Manual award. PDPA: the contract makes `reason` the ledger description, which the student sees for good (see the
+   * wallet PDPA rule in `wallet.types.ts`), so a reason that carries personal data (an e-mail address, a Malaysian IC
+   * number or a phone-number-like run of digits) is refused with 422 `fields.reason`.
+   *
+   * IDEMPOTENCY. An optional `Idempotency-Key` makes the ledger key `(admin_award, award:<key>)`: a repeat with the same
+   * key and amount returns the first result and writes nothing (no second credit, no second audit row). Without a key
+   * every call is a new award (the mock's behaviour).
+   */
+  async award(actor: AuditActor, body: unknown, idempotencyKey: string | null = null): Promise<GamificationAdminAwardResult> {
     const { userId, amount, reason } = readFields(body, {
       userId: { kind: 'id' },
-      amount: { kind: 'int', min: 1, max: GAMIFICATION_AWARD_MAX },
+      amount: { kind: 'int', min: 1, max: Math.min(GAMIFICATION_AWARD_MAX, MAX_AMOUNT_PER_CALL) },
       reason: { kind: 'text', max: 255 },
     })
+    if (containsPersonalData(reason)) throw validationFailure({ reason: PERSONAL_DATA_REASON })
+    const sourceId = idempotencyKey === null ? null : `award:${idempotencyKey}`
+    if (sourceId !== null) {
+      const prior = await this.repo.ledgerByKey(this.repo.handle(), userId, 'admin_award', sourceId)
+      if (prior !== null && prior.amount === amount) return { userId, currentSyiling: prior.balanceAfter, transactionId: prior.id }
+    }
+    const key = sourceId === null ? { sourceId: null, noKeyReason: 'a manual admin award without an Idempotency-Key has no natural key' } : { sourceId }
     return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_AWARD_GRANTED, { type: 'user', id: userId }, { amount }, async (tx) => {
       if (!(await this.repo.userBasics(tx, userId))) throw notFoundError(MSG.userNotFound)
-      const out = await this.wallet.credit(
-        { userId, amount, type: 'bonus', source: 'admin_award', sourceId: null, noKeyReason: 'a manual admin award has no natural key', description: reason, isTest: actor.isTest },
-        { tx },
-      )
+      const out = await this.wallet.credit({ userId, amount, type: 'bonus', source: 'admin_award', description: reason, isTest: actor.isTest, ...key }, { tx })
       return { userId, currentSyiling: out.currentSyiling, transactionId: out.entryId }
     })
   }
@@ -427,7 +453,7 @@ export class GamificationAdminService {
     const refuse = () => validationFailure(field === undefined ? {} : { [field]: MSG.summary }, MSG.summary)
     for (const { key, value } of values) {
       const toggle = TOGGLE_SETTING_KEYS.includes(key)
-      if (!known.has(key) || !Number.isInteger(value) || value < 0 || value > 2_147_483_647 || (toggle && value > 1)) throw refuse()
+      if (!known.has(key) || !Number.isInteger(value) || value < 0 || value > (key === ECONOMY_KEYS.flatQuizReward ? MAX_AMOUNT_PER_CALL : INT_MAX) || (toggle && value > 1)) throw refuse()
     }
     const at = this.clock.now()
     for (const { key, value } of values) await this.repo.saveSetting(tx, key, value, at)
@@ -484,7 +510,7 @@ export class GamificationAdminService {
 
   async setRewardCost(actor: AuditActor, rawId: string, body: unknown): Promise<GamificationSyilingReward> {
     const id = idParam(rawId)
-    const { costValueSen } = readFields(body, { costValueSen: { kind: 'int', min: 0, max: 2_147_483_647 } })
+    const { costValueSen } = readFields(body, { costValueSen: { kind: 'int', min: 0, max: INT_MAX } })
     return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_REWARD_COST_UPDATED, { type: 'syiling_reward', id: rawId }, { costValueSen }, async (tx) => {
       const r = await this.repo.setRewardCost(tx, id, costValueSen, this.clock.now())
       if (!r) throw notFoundError(MSG.rewardNotFound)
@@ -501,7 +527,7 @@ export class GamificationAdminService {
     const v = readFields(body, {
       title: { kind: 'text', max: 150 },
       description: { kind: 'text', max: 1000, optional: true },
-      ticketCostSyiling: { kind: 'int', min: 1, max: 2_147_483_647 },
+      ticketCostSyiling: { kind: 'int', min: 1, max: INT_MAX },
       maxTicketsPerStudent: { kind: 'int', min: 1, max: 32_767 },
       closesAt: { kind: 'text', max: 10, pattern: DATE_RE, optional: true },
       openNow: { kind: 'bool', optional: true },
@@ -525,14 +551,17 @@ export class GamificationAdminService {
   /**
    * Draws the winners of an OPEN draw (AC5, AC9). There is no HTTP route for it (the contract has none); the
    * method is the doorway for the draw run. Prize slots are the pool lines in order, each repeated `qty` times, so
-   * the number of awards can never pass the sum of `qty` (nor the number of tickets). Tickets are shuffled with the
-   * seeded PRNG stream `draw:<id>` (`seed` is the stream base; the same tickets and seed give the same result),
-   * each ticket wins at most once, and the draw is closed (`status = closed`, first winner stored). The full result
-   * is written as one audit event in the same transaction.
+   * the number of awards can never pass the sum of `qty` (nor the number of tickets). Tickets are shuffled
+   * (Fisher-Yates) with the random source of `GamificationPorts` (the OS CSPRNG in production, so winners are
+   * neither predictable nor choosable; tests override it with a seeded stream for the AC5 determinism). Each
+   * ticket wins at most once, and the draw is closed (`status = closed`, first winner stored). The draw row is
+   * locked `FOR UPDATE` before the tickets are read. The audit event (same transaction) holds what is needed to
+   * audit the result: the ticket ids in ascending order, the shuffled order and the winning tickets in prize order.
    */
-  async runDraw(drawId: string, actor: AuditActor | null, opts: { seed?: number } = {}): Promise<{ drawId: string; awards: { position: number; label: string; ticketId: string; userId: string }[] }> {
+  async runDraw(drawId: string, actor: AuditActor | null): Promise<{ drawId: string; awards: { position: number; label: string; ticketId: string; userId: string }[] }> {
     const id = idFromString(drawId)
     return this.prisma.transaction(async (tx) => {
+      await this.repo.lockDraw(tx, id)
       const draw = await this.repo.draw(tx, id)
       if (!draw) throw notFoundError()
       if (draw.status !== 'open') throw new ApiError({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
@@ -541,10 +570,10 @@ export class GamificationAdminService {
         for (let i = 0; i < p.qty; i++) slots.push({ position, label: p.label })
       })
       const tickets = await this.repo.ticketsOf(tx, id)
-      const prng = prngStream(`draw:${drawId}`, opts.seed ?? DEFAULT_SEED_BASE)
+      const pick = this.ports.drawRandom(drawId)
       const pool = [...tickets]
       for (let i = pool.length - 1; i > 0; i--) {
-        const j = prng.int(0, i)
+        const j = pick(i)
         const t = pool[i] as (typeof pool)[number]
         pool[i] = pool[j] as (typeof pool)[number]
         pool[j] = t
@@ -562,7 +591,13 @@ export class GamificationAdminService {
         isTest: actor?.isTest ?? false,
         targetType: 'draw',
         targetId: drawId,
-        details: { tickets: tickets.length, awards: awards.map((a) => ({ position: a.position, ticketId: a.ticketId, userId: a.userId })) },
+        details: {
+          ticketCount: tickets.length,
+          ticketIds: tickets.map((x) => x.id),
+          shuffledTicketIds: pool.map((x) => x.id),
+          winningTicketIds: awards.map((a) => a.ticketId),
+          awards: awards.map((a) => ({ position: a.position, ticketId: a.ticketId, userId: a.userId })),
+        },
         tx,
       })
       return { drawId, awards }

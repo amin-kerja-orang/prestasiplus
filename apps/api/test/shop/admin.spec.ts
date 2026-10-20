@@ -315,10 +315,17 @@ describe('M15 admin routes (BE-23)', () => {
       expectError(await admin.post('/admin/hadiah/redemptions/abc/cancel'), 404, 'NOT_FOUND', 'Not Found.')
     })
 
-    it('a redemption waiting for parent consent cannot be delivered or cancelled by the admin (mock rule; the parent routes are not built)', async () => {
-      const r = await redemption(STUDENT, { consent: true })
-      expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/cancel`), 409, 'CONFLICT')
+    it('a redemption waiting for parent consent (parent routes not built, UD-3) can be cancelled with one refund and the reserved stock back, but not delivered', async () => {
+      const r = await redemption(STUDENT, { consent: true, tokenCost: 7, stock: 3 })
+      expect(await stockOf(t, r.reward)).toBe(2)
+      const spent = await walletRow(t, r.uid)
       expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: 'ABC' }), 409, 'CONFLICT')
+      const res = await admin.post(`/admin/hadiah/redemptions/${r.id}/cancel`)
+      expect(RewardCancelResultSchema.parse(res.body.data)).toEqual({ id: r.id, status: 'cancelled', refundedTokens: 7 })
+      expect((await walletRow(t, r.uid)).tokens).toBe(spent.tokens + 7)
+      expect(await stockOf(t, r.reward)).toBe(3)
+      expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/cancel`), 409, 'CONFLICT')
+      expect((await walletRow(t, r.uid)).tokens).toBe(spent.tokens + 7)
     })
   })
 })

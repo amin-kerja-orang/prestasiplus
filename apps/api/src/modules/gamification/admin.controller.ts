@@ -1,11 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
+
+import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
 import { listMeta, NoStoreInterceptor, ok, okList } from '../../common/http'
 import { Roles } from '../../common/guards'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { Actor, type AuditActor } from './actor'
 import { GamificationAdminService } from './admin.service'
-import { GAMIFICATION_LIMITS, STUDENTS_PAGE_SIZE, TRANSACTIONS_PAGE_SIZE } from './gamification.constants'
+import { GAMIFICATION_LIMITS, IDEMPOTENCY_HEADER, IDEMPOTENCY_KEY_PATTERN, STUDENTS_PAGE_SIZE, TRANSACTIONS_PAGE_SIZE } from './gamification.constants'
+import { validationFailure } from './validation'
 
 /**
  * M14 admin economy (S1 to S5): the `admin` role only (Admin Pusat). Bodies are read raw and validated in the
@@ -88,8 +91,9 @@ export class GamificationAdminController {
   @Post('award')
   @HttpCode(200)
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
-  async award(@Actor() actor: AuditActor, @Body() body: unknown) {
-    return ok(await this.admin.award(actor, body))
+  async award(@Actor() actor: AuditActor, @Body() body: unknown, @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined) {
+    if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) throw validationFailure({ 'Idempotency-Key': MSG.invalid })
+    return ok(await this.admin.award(actor, body, idempotencyKey ?? null))
   }
 
   @Get('transactions')

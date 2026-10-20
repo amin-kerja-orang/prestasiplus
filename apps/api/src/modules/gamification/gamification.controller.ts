@@ -7,6 +7,7 @@ import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { isOverloadError } from '../auth/auth.errors'
 import { isTestActor } from '../wallet'
+import { MOD_PELAJAR_REFUSAL } from './gamification.constants'
 import { GAMIFICATION_LIMITS, IDEMPOTENCY_HEADER, IDEMPOTENCY_KEY_PATTERN } from './gamification.constants'
 import { GamificationService, type Viewer } from './gamification.service'
 import { bodyOf, intOf, queryText, validationFailure } from './validation'
@@ -86,6 +87,8 @@ export class GamificationController {
   @HttpCode(200)
   @RateLimit(GAMIFICATION_LIMITS.convert)
   async convert(@Req() req: Req, @Body() body: unknown, @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined) {
+    // Mod Pelajar never spends real coins: refused before anything is read or written (same rule as the shop spends).
+    if (viewerOf(req).isTest) throw ApiError.of('FORBIDDEN', { message: MOD_PELAJAR_REFUSAL })
     const amount = intOf(bodyOf(body).syilingAmount)
     if (amount === undefined) throw validationFailure({ syilingAmount: MSG.amountInvalid }, MSG.amountInvalid)
     if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) {

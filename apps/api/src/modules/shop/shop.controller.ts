@@ -5,7 +5,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { NoStoreInterceptor, ok } from '../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
-import { isOverloadError } from '../auth/auth.errors'
+import { retryable as guard } from './shop.guard'
 import { Actor, type ShopActor } from './actor'
 import { SHOP_LIMITS } from './shop.constants'
 import { ShopService } from './shop.service'
@@ -19,16 +19,6 @@ function me(req: Req): string {
   return auth.userId
 }
 
-/** An overloaded database is a retryable 429, never a 500. */
-async function guard<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn()
-  } catch (err) {
-    if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
-    throw err
-  }
-}
-
 /**
  * Student routes of M15 (any signed-in role, like the mock; the session guard makes anonymous calls 401 and checks
  * CSRF on every write). Every answer is `no-store`. The three spending writes are limited per user (429) and refused
@@ -37,6 +27,7 @@ async function guard<T>(fn: () => Promise<T>): Promise<T> {
 @Controller()
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
+@RateLimit(SHOP_LIMITS.read)
 export class ShopController {
   constructor(private readonly shop: ShopService) {}
 

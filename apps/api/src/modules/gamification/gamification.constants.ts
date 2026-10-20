@@ -63,3 +63,6 @@ export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_.:-]{1,100}$/
 /** Referral rewards (mock constants, contract `GAMIFICATION_REFERRAL_REWARDS`). */
 export const REFERRAL_REWARD_REFERRER = 50
 export const REFERRAL_REWARD_REFEREE = 25
+
+/** 403 message when an admin in Mod Pelajar tries to spend (convert): Mod Pelajar never spends real coins. */
+export const MOD_PELAJAR_REFUSAL = 'Tidak dibenarkan dalam Mod Pelajar.'
