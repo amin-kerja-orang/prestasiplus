@@ -7,7 +7,11 @@ import type {
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
   PerformanceLevelCardSchema,
+  PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
+  PerformancePublicProfileSchema,
+  PerformanceRankingSchema,
+  PerformanceTimelinePostSchema,
   PerformanceSchoolItemAnalysisSchema,
   PerformanceSchoolSchema,
   PerformanceStudentSchema,
@@ -42,3 +46,8 @@ export type PerformanceStudent = z.infer<typeof PerformanceStudentSchema>
 export interface ItemAnalysisSchoolQuery {
   tingkatan?: string
 }
+
+export type PerformanceRanking = z.infer<typeof PerformanceRankingSchema>
+export type PerformanceLeaderboard = z.infer<typeof PerformanceLeaderboardSchema>
+export type PerformancePublicProfile = z.infer<typeof PerformancePublicProfileSchema>
+export type PerformanceTimelinePost = z.infer<typeof PerformanceTimelinePostSchema>
