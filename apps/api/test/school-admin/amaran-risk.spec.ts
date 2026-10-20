@@ -72,6 +72,12 @@ describe('BE-21 Amaran risk formula (AC 10)', () => {
     expect([r.a, r.e, r.m, r.score, r.status, r.neverActive]).toEqual([50, 100, 100, 80, 'high', true])
   })
 
+  it('a pupil whose only activity is a login (no practice, so no facts) is never active: A 50, E 100, M 100', () => {
+    // A login is not practice: the service passes no session, no mastery and no practice stamp, whatever `last_login_at` says.
+    const s = scored({ accuracy: null, sessions: 0, lastActiveAt: null, masteryLevels: [] })
+    expect([s.risk.a, s.risk.e, s.risk.m, s.risk.neverActive]).toEqual([50, 100, 100, true])
+  })
+
   it('M is 100 without mastery records', () => {
     expect(computeRisk({ accuracy: 90, sessions: 2, lastActiveAt: NOW, masteryLevels: [] }, NOW).m).toBe(100)
   })

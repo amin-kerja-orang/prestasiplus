@@ -46,8 +46,10 @@ import {
 
 /** Rows per `IN (...)` list sent to the database. */
 const IN_CHUNK = 1000
-/** Pupils read from the practice owner at the same time (one pupil is three small reads). */
-const PUPIL_PARALLEL = 8
+/** Most schools one district or state roll-up may read; a larger one is refused with a 422 (bounded cost per request). */
+export const MAX_ROLLUP_SCHOOLS = 150
+/** 422 text when a roll-up covers more than `MAX_ROLLUP_SCHOOLS` schools (BM; no contract text exists, see the deviation table). */
+export const ROLLUP_TOO_LARGE_MESSAGE = 'Terlalu banyak sekolah dalam skop ini. Sila pilih daerah yang lebih kecil atau satu sekolah.'
 /** Schools are read in pages of this size when a district or state is rolled up. */
 const SCHOOL_PAGE = 500
 /** Reserved fixture schools (BR-M18-02) are left out of district and state roll-ups. */
@@ -63,21 +65,6 @@ const refuse422 = (field: string, message: string): ApiError => ApiError.of('VAL
 async function each<T>(ids: readonly string[], fn: (part: string[]) => Promise<T>): Promise<T[]> {
   const out: T[] = []
   for (let i = 0; i < ids.length; i += IN_CHUNK) out.push(await fn(ids.slice(i, i + IN_CHUNK)))
-  return out
-}
-
-/** Runs `fn` over `items` with at most `size` calls in flight, keeping the order of the results. */
-async function pool<T, R>(items: readonly T[], size: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out = new Array<R>(items.length)
-  let next = 0
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const i = next++
-      if (i >= items.length) return
-      out[i] = await fn(items[i] as T)
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(size, items.length) }, worker))
   return out
 }
 
@@ -125,7 +112,7 @@ export class AmaranService {
       const school = await this.readableSchool(caller, rawId)
       const now = this.clock.now().getTime()
       const t = parseTingkatan(rawTingkatan)
-      const data = await this.load(school, now)
+      const data = await this.load(school, now, caller)
       const kept = t === undefined ? data.scored : data.scored.filter((p) => inTingkatan(p.facts.classes, t))
       const ranked = [...kept].sort(rankOrder)
       return {
@@ -150,7 +137,7 @@ export class AmaranService {
 
       if (scope.kind === 'school') {
         const school = await this.readableSchool(caller, scope.schoolId)
-        const data = await this.load(school, now)
+        const data = await this.load(school, now, caller)
         return {
           scope: 'school',
           title: school.name,
@@ -167,11 +154,12 @@ export class AmaranService {
       const district = scope.kind === 'district' ? scope.district.toLowerCase() : null
       const chosen = (await this.schoolsOfState(state)).filter((s) => !isFixture(s.id) && (district === null || (s.district ?? '').trim().toLowerCase() === district))
       if (chosen.length === 0) throw notFound()
+      if (chosen.length > MAX_ROLLUP_SCHOOLS) throw refuse422(scope.kind, ROLLUP_TOO_LARGE_MESSAGE)
 
       const scored: ScoredPupil[] = []
       const rows: AmaranSummarySchoolRow[] = []
       for (const school of chosen) {
-        const data = await this.load(school, now)
+        const data = await this.load(school, now, caller)
         if (data.scored.length === 0) continue
         scored.push(...data.scored)
         const t = tallyOf(data.scored)
@@ -250,7 +238,7 @@ export class AmaranService {
     return this.guard(async () => {
       const school = await this.readableSchool(caller, rawId)
       const now = this.clock.now().getTime()
-      const data = await this.load(school, now)
+      const data = await this.load(school, now, caller)
       const pupils = [...data.scored].sort(rankOrder).map((p, i) => pupilView(p, i + 1))
       const fileName = `amaran-sekolah-${school.id}-${yyyymmdd(now)}.csv`
       await this.audit.record({
@@ -315,25 +303,35 @@ export class AmaranService {
     }
   }
 
-  /** Pupils of one school (active and inactive), their classes and their practice facts. */
-  private async load(school: SchoolRow, now: number): Promise<SchoolData> {
-    const students = (await this.users.studentsOfSchool(school.id, '', '')).filter((s) => s.schoolId === school.id)
-    const classOf = await this.classesOf(
-      school.id,
-      students.map((s) => s.id),
-    )
-    const facts = await pool(students, PUPIL_PARALLEL, async (s) => {
-      const stats = await this.practice.historyStats(s.id, { modes: PRACTICE_SESSION_MODES })
-      const newest = await this.practice.history(s.id, { modes: PRACTICE_SESSION_MODES, take: 1 })
-      const mastery = (await this.practice.mastery(s.id)).filter((m) => m.answered > 0)
-      const stamps = [newest[0]?.completedAt ?? null, ...mastery.map((m) => m.lastAnsweredAt)].filter((d): d is Date => d !== null).map((d) => d.getTime())
+  /**
+   * Pupils of one school (active and inactive), their classes and their practice facts. A teacher sees only the active members
+   * of the own classes (as `/effectiveness`); admin and school_admin see the whole school. The practice facts are three
+   * set-based reads (one query per 1000 pupils each), never one read per pupil.
+   */
+  private async load(school: SchoolRow, now: number, caller: AmaranCaller): Promise<SchoolData> {
+    let students = (await this.users.studentsOfSchool(school.id, '', '')).filter((s) => s.schoolId === school.id)
+    if (caller.role === 'teacher') {
+      const own = new Set(await this.classes.teacherStudentIds(caller.userId))
+      students = students.filter((s) => own.has(s.id))
+    }
+    const ids = students.map((s) => s.id)
+    const classOf = await this.classesOf(school.id, ids)
+    const [stats, newest, masteryOf] = await Promise.all([
+      this.practice.statsOf(ids, { modes: PRACTICE_SESSION_MODES }),
+      this.practice.lastActivityOf(ids, { modes: PRACTICE_SESSION_MODES }),
+      this.practice.masteryOf(ids),
+    ])
+    const facts = students.map((s) => {
+      const st = stats.get(s.id)
+      const mastery = (masteryOf.get(s.id) ?? []).filter((m) => m.answered > 0)
+      const stamps = [newest.get(s.id) ?? null, ...mastery.map((m) => m.lastAnsweredAt)].filter((d): d is Date => d !== null).map((d) => d.getTime())
       const pupil: PupilFacts = {
         userId: s.id,
         name: s.name,
         grade: s.grade,
         classes: classOf.get(s.id) ?? [],
-        accuracy: stats.sessions > 0 ? stats.avgAccuracyPct : null,
-        sessions: stats.sessions,
+        accuracy: st && st.sessions > 0 ? st.avgAccuracyPct : null,
+        sessions: st?.sessions ?? 0,
         lastActiveAt: stamps.length === 0 ? null : Math.max(...stamps),
         masteryLevels: mastery.map((m) => masteryLevelOf(m.correct)),
       }

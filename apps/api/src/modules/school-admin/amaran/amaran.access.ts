@@ -48,14 +48,14 @@ export function schoolIdOf(raw: string | undefined): string | null {
 }
 
 /**
- * May the caller read the risk data of this school? admin: any school; school_admin: the own school; teacher: the own school or
- * the school of a class the teacher owns. Callers turn `false` into the SAME 404 as an unknown school, so the answer cannot be
- * used to list valid school ids. A role outside `AMARAN_ROLES` never gets here (the `@Roles` guard answers 403 first).
+ * May the caller read the risk data of this school? admin: any school; school_admin: the own school; teacher: only a school
+ * where the teacher owns an active class (minimum data: the pupils shown are those of the own classes, see `amaran.service`).
+ * Callers turn `false` into the SAME 404 as an unknown school, so the answer cannot be used to list valid school ids. A role
+ * outside `AMARAN_ROLES` never gets here (the `@Roles` guard answers 403 first).
  */
 export async function canReadSchool(caller: AmaranCaller, schoolId: string, classes: Pick<ClassesRepository, 'forTeacher'>): Promise<boolean> {
   if (caller.role === 'admin') return true
-  if (caller.role !== 'school_admin' && caller.role !== 'teacher') return false
-  if (caller.schoolId !== null && caller.schoolId === schoolId) return true
-  if (caller.role === 'teacher') return (await classes.forTeacher(caller.userId)).some((c) => c.schoolId === schoolId)
+  if (caller.role === 'school_admin') return caller.schoolId !== null && caller.schoolId === schoolId
+  if (caller.role === 'teacher') return (await classes.forTeacher(caller.userId)).some((c) => c.isActive && c.schoolId === schoolId)
   return false
 }

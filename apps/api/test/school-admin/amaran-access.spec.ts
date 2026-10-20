@@ -111,6 +111,30 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     errorOf(await teacher.get(`/amaran/schools/${s2}`), 404, 'NOT_FOUND')
   })
 
+  it('a teacher sees only the active pupils of the own classes (risk page and summary); school_admin sees the whole school', async () => {
+    const own = pupilIds.slice(0, 3).map((_, i) => `Murid Amaran ${i + 1}`)
+    const risk = AmaranSchoolRiskSchema.parse((await teacher.get(`/amaran/schools/${s1}`)).body.data)
+    expect(risk.pupils.map((p) => p.name).sort()).toEqual(own)
+    expect(risk.tally.total).toBe(3)
+    const summary = AmaranSummarySchema.parse((await teacher.get('/amaran/summary')).body.data)
+    expect(summary.tally.total).toBe(3)
+    expect(summary.pupilsLine).toBe('3 pelajar')
+    const whole = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    expect(whole.pupils.length).toBeGreaterThanOrEqual(6)
+    expect(whole.pupils.map((p) => p.name)).not.toContain('Murid Sekolah Dua')
+  })
+
+  it('a teacher with a class in another school sees only the own class pupils there, and none of the school 1 pupils', async () => {
+    const teacherId = await userIdOf(t.db, TEACHER)
+    const klass = await insertClass(t.db, { name: '4 Sebelah', schoolId: s2, teacherId })
+    const other = await insertUser(t.db, { name: 'Murid Kelas Sebelah', email: 'sebelah@ujian.test', roles: ['student'], schoolId: s2, grade: 10 })
+    await enrolIn(t.db, klass, other)
+    const risk = AmaranSchoolRiskSchema.parse((await teacher.get(`/amaran/schools/${s2}`)).body.data)
+    expect(risk.pupils.map((p) => p.name)).toEqual(['Murid Kelas Sebelah'])
+    await t.db.query(`delete from enrolments where classroom_id = $1::bigint`, [klass])
+    await t.db.query(`delete from classrooms where id = $1::bigint`, [klass])
+  })
+
   it('the risk page: only the school pupils, ranked, with the BM cell texts, never an IC, e-mail or phone, and no-store', async () => {
     const res = await schoolAdmin.get(`/amaran/schools/${s1}`)
     expect(res.status).toBe(200)
