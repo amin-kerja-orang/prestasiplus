@@ -117,6 +117,8 @@ export interface QuestionRecord {
   groupPosition: number | null
   /** `question_tags` kind `pool` present (flat `spmPool`). */
   spmPool: boolean
+  /** BE-42: the PKSK tags (`pksk_domain` code, `pksk_level`) when the question is a PKSK question, else null. */
+  pksk?: { domainCode: string; level: 'T1' | 'T4' } | null
   createdAt: Date
   updatedAt: Date
   version: QuestionVersionRecord

@@ -145,12 +145,16 @@ const LEAF_KIND: Record<Leaf['mode'], BijakAttemptLeafKind> = {
   essay: 'essay',
   drawing: 'drawing',
   table_fill: 'table_fill',
+  // PKSK questions never reach the exam builder (excluded at the source); the entry only keeps the map total.
+  pksk_choice: 'short_text',
 }
 
 function describeKey(leaf: Leaf): SchemeLine[] {
   switch (leaf.mode) {
     case 'mcq':
       return [{ text: SCHEME_LINES.correctOption(leaf.options.findIndex((o) => o.label === leaf.key.correct)) }]
+    case 'pksk_choice':
+      return []
     case 'short_text':
       return leaf.key.values.map((v) => ({ text: SCHEME_LINES.accepted(v) }))
     case 'numeric':

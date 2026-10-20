@@ -28,7 +28,7 @@ import {
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
-import { isLeaf } from './grading'
+import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
   AdminListResult,
@@ -99,6 +99,9 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
   }
   return { path, message: issue.message }
 }
+
+/** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
+export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
@@ -488,7 +491,11 @@ export class QuestionsService {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
     const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
-    if (res.success) return res.data
+    if (res.success) {
+      // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
+      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
+      return res.data
+    }
     const issue = res.error.issues[0]
     const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
