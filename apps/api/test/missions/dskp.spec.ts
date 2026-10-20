@@ -71,7 +71,10 @@ describe('BE-18 B: teacher DSKP picks (bidang, SK, SP)', () => {
     it('a refusal writes nothing; a body that is not an object is a name refusal', async () => {
       const before = await count('dskp_bidang')
       refused(await bidang({ name: '' }), D.bidangName)
-      refused(await bidang({ name: 'a\u0000b', subjectId, educationLevelId: levelId }), D.bidangName)
+      // A NUL character is refused by the global NUL guard (common/security/nul-guard) before the handler: 422, nothing written.
+      const nul = await bidang({ name: 'a\u0000b', subjectId, educationLevelId: levelId })
+      expect(nul.status).toBe(422)
+      expect((nul.body as { error: { code: string } }).error.code).toBe('VALIDATION_ERROR')
       const res = await teacher.who.agent.post('/api/guru/dskp/bidang').set('X-CSRF-Token', teacher.who.csrf).send([1, 2])
       refused(res, D.bidangName)
       expect(await count('dskp_bidang')).toBe(before)
