@@ -8,7 +8,7 @@ export type {
   QueueRecord,
   SessionRecord,
 } from './practice.repository'
-export { PracticePorts, PRACTICE_REWARD_SOURCE, versionKey } from './ports'
+export { PracticePorts, PRACTICE_REWARD_SOURCE, practiceRewardSource, versionKey } from './ports'
 export type {
   AssignmentKind,
   AssignmentResolution,
@@ -18,6 +18,7 @@ export type {
   PracticeRamalanSource,
   PracticeRewardPort,
   PracticeRewardResult,
+  PracticeRewardSource,
   PracticeSelection,
   PracticeSessionCompleted,
 } from './ports'

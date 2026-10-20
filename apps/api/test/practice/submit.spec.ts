@@ -85,6 +85,7 @@ describe('AC5 rewards: points, coins and the reward port', () => {
       userId: ids.pelajar,
       sessionId: started.sessionId,
       mode: 'random',
+      source: 'quiz_practice',
       correct: 2,
       total: 5,
       timeSpent: 45,
@@ -107,6 +108,15 @@ describe('AC5 rewards: points, coins and the reward port', () => {
     const second = await play(maju, t.bank, { mode: 'mission', missionId: '9002' }, 4)
     expect(t.reward.calls[1]).toMatchObject({ coinsPerCorrect: 3, sessionCoins: 12 })
     expect((await sessionRow(second.started.sessionId))?.coins_earned).toBe(12)
+  })
+
+  it('the port gets the ledger source of the mode: practice modes quiz_practice, SPM modes quiz_spm (M14 BR-M14-03)', async () => {
+    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 1)
+    await play(pelajar, t.bank, { mode: 'past_year', subjectCode: 'SEJ', count: 5 }, 2)
+    expect(t.reward.calls.map((c) => [c.mode, c.source])).toEqual([
+      ['random', 'quiz_practice'],
+      ['past_year', 'quiz_spm'],
+    ])
   })
 
   it('a non-mission session reports no coinsPerCorrect to the port', async () => {

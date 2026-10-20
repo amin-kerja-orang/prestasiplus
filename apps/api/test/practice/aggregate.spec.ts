@@ -89,6 +89,25 @@ describe('PracticeAggregateService', () => {
     expect(rb).toMatchObject({ duration_sec: 0, start_type: null })
   })
 
+  it('M3 (#45): the BE-16 emit with paperKind, startedAt and submittedAt stores start_type, both times and duration_sec', async () => {
+    const s = await user()
+    const startedAt = new Date('2026-10-20T01:00:00Z')
+    const submittedAt = new Date('2026-10-20T02:15:30Z')
+    const be16: BijakAttemptAggregateInput = {
+      attemptId: uuid(), userId: s, isTest: false, paperId: '7', subject: 'MAT', kertas: 1, mode: 'exam',
+      status: 'submitted', score: 3, max: 4, provisional: false, regraded: false,
+      questions: [{ questionId: 'q1', marks: 4, awarded: 3, attempted: true, counted: true }],
+      paperKind: 'pilihan', startedAt, submittedAt,
+    }
+    await svc.recordGraded(be16)
+    const [row] = await aggs(`attempt_id = '${be16.attemptId}'`)
+    expect(row).toMatchObject({ start_type: 'pilihan', duration_sec: 4530 })
+    expect((row!.started_at as Date).toISOString()).toBe(startedAt.toISOString())
+    expect((row!.submitted_at as Date).toISOString()).toBe(submittedAt.toISOString())
+    const [read] = await svc.forStudents({ userIds: [s], from: new Date('2026-10-20T00:00:00Z'), to: new Date('2026-10-21T00:00:00Z') })
+    expect(read).toMatchObject({ attemptId: be16.attemptId, startType: 'pilihan', durationSec: 4530 })
+  })
+
   it('replay and 5 parallel calls leave one unchanged row', async () => {
     const a = input({ userId: u1 })
     await svc.recordGraded(a)
