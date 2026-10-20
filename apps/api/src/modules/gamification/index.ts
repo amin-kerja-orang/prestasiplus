@@ -1,1 +1,6 @@
 export { GamificationModule } from './gamification.module'
+export { GamificationService, dayMetrics, referralCodeFor } from './gamification.service'
+export type { EntryOptions, GameResultInput, Viewer } from './gamification.service'
+export { GamificationAdminService, parsePrizePool } from './admin.service'
+export { GamificationPorts, NoPracticeFacts } from './ports'
+export type { PracticeDayFacts, PracticeDaySession, PracticeFactsProvider, PracticeMasteryFact } from './ports'
