@@ -101,9 +101,9 @@ describe('server-status', () => {
 })
 
 describe('stubs and shared reads', () => {
-  it('an allowed role reaches the handler: a stub answers a server error (not 401/403) and still no-store', async () => {
+  it('an allowed role reaches the handler (200, not 401/403) and the answer is no-store', async () => {
     const res = await getAs(sessions.admin as LoggedIn, '/guru/command-center/evaluate')
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
     expect(res.headers['cache-control']).toBe('no-store')
   })
 

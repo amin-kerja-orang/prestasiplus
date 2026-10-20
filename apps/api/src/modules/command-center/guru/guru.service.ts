@@ -9,12 +9,16 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { notImplemented } from '../http/errors'
 import type { CommandCenterGuruDrillType } from '../http/request'
 import type { Viewer } from '../http/viewer'
 import { CommandCenterRepository } from '../shared/command-center.repository'
 import { BADGE_READ_PORT, type BadgeReadPort, FEEDBACK_PORT, type FeedbackReadPort, HEADCOUNT_PORT, type HeadcountReadPort, MOOD_PORT, type MoodReadPort } from '../shared/ports'
 import { ScopeService } from '../shared/scope.service'
+import { buildAchievements, buildBadgeHolders } from './achievements.builder'
+import { buildEvaluation, buildPredictive } from './analysis.builder'
+import { type GuruDeps, loadContext } from './context'
+import { buildDrill } from './drill.builder'
+import { buildLiveData } from './live-data.builder'
 
 /**
  * GURU slice (routes 12 to 17). OWNER: guru implementer. The viewer set S is `repo.teacherStudentIds(viewer.userId)`
@@ -33,38 +37,44 @@ export class GuruService {
     @Inject(BADGE_READ_PORT) readonly badges: BadgeReadPort,
   ) {}
 
+  private deps(): GuruDeps {
+    return { repo: this.repo, mood: this.mood, feedback: this.feedback, headcount: this.headcount, badges: this.badges }
+  }
+
+  private async context(viewer: Viewer) {
+    const deps = this.deps()
+    return { deps, ctx: await loadContext(deps, viewer, this.clock.now()) }
+  }
+
   async liveData(viewer: Viewer): Promise<CommandCenterGuruLiveData> {
-    void viewer
-    return notImplemented('GET /guru/command-center/live-data')
+    const { deps, ctx } = await this.context(viewer)
+    return buildLiveData(deps, ctx)
   }
 
   /** `type` and `filter` are already validated by `guruDrillQueryOf` (422 texts). */
   async drill(viewer: Viewer, type: CommandCenterGuruDrillType, filter: string): Promise<CommandCenterGuruDrill> {
-    void viewer
-    void type
-    void filter
-    return notImplemented('GET /guru/command-center/drill')
+    const { deps, ctx } = await this.context(viewer)
+    return buildDrill(deps, ctx, type, filter)
   }
 
   async evaluate(viewer: Viewer): Promise<CommandCenterGuruEvaluation> {
-    void viewer
-    return notImplemented('GET /guru/command-center/evaluate')
+    const { deps, ctx } = await this.context(viewer)
+    return buildEvaluation(deps, ctx)
   }
 
   async predictive(viewer: Viewer): Promise<CommandCenterGuruPredictive> {
-    void viewer
-    return notImplemented('GET /guru/command-center/predictive')
+    const { deps, ctx } = await this.context(viewer)
+    return buildPredictive(deps, ctx)
   }
 
   async achievements(viewer: Viewer): Promise<CommandCenterGuruAchievements> {
-    void viewer
-    return notImplemented('GET /guru/command-center/achievements')
+    const { deps, ctx } = await this.context(viewer)
+    return buildAchievements(deps, ctx)
   }
 
   /** `badgeId` is already validated (422 "Lencana tidak sah."); an unknown badge is 404 with the message "Lencana tidak dijumpai.". */
   async badgeHolders(viewer: Viewer, badgeId: string): Promise<CommandCenterGuruBadgeHolders> {
-    void viewer
-    void badgeId
-    return notImplemented('GET /guru/command-center/badge-holders')
+    const { deps, ctx } = await this.context(viewer)
+    return buildBadgeHolders(deps, ctx, badgeId)
   }
 }
