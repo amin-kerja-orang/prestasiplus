@@ -109,6 +109,9 @@ export const EnvSchema = z.object({
   // BE-12 (practice). Optional: the code applies 120 writes (start, check, submit) per minute per user when unset.
   THROTTLE_PRACTICE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_PRACTICE_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-13 (practice reads). Optional: the code applies 30 SPM-target saves and 60 structured attempts per minute per user when unset.
+  THROTTLE_SPM_TARGETS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.

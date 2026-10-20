@@ -107,6 +107,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     ends_on: '2026-12-31',
   }),
   // schools: name (text) is generated; nothing else is required.
+  // spm_targets (BE-13): user and subject must exist; the grade has a check.
+  spm_targets: async (query) => ({ user_id: await parentUser(query), subject_id: await parentSubject(query), target_grade: 'A' }),
+  // structured_attempts (BE-13): the user must exist; question_id has no FK (BE-09 owns the bank).
+  structured_attempts: async (query) => ({ user_id: await parentUser(query), question_id: 1, question_version_no: 1, total_awarded: 0, total_max: 0 }),
   support_tickets: async (query) => ({ user_id: await parentUser(query) }),
   videos: async (query) => ({ uploader_id: await parentUser(query), platform: 'Youtube', category: 'tutorial' }),
   // subject_levels (BE-08): both parents must exist.
