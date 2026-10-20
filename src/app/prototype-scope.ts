@@ -16,6 +16,7 @@
  * matrix row number of section B; section A items are `A1`-`A5`.
  */
 
+import { isHttpMode } from '@/api/mode'
 import type { Role } from '@/stores/session-types'
 
 /*
@@ -269,7 +270,21 @@ export function isPathAllowed(role: Role | null, path: string): boolean {
  * admin has no `/dashboard` in the prototype), `/dashboard` otherwise.
  */
 export function shellHomePath(role: Role | null): string {
+  if (role === 'student') return studentHomePath()
   return isPrototypeScopeOn() && isPrototypeRole(role) ? scopeHomePath(role) : '/dashboard'
+}
+
+/**
+ * Student home: Bijak SPM in http mode (`GET /api/dashboard` is not built yet, so `/dashboard`
+ * shows an error), `/dashboard` in mock mode. `/dashboard` itself stays reachable by URL.
+ */
+export function studentHomePath(): string {
+  return isHttpMode() ? '/spm/bijak' : '/dashboard'
+}
+
+/** The landing path after login or on `/`: the server one, except a student in http mode. */
+export function effectiveLandingPath(role: Role | null, landingPath: string | null): string | null {
+  return role === 'student' && isHttpMode() ? studentHomePath() : landingPath
 }
 
 /** Where the "back to the dashboard" button of the "not available" page goes. */
@@ -281,5 +296,6 @@ export function scopeHomePath(role: Role | null): string {
   if (role === null) return '/login'
   // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`
   // clears the session and ends on `/login`, so there is no redirect loop.
+  if (role === 'student') return studentHomePath()
   return isPrototypeRole(role) ? '/dashboard' : '/logout'
 }
