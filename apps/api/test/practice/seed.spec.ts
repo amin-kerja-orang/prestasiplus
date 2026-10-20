@@ -43,9 +43,10 @@ async function snapshot() {
 }
 
 describe('practice demo seed (BE-12)', () => {
-  it('is registered last, after identity and curriculum', () => {
+  it('is registered after identity and curriculum', () => {
     const names = seedModules.map((m) => m.name)
-    expect(names.indexOf('practice')).toBe(names.length - 1)
+    // The seed registry is append-only: later cards (BE-23 gamification) append after practice.
+    expect(names.indexOf('practice')).toBeGreaterThan(names.indexOf('identity'))
     expect(names.indexOf('practice')).toBeGreaterThan(names.indexOf('curriculum'))
     expect(practiceSeed.kind ?? 'demo').toBe('demo')
   })

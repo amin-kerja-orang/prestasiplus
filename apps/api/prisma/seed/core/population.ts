@@ -12,19 +12,11 @@
  * idempotent (users by e-mail, roles by user + role, scopes by user + role) and deterministic (names
  * come from a seeded stream); `legacy_*`, IC and phone data are never set. Existing hashes are kept.
  */
-import { hash } from '@node-rs/argon2'
 
 import type { SeedModule } from '../index'
 import { assertSeedAllowed } from '../guard'
 import { CLASS_NAMES, NAME_WORDS, ROLE_LABELS } from './fixtures/names'
-import { DEMO_PASSWORD } from './identity'
-
-const ARGON2_OPTIONS = { memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const
-let demoHash: Promise<string> | undefined
-function demoPasswordHash(): Promise<string> {
-  demoHash ??= hash(DEMO_PASSWORD, ARGON2_OPTIONS)
-  return demoHash
-}
+import { demoPasswordHash } from './demo-password'
 
 type RoleCode = 'admin' | 'school_admin' | 'ppd_officer' | 'teacher' | 'student' | 'parent' | 'sponsor'
 
