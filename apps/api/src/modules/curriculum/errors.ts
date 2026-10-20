@@ -1,4 +1,4 @@
-import { CURRICULUM_NOT_FOUND_MESSAGES as NF } from '@pp/contract'
+import { CURRICULUM_CONFLICT_MESSAGES as CF, CURRICULUM_NOT_FOUND_MESSAGES as NF } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 import { existsMessage, uniqueMessage } from './validation'
@@ -11,6 +11,9 @@ export const topicNotFound = (): ApiError => notFound(NF.topic)
 export const subtopicNotFound = (): ApiError => notFound(NF.subtopic)
 export const subjectNotFound = (): ApiError => notFound(NF.subject)
 export const levelNotFound = (): ApiError => notFound(NF.level)
+
+/** 409 with the BM copy: the entity still has children, so nothing is deleted (LEAD 2026-10-20). */
+export const hasChildren = (kind: keyof typeof CF): ApiError => ApiError.of('CONFLICT', { message: CF[kind] })
 
 export interface DbErrorMap {
   /** The 404 for a row that vanished between the check and the write (Prisma P2025). */

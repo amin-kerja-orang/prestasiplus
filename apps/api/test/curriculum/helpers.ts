@@ -37,6 +37,8 @@ export interface BootOptions {
   /** Provider overrides (BE-13 and BE-09 stand-ins). */
   progress?: unknown
   questionCounts?: unknown
+  /** Extra environment variables (for example a low `THROTTLE_ADMIN_WRITE_PER_MINUTE`). */
+  env?: Record<string, string>
 }
 
 /** Nest app with the auth and curriculum modules on a private migrated and seeded database. */
@@ -49,6 +51,10 @@ export async function bootCurriculumApp(opts: BootOptions = {}): Promise<Curricu
     SESSION_SECRET: 'x'.repeat(32),
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
+    // The tests run many admin writes on a frozen clock (the window never ends): lift the write limit
+    // unless a test asks for a low one.
+    THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000',
+    ...opts.env,
   })
   const clock = new FixedClock(START)
   const builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, CurriculumModule])] })

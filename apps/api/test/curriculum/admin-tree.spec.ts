@@ -193,18 +193,30 @@ describe('admin curriculum tree', () => {
       expect(row.name).toBe('Bab Ujian')
     })
 
-    it('#17 deletes the chapter with the topic and subtopic cascade, counted before and after', async () => {
+    it('#17 deletes only an empty chapter: 409 while it has topics, nothing deleted; then 200 with zero cascade counts', async () => {
       const topicId = (await t.db.query<{ id: string }>('select id::text from topics where chapter_id = $1', [chapterId]))[0]!.id
-      await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S1' })
-      await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S2' })
-      const topicsBefore = await count(t.db, 'select count(*) n from topics')
-      const subsBefore = await count(t.db, 'select count(*) n from subtopics')
+      const s1 = parseStatus(await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S1' }), CurriculumSubtopicSchema, 201).data.id
+      const s2 = parseStatus(await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S2' }), CurriculumSubtopicSchema, 201).data.id
+      const counts = async () => ({
+        chapters: await count(t.db, 'select count(*) n from chapters'),
+        topics: await count(t.db, 'select count(*) n from topics'),
+        subtopics: await count(t.db, 'select count(*) n from subtopics'),
+        audit: await count(t.db, "select count(*) n from audit_events where action like 'curriculum.%.deleted'"),
+      })
+      const before = await counts()
+      expectError(await admin.delete(`/api/admin/curriculum/chapters/${chapterId}`), 'CONFLICT', 'Bab ini masih mempunyai topik.')
+      expectError(await admin.delete(`/api/admin/curriculum/topics/${topicId}`), 'CONFLICT', 'Topik ini masih mempunyai subtopik.')
+      expect(await counts()).toEqual(before)
+      expect(parseData(await admin.get(`/api/admin/curriculum/chapters/${chapterId}`), CurriculumChapterDetailSchema).id).toBe(chapterId)
+      // Children first, then the parents.
+      await admin.delete(`/api/admin/curriculum/subtopics/${s1}`)
+      await admin.delete(`/api/admin/curriculum/subtopics/${s2}`)
+      const topic = parseStatus(await admin.delete(`/api/admin/curriculum/topics/${topicId}`), CurriculumTopicDeletedSchema, 200)
+      expect(topic.data).toEqual({ deleted: { topics: 1, subtopics: 0 } })
       const res = await admin.delete(`/api/admin/curriculum/chapters/${chapterId}`)
       const { data, status } = parseStatus(res, CurriculumChapterDeletedSchema, 200)
       expect(status).toBe('Bab berjaya dipadam.')
-      expect(data).toEqual({ deleted: { chapters: 1, topics: 1, subtopics: 2 } })
-      expect(await count(t.db, 'select count(*) n from topics')).toBe(topicsBefore - 1)
-      expect(await count(t.db, 'select count(*) n from subtopics')).toBe(subsBefore - 2)
+      expect(data).toEqual({ deleted: { chapters: 1, topics: 0, subtopics: 0 } })
       expect(await count(t.db, 'select count(*) n from chapters where id = $1', [chapterId])).toBe(0)
       expectError(await admin.delete(`/api/admin/curriculum/chapters/${chapterId}`), 'NOT_FOUND', 'Bab tidak dijumpai.')
     })
@@ -284,15 +296,17 @@ describe('admin curriculum tree', () => {
       expect(node.topics.map((x) => x.topicNumber)).toEqual(['1', '1.1', '2', '10'])
     })
 
-    it('#21 deletes with the subtopic cascade counted; subtopics are gone', async () => {
-      await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S1' })
-      await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S2' })
-      await admin.post('/api/admin/curriculum/subtopics', { topicId, name: 'S3' })
+    it('#21 409 while the topic has subtopics (all kept); an empty topic is deleted', async () => {
+      const ids: string[] = []
+      for (const name of ['S1', 'S2', 'S3']) ids.push(parseStatus(await admin.post('/api/admin/curriculum/subtopics', { topicId, name }), CurriculumSubtopicSchema, 201).data.id)
       const subsBefore = await count(t.db, 'select count(*) n from subtopics')
+      expectError(await admin.delete(`/api/admin/curriculum/topics/${topicId}`), 'CONFLICT', 'Topik ini masih mempunyai subtopik.')
+      expect(await count(t.db, 'select count(*) n from subtopics')).toBe(subsBefore)
+      expect(await count(t.db, 'select count(*) n from topics where id = $1', [topicId])).toBe(1)
+      for (const id of ids) await admin.delete(`/api/admin/curriculum/subtopics/${id}`)
       const { data, status } = parseStatus(await admin.delete(`/api/admin/curriculum/topics/${topicId}`), CurriculumTopicDeletedSchema, 200)
       expect(status).toBe('Topik berjaya dipadam.')
-      expect(data).toEqual({ deleted: { topics: 1, subtopics: 3 } })
-      expect(await count(t.db, 'select count(*) n from subtopics')).toBe(subsBefore - 3)
+      expect(data).toEqual({ deleted: { topics: 1, subtopics: 0 } })
       expect(await count(t.db, 'select count(*) n from subtopics where topic_id = $1', [topicId])).toBe(0)
       expectError(await admin.get(`/api/admin/curriculum/topics/${topicId}`), 'NOT_FOUND', 'Topik tidak dijumpai.')
     })
