@@ -3,8 +3,12 @@
  */
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll } from '../support'
-import { FORBIDDEN_TITLE } from './bijak-flow'
+import { FORBIDDEN_TITLE, HTTP_MODE } from './bijak-flow'
 
+test.skip(
+  HTTP_MODE,
+  'mock-only (loginAs init-script session, __mock boot, local mock server): not run when BIJAK_API_BASE is set',
+)
 test.skip(
   process.env.E2E_PROTOTYPE_SCOPE !== 'on',
   'needs the scope-on build: playwright.bijak.config.mjs',

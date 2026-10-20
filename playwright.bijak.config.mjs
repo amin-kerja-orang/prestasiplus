@@ -10,7 +10,10 @@ import { defineConfig } from '@playwright/test'
 process.env.E2E_PROTOTYPE_SCOPE = 'on' // read by the spec (it skips itself otherwise)
 
 const PORT = Number(process.env.BIJAK_PORT ?? 5191) // default unchanged; BIJAK_PORT overrides
-const baseURL = `http://localhost:${PORT}`
+// One-flag http mode: BIJAK_API_BASE=<origin serving the VITE_API_MODE=http SPA + /api> (BE-32 stack,
+// same-origin as playwright.http.config.ts). Unset = the mock build below, unchanged.
+const API_BASE = process.env.BIJAK_API_BASE
+const baseURL = API_BASE || `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: 'e2e',
@@ -48,13 +51,15 @@ export default defineConfig({
       use: { browserName: 'chromium', viewport: { width: 1280, height: 800 }, hasTouch: false },
     },
   ],
-  webServer: {
-    command: process.env.BIJAK_DEV
-      ? `npx vite --mode e2e --port ${PORT} --strictPort`
-      : `npx vite build --mode e2e --outDir dist-e2e-bijak && npx vite preview --mode e2e --outDir dist-e2e-bijak --port ${PORT} --strictPort`,
-    env: { VITE_PROTOTYPE_SCOPE: 'on' },
-    url: baseURL,
-    reuseExistingServer: !!process.env.BIJAK_REUSE,
-    timeout: 900_000,
-  },
+  webServer: API_BASE
+    ? undefined
+    : {
+        command: process.env.BIJAK_DEV
+          ? `npx vite --mode e2e --port ${PORT} --strictPort`
+          : `npx vite build --mode e2e --outDir dist-e2e-bijak && npx vite preview --mode e2e --outDir dist-e2e-bijak --port ${PORT} --strictPort`,
+        env: { VITE_PROTOTYPE_SCOPE: 'on' },
+        url: baseURL,
+        reuseExistingServer: !!process.env.BIJAK_REUSE,
+        timeout: 900_000,
+      },
 })

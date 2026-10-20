@@ -12,6 +12,14 @@ import type { Page } from '@playwright/test'
 import { expect } from '../fixtures/test'
 import { expectNoHorizontalScroll } from '../support'
 
+/**
+ * One flag flips the suite from the mock build to an http-mode stack: `BIJAK_API_BASE=<origin>`
+ * (the origin that serves the VITE_API_MODE=http SPA and proxies /api, as in BE-32). Mock-only specs
+ * skip themselves when it is set; `http-autosave.spec.ts` runs only then.
+ */
+export const API_BASE = process.env.BIJAK_API_BASE
+export const HTTP_MODE = !!API_BASE
+
 export const PAPER_ID = 'mat-k1-2025-a'
 export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
 

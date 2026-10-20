@@ -6,8 +6,12 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell } from '../support'
-import { pickOption, startPaper, submitAttempt } from './bijak-flow'
+import { HTTP_MODE, pickOption, startPaper, submitAttempt } from './bijak-flow'
 
+test.skip(
+  HTTP_MODE,
+  'mock-only (loginAs init-script session, __mock boot, local mock server): not run when BIJAK_API_BASE is set',
+)
 test.skip(
   process.env.E2E_PROTOTYPE_SCOPE !== 'on',
   'needs the scope-on build: playwright.bijak.config.mjs',
@@ -23,7 +27,7 @@ async function enterModPelajar(page: Page, gotoApp: (p: string) => Promise<void>
 }
 
 test.describe('Bijak SPM Admin Mod Pelajar @bijak', () => {
-  test('admin in Mod Pelajar: list, start, answer, submit, result, leave @bijak', async ({
+  test('Admin Pusat in Mod Pelajar: list, start, answer, submit, result, leave @bijak', async ({
     page,
     loginAs,
     gotoApp,
@@ -52,7 +56,12 @@ test.describe('Bijak SPM Admin Mod Pelajar @bijak', () => {
   })
 
   test.fixme('admin sees student Bijak results through an admin module @bijak', () => {
-    // /admin/bijak-spm is the paper/intake admin (papers, drafts); no admin module lists student
+    // /admin/spm/kertas is the paper admin (Pembina Kertas); no admin module lists student
     // attempts or results in the mock. Only the student history in Mod Pelajar shows them.
+  })
+
+  test.fixme('school admin in Mod Pelajar: list, start, submit, result @bijak', () => {
+    // v2-bijak-spm roles table (D31c, D33b) lists admin_sekolah for Mod Pelajar, but
+    // src/shells/shared/mod-pelajar.ts enterModPelajar() accepts only role 'admin'.
   })
 })
