@@ -2,29 +2,32 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
+import { ClassesModule } from '../classes'
 import { PerutusanModule } from '../content/perutusan'
 import { NotificationsModule } from '../notifications'
+import { PerformanceModule, SchoolPerformanceService } from '../reports/performance'
 import { SchoolsModule } from '../schools'
 import { SubscriptionsModule } from '../subscriptions'
 import { UsersModule } from '../users'
 import { DashboardService } from './dashboard.service'
 import { PendingTeachersService } from './pending-teachers.service'
 import { SchoolAdminController } from './school-admin.controller'
-import { NoSchoolClasses, NoSchoolPerformance, SCHOOL_CLASS_COUNT_PORT, SCHOOL_PERFORMANCE_PORT } from './school-admin.ports'
+import { SCHOOL_CLASS_COUNT_PORT, SCHOOL_PERFORMANCE_PORT } from './school-admin.ports'
+import { SchoolClassesAdapter } from './school-classes.adapter'
 
 /**
  * Admin Sekolah slice of BE-21 (M27): the school dashboard and the pending-teacher verification. No tables of its own.
- * The Bijak figures and the class count come through ports with fail-closed defaults (see `school-admin.ports.ts`).
- * TODO(BE-19 merge) / TODO(BE-17 merge): replace the two default providers.
+ * The Bijak figures come from BE-19's `SchoolPerformanceService` through `SCHOOL_PERFORMANCE_PORT`; the class count comes from
+ * BE-17's `ClassesRepository` through `SCHOOL_CLASS_COUNT_PORT` (`SchoolClassesAdapter`).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, NotificationsModule, PerutusanModule, SchoolsModule, SubscriptionsModule, UsersModule],
+  imports: [AuditModule, ClassesModule, ThrottleModule, NotificationsModule, PerformanceModule, PerutusanModule, SchoolsModule, SubscriptionsModule, UsersModule],
   controllers: [SchoolAdminController],
   providers: [
     DashboardService,
     PendingTeachersService,
-    { provide: SCHOOL_PERFORMANCE_PORT, useClass: NoSchoolPerformance },
-    { provide: SCHOOL_CLASS_COUNT_PORT, useClass: NoSchoolClasses },
+    { provide: SCHOOL_PERFORMANCE_PORT, useExisting: SchoolPerformanceService },
+    { provide: SCHOOL_CLASS_COUNT_PORT, useClass: SchoolClassesAdapter },
   ],
 })
 export class SchoolAdminModule {}
