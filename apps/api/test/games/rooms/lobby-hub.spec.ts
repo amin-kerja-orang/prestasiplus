@@ -38,9 +38,11 @@ describe('hub and lobby (M16-22, M16-23)', () => {
     })
     const code = await createRoom(student, 'papan-bijak')
     const hub = parseData(await student2.get('/api/games/hub'), GamesHubSchema)
+    // children's names rule (issue #76): another pupil's host is first name + initial; the host sees the full name
     expect(hub.openRooms).toEqual([
-      { game: 'papan-bijak', code, host: 'Murid Demo', players: 1, max: 4 },
+      { game: 'papan-bijak', code, host: 'Murid D.', players: 1, max: 4 },
     ])
+    expect(parseData(await student.get('/api/games/hub'), GamesHubSchema).openRooms[0]?.host).toBe('Murid Demo')
   })
 
   it('hub: full and non-waiting rooms are hidden; at most 6 newest first, code ascending on a tie', async () => {
@@ -143,7 +145,8 @@ describe('hub and lobby (M16-22, M16-23)', () => {
         [(kids[i] as { id: string }).id, wins, jumlah, skor, betul, isTest],
       )
     }
-    const lobby = parseData(await student.get('/api/games/papan-bijak/lobby'), GamesLobbySchema)
+    // the admin sees every name in full (the redacted views are in names/children-names.spec.ts)
+    const lobby = parseData(await admin.get('/api/games/papan-bijak/lobby'), GamesLobbySchema)
     if (!('top10' in lobby)) throw new Error('expected top10')
     expect(lobby.top10.map((r) => r.userId)).toEqual(
       [kids[1], kids[2], kids[0]].map((k) => (k as { id: string }).id),
@@ -177,7 +180,7 @@ describe('hub and lobby (M16-22, M16-23)', () => {
         [(kids[i] as { id: string }).id, wins],
       )
     }
-    const lobby = parseData(await student.get('/api/games/kuiz-relay/lobby'), GamesLobbySchema)
+    const lobby = parseData(await admin.get('/api/games/kuiz-relay/lobby'), GamesLobbySchema)
     if (!('leaders' in lobby)) throw new Error('expected leaders')
     expect(lobby.leaders.map((l) => [l.userId, l.value, l.name])).toEqual(
       [1, 2, 0].map((i, n) => [

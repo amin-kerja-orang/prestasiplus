@@ -10,6 +10,7 @@ import {
   type GamesRoomGame,
   type GamesRoomSubject,
   type GamesRoomView,
+  type RoleCode,
 } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
@@ -29,6 +30,7 @@ import {
   actionNotYourTurn,
 } from '../errors'
 import { DEFAULT_QUIZ_TILES } from '../games.constants'
+import { NamePrivacy } from '../core/name-privacy.service'
 import { GamesPorts } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
 import { GameSubjects } from '../core/subjects'
@@ -76,6 +78,8 @@ export function normaliseCode(value: unknown): string | null {
 export interface Caller {
   userId: string
   isTest: boolean
+  /** The ACTIVE role: scopes which pupils' names the caller sees (children's names rule). */
+  role: RoleCode
 }
 
 export interface NewRoomInput {
@@ -96,6 +100,7 @@ export class RoomsService {
     @Inject(RoomsRepository) private readonly repo: RoomsRepository,
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(GameUsers) private readonly users: GameUsers,
+    @Inject(NamePrivacy) private readonly privacy: NamePrivacy,
     @Inject(GameQuestions) private readonly questions: GameQuestions,
     @Inject(GameSubjects) private readonly subjects: GameSubjects,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -107,6 +112,11 @@ export class RoomsService {
   async hub(caller: Caller): Promise<GamesHub> {
     const open = await this.repo.openRooms(6)
     const names = await this.users.getMany(open.map((r) => r.hostId))
+    const seen = await this.privacy.resolver(caller)
+    const hostName = (id: string): string => {
+      const h = names.get(id)
+      return h ? seen.name(h) : ''
+    }
     const [played, battled] = await Promise.all([
       this.repo.hasPlayed('papan-bijak', caller.userId),
       this.ports.battle.hasBattled(caller.userId),
@@ -115,7 +125,7 @@ export class RoomsService {
       openRooms: open.map((r) => ({
         game: r.game as GamesRoomGame,
         code: r.code,
-        host: names.get(r.hostId)?.name ?? '',
+        host: hostName(r.hostId),
         players: r.players,
         max: r.max,
       })),
@@ -131,17 +141,20 @@ export class RoomsService {
     if (game === 'papan-bijak') {
       const rows = await this.repo.papanBijakTop(10)
       const names = await this.users.getMany(rows.map((r) => r.userId))
+      const seen = await this.privacy.resolver(caller)
       return {
         ...base,
         top10: rows.flatMap((r, i) => {
-          const name = names.get(r.userId)?.name
-          if (name === undefined) return []
+          const pupil = names.get(r.userId)
+          if (pupil === undefined) return []
+          // Children's names rule: the name (and so the initials) are computed from what this viewer may see.
+          const shown = seen.shown(pupil)
           return [
             {
               rank: i + 1,
-              userId: r.userId,
-              name: truncateName(name),
-              initials: initialsOf(name),
+              userId: shown.userId,
+              name: truncateName(shown.name),
+              initials: initialsOf(shown.name),
               menang: r.wins,
               jumlah: r.jumlah,
               kadar: kadarOf(r.wins, r.jumlah),
@@ -154,11 +167,14 @@ export class RoomsService {
     }
     const rows = await this.repo.leaders(game, 10)
     const names = await this.users.getMany(rows.map((r) => r.userId))
+    const seen = await this.privacy.resolver(caller)
     return {
       ...base,
       leaders: rows.flatMap((r, i) => {
-        const name = names.get(r.userId)?.name
-        return name === undefined ? [] : [{ rank: i + 1, userId: r.userId, name, value: r.wins }]
+        const pupil = names.get(r.userId)
+        if (pupil === undefined) return []
+        const shown = seen.shown(pupil)
+        return [{ rank: i + 1, userId: shown.userId, name: shown.name, value: r.wins }]
       }),
     }
   }
@@ -276,7 +292,7 @@ export class RoomsService {
     const game = parseGame(gameParam)
     const probe = await this.mustPlayer(caller, game, rawCode)
     if (probe.room.status !== 'waiting' && probe.room.status !== 'playing')
-      return this.viewOf(probe.room, probe.players)
+      return this.viewOf(caller, probe.room, probe.players)
     return this.prisma.transaction(async (tx) => {
       await this.repo.lock(probe.room.code)
       let { room, players } = await this.mustPlayer(caller, game, rawCode)
@@ -293,7 +309,7 @@ export class RoomsService {
         room = after.room
         players = after.players
       }
-      return this.viewOf(room, players)
+      return this.viewOf(caller, room, players)
     })
   }
 
@@ -325,7 +341,7 @@ export class RoomsService {
       await this.repo.updateRoom(room.code, { status: 'playing', startedAt: now }, now)
       const started: RoomRow = { ...room, status: 'playing', startedAt: now }
       const done = await this.applyOut(tx, started, players, out)
-      return this.viewOf(done.room, done.players)
+      return this.viewOf(caller, done.room, done.players)
     })
   }
 
@@ -372,7 +388,7 @@ export class RoomsService {
           : before
       // The clock ended the game just now: the answer arrived too late, so answer with the finished room.
       if (before.room.status === 'playing' && clocked.room.status === 'finished')
-        return this.viewOf(clocked.room, clocked.players)
+        return this.viewOf(caller, clocked.room, clocked.players)
       const { room, players } = clocked
       if (room.status !== 'playing' || !room.state) throw actionNotStarted()
       if (room.state.humanId !== caller.userId) throw actionNotYourTurn()
@@ -386,7 +402,7 @@ export class RoomsService {
           nowMs: this.clock.now().getTime(),
         })
         const done = await this.applyOut(tx, room, players, out)
-        return this.viewOf(done.room, done.players)
+        return this.viewOf(caller, done.room, done.players)
       } catch (e) {
         throw mapRefusal(e)
       }
@@ -570,13 +586,19 @@ export class RoomsService {
 
   // --- view building -----------------------------------------------------------------------------------------------
 
-  private async viewOf(room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
+  private async viewOf(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
     const ids = [room.hostId, ...players.map((p) => p.userId)]
     const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
     if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
-    const nameOf = (id: string): string => names.get(id)?.name ?? ''
+    // Children's names rule: players, host, winner and scores show a name the caller may see, else first name + initial.
+    // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
+    const seen = await this.privacy.resolver(caller)
+    const nameOf = (id: string): string => {
+      const u = names.get(id)
+      return u ? seen.name(u) : ''
+    }
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,

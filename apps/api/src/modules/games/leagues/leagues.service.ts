@@ -19,6 +19,7 @@ import { CurriculumRepository } from '../../curriculum'
 import { SchoolsRepository } from '../../schools'
 import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueInviteInvalid, leagueNeedsSchool, leagueNotFound } from '../errors'
 import { GameUsers } from '../core/game-users'
+import { NamePrivacy } from '../core/name-privacy.service'
 import { mytDateOf, startOfMytWeek } from '../core/time'
 import type { GamesCaller } from '../caller'
 import { type LeagueRecord, LeaguesRepository } from './leagues.repository'
@@ -35,6 +36,7 @@ export class LeaguesService {
   constructor(
     @Inject(LeaguesRepository) private readonly repo: LeaguesRepository,
     @Inject(GameUsers) private readonly users: GameUsers,
+    @Inject(NamePrivacy) private readonly privacy: NamePrivacy,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -47,6 +49,13 @@ export class LeaguesService {
 
   private async schoolIdOf(userId: string): Promise<string | null> {
     return (await this.users.get(userId))?.schoolId ?? null
+  }
+
+  /** The creator may be a pupil (any role creates a league): children's names rule, name only (the response has no id). */
+  private async creatorName(caller: GamesCaller, creatorId: string | null): Promise<string> {
+    if (creatorId === null) return ''
+    const creator = await this.users.get(creatorId)
+    return creator ? (await this.privacy.resolver(caller)).name(creator) : ''
   }
 
   private cardOf(l: LeagueRecord, subjectName: string | null, schools: number): GamesLeagueCard {
@@ -114,7 +123,7 @@ export class LeaguesService {
     return {
       ...card,
       scoringLabel: LABELS.scoring[l.scoringMethod as keyof typeof LABELS.scoring],
-      creatorName: l.creatorId === null ? '' : ((await this.users.get(l.creatorId))?.name ?? ''),
+      creatorName: await this.creatorName(caller, l.creatorId),
       classLevels: levels as GamesLeagueClassLevel[],
       inviteCode: l.inviteCode,
       shareUrl: shareUrl(l.name, l.inviteCode),

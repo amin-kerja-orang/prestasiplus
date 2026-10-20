@@ -192,7 +192,7 @@ describe('games foundation', () => {
     expect(await t.ports.botPool.pick({ ...input, fits: () => false })).toBeNull()
     const users = t.app.get(GameUsers, { strict: false })
     const profile = await users.get(hostId)
-    expect(Object.keys(profile ?? {}).sort()).toEqual(['grade', 'id', 'name', 'schoolId'])
+    expect(Object.keys(profile ?? {}).sort()).toEqual(['grade', 'id', 'isPupil', 'name', 'schoolId'])
   })
 
   it('boots with GamesModule registered, answering 401 without a session on an unknown games path', async () => {
