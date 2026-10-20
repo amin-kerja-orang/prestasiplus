@@ -7,6 +7,8 @@
 import type { CcMood } from '../../api/command-center-board-types'
 
 export const S2_COPY = {
+  /** http mode, live-data not built yet (404): the demo has no live figures. */
+  unavailable: 'Fungsi ini belum tersedia dalam demo',
   title: 'PrestasiPlus Command Center',
   back: '← Dashboard',
   daily: 'Aktiviti Harian',

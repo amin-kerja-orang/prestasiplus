@@ -6,6 +6,7 @@
 import { onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useIntervalWhileVisible } from '@/composables'
 import { formatCount } from '@/lib/number'
@@ -46,6 +47,8 @@ function refusedAtFirstLoad(err: unknown, hasData: boolean): boolean {
  */
 export function useLiveBoard() {
   const data = shallowRef<CcLiveData | null>(null)
+  /** http mode only: the endpoint is not built yet (404), so polling stopped and the board says so. */
+  const unavailable = ref(false)
   let controller: AbortController | null = null
   let inFlight = false
 
@@ -66,6 +69,11 @@ export function useLiveBoard() {
     } catch (err) {
       if (timedOut) console.error('Fetch error:', err)
       if (current.signal.aborted) return
+      if (isHttpMode() && isApiError(err) && err.status === 404) {
+        unavailable.value = true
+        poll.stop()
+        return
+      }
       if (refusedAtFirstLoad(err, data.value !== null)) setRouteOutcome(403)
       console.error('Fetch error:', err)
     } finally {
@@ -74,11 +82,11 @@ export function useLiveBoard() {
     }
   }
 
-  useIntervalWhileVisible(() => void load(), S2_POLL_MS, { immediate: true })
+  const poll = useIntervalWhileVisible(() => void load(), S2_POLL_MS, { immediate: true })
   onScopeDispose(() => {
     controller?.abort()
   })
-  return { data }
+  return { data, unavailable }
 }
 
 export type LoadStatus = 'loading' | 'ok' | 'error'
