@@ -19,7 +19,7 @@ const entries = (pool: string, ids: string[]): PoolEntry[] => ids.map((questionI
 const bp = (sections: Blueprint['sections']): Blueprint => ({ subject: 'MAT', kertas: 2, source: 'Spec', code: '1449/2', durationMin: 150, instructions: [], sections })
 
 describe('poolUnits', () => {
-  const groups = new Map<string, GroupDef>([['g', { id: 'g', questionIds: ['g1', 'g2'] }]])
+  const groups = new Map<string, GroupDef>([['g', { id: 'g', stimulusId: 's', questionIds: ['g1', 'g2'] }]])
   const groupOf = (q: string): string | undefined => (q.startsWith('g') ? 'g' : undefined)
 
   it('takes a stimulus group whole, once, in published order, and singles on their own', () => {

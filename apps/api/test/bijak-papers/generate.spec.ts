@@ -226,8 +226,9 @@ describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
     info.set(id, { id, marks: 2, groupId: 'g1', versionNo: 1 })
     entries.push({ questionId: id, groupId: 'g1' })
   }
+  let vanished = false
   const source: BijakQuestionSource = {
-    getMany: async (ids) => new Map(ids.flatMap((id) => (info.has(id) ? [[id, info.get(id) as BijakQuestionInfo] as const] : []))),
+    getMany: async (ids) => new Map(ids.flatMap((id) => (!vanished && info.has(id) ? [[id, info.get(id) as BijakQuestionInfo] as const] : []))),
     pool: async (pool) => (pool === 'MAT1-A' ? { entries, groups: new Map([['g1', ['7101', '7102']]]) } : { entries: [], groups: new Map() }),
   }
 
@@ -257,6 +258,18 @@ describe('Jana Kertas through the question port (a BE-09 stand-in)', () => {
     expect(cover.marks).toBe(budget)
     // The fake pool is empty for every other pool: MAT Kertas 2 is a shortage.
     expectError(await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 }), 'SHORTAGE', 422)
+  })
+
+  it('a pooled question that vanished before the info read fails the request and writes no paper row', async () => {
+    const count = async (): Promise<number> => Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+    const before = await count()
+    vanished = true
+    try {
+      expect((await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })).status).toBe(500)
+    } finally {
+      vanished = false
+    }
+    expect(await count()).toBe(before)
   })
 })
 

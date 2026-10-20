@@ -101,7 +101,7 @@ describe('exam seed (BE-15)', () => {
         expect(bank.questions).toHaveLength(POC_BANK.questions.length)
         expect(idOf('mat1-pecahan-v1')).toBe(pocQuestionId('mat1-pecahan-v1'))
 
-        const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+        const info = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
         await runSeeds([examSeed], { prisma: db.prisma })
         expect(info).toHaveBeenCalledWith(expect.stringContaining('no PocQuestionLoader is wired'))
         info.mockRestore()

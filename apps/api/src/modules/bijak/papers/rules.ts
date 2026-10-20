@@ -64,7 +64,8 @@ export function toComposerBlueprint(subject: string, kertas: number, row: Bluepr
   const reference = referencePanels(row.referenceSheets)
   return {
     subject,
-    kertas,
+    // The composer types Kertas as 1 | 2; the number is only carried through (the DB allows >= 1).
+    kertas: kertas as Blueprint['kertas'],
     source: sourceToWire(row.source),
     code: row.code,
     durationMin: row.durationMin,

@@ -76,7 +76,9 @@ export class PapersService {
   /* ------------------------------------------------------------------------------ reads */
 
   async listPapers(userId: string): Promise<BijakPaperSummary[]> {
-    const papers = await this.repo.listPublishedPilihan()
+    // A published paper missing a printed code or a section would break the contract (code min 1,
+    // sections min 1): it is not listed (BE-39 may create such rows; they stay out of the hub).
+    const papers = (await this.repo.listPublishedPilihan()).filter((p) => p.paperCode && p.sections.length > 0)
     if (papers.length === 0) return []
     const [subjects, info, progress] = await Promise.all([
       this.repo.subjectsByIds(papers.map((p) => p.subjectId)),
@@ -117,7 +119,7 @@ export class PapersService {
     const out: BijakBlueprintContract[] = []
     for (const b of blueprints) {
       const subject = subjects.get(b.subjectId.toString())
-      if (!subject) continue
+      if (!subject || b.sections.length === 0) continue
       out.push({
         subject: bijakCodeOf(subject.code),
         subjectName: subject.name,
@@ -180,10 +182,13 @@ export class PapersService {
     const groupOfQuestion = new Map<string, string>()
     const unitsByPool = new Map<string, PoolUnit[]>()
     for (const pool of new Set(blueprint.sections.map((s) => s.pool))) {
-      const loaded = await source.pool(pool, { subjectId: subject.id.toString(), subjectCode: subject.code, kertas: body.kertas })
+      // A section without a pool tag draws from nothing (a clean SHORTAGE); the source is not asked for ''.
+      const loaded = pool
+        ? await source.pool(pool, { subjectId: subject.id.toString(), subjectCode: subject.code, kertas: body.kertas })
+        : { entries: [], groups: new Map<string, readonly string[]>() }
       const poolEntries = loaded.entries.map((e): PoolEntry => ({ questionId: e.questionId, pool }))
       for (const e of loaded.entries) if (e.groupId) groupOfQuestion.set(e.questionId, e.groupId)
-      for (const [id, questionIds] of loaded.groups) groups.set(id, { id, questionIds: [...questionIds] })
+      for (const [id, questionIds] of loaded.groups) groups.set(id, { id, stimulusId: id, questionIds: [...questionIds] })
       entries.push(...poolEntries)
       unitsByPool.set(pool, poolUnits(pool, poolEntries, groups, (qid) => groupOfQuestion.get(qid)))
     }
@@ -200,7 +205,11 @@ export class PapersService {
     })
     if (!outcome.ok) throw shortage(outcome.shortages)
 
-    const info = await source.getMany(outcome.sections.flatMap((s) => s.questionIds))
+    const composed = outcome.sections.flatMap((s) => s.questionIds)
+    const info = await source.getMany(composed)
+    // A pooled question that vanished between the pool read and this read (unpublished meanwhile):
+    // fail before any write rather than store a section with wrong marks or version.
+    if (composed.some((qid) => !info.has(qid))) throw new Error('bijak generate: a composed question is no longer in the question source')
     const marksOf = (qid: string): number => info.get(qid)?.marks ?? 0
     const paperId = await this.repo.createJanaPaper({
       title: `Kertas Jana ${subject.name} Kertas ${String(body.kertas)} (#${String(previous + 1)})`,
