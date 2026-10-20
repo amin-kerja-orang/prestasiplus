@@ -73,6 +73,7 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
+    BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
     // BE-37 intake: volume ceilings raised (a whole suite creates many batches as one teacher) and the job worker
     // ticks fast, so a scenario can wait for a batch to be read. OCR stays off (OCR_ENGINE unset).
     INTAKE_MAX_ACTIVE_BATCHES: '100',

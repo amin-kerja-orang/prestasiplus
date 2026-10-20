@@ -1,4 +1,5 @@
 import { Inject, Module, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 import { CurriculumModule } from '../../curriculum'
 import { PracticeModule } from '../../practice'
@@ -39,6 +40,9 @@ import { PocBijakQuestionSource } from './poc-question-source'
  *   to exam-core). Jana's `pool` stays on the PoC fixture (no BE-09 pool-tag mapping yet, #45 M8).
  *   This replaces the earlier `question_versions` gate, which left BE-16 with no question source at all
  *   once BE-09 merged.
+ * - PoC questions are STAGING ONLY (LEAD decision 2026-10-20 16:00): the PoC fixtures are plugged in only when
+ *   `BIJAK_POC_QUESTIONS` is true (default false). Off, reserved PoC ids are not served (start is 403 "not
+ *   eligible", `getMany` omits them) and Jana's pool is empty (422 SHORTAGE); BE-09 questions work either way.
  */
 @Module({
   imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule],
@@ -57,7 +61,14 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(Be09BijakQuestionSource) private readonly bankQuestions: Be09BijakQuestionSource,
     @Inject(PerformancePorts) private readonly performancePorts: PerformancePorts,
     @Inject(PrismaBijakAggregate) private readonly performanceAggregate: PrismaBijakAggregate,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
+
+  /** `BIJAK_POC_QUESTIONS` (parsed to a boolean by the env schema; a raw string is accepted too). */
+  private pocEnabled(): boolean {
+    const v: unknown = this.config.get('BIJAK_POC_QUESTIONS')
+    return v === true || v === 'true' || v === '1'
+  }
 
   onModuleInit(): void {
     this.attemptPorts.providePaperSource(this.paperSource)
@@ -66,8 +77,9 @@ export class BijakIntegrationModule implements OnModuleInit {
     this.attemptPorts.provideAggregate(this.aggregate)
     this.attemptPorts.provideReward(this.bijakReward)
     this.practicePorts.provideReward(this.practiceReward)
-    this.attemptPorts.provideQuestionSource(new CompositeBijakQuestionSource(new PocBijakQuestionSource(), this.bankQuestions))
-    this.papersPorts.provideQuestionSource(new CompositePaperQuestionSource(new PocQuestionSource(), this.bankQuestions))
+    const poc = this.pocEnabled()
+    this.attemptPorts.provideQuestionSource(new CompositeBijakQuestionSource(poc ? new PocBijakQuestionSource() : null, this.bankQuestions))
+    this.papersPorts.provideQuestionSource(new CompositePaperQuestionSource(poc ? new PocQuestionSource() : null, this.bankQuestions))
     this.performancePorts.provideBijak(this.performanceAggregate)
   }
 }
