@@ -30,6 +30,7 @@ import { shopScenarios } from './gamification/shop'
 import { practiceReadsScenarios } from './practice-reads'
 import { kirkpatrickScenarios } from './analytics/kirkpatrick'
 import { analyticsScenarios } from './analytics/analytics'
+import { heatmapScenarios } from './heatmap/heatmap'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -69,5 +70,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...practiceReadsScenarios,
     ...kirkpatrickScenarios,
     ...analyticsScenarios,
+    ...heatmapScenarios,
   ]
 }
