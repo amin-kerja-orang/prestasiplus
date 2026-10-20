@@ -83,7 +83,7 @@ export class StudentPerformanceService {
         practiceDays: perDay.size,
       },
       // The gamification port carries a name only, so the icon stays empty.
-      badges: badges.map((b) => ({ icon: '', name: b.name })),
+      badges: badges.map((b) => ({ icon: b.icon, name: b.name })),
       heatmap,
       weakTopics: [],
       suggestions,

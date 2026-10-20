@@ -768,12 +768,12 @@ export class GamificationRepository {
   }
 
   /** The achievements a user has unlocked for real (not under Mod Pelajar), oldest first. */
-  async badgesOf(db: Db, userId: string): Promise<{ key: string; name: string; earnedAt: Date }[]> {
+  async badgesOf(db: Db, userId: string): Promise<{ key: string; name: string; icon: string; earnedAt: Date }[]> {
     const rows = await db.userAchievement.findMany({
       where: { userId: idFromString(userId), isTest: false },
-      include: { achievement: { select: { name: true } } },
+      include: { achievement: { select: { name: true, icon: true } } },
       orderBy: [{ unlockedAt: 'asc' }, { id: 'asc' }],
     })
-    return rows.map((r) => ({ key: idToString(r.achievementId), name: r.achievement.name, earnedAt: r.unlockedAt }))
+    return rows.map((r) => ({ key: idToString(r.achievementId), name: r.achievement.name, icon: r.achievement.icon, earnedAt: r.unlockedAt }))
   }
 }

@@ -44,11 +44,11 @@ const schoolAdmin = ctxOf('school_admin', 'sa1')
 
 describe('Prestasi 360: gamification and headcount cards', () => {
   it('streak, best streak, koin and badges come from the gamification port', async () => {
-    w.gamification.add('2', { syiling: 120, streak: { current: 4, best: 9 } }).addBadge('2', { key: '7', name: 'Rajin', earnedAt: new Date('2026-09-01T00:00:00Z') })
+    w.gamification.add('2', { syiling: 120, streak: { current: 4, best: 9 } }).addBadge('2', { key: '7', name: 'Rajin', icon: 'R', earnedAt: new Date('2026-09-01T00:00:00Z') })
     const r = await w.student.student(admin, '2')
     expect(r.streak).toBe(4)
     expect(r.activity).toMatchObject({ streakCurrent: 4, streakBest: 9, koinTotal: 120, practiceDays: 1 })
-    expect(r.badges).toEqual([{ icon: '', name: 'Rajin' }])
+    expect(r.badges).toEqual([{ icon: 'R', name: 'Rajin' }])
     PerformanceStudentSchema.parse(r)
   })
 

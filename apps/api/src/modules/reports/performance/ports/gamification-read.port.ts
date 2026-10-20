@@ -29,6 +29,8 @@ export interface GamificationProfile {
 export interface GamificationBadge {
   key: string
   name: string
+  /** The achievement icon (emoji or icon name); '' when it has none. */
+  icon: string
   earnedAt: Date
 }
 
