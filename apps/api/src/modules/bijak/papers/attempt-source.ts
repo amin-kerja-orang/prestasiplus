@@ -27,6 +27,11 @@ export interface AttemptPaper {
   id: string
   kind: 'pilihan' | 'jana'
   title: string
+  /**
+   * The BIJAK subject code (MAT, SN, SEJ), never the curriculum code (MATH, SCI). BE-16 stores it as
+   * `exam_attempts.subject` and BE-12 as the aggregate `subject_code`. A reader filtering by a curriculum
+   * code (BE-19, BE-21) converts with `bijakCodeOf` / `curriculumCodeOf` from `bijak/papers` (#45 M6).
+   */
   subject: string
   subjectName: string
   kertas: number
