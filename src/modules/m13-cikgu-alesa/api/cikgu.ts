@@ -62,7 +62,7 @@ export function createRph(body: RphCreateRequest, options: Signal = {}): Promise
 }
 
 /** #4 `GET /api/cikgu/rph/:id`. */
-export function fetchRph(id: number, options: Signal = {}): Promise<Rph> {
+export function fetchRph(id: number | string, options: Signal = {}): Promise<Rph> {
   return api.get<Rph>(`/api/cikgu/rph/${String(id)}`, withSignal(options))
 }
 
@@ -72,7 +72,7 @@ export function fetchEssayList(page = 1, options: Signal = {}): Promise<ListResu
 }
 
 /** #6 `GET /api/cikgu/essays/:id`. */
-export function fetchEssay(id: number, options: Signal = {}): Promise<EssayMarking> {
+export function fetchEssay(id: number | string, options: Signal = {}): Promise<EssayMarking> {
   return api.get<EssayMarking>(`/api/cikgu/essays/${String(id)}`, withSignal(options))
 }
 

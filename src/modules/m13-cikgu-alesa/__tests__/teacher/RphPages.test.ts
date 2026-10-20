@@ -258,6 +258,14 @@ describe('V1 RPH view', () => {
     expect(api.fetchRph).toHaveBeenCalledWith(13101, expect.anything())
   })
 
+  it.each([13101, 'clx9abc123'])('fetches with the id as given (%s)', async (id) => {
+    api.fetchRph.mockResolvedValue({ ...rph, id })
+    const m = await mountAt(RphViewPage, `/cikgu/rph/${String(id)}`, { id })
+    wrapper = m.wrapper
+    expect(api.fetchRph).toHaveBeenCalledWith(id, expect.anything())
+    expect(wrapper.find('[data-testid="rph-view-tajuk"]').exists()).toBe(true)
+  })
+
   it('a 404 (foreign or unknown id) raises the standard 404 outcome', async () => {
     api.fetchRph.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
     const m = await mountAt(RphViewPage, '/cikgu/rph/1', { id: 1 })

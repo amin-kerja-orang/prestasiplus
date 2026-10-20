@@ -14,7 +14,7 @@ import { fetchRph } from '../api'
 import { RPH_COPY as C } from '../components/teacher/copy'
 import { dmy } from '../components/teacher/lib'
 
-const props = defineProps<{ id: number }>()
+const props = defineProps<{ id: number | string }>()
 
 const { data, error, reload } = useApi(
   (signal) => fetchRph(props.id, { signal }),

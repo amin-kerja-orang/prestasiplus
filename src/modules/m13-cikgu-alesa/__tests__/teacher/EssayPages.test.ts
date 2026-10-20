@@ -202,6 +202,23 @@ describe('V2 essay view', () => {
     expect(comment.element.querySelector('b')).toBeNull()
   })
 
+  it.each([13201, 'clx9abc123'])('fetches with the id as given (%s)', async (id) => {
+    api.fetchEssay.mockResolvedValue({
+      id,
+      rubricKey: 'spm_bm_karangan',
+      subjectName: 'Bahasa Melayu',
+      studentName: 'Murid Demo 01',
+      essayTitle: 'T',
+      marks: 1,
+      maxMarks: 2,
+      comment: 'c',
+    })
+    const m = await mountAt(EssayViewPage, `/cikgu/essay/${String(id)}`, { id })
+    wrapper = m.wrapper
+    expect(api.fetchEssay).toHaveBeenCalledWith(id, expect.anything())
+    expect(wrapper.find('[data-testid="essay-view-tajuk"]').exists()).toBe(true)
+  })
+
   it('404 raises the standard 404 outcome', async () => {
     api.fetchEssay.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
     const m = await mountAt(EssayViewPage, '/cikgu/essay/99999999', { id: 99999999 })

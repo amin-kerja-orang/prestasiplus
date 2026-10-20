@@ -4,9 +4,9 @@ import type { RouteMeta, RouteRecordRaw } from 'vue-router'
  * M13 route fragment: the teacher-only paths S2 to S6 and the proposed views V1 / V2 (SRS M13 v1.1
  * §2, FR-M13-06, 07, 47, 48). Guard: teacher and admin; any other role goes to its landing page, a
  * guest to `/login`. Headers and tab titles are the live ones (URS FN-M13-1.1.5, 1.1.6). The id of
- * V1 / V2 is numeric only (`\d+`): `/cikgu/rph/abc` matches nothing and is the catch-all 404 (S7);
- * an unknown or foreign numeric id is raised by the page (404 outcome). `/cikgu/rph/baharu` is
- * declared before the id route and cannot be confused with it (digits only).
+ * V1 / V2 is an opaque string (the API sends string ids; the mock sends numbers, which arrive as
+ * their decimal text): the page passes it on as is and an unknown or foreign id is raised by the
+ * page (404 outcome). `/cikgu/rph/baharu` is declared before the id route so it wins.
  */
 const roles: RouteMeta['roles'] = ['teacher', 'admin']
 
@@ -36,10 +36,10 @@ const routes: RouteRecordRaw[] = [
     meta: meta('Jana RPH Baharu', 'Jana RPH dengan Cikgu Alesa'),
   },
   {
-    path: '/cikgu/rph/:id(\\d+)',
+    path: '/cikgu/rph/:id([^/]+)',
     name: 'cikgu-rph-view',
     component: () => import('../pages/RphViewPage.vue'),
-    props: (route) => ({ id: Number(route.params.id) }),
+    props: (route) => ({ id: String(route.params.id) }),
     meta: meta('RPH — Cikgu Alesa', 'Rancangan Pengajaran Harian (RPH)'),
   },
   {
@@ -55,10 +55,10 @@ const routes: RouteRecordRaw[] = [
     meta: meta('Mark Karangan Baharu', 'Mark Karangan Baharu'),
   },
   {
-    path: '/cikgu/essay/:id(\\d+)',
+    path: '/cikgu/essay/:id([^/]+)',
     name: 'cikgu-essay-view',
     component: () => import('../pages/EssayViewPage.vue'),
-    props: (route) => ({ id: Number(route.params.id) }),
+    props: (route) => ({ id: String(route.params.id) }),
     meta: meta('Marking Karangan', 'Marking Karangan AI'),
   },
   {

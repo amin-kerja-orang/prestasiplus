@@ -32,8 +32,8 @@ export type RphSource = 'form' | 'chat'
 
 /** DATA-M13-03 Rph (#3, #4). */
 export interface Rph {
-  id: number
-  userId: number
+  id: number | string
+  userId: number | string
   subjectName: string
   level: LevelCode
   tajuk: string
@@ -76,8 +76,8 @@ export interface RphCreateRequest {
 
 /** DATA-M13-04 EssayMarking (#6). */
 export interface EssayMarking {
-  id: number
-  userId: number
+  id: number | string
+  userId: number | string
   rubricKey: RubricKey
   subjectName: string | null
   level: string | null

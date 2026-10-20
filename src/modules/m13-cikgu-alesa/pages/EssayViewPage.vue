@@ -14,7 +14,7 @@ import { fetchEssay } from '../api'
 import { ESSAY_COPY as C } from '../components/teacher/copy'
 import { orDash, rubricShort } from '../components/teacher/lib'
 
-const props = defineProps<{ id: number }>()
+const props = defineProps<{ id: number | string }>()
 
 const { data, error, reload } = useApi(
   (signal) => fetchEssay(props.id, { signal }),
