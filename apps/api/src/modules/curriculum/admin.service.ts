@@ -22,6 +22,7 @@ import type { AuditActor } from './actor'
 import {
   type DbErrorMap,
   chapterNotFound,
+  hasChildren,
   levelNotFound,
   subjectNotFound,
   subtopicNotFound,
@@ -197,7 +198,12 @@ export class CurriculumAdminService {
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_DELETED, targetType: 'education_level', targetId: () => current.id },
       { notFound: levelNotFound },
-      () => this.repo.deleteLevel(current.id),
+      async () => {
+        // Lock the row, then look for children: a concurrent child insert waits on the lock (FK key-share).
+        if (!(await this.repo.lockLevel(current.id))) throw levelNotFound()
+        if (await this.repo.levelHasChildren(current.id)) throw hasChildren('level')
+        await this.repo.deleteLevel(current.id)
+      },
     )
     return { data: { deleted: 1 as const }, status: FLASH.level.deleted }
   }
@@ -312,7 +318,11 @@ export class CurriculumAdminService {
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_SUBJECT_DELETED, targetType: 'subject', targetId: () => current.id },
       { notFound: subjectNotFound },
-      () => this.repo.deleteSubject(current.id),
+      async () => {
+        if (!(await this.repo.lockSubject(current.id))) throw subjectNotFound()
+        if (await this.repo.subjectHasChildren(current.id)) throw hasChildren('subject')
+        await this.repo.deleteSubject(current.id)
+      },
     )
     return { data: { deleted: 1 as const }, status: FLASH.subject.deleted }
   }
@@ -463,9 +473,11 @@ export class CurriculumAdminService {
       { action: AUDIT_ACTIONS.CURRICULUM_CHAPTER_DELETED, targetType: 'chapter', targetId: () => current.id },
       { notFound: chapterNotFound },
       async () => {
-        const counts = await this.repo.countTopicsOfChapter(current.id)
+        if (!(await this.repo.lockChapter(current.id))) throw chapterNotFound()
+        if (await this.repo.chapterHasTopics(current.id)) throw hasChildren('chapter')
         await this.repo.deleteChapter(current.id)
-        return { chapters: 1 as const, ...counts }
+        // Only an empty chapter is deleted, so no topic or subtopic goes with it.
+        return { chapters: 1 as const, topics: 0, subtopics: 0 }
       },
     )
     return { data: { deleted }, status: FLASH.chapter.deleted }
@@ -560,9 +572,10 @@ export class CurriculumAdminService {
       { action: AUDIT_ACTIONS.CURRICULUM_TOPIC_DELETED, targetType: 'topic', targetId: () => current.id },
       { notFound: topicNotFound },
       async () => {
-        const subtopics = await this.repo.countSubtopicsOfTopic(current.id)
+        if (!(await this.repo.lockTopic(current.id))) throw topicNotFound()
+        if (await this.repo.topicHasSubtopics(current.id)) throw hasChildren('topic')
         await this.repo.deleteTopic(current.id)
-        return { topics: 1 as const, subtopics }
+        return { topics: 1 as const, subtopics: 0 }
       },
     )
     return { data: { deleted }, status: FLASH.topic.deleted }

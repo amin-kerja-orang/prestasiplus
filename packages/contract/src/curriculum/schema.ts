@@ -38,6 +38,17 @@ export const CURRICULUM_NOT_FOUND_MESSAGES = {
   chapterIdRequired: 'Chapter ID diperlukan.',
 } as const
 
+/**
+ * 409 CONFLICT copy of a delete that still has children (BE-08 follow-up, LEAD 2026-10-20). Working
+ * assumption: the live site and the mock cascade, so there is no observed copy.
+ */
+export const CURRICULUM_CONFLICT_MESSAGES = {
+  level: 'Tahap Pendidikan ini masih mempunyai subjek, bab atau nod DSKP.',
+  subject: 'Subjek ini masih mempunyai tahap, bab atau nod DSKP.',
+  chapter: 'Bab ini masih mempunyai topik.',
+  topic: 'Topik ini masih mempunyai subtopik.',
+} as const
+
 export const CURRICULUM_FLASH_MESSAGES = {
   chapter: { created: 'Bab berjaya ditambah.', updated: 'Bab berjaya dikemaskini.', deleted: 'Bab berjaya dipadam.' },
   topic: { created: 'Topik berjaya ditambah.', updated: 'Topik berjaya dikemaskini.', deleted: 'Topik berjaya dipadam.' },

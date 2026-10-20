@@ -6,6 +6,7 @@ import { CurriculumRepository } from './curriculum.repository'
 import { CurriculumLearnerController } from './learner.controller'
 import { CurriculumLearnerService } from './learner.service'
 import { AuditModule } from '../../common/audit'
+import { ThrottleModule } from '../../common/throttle'
 import { CurriculumPorts } from './providers'
 
 /**
@@ -14,10 +15,10 @@ import { CurriculumPorts } from './providers'
  * `node()`) and `CurriculumPorts` for the other cards. BE-13 calls
  * `ports.provideTopicProgress(...)` and BE-09 calls `ports.provideQuestionCounts(...)` from their
  * own `onModuleInit` (see `providers.ts`); until then both answer "nothing yet". Neither card edits
- * this file. Every admin write records an `audit_events` row (`curriculum.*` actions).
+ * this file. Every admin write is rate limited per user (`CURRICULUM_LIMITS`) and records an `audit_events` row (`curriculum.*` actions).
  */
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, ThrottleModule],
   controllers: [
     CurriculumLearnerController,
     AdminEducationLevelsController,
