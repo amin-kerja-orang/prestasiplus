@@ -331,7 +331,7 @@ export const useSessionStore = defineStore('session', () => {
       const me = await api.get<UserMe>('/api/me')
       if (auth.value?.token !== sent) return null
       setUser(me)
-      return me
+      return auth.value?.user ?? me
     } catch {
       return null
     }
