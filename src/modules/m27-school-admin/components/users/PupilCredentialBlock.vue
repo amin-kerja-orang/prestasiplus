@@ -6,9 +6,9 @@
  */
 import { DsPanel } from '@/ds'
 
-import type { CreatePupilResult } from '../../api/school-admin'
+import type { CreatedCredential } from '../../api/school-admin'
 
-defineProps<{ credential: CreatePupilResult['credential'] }>()
+withDefaults(defineProps<{ credential: CreatedCredential; who?: string }>(), { who: 'pelajar' })
 </script>
 
 <template>
@@ -17,7 +17,7 @@ defineProps<{ credential: CreatePupilResult['credential'] }>()
       color="warning"
       variant="subtle"
       icon="i-ph-key"
-      title="Maklumat log masuk pelajar — catat sekarang, ia tidak akan dipaparkan semula."
+      :title="`Maklumat log masuk ${who} — catat sekarang, ia tidak akan dipaparkan semula.`"
       class="mb-4"
     />
     <dl class="grid grid-cols-1 gap-x-4 gap-y-2 text-body sm:grid-cols-2">

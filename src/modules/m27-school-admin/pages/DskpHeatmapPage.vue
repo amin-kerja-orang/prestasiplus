@@ -72,7 +72,7 @@ const unknownSubject = computed(
   () =>
     data.value !== null &&
     requested.value !== null &&
-    !data.value.subjects.some((s) => s.id === requested.value),
+    !data.value.subjects.some((s) => String(s.id) === String(requested.value)),
 )
 const selectValue = computed<number | ''>(() => {
   if (!data.value || unknownSubject.value) return ''

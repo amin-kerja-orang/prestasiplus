@@ -11,17 +11,22 @@
 import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import { useFlash, useSession } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsPage, DsPanel } from '@/ds'
 
-import { createSchoolTeacher } from '../api/school-admin'
+import { createSchoolTeacher, type CreatedCredential } from '../api/school-admin'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
-import { errorLines, TEACHER_LIST_PATH } from '../components/users/users-format'
+import PupilCredentialBlock from '../components/users/PupilCredentialBlock.vue'
+import { errorLines, newPasswordPlaceholder, TEACHER_LIST_PATH } from '../components/users/users-format'
 
 const router = useRouter()
 const flash = useFlash()
 const { user: me } = useSession()
 
+/** http mode: the server generates the password (D59b); no typed pair, and the credential is shown once. */
+const http = isHttpMode()
+const credential = ref<CreatedCredential | null>(null)
 const form = reactive({ name: '', email: '', phone: '', password: '', passwordConfirmation: '' })
 const saving = ref(false)
 const errors = ref<string[]>([])
@@ -36,10 +41,15 @@ async function submit(): Promise<void> {
       name: form.name,
       email: form.email,
       phone: form.phone,
-      password: form.password,
-      passwordConfirmation: form.passwordConfirmation,
+      ...(http
+        ? {}
+        : { password: form.password, passwordConfirmation: form.passwordConfirmation }),
     })
     flash.success(result.status)
+    if (http && result.credential) {
+      credential.value = result.credential
+      return
+    }
     await router.push(TEACHER_LIST_PATH)
   } catch (err) {
     errors.value = errorLines(err)
@@ -55,7 +65,20 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage class="max-w-4xl" data-testid="sg-create-page">
+    <template v-if="credential">
+      <PupilCredentialBlock :credential="credential" who="guru" />
+      <div>
+        <UButton
+          :to="TEACHER_LIST_PATH"
+          label="Ke Senarai Guru"
+          icon="i-ph-arrow-right"
+          class="min-h-11"
+          data-testid="sg-credential-continue"
+        />
+      </div>
+    </template>
     <form
+      v-else
       method="post"
       novalidate
       class="flex min-w-0 flex-col gap-6"
@@ -137,7 +160,7 @@ async function submit(): Promise<void> {
           />
         </DsFormField>
 
-        <DsFormField label="Kata Laluan" required name="user-password">
+        <DsFormField v-if="!http" label="Kata Laluan" required name="user-password">
           <UInput
             id="user-password"
             v-model="form.password"
@@ -145,13 +168,13 @@ async function submit(): Promise<void> {
             name="password"
             autocomplete="new-password"
             icon="i-ph-lock-simple"
-            placeholder="Minimum 6 aksara"
+            :placeholder="newPasswordPlaceholder()"
             class="w-full"
             data-testid="user-password"
           />
         </DsFormField>
 
-        <DsFormField label="Sahkan Kata Laluan" required name="user-password-confirm">
+        <DsFormField v-if="!http" label="Sahkan Kata Laluan" required name="user-password-confirm">
           <UInput
             id="user-password-confirm"
             v-model="form.passwordConfirmation"

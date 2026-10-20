@@ -37,7 +37,14 @@ import {
   type SchoolUserDetail,
   type SchoolUserInput,
 } from '../../api/school-admin'
-import { errorLines, formatDate, formatDateTime, ROLE_CONFIG, type SchoolUserRole } from './users-format'
+import {
+  errorLines,
+  formatDate,
+  formatDateTime,
+  newPasswordPlaceholder,
+  ROLE_CONFIG,
+  type SchoolUserRole,
+} from './users-format'
 
 const props = defineProps<{ role: SchoolUserRole; id: number }>()
 
@@ -273,7 +280,7 @@ async function submit(): Promise<void> {
               name="new_password"
               autocomplete="new-password"
               icon="i-ph-lock-simple"
-              placeholder="Minimum 6 aksara"
+              :placeholder="newPasswordPlaceholder()"
               class="w-full"
               data-testid="user-new-password"
             />

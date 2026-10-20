@@ -14,6 +14,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
+import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash } from '@/composables'
 import {
   DsFormBar,
@@ -50,6 +51,8 @@ watch(
   { immediate: true },
 )
 
+/** http mode: no typed password (the server generates the credential, D59b). */
+const http = isHttpMode()
 const form = reactive({ name: '', classId: '', email: '', password: '' })
 const saving = ref(false)
 const errors = ref<string[]>([])
@@ -64,8 +67,9 @@ async function submit(): Promise<void> {
     const result = await createSchoolPupil({
       name: form.name,
       email: form.email,
-      ...(form.password !== '' ? { password: form.password } : {}),
-      ...(form.classId !== '' ? { classId: Number(form.classId) } : {}),
+      // http mode: the server generates the password (D59b) and takes the class id as a string.
+      ...(!http && form.password !== '' ? { password: form.password } : {}),
+      ...(form.classId !== '' ? { classId: http ? form.classId : Number(form.classId) } : {}),
     })
     credential.value = result.credential
     flash.show({ type: 'success', message: result.status })
@@ -167,7 +171,7 @@ async function submit(): Promise<void> {
           />
         </DsFormField>
 
-        <DsFormField label="Kata laluan" native for="pupil-password">
+        <DsFormField v-if="!http" label="Kata laluan" native for="pupil-password">
           <UInput
             id="pupil-password"
             v-model="form.password"

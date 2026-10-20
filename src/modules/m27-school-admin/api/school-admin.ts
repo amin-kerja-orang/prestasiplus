@@ -375,8 +375,22 @@ export interface ResetPasswordInput {
 }
 
 export interface CreateTeacherInput extends SchoolUserInput {
+  /** Mock mode only: in http mode the server generates the password (D59b) and the pair is not sent. */
+  password?: string
+  passwordConfirmation?: string
+}
+
+/** One-time credential of a created account (pupil or teacher). */
+export interface CreatedCredential {
+  name: string
+  school: string
+  email: string
   password: string
-  passwordConfirmation: string
+}
+
+/** #12 response. `credential` is present in http mode only (D59b); the mock has none. */
+export interface CreateTeacherResult extends WriteResult<SchoolUserDetail> {
+  credential?: CreatedCredential
 }
 
 export interface CreatePupilInput {
@@ -385,7 +399,7 @@ export interface CreatePupilInput {
   /** Empty or absent = the M02 default password. Typed: 8 to 255 characters. */
   password?: string | null
   /** An active `classroom` of the school. */
-  classId?: number | null
+  classId?: string | number | null
 }
 
 /** #19 response: `credential` is the only place a password is rendered (BR-M27-41). */
@@ -417,7 +431,7 @@ export const fetchSchoolTeacher = (id: number, o: { signal?: AbortSignal } = {})
 
 /** #12 `POST /api/admin-sekolah/guru` (S11): 201, role `teacher`, own school, active. */
 export const createSchoolTeacher = (input: CreateTeacherInput) =>
-  api.post<WriteResult<SchoolUserDetail>>(`${BASE}/guru`, { body: input, raw: true })
+  api.post<CreateTeacherResult>(`${BASE}/guru`, { body: input, raw: true })
 
 /** #13 `PUT /api/admin-sekolah/guru/:id`. */
 export const updateSchoolTeacher = (id: number, input: SchoolUserInput) =>
@@ -447,9 +461,9 @@ export interface SchoolPupilFormOptions {
   /** The school's active `classroom` classes by name A to Z (valid targets of #19). */
   classes: { id: number; name: string }[]
   /** Non-secret placeholder (bullets of the default password's length); never the literal password. */
-  passwordPlaceholder: string
-  passwordHint: 'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).'
-  passwordMinLength: 8
+  passwordPlaceholder?: string
+  passwordHint?: 'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).'
+  passwordMinLength?: 8
 }
 
 /** #22 `GET /api/admin-sekolah/pelajar/form-options` (S12). */

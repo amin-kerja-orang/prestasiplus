@@ -85,6 +85,24 @@ beforeEach(() => {
   usePageMeta().reset()
 })
 
+describe('wire ids are strings (http mode)', () => {
+  it('does not show the empty state when the requested subject id matches a string-id subject', async () => {
+    const data = heatmap({
+      subjects: [
+        { id: '7', name: 'Fizik' },
+        { id: '9', name: 'Kimia' },
+      ] as unknown as SchoolDskpHeatmap['subjects'],
+    })
+    const w = await mountPage(data, '/admin-sekolah/dskp-heatmap?subjectId=9&tingkatan=T5')
+    expect(has(w, 'dh-empty')).toBe(false)
+  })
+
+  it('still shows the empty state for an unknown subject id', async () => {
+    const w = await mountPage(heatmap(), '/admin-sekolah/dskp-heatmap?subjectId=99&tingkatan=T5')
+    expect(has(w, 'dh-empty')).toBe(true)
+  })
+})
+
 describe('route (FR-M27-38, 40, 44)', () => {
   it('declares S2 in the user shell for school_admin only with the 403 outcome and the tab title', () => {
     const s2 = routes.find((r) => r.path === '/admin-sekolah/dskp-heatmap')

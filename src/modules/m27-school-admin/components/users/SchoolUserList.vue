@@ -16,6 +16,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 
 import { isApiError, type ListResult } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
@@ -85,6 +86,8 @@ interface Item extends Record<string, unknown> {
 }
 
 const props = defineProps<{ role: SchoolUserRole }>()
+/** http mode: impersonation has no endpoint (UD-2, replaced by POST /session/mode), so no "Menyamar" button. */
+const http = isHttpMode()
 
 const route = useRoute()
 const router = useRouter()
@@ -522,6 +525,7 @@ function openRow(row: Item): void {
         <template #actions-cell="{ row }">
           <UserRowActions :edit-to="row.original.editTo" :can-edit="row.original.canEdit">
             <ImpersonateButton
+              v-if="!http"
               :user-id="row.original.id"
               :name="row.original.name"
               :is-active="row.original.isActive"
@@ -549,6 +553,7 @@ function openRow(row: Item): void {
             >
             <UserRowActions :edit-to="row.editTo" :can-edit="row.canEdit">
               <ImpersonateButton
+                v-if="!http"
                 :user-id="row.id"
                 :name="row.name"
                 :is-active="row.isActive"
