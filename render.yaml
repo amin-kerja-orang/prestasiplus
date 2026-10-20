@@ -1,0 +1,21 @@
+# Render blueprint for the staging API (free plan). No secrets: every sync:false value is set in the Render dashboard.
+# Runbook: docs/ops/deploy-staging.md. Image = docker/api/Dockerfile (runtime stage); the Prisma CLI is not in it,
+# so migrations are a one-off from a laptop (see the runbook), not a pre-deploy command.
+services:
+  - type: web
+    name: pretasiplus-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./docker/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: COOKIE_SECURE, value: 'true' }
+      - { key: TRUST_PROXY_HOPS, value: '2' }
+      - { key: DATABASE_URL, sync: false }
+      - { key: SESSION_SECRET, sync: false }
+      - { key: IC_HASH_KEY, sync: false }
+      - { key: PUBLIC_BASE_URL, sync: false }
+      - { key: PUBLIC_ORIGINS, sync: false }
