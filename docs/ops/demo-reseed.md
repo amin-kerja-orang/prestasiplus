@@ -38,7 +38,7 @@ Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the def
 
 ## Path B: already seeded with the published dev password (Demo1234)
 
-The seed writes the hash only when the stored `users.password_hash` is NULL (`existing.passwordHash ?? demoPasswordHash()` in `core/identity.ts` and `core/population.ts`). So the hashes of the demo accounts must be emptied first. Take a Supabase backup first (Dashboard -> Database -> Backups). Alternative: reset the database and follow Path A.
+The seed writes the hash only when the stored `users.password_hash` is NULL (`existing.passwordHash ?? demoPasswordHash()` in `core/identity.ts` and `core/population.ts`, and the same rule in `poc/bijak-sittings.ts`). So the hashes of the demo accounts must be emptied first. Take a Supabase backup first (Dashboard -> Database -> Backups). Alternative: reset the database and follow Path A.
 
 Demo accounts the seed creates: `@demo.test` (identity, population, Bijak PoC pupils murid4 to murid8), `@example.test` (population pupils/teachers/school admins, also on the dev password), and the e-mail-less roster pupil `murid01` of DEMO002. Run in the Supabase SQL editor or `psql "$DATABASE_URL"`:
 
@@ -70,14 +70,10 @@ Then re-run the seed (same env as Path A):
 ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc
 ```
 
-**Follow-up SQL (required).** The Bijak PoC seed (`poc/bijak-sittings.ts`) copies `pelajar@demo.test`'s hash into `murid4` to `murid8@demo.test` only when it CREATES them; for existing rows it does not touch the hash, so after the reset above they stay NULL and cannot log in. Fix after the seed:
+**No follow-up SQL is needed.** Every seed that writes demo accounts (`core/identity.ts`, `core/population.ts` and the Bijak PoC `poc/bijak-sittings.ts`, which owns murid4 to murid8) refills a NULL `password_hash` from the shared `demoPasswordHash()` (`core/demo-password.ts`, honours `SEED_DEMO_PASSWORD_HASH`). An existing non-NULL hash is kept. Check afterwards that no demo account is left without a hash (expect 0):
 
 ```sql
-BEGIN;
-UPDATE users SET password_hash = (SELECT password_hash FROM users WHERE lower(email) = 'pelajar@demo.test')
-WHERE lower(email) IN ('murid4@demo.test','murid5@demo.test','murid6@demo.test','murid7@demo.test','murid8@demo.test')
-  AND password_hash IS NULL;   -- expect 5 rows
-COMMIT;
+SELECT count(*) FROM users WHERE password_hash IS NULL AND (lower(email) LIKE '%@demo.test' OR lower(email) LIKE '%@example.test');
 ```
 
 ## Verify after seeding

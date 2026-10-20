@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { verify } from '@node-rs/argon2'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds, seedModules } from '../../prisma/seed'
+import { DEMO_PASSWORD } from '../../prisma/seed/core/demo-password'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
@@ -182,6 +184,20 @@ describe('PoC Bijak sittings seed', () => {
     } finally {
       await other.drop()
     }
+  }, 120_000)
+
+  it('refills a NULL password hash after a Path B reset, for every @demo.test user (incl. murid4 to murid8)', async () => {
+    const reset = await t.db.query(`UPDATE users SET password_hash = NULL WHERE lower(email) LIKE '%@demo.test' RETURNING id`)
+    expect(reset.length).toBeGreaterThanOrEqual(BIJAK_DEMO_PUPILS.length)
+    await runSeeds(MODULES, { prisma: t.db.prisma })
+    const rows = await t.db.query(`SELECT email, password_hash FROM users WHERE lower(email) LIKE '%@demo.test' ORDER BY email`)
+    const emails = rows.map((r) => String(r.email))
+    for (const p of BIJAK_DEMO_PUPILS) expect(emails).toContain(p.email)
+    for (const r of rows) {
+      expect(r.password_hash, String(r.email)).toBeTruthy()
+      expect(await verify(String(r.password_hash), DEMO_PASSWORD), String(r.email)).toBe(true)
+    }
+    expect(await fingerprint(t.db)).toEqual(before)
   }, 120_000)
 
   it('keeps the seed folder rules: no Math.random, Date.now or new Date()', () => {
