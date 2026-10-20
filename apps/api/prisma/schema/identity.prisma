@@ -77,13 +77,6 @@ model User {
   audioKbatSets         AudioKbatSet[]      @relation("AudioKbatSetCreator")
   audioKbatAttempts     AudioKbatAttempt[]  @relation("AudioKbatAttemptUser")
   supportTickets        SupportTicket[]     @relation("SupportTicketUser")
-  // BE-11 back-relations (wallet.prisma owns the models).
-  wallet                Wallet?
-  coinLedger            CoinLedger[]
-  streak                Streak?
-  sessionCredits        SessionCredit[]
-  dailyLoginMarks       DailyLoginMark[]
-  tokenMovements        TokenMovement[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")

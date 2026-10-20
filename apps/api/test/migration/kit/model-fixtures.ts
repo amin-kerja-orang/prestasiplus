@@ -64,8 +64,6 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
   // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
-  // coin_ledger (BE-11): type has a check and the sign of amount follows it.
-  coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
