@@ -1,6 +1,6 @@
 // SPM hub tables (BE-41, owner module M06). Conventions: docs/architecture/v2-backend-plan.md section 14.2,
 // data model 3.13 (the mock stores `m06.trackingSets` and `m06.mockExams`, promoted to B1 by D53).
-// Not expressible in Prisma and written by hand in migration 0025_spm_hub: identity columns (GENERATED ALWAYS),
+// Not expressible in Prisma and written by hand in migration 0034_spm_hub: identity columns (GENERATED ALWAYS),
 // CHECK constraints (enums are text + check), the foreign keys to tables owned by other modules
 // (subjects, users, questions).
 //

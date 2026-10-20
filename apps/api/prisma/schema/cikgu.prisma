@@ -1,0 +1,135 @@
+// Cikgu Alesa tables (BE-43, owner module M13): chat threads and messages, RPH plans, essay markings, PBD tags.
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2, data model section 3.13 and G-01 to G-18.
+// Not expressible in Prisma and written by hand in migration 0026_cikgu_alesa: identity columns (GENERATED ALWAYS),
+// CHECK constraints (enums are text + check), the partial index on pending PBD tags and the foreign keys to tables
+// owned by other modules (users, classrooms).
+//
+// Foreign keys to users and classrooms exist in the database but are NOT declared as Prisma relations here: a relation
+// needs a back-relation field in the other owner's schema file (identity.prisma, classes.prisma), which this card must
+// not edit. The repository reads those tables through their owners' repositories, never with `include`.
+// Child data (PDPA): chat text, essay text and student names are personal data of minors. They are never logged and
+// never copied to another table.
+
+/// A chat conversation of one signed-in user (the v2 side of .cloud `chatbot_conversations`; nothing is loaded in B1).
+/// The id is the opaque `thread_id` of the wire (decimal string).
+model ChatThread {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isTest       Boolean  @default(false) @map("is_test")
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  messages ChatMessage[]
+
+  @@unique([legacySource, legacyId], map: "uq_chat_threads_legacy")
+  @@index([userId, updatedAt], map: "ix_chat_threads_user_id_updated_at")
+  @@map("chat_threads")
+}
+
+/// One message of a thread. Two per turn: the `user` message and the `bot` reply, with the same `created_at`.
+/// `user_id` is a copy of the thread owner so that the daily quota query (BR-M13-06) needs no join.
+model ChatMessage {
+  id           BigInt   @id @default(autoincrement())
+  threadId     BigInt   @map("thread_id")
+  userId       BigInt   @map("user_id")
+  /// user, bot (check constraint).
+  role         String
+  text         String
+  /// mark_essay, rph, practice, or null (check constraint).
+  tool         String?
+  /// 0 or 1 (check constraint).
+  toolHops     Int      @default(0) @map("tool_hops") @db.SmallInt
+  tokensIn     Int      @default(0) @map("tokens_in")
+  tokensOut    Int      @default(0) @map("tokens_out")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isTest       Boolean  @default(false) @map("is_test")
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, map: "fk_chat_messages_thread_id")
+
+  @@unique([legacySource, legacyId], map: "uq_chat_messages_legacy")
+  @@index([userId, createdAt], map: "ix_chat_messages_user_id_created_at")
+  @@index([threadId, createdAt], map: "ix_chat_messages_thread_id_created_at")
+  @@map("chat_messages")
+}
+
+/// A lesson plan (RPH) of a teacher. Born in v2 (no .cloud source), so no legacy columns.
+model RphPlan {
+  id                  BigInt   @id @default(autoincrement())
+  userId              BigInt   @map("user_id")
+  subjectName         String   @map("subject_name")
+  /// D1..D6, T1..T5 (check constraint).
+  level               String
+  tajuk               String
+  className           String?  @map("class_name")
+  lessonDate          DateTime @map("lesson_date") @db.Date
+  durationMinutes     Int      @default(60) @map("duration_minutes") @db.SmallInt
+  timeSlot            String?  @map("time_slot")
+  tema                String?
+  pengajaranKeperluan String?  @map("pengajaran_keperluan")
+  /// generated (check constraint).
+  status              String   @default("generated")
+  /// form, chat (check constraint).
+  source              String
+  content             String
+  /// The chat thread that produced it (source = chat); null for a form RPH.
+  threadId            BigInt?  @map("thread_id")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isTest              Boolean  @default(false) @map("is_test")
+
+  @@index([userId, lessonDate(sort: Desc), id(sort: Desc)], map: "ix_rph_plans_user_id_lesson_date_id")
+  @@index([threadId], map: "ix_rph_plans_thread_id")
+  @@map("rph_plans")
+}
+
+/// One essay marking made by the chat `mark_essay` tool. Born in v2, so no legacy columns.
+/// `student_name` and `essay_text` are child data typed by a teacher: never logged, never copied elsewhere.
+model EssayMarking {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  /// spm_bm_karangan, spm_bi_continuous_writing, pt3_bm_karangan, pt3_bi_essay, sejarah_essay, general (check constraint).
+  rubricKey   String   @map("rubric_key")
+  subjectName String?  @map("subject_name")
+  level       String?
+  studentName String?  @map("student_name")
+  essayTitle  String?  @map("essay_title")
+  essayText   String   @map("essay_text")
+  marks       Int
+  maxMarks    Int      @map("max_marks")
+  comment     String
+  threadId    BigInt   @map("thread_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isTest      Boolean  @default(false) @map("is_test")
+
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "ix_essay_markings_user_id_created_at_id")
+  @@index([threadId], map: "ix_essay_markings_thread_id")
+  @@map("essay_markings")
+}
+
+/// A PBD tag (TP band of one student in one class) proposed by the roll-up and approved by the teacher.
+/// Born in v2, so no legacy columns. A partial index on `status = 'pending'` by `(user_id, created_at desc)` is written
+/// by hand in the migration (ix_pbd_tags_pending).
+model PbdTag {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @map("user_id")
+  classroomId BigInt    @map("classroom_id")
+  studentId   BigInt    @map("student_id")
+  sp          String
+  skor        Decimal   @db.Decimal(4, 1)
+  /// 1..6 (check constraint).
+  tp          Int       @db.SmallInt
+  /// pending, approved (check constraint).
+  status      String    @default("pending")
+  /// The time of the roll-up that wrote the row.
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedAt  DateTime? @map("approved_at") @db.Timestamptz(6)
+  isTest      Boolean   @default(false) @map("is_test")
+
+  @@unique([userId, classroomId, studentId, sp], map: "uq_pbd_tags_user_id_classroom_id_student_id_sp")
+  @@index([classroomId], map: "ix_pbd_tags_classroom_id")
+  @@index([studentId], map: "ix_pbd_tags_student_id")
+  @@map("pbd_tags")
+}
