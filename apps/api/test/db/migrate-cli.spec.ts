@@ -68,7 +68,7 @@ describe('be:db:* scripts against an empty database', { timeout: 120_000 }, () =
     const r = run('migrate')
     expect(r.status, r.stdout + r.stderr).toBe(0)
     const rows = await query<{ migration_name: string }>(
-      'select migration_name from _prisma_migrations',
+      'select migration_name from _prisma_migrations order by migration_name',
     )
     expect(rows.map((x) => x.migration_name)).toEqual(MIGRATION_NAMES)
     expect(await query("select 1 from pg_extension where extname = 'pgcrypto'")).toHaveLength(1)
