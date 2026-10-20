@@ -39,7 +39,7 @@ export interface IntegrationApp {
  * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
  * (PoC papers on the reserved ids AND bank questions in `question_versions`).
  */
-export async function bootIntegrationApp(): Promise<IntegrationApp> {
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
   await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
@@ -62,6 +62,8 @@ export async function bootIntegrationApp(): Promise<IntegrationApp> {
     BIJAK_SWEEP_INTERVAL_SECONDS: '0',
     UPLOAD_RATE_PER_MINUTE: '1000',
     FILE_STORAGE_DIR: undefined,
+    // The test boot runs the demo seed, as staging does: PoC questions on unless a spec asks for the production default.
+    BIJAK_POC_QUESTIONS: opts.pocQuestions === false ? 'false' : 'true',
   }
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k]
