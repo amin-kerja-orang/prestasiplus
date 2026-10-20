@@ -16,6 +16,10 @@ import { UsersModule } from './users'
 import { CurriculumModule } from './curriculum'
 import { QuestionsModule } from './questions'
 import { WalletModule } from './wallet'
+import { BijakPapersModule } from './bijak/papers'
+import { BijakAttemptsModule } from './bijak/attempts'
+import { PracticeModule } from './practice'
+import { BijakIntegrationModule } from './bijak/integration'
 import { QuestionWorkflowModule } from './questions/workflow'
 
 /**
@@ -25,4 +29,4 @@ import { QuestionWorkflowModule } from './questions/workflow'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule]

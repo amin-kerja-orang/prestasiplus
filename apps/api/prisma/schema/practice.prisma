@@ -1,0 +1,249 @@
+// Practice tables (BE-12, owner module M05: sessions, answers, revision queue, mastery; D12, ADR-0014).
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2, data model section 3.6.
+// Hand-written in migration 0014_practice_write: identity columns (GENERATED ALWAYS), CHECK constraints
+// (enums are text + check), partial unique index on `client_uuid`, the foreign keys to `users`,
+// `subjects`, `education_levels`, `chapters` and `topics` (no back-relations: BE-12 may not edit the
+// identity or curriculum schema files).
+// NO foreign keys to `questions` yet: BE-09 (migration 0011) owns the bank and is not merged when this
+// card is built. Question ids are plain bigints; the follow-up migration that adds the FKs is listed in
+// docs/architecture/v2-backend-deviations.md (BE-12 rows).
+// BE-13 (reads) reads these tables through `PracticeRepository` only.
+
+model PracticeSession {
+  /// uuid, also the id on the wire.
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           BigInt    @map("user_id")
+  /// Client idempotency key (contract `ClientUuid`); unique per user where not null (partial index).
+  clientUuid       String?   @map("client_uuid") @db.Uuid
+  /// random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk (check).
+  mode             String
+  subjectId        BigInt?   @map("subject_id")
+  educationLevelId BigInt?   @map("education_level_id")
+  difficulty       Int?      @db.SmallInt
+  chapterId        BigInt?   @map("chapter_id")
+  year             Int?      @db.SmallInt
+  setNo            Int?      @map("set_no") @db.SmallInt
+  targetQuestionId BigInt?   @map("target_question_id")
+  missionId        BigInt?   @map("mission_id")
+  remedialTestId   BigInt?   @map("remedial_test_id")
+  questionSetId    BigInt?   @map("question_set_id")
+  timeLimitSec     Int?      @map("time_limit_sec")
+  pkskDomain       String?   @map("pksk_domain")
+  /// T1, T4 (check).
+  pkskTargetLevel  String?   @map("pksk_target_level")
+  questionCount    Int       @map("question_count") @db.SmallInt
+  /// in_progress, completed (check).
+  status           String    @default("in_progress")
+  correctCount     Int       @default(0) @map("correct_count") @db.SmallInt
+  timeSpentSec     Int       @default(0) @map("time_spent_sec")
+  /// BR-09: the session's own coins (mock `sessionCoins`), not the wallet credit.
+  coinsEarned      Int       @default(0) @map("coins_earned")
+  pointsEarned     Int       @default(0) @map("points_earned")
+  /// Mission coin rate captured at start (BR-09), null otherwise.
+  coinsPerCorrect  Int?      @map("coins_per_correct")
+  startedAt        DateTime  @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  /// .cloud `paper` (paper1/paper2), audit only.
+  legacyPaper      String?   @map("legacy_paper")
+  /// Written while an admin or school admin is in Mod Pelajar (G-07).
+  isTest           Boolean   @default(false) @map("is_test")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?   @map("legacy_source")
+  legacyId         String?   @map("legacy_id")
+  legacyHash       String?   @map("legacy_hash")
+
+  questions PracticeSessionQuestion[]
+  answers   PracticeAnswer[]
+  checks    PracticeCheck[]
+
+  @@unique([legacySource, legacyId], map: "uq_practice_sessions_legacy")
+  @@index([userId, startedAt(sort: Desc)], map: "ix_practice_sessions_user_id_started_at")
+  @@index([userId, status], map: "ix_practice_sessions_user_id_status")
+  @@index([subjectId], map: "ix_practice_sessions_subject_id")
+  @@map("practice_sessions")
+}
+
+/// OD-28 / OWN-7: the served list in order, with the version served (grading never re-reads the live version).
+model PracticeSessionQuestion {
+  id                BigInt   @id @default(autoincrement())
+  sessionId         String   @map("session_id") @db.Uuid
+  position          Int      @db.SmallInt
+  questionId        BigInt   @map("question_id")
+  questionVersionNo Int      @map("question_version_no")
+  isTest            Boolean  @default(false) @map("is_test")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "fk_practice_session_questions_session_id")
+
+  @@unique([sessionId, position], map: "uq_practice_session_questions_session_id_position")
+  @@unique([sessionId, questionId], map: "uq_practice_session_questions_session_id_question_id")
+  @@map("practice_session_questions")
+}
+
+/// The answer log (BR-06): one row per checked question of a completed session, dimensions copied at answer time.
+model PracticeAnswer {
+  id                 BigInt    @id @default(autoincrement())
+  /// Null for an answer outside a session (mock `hasSession = false`).
+  sessionId          String?   @map("session_id") @db.Uuid
+  userId             BigInt    @map("user_id")
+  /// Nullable: historical (migrated) rows have no link. FK to questions = follow-up (BE-09).
+  questionId         BigInt?   @map("question_id")
+  questionVersionNo  Int?      @map("question_version_no")
+  subjectId          BigInt?   @map("subject_id")
+  educationLevelId   BigInt?   @map("education_level_id")
+  chapterId          BigInt?   @map("chapter_id")
+  topicId            BigInt?   @map("topic_id")
+  difficulty         Int?      @db.SmallInt
+  questionType       String?   @map("question_type")
+  /// Chosen option label `A`..`H` (the wire sends the zero-based index).
+  selectedLabel      String?   @map("selected_label")
+  isCorrect          Boolean   @map("is_correct")
+  timeSeconds        Int?      @map("time_seconds")
+  answeredAt         DateTime  @map("answered_at") @db.Timestamptz(6)
+  /// True only for migrated snapshot rows.
+  historical         Boolean   @default(false)
+  /// Copy of the session's client key (v2-data-migration 4.4).
+  clientUuid         String?   @map("client_uuid") @db.Uuid
+  legacyQuestionRef  String?   @map("legacy_question_ref")
+  legacyContentHash  String?   @map("legacy_content_hash")
+  sourceNaturalKey   String?   @map("source_natural_key")
+  numberLabel        String?   @map("number_label")
+  isTest             Boolean   @default(false) @map("is_test")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource       String?   @map("legacy_source")
+  legacyId           String?   @map("legacy_id")
+  legacyHash         String?   @map("legacy_hash")
+
+  session PracticeSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "fk_practice_answers_session_id")
+
+  @@unique([legacySource, legacyId], map: "uq_practice_answers_legacy")
+  @@index([userId, subjectId, answeredAt], map: "ix_practice_answers_user_id_subject_id_answered_at")
+  @@index([sessionId], map: "ix_practice_answers_session_id")
+  @@index([userId, questionId], map: "ix_practice_answers_user_id_question_id")
+  @@index([subjectId, chapterId], map: "ix_practice_answers_subject_id_chapter_id")
+  @@map("practice_answers")
+}
+
+/// One instant check ("Semak") per question per session (BR-30); graded against the served version.
+model PracticeCheck {
+  id                BigInt   @id @default(autoincrement())
+  sessionId         String   @map("session_id") @db.Uuid
+  userId            BigInt   @map("user_id")
+  questionId        BigInt   @map("question_id")
+  questionVersionNo Int      @map("question_version_no")
+  selectedLabel     String   @map("selected_label")
+  isCorrect         Boolean  @map("is_correct")
+  checkedAt         DateTime @map("checked_at") @db.Timestamptz(6)
+  seq               Int      @db.SmallInt
+  isTest            Boolean  @default(false) @map("is_test")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "fk_practice_checks_session_id")
+
+  @@unique([sessionId, questionId], map: "uq_practice_checks_session_id_question_id")
+  @@map("practice_checks")
+}
+
+/// BR-14 wrong list: one row per user and question, `wrong_times` up on a wrong answer, removed on a right one.
+model RevisionQueue {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  questionId  BigInt   @map("question_id")
+  subjectId   BigInt   @map("subject_id")
+  wrongTimes  Int      @default(1) @map("wrong_times")
+  lastWrongAt DateTime @map("last_wrong_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, questionId], map: "uq_revision_queue_user_id_question_id")
+  @@index([userId, subjectId], map: "ix_revision_queue_user_id_subject_id")
+  @@map("revision_queue")
+}
+
+/// BR-20 stored counters per user and subject (one writer: the submit step).
+model Mastery {
+  id             BigInt    @id @default(autoincrement())
+  userId         BigInt    @map("user_id")
+  subjectId      BigInt    @map("subject_id")
+  correct        Int       @default(0)
+  answered       Int       @default(0)
+  lastAnsweredAt DateTime? @map("last_answered_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, subjectId], map: "uq_mastery_user_id_subject_id")
+  @@map("mastery")
+}
+
+/// S1 "Digunakan" counter per subject (mock `practice.subjectUsage`).
+model SubjectUsage {
+  subjectId BigInt   @id @map("subject_id")
+  usedCount Int      @default(0) @map("used_count")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("subject_usage")
+}
+
+/// US-33 (AC-33.4): one analytics aggregate per graded sitting (Bijak SPM attempts), written or updated idempotently.
+model PracticeAttemptAggregate {
+  id              BigInt    @id @default(autoincrement())
+  /// Kind of sitting: bijak (check). Other paper kinds join later.
+  source          String
+  /// The sitting id of the source module (`exam_attempts.id` for bijak). No FK: BE-16 owns that table.
+  attemptId       String    @map("attempt_id") @db.Uuid
+  userId          BigInt    @map("user_id")
+  /// Decimal paper id; null for a generated or migrated paper. No FK: BE-15 owns `papers`.
+  paperId         BigInt?   @map("paper_id")
+  /// Start type: pilihan, jana (check); null when the caller did not pass it.
+  startType       String?   @map("start_type")
+  /// Subject code as the paper carries it, for example `MAT`.
+  subjectCode     String    @map("subject_code")
+  kertas          Int       @db.SmallInt
+  /// exam, latihan (check).
+  mode            String
+  /// submitted, auto_submitted (check).
+  status          String
+  /// Units = marks (AC-33.4).
+  unitsAwarded    Decimal   @map("units_awarded") @db.Decimal(7, 2)
+  unitsMax        Decimal   @map("units_max") @db.Decimal(7, 2)
+  durationSec     Int?      @map("duration_sec")
+  provisional     Boolean   @default(false)
+  /// How many regrades replaced the figures (late sync).
+  regradeCount    Int       @default(0) @map("regrade_count")
+  startedAt       DateTime? @map("started_at") @db.Timestamptz(6)
+  submittedAt     DateTime? @map("submitted_at") @db.Timestamptz(6)
+  /// Stored and flagged; excluded from every read other modules use (AC-18.3, G-07).
+  isTest          Boolean   @default(false) @map("is_test")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  items PracticeAttemptAggregateItem[]
+
+  @@unique([source, attemptId], map: "uq_practice_attempt_aggregates_source_attempt_id")
+  @@index([userId, submittedAt(sort: Desc)], map: "ix_practice_attempt_aggregates_user_id_submitted_at")
+  @@index([subjectCode, kertas], map: "ix_practice_attempt_aggregates_subject_code_kertas")
+  @@index([paperId], map: "ix_practice_attempt_aggregates_paper_id")
+  @@map("practice_attempt_aggregates")
+}
+
+/// US-33 per-question figures of one aggregate (Analisa Item). Replaced as a whole on a regrade.
+model PracticeAttemptAggregateItem {
+  id          BigInt  @id @default(autoincrement())
+  aggregateId BigInt  @map("aggregate_id")
+  position    Int     @db.SmallInt
+  /// Opaque question id of the source (BE-09 owns the bank; no FK).
+  questionId  String  @map("question_id")
+  marks       Decimal @db.Decimal(7, 2)
+  awarded     Decimal @db.Decimal(7, 2)
+  attempted   Boolean
+  counted     Boolean
+  isTest      Boolean @default(false) @map("is_test")
+
+  aggregate PracticeAttemptAggregate @relation(fields: [aggregateId], references: [id], onDelete: Cascade, map: "fk_practice_attempt_aggregate_items_aggregate_id")
+
+  @@unique([aggregateId, position], map: "uq_practice_attempt_aggregate_items_aggregate_id_position")
+  @@index([questionId], map: "ix_practice_attempt_aggregate_items_question_id")
+  @@map("practice_attempt_aggregate_items")
+}

@@ -3,6 +3,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from '../zod'
 import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
+import { RATE_LIMITED_RESPONSE } from './reads/rate-limit'
 import {
   CheckAnswerRequestSchema,
   CheckAnswerResponseSchema,
@@ -87,6 +88,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
       422: err(
         'VALIDATION_ERROR "Nilai tidak sah." with fields (mode, levelId, difficulty, count, targetQuestionId); NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi."; SET_NOT_READY "Soalan tidak mencukupi."; NO_WRONG_QUESTIONS "Maaf, terdapat masalah memuatkan kuiz ulang kaji.".',
       ),
+      429: RATE_LIMITED_RESPONSE,
     },
   })
 
@@ -101,10 +103,12 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(CheckAnswerResponseSchema), 'Result of the check; the key is revealed here by design.'),
       401: unauthorized,
+      402: err('TRIAL_EXHAUSTED "Baki percubaan percuma anda telah habis." (first check past the trial limit; nothing is stored).'),
       403: err(csrfInvalid),
       404: notYours,
       409: err('ALREADY_SUBMITTED "Sesi ini sudah dihantar.".'),
       422: err('VALIDATION_ERROR "Jawapan tidak sah." (fields.questionId when not in the session, fields.selectedOptionId when out of range).'),
+      429: RATE_LIMITED_RESPONSE,
     },
   })
 
@@ -122,6 +126,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
       403: err(csrfInvalid),
       404: notYours,
       409: err('ALREADY_SUBMITTED "Sesi ini sudah dihantar." (second submit).'),
+      429: RATE_LIMITED_RESPONSE,
     },
   })
 
@@ -135,6 +140,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(SessionListResponseSchema, 'Sessions with meta.activeType and meta.stats.'),
       401: unauthorized,
+      429: RATE_LIMITED_RESPONSE,
       422: err('VALIDATION_ERROR "Mod tidak sah." with fields.modes.'),
     },
   })
