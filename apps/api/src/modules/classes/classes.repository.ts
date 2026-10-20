@@ -6,10 +6,18 @@ import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { JOIN_CODE_ALPHABET, JOIN_CODE_ATTEMPTS, JOIN_CODE_LENGTH } from './classes.constants'
+import { slugOfGrade } from './level-slug'
 
 export type ClassroomKind = 'classroom' | 'school_class'
 export type EnrolmentStatus = 'active' | 'removed'
 export type EnrolmentSource = 'code' | 'teacher' | 'school_admin' | 'complimentary'
+
+/** Report label of a class (BE-19): level slug (`tahun-n` / `tingkatan-n`, null for other grades), owner's name and active real member count. */
+export interface ClassLabel extends ClassRecord {
+  levelSlug: string | null
+  teacherName: string | null
+  studentCount: number
+}
 
 /** A class as the other modules see it: decimal-string ids, no `legacy_*`. */
 export interface ClassRecord {
@@ -160,6 +168,40 @@ export class ClassesRepository {
     if (key === null) return null
     const row = await this.db.classroom.findUnique({ where: { id: key } })
     return row ? toClass(row) : null
+  }
+
+  /** Every class (any kind), newest first. Read accessor for reports (BE-19). */
+  async all(): Promise<ClassRecord[]> {
+    const rows = await this.db.classroom.findMany({ orderBy: NEWEST_FIRST })
+    return rows.map(toClass)
+  }
+
+  /** Alias of `get` under the name BE-19 uses. */
+  async byId(id: string): Promise<ClassRecord | null> {
+    return this.get(id)
+  }
+
+  /** Classes by id with `levelSlug`, `teacherName` and `studentCount` (BE-19 report labels); unknown ids are absent from the map. */
+  async labels(ids: readonly string[]): Promise<Map<string, ClassLabel>> {
+    const keys = idsOf(ids)
+    const rows = keys.length === 0 ? [] : await this.db.classroom.findMany({ where: { id: { in: keys } } })
+    const records = rows.map(toClass)
+    const [levels, teachers, counts] = await Promise.all([
+      this.levelGrades([...new Set(records.map((r) => r.educationLevelId))]),
+      this.userNames(records.map((r) => r.teacherId)),
+      this.memberCounts(records.map((r) => r.id)),
+    ])
+    return new Map(
+      records.map((r): [string, ClassLabel] => [
+        r.id,
+        {
+          ...r,
+          levelSlug: slugOfGrade(levels.get(r.educationLevelId)?.grade),
+          teacherName: r.teacherId ? (teachers.get(r.teacherId) ?? null) : null,
+          studentCount: counts.get(r.id) ?? 0,
+        },
+      ]),
+    )
   }
 
   /** The classes a teacher owns (active and inactive), newest first. */

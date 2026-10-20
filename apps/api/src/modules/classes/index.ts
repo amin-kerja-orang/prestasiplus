@@ -1,6 +1,7 @@
 export { ClassesModule } from './classes.module'
 export { ClassesRepository } from './classes.repository'
 export type {
+  ClassLabel,
   ClassRecord,
   ClassroomKind,
   EnrolInput,

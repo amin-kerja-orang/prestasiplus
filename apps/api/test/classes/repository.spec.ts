@@ -63,6 +63,17 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
     expect(await counts()).toEqual(first)
   })
 
+  it('all, byId and labels give levelSlug, teacherName and studentCount (BE-19)', async () => {
+    const demo = (await repo.findByJoinCode(DEMO_CLASS_CODE)) as { id: string }
+    expect((await repo.all()).map((x) => x.id)).toContain(demo.id)
+    expect((await repo.byId(demo.id))?.id).toBe(demo.id)
+    expect(await repo.byId('zz')).toBeNull()
+    const label = await repo.labels([demo.id, '999999999'])
+    expect(label.size).toBe(1)
+    expect(label.get(demo.id)).toMatchObject({ levelSlug: 'tingkatan-4', studentCount: 2 })
+    expect(typeof label.get(demo.id)?.teacherName).toBe('string')
+  })
+
   it('createClass, get, forTeacher, schoolClasses, findByJoinCode', async () => {
     const c = await repo.createClass({ name: 'Repo Satu', teacherId, schoolId: school1, subjectId: null, educationLevelId: levelId, academicYear: 2026, description: null, now })
     expect(c).toMatchObject({ kind: 'classroom', teacherId, schoolId: school1, subjectId: null, isActive: true })

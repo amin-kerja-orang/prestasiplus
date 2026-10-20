@@ -1,5 +1,5 @@
--- 0014_classes (BE-17): classrooms, enrolments, teacher_profiles (M10 part A).
--- Number 0014 allocated by the LEAD. Hand-written in the style of `prisma migrate diff` output: identity columns
+-- 0015_classes (BE-17): classrooms, enrolments, teacher_profiles (M10 part A).
+-- Number 0015 allocated by the LEAD. Hand-written in the style of `prisma migrate diff` output: identity columns
 -- (GENERATED ALWAYS), CHECK constraints (enums are text + check), the case-insensitive unique index on the join code
 -- and the foreign keys to tables of other owners (users, schools, subjects, education_levels), which the Prisma schema
 -- does not declare as relations (see classes.prisma). Plan 14.2, data model 3.9.

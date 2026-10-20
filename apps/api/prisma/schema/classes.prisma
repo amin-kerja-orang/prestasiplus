@@ -1,10 +1,10 @@
 // Classes and teacher profile tables (BE-17, owner module M10). Conventions: docs/architecture/v2-backend-plan.md
 // section 14.2, data model section 3.9. BE-18 (missions, question sets) adds its models to this file later.
-// Not expressible in Prisma and written by hand in migration 0014_classes: identity columns (GENERATED ALWAYS),
+// Not expressible in Prisma and written by hand in migration 0015_classes: identity columns (GENERATED ALWAYS),
 // CHECK constraints (enums are text + check), the case-insensitive unique index on classrooms.join_code and the
 // foreign keys to tables owned by other modules.
 //
-// Foreign keys to users, schools, subjects and education_levels exist in the database (migration 0014) but are
+// Foreign keys to users, schools, subjects and education_levels exist in the database (migration 0015) but are
 // NOT declared as Prisma relations here: a relation needs a back-relation field in the other owner's schema file
 // (identity.prisma, schools.prisma, curriculum.prisma), which this card must not edit (parallel cards edit the
 // same lines). The repository therefore reads those tables with separate batch lookups, never with `include`.
