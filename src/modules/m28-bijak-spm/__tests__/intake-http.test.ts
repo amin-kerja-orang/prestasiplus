@@ -30,7 +30,7 @@ const fail = (
   body: { error: { code, message, ...(fields ? { fields } : {}) } },
 })
 
-const summary = {
+const summary: Omit<WireBatchDetail, 'files'> = {
   id: 'b1',
   status: 'ready_for_review',
   statusLabel: 'Sedia untuk semakan',
@@ -41,6 +41,8 @@ const summary = {
   source: 'Sekolah',
   copyright: 'sendiri',
   notes: null,
+  adminNotes: null,
+  owner: null,
   fileCount: 1,
   pageCount: 2,
   createdAt: T0,
@@ -48,9 +50,9 @@ const summary = {
   submittedAt: null,
 }
 const detail: WireBatchDetail = {
-  ...(summary as unknown as Omit<WireBatchDetail, 'files'>),
+  ...summary,
   files: [
-    { id: 'f1', originalName: 'k2.pdf', sizeBytes: 10, pageCount: 2, status: 'done', errorCode: null },
+    { id: 'f1', originalName: 'k2.pdf', sizeBytes: 10, pageCount: 2, status: 'done', errorCode: null, progress: { total: 2, done: 2, failed: 0 } },
   ],
 }
 
@@ -79,7 +81,7 @@ describe('intake wire mappers', () => {
     expect(paperTypeFromWire('exercise_book')).toBe('Buku Latihan')
   })
   it('maps a summary', () => {
-    const s = summaryFromWire(summary as never, () => 'Matematik')
+    const s = summaryFromWire(summary, () => 'Matematik')
     expect(s).toMatchObject({
       id: 'b1',
       title: 'Matematik Kertas 2 2025',

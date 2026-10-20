@@ -1,55 +1,29 @@
 /**
- * Wire shapes and pure mappers of the intake routes (BE-37 files/OCR at origin/feature/v2-backend
- * 2f3b8311, `packages/contract/src/intake/files.ts`). The worktree contract package predates BE-37,
- * so the few shapes the admin UI reads are declared here (not imported from `@pp/contract`).
+ * Wire shapes and pure mappers of the intake routes (BE-37 files/OCR, `packages/contract/src/intake/files.ts`).
+ * The wire types are the contract's `z.infer` types (type-only imports from `@pp/contract`).
  *
  * The backend submission is a declaration plus PDF files and their OCR pages. The extracted
  * questions (BE-38 items) have no controller yet, so a mapped batch carries no questions.
  */
+import type {
+  IntakeBatchDetail,
+  IntakeBatchStatus,
+  IntakeBatchSummary,
+  IntakeFileSummary,
+  IntakePageInfo,
+  IntakePaperType,
+} from '@pp/contract'
+
 import type { IntakeBatch, IntakeStatus, IntakeSummary, PageText } from '../admin/intake/types'
 
-export type WireBatchStatus = 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
-
-export interface WireFile {
-  id: string
-  originalName: string
-  sizeBytes: number
-  pageCount: number | null
-  status: 'uploaded' | 'processing' | 'done' | 'failed' | 'cancelled'
-  errorCode: string | null
-}
-
-export interface WireBatchSummary {
-  id: string
-  status: WireBatchStatus
-  statusLabel: string
-  paperType: string
-  subject: string
-  kertas: 1 | 2
-  year: number
-  source: string
-  copyright: string
-  notes: string | null
-  fileCount: number
-  pageCount: number
-  createdAt: string
-  updatedAt: string
-  submittedAt: string | null
-}
-
-export interface WireBatchDetail extends WireBatchSummary {
-  files: WireFile[]
-}
-
-export interface WirePage {
-  pageNo: number
-  textSource: 'text-layer' | 'ocr' | null
-  text: string | null
-  ocrConfidence: number | null
-}
+export type WireBatchStatus = IntakeBatchStatus
+export type WireFile = IntakeFileSummary
+export type WireBatchSummary = IntakeBatchSummary
+export type WireBatchDetail = IntakeBatchDetail
+export type WirePage = IntakePageInfo
 
 /** UI paper type label to the wire code (and back). */
-export const PAPER_TYPE_CODES: Record<string, string> = {
+export const PAPER_TYPE_CODES: Record<string, IntakePaperType> = {
   'Percubaan SPM': 'trial',
   'Soalan Umum': 'general',
   'Peperiksaan Sebenar': 'exam',
@@ -60,7 +34,7 @@ const PAPER_TYPE_LABELS = Object.fromEntries(
   Object.entries(PAPER_TYPE_CODES).map(([label, code]) => [code, label]),
 )
 
-export function paperTypeToWire(label: string): string {
+export function paperTypeToWire(label: string): IntakePaperType {
   return PAPER_TYPE_CODES[label] ?? 'other'
 }
 export function paperTypeFromWire(code: string): string {
@@ -102,7 +76,9 @@ export function summaryFromWire(
 }
 
 /** Pages of all files, numbered continuously across the batch (the UI has one page counter). */
-export function pagesFromWire(lists: { pages: WirePage[] }[]): PageText[] {
+export function pagesFromWire(
+  lists: { pages: Pick<IntakePageInfo, 'pageNo' | 'textSource' | 'text' | 'ocrConfidence'>[] }[],
+): PageText[] {
   const out: PageText[] = []
   let offset = 0
   for (const list of lists) {
