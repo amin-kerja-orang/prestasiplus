@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "vite",
     "e2e:bijak:regression": "bash scripts/bijak-regression.sh",
+    "e2e:bijak:http-dryrun": "bash scripts/bijak-http-dryrun.sh",
     "smoke:bijak": "node e2e/smoke/bijak-smoke.mjs",
     "build": "vue-tsc -b && vite build --mode demo && node scripts/check-demo-bundle.mjs",
     "build:artifact": "vue-tsc -b && node scripts/build-artifact.mjs",
