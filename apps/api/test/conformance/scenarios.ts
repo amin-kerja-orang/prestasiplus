@@ -14,6 +14,7 @@ import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
+import { performanceScenarios } from './performance/performance'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
@@ -47,5 +48,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...bijakIntegrationScenarios,
     ...questionsWorkflowScenarios,
     ...classesScenarios,
+    ...performanceScenarios,
   ]
 }
