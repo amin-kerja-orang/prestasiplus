@@ -17,6 +17,8 @@ beforeEach(() => {
   addPupil(w, '5', 'Emir Danial', 's2')
   addPupil(w, '6', 'Farah Lee', 's2')
   w.directory.addPupil({ id: 't1', name: 'Cikgu Ujian', schoolId: 's1', isStudent: false })
+  // Ids are only shown inside the canSeeName scope: t1 teaches every pupil here (the scope matrix is in names-privacy.spec.ts).
+  w.classes.add({ id: 'c1', schoolId: 's1', teacherId: 't1' }, ['1', '2', '3', '4', '5', '6'])
   // correct / answered: 1 = 9/10, 2 = 9/12, 3 = 8/8, 4 = 5/5, 5 = 5/6, 6 = 2/2 (below the 3-answer floor)
   w.practice.addAnswers('1', 10, 9).addAnswers('2', 12, 9).addAnswers('3', 8, 8).addAnswers('4', 5, 5).addAnswers('5', 6, 5).addAnswers('6', 2, 2)
   w.gamification.add('1', { level: 4 }).add('3', { level: 2 })
@@ -61,6 +63,7 @@ describe('Rankings: rules', () => {
     w.directory.addPupil({ id: 'v', name: 'Viewer Ujian', schoolId: 's2' })
     const sek = await w.ranking.rankings(ctxOf('student', 'v'), { scope: 'sekolah' })
     expect(sek.rows).toEqual([])
+    w.classes.add({ id: 'c2', schoolId: 's2', teacherId: 'v' }, ['4', '5', '6'])
     const asTeacher = await w.ranking.rankings({ ...teacher, userId: 'v' }, { scope: 'sekolah' })
     expect(asTeacher.rows.map((x) => x.userId)).toEqual(['4', '5'])
     expect(asTeacher.rows[0]?.schoolName).toBe('Sekolah Dua')
