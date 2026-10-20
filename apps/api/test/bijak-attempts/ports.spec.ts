@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { BijakAttemptPorts, NoAggregate, NoPapers, NoQuestions, NoReward } from '../../src/modules/bijak/attempts/ports'
-import { type AttemptsTestApp, bootAttemptsApp, expectError, loginAs, STUDENT } from './helpers'
+import { type AttemptsTestApp, bootAttemptsApp, expectError, loginAs, PAPER, STUDENT } from './helpers'
 
 const input = { userId: '1', paperId: '1', isTest: false }
 
@@ -41,5 +41,23 @@ describe('the module before BE-15 and BE-09 are plugged in (default ports)', () 
     const c = await loginAs(t, STUDENT)
     expect((await c.get('/api/bijak/history')).body).toEqual({ data: [] })
     expectError(await c.post('/api/bijak/attempts', { paperId: '101', mode: 'exam' }), 'NOT_FOUND', 'Kertas tidak ditemui')
+  })
+})
+
+describe('start with a paper source but the default NoQuestions source', () => {
+  let t: AttemptsTestApp
+  beforeAll(async () => {
+    t = await bootAttemptsApp({}, { plugPorts: false })
+    t.app.get(BijakAttemptPorts).providePaperSource(t.papers)
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+  it('answers 422 "Tiada soalan layak untuk kertas ini." in the error envelope and creates nothing', async () => {
+    const c = await loginAs(t, STUDENT)
+    expectError(await c.post('/api/bijak/attempts', { paperId: PAPER.matK1, mode: 'exam' }), 'VALIDATION_ERROR', 'Tiada soalan layak untuk kertas ini.', 422)
+    expect(await t.db.prisma.examAttempt.count()).toBe(0)
+    expect(t.reward.calls).toHaveLength(0)
+    expect(t.aggregate.calls).toHaveLength(0)
   })
 })

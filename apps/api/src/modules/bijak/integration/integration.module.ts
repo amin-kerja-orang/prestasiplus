@@ -58,6 +58,8 @@ export class BijakIntegrationModule implements OnModuleInit {
     if (!(await this.questionBankPresent())) {
       this.attemptPorts.provideQuestionSource(new PocBijakQuestionSource())
       this.logger.log('BE-09 question bank absent: Bijak attempts use the PoC question fixture')
+    } else {
+      this.logger.warn('BE-09 question bank present but no Bijak question source is bound: starting an attempt answers 422 until the BE-09 connector provides one')
     }
   }
 
