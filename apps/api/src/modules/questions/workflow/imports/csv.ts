@@ -49,8 +49,12 @@ export function parseCsv(text: string): CsvRecord[] {
         i++
       } else if (ch === '"') {
         quoted = false
+      } else if (ch === '\n' || ch === '\r') {
+        // CRLF (files made on Windows) and a lone CR both become one LF inside a cell.
+        if (ch === '\r' && src[i + 1] === '\n') i++
+        line++
+        cell += '\n'
       } else {
-        if (ch === '\n') line++
         cell += ch
       }
       continue

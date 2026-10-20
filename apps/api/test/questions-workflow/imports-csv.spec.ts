@@ -30,6 +30,37 @@ describe('imports: CSV parser (mock csv.test.ts)', () => {
   })
 })
 
+describe('imports: CRLF files (made on Windows)', () => {
+  const rows = [
+    '"Soalan dua baris\r\nbersambung",A,B,C,,B,1,1,3,2,',
+    '"Soalan tidak lengkap",A,,C,D,A,1,1,1,1,',
+    '"Jawapan salah",A,B,C,D,E,1,1,1,1,',
+  ]
+  const lf = `${HEADER}\n${rows.join('\n').replace(/\r\n/g, '\n')}`
+  const crlf = `${HEADER}\r\n${rows.join('\r\n')}\r\n`
+
+  it('keeps cell values free of CR and the bad-row lines identical to the LF file', () => {
+    const a = planImport(lf, lookups)
+    const b = planImport(crlf, lookups)
+    expect(b.rows[0]?.input.stemMs).toBe('Soalan dua baris\nbersambung')
+    expect(b.rows[0]?.input.stemMs).not.toContain('\r')
+    expect(b.failures).toEqual([
+      { row: 4, message: MSG.incomplete },
+      { row: 5, message: MSG.answer },
+    ])
+    expect(b.failures).toEqual(a.failures)
+    expect(b.rows).toEqual(a.rows)
+  })
+
+  it('turns a lone CR inside a quoted cell into LF and still counts the line', () => {
+    expect(parseCsv('q,x\n"a\rb",c\nlast,row')).toEqual([
+      { line: 1, cells: ['q', 'x'] },
+      { line: 2, cells: ['a\nb', 'c'] },
+      { line: 4, cells: ['last', 'row'] },
+    ])
+  })
+})
+
 describe('imports: row planning (mock messages, verbatim)', () => {
   it('a valid row becomes an excel MCQ input, letter case ignored, marks default 1', () => {
     const p = plan('"Soalan sepuluh aksara",A1,B1,C1,,b,3,4,2,,"Sebab"')
