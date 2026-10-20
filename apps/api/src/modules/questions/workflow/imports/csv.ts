@@ -118,6 +118,11 @@ const toInt = (value: string): number | null => (/^\d{1,9}$/.test(value) ? Numbe
 /** A positive decimal id without leading zeros trouble: "007" is the same id as "7". */
 const toId = (value: string): string | null => (/^\d{1,18}$/.test(value) ? String(BigInt(value)) : null)
 
+/** BE-09 stores MCQs with 3 to 8 options (contract `QuestionLeafPart`), so a row with fewer is a failed row, not a rolled-back import. */
+const MIN_OPTIONS = 3
+/** BE-09 has no text for this rule (its contract uses the generic schema message); this copy is the lead's fallback. */
+export const MIN_OPTIONS_MESSAGE = 'Pilihan jawapan mesti sekurang-kurangnya 3.'
+
 export function planImport(
   text: string,
   lookups: ImportLookups,
@@ -188,6 +193,10 @@ export function planImport(
     const marks = marksCell === '' ? 1 : toInt(marksCell)
     if (marks === null || marks < 1) {
       fail(MSG.marks)
+      continue
+    }
+    if (texts.filter((t) => t !== '').length < MIN_OPTIONS) {
+      fail(MIN_OPTIONS_MESSAGE)
       continue
     }
     if (caps && [...stemMs].length > caps.textMax) {

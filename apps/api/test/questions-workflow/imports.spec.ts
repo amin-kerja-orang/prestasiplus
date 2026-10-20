@@ -237,14 +237,14 @@ describe('question imports (BE-10 AC 5, 9)', () => {
     })
 
     it('applies the length caps and orders failures by file row', async () => {
-      const head = 'question_text,option_a,option_b,correct_answer,subject_id,education_level_id,difficulty_level'
+      const head = 'question_text,option_a,option_b,option_c,correct_answer,subject_id,education_level_id,difficulty_level'
       const tail = `${ids.subject},${ids.level},1`
       const file = [
         head,
-        `"${'x'.repeat(2001)}",A,B,A,${tail}`,
-        `"ok",A,B,Z,${tail}`,
-        `"ok",${'y'.repeat(501)},B,A,${tail}`,
-        `"${'x'.repeat(2000)}",${'y'.repeat(500)},B,A,${tail}`,
+        `"${'x'.repeat(2001)}",A,B,C,A,${tail}`,
+        `"ok",A,B,C,Z,${tail}`,
+        `"ok",${'y'.repeat(501)},B,C,A,${tail}`,
+        `"${'x'.repeat(2000)}",${'y'.repeat(500)},B,C,A,${tail}`,
       ].join('\n')
       const res = await teacher.upload('/api/guru/questions/import', { name: 'had.csv', body: file })
       expect(res.body.data.imported).toBe(1)
