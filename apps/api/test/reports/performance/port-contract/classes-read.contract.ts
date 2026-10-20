@@ -40,6 +40,8 @@ export interface ClassesHarness {
   schoolId(key: string): string
   subject(key: string): { id: string; name: string }
   levelSlug(grade: 10 | 11): string
+  /** BE-17 display slug of the grade ('tingkatan-4' for 10). */
+  classLevelSlug(grade: 10 | 11): string
 }
 
 /** Builds a port holding exactly `seed`. The real adapter's factory inserts the rows into a seeded database. */
@@ -103,6 +105,7 @@ export function describeClassesReadPort(name: string, factory: ClassesFactory): 
         subjectId: h.subject('SUB1').id,
         subjectName: h.subject('SUB1').name,
         levelSlug: h.levelSlug(10),
+        classLevelSlug: h.classLevelSlug(10),
         year: 2026,
         isActive: true,
         studentCount: 2,
@@ -113,7 +116,7 @@ export function describeClassesReadPort(name: string, factory: ClassesFactory): 
 
     it('answers an inactive class, a class without subject and a school class without owner', async () => {
       const h = await factory(CLASSES_SEED)
-      expect(await h.port.classById(h.classId('C2'))).toMatchObject({ isActive: false, subjectId: null, subjectName: null, levelSlug: h.levelSlug(11), studentCount: 2 })
+      expect(await h.port.classById(h.classId('C2'))).toMatchObject({ isActive: false, subjectId: null, subjectName: null, levelSlug: h.levelSlug(11), classLevelSlug: h.classLevelSlug(11), studentCount: 2 })
       expect(await h.port.classById(h.classId('C4'))).toMatchObject({ kind: 'school_class', teacherId: null, teacherName: null, studentCount: 2 })
     })
 

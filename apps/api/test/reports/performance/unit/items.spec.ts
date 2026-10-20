@@ -190,6 +190,11 @@ describe('Analisa Item: school', () => {
 describe('Analisa Item: class', () => {
   const teacher = ctxOf('teacher', 't1')
 
+  it('the wire level slug is the BE-17 slug (tingkatan-5), while the internal code stays t5', async () => {
+    w.classes.add({ id: '30', schoolId: 's1', teacherId: 't1', levelSlug: 't5', classLevelSlug: 'tingkatan-5' }, ['7'])
+    expect((await w.items.classAnalysis(teacher, '30')).class.levelSlug).toBe('tingkatan-5')
+  })
+
   it('per question: attempts, students, accuracy, index, wrong students, options', async () => {
     const r = await w.items.classAnalysis(teacher, '10')
     expect(r.class).toEqual({ id: '10', name: 'Kelas 10', subjectName: 'Bahasa Melayu', levelSlug: 't4', year: 2026, students: 6 })

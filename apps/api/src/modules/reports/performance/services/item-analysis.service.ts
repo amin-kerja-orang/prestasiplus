@@ -381,7 +381,7 @@ export class ItemAnalysisService {
         id: cls.id,
         name: cls.name,
         subjectName: cls.subjectName,
-        levelSlug: cls.levelSlug,
+        levelSlug: cls.classLevelSlug ?? cls.levelSlug,
         year: cls.year,
         students: members.length,
       },

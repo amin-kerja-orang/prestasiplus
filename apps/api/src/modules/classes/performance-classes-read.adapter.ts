@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { ClassInfo, ClassesReadPort } from '../reports/performance/ports'
 import { UsersRepository } from '../users'
 import { ClassesRepository, type ClassRecord } from './classes.repository'
+import { slugOfGrade } from './level-slug'
 
 /** Ids per batched read of users. */
 const USER_CHUNK = 1000
@@ -88,6 +89,7 @@ export class PerformanceClassesReadAdapter implements ClassesReadPort {
       subjectId: r.subjectId,
       subjectName: r.subjectId === null ? null : (subjects.get(r.subjectId) ?? null),
       color: NO_COLOR,
+      classLevelSlug: slugOfGrade(levels.get(r.educationLevelId)?.grade),
       levelSlug: levels.get(r.educationLevelId)?.code.toLowerCase() ?? '',
       year: r.academicYear,
       joinCode: r.joinCode ?? '',

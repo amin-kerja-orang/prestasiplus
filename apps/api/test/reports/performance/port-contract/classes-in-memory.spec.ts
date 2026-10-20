@@ -16,6 +16,7 @@ describeClassesReadPort('InMemoryClasses', async (seed) => {
         subjectId: c.subject,
         subjectName: c.subject === null ? null : `Subjek ${c.subject}`,
         levelSlug: c.grade === 10 ? 't4' : 't5',
+        classLevelSlug: c.grade === 10 ? 'tingkatan-4' : 'tingkatan-5',
         year: c.year,
         isActive: c.active,
       },
@@ -29,6 +30,7 @@ describeClassesReadPort('InMemoryClasses', async (seed) => {
     schoolId: (k) => k,
     subject: (k) => ({ id: k, name: `Subjek ${k}` }),
     levelSlug: (g) => (g === 10 ? 't4' : 't5'),
+    classLevelSlug: (g) => (g === 10 ? 'tingkatan-4' : 'tingkatan-5'),
   }
   return h
 })

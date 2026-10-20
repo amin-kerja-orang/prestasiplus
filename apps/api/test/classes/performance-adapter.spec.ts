@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { slugOfGrade } from '../../src/modules/classes/level-slug'
 import { PerformanceClassesReadAdapter } from '../../src/modules/classes/performance-classes-read.adapter'
 import { PerformancePorts } from '../../src/modules/reports/performance'
 import {
@@ -73,6 +74,7 @@ async function build(seed: ClassesSeed): Promise<ClassesHarness> {
     schoolId: (k) => need(schools, k),
     subject: () => subject,
     levelSlug: (g) => slugs.get(g) as string,
+    classLevelSlug: (g) => slugOfGrade(g) as string,
   }
 }
 
