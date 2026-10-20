@@ -44198,7 +44198,8 @@
           "question_image",
           "cms_image",
           "audio_kbat",
-          "cms_screenshot"
+          "cms_screenshot",
+          "timeline_photo"
         ]
       },
       "FileRef": {
@@ -61839,6 +61840,1461 @@
         "additionalProperties": false,
         "description": "[PROPOSED] Review header and side panels of one batch."
       },
+      "IntakeBatchStatus": {
+        "type": "string",
+        "enum": [
+          "submitted",
+          "processing",
+          "ready_for_review",
+          "failed",
+          "cancelled"
+        ],
+        "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED]."
+      },
+      "IntakeFileStatus": {
+        "type": "string",
+        "enum": [
+          "uploaded",
+          "processing",
+          "done",
+          "failed",
+          "cancelled"
+        ],
+        "description": "[PROPOSED] Processing status of one stored PDF."
+      },
+      "IntakePageOcrStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "not_needed",
+          "done",
+          "failed"
+        ],
+        "description": "[PROPOSED] pending = not processed yet, not_needed = the page has a text layer, done = read by OCR, failed = see `errorCode`."
+      },
+      "IntakeTextSource": {
+        "type": "string",
+        "enum": [
+          "text-layer",
+          "ocr"
+        ],
+        "description": "`text-layer` = digital-born PDF, `ocr` = scanned page read by Tesseract. Same values as the BE-36 `AiPageText.source`."
+      },
+      "IntakePaperType": {
+        "type": "string",
+        "enum": [
+          "trial",
+          "general",
+          "exam",
+          "exercise_book",
+          "other"
+        ],
+        "description": "Paper type (prototype PAPER_TYPES): trial = Percubaan SPM, general = Soalan Umum, exam = Peperiksaan Sebenar, exercise_book = Buku Latihan, other = Lain-lain."
+      },
+      "IntakeCopyright": {
+        "type": "string",
+        "enum": [
+          "sendiri",
+          "rasmi",
+          "pihak-ketiga"
+        ],
+        "description": "Rights declaration (prototype COPYRIGHT_OPTIONS): sendiri = own work, rasmi = official (LPM), pihak-ketiga = third party."
+      },
+      "IntakeFileErrorCode": {
+        "type": "string",
+        "enum": [
+          "ENCRYPTED",
+          "CORRUPT",
+          "TOO_MANY_PAGES",
+          "TOO_COMPLEX",
+          "OCR_TIMEOUT",
+          "OCR_FAILED",
+          "OCR_UNAVAILABLE",
+          "RENDER_FAILED",
+          "CANCELLED"
+        ],
+        "description": "[PROPOSED] Why a file or page failed: ENCRYPTED, CORRUPT, TOO_MANY_PAGES, TOO_COMPLEX (bomb, memory or time limit while reading), OCR_TIMEOUT, OCR_FAILED, OCR_UNAVAILABLE (scanned page and no OCR engine configured), RENDER_FAILED, CANCELLED."
+      },
+      "IntakeBatchCreate": {
+        "type": "object",
+        "properties": {
+          "paperType": {
+            "$ref": "#/components/schemas/IntakePaperType"
+          },
+          "subject": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,32}$",
+            "description": "Subject code (upper-case), e.g. MAT.",
+            "example": "MAT"
+          },
+          "kertas": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1990,
+            "maximum": 2100
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Source declaration text (max 200)."
+          },
+          "copyright": {
+            "$ref": "#/components/schemas/IntakeCopyright"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Uploader notes (max 1000). Never sent to an AI provider."
+          },
+          "declaration": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The uploader confirms the declaration; must be `true`."
+          }
+        },
+        "required": [
+          "paperType",
+          "subject",
+          "kertas",
+          "year",
+          "source",
+          "copyright",
+          "declaration"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Declaration of a submission (prototype IntakeMeta)."
+      },
+      "IntakeBatchListQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/IntakeBatchStatus"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false,
+        "description": "[PROPOSED] Filters of GET /intake/batches. Newest first."
+      },
+      "IntakeUploadMultipartRequest": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "minItems": 1,
+            "description": "One or more PDF parts, all named `files`."
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "IntakeOwnerRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "The uploader. The whole `owner` is null when the account was deleted."
+      },
+      "IntakeFileProgress": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "done",
+          "failed"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Pages of one file: total, finished (done or not needed) and failed."
+      },
+      "IntakeFileSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "originalName": {
+            "type": "string",
+            "description": "Sanitised client file name (display only)."
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntakeFileStatus"
+          },
+          "errorCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeFileErrorCode"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "progress": {
+            "$ref": "#/components/schemas/IntakeFileProgress"
+          }
+        },
+        "required": [
+          "id",
+          "originalName",
+          "sizeBytes",
+          "pageCount",
+          "status",
+          "errorCode",
+          "progress"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] One stored PDF of a submission and its progress."
+      },
+      "IntakeBatchSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntakeBatchStatus"
+          },
+          "statusLabel": {
+            "type": "string",
+            "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
+          },
+          "paperType": {
+            "$ref": "#/components/schemas/IntakePaperType"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "kertas": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "year": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "copyright": {
+            "$ref": "#/components/schemas/IntakeCopyright"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set by Admin Pusat (max 1000)."
+          },
+          "fileCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the page counts of the files read so far."
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeOwnerRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "submittedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "statusLabel",
+          "paperType",
+          "subject",
+          "kertas",
+          "year",
+          "source",
+          "copyright",
+          "notes",
+          "adminNotes",
+          "fileCount",
+          "pageCount",
+          "owner",
+          "createdAt",
+          "updatedAt",
+          "submittedAt"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A submission (batch) with its declaration and counts."
+      },
+      "IntakeBatchDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntakeBatchStatus"
+          },
+          "statusLabel": {
+            "type": "string",
+            "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
+          },
+          "paperType": {
+            "$ref": "#/components/schemas/IntakePaperType"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "kertas": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              }
+            ]
+          },
+          "year": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "copyright": {
+            "$ref": "#/components/schemas/IntakeCopyright"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set by Admin Pusat (max 1000)."
+          },
+          "fileCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the page counts of the files read so far."
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeOwnerRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "submittedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeFileSummary"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "statusLabel",
+          "paperType",
+          "subject",
+          "kertas",
+          "year",
+          "source",
+          "copyright",
+          "notes",
+          "adminNotes",
+          "fileCount",
+          "pageCount",
+          "owner",
+          "createdAt",
+          "updatedAt",
+          "submittedAt",
+          "files"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A submission with its files and per-file progress."
+      },
+      "IntakeUploadResult": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeFileSummary"
+            }
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] The files stored by one upload request, in upload order."
+      },
+      "IntakeBbox": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "w": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "h": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "additionalProperties": false,
+        "description": "Rectangle as fractions of the page (0..1), so it survives re-rendering."
+      },
+      "IntakeTextBlock": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/IntakeBbox"
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "OCR confidence 0-100; null for a text-layer block."
+          }
+        },
+        "required": [
+          "text",
+          "bbox",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A text block of a page with its position."
+      },
+      "IntakeFigureRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/IntakeBbox"
+          },
+          "altTextSuggestion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "id",
+          "bbox",
+          "altTextSuggestion"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A figure cropped from a page; the image is GET /intake/figures/{id}/image."
+      },
+      "IntakePageInfo": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Pixels of the page image; null until rendered."
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "textSource": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeTextSource"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ocrConfidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "ocrStatus": {
+            "$ref": "#/components/schemas/IntakePageOcrStatus"
+          },
+          "errorCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeFileErrorCode"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "hasImage": {
+            "type": "boolean",
+            "description": "true when GET /intake/files/{id}/pages/{n}/image has an image."
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeTextBlock"
+            }
+          },
+          "figures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeFigureRef"
+            }
+          }
+        },
+        "required": [
+          "pageNo",
+          "width",
+          "height",
+          "textSource",
+          "text",
+          "ocrConfidence",
+          "ocrStatus",
+          "errorCode",
+          "hasImage",
+          "blocks",
+          "figures"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] One page: text, source, blocks, figures and status."
+      },
+      "IntakePageList": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakePageInfo"
+            }
+          }
+        },
+        "required": [
+          "fileId",
+          "pages"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] All pages of one file, in page order."
+      },
+      "IntakeDashboardBatchStatus": {
+        "type": "string",
+        "enum": [
+          "submitted",
+          "processing",
+          "ready_for_review",
+          "failed",
+          "cancelled"
+        ],
+        "description": "[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, failed, cancelled."
+      },
+      "IntakeDashboardTagField": {
+        "type": "string",
+        "enum": [
+          "subject",
+          "level",
+          "chapter",
+          "dskpTopic",
+          "difficulty"
+        ],
+        "description": "[PROPOSED] subject = tag.subject, level = tag.level, chapter = tag.unit, dskpTopic = tag.sp, difficulty = tag.tp."
+      },
+      "IntakeDashboardQuery": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "example": "2026-10"
+          }
+        },
+        "description": "[PROPOSED] Query of GET /intake/dashboard. Unknown keys are ignored (as AiUsageQuery)."
+      },
+      "IntakeDashboardCostQuery": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "example": "2026-10"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible"
+            ],
+            "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered."
+          }
+        },
+        "description": "[PROPOSED] Query of GET /intake/dashboard/cost. Unknown keys are ignored (as AiUsageQuery)."
+      },
+      "IntakeDashboardSources": {
+        "type": "object",
+        "properties": {
+          "batches": {
+            "type": "boolean",
+            "description": "intake_batches (BE-37) was readable."
+          },
+          "items": {
+            "type": "boolean",
+            "description": "intake_items and intake_item_events (BE-38) were readable."
+          },
+          "duplicates": {
+            "type": "boolean",
+            "description": "duplicate_links (BE-38) was readable; without it only items marked Pendua count."
+          },
+          "usage": {
+            "type": "boolean",
+            "description": "ai_usage_logs (BE-36) was readable."
+          },
+          "settings": {
+            "type": "boolean",
+            "description": "ai_settings (BE-36) was readable."
+          }
+        },
+        "required": [
+          "batches",
+          "items",
+          "duplicates",
+          "usage",
+          "settings"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Which stores the figures come from. A false store contributes the empty aggregate (its card is not merged on this server yet)."
+      },
+      "IntakeBudgetSource": {
+        "type": "string",
+        "enum": [
+          "settings",
+          "env",
+          "none"
+        ],
+        "description": "[PROPOSED] Where the cap comes from: settings = ai_settings.monthly_budget_sen (the admin override), env = AI_MONTHLY_BUDGET_SEN, none = neither (cap 0)."
+      },
+      "IntakeBudget": {
+        "type": "object",
+        "properties": {
+          "costSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Month cost of every provider (mock counts 0). This is what the BE-36 budget guard compares."
+          },
+          "budgetSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "budgetSource": {
+            "$ref": "#/components/schemas/IntakeBudgetSource"
+          },
+          "remainingSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "max(0, budgetSen - costSen)."
+          },
+          "percentUsed": {
+            "type": "number",
+            "minimum": 0,
+            "description": "costSen / budgetSen * 100 rounded to one decimal; 0 when budgetSen is 0 and costSen is 0, 100 when budgetSen is 0 and costSen > 0 (as AiStatus.percentUsed)."
+          },
+          "budgetState": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "exhausted"
+            ],
+            "description": "ok / warning / exhausted from the exact (unrounded) ratio: warning from 80 %, exhausted from 100 %. A cap of 0 is exhausted (every new extraction is queued, AiSettings.monthlyBudgetSen)."
+          },
+          "warnReached": {
+            "type": "boolean",
+            "description": "True from 80 % (AC-29.2 notification threshold)."
+          },
+          "capReached": {
+            "type": "boolean",
+            "description": "True from 100 % (new extractions are queued, AC-29.2)."
+          }
+        },
+        "required": [
+          "costSen",
+          "budgetSen",
+          "budgetSource",
+          "remainingSen",
+          "percentUsed",
+          "budgetState",
+          "warnReached",
+          "capReached"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] AI cost of the month against the monthly cap (NFR-03, AC-29.2)."
+      },
+      "IntakeDashboard": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "$ref": "#/components/schemas/AiMonth"
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "First instant of the month (00:00 +08:00), inclusive.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "First instant of the next month, exclusive.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Server time of the answer; the queue snapshot is taken at this instant.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "submissions": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byStatus": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/IntakeDashboardBatchStatus"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every status, in the order of INTAKE_DASHBOARD_BATCH_STATUSES, zero included."
+              }
+            },
+            "required": [
+              "total",
+              "byStatus"
+            ],
+            "additionalProperties": false,
+            "description": "Submissions (intake batches) created in the month, by their current status."
+          },
+          "queue": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Review queue size now: items in an open state (generated, needs_review, duplicate)."
+              },
+              "oldestItemAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "pattern": "\\+08:00$",
+                "description": "Creation time of the oldest open item; null when the queue is empty.",
+                "example": "2026-10-16T09:30:00+08:00"
+              },
+              "oldestItemAgeSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "generatedAt - oldestItemAt in whole seconds; null when the queue is empty."
+              },
+              "pendingSubmissions": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions waiting for extraction now (submitted or processing), including the ones queued by the budget cap."
+              },
+              "oldestPendingSubmissionAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "oldestItemAt",
+              "oldestItemAgeSeconds",
+              "pendingSubmissions",
+              "oldestPendingSubmissionAt"
+            ],
+            "additionalProperties": false,
+            "description": "Snapshot at generatedAt, not limited to the month."
+          },
+          "extraction": {
+            "type": "object",
+            "properties": {
+              "succeeded": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions of the month that reached ready_for_review."
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions of the month that ended failed."
+              },
+              "successRate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "succeeded / (succeeded + failed) * 100, one decimal; null when both are 0. Submissions still pending or cancelled are not counted."
+              }
+            },
+            "required": [
+              "succeeded",
+              "failed",
+              "successRate"
+            ],
+            "additionalProperties": false
+          },
+          "tagAcceptance": {
+            "type": "object",
+            "properties": {
+              "acceptedItems": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Items accepted (an `accepted` event) in the month."
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "$ref": "#/components/schemas/IntakeDashboardTagField"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The item field path, e.g. tag.unit."
+                    },
+                    "unchanged": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Accepted items with no edit event on this field (the AI tag was kept)."
+                    },
+                    "ratePercent": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "unchanged / acceptedItems * 100, one decimal; null when acceptedItems is 0."
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "path",
+                    "unchanged",
+                    "ratePercent"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every field, in the order of INTAKE_DASHBOARD_TAG_FIELDS."
+              }
+            },
+            "required": [
+              "acceptedItems",
+              "fields"
+            ],
+            "additionalProperties": false,
+            "description": "Percentage of AI tags accepted unchanged, per field."
+          },
+          "duplicates": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Items created in the month."
+              },
+              "duplicates": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Of those, items with an exact or near duplicate finding, or marked Pendua. Variants are informational and not counted."
+              },
+              "ratePercent": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "duplicates / items * 100, one decimal; null when items is 0."
+              }
+            },
+            "required": [
+              "items",
+              "duplicates",
+              "ratePercent"
+            ],
+            "additionalProperties": false
+          },
+          "aiCost": {
+            "$ref": "#/components/schemas/IntakeBudget"
+          },
+          "sources": {
+            "$ref": "#/components/schemas/IntakeDashboardSources"
+          }
+        },
+        "required": [
+          "month",
+          "from",
+          "to",
+          "generatedAt",
+          "submissions",
+          "queue",
+          "extraction",
+          "tagAcceptance",
+          "duplicates",
+          "aiCost",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Every AC-29.1 figure for one Malaysia month (card BE-40)."
+      },
+      "IntakeCostDay": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "Malaysia calendar day.",
+            "example": "2026-10-16"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "day",
+          "calls",
+          "costSen"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one Malaysia day."
+      },
+      "IntakeCostProvider": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible",
+              null
+            ],
+            "description": "Null for rows without a provider (migrated legacy log rows)."
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "provider",
+          "calls",
+          "costSen",
+          "pages",
+          "tokensIn",
+          "tokensOut"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one provider. The mock provider always costs 0."
+      },
+      "IntakeCostBatch": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Null for calls not tied to a submission (health check, Cikgu Alesa text).",
+            "example": "1042"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "batchId",
+          "calls",
+          "costSen",
+          "pages",
+          "tokensIn",
+          "tokensOut"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one submission."
+      },
+      "IntakeCost": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "$ref": "#/components/schemas/AiMonth"
+          },
+          "from": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "generatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible",
+              null
+            ],
+            "description": "The provider filter applied, null for all."
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "calls": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "costSen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pages": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensOut": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "calls",
+              "costSen",
+              "pages",
+              "tokensIn",
+              "tokensOut"
+            ],
+            "additionalProperties": false,
+            "description": "Totals of the filtered rows."
+          },
+          "byDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostDay"
+            },
+            "description": "Every day of the month in order, zero days included."
+          },
+          "byProvider": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostProvider"
+            },
+            "description": "Providers with at least one call, highest cost first, then by provider id."
+          },
+          "byBatch": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostBatch"
+            },
+            "description": "At most 100 rows, highest cost first, then by id (the no-batch row last on a tie)."
+          },
+          "byBatchTruncated": {
+            "type": "boolean",
+            "description": "True when more than 100 batch rows exist."
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "costSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Month cost of every provider (mock counts 0). This is what the BE-36 budget guard compares."
+              },
+              "budgetSen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "budgetSource": {
+                "$ref": "#/components/schemas/IntakeBudgetSource"
+              },
+              "remainingSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "max(0, budgetSen - costSen)."
+              },
+              "percentUsed": {
+                "type": "number",
+                "minimum": 0,
+                "description": "costSen / budgetSen * 100 rounded to one decimal; 0 when budgetSen is 0 and costSen is 0, 100 when budgetSen is 0 and costSen > 0 (as AiStatus.percentUsed)."
+              },
+              "budgetState": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "warning",
+                  "exhausted"
+                ],
+                "description": "ok / warning / exhausted from the exact (unrounded) ratio: warning from 80 %, exhausted from 100 %. A cap of 0 is exhausted (every new extraction is queued, AiSettings.monthlyBudgetSen)."
+              },
+              "warnReached": {
+                "type": "boolean",
+                "description": "True from 80 % (AC-29.2 notification threshold)."
+              },
+              "capReached": {
+                "type": "boolean",
+                "description": "True from 100 % (new extractions are queued, AC-29.2)."
+              }
+            },
+            "required": [
+              "costSen",
+              "budgetSen",
+              "budgetSource",
+              "remainingSen",
+              "percentUsed",
+              "budgetState",
+              "warnReached",
+              "capReached"
+            ],
+            "additionalProperties": false,
+            "description": "Never filtered by provider: the cap is for all usage."
+          },
+          "sources": {
+            "type": "object",
+            "properties": {
+              "usage": {
+                "type": "boolean",
+                "description": "ai_usage_logs (BE-36) was readable."
+              },
+              "settings": {
+                "type": "boolean",
+                "description": "ai_settings (BE-36) was readable."
+              }
+            },
+            "required": [
+              "usage",
+              "settings"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "month",
+          "from",
+          "to",
+          "generatedAt",
+          "provider",
+          "total",
+          "byDay",
+          "byProvider",
+          "byBatch",
+          "byBatchTruncated",
+          "budget",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] AI cost by day, provider and submission, with the budget (card BE-40)."
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -61939,6 +63395,68 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/IntakeBulkResult"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeBatchSummaryEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeBatchSummary"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeBatchListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeBatchSummary"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "IntakeBatchDetailEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeBatchDetail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeUploadResultEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeUploadResult"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakePageListEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakePageList"
           }
         },
         "required": [
@@ -83731,6 +85249,14 @@
         "responses": {
           "200": {
             "description": "The product.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -83815,6 +85341,14 @@
         "responses": {
           "200": {
             "description": "The hand-off URL.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -102510,7 +104044,7 @@
           "files"
         ],
         "summary": "Upload one file",
-        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin. Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
+        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
         "parameters": [
           {
             "schema": {
@@ -102619,7 +104153,7 @@
           "files"
         ],
         "summary": "Download a file",
-        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
+        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
         "parameters": [
           {
             "schema": {
@@ -104624,6 +106158,1237 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches": {
+      "post": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Create a submission with its declaration",
+        "description": "Card BE-37 (prototype createIntakeBatch). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Status starts `submitted` (Dihantar); files are added with POST /intake/batches/{id}/files. A teacher may have a limited number of open batches (INTAKE_MAX_ACTIVE_BATCHES; Admin Pusat exempt): over it is 429 RATE_LIMITED. `declaration` must be `true`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeBatchCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBatchSummaryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE: the JSON body is too large.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "List submissions (paginated)",
+        "description": "Card BE-37 (prototype listIntakeBatches). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. A Guru sees own batches only; Admin Pusat sees all. Newest first; page size 20 (max 100).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IntakeBatchStatus"
+            },
+            "required": false,
+            "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBatchListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "One submission with its files and per-file progress",
+        "description": "Card BE-37 (prototype getIntakeBatch). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. The client polls this while `status` is submitted or processing.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBatchDetailEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown batch, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/files": {
+      "post": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Upload one or more PDF files to a submission",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeUploadMultipartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The stored files.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeUploadResultEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown batch, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kelompok ini tidak lagi menerima fail.\": the batch no longer accepts files.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE: the request is over the body limit (nginx may answer first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/cancel": {
+      "post": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Cancel a submission and its pending jobs",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Queued and running jobs of the batch are cancelled; status becomes `cancelled` (Dibatalkan [PROPOSED]). Idempotent on a batch that is already cancelled (200). A batch that is `ready_for_review` or `failed` cannot be cancelled: 409 CONFLICT. The request body is empty.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The batch after cancellation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBatchDetailEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown batch, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the batch has already finished (ready_for_review or failed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/files/{id}/pages": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Pages of a file: text, source, blocks, figures, status",
+        "description": "[PROPOSED] Gives the review UI what the prototype OCR produced client-side (PageText, blocks). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. The page image is a separate route; `hasImage` says whether it exists.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All pages, in page order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakePageListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown file, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/files/{id}/pages/{n}/image": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Rendered page image",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Authenticated and scope-checked; there is no public URL. Stored Content-Type, `nosniff`, `no-store`. A page without an image is 404. Rate limited per user.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number, 1-based."
+            },
+            "required": true,
+            "description": "Page number, 1-based.",
+            "name": "n",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page image.",
+            "headers": {
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "`inline`; the original is `attachment; filename=\"...\"`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown page, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/files/{id}/pages/{n}/thumb": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Page thumbnail",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Same rules as the page image; 240 px wide.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number, 1-based."
+            },
+            "required": true,
+            "description": "Page number, 1-based.",
+            "name": "n",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The thumbnail.",
+            "headers": {
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "`inline`; the original is `attachment; filename=\"...\"`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown page, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/figures/{id}/image": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Figure crop image",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Same rules as the page image.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The figure crop.",
+            "headers": {
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "`inline`; the original is `attachment; filename=\"...\"`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown figure, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/files/{id}/original": {
+      "get": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Download the stored original PDF",
+        "description": "Card BE-37 (replaces the mock GET /api/question-submissions/:id/files/:index). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. `Content-Disposition: attachment; filename=\"<sanitised>.pdf\"`, `application/pdf`, `nosniff`. Anyone else gets 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The PDF bytes.",
+            "headers": {
+              "X-Content-Type-Options": {
+                "description": "Always `nosniff`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Always `no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "`inline`; the original is `attachment; filename=\"...\"`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown file, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/dashboard": {
+      "get": {
+        "tags": [
+          "intake-dashboard"
+        ],
+        "summary": "Intake dashboard: submissions, queue, extraction, tag acceptance, duplicates, AI cost",
+        "description": "Every AC-29.1 figure for one Malaysia month (default the current one). Test submissions are excluded; the queue is a snapshot at the time of the request. Admin Pusat only (role code `admin`); every other role gets 403, no session 401. GET only: no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+              "example": "2026-10"
+            },
+            "required": false,
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard figures.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: platform cost and queue figures (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/IntakeDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (month is not YYYY-MM).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/dashboard/cost": {
+      "get": {
+        "tags": [
+          "intake-dashboard"
+        ],
+        "summary": "AI cost of a month by day, provider and submission, with the budget",
+        "description": "Usage from ai_usage_logs grouped by Malaysia day, provider and submission, optionally for one provider; the budget block (cap from ai_settings, else AI_MONTHLY_BUDGET_SEN; percent used; 80 % / 100 % flags) always covers every provider. Mock-provider usage costs 0. Admin Pusat only (role code `admin`); every other role gets 403, no session 401. GET only: no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+              "example": "2026-10"
+            },
+            "required": false,
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "name": "month",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mock",
+                "anthropic",
+                "openai",
+                "gemini",
+                "openai-compatible"
+              ],
+              "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered."
+            },
+            "required": false,
+            "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered.",
+            "name": "provider",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cost figures.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: platform cost and queue figures (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/IntakeCost"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (month is not YYYY-MM, unknown provider).",
             "content": {
               "application/json": {
                 "schema": {

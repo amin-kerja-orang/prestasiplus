@@ -39,7 +39,7 @@ export async function questionTableExists(prisma: PrismaClient): Promise<boolean
   return rows[0]?.present === true
 }
 
-async function subjectIds(prisma: PrismaClient): Promise<Map<string, bigint>> {
+export async function subjectIds(prisma: PrismaClient): Promise<Map<string, bigint>> {
   const codes = [...new Set(POC_BANK.subjects.map((s) => curriculumCodeOf(s.code)))]
   const rows = await prisma.subject.findMany({ where: { code: { in: codes } }, select: { id: true, code: true } })
   const byCode = new Map(rows.map((r) => [r.code, r.id]))
@@ -52,41 +52,46 @@ async function subjectIds(prisma: PrismaClient): Promise<Map<string, bigint>> {
   return out
 }
 
-async function seedBlueprints(prisma: PrismaClient, subjects: Map<string, bigint>): Promise<void> {
-  for (const bp of POC_BANK.blueprints) {
-    const subjectId = subjects.get(bp.subject) as bigint
-    const exists = await prisma.blueprint.findFirst({
-      where: { OR: [{ code: bp.code, version: 1 }, { subjectId, kertas: bp.kertas, status: 'active' }] },
-      select: { id: true },
-    })
-    if (exists) continue
-    await prisma.blueprint.create({
-      data: {
-        subjectId,
-        kertas: bp.kertas,
-        code: bp.code,
-        version: 1,
-        status: 'active',
-        source: SOURCE_TO_DB[bp.source],
-        durationMin: bp.durationMin,
-        instructions: bp.instructions,
-        referenceSheets: bp.reference ?? [],
-        sections: {
-          create: bp.sections.map((s, i) => ({
-            position: i + 1,
-            label: s.label,
-            instruction: s.instruction ?? null,
-            ruleType: s.rule.type,
-            ruleN: s.rule.type === 'choose' ? s.rule.n : null,
-            questionCount: s.take,
-            markBudget: s.markBudget ?? null,
-            compulsory: s.compulsory ?? false,
-            pool: s.pool,
-          })),
-        },
+/**
+ * Creates one blueprint (version 1, active) unless it exists: matched by (code, version 1), and skipped when
+ * its subject and kertas already have an active blueprint. Shared with `exam-demo-blueprints.ts`.
+ */
+export async function createBlueprintIfAbsent(prisma: PrismaClient, subjectId: bigint, bp: PocBlueprint): Promise<void> {
+  const exists = await prisma.blueprint.findFirst({
+    where: { OR: [{ code: bp.code, version: 1 }, { subjectId, kertas: bp.kertas, status: 'active' }] },
+    select: { id: true },
+  })
+  if (exists) return
+  await prisma.blueprint.create({
+    data: {
+      subjectId,
+      kertas: bp.kertas,
+      code: bp.code,
+      version: 1,
+      status: 'active',
+      source: SOURCE_TO_DB[bp.source],
+      durationMin: bp.durationMin,
+      instructions: bp.instructions,
+      referenceSheets: bp.reference ?? [],
+      sections: {
+        create: bp.sections.map((s, i) => ({
+          position: i + 1,
+          label: s.label,
+          instruction: s.instruction ?? null,
+          ruleType: s.rule.type,
+          ruleN: s.rule.type === 'choose' ? s.rule.n : null,
+          questionCount: s.take,
+          markBudget: s.markBudget ?? null,
+          compulsory: s.compulsory ?? false,
+          pool: s.pool,
+        })),
       },
-    })
-  }
+    },
+  })
+}
+
+async function seedBlueprints(prisma: PrismaClient, subjects: Map<string, bigint>): Promise<void> {
+  for (const bp of POC_BANK.blueprints) await createBlueprintIfAbsent(prisma, subjects.get(bp.subject) as bigint, bp)
 }
 
 async function seedPaper(prisma: PrismaClient, ctx: SeedContext, paper: PocPaper, subjects: Map<string, bigint>): Promise<void> {

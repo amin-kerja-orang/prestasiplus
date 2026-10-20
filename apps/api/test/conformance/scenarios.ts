@@ -12,6 +12,9 @@ import { videosScenarios } from './content/videos'
 import { bijakPapersScenarios } from './bijak/papers'
 import { classesScenarios } from './classes/classes'
 import { filesScenarios } from './files/files'
+import { intakeScenarios } from './intake/intake'
+import { missionsScenarios } from './missions/missions'
+import { questionSetsScenarios } from './missions/question-sets'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
@@ -22,6 +25,14 @@ import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
 import { walletScenarios } from './wallet/wallet'
 import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
+import { gamificationScenarios } from './gamification/gamification'
+import { shopScenarios } from './gamification/shop'
+import { practiceReadsScenarios } from './practice-reads'
+import { kirkpatrickScenarios } from './analytics/kirkpatrick'
+import { analyticsScenarios } from './analytics/analytics'
+import { heatmapScenarios } from './heatmap/heatmap'
+import { intakeDashboardScenarios } from './intake/dashboard'
+import { cikguScenarios } from './cikgu/cikgu'
 import { commandCenterScenarios } from './command-center/command-center'
 
 /**
@@ -54,6 +65,17 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...performanceScenarios,
     ...schoolAdminScenarios,
     ...bijakBuilderScenarios,
+    ...gamificationScenarios,
+    ...shopScenarios,
+    ...intakeScenarios,
+    ...missionsScenarios,
+    ...questionSetsScenarios,
+    ...practiceReadsScenarios,
+    ...kirkpatrickScenarios,
+    ...analyticsScenarios,
+    ...heatmapScenarios,
+    ...intakeDashboardScenarios,
+    ...cikguScenarios,
     ...commandCenterScenarios,
   ]
 }

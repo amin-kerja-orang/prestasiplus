@@ -62,6 +62,11 @@ const json = (schema: z.ZodType, description: string) => ({
   content: { 'application/json': { schema } },
 })
 const err = (description: string) => json(ErrorBodySchema, description)
+/** 200 that adds Cache-Control: no-store (the two routes that move a counter). */
+const jsonNoStore = (schema: z.ZodType, description: string) => ({
+  ...json(schema, description),
+  headers: { 'Cache-Control': { description: 'no-store', schema: { type: 'string' as const } } },
+})
 
 /**
  * D57(a): every write route, and the product page GET that bumps `views`, can answer 429. Standard `{ error }`
@@ -100,7 +105,8 @@ const csrf = z.object({
 
 /**
  * Registers the five buyer routes of M20 (BE-46). Bodies are `{ data }`, `{ data, meta }` or
- * `{ error }`. No response carries a credential or token, so none sends Cache-Control: no-store (D57(b)).
+ * `{ error }`. No response carries a credential or token. The product page GET and the WhatsApp POST add
+ * Cache-Control: no-store because they move a counter; the other three routes set no cache header.
  * Seller and admin routes of the SRS have no mock route and are not registered.
  */
 export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
@@ -132,7 +138,7 @@ export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
     description:
       'Adds 1 to `views` on EVERY call (no de-duplication) and returns the new value. A hidden or unknown slug changes nothing.',
     request: { params: SlugParams },
-    responses: { 429: RATE_LIMITED, 200: json(MarketplaceProductResponseSchema, 'The product.'), 401: UNAUTHORIZED, 404: NOT_FOUND_PRODUCT },
+    responses: { 429: RATE_LIMITED, 200: jsonNoStore(MarketplaceProductResponseSchema, 'The product.'), 401: UNAUTHORIZED, 404: NOT_FOUND_PRODUCT },
   })
 
   registry.registerPath({
@@ -145,7 +151,7 @@ export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
     request: { params: SlugParams, headers: [csrf] },
     responses: {
       429: RATE_LIMITED,
-      200: json(MarketplaceWhatsappResponseSchema, 'The hand-off URL.'),
+      200: jsonNoStore(MarketplaceWhatsappResponseSchema, 'The hand-off URL.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF,
       404: NOT_FOUND_PRODUCT,

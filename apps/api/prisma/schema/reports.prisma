@@ -1,0 +1,80 @@
+// Reports and analytics tables (BE-20, owners M11 and M12). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2, data model section 3.10. BE-19 adds risk_profiles / sp_records / spm_history to this file later.
+// Not expressible in Prisma and written by hand in migration 0023_reports_analytics_kirkpatrick: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check) and the foreign keys to tables owned by other
+// modules (users, schools), which are NOT declared as Prisma relations here (a relation needs a back-relation field
+// in identity.prisma / schools.prisma, which this card must not edit). Repositories read those tables with separate
+// lookups, never with `include`.
+// Sensitive: feedback.comment and interventions free text are personal data and are never logged.
+
+/// M11 flag set by a teacher on a pupil: under review or excluded from the report figures. One row per pupil.
+model MonitoringFlag {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  /// review, excluded (check constraint).
+  level     String
+  flaggedAt DateTime @default(now()) @map("flagged_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId], map: "uq_monitoring_flags_user_id")
+  @@map("monitoring_flags")
+}
+
+/// M12 level 1 (Reaction): one answer per user per Malaysia calendar month. `nps` is null for migrated rows.
+model Feedback {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// Snapshot of the role that answered: admin, school_admin, ppd_officer, teacher, student, parent, sponsor (check).
+  role         String
+  /// Snapshot for scope filters.
+  schoolId     BigInt?  @map("school_id")
+  /// First day of the Malaysia month (mock `YYYY-MM`).
+  month        DateTime @db.Date
+  /// 0 to 10 (check); null for migrated rows.
+  nps          Int?     @db.SmallInt
+  /// 1 to 5 (check).
+  satisfaction Int      @db.SmallInt
+  usability    Int?     @db.SmallInt
+  relevance    Int?     @db.SmallInt
+  score        Int?     @db.SmallInt
+  /// Free text, personal content: never logged.
+  comment      String?
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  // is_test is part of the key: a Mod Pelajar response never blocks the user's real response of the month.
+  @@unique([userId, month, isTest], map: "uq_feedback_user_id_month_is_test")
+  @@unique([legacySource, legacyId], map: "uq_feedback_legacy")
+  @@index([schoolId, month], map: "ix_feedback_school_id_month")
+  @@map("feedback")
+}
+
+/// M12 level 3 (Behaviour): a teacher intervention for a pupil. Free text is sensitive and never logged.
+model Intervention {
+  id               BigInt   @id @default(autoincrement())
+  studentId        BigInt   @map("student_id")
+  /// mood, inactive, declining (check).
+  alertType        String   @map("alert_type")
+  actionDate       DateTime @map("action_date") @db.Date
+  alertDescription String   @map("alert_description")
+  actionTaken      String   @map("action_taken")
+  beforeAccuracy   Decimal? @map("before_accuracy") @db.Decimal(5, 2)
+  afterAccuracy    Decimal? @map("after_accuracy") @db.Decimal(5, 2)
+  /// happy, okay, sad, stressed (check).
+  beforeMood       String?  @map("before_mood")
+  afterMood        String?  @map("after_mood")
+  createdById      BigInt   @map("created_by_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_interventions_legacy")
+  @@index([studentId, actionDate], map: "ix_interventions_student_id_action_date")
+  @@index([createdById], map: "ix_interventions_created_by_id")
+  @@map("interventions")
+}

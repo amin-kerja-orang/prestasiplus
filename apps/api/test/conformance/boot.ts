@@ -15,6 +15,7 @@ import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { examSeed } from '../../prisma/seed/exam'
 import { walletSeed } from '../../prisma/seed/wallet'
+import { gamificationSeed } from '../../prisma/seed/gamification'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
@@ -30,7 +31,7 @@ export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
  * Seeds the conformance database is built from. HOOK FOR BE-07: add its demo-account seed here (and
  * update `accounts.ts`); the suite needs nothing else from the seed layer.
  */
-export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed]
+export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, gamificationSeed]
 
 /**
  * Environment of the conformance app. Determinism, never weaker production code:
@@ -68,12 +69,27 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_CLASSES_READ_PER_MINUTE: '100000',
     THROTTLE_CLASSES_WRITE_PER_MINUTE: '100000',
     THROTTLE_CLASS_JOIN_PER_MINUTE: '100000',
+    THROTTLE_KIRKPATRICK_READ_PER_MINUTE: '100000',
+    THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: '100000',
+    THROTTLE_ANALYTICS_READ_PER_MINUTE: '100000',
+    THROTTLE_CIKGU_SEND_PER_MINUTE: '100000',
+    THROTTLE_CIKGU_READ_PER_MINUTE: '100000',
+    THROTTLE_CIKGU_WRITE_PER_MINUTE: '100000',
+    THROTTLE_CIKGU_EXPORT_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
     BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
+    // BE-37 intake: volume ceilings raised (a whole suite creates many batches as one teacher) and the job worker
+    // ticks fast, so a scenario can wait for a batch to be read. OCR stays off (OCR_ENGINE unset).
+    INTAKE_MAX_ACTIVE_BATCHES: '100',
+    INTAKE_DAILY_PAGE_QUOTA: '100000',
+    INTAKE_WRITES_PER_MINUTE: '1000',
+    INTAKE_READS_PER_MINUTE: '10000',
+    JOBS_WORKER_ENABLED: 'true',
+    JOBS_POLL_MS: '100',
   }
 }
 
