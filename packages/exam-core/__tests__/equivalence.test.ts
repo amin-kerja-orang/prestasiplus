@@ -7,7 +7,7 @@ import {
   numericValue,
   plainToLatex,
   splitUnit,
-} from '../domain/math-expr'
+} from '../src/math-expr'
 
 describe('answersEquivalent (table)', () => {
   const same: [string, string][] = [
