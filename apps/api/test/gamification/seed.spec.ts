@@ -30,9 +30,9 @@ describe('gamification seed (BE-23 data layer)', () => {
     await db.drop()
   })
 
-  it('is registered once, last before the marketplace seeds (BE-46), as a demo module (the reference set is not touched)', () => {
+  it('is registered once, last, as a demo module (the reference set is not touched)', () => {
     expect(seedModules.filter((m) => m.name === 'gamification')).toHaveLength(1)
-    expect(seedModules.filter((m) => !m.name.includes('marketplace')).at(-1)!.name).toBe('gamification')
+    expect(seedModules[seedModules.length - 1]!.name).toBe('gamification')
     expect(gamificationSeed.kind).toBe('demo')
   })
 
