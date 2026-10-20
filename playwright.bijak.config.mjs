@@ -9,12 +9,12 @@ import { defineConfig } from '@playwright/test'
  */
 process.env.E2E_PROTOTYPE_SCOPE = 'on' // read by the spec (it skips itself otherwise)
 
-const PORT = 5191
+const PORT = Number(process.env.BIJAK_PORT ?? 5191) // default unchanged; BIJAK_PORT overrides
 const baseURL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: 'e2e',
-  testMatch: '**/bijak-spm.spec.ts',
+  testMatch: ['**/bijak-spm.spec.ts', '**/bijak/*.spec.ts'],
   fullyParallel: true,
   workers: 2,
   timeout: 120_000,

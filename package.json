@@ -34,6 +34,7 @@
     "stack:down": "docker compose -f compose.yaml -f compose.http.yaml down",
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore-check": "node scripts/db-restore-check.mjs",
+    "test:e2e:bijak": "playwright test -c playwright.bijak.config.mjs --grep @bijak",
     "test:e2e:observed": "playwright test --grep-invert @provisional",
     "test:e2e:module": "node scripts/e2e-module.mjs",
     "check:trace": "node scripts/check-e2e-trace.mjs",
