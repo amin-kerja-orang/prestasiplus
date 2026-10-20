@@ -90,10 +90,10 @@ $env:DATABASE_URL=$env:DATABASE_URL.Replace('sslmode=require','sslmode=no-verify
 $env:ALLOW_DEMO_SEED='true'; npm run be:db:seed
 Remove-Item Env:DATABASE_URL, Env:ALLOW_DEMO_SEED
 ```
-Expected: `migrate deploy` lists the applied migrations (`0001_init` ... `0017_question_workflow`, including `0015_classes`; more if later
+Expected: `migrate deploy` lists the applied migrations (`0001_init` ... `0018_aggregate_school_id`, including `0015_classes`; more if later
 PRs merged) and ends with "All migrations have been successfully applied". `0001_init` prints a NOTICE that
 `pgcrypto` already exists (Supabase pre-installs it in the `extensions` schema): that is fine. The seed ends
-with `seed: profile=poc, 10 module(s): ...`. The line "PoC questions not loaded (BE-09 wire-up TODO)" is
+with `seed: profile=poc, 11 module(s): ...` (base 01c47e75; `poc-classes` is the 10th). The line "PoC questions not loaded (BE-09 wire-up TODO)" is
 expected: the PoC Bijak questions are served by the API from code, not from the seed.
 
 `NODE_ENV=production` matters: the seed then refuses the demo modules unless `ALLOW_DEMO_SEED=true` is given
@@ -244,6 +244,176 @@ The paper builder API (BE-39, #47) is on the base, but the admin Bijak pages of 
 - **Teardown after the demo** (recommended, the accounts have a published password): Pages -> project ->
   Settings -> Delete project; Render -> service -> Settings -> Delete Web Service; Supabase -> Project Settings ->
   General -> Delete project (or Pause). Rotate nothing else: no real secret was shared.
+
+## 9. Switch Render back to feature/v2-backend (about 15 min, of which ~6 min build)
+
+For the 2026-10-21 demo the API on Render (`prestasiplus-api`) was deployed from `be/fix-builder-exam-core-import`
+(#56) and the Supabase DB was loaded from a dump at the #56 state: migrations `0001`-`0014` + `0017` (15 rows in
+`_prisma_migrations`) and the demo seed. The base has since gained `0015_classes` (BE-17),
+`0018_aggregate_school_id` and the classes seed (`poc-classes`, used by the Guru, Kelas Saya, report and school
+dashboard pages). Once the LEAD has merged #56, catch the DB up FIRST, then switch the branch.
+
+Order matters, and it is safe while the old API keeps serving: both migrations are additive (new tables, one new
+nullable column plus a backfill), so the #56 API ignores them; the new rows are only read by the new API.
+
+**What you need:** a checkout of the repo with Node 22, the Supabase **session pooler** URL (step 1.2) and a
+terminal. The container that wrote this cannot reach Supabase; you run this on your own machine, and you type the
+URL yourself: it never goes into a file, the repo, a chat or the shell history.
+
+### 9.1 Laptop: update the checkout (2 min)
+```
+cd <your prestasiplus checkout>
+git fetch origin feature/v2-backend
+git checkout feature/v2-backend
+git pull --ff-only origin feature/v2-backend
+git log --oneline -1          # note this SHA: Render must deploy the SAME one (9.5)
+npm ci
+npm run db:generate -w @pp/api   # the seed needs the generated Prisma client (gitignored)
+```
+
+### 9.2 Laptop: put the DB URL in this shell only
+macOS zsh (default on a Mac): the prompt does not echo and nothing lands in the history:
+```
+read -rs 'DATABASE_URL?Session pooler URL ending in ?sslmode=no-verify: ' && export DATABASE_URL; echo
+```
+bash / Git Bash: `read -rsp 'Session pooler URL ending in ?sslmode=no-verify: ' DATABASE_URL && export DATABASE_URL; echo`
+
+Paste `postgresql://postgres.<PROJECT_REF>:<SUPABASE_DB_PASSWORD>@aws-<n>-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=no-verify`.
+The `?sslmode=no-verify` suffix is for the seed (node-postgres through Prisma, step 1.3); the delta script ignores
+every `ssl*` parameter and always uses TLS without certificate verification for a non-local host.
+
+Optional but recommended (Supabase free has no backups; needs a Postgres 17 `pg_dump`, e.g. `brew install postgresql@17`).
+`no-verify` is a node-postgres value that libpq (`pg_dump`) rejects, so swap the suffix, and write the dump OUTSIDE
+the checkout (it holds all demo data):
+`pg_dump "${DATABASE_URL%%\?*}?sslmode=require" -Fc -f ~/demo-before-delta-$(date +%F-%H%M).dump`.
+
+### 9.3 Laptop: the migration delta (1 min)
+[scripts/demo-db-delta.mjs](../../scripts/demo-db-delta.mjs) does what `prisma migrate deploy` does without the
+Prisma schema engine: compares `apps/api/prisma/migrations/*/migration.sql` with `_prisma_migrations`, applies the
+missing ones in name order (one transaction each: the SQL and its row commit together or not at all) and writes the
+row in Prisma's table format (uuid id, sha256 checksum of the file, `finished_at`, `applied_steps_count = 1`), so a
+later `prisma migrate deploy` is expected to see them as applied (checked against Prisma's table definition and
+checksum rule, not against the schema engine itself, see 9.7). Run it from ONE terminal only (it takes no lock). It refuses to run, and applies nothing, when a recorded migration's
+checksum differs from its file, a recorded migration has no folder in the checkout (wrong branch) or a recorded
+migration is unfinished. It never prints the URL.
+```
+node scripts/demo-db-delta.mjs --dry-run
+node scripts/demo-db-delta.mjs
+node scripts/demo-db-delta.mjs          # again: must say "Up to date: no migration to apply."
+```
+Expected dry run on the #56 DB at base 01c47e75 (more lines if later PRs with migrations merged; that is fine as
+long as Render deploys the same SHA):
+```
+_prisma_migrations: 15 applied row(s).
+note     0015_classes sorts before the newest applied migration (0017_question_workflow); it is applied anyway (as prisma migrate deploy does).
+would apply  0015_classes  sha256 bc902c50...
+would apply  0018_aggregate_school_id  sha256 259cc7bd...
+```
+Then `Done: 2 migration(s) applied; _prisma_migrations now has 17 applied row(s).`
+
+If it prints `REFUSED`: stop. Nothing was changed. A checksum mismatch means the checkout is not the code the DB
+was built from; do not "fix" the row by hand, ask the LEAD (or use the fallback in 9.8).
+
+### 9.4 Laptop: top up the demo seed (2-4 min)
+The demo seed is idempotent by design (ADR-0006: upsert or find-by-natural-key, never truncate) and has no
+per-module flag, so the top-up is simply the whole seed again from the base checkout:
+```
+NODE_ENV=production ALLOW_DEMO_SEED=true npm run be:db:seed
+unset DATABASE_URL
+```
+Expected last line: `seed: profile=poc, 11 module(s): core-identity, core-schools, core-school-packages, core-population, curriculum, questions, wallet, content, exam, poc-classes, practice`.
+
+What a re-run does to the rows that are already there (checked in the code and in the rehearsal, 9.7):
+- adds the new classes (`DEMO4S` for `guru@demo.test` with the two Form 4 demo pupils, `KLS001`-`KLS013` for the
+  generated teachers) and their enrolments; nothing else changes in row counts;
+- demo accounts and schools are re-asserted from the seed (name, school, grade, active flags, roles); the
+  password hash of an existing account is KEPT; wallets, practice sessions, exam papers, questions and the
+  support ticket are left alone when they already exist; seeded articles, banners and videos are reset to the
+  seed text (an edit made to them during the demo is overwritten);
+- data written by the demo itself (Bijak attempts, answers, aggregates, uploads) is never touched.
+
+Then re-run the Data API lockdown (step 3.2: SQL editor, paste `scripts/supabase/lockdown-data-api.sql`, Run, then
+the verify queries: `leaked_grants` = 0). The new tables (`classrooms`, `enrolments`, `teacher_profiles`) must not
+be readable through the Data API.
+
+### 9.5 Render: change the branch and deploy (~6 min build)
+1. Render -> `prestasiplus-api` -> **Environment**: check `BIJAK_POC_QUESTIONS` = `true`. The variable is new on
+   the base (#51, default `false`); the #56 build never read it. Without it the new API refuses the PoC Bijak
+   papers (start = 403) and the student demo breaks. Also check `PUBLIC_BASE_URL` = the Pages origin.
+2. **Settings** -> Build & Deploy -> **Branch** -> `feature/v2-backend` -> Save. Auto-deploy stays **off**.
+3. **Manual Deploy** -> **Deploy latest commit** (or "Deploy a specific commit" with the SHA from 9.1). Wait for
+   "Live"; the log ends with `API listening on port 10000`.
+4. `https://<project>.pages.dev/api/health` -> `{"data":{"status":"ok","db":"up",...}}`.
+
+### 9.6 Smoke (3 min)
+```
+read -rs 'DEMO_PASSWORD?Demo password (docs/AKAUN-DEMO.md): ' && export DEMO_PASSWORD; echo     # zsh; bash: read -rsp '...' DEMO_PASSWORD
+BASE_URL=https://<project>.pages.dev bash scripts/demo-smoke.sh
+unset DEMO_PASSWORD
+```
+Expected: `Result: 28 passed, 0 failed`. Then in a browser: `guru@demo.test` -> Guru -> Kelas (class `DEMO4S`
+with 2 pupils), `adminsekolah@demo.test` -> dashboard, `pelajar@demo.test` -> Kelas Saya (1 class), Bijak SPM.
+
+**Rollback:** Render -> Settings -> Branch back to `be/fix-builder-exam-core-import` -> Manual Deploy. The DB
+needs no rollback: the old API works with the new tables (additive).
+
+### 9.7 Rehearsal (2026-10-20, container, Postgres 16, non-superuser owner, `pgcrypto` in `extensions`)
+1. DB at the #56 state: migrations from the #56 tree (`--migrations-dir`), 15 rows; #56 demo seed:
+   `10 module(s)`, 98 tables.
+2. `--dry-run` listed `0015_classes` and `0018_aggregate_school_id`; a copy with the `0012` checksum altered was
+   `REFUSED` (exit 1, nothing applied); the delta applied both (17 rows); a second run: "Up to date".
+3. Seed top-up from the base: `11 module(s)`; row counts changed ONLY for `classrooms` 0 -> 14 and
+   `enrolments` 0 -> 23. A second run changed no row count. A fresh DB built from the base (all migrations +
+   seed) has exactly the same row count in all 101 tables and the same classes and rosters.
+4. Base API (`npm run be:build`, `NODE_ENV=production`, `BIJAK_POC_QUESTIONS=true`) against that DB:
+   `/api/health` db up; `scripts/demo-smoke.sh` straight at the API: 25 passed, the 3 failures are the
+   proxy-only checks (SPA `/`, deep link, `no-store` added by the Pages worker); student login with CSRF, wrong
+   CSRF = 403, Bijak papers (4), exam start/autosave/submit/result/history, Admin Pusat checks all passed, and the
+   new aggregate row carries `school_id`. Guru classes, school-admin dashboard, school performance report and
+   Kelas Saya answered 200.
+5. TLS path: the script against a self-signed TLS Postgres through a non-local host name connected with
+   "TLS, certificate not verified". Not rehearsable here: Supabase itself (no network path from the container)
+   and the real Prisma schema engine (blocked), so the rows were checked against Prisma's table definition and
+   checksum rule (sha256 hex of the file), not against `prisma migrate deploy` itself.
+
+### 9.8 Fallback: fresh dump + reload
+If the delta refuses or the top-up fails half-way: build the DB at the base state where the full toolchain
+works (an empty Postgres 16/17, `node scripts/demo-db-delta.mjs` on it, then
+`NODE_ENV=production ALLOW_DEMO_SEED=true npm run be:db:seed`), `pg_dump -Fc --no-owner --no-privileges` it,
+and restore into a NEW Supabase project (steps 1-3), then point Render `DATABASE_URL` at the new project. This
+loses whatever the demo wrote into the old DB (fictitious data only).
+
+## 10. Re-upload the Pages frontend (direct upload, about 10 min)
+
+The demo frontend is the Cloudflare Pages project `prestasiplus-demo`, deployed by **direct upload** (not Git):
+the http build of `be/demo-pages` plus [deploy/pages-direct/_worker.js](../../deploy/pages-direct/_worker.js)
+(advanced-mode worker, a JS port of `functions/api/[[path]].ts`: same-origin `/api/*` proxy to Render). Drag and
+drop does not compile `functions/`, which is why the worker file goes into `dist/` by hand.
+
+After a base change that touches the UI or the http clients, rebuild from `be/demo-pages` merged with the base:
+```
+cd <your prestasiplus checkout>
+git fetch origin be/demo-pages feature/v2-backend
+git checkout -B demo-pages-local origin/be/demo-pages
+git merge --no-edit origin/feature/v2-backend      # local only; do not push (rehearsed 2026-10-20: no conflict)
+npm ci
+VITE_API_MODE=http npx vite build --mode demo        # the shell value wins over VITE_API_MODE=mock in .env.demo
+node scripts/check-demo-bundle.mjs dist              # expect "check-demo-bundle: OK"
+cp deploy/pages-direct/_worker.js dist/
+cd dist && zip -qr ~/pages-dist.zip . && cd ..      # the CONTENTS of dist at the zip root, not a dist/ folder
+unzip -l ~/pages-dist.zip | grep -E ' (index.html|_worker.js)$'   # both must be listed at the root
+```
+Windows PowerShell: `$env:VITE_API_MODE='http'; npx vite build --mode demo`, then
+`Copy-Item deploy/pages-direct/_worker.js dist/` and `Compress-Archive -Path dist/* -DestinationPath $HOME\pages-dist.zip`.
+
+Upload: Cloudflare dashboard -> Workers & Pages -> `prestasiplus-demo` -> **Create deployment** (Deployments tab)
+-> Production -> upload `~/pages-dist.zip` (or drag the `dist` folder itself) -> Save and deploy. The project keeps
+its `API_ORIGIN` variable; the worker falls back to `https://prestasiplus-api.onrender.com` when it is unset.
+Check `https://<project>.pages.dev/api/health`, then run the smoke (9.6). Rollback: Deployments -> the previous
+deployment -> **Rollback to this deployment**.
+
+Rehearsed 2026-10-20 (be/demo-pages ad230a6 + base 01c47e75): merge clean, build 15 s, bundle check OK,
+679 files, about 16 MB unzipped.
 
 ## Known limits (temporary demo)
 
