@@ -15,11 +15,13 @@ import {
   BIJAK_BUILDER_CSRF_MESSAGE,
   BIJAK_BUILDER_MESSAGES,
   BIJAK_BUILDER_PAPER_STATUSES,
+  BIJAK_BUILDER_SCHEME_LINES,
   BijakBlueprintAdminCreateSchema,
   BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintListQuerySchema,
   BijakBlueprintViewSchema,
   BijakBuilderCsrfErrorSchema,
+  BijakBuilderCurriculumTagSchema,
   BijakBuilderEditorSchema,
   BijakBuilderGroupSchema,
   BijakBuilderOkSchema,
@@ -33,28 +35,31 @@ import {
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
   BijakBuilderQuestionSchema,
+  BijakBuilderSchemeLineSchema,
 } from '../schema'
 
-/* The paper builder mock (src/modules/m28-bijak-spm/{server/admin.ts, domain/admin-types.ts, ...})
- * is not on GitHub yet. Every payload below is built from the shapes the LEAD round-3 review quotes
- * from it: AdminPaper (extends PaperDef), AdminPaperSummary, BuilderQuestion, BuilderGroup,
- * PaperEditorData, BlueprintView, previewQuestions, publishPaper { ok, errors }. The only
- * differences are the wire timestamps (the mock keeps epoch numbers). Fictitious content only. */
+/* Fixtures are shaped like the data of the prototype paper builder (m28-bijak-spm at 9af43134;
+ * the first four files are also in docs/reference/bijak-paper-builder-mock/): AdminPaper (extends
+ * PaperDef), AdminPaperSummary, BuilderQuestion, BuilderGroup, PaperEditorData, BlueprintView,
+ * ReviewQuestion, previewQuestions, publishPaper. Ids and the Matematik Kertas 2 seed structure (A
+ * all, B all, C choose 1 of 2) follow the prototype seed (kp-N paper ids, kp-N-sN section ids, mat2-*
+ * question ids). The only differences are the wire timestamps (the prototype keeps epoch numbers) and
+ * the D54 question status codes. */
 
 const TS = '2026-10-19T09:30:00+08:00'
 const TS2 = '2026-10-19T10:00:00+08:00'
 
 const section = (over: Record<string, unknown> = {}) => ({
-  id: 's-a',
+  id: 'kp-2-s1',
   label: 'Bahagian A',
   markBudget: 6,
   questionCount: 2,
   rule: { type: 'all' },
-  questionIds: ['q-101', 'q-102'],
+  questionIds: ['mat2-algebra-v1', 'mat2-diskaun-v2'],
   ...over,
 })
 const paper = (over: Record<string, unknown> = {}) => ({
-  id: 'pp-1',
+  id: 'kp-2',
   title: 'Percubaan SPM Matematik Kertas 2 Set B',
   subject: 'MAT',
   kertas: 2,
@@ -70,14 +75,12 @@ const paper = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 const summary = (over: Record<string, unknown> = {}) => ({
-  id: 'pp-1',
+  id: 'kp-2',
   title: 'Percubaan SPM Matematik Kertas 2 Set B',
   subject: 'MAT',
   subjectName: 'Matematik',
   kertas: 2,
-  year: 2026,
   code: '1449/2',
-  durationMin: 150,
   status: 'draf',
   questionCount: 2,
   marks: 6,
@@ -87,10 +90,10 @@ const summary = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 const bq = (over: Record<string, unknown> = {}) => ({
-  id: 'q-101',
+  id: 'mat2-algebra-v1',
   preview: 'Selesaikan $x^2 - 5x + 6 = 0$.',
   marks: 3,
-  kind: 'structured',
+  kind: 'berstruktur',
   topic: 'Fungsi dan Persamaan Kuadratik',
   status: 'published',
   kertas: 2,
@@ -104,6 +107,35 @@ const stimulus = (over: Record<string, unknown> = {}) => ({
   alt: 'Dua bentuk geometri',
   ...over,
 })
+const REVIEW_Q = {
+  id: 'mat2-algebra-v1',
+  stem: 'Selesaikan $x^2 - 5x + 6 = 0$.',
+  marks: 3,
+  curriculum: {
+    subject: 'MAT',
+    level: 'T4',
+    unit: 'T4-02',
+    unitLabel: 'Fungsi dan Persamaan Kuadratik',
+    sp: ['2.2.1'],
+    tp: 3,
+    formOrigin: 'T4',
+  },
+  parts: [
+    {
+      id: 'mat2-algebra-v1-a',
+      label: '(a)',
+      prompt: 'Cari nilai $x$.',
+      marks: 3,
+      answer: { kind: 'working' },
+    },
+  ],
+  scheme: {
+    'mat2-algebra-v1-a': {
+      marks: 3,
+      lines: [{ tag: 'K1', text: 'Memfaktorkan', marks: 1 }, { text: 'Jawapan akhir: $x = 2, 3$' }],
+    },
+  },
+}
 const bpSection = (over: Record<string, unknown> = {}) => ({
   label: 'Bahagian A',
   markBudget: 6,
@@ -171,7 +203,7 @@ describe('AdminPaper and AdminPaperSummary (mock shapes)', () => {
         sections: [
           section(),
           section({
-            id: 's-c',
+            id: 'kp-2-s3',
             label: 'Bahagian C',
             markBudget: 20,
             questionCount: 2,
@@ -266,6 +298,10 @@ describe('editor read: BuilderQuestion, BuilderGroup, BlueprintView, PaperEditor
       )
     }
     expect(BijakBuilderQuestionSchema.safeParse(bq({ stem: 'x' })).success).toBe(false)
+    for (const kind of ['objektif', 'berstruktur', 'esei']) {
+      expect(BijakBuilderQuestionSchema.safeParse(bq({ kind })).success, kind).toBe(true)
+    }
+    expect(BijakBuilderQuestionSchema.safeParse(bq({ kind: 'mcq' })).success).toBe(false)
     expect(BijakBuilderQuestionSchema.safeParse(bq({ status: 'pending_review' })).success).toBe(
       false,
     )
@@ -340,14 +376,14 @@ describe('createPaper and PaperPatch (single PUT)', () => {
       BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, title: 'Set C' })
         .success,
     ).toBe(true)
-    expect(BijakBuilderPaperCreateResultSchema.parse({ id: 'pp-9' })).toEqual({ id: 'pp-9' })
+    expect(BijakBuilderPaperCreateResultSchema.parse({ id: 'kp-3' })).toEqual({ id: 'kp-3' })
     expect(BijakBuilderPaperCreateResultSchema.safeParse({ id: 9 }).success).toBe(false)
   })
 
-  it('rejects an empty title with the BM copy, and extra or missing keys on create', () => {
-    const r = BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, title: '  ' })
-    expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0]!.message).toBe('Tajuk kertas diperlukan')
+  it('allows a blank title on create (the mock uses the default) and rejects extra or missing keys', () => {
+    expect(
+      BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, title: '  ' }).success,
+    ).toBe(true)
     expect(BijakBuilderPaperCreateSchema.safeParse({ kertas: 2 }).success).toBe(false)
     expect(BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 0 }).success).toBe(
       false,
@@ -369,8 +405,8 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     expect(
       BijakBuilderPaperPatchSchema.safeParse({
         sections: [
-          { id: 's-a', questionIds: ['q-101', 'q-102'] },
-          { id: 's-c', questionIds: [] },
+          { id: 'kp-2-s1', questionIds: ['mat2-algebra-v1', 'mat2-diskaun-v2'] },
+          { id: 'kp-2-s3', questionIds: [] },
         ],
       }).success,
     ).toBe(true)
@@ -390,14 +426,14 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     }
     expect(
       BijakBuilderPaperPatchSchema.safeParse({
-        sections: [{ id: 's-a', questionIds: ['q-1'], label: 'X' }],
+        sections: [{ id: 'kp-2-s1', questionIds: ['q-1'], label: 'X' }],
       }).success,
     ).toBe(false)
     expect(
       BijakBuilderPaperPatchSchema.safeParse({ sections: [{ questionIds: [] }] }).success,
     ).toBe(false)
     expect(
-      BijakBuilderPaperPatchSchema.safeParse({ sections: [{ id: 's-a', questionIds: [101] }] })
+      BijakBuilderPaperPatchSchema.safeParse({ sections: [{ id: 'kp-2-s1', questionIds: [101] }] })
         .success,
     ).toBe(false)
     expect(BijakBuilderPaperPatchSchema.safeParse({ durationMin: 0 }).success).toBe(false)
@@ -409,15 +445,18 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
 describe('publish, delete and preview results', () => {
   it('parses publishPaper as { ok, errors } with errors empty on success', () => {
-    const ok = BijakBuilderPublishResultSchema.parse({ ok: true, errors: [] })
-    expect(ok).toEqual({ ok: true, errors: [] })
+    expect(BijakBuilderPublishResultSchema.parse({ ok: true, errors: [] })).toEqual({
+      ok: true,
+      errors: [],
+    })
+    const L = BIJAK_BUILDER_CHECK_LINES
+    // the order publishPaper uses: paper-wide lines, then each section line prefixed with its label
     const lines = [
-      'Bahagian A: Kurang 1 soalan (perlu 3, ada 2)',
-      'Bahagian B: Markah 18 tidak sama dengan bajet 20',
-      'Bahagian B: 2 soalan belum Terbit',
-      'Bahagian C: Kumpulan rangsangan Rajah 2 tidak berturutan',
-      'Soalan berulang dalam kertas: q-101',
-      'Kumpulan rangsangan Rajah 2 dipecahkan antara dua bahagian',
+      L.duplicateQuestion(['mat2-algebra-v1', 'mat2-garis-v2']),
+      L.groupSplit('g-rajah-2'),
+      L.sectionLine('Bahagian A', L.tooFew(3, 2)),
+      L.sectionLine('Bahagian B', L.marksMismatch(18, 20)),
+      L.sectionLine('Bahagian B', L.notPublished(2)),
     ]
     const bad = BijakBuilderPublishResultSchema.parse({ ok: false, errors: lines })
     expect(bad.ok).toBe(false)
@@ -436,18 +475,17 @@ describe('publish, delete and preview results', () => {
     ).toBe(false)
   })
 
-  it('documents the checkPaper lines quoted by the review', () => {
-    expect(BIJAK_BUILDER_CHECK_LINES.tooFew).toBe('Kurang N soalan (perlu X, ada Y)')
-    expect(BIJAK_BUILDER_CHECK_LINES.marksMismatch).toBe('Markah M tidak sama dengan bajet B')
-    expect(BIJAK_BUILDER_CHECK_LINES.notPublished).toBe('{N} soalan belum Terbit')
-    expect(BIJAK_BUILDER_CHECK_LINES.groupNotConsecutive).toBe(
-      'Kumpulan rangsangan G tidak berturutan',
-    )
-    expect(BIJAK_BUILDER_CHECK_LINES.incomplete).toBe('tidak lengkap')
-    expect(BIJAK_BUILDER_CHECK_LINES.duplicateQuestion).toBe('Soalan berulang dalam kertas: ...')
-    expect(BIJAK_BUILDER_CHECK_LINES.groupSplit).toBe(
-      'Kumpulan rangsangan X dipecahkan antara dua bahagian',
-    )
+  it('builds the checkPaper lines exactly as the mock does', () => {
+    const L = BIJAK_BUILDER_CHECK_LINES
+    expect(L.duplicateQuestion(['a', 'b'])).toBe('Soalan berulang dalam kertas: a, b')
+    expect(L.groupSplit('g1')).toBe('Kumpulan rangsangan g1 dipecahkan antara dua bahagian')
+    expect(L.tooFew(3, 2)).toBe('Kurang 1 soalan (perlu 3, ada 2)')
+    expect(L.tooMany(2, 3)).toBe('Lebih 1 soalan (perlu 2, ada 3)')
+    expect(L.marksMismatch(18, 20)).toBe('Markah 18 tidak sama dengan bajet 20')
+    expect(L.groupNotConsecutive('g1')).toBe('Kumpulan rangsangan g1 tidak berturutan')
+    expect(L.groupIncomplete('g1', 2)).toBe('Kumpulan rangsangan g1 tidak lengkap (2 soalan tiada)')
+    expect(L.notPublished(2)).toBe('2 soalan belum Terbit')
+    expect(L.sectionLine('Bahagian A', L.notPublished(1))).toBe('Bahagian A: 1 soalan belum Terbit')
   })
 
   it('returns delete as { ok: true } (idempotent: also for an unknown id)', () => {
@@ -457,52 +495,35 @@ describe('publish, delete and preview results', () => {
   })
 
   it('takes { ids } for the preview, saved or not, and rejects other keys', () => {
-    expect(BijakBuilderPreviewRequestSchema.safeParse({ ids: ['q-101', 'q-new-1'] }).success).toBe(
-      true,
-    )
+    expect(
+      BijakBuilderPreviewRequestSchema.safeParse({ ids: ['mat2-algebra-v1', 'q-new-1'] }).success,
+    ).toBe(true)
     expect(BijakBuilderPreviewRequestSchema.safeParse({ ids: [] }).success).toBe(true)
     expect(BijakBuilderPreviewRequestSchema.safeParse({ ids: [1] }).success).toBe(false)
-    expect(BijakBuilderPreviewRequestSchema.safeParse({ paperId: 'pp-1' }).success).toBe(false)
+    expect(BijakBuilderPreviewRequestSchema.safeParse({ paperId: 'kp-2' }).success).toBe(false)
     expect(BijakBuilderPreviewRequestSchema.safeParse({ ids: ['a'], extra: 1 }).success).toBe(false)
   })
 
-  it('parses { questions, stimuli, optionBanks } keyed by group id, with no answer key', () => {
+  it('parses { questions, stimuli, optionBanks } keyed by group id (ReviewQuestion with its scheme)', () => {
+    const mcq = {
+      id: 'mat2-obj-1',
+      stem: 'Nilai $f(2)$ ialah',
+      marks: 1,
+      curriculum: { ...REVIEW_Q.curriculum, unit: null, formOrigin: 'T1-T3' },
+      mcq: {
+        options: [
+          { id: 'o1', text: '1' },
+          { id: 'o2', text: '2' },
+        ],
+        correct: 'o2',
+      },
+      scheme: { 'mat2-obj-1': { marks: 1, lines: [{ text: 'Jawapan betul: B' }] } },
+    }
     const preview = {
-      questions: [
-        {
-          id: 'q-201',
-          groupId: 'g-1',
-          topic: 'Geometri Koordinat',
-          formOrigin: 'T4',
-          stem: 'Berdasarkan Rajah 2, kenal pasti bentuk.',
-          marks: 2,
-          parts: [
-            {
-              id: 'p-1',
-              label: '(a)',
-              prompt: 'Nyatakan',
-              marks: 2,
-              answer: { kind: 'match_letter' },
-            },
-          ],
-        },
-        {
-          id: 'q-301',
-          topic: 'Fungsi',
-          formOrigin: 'T4',
-          stem: 'Nilai $f(2)$ ialah',
-          marks: 1,
-          mcq: {
-            options: [
-              { id: 'A', text: '1' },
-              { id: 'B', text: '2' },
-            ],
-          },
-        },
-      ],
-      stimuli: { 'g-1': stimulus() },
+      questions: [REVIEW_Q, mcq, { ...REVIEW_Q, id: 'mat2-x', scheme: { 'mat2-x-a': null } }],
+      stimuli: { 'g-rajah-2': stimulus() },
       optionBanks: {
-        'g-1': [
+        'g-rajah-2': [
           { id: 'A', text: 'Segi tiga' },
           { id: 'B', text: 'Segi empat' },
         ],
@@ -510,18 +531,149 @@ describe('publish, delete and preview results', () => {
     }
     expect(BijakBuilderPreviewSchema.safeParse(preview).success).toBe(true)
     expect(envelopeOf(BijakBuilderPreviewSchema).safeParse({ data: preview }).success).toBe(true)
+    expect(
+      BijakBuilderPreviewSchema.safeParse({ questions: [], stimuli: {}, optionBanks: {} }).success,
+    ).toBe(true)
     expect(BijakBuilderPreviewSchema.safeParse({ ...preview, groups: [] }).success).toBe(false)
     expect(BijakBuilderPreviewSchema.safeParse({ questions: [], stimuli: {} }).success).toBe(false)
-    const withKey = structuredClone(preview) as { questions: Record<string, unknown>[] }
-    withKey.questions[0]!.scheme = { accept: ['A'] }
-    expect(BijakBuilderPreviewSchema.safeParse(withKey).success).toBe(false)
-    const withNumber = structuredClone(preview) as { questions: Record<string, unknown>[] }
-    withNumber.questions[0]!.number = 1
-    expect(BijakBuilderPreviewSchema.safeParse(withNumber).success).toBe(false)
+  })
+
+  it('requires the mock ReviewQuestion fields and rejects the BE-16 view fields', () => {
+    const parse = (q: unknown) =>
+      BijakBuilderPreviewSchema.safeParse({ questions: [q], stimuli: {}, optionBanks: {} }).success
+    for (const key of ['stem', 'marks', 'curriculum', 'scheme']) {
+      expect(parse({ ...REVIEW_Q, [key]: undefined }), key).toBe(false)
+    }
+    expect(parse({ ...REVIEW_Q, number: 1 })).toBe(false)
+    expect(parse({ ...REVIEW_Q, sectionId: 'kp-2-s1' })).toBe(false)
+    expect(parse({ ...REVIEW_Q, curriculum: { ...REVIEW_Q.curriculum, level: 'T3' } })).toBe(false)
+  })
+
+  it('keeps the curriculum tag field for field with the BE-36 / BE-38 bounds (tp 1..6, unit at most 64)', () => {
+    const tag = (over: Record<string, unknown> = {}) => ({ ...REVIEW_Q.curriculum, ...over })
+    const ok = (t: unknown) => BijakBuilderCurriculumTagSchema.safeParse(t).success
+    expect(ok(tag())).toBe(true)
+    // seed shape of the prototype `curr()`: no DSKP unit, no SP, tp 2, T1-T3 origin
+    expect(ok(tag({ unit: null, sp: [], tp: 2, formOrigin: 'T1-T3', level: 'T4+T5' }))).toBe(true)
+    for (const tp of [1, 6]) expect(ok(tag({ tp })), `tp ${tp}`).toBe(true)
+    for (const tp of [0, 7, -1, 2.5, '3', null])
+      expect(ok(tag({ tp })), `tp ${String(tp)}`).toBe(false)
+    expect(ok(tag({ unit: 'u'.repeat(64) }))).toBe(true)
+    expect(ok(tag({ unit: 'u'.repeat(65) }))).toBe(false)
+    expect(ok(tag({ unit: '' }))).toBe(false)
+    expect(ok(tag({ unit: undefined }))).toBe(false)
+    expect(ok(tag({ unitLabel: 'x'.repeat(200) }))).toBe(true)
+    expect(ok(tag({ unitLabel: 'x'.repeat(201) }))).toBe(false)
+    expect(ok(tag({ subject: '' }))).toBe(false)
+    expect(ok(tag({ subject: 'S'.repeat(33) }))).toBe(false)
+    expect(ok(tag({ sp: Array.from({ length: 20 }, (_, i) => `2.2.${i + 1}`) }))).toBe(true)
+    expect(ok(tag({ sp: Array.from({ length: 21 }, (_, i) => `2.2.${i + 1}`) }))).toBe(false)
+    expect(ok(tag({ sp: [''] }))).toBe(false)
+    expect(ok(tag({ sp: ['s'.repeat(65)] }))).toBe(false)
+    for (const level of ['T4', 'T5', 'T4+T5']) expect(ok(tag({ level })), level).toBe(true)
+    for (const formOrigin of ['T1-T3', 'T4', 'T5'])
+      expect(ok(tag({ formOrigin })), formOrigin).toBe(true)
+    expect(ok(tag({ formOrigin: 'T6' }))).toBe(false)
+    expect(ok(tag({ extra: 1 }))).toBe(false)
+  })
+
+  it('builds the scheme lines exactly as the prototype describeScheme and reviewQuestion do', () => {
+    const L = BIJAK_BUILDER_SCHEME_LINES
+    expect(L.correctOption(0)).toBe('Jawapan betul: A')
+    expect(L.correctOption(7)).toBe('Jawapan betul: H')
+    expect(L.correctOption(8)).toBe('Jawapan betul: ?')
+    expect(L.correctOption(-1)).toBe('Jawapan betul: ?')
+    expect(L.accepted('12')).toBe('Diterima: 12')
+    expect(L.accepted('12', 'cm')).toBe('Diterima: 12 cm')
+    expect(L.mapping('1', 'P')).toBe('1 = P')
+    expect(L.rubricBand('Cemerlang', 9, 10, 'Huraian lengkap')).toBe(
+      'Cemerlang (9-10): Huraian lengkap',
+    )
+    expect(L.finalAnswer('x = 2, 3')).toBe('Jawapan akhir: $x = 2, 3$')
+    expect(L.pointTag('K', 1)).toBe('K1')
+    expect(L.pointTag('M', 2)).toBe('M2')
+    const line = (l: unknown) => BijakBuilderSchemeLineSchema.safeParse(l).success
+    for (const code of ['K', 'N', 'P', 'B', 'M', 'F', 'C']) {
+      expect(line({ tag: L.pointTag(code, 1), text: 'x', marks: 1 }), code).toBe(true)
+    }
+    for (const tag of ['X1', 'K', 'K0', 'k1', '1K', 'K1 '])
+      expect(line({ tag, text: 'x' }), tag).toBe(false)
+    expect(line({ text: L.correctOption(1) })).toBe(true)
+    expect(line({ text: 'x', marks: -1 })).toBe(false)
+    expect(line({ text: 'x', extra: 1 })).toBe(false)
+  })
+
+  it('bounds the ReviewQuestion MCQ options at 10 and keeps correct optional', () => {
+    const parse = (q: unknown) =>
+      BijakBuilderPreviewSchema.safeParse({ questions: [q], stimuli: {}, optionBanks: {} }).success
+    const options = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `o${i + 1}`, text: `${i}` }))
+    const mcq = (n: number, extra: Record<string, unknown> = {}) => ({
+      id: 'mat2-obj-1',
+      stem: 'Nilai $f(2)$ ialah',
+      marks: 1,
+      curriculum: REVIEW_Q.curriculum,
+      mcq: { options: options(n), ...extra },
+      scheme: { 'mat2-obj-1': null },
+    })
+    expect(parse(mcq(10, { correct: 'o2' }))).toBe(true)
+    expect(parse(mcq(4))).toBe(true) // no scheme option key: correct is absent, as in the prototype
+    expect(parse(mcq(11))).toBe(false)
+    expect(parse(mcq(4, { correct: '' }))).toBe(false)
+    expect(parse(mcq(4, { correct: 2 }))).toBe(false)
+  })
+
+  it('carries every prototype StimulusDef field on the group and the preview', () => {
+    const full = stimulus({
+      kind: 'table',
+      caption: 'Jadual 1',
+      svg: '<svg viewBox="0 0 10 10"></svg>',
+      text: 'Petikan ringkas',
+      table: { head: ['x', 'y'], rows: [['1', '2']] },
+    })
+    for (const kind of ['diagram', 'passage', 'table']) {
+      expect(
+        BijakBuilderGroupSchema.safeParse({
+          id: 'g-1',
+          stimulus: { ...full, kind },
+          questionIds: ['a'],
+        }).success,
+        kind,
+      ).toBe(true)
+    }
+    expect(
+      BijakBuilderPreviewSchema.safeParse({
+        questions: [],
+        stimuli: { 'g-1': full },
+        optionBanks: {},
+      }).success,
+    ).toBe(true)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: stimulus({ kind: 'video' }),
+        questionIds: [],
+      }).success,
+    ).toBe(false)
+    // alt is required by StimulusDef (the prototype keeps "" when a paper has none)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: { ...stimulus(), alt: undefined },
+        questionIds: [],
+      }).success,
+    ).toBe(false)
+    expect(
+      BijakBuilderGroupSchema.safeParse({
+        id: 'g-1',
+        stimulus: stimulus({ alt: '' }),
+        questionIds: [],
+      }).success,
+    ).toBe(true)
   })
 })
 
-describe('BM copy (quoted from the mock server/admin.ts, confirmed by the LEAD review)', () => {
+describe('BM copy (copied from the prototype server/admin.ts)', () => {
   it('keeps the quoted strings verbatim', () => {
     expect(BIJAK_BUILDER_MESSAGES.paperLocked).toBe(
       'Kertas Terbit tidak boleh disunting. Tarik balik dahulu.',
@@ -722,14 +874,18 @@ describe('openapi document', () => {
     }
   })
 
-  it('sends no credential or token on any route of the card (D57b: no Cache-Control: no-store needed)', () => {
+  it('sends Cache-Control: no-store only on the preview 200, which carries answer keys (D57b)', () => {
     for (const { path, method, op } of mine) {
       for (const [status, r] of Object.entries(
-        op.responses as Record<string, { headers?: object }>,
+        op.responses as Record<
+          string,
+          { headers?: Record<string, { schema?: { enum?: string[] } }> }
+        >,
       )) {
-        expect(Object.keys(r.headers ?? {}), `${method} ${path} ${status}`).not.toContain(
-          'Cache-Control',
-        )
+        const header = r.headers?.['Cache-Control']
+        const isPreview200 = path === '/admin/papers/preview' && status === '200'
+        if (isPreview200) expect(header?.schema?.enum).toEqual(['no-store'])
+        else expect(header, `${method} ${path} ${status}`).toBeUndefined()
       }
     }
   })
@@ -764,23 +920,26 @@ describe('openapi document', () => {
     expect(codes(`${bp}/retire`, 'post')).toEqual(['200', '401', '403', '404', '409', '429'])
   })
 
-  it('carries the quoted BM errors and the real checkPaper lines in the route descriptions', () => {
+  it('carries the mock BM errors and the real checkPaper lines in the route descriptions', () => {
     const text = (path: string, method: string) => JSON.stringify(doc.paths[path]![method])
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.paperLocked)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidQuestion)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidSection)
+    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
     expect(text('/admin/papers/{id}', 'put')).toContain('subject check only')
+    expect(text('/admin/papers/{id}', 'put')).toContain('Checks run in the mock order')
     expect(text('/admin/papers/{id}', 'delete')).toContain(BIJAK_BUILDER_MESSAGES.deleteTerbit)
     expect(text('/admin/papers', 'post')).toContain(BIJAK_BUILDER_MESSAGES.noBlueprint)
     expect(text('/admin/papers', 'post')).toContain('no field')
-    expect(text('/admin/papers', 'post')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
     expect(text('/admin/papers/{id}', 'get')).toContain(BIJAK_BUILDER_MESSAGES.paperNotFound)
     const publish = text('/admin/papers/{id}/publish', 'post')
     for (const line of [
       'Kurang N soalan (perlu X, ada Y)',
+      'Lebih N soalan (perlu X, ada Y)',
       'Markah M tidak sama dengan bajet B',
-      'soalan belum Terbit',
+      '{N} soalan belum Terbit',
       'tidak berturutan',
+      'tidak lengkap (N soalan tiada)',
       'Soalan berulang dalam kertas',
       'dipecahkan antara dua bahagian',
       '{label}: ',
@@ -788,6 +947,18 @@ describe('openapi document', () => {
       expect(publish, line).toContain(line)
     }
     expect(publish).not.toContain('perlu 3 soalan, hanya 2 tersedia')
+  })
+
+  it('answers PaperEditorData on PUT and { ok: true } on withdraw and delete', () => {
+    const ref = (path: string, method: string, code: string) =>
+      JSON.stringify(
+        (doc.paths[path]![method]!.responses[code] as { content: Record<string, unknown> }).content,
+      )
+    expect(ref('/admin/papers/{id}', 'put', '200')).toContain('BijakBuilderEditor')
+    expect(ref('/admin/papers/{id}', 'get', '200')).toContain('BijakBuilderEditor')
+    expect(ref('/admin/papers/{id}/withdraw', 'post', '200')).toContain('BijakBuilderOk')
+    expect(ref('/admin/papers/{id}', 'delete', '200')).toContain('BijakBuilderOk')
+    expect(ref('/admin/papers', 'post', '201')).toContain('BijakBuilderPaperCreateResult')
   })
 
   it('maps every mock refusal to 422 VALIDATION_ERROR and says the mapping awaits the LEAD', () => {
@@ -865,16 +1036,22 @@ describe('openapi document', () => {
     }
   })
 
-  it('does not leak an answer key or scheme into any builder component', () => {
+  it('keeps answer keys and schemes out of every builder component except the admin-only review shapes', () => {
+    const admin = new Set([
+      'BijakBuilderReviewQuestion',
+      'BijakBuilderSchemeLine',
+      'BijakBuilderPreview',
+    ])
     const text = JSON.stringify(
       Object.fromEntries(
         Object.entries(doc.components.schemas).filter(
-          ([k]) => k in BIJAK_BUILDER_COMPONENT_SCHEMAS,
+          ([k]) => k in BIJAK_BUILDER_COMPONENT_SCHEMAS && !admin.has(k),
         ),
       ),
     )
     for (const word of ['"scheme"', '"correct"', '"accepted"', '"explanation"', '"answerKey"']) {
       expect(text).not.toContain(word)
     }
+    expect(JSON.stringify(doc.paths['/admin/papers/preview'])).toContain('Admin Pusat only')
   })
 })
