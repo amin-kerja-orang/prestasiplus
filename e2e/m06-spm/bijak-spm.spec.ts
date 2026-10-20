@@ -10,9 +10,14 @@ import { mkdirSync } from 'node:fs'
 
 import type { Page } from '@playwright/test'
 
+import { HTTP_MODE } from '../bijak/bijak-flow'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell, viewportWidth } from '../support'
 
+test.skip(
+  HTTP_MODE,
+  'mock-only (loginAs init-script session, __mock boot, local mock server): not run when BIJAK_API_BASE is set',
+)
 test.skip(
   process.env.E2E_PROTOTYPE_SCOPE !== 'on',
   'needs the scope-on build: playwright.bijak.config.mjs',
@@ -42,7 +47,7 @@ async function startPaper(
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
 }
 
-test.describe('Bijak SPM', () => {
+test.describe('Bijak SPM @bijak', () => {
   test('hub from SPM, stimulus group with pinned Rajah, submit and per-point result', async ({
     page,
     loginAs,

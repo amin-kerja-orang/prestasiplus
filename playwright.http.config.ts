@@ -22,11 +22,13 @@ import { defineConfig } from '@playwright/test'
  * - `E2E_HTTP_TEST_DIR` (default `e2e`) lets a harness check point the run at another folder.
  */
 const port = process.env.FRONTEND_PORT || '5192'
-const baseURL = process.env.BASE_URL || `http://localhost:${port}`
+// BASE_URL (BE-32), else BIJAK_API_BASE (the Bijak go/no-go flag), else the compose default port.
+const baseURL = process.env.BASE_URL || process.env.BIJAK_API_BASE || `http://localhost:${port}`
 
 export default defineConfig({
   testDir: process.env.E2E_HTTP_TEST_DIR || 'e2e',
-  testMatch: '**/*.spec.ts',
+  // Only the http specs: e2e/api/** and the Bijak *-http specs. The mock specs are never loaded.
+  testMatch: ['**/api/**/*.spec.ts', '**/bijak/*-http.spec.ts', '**/bijak/http-*.spec.ts'],
   grep: /@api/,
   // The seeded database is shared by every worker and project: keep one worker so a spec that
   // changes data (profile, password) cannot race another. Raise it only for read-only specs.
@@ -34,7 +36,9 @@ export default defineConfig({
   workers: Number(process.env.E2E_HTTP_WORKERS) || 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-http' }]] : 'list',
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-http' }]]
+    : 'list',
   outputDir: 'test-results-http',
   use: {
     baseURL,

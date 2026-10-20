@@ -1,0 +1,82 @@
+# E2E against the real stack (BE-32). Manual only: no push, no schedule (Actions budget).
+#   Actions -> e2e-http -> Run workflow
+# Builds compose.yaml + compose.http.yaml (as `npm run stack:up`), runs the @api specs
+# (`npm run test:e2e:http`: e2e/api/** and the Bijak *-http specs) on mobile, tablet and desktop.
+# Secret needed: E2E_DEMO_PASSWORD. It must equal the demo-seed password (the seed default, see
+# apps/api/prisma/seed/core/identity.ts) unless SEED_DEMO_PASSWORD_HASH is set in the job's .env.api.
+name: e2e-http
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-http-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e2e-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: http://localhost:5192
+      E2E_DEMO_PASSWORD: ${{ secrets.E2E_DEMO_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: Generate throw-away .env.api and .env.db (random secrets, job-local, never committed)
+        run: |
+          set -eu
+          db_pw="$(openssl rand -hex 24)"
+          cp .env.db.example .env.db
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${db_pw}|" .env.db
+          cp .env.api.example .env.api
+          sed -i \
+            -e "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://pp:${db_pw}@db:5432/prestasiplus|" \
+            -e "s|^SESSION_SECRET=.*|SESSION_SECRET=$(openssl rand -hex 32)|" \
+            -e "s|^IC_HASH_KEY=.*|IC_HASH_KEY=$(openssl rand -hex 32)|" \
+            -e "s|^BIJAK_POC_QUESTIONS=.*|BIJAK_POC_QUESTIONS=true|" \
+            .env.api
+          grep -q '^POSTGRES_USER=pp' .env.db && grep -q '^POSTGRES_DB=prestasiplus' .env.db
+
+      - name: Stack up (compose.yaml + compose.http.yaml, migrate + demo seed, waits for health)
+        run: npm run stack:up
+
+      - name: Wait for the frontend health endpoint
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/healthz" >/dev/null; then echo "healthy"; exit 0; fi
+            sleep 5
+          done
+          echo "stack did not become healthy"; docker compose -f compose.yaml -f compose.http.yaml ps; exit 1
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: E2E (real API)
+        run: npm run test:e2e:http
+
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: playwright-report-http
+          path: |
+            playwright-report-http
+            test-results-http
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose -f compose.yaml -f compose.http.yaml logs --no-color --tail=200
+
+      - name: Stack down
+        if: always()
+        run: npm run stack:down -- --volumes

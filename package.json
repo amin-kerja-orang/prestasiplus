@@ -12,6 +12,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "e2e:bijak:regression": "bash scripts/bijak-regression.sh",
+    "e2e:bijak:http-dryrun": "bash scripts/bijak-http-dryrun.sh",
+    "smoke:bijak": "node e2e/smoke/bijak-smoke.mjs",
     "build": "vue-tsc -b && vite build --mode demo && node scripts/check-demo-bundle.mjs",
     "build:artifact": "vue-tsc -b && node scripts/build-artifact.mjs",
     "build:e2e": "vite build --mode e2e --outDir dist-e2e",
@@ -34,6 +37,7 @@
     "stack:down": "docker compose -f compose.yaml -f compose.http.yaml down",
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore-check": "node scripts/db-restore-check.mjs",
+    "test:e2e:bijak": "playwright test -c playwright.bijak.config.mjs --grep @bijak",
     "test:e2e:observed": "playwright test --grep-invert @provisional",
     "test:e2e:module": "node scripts/e2e-module.mjs",
     "check:trace": "node scripts/check-e2e-trace.mjs",
