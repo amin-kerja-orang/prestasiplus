@@ -12,14 +12,19 @@ import { HeadcountRepository } from './headcount/headcount.repository'
 import { HeadcountService } from './headcount/headcount.service'
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
+import { PublicStudentController, SocialController } from './http/social.controllers'
 import { PerformancePorts, DIRECTORY_PORT } from './ports'
 import {
   AnalyticsService,
   ClassPerformanceService,
   ItemAnalysisService,
+  LeaderboardService,
+  PublicProfileService,
+  RankingService,
   SchoolPerformanceService,
   StatsService,
   StudentPerformanceService,
+  WeeklyReportService,
 } from './services'
 
 /**
@@ -30,7 +35,7 @@ import {
  */
 @Module({
   imports: [AuditModule, ThrottleModule, UsersModule, SchoolsModule, CurriculumModule],
-  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, HeadcountController],
+  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, SocialController, PublicStudentController, HeadcountController],
   providers: [
     PerformancePorts,
     { provide: DIRECTORY_PORT, useClass: UsersDirectoryAdapter },
@@ -41,6 +46,10 @@ import {
     SchoolPerformanceService,
     ClassPerformanceService,
     ItemAnalysisService,
+    RankingService,
+    LeaderboardService,
+    PublicProfileService,
+    WeeklyReportService,
     HeadcountRepository,
     HeadcountService,
     HeadcountFactsService,

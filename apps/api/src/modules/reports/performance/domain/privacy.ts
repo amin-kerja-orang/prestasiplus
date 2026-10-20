@@ -35,3 +35,14 @@ export function levelVisibleToNonStaff(role: RoleCode, levelContributors: number
   if (levelContributors < MIN_COHORT) return false
   return classContributors.every((n) => n === 0 || n >= MIN_COHORT)
 }
+
+/**
+ * Name on a ranking row (OQ-7): staff and the pupil themself see the full name, everyone else the first name
+ * plus the initial of the last name (`shortened`, from `shortName` in ranking.ts).
+ */
+export function displayName(role: RoleCode, viewerId: string, pupilId: string, fullName: string, shortened: string): string {
+  return isStaff(role) || viewerId === pupilId ? fullName : shortened
+}
+
+/** A ranking scope may list pupils to a non-staff viewer only when it holds at least MIN_COHORT ranked pupils. */
+export const scopeVisible = (role: RoleCode, rankedPupils: number): boolean => meetsCohort(role, rankedPupils)

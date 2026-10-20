@@ -732,4 +732,48 @@ export class GamificationRepository {
     })
     return r.count === 1
   }
+
+  // --- reads for BE-19's reports (PerformanceGamificationAdapter) ---------------------------------
+
+  /** Wallet level, syiling and cached tier of many users in one read; users without a wallet row are absent. */
+  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; tierId: string | null }>> {
+    const out = new Map<string, { level: number; syiling: number; tierId: string | null }>()
+    const ids = userIds.flatMap((id) => {
+      try {
+        return [idFromString(id)]
+      } catch {
+        return []
+      }
+    })
+    if (ids.length === 0) return out
+    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, tierId: true } })
+    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, tierId: r.tierId === null ? null : idToString(r.tierId) })
+    return out
+  }
+
+  /** Streaks of many users in one read; users without a row are absent. */
+  async streaksOf(db: Db, userIds: readonly string[]): Promise<Map<string, { current: number; best: number }>> {
+    const out = new Map<string, { current: number; best: number }>()
+    const ids = userIds.flatMap((id) => {
+      try {
+        return [idFromString(id)]
+      } catch {
+        return []
+      }
+    })
+    if (ids.length === 0) return out
+    const rows = await db.streak.findMany({ where: { userId: { in: ids } }, select: { userId: true, current: true, best: true } })
+    for (const r of rows) out.set(idToString(r.userId), { current: r.current, best: r.best })
+    return out
+  }
+
+  /** The achievements a user has unlocked for real (not under Mod Pelajar), oldest first. */
+  async badgesOf(db: Db, userId: string): Promise<{ key: string; name: string; earnedAt: Date }[]> {
+    const rows = await db.userAchievement.findMany({
+      where: { userId: idFromString(userId), isTest: false },
+      include: { achievement: { select: { name: true } } },
+      orderBy: [{ unlockedAt: 'asc' }, { id: 'asc' }],
+    })
+    return rows.map((r) => ({ key: idToString(r.achievementId), name: r.achievement.name, earnedAt: r.unlockedAt }))
+  }
 }
