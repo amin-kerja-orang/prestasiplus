@@ -84,7 +84,12 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     const outcome = to.meta.onForbidden ?? DEFAULT_ON_FORBIDDEN
     if (outcome === '403') return { kind: 'in-place', status: 403 }
     if (outcome === '404') return { kind: 'in-place', status: 404 }
-    const landing = session.landingPath
+    // In scope (D43) a prototype role goes to its own home, not the server landing: the real API
+    // lands a school admin on `/admin` (Admin Pusat only), which would bounce here forever.
+    const landing =
+      isPrototypeScopeOn() && isPrototypeRole(session.role)
+        ? scopeHomePath(session.role)
+        : session.landingPath
     // A landing path that itself refuses the role would loop; show the 403 page instead.
     if (landing === null || landing === to.path) return { kind: 'in-place', status: 403 }
     return { kind: 'redirect', to: landing }
