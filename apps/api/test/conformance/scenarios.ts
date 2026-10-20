@@ -4,6 +4,7 @@ import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
 import { bijakAttemptsScenarios } from './bijak/attempts'
 import { bijakIntegrationScenarios } from './bijak/integration'
+import { bijakBuilderScenarios } from './bijak-builder/builder'
 import { articleScenarios } from './content/articles'
 import { audioScenarios } from './content/audio'
 import { perutusanScenarios } from './content/perutusan'
@@ -51,5 +52,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...classesScenarios,
     ...performanceScenarios,
     ...schoolAdminScenarios,
+    ...bijakBuilderScenarios,
   ]
 }

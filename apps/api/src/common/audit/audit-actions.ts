@@ -1,6 +1,6 @@
 /**
  * Action names written to `audit_events.action`. Append-only registry: a card adds its own lines at
- * the end, never reorders or renames. BE-03: `auth.*` and `session.*`; BE-08: `curriculum.*`; BE-16: `bijak.attempt.*`.
+ * the end, never reorders or renames. BE-03: `auth.*` and `session.*`; BE-08: `curriculum.*`; BE-16: `bijak.attempt.*`; BE-39: `bijak.paper.*`, `bijak.blueprint.*`.
  */
 export const AUDIT_ACTIONS = {
   LOGIN_FAILED: 'auth.login.failed',
@@ -35,5 +35,13 @@ export const AUDIT_ACTIONS = {
   QUESTION_DELETED: 'question.deleted',
   QUESTION_BULK_ACTION: 'question.bulk_action',
   QUESTION_STATUS_CHANGED: 'question.status.changed',
+  BIJAK_PAPER_CREATED: 'bijak.paper.created',
+  BIJAK_PAPER_UPDATED: 'bijak.paper.updated',
+  BIJAK_PAPER_DELETED: 'bijak.paper.deleted',
+  BIJAK_PAPER_PUBLISHED: 'bijak.paper.published',
+  BIJAK_PAPER_WITHDRAWN: 'bijak.paper.withdrawn',
+  BIJAK_BLUEPRINT_CREATED: 'bijak.blueprint.created',
+  BIJAK_BLUEPRINT_VERSION_CREATED: 'bijak.blueprint.version_created',
+  BIJAK_BLUEPRINT_RETIRED: 'bijak.blueprint.retired',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
