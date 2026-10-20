@@ -1,5 +1,5 @@
 // Games tables (BE-45, owner module M16 part 2: Permainan hub, room games, solo games, Roda Nasib, Jutawan Ilmu,
-// leagues, Sekolah Bersaing, game settings). Hand-written in migration 0028_games (proposed number,
+// leagues, Sekolah Bersaing, game settings). Hand-written in migration 0033_games (proposed number,
 // renumber-at-merge, LEAD to confirm): identity columns (GENERATED ALWAYS), CHECK constraints (enums are text +
 // check), partial unique indexes. Foreign keys to `users`, `schools`, `subjects` and `questions` live in SQL only
 // (no back-relations: this card may not edit the identity, schools, curriculum or questions schema files).

@@ -1,5 +1,5 @@
--- 0028_games (BE-45, owner module M16 part 2: games hub, room games, solo games, Roda Nasib, Jutawan Ilmu,
--- leagues, Sekolah Bersaing, game settings). PROPOSED NUMBER: renumber at merge, LEAD to confirm.
+-- 0033_games (BE-45, owner module M16 part 2: games hub, room games, solo games, Roda Nasib, Jutawan Ilmu,
+-- leagues, Sekolah Bersaing, game settings). PROPOSED NUMBER 0033 (renumbered from 0028; 0031 BE-42 and 0032 BE-46 are taken): LEAD to confirm.
 -- Hand-written in the style of 0014: identity columns (GENERATED ALWAYS), CHECK constraints (enums are text +
 -- check, English codes), explicit constraint and index names.
 --
