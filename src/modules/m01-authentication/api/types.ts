@@ -55,6 +55,8 @@ export interface ClientSession {
   remember: boolean
   expiresAt: string
   user: UserMe
+  /** Real API only (V2-T31): CSRF token of the cookie session. */
+  csrf?: string
 }
 
 /** The server part of a session response (#1, #2, #4): `remember` is added by the client call. */

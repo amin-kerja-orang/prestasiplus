@@ -20,9 +20,10 @@ import { createPinia } from 'pinia'
 import { createApp, type App as VueApp } from 'vue'
 import type { Router, RouterHistory } from 'vue-router'
 
-import { createHttpTransport, installTransport, type Transport } from '@/api'
+import { createHttpTransport, installTransport, isHttpMode, type Transport } from '@/api'
 import type { BootMockOptions, MockRuntime } from '@/mock'
 import { useSessionStore, withSessionSliding } from '@/stores'
+import { restoreHttpSession, storedCsrfToken } from '@/stores/http-session'
 import { readStoredSession } from '@/stores/session'
 import { uiLocale, uiLocaleKey } from '@/theme/locale-ms'
 
@@ -80,8 +81,15 @@ async function createTransport(
   /** Deferred demo boot only: resolves when the mock (and so the mock clock) is ready. */
   mockReady: Promise<unknown> | null
 }> {
-  if (import.meta.env.VITE_API_MODE === 'http') {
-    return { transport: createHttpTransport(), mockRuntime: null, mockReady: null }
+  if (isHttpMode()) {
+    // Cookie session (V2-T31): cookies always sent, the stored CSRF token goes on every write, and
+    // the mock-era bearer header is dropped. `withSessionSliding` still sees the bearer on the way in.
+    const transport = createHttpTransport({
+      credentials: 'include',
+      csrfToken: storedCsrfToken,
+      sendAuthorization: false,
+    })
+    return { transport, mockRuntime: null, mockReady: null }
   }
   if (shouldDeferMock(mockOptions)) {
     const ready = startMockRuntime(mockOptions)
@@ -112,6 +120,8 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Bootstr
   const pinia = createPinia()
   app.use(pinia)
   useSessionStore()
+  // T7: in http mode the cookie, not localStorage, is the source of truth for who is signed in.
+  if (isHttpMode()) await restoreHttpSession()
 
   const router = createAppRouter(options.history ? { history: options.history } : {})
   connectUnauthorizedRedirect(router)

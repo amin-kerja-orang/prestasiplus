@@ -24,6 +24,8 @@ export interface ClientSession {
   /** ISO 8601 (+08:00): remember → +5 years; otherwise +120 min (sliding on the server). */
   expiresAt: string
   user: UserMe
+  /** Real API only (V2-T31): CSRF token of the cookie session; the mock never writes it. */
+  csrf?: string
   /**
    * Present only on an impersonated session (XR-M27-21): the actor (school admin) and the path
    * "Kembali ke Admin" returns to. Not derived from `UserMe`; the shell renders the banner from it.
