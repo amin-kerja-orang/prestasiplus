@@ -69,6 +69,37 @@ const parse = (text: string): bigint | null => {
 
 const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
 
+interface FlatIssue {
+  path: PropertyKey[]
+  message: string
+}
+interface UnionLike {
+  code: string
+  path: readonly PropertyKey[]
+  message: string
+  errors?: readonly (readonly UnionLike[])[]
+}
+
+/**
+ * A failed `z.union` reports only "Invalid input" at the union. This walks into the branches and keeps
+ * the issue that got furthest into the value (longest path), so an `mcq` leaf with a `rubric` key
+ * names `key.kind` instead of the whole part.
+ */
+function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIssue {
+  const path = [...prefix, ...issue.path]
+  if (issue.code === 'invalid_union' && issue.errors && issue.errors.length > 0) {
+    let best: FlatIssue | undefined
+    for (const branch of issue.errors) {
+      for (const inner of branch) {
+        const flat = deepestIssue(inner, path)
+        if (!best || flat.path.length > best.path.length) best = flat
+      }
+    }
+    if (best) return best
+  }
+  return { path, message: issue.message }
+}
+
 /** What create, update and the Guru routes all reduce to before touching the database. */
 interface Normalized {
   subjectId: string
@@ -407,9 +438,9 @@ export class QuestionsService {
     const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
     if (res.success) return res.data
     const issue = res.error.issues[0]
-    const path = issue?.path ?? []
-    const key = supplied ? ['parts', ...path.map(String)].join('.') : this.flatKeyOf(path)
-    throw fail({ [key]: issue?.message ?? 'Data tidak sah.' })
+    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
+    throw fail({ [key]: deepest.message })
   }
 
   /** The flat body field that a failure inside the single generated leaf points to. */
