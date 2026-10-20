@@ -3,6 +3,7 @@ import { allScenarios, type ContractIndex, type Scenario } from '@pp/contract-te
 import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
 import { bijakPapersScenarios } from './bijak/papers'
+import { bijakBuilderScenarios } from './bijak-builder/builder'
 import { articleScenarios } from './content/articles'
 import { audioScenarios } from './content/audio'
 import { perutusanScenarios } from './content/perutusan'
@@ -33,5 +34,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...videosScenarios,
     ...perutusanScenarios,
     ...bijakPapersScenarios,
+    ...bijakBuilderScenarios,
   ]
 }

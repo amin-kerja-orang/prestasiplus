@@ -22,6 +22,7 @@ import { AUDIT_ACTIONS, AuditService } from '../../../common/audit'
 import { ApiError } from '../../../common/errors/api-error'
 import { listMeta } from '../../../common/http/respond'
 import { toMytTimestamp } from '../../../common/time/myt'
+import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
@@ -35,6 +36,8 @@ import { checkPaper, publishErrors, type PaperCheck } from './paper-check'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionRef } from './ports'
 
 type Info = ReadonlyMap<string, BuilderQuestionInfo>
+
+const MAX_KERTAS = 32767
 
 const DEFAULT_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)} (draf)`
 
@@ -51,16 +54,9 @@ function parseId(text: string): bigint | null {
   }
 }
 
-/** Parses a raw body or query with a contract schema; failure is 422 VALIDATION_ERROR with `fields` (as `ZodValidationPipe`). */
+/** Parses a raw body or query with a contract schema; failure is 422 VALIDATION_ERROR with `fields`. */
 function parseWith<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
-  const result = schema.safeParse(value)
-  if (result.success) return result.data
-  const fields: Record<string, string> = {}
-  for (const issue of result.error.issues) {
-    const key = issue.path.length ? issue.path.map(String).join('.') : '_'
-    fields[key] ??= issue.message
-  }
-  throw ApiError.of('VALIDATION_ERROR', { fields })
+  return new ZodValidationPipe(schema).transform(value)
 }
 
 interface Evaluation {
@@ -102,32 +98,71 @@ export class BuilderService {
     return [...seen.values()]
   }
 
-  private async evaluate(paper: PaperTree): Promise<Evaluation> {
-    const refs = this.refsOf(paper)
-    const info = refs.length ? await this.questions.describe(refs) : new Map<string, BuilderQuestionInfo>()
-    const groupIds = [...new Set([...info.values()].flatMap((i) => (i.groupId ? [i.groupId] : [])))]
-    const groups = groupIds.length ? await this.questions.groups(groupIds) : new Map<string, BuilderGroupInfo>()
-    const marks = new Map<string, number>()
-    for (const s of paper.sections)
-      for (const pl of s.placements) {
-        const id = idToString(pl.questionId)
-        if (!marks.has(id)) marks.set(id, pl.marksOverride ?? info.get(id)?.marks ?? 0)
+  /**
+   * Evaluates papers against ONE `describe` call for the current refs of the drafts, one call per
+   * "layer" of pinned refs of the published papers (normally one: a layer holds at most one version
+   * per question id, because `describe` is keyed by id), and ONE `groups` call for all of them.
+   */
+  private async evaluateMany(papers: readonly PaperTree[]): Promise<Evaluation[]> {
+    const current = new Set<string>()
+    const pinned = new Map<string, number[]>()
+    for (const paper of papers)
+      for (const ref of this.refsOf(paper)) {
+        if (ref.versionNo === undefined) current.add(ref.id)
+        else {
+          const versions = pinned.get(ref.id) ?? []
+          if (!versions.includes(ref.versionNo)) versions.push(ref.versionNo)
+          pinned.set(ref.id, versions)
+        }
       }
-    const placed = [...marks.keys()]
-    const check = checkPaper({
-      specs: paper.sections.map((s) => ({
-        label: s.label,
-        markBudget: s.markBudget,
-        questionCount: s.questionCount,
-        rule: ruleOf(s.ruleType, s.ruleN),
-      })),
-      sections: paper.sections.map((s) => ({ questionIds: s.placements.map((pl) => idToString(pl.questionId)) })),
-      marksOf: (id) => marks.get(id) ?? 0,
-      groupOf: (id) => info.get(id)?.groupId ?? undefined,
-      membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
-      isLive: (id) => info.get(id)?.status === 'published',
+    const described = new Map<string, BuilderQuestionInfo>() // key: `${id}@${versionNo | 'now'}`
+    if (current.size) {
+      const got = await this.questions.describe([...current].map((id) => ({ id })))
+      for (const [id, info] of got) described.set(`${id}@now`, info)
+    }
+    const layers = Math.max(0, ...[...pinned.values()].map((v) => v.length))
+    for (let i = 0; i < layers; i++) {
+      const refs = [...pinned].flatMap(([id, versions]) => (versions[i] === undefined ? [] : [{ id, versionNo: versions[i]! }]))
+      const got = await this.questions.describe(refs)
+      for (const ref of refs) {
+        const info = got.get(ref.id)
+        if (info) described.set(`${ref.id}@${String(ref.versionNo)}`, info)
+      }
+    }
+    const groupIds = [...new Set([...described.values()].flatMap((i) => (i.groupId ? [i.groupId] : [])))]
+    const groups = groupIds.length ? await this.questions.groups(groupIds) : new Map<string, BuilderGroupInfo>()
+
+    return papers.map((paper) => {
+      const isPinned = paper.status === 'published'
+      const info = new Map<string, BuilderQuestionInfo>()
+      const marks = new Map<string, number>()
+      for (const s of paper.sections)
+        for (const pl of s.placements) {
+          const id = idToString(pl.questionId)
+          const found = described.get(`${id}@${isPinned ? String(pl.pinnedVersionNo) : 'now'}`)
+          if (found && !info.has(id)) info.set(id, found)
+          if (!marks.has(id)) marks.set(id, pl.marksOverride ?? found?.marks ?? 0)
+        }
+      const placed = [...marks.keys()]
+      const check = checkPaper({
+        specs: paper.sections.map((s) => ({
+          label: s.label,
+          markBudget: s.markBudget,
+          questionCount: s.questionCount,
+          rule: ruleOf(s.ruleType, s.ruleN),
+        })),
+        sections: paper.sections.map((s) => ({ questionIds: s.placements.map((pl) => idToString(pl.questionId)) })),
+        marksOf: (id) => marks.get(id) ?? 0,
+        groupOf: (id) => info.get(id)?.groupId ?? undefined,
+        membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
+        isLive: (id) => info.get(id)?.status === 'published',
+      })
+      return { info, groups, check }
     })
-    return { info, groups, check }
+  }
+
+  private async evaluate(paper: PaperTree): Promise<Evaluation> {
+    return (await this.evaluateMany([paper]))[0]!
   }
 
   // --- wire shapes -------------------------------------------------------------------------------
@@ -185,9 +220,10 @@ export class BuilderService {
     const wire = this.paperWire(paper, subject)
     const used = this.refsOf(paper)
     const usedInfo = used.length ? await this.questions.describe(used) : new Map<string, BuilderQuestionInfo>()
-    const candidateIds = (await this.questions.candidates({ subject: wire.subject, kertas: paper.kertas })).filter(
-      (id) => !usedInfo.has(id),
-    )
+    // The picker shows at most 1000 candidates, so a large bank cannot make one editor read unbounded.
+    const candidateIds = (await this.questions.candidates({ subject: wire.subject, kertas: paper.kertas }))
+      .filter((id) => !usedInfo.has(id))
+      .slice(0, 1000)
     const candInfo = candidateIds.length ? await this.questions.describe(candidateIds.map((id) => ({ id }))) : new Map<string, BuilderQuestionInfo>()
     const ordered: BuilderQuestionInfo[] = []
     const seen = new Set<string>()
@@ -250,9 +286,10 @@ export class BuilderService {
       this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize),
     ])
     const subjects = await this.repo.subjectsByIds(rows.map((r) => r.subjectId))
+    const evaluations = await this.evaluateMany(rows)
     const data = await Promise.all(
-      rows.map(async (paper): Promise<BijakBuilderPaperSummary> => {
-        const { check } = await this.evaluate(paper)
+      rows.map(async (paper, i): Promise<BijakBuilderPaperSummary> => {
+        const { check } = evaluations[i]!
         const subject = subjects.get(paper.subjectId.toString())
         const code = subject ? bijakCodeOf(subject.code) : ''
         return {
@@ -276,12 +313,19 @@ export class BuilderService {
 
   async create(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakBuilderPaperCreateSchema, rawBody)
+    // kertas is a smallint column: a larger number can have no blueprint (and must not reach the query).
+    if (body.kertas > MAX_KERTAS) throw invalid(MESSAGES.noBlueprint)
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
-    const blueprint = subject ? await this.repo.activeBlueprint(subject.id, body.kertas) : null
-    if (!subject || !blueprint || blueprint.source === 'draft') throw invalid(MESSAGES.noBlueprint)
+    if (!subject) throw invalid(MESSAGES.noBlueprint)
     const now = this.clock.now()
     const trimmed = body.title?.trim()
     const id = await this.prisma.transaction(async () => {
+      // Lock the active blueprint row, then re-read it: a concurrent retire / new version / Draf edit is seen.
+      const first = await this.repo.activeBlueprint(subject.id, body.kertas)
+      if (!first) throw invalid(MESSAGES.noBlueprint)
+      await this.repo.lockBlueprint(first.id)
+      const blueprint = await this.repo.activeBlueprint(subject.id, body.kertas)
+      if (!blueprint || blueprint.source === 'draft') throw invalid(MESSAGES.noBlueprint)
       const paperId = await this.repo.createPaper({
         title: trimmed ? trimmed : DEFAULT_TITLE(subject.name, body.kertas),
         subjectId: subject.id,

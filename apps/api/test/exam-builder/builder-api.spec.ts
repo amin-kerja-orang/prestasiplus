@@ -364,6 +364,48 @@ describe('paper builder API', () => {
       expect((await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1 })).status).toBe(201)
     })
 
+    it('create with a kertas beyond the smallint range is 422 noBlueprint, not a 500', async () => {
+      for (const kertas of [32768, 40000, 99999999999]) {
+        const err = expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
+        expect(err.fields).toBeUndefined()
+      }
+    })
+
+    it('list status filter: a withdrawn paper is draf, not terbit', async () => {
+      const id = await newPaper()
+      await fill(id, { A, B, C })
+      await publish(id)
+      const ids = async (status: string) => Summaries.parse((await admin.get(`/api/admin/papers?status=${status}&pageSize=100`)).body).data.map((r) => r.id)
+      expect(await ids('terbit')).toContain(id)
+      expect(await ids('draf')).not.toContain(id)
+      await admin.post(`/api/admin/papers/${id}/withdraw`)
+      expect(await ids('terbit')).not.toContain(id)
+      expect(await ids('draf')).toContain(id)
+    })
+
+    it('concurrency: double publish gives one audit row; PUT racing publish ends coherent', async () => {
+      const id = await newPaper()
+      await fill(id, { A, B, C })
+      const both = await Promise.all([admin.post(`/api/admin/papers/${id}/publish`), admin.post(`/api/admin/papers/${id}/publish`)])
+      for (const r of both) expect(Publish.parse(r.body).data).toEqual({ ok: true, errors: [] })
+      expect((await auditRows(t.db, 'bijak.paper.published')).filter((r) => r.target_id === id)).toHaveLength(1)
+      expect((await q('select version from papers where id = $1', [id]))[0]!.version).toBe(1)
+
+      const id2 = await newPaper()
+      const e = await fill(id2, { A, B, C })
+      const [put, pub] = await Promise.all([
+        admin.put(`/api/admin/papers/${id2}`, { sections: [{ id: e.paper.sections[0]!.id, questionIds: ['700003', '700002', '700001'] }] }),
+        admin.post(`/api/admin/papers/${id2}/publish`),
+      ])
+      expect([200, 422]).toContain(put.status)
+      if (put.status === 422) expectError(put, 'VALIDATION_ERROR', 422, MSG.paperLocked)
+      expect(Publish.parse(pub.body).data.ok).toBe(true)
+      expect(await dbStatus(id2)).toBe('published')
+      expect(await count(t.db, `select count(*) n from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [id2])).toBe(6)
+      expect(await count(t.db, `select count(*) n from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1 and pl.marks_override is null`, [id2])).toBe(0)
+      expect((await auditRows(t.db, 'bijak.paper.published')).filter((r) => r.target_id === id2)).toHaveLength(1)
+    })
+
     it('create validates the body; a blank title gets the default, a given title is trimmed', async () => {
       expectError(await admin.post('/api/admin/papers', { subject: 'MAT' }), 'VALIDATION_ERROR', 422)
       const blank = await editor(await newPaper({ title: '   ' }))

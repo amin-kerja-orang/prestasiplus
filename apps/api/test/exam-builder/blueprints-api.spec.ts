@@ -156,6 +156,24 @@ describe('create', () => {
   })
 })
 
+describe('choose rule bounds', () => {
+  const choose = (n: number) => [section({ questionCount: 5, markBudget: 5, rule: { type: 'choose', n } })]
+
+  it.each([40000, 6])('create and versions reject n = %i above the question count with sections.0.rule.n', async (n) => {
+    const c = expectError(await admin.post('/api/admin/blueprints', create({ subject: 'SEJ', kertas: 20, code: 'N/20', sections: choose(n) })), 'VALIDATION_ERROR')
+    expect(c.fields).toEqual({ 'sections.0.rule.n': 'Medan ini tidak sah.' })
+    const v = expectError(await admin.post('/api/admin/blueprints/MAT/1/versions', body({ code: 'N/20V', sections: [section(), ...choose(n)] })), 'VALIDATION_ERROR')
+    expect(v.fields).toEqual({ 'sections.1.rule.n': 'Medan ini tidak sah.' })
+    expect(await bpRows('N/20')).toHaveLength(0)
+    expect(await bpRows('N/20V')).toHaveLength(0)
+  })
+
+  it('accepts n equal to the question count', async () => {
+    expect((await admin.post('/api/admin/blueprints', create({ subject: 'SEJ', kertas: 21, code: 'N/21', sections: choose(5) }))).status).toBe(201)
+    expect((await admin.post('/api/admin/blueprints/SEJ/21/versions', body({ code: 'N/21B', sections: choose(5) }))).status).toBe(201)
+  })
+})
+
 describe('versions (AC5)', () => {
   it('keeps the old row content, activates n+1 and leaves papers on the old version', async () => {
     expect((await admin.post('/api/admin/blueprints', create({ subject: 'SEJ', kertas: 6, code: 'V/6' }))).status).toBe(201)

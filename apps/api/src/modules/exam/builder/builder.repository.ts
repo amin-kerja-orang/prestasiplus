@@ -52,7 +52,12 @@ export class BuilderRepository {
 
   /** `select ... for update` on the paper row; call inside the open transaction. */
   async lockPaper(id: bigint): Promise<void> {
-    await this.prisma.client.$queryRaw`select id from papers where id = ${id} for update`
+    await this.prisma.client.$queryRaw`select id from papers where id = ${id} and kind = 'pilihan' for update`
+  }
+
+  /** `select ... for update` on a blueprint row; call inside the open transaction. */
+  async lockBlueprint(id: bigint): Promise<void> {
+    await this.prisma.client.$queryRaw`select id from blueprints where id = ${id} for update`
   }
 
   findPilihan(id: bigint): Promise<PaperTree | null> {

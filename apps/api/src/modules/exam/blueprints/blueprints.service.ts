@@ -31,6 +31,15 @@ const INVALID_FIELD_MESSAGE = 'Medan ini tidak sah.'
 
 const SOURCE_TO_DB: Readonly<Record<BijakBlueprintSource, string>> = { Disahkan: 'verified', Spec: 'spec', Draf: 'draft' }
 
+/** A choose rule cannot ask for more answers than the section holds (also keeps `n` inside smallint). */
+function assertRuleBounds(sections: BijakBlueprintAdminSectionInput[]): void {
+  const fields: Record<string, string> = {}
+  sections.forEach((s, i) => {
+    if (s.rule.type === 'choose' && s.rule.n > s.questionCount) fields[`sections.${String(i)}.rule.n`] = INVALID_FIELD_MESSAGE
+  })
+  if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
+}
+
 const errorCodeOf = (e: unknown): string | undefined =>
   typeof e === 'object' && e !== null && typeof (e as { code?: unknown }).code === 'string' ? (e as { code: string }).code : undefined
 
@@ -101,6 +110,7 @@ export class BlueprintsService {
 
   async create(actor: AuditActor, rawBody: unknown) {
     const body = new ZodValidationPipe(BijakBlueprintAdminCreateSchema).transform(rawBody)
+    assertRuleBounds(body.sections)
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
     if (!subject) throw ApiError.of('VALIDATION_ERROR', { fields: { subject: INVALID_FIELD_MESSAGE } })
     if (body.kertas > KERTAS_MAX) throw ApiError.of('VALIDATION_ERROR', { fields: { kertas: INVALID_FIELD_MESSAGE } })
@@ -132,6 +142,7 @@ export class BlueprintsService {
     if (!(await this.repo.hasRows(subject.id, kertas))) throw ApiError.of('NOT_FOUND', { message: MSG.blueprintNotFound })
     if (!(await this.repo.active(subject.id, kertas))) throw gone()
     const body = new ZodValidationPipe(BijakBlueprintAdminVersionInputSchema).transform(rawBody)
+    assertRuleBounds(body.sections)
     try {
       const row = await this.prisma.transaction(async () => {
         const current = await this.lockActive(subject.id, kertas)

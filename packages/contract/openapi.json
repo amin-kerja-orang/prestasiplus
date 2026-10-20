@@ -97140,6 +97140,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (page, pageSize, status).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -97989,6 +97999,16 @@
           },
           "403": {
             "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (page, pageSize, subject, kertas).",
             "content": {
               "application/json": {
                 "schema": {
