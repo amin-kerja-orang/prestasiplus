@@ -27,6 +27,8 @@ async function parentPackage(query: FixtureQuery): Promise<string> {
 }
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // coin_ledger (BE-11): type has a check and the sign of amount follows it.
+  coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
@@ -47,7 +49,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // schools: name (text) is generated; nothing else is required.
+  // streaks and wallets (BE-11): one row per user, so a parent user is all they need.
+  streaks: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
   // users: name (text) is generated; nothing else is required.
+  wallets: async (query) => ({ user_id: await parentUser(query) }),
 }

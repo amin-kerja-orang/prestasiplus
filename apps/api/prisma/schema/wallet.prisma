@@ -1,0 +1,178 @@
+// Wallet, ledger and streak core (BE-11, M14 core): tiers, wallets, coin_ledger, streaks,
+// session_credits, daily_login_marks and token_movements. Written ONLY through WalletService and
+// StreakService (modules/wallet); other modules never touch these tables (ADR-0014). BE-23 adds
+// gamification.prisma (challenges, achievements, shop...) and the admin tier CRUD.
+// Hand-written in migration 0010_wallet_streak: identity columns (GENERATED ALWAYS), CHECK
+// constraints (enums are text + check, no Postgres enum types), the partial unique index that makes
+// credits idempotent, and the trigger that keeps coin_ledger append-only. Prisma cannot express those.
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2; data model section 3.7.
+
+/// Tier catalogue (mock `gamification.tiers`). A wallet carries its tier; admin tier CRUD is BE-23.
+model Tier {
+  id                     BigInt   @id @default(autoincrement())
+  /// Open string key (`bronze`, `silver`, `gold`, `platinum`, others created by an admin). Unique.
+  tierName               String   @map("tier_name")
+  labelMs                String   @map("label_ms")
+  icon                   String
+  color                  String
+  /// Threshold in CURRENT syiling (not lifetime): a wallet moves up to the highest active tier whose min_syiling is at most its balance (BR-M14-08).
+  minSyiling             Int      @map("min_syiling")
+  /// Syiling per token (BR-M14-10). Positive; numeric(10,4) as the data model says.
+  conversionRate         Decimal  @map("conversion_rate") @db.Decimal(10, 4)
+  sortOrder              Int      @map("sort_order")
+  perks                  String[] @default([])
+  quizRewardL1           Int      @default(0) @map("quiz_reward_l1")
+  quizRewardL2           Int      @default(0) @map("quiz_reward_l2")
+  quizRewardL3           Int      @default(0) @map("quiz_reward_l3")
+  quizRewardL4           Int      @default(0) @map("quiz_reward_l4")
+  quizRewardL5           Int      @default(0) @map("quiz_reward_l5")
+  pkskRewardCorrect      Int      @default(0) @map("pksk_reward_correct")
+  boardGameRewardCorrect Int      @default(0) @map("board_game_reward_correct")
+  boardGameRewardWin     Int      @default(0) @map("board_game_reward_win")
+  isActive               Boolean  @default(true) @map("is_active")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource           String?  @map("legacy_source")
+  legacyId               String?  @map("legacy_id")
+
+  wallets Wallet[]
+
+  @@unique([tierName], map: "uq_tiers_tier_name")
+  @@unique([legacySource, legacyId], map: "uq_tiers_legacy")
+  @@index([isActive, minSyiling], map: "ix_tiers_is_active_min_syiling")
+  @@map("tiers")
+}
+
+/// One wallet per user, kept in step with the ledger inside the caller's transaction (open question 2 of
+/// the card). Created by the first credit; a read never creates it (BR-M14-02).
+model Wallet {
+  id                 BigInt   @id @default(autoincrement())
+  userId             BigInt   @map("user_id")
+  /// Cached tier, written by the owner service only; never lowered (BR-M14-08).
+  tierId             BigInt?  @map("tier_id")
+  /// Never negative (check). Equals the sum of the user's ledger amounts for rows born in v2.
+  currentSyiling     Int      @default(0) @map("current_syiling")
+  totalSyilingEarned Int      @default(0) @map("total_syiling_earned")
+  /// May be negative in migrated or seeded data only (DV-M14-10); the service never lowers it below 0.
+  tokenBalance       Int      @default(0) @map("token_balance")
+  xp                 Int      @default(0)
+  /// Stored, not derived: the mock never changes `level` at runtime (FR-M14-62).
+  level              Int      @default(1) @db.SmallInt
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource       String?  @map("legacy_source")
+  legacyId           String?  @map("legacy_id")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_wallets_user_id")
+  tier Tier? @relation(fields: [tierId], references: [id], onDelete: Restrict, map: "fk_wallets_tier_id")
+
+  @@unique([userId], map: "uq_wallets_user_id")
+  @@unique([legacySource, legacyId], map: "uq_wallets_legacy")
+  @@index([tierId], map: "ix_wallets_tier_id")
+  @@map("wallets")
+}
+
+/// Append-only coin ledger: rows are inserted and never updated or deleted (a trigger refuses it, a user
+/// delete cascades). `balance_after` is the running syiling balance. Idempotency key:
+/// unique (user_id, source, source_id) where source_id is not null (partial index, migration only).
+model CoinLedger {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// earn, spend, convert, bonus, refund (check).
+  type         String
+  /// What caused it (`quiz_practice`, `quiz_spm`, `daily_login`, `token_conversion`, `admin_award`...). Open list.
+  source       String
+  /// The cause (session id, challenge id and day...). Null for rows with no natural key (and migrated rows).
+  sourceId     String?  @map("source_id")
+  /// Token delta of a conversion row only.
+  tokens       Int?
+  /// Signed syiling delta: + earn/bonus/refund, - spend/convert (check).
+  amount       Int
+  balanceAfter Int      @map("balance_after")
+  description  String
+  /// Written while an admin is in Mod Pelajar (G-07); such rows are excluded from totals shown to others.
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+  legacyHash   String?  @map("legacy_hash")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_coin_ledger_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_coin_ledger_legacy")
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "ix_coin_ledger_user_id_created_at_id")
+  @@map("coin_ledger")
+}
+
+/// Daily streak by Malaysia day (BR-M14-14). One row per user.
+model Streak {
+  id               BigInt    @id @default(autoincrement())
+  userId           BigInt    @map("user_id")
+  current          Int       @default(0)
+  best             Int       @default(0)
+  /// Malaysia calendar day of the last qualifying activity; null before the first one.
+  lastActivityDate DateTime? @map("last_activity_date") @db.Date
+  totalDays        Int       @default(0) @map("total_days")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?   @map("legacy_source")
+  legacyId         String?   @map("legacy_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_streaks_user_id")
+
+  @@unique([userId], map: "uq_streaks_user_id")
+  @@unique([legacySource, legacyId], map: "uq_streaks_legacy")
+  @@map("streaks")
+}
+
+/// The stored result of one credited session (idempotency of the session credit). `session_id` is a uuid
+/// with no foreign key yet: practice_sessions belongs to BE-12, which adds the FK in its own migration.
+model SessionCredit {
+  id            BigInt   @id @default(autoincrement())
+  sessionId     String   @map("session_id") @db.Uuid
+  userId        BigInt   @map("user_id")
+  coinsEarned   Int      @map("coins_earned")
+  pointsEarned  Int      @map("points_earned")
+  streakCount   Int      @map("streak_count")
+  totalBalance  Int      @map("total_balance")
+  completedAt   DateTime @map("completed_at") @db.Timestamptz(6)
+  isTest        Boolean  @default(false) @map("is_test")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_session_credits_user_id")
+
+  @@unique([sessionId], map: "uq_session_credits_session_id")
+  @@index([userId, completedAt], map: "ix_session_credits_user_id_completed_at")
+  @@map("session_credits")
+}
+
+/// First password login of a Malaysia day per user (BR-M14-14: the +2 daily_login credit is paid once a day).
+model DailyLoginMark {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  markDate  DateTime @map("mark_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_daily_login_marks_user_id")
+
+  @@unique([userId, markDate], map: "uq_daily_login_marks_user_date")
+  @@map("daily_login_marks")
+}
+
+/// Token movement log (mock `gamification.tokenMovements`, no screen). Token movements never write the coin
+/// ledger (BR-M14-22); a syiling-to-token conversion is a `convert` ledger row and writes no movement.
+model TokenMovement {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  /// Signed, never 0.
+  delta     Int
+  source    String
+  refId     String?  @map("ref_id")
+  isTest    Boolean  @default(false) @map("is_test")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_token_movements_user_id")
+
+  @@index([userId, createdAt], map: "ix_token_movements_user_id_created_at")
+  @@map("token_movements")
+}
