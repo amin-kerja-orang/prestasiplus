@@ -1,0 +1,32 @@
+# Staging overlay (single VPS, HTTPS terminated by a proxy in front of the frontend nginx).
+#   docker compose -f compose.yaml -f compose.staging.yaml up -d --build --wait
+# Runbook: docs/ops/deploy-staging.md. Do NOT combine with compose.http.yaml (that one is dev/e2e only).
+# What it changes compared with compose.yaml:
+#   frontend  built with VITE_API_MODE=http (same-origin /api through nginx), bound to loopback so only
+#             the TLS proxy reaches it, restarts after a reboot
+#   migrate   unchanged: `prisma migrate deploy` only. NO demo seed runs automatically; seeding the staging
+#             demo accounts is a separate explicit command (see the runbook)
+#   api       COOKIE_SECURE=true fixed (never read from .env); TRUST_PROXY_HOPS defaults to 1
+# Secrets are not set here: .env.api and .env.db (git-ignored, copied from the .example files) hold them.
+services:
+  frontend:
+    build:
+      args:
+        BUILD_MODE: production
+        VITE_API_MODE: http
+        VITE_TEST_HOOKS: 'false'
+        VITE_API_BASE_URL: ''
+    image: pretasiplus-frontend:staging
+    ports: !override
+      - '127.0.0.1:${FRONTEND_PORT:-5192}:8080'
+    restart: unless-stopped
+
+  api:
+    environment:
+      COOKIE_SECURE: 'true'
+      # 1 = only the frontend nginx in front; 2 = one more proxy (the TLS terminator) in front of nginx.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+    restart: unless-stopped
+
+  db:
+    restart: unless-stopped
