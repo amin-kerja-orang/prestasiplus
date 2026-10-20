@@ -95,6 +95,11 @@ export const EnvSchema = z.object({
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
+  // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.
+  THROTTLE_CLASSES_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CLASSES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  PUBLIC_BASE_URL: z.url().optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
