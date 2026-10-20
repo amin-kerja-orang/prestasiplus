@@ -1,5 +1,9 @@
 # Staging deploy
 
+> Temporary demo of 2026-10-21, step by step with a smoke test and the Supabase Data API lockdown:
+> [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md). It supersedes the `sslmode=require` URL of step 1 below
+> (node-postgres verifies `sslmode=require`; use `verify-full` with the Supabase CA).
+
 Two paths. Both keep the browser on ONE origin (SPA and `/api` together), so there is no CORS and the
 session cookie is first-party.
 
@@ -61,7 +65,7 @@ Run migrations before deploying a release that carries a new migration, after ta
    | `VITE_API_BASE_URL` | empty (same origin) |
    | `VITE_TEST_HOOKS` | `false` |
    | `API_ORIGIN` | the Render URL, e.g. `https://pretasiplus-api.onrender.com` (runtime, read by the Function). Unset = the Function answers 500 (fails closed). |
-4. SPA fallback: nothing to add. Pages serves `index.html` for unknown paths when the build has no top-level `404.html` (Vite emits none), and `functions/api` wins for `/api/*`. A `_redirects` file is not needed.
+4. SPA fallback: nothing to add. Pages serves `index.html` for unknown paths when the build has no top-level `404.html` (Vite emits none), and `functions/api` wins for `/api/*`. A `_redirects` file is not needed. `public/_routes.json` limits the Function to `/api/*`, so static files do not count against the Function quota.
 5. The Function (`functions/api/[[path]].ts`): preserves method, path and query; streams the body; `redirect: 'manual'`; returns every `Set-Cookie` unchanged; overwrites (never appends) `X-Forwarded-For` and `X-Real-IP` with `CF-Connecting-IP`; sets `X-Forwarded-Proto: https` and `X-Forwarded-Host` to the Pages host; strips hop-by-hop headers; adds no caching; answers 502 in the API error envelope (`{"error":{"code","message"}}`) when the API is unreachable, 500 when `API_ORIGIN` is unset, and 413 for `POST /api/files` over 22 MB (the API enforces its own `MAX_UPLOAD_MB`/`INTAKE_MAX_FILE_MB` below that). The free Pages plan allows 100,000 Function requests per day.
 
 ### 5. Smoke checklist
