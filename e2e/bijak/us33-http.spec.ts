@@ -8,8 +8,7 @@
  */
 import { expect, test } from '@playwright/test'
 
-import { expectNoHorizontalScroll } from '../support'
-import { HTTP_MODE } from './bijak-flow'
+import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
 import { US33_COPY, US33_ROUTES, US33_SELECTORS as S, expectScreen, httpLogin } from './us33-flow'
 
 const SCHOOL_USER = process.env.BIJAK_ADMIN_SEKOLAH_USER
@@ -37,7 +36,7 @@ test.describe('Bijak SPM US-33 results, http mode @bijak', () => {
       await expect(page.getByTestId(S.schoolPractice)).toBeVisible()
       await expect(page.getByTestId(S.practiceCounts)).toContainText('sesi')
     }
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
   })
 
   test('teacher class view has the Keputusan Bijak SPM section, figures or Tiada data @bijak', async ({
@@ -46,7 +45,7 @@ test.describe('Bijak SPM US-33 results, http mode @bijak', () => {
     test.skip(!GURU_USER || !GURU_PASS, 'needs BIJAK_GURU_USER and _PASS')
     await httpLogin(page, GURU_USER ?? '', GURU_PASS ?? '')
     await page.goto(US33_ROUTES.classPicker)
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
     await page.locator('a[href^="/prestasi/kelas/"]').first().click()
     await expectScreen(page, S.classPage)
     const section = page.getByTestId(S.bijakSummary)

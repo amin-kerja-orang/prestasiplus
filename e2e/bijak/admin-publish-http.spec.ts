@@ -15,15 +15,18 @@
  * http client (server/http-admin.ts, wired to BE-39: papers list/get/create/save/publish/unpublish/
  * delete, blueprints). Intake, review-queue and bank methods have no backend route and REJECT with
  * `BijakError('unavailable', 'Fungsi ini belum tersedia.')`; their pages show the generic load error.
- * The demo path is Pembina Kertas. B4 = the builder needs PoC questions; without B4 a publish is
- * refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39 contract, bijak/builder/paths.ts),
- * so create + publish stays `test.fixme` (remove the fixme once B4 lands).
+ * The demo path is Pembina Kertas. B4 (155cf001 on v2-backend: composite builder source) gives the
+ * builder the PoC questions when the API runs with BIJAK_POC_QUESTIONS=true, so create + publish
+ * works. Subject/kertas used: Matematik Kertas 1 (PoC blueprint "Objektif", take 10, 10 marks, pool
+ * MAT1-A with 45 PoC questions: apps/api/src/modules/bijak/papers/poc/poc-bank.ts). Without B4 a
+ * publish is refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39 contract,
+ * bijak/builder/paths.ts).
  */
 import type { Browser, Page, TestInfo } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
-import { expectNoHorizontalScroll, isDesktopShell } from '../support'
-import { HTTP_MODE } from './bijak-flow'
+import { isDesktopShell } from '../support'
+import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
 
 const ADMIN_USER = process.env.BIJAK_ADMIN_PUSAT_USER
 const ADMIN_PASS = process.env.BIJAK_ADMIN_PUSAT_PASS
@@ -53,9 +56,16 @@ async function openPaperBuilder(page: Page): Promise<void> {
 async function createDraft(page: Page, title: string): Promise<string> {
   await page.getByTestId('paper-new').click()
   await expect(page.getByTestId('paper-new-page')).toBeVisible()
-  await expectNoHorizontalScroll(page)
-  await page.getByTestId('new-subject').selectOption({ label: 'Matematik' })
-  await page.getByTestId('new-kertas').selectOption({ index: 1 })
+  await expectNoHorizontalScrollHttp(page)
+  // The subject option is matched by name (value is the subject code), Kertas by its label.
+  const subjectValue = await page
+    .getByTestId('new-subject')
+    .locator('option', { hasText: /^Matematik$/ })
+    .first()
+    .getAttribute('value')
+  expect(subjectValue, 'a "Matematik" subject option').toBeTruthy()
+  await page.getByTestId('new-subject').selectOption(subjectValue ?? '')
+  await page.getByTestId('new-kertas').selectOption({ label: 'Kertas 1' })
   await page.getByTestId('new-title').fill(title)
   await expect(page.getByTestId('blueprint-summary')).toBeVisible()
   await page.getByRole('button', { name: 'Cipta Kertas' }).click()
@@ -78,6 +88,19 @@ async function assembleUntilMatching(page: Page): Promise<void> {
   await expect(check).toContainText('Sepadan dengan blueprint')
 }
 
+/** Deletes a draft from the list (card button below 640 px, table row button above). */
+async function deleteDraft(page: Page, id: string, title: string): Promise<void> {
+  await page.goto('/admin/spm/kertas')
+  await expect(page.getByTestId('papers-page')).toBeVisible()
+  const byId = page.getByTestId(`paper-delete-${id}`)
+  const inRow = page
+    .getByTestId('papers-table')
+    .locator('tr', { hasText: title })
+    .getByRole('button', { name: 'Padam kertas' })
+  const button = (await byId.count()) ? byId : inRow
+  if (await button.count()) await button.first().click()
+}
+
 /** A student in a SEPARATE browser context sees the paper title in the Bijak list. */
 async function studentSees(browser: Browser, info: TestInfo, title: string): Promise<void> {
   const context = await browser.newContext({
@@ -91,7 +114,7 @@ async function studentSees(browser: Browser, info: TestInfo, title: string): Pro
     await page.goto('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
     await expect(page.getByText(title).first()).toBeVisible()
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
   } finally {
     await context.close()
   }
@@ -105,7 +128,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
     await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
     if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
     const link = page
       .locator('[data-testid=pentadbiran-nav]:visible')
@@ -123,7 +146,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     await expect(page.getByTestId('paper-new')).toBeVisible()
     // The generic load error ("Tidak dapat memuatkan senarai kertas.") must not be showing.
     await expect(page.getByText('Tidak dapat memuatkan senarai kertas.')).toHaveCount(0)
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
   })
 
   // Real, read-only: opens the first existing paper (no edit, no publish, no write).
@@ -139,11 +162,14 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     await expect(page.getByTestId('paper-title')).toBeVisible()
     await expect(page.getByTestId('section-0')).toBeVisible()
     await expect(page.getByText('Tidak dapat memuatkan kertas.')).toHaveCount(0)
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
   })
 
-  // Out of scope for the demo (no backend route yet): they reject with BijakError('unavailable',
-  // 'Fungsi ini belum tersedia.') and each page shows its generic load error, no crash.
+  // Out of scope for the demo (no backend route yet): the admin http client rejects with
+  // BijakError('unavailable') and each page shows a friendly state, no crash. Targets the FINAL FE
+  // (550cfec6): `DsEmptyState` data-testid="unavailable-state" titled UNAVAILABLE_TITLE
+  // ("Fungsi ini belum tersedia dalam demo", server/errors.ts). Tolerant of the previous build
+  // (38269c8e), which showed the generic load-error copy instead (OLD_COPY below).
   test(
     'Bank Soalan, Baris Gilir Semakan and Intake show a graceful unavailable state @bijak',
     {
@@ -158,26 +184,41 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
       const errors: string[] = []
       page.on('pageerror', (e) => errors.push(e.message))
       await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+      const NEW_TITLE = 'Fungsi ini belum tersedia dalam demo'
+      // [route, page test id, previous-build copy]. File:line in 550cfec6 (unavailable-state):
+      // BankPage.vue:239, ReviewQueuePage.vue:195, ReviewItemPage.vue:118,
+      // IntakeListPage.vue:132, IntakeReviewPage.vue:265.
       const screens = [
-        // [route, page test id (not for intake), message]
         ['/admin/spm/soalan', 'bank-page', 'Tidak dapat memuatkan bank soalan.'],
         ['/admin/spm/semakan', 'review-queue-page', 'Tidak dapat memuatkan baris gilir.'],
-        ['/admin/spm/soalan/ekstrak', '', 'Tidak dapat memuatkan senarai ekstrak.'],
+        [
+          '/admin/spm/semakan/tiada-item',
+          'review-item-page',
+          'Tidak dapat memuatkan item semakan.',
+        ],
+        ['/admin/spm/soalan/ekstrak', 'intake-list-page', 'Tidak dapat memuatkan senarai ekstrak.'],
+        ['/admin/spm/soalan/ekstrak/tiada-kumpulan', 'intake-review-page', ''],
       ] as const
-      for (const [route, testId, message] of screens) {
+      for (const [route, testId, oldCopy] of screens) {
         await page.goto(route)
-        if (testId) await expect(page.getByTestId(testId)).toBeVisible()
-        await expect(page.getByText(message).first()).toBeVisible()
-        await expectNoHorizontalScroll(page)
+        await expect(page.locator('#app')).not.toBeEmpty()
+        const state = page.getByTestId('unavailable-state')
+        const seen = oldCopy ? state.or(page.getByText(oldCopy)) : state
+        await expect(seen.first(), `${route} shows its unavailable state`).toBeVisible()
+        if (await state.count()) await expect(state).toContainText(NEW_TITLE)
+        // Not blank: the page container (when it has a test id) is mounted.
+        if (testId && (await page.getByTestId(testId).count())) {
+          await expect(page.getByTestId(testId)).toBeVisible()
+        }
+        await expectNoHorizontalScrollHttp(page)
       }
       expect(errors).toEqual([])
     },
   )
 
-  test.fixme('Terbitkan on an empty draft is refused with the gap list, then cleaned up @bijak', async ({
+  test('Terbitkan on an empty draft is refused with the gap list, then cleaned up @bijak', async ({
     page,
   }) => {
-    // FIXME(B4): builder needs PoC questions; without B4 publish is refused "Kurang 10 soalan".
     const title = `E2E-http refuse ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/spm/kertas')
@@ -189,29 +230,25 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
       )
       await expect(page.getByTestId('budget-issues')).toContainText('Kurang') // e.g. "Objektif: Kurang 10 soalan (perlu 10, ada 0)" (Needs confirmation: exact numbers)
       await expect(page.getByTestId('paper-unpublish')).toHaveCount(0)
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
     } finally {
       // Cleanup: delete the draft from the list.
-      await page.goto('/admin/spm/kertas')
-      const row = page.getByTestId('papers-table').locator('tr', { hasText: title })
-      if (await row.count()) await row.getByRole('button', { name: 'Padam kertas' }).click()
-      expect(id).not.toBe('')
+      await deleteDraft(page, id, title)
     }
   })
 
-  test.fixme('draft, assemble to Sepadan, Simpan, Terbitkan, student sees it, Tarik balik, delete @bijak', async ({
+  test('draft, assemble to Sepadan, Simpan, Terbitkan, student sees it, Tarik balik, delete @bijak', async ({
     page,
     browser,
   }, testInfo) => {
     test.skip(!STUDENT_USER || !STUDENT_PASS, 'needs BIJAK_STUDENT_USER and BIJAK_STUDENT_PASS')
-    // FIXME(B4): builder needs PoC questions; without B4 publish is refused "Kurang 10 soalan".
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
     await openPaperBuilder(page)
     await expect(page.getByTestId('papers-page')).toBeVisible()
-    await expectNoHorizontalScroll(page)
-    await createDraft(page, title)
+    await expectNoHorizontalScrollHttp(page)
+    const id = await createDraft(page, title)
     try {
       await assembleUntilMatching(page)
       await page.getByTestId('paper-save').click()
@@ -222,7 +259,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
       await expect(page.getByTestId('paper-view-student')).toBeVisible()
       await expect(page.getByTestId('paper-publish')).toHaveCount(0)
       await expect(page.getByTestId('paper-title')).toBeDisabled()
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
 
       await studentSees(browser, testInfo, title)
     } finally {
@@ -231,9 +268,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
         await page.getByTestId('paper-unpublish').click()
         await expect(page.getByTestId('paper-publish')).toBeVisible()
       }
-      await page.goto('/admin/spm/kertas')
-      const row = page.getByTestId('papers-table').locator('tr', { hasText: title })
-      if (await row.count()) await row.getByRole('button', { name: 'Padam kertas' }).click()
+      await deleteDraft(page, id, title)
     }
   })
 })

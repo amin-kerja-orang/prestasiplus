@@ -8,8 +8,14 @@
  */
 import { expect, test } from '@playwright/test'
 
-import { expectNoHorizontalScroll } from '../support'
-import { HTTP_MODE, PAPER_ID, pickOption, pressedOptions, startPaper } from './bijak-flow'
+import {
+  expectNoHorizontalScrollHttp,
+  HTTP_MODE,
+  PAPER_ID,
+  pickOption,
+  pressedOptions,
+  startPaper,
+} from './bijak-flow'
 
 const USER = process.env.BIJAK_STUDENT_USER
 const PASS = process.env.BIJAK_STUDENT_PASS
@@ -29,15 +35,22 @@ test.describe('Bijak SPM autosave over HTTP @bijak', () => {
 
     await page.goto('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
-    await expectNoHorizontalScroll(page)
-    await startPaper(page, PAPER_ID)
+    await expectNoHorizontalScrollHttp(page)
+    // The mock paper id does not exist on a real stack: use BIJAK_PAPER_ID or the hub's first paper.
+    const firstOpen = page.locator('[data-testid^=open-]').first()
+    await expect(firstOpen).toBeVisible()
+    const firstId = (await firstOpen.getAttribute('data-testid'))?.slice('open-'.length)
+    await startPaper(page, process.env.BIJAK_PAPER_ID ?? firstId ?? PAPER_ID)
     const attemptUrl = page.url()
 
     const saved = page.waitForResponse(
       (r) =>
         r.request().method() === 'PUT' && /\/api\/bijak\/attempts\/[^/]+\/answers$/.test(r.url()),
     )
-    await pickOption(page, 1)
+    // A resumed attempt (same account, earlier run) may already have an answer; tapping a pressed
+    // option clears it, so pick one that is not pressed.
+    const pressedNow = await pressedOptions(page)
+    await pickOption(page, Math.max(0, pressedNow.indexOf('false')))
     const res = await saved
     expect(res.status()).toBeGreaterThanOrEqual(200)
     expect(res.status()).toBeLessThan(300)
@@ -55,6 +68,6 @@ test.describe('Bijak SPM autosave over HTTP @bijak', () => {
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
     expect(page.url()).toBe(attemptUrl)
     await expect.poll(() => pressedOptions(page)).toEqual(before)
-    await expectNoHorizontalScroll(page)
+    await expectNoHorizontalScrollHttp(page)
   })
 })

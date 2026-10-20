@@ -9,7 +9,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect } from '../fixtures/test'
-import { expectNoHorizontalScroll } from '../support'
+import { expectNoHorizontalScrollAuto } from './bijak-flow'
 
 /** Existing routes. */
 export const US33_ROUTES = {
@@ -103,5 +103,5 @@ export async function httpLogin(page: Page, user: string, pass: string): Promise
 /** Screen is up, no horizontal scroll. */
 export async function expectScreen(page: Page, testId: string): Promise<void> {
   await expect(page.getByTestId(testId)).toBeVisible()
-  await expectNoHorizontalScroll(page)
+  await expectNoHorizontalScrollAuto(page)
 }

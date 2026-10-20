@@ -10,7 +10,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect } from '../fixtures/test'
-import { expectNoHorizontalScroll } from '../support'
+import { expectNoHorizontalScroll, H_SCROLL_SAMPLE_GAP_MS, H_SCROLL_SAMPLES } from '../support'
 
 /**
  * One flag flips the suite from the mock build to an http-mode stack: `BIJAK_API_BASE=<origin>`
@@ -20,6 +20,35 @@ import { expectNoHorizontalScroll } from '../support'
 export const API_BASE = process.env.BIJAK_API_BASE
 export const HTTP_MODE = !!API_BASE
 
+/**
+ * Http-mode twin of `expectNoHorizontalScroll` (e2e/support/assertions.ts): same sampling, but the
+ * app has booted when `#app.__vue_app__` exists; there is no `window.__mock` in http mode.
+ */
+export async function expectNoHorizontalScrollHttp(page: Page): Promise<void> {
+  const samples: number[] = []
+  for (let i = 0; i < H_SCROLL_SAMPLES; i++) {
+    if (i > 0) await page.waitForTimeout(H_SCROLL_SAMPLE_GAP_MS)
+    const sample = await page.evaluate(() => {
+      const app = document.querySelector('#app') as (Element & { __vue_app__?: unknown }) | null
+      if (!app?.__vue_app__) return null
+      const el = document.documentElement
+      return el.scrollWidth - el.clientWidth
+    })
+    expect(sample, 'expectNoHorizontalScrollHttp: the app has not mounted').not.toBeNull()
+    samples.push(sample!)
+  }
+  for (const overflow of samples) {
+    expect(
+      overflow,
+      `horizontal page overflow in px (samples: ${samples.join(', ')})`,
+    ).toBeLessThanOrEqual(0)
+  }
+}
+
+/** The right check for the current mode (shared steps run in both). */
+export const expectNoHorizontalScrollAuto = (page: Page): Promise<void> =>
+  HTTP_MODE ? expectNoHorizontalScrollHttp(page) : expectNoHorizontalScroll(page)
+
 export const PAPER_ID = 'mat-k1-2025-a'
 export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
 
@@ -27,10 +56,10 @@ export const FORBIDDEN_TITLE = '403 - Akses Ditolak | PRESTASIPLUS'
 export async function startPaper(page: Page, paperId = PAPER_ID): Promise<void> {
   await page.getByTestId(`open-${paperId}`).click()
   await expect(page.getByTestId('bijak-cover')).toBeVisible()
-  await expectNoHorizontalScroll(page)
+  await expectNoHorizontalScrollAuto(page)
   await page.locator('[data-ds=hero-cta]').click()
   await expect(page.getByTestId('attempt-shell')).toBeVisible()
-  await expectNoHorizontalScroll(page)
+  await expectNoHorizontalScrollAuto(page)
 }
 
 /** Opens the hub from the SPM section (the menu route a student really takes). */
@@ -41,7 +70,7 @@ export async function openHubFromSpm(
   await gotoApp('/spm')
   await page.getByTestId('spm-bijak-link').click()
   await expect(page.getByTestId('bijak-hub')).toBeVisible()
-  await expectNoHorizontalScroll(page)
+  await expectNoHorizontalScrollAuto(page)
 }
 
 /** Picks option `index` of the current MCQ question. */
@@ -63,5 +92,5 @@ export async function submitAttempt(page: Page): Promise<void> {
   await expect(page.getByTestId('submit-summary')).toBeVisible()
   await page.getByTestId('confirm-submit').click()
   await expect(page.getByTestId('win-screen')).toBeVisible()
-  await expectNoHorizontalScroll(page)
+  await expectNoHorizontalScrollAuto(page)
 }

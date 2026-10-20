@@ -28,8 +28,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
-import { expectNoHorizontalScroll } from '../support'
-import { HTTP_MODE } from './bijak-flow'
+import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
 
 const USER = process.env.BIJAK_STUDENT_USER
 const PASS = process.env.BIJAK_STUDENT_PASS
@@ -101,7 +100,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       await page.goto('/spm/bijak')
       expect(is2xx(await papersRes)).toBe(true)
       await expect(page.getByTestId('bijak-hub')).toBeVisible()
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
       const open = PAPER
         ? page.getByTestId(`open-${PAPER}`)
         : page.locator('[data-testid^=open-]').first()
@@ -114,7 +113,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       await open.click()
       expect(is2xx(await coverRes)).toBe(true)
       await expect(page.getByTestId('bijak-cover')).toBeVisible()
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
       title = (await page.getByTestId('cover-title').innerText()).trim()
       expect(title.length).toBeGreaterThan(0)
       await expect(page.getByTestId('cover-hero')).toContainText(/\d+ minit/)
@@ -145,7 +144,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       await expect(page.getByTestId('clock')).toHaveText(/\d+:\d{2}/)
       clockAtStart = clockSeconds(await page.getByTestId('clock').innerText())
       expect(clockAtStart).toBeGreaterThan(0)
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
     })
 
     await test.step('3 answer Q1 (+ Q2): PUT answers 2xx, indicator reads Disimpan', async () => {
@@ -165,7 +164,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
         expect(is2xx(await saved2)).toBe(true)
         await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
       }
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
     })
 
     await test.step('4 move on, drop the device copy, reload: state comes from the server', async () => {
@@ -223,7 +222,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       // Answers: back to Q1 and compare.
       while ((await questionNumber(page)) > 1) await page.getByTestId('prev').click()
       await expect.poll(() => pressed(page)).toEqual(answersBefore)
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
     })
 
     await test.step('5 Hantar + confirm: POST submit 2xx, result screen with per-section scores', async () => {
@@ -243,7 +242,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       await expect(page.getByTestId('section-score').first()).toBeVisible()
       expect(await page.getByTestId('section-score').count()).toBeGreaterThanOrEqual(1)
       await expect(page.getByTestId('home')).toBeVisible()
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
       // Total score as the ring label prints it: "Skor X daripada Y".
       scoreText = await page
         .getByTestId('win-screen')
@@ -261,7 +260,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak', () => {
       await page.goto('/spm/bijak/sejarah')
       expect(is2xx(await hist)).toBe(true)
       await expect(page.getByTestId('history-list')).toBeVisible()
-      await expectNoHorizontalScroll(page)
+      await expectNoHorizontalScrollHttp(page)
 
       const entry = page.getByTestId(`history-${attemptId}`)
       await expect(entry).toBeVisible()
