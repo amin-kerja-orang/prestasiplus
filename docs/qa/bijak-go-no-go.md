@@ -26,6 +26,8 @@ A FAIL at `login` with 429 = throttle (wait 1 minute); with 403 = forced passwor
 
 ## 2. Automated e2e in http mode
 
+**Rate-limit rule (lead, 2026-10-20):** never run the automated e2e at the same time as the manual UAT. Both come from one IP, share the API rate limit and get 429 (seen in the local dry-run as "Too Many Attempts." at login and a failed paper list). Order: automated e2e first (go/no-go), then manual UAT; leave about 1 minute between them. A 429 in the e2e report is a rerun, not a FAIL.
+
 ```
 BIJAK_API_BASE=<Pages URL> \
 BIJAK_STUDENT_USER=.. BIJAK_STUDENT_PASS=.. \
