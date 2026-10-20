@@ -133,6 +133,26 @@ export interface PendingTeacherRow {
   createdAt: Date
 }
 
+/** Filter of the school admin's teacher and pupil lists (BE-21): `isActive` is the EFFECTIVE state (a suspended account is inactive). */
+export interface ManagedListFilter {
+  isActive?: boolean
+  search?: string
+  page: number
+  pageSize: number
+}
+
+export type ManagedRole = 'student' | 'teacher'
+
+/** School totals of one managed role; ignore every list filter. `inactive` includes suspended accounts. */
+export interface ManagedCounts {
+  total: number
+  active: number
+  inactive: number
+}
+
+/** Most rows one managed-user export returns (a school has a few thousand pupils at most). */
+export const MANAGED_EXPORT_MAX = 20_000
+
 /** Most pending teachers one list returns (oldest first). */
 export const PENDING_LIST_MAX = 200
 
@@ -474,6 +494,71 @@ export class UsersRepository {
       select: { id: true, name: true, email: true, phone: true, createdAt: true },
     })
     return row ? { id: idToString(row.id), name: row.name, email: row.email, phone: row.phone, createdAt: row.createdAt } : null
+  }
+
+  // --- school admin people lists (BE-21 Part A) ---------------------------------------------------
+
+  /** The accounts a school admin manages as `role` in `schoolId`: same school, the role, and no role outside `SCHOOL_ADMIN_VISIBLE_ROLES`. */
+  private managedBase(schoolId: bigint, role: ManagedRole): Prisma.UserWhereInput[] {
+    const visible = [...SCHOOL_ADMIN_VISIBLE_ROLES]
+    return [{ schoolId }, { roles: { some: { role } } }, { roles: { none: { role: { notIn: visible } } } }]
+  }
+
+  /** Effective active = active and not suspended; a suspended account is shown as inactive (BE-21 OQ-8). */
+  private static readonly EFFECTIVE_ACTIVE: Prisma.UserWhereInput = { isActive: true, isSuspended: false }
+  private static readonly EFFECTIVE_INACTIVE: Prisma.UserWhereInput = { OR: [{ isActive: false }, { isSuspended: true }] }
+
+  /**
+   * One page of the teachers or pupils of a school: effective-active first, then id descending. The two groups are two
+   * set-based queries cut at the page offset, so the order is exact without an ORDER BY expression. The page is clamped
+   * to the last one. `schoolId` is the caller's (from the session); a malformed id matches nothing.
+   */
+  async listBySchoolRole(schoolId: string, role: ManagedRole, filter: ManagedListFilter): Promise<{ rows: UserRecord[]; total: number; page: number }> {
+    if (!isIdString(schoolId)) return { rows: [], total: 0, page: 1 }
+    const base = this.managedBase(idFromString(schoolId), role)
+    if (filter.search) base.push(textSearch(filter.search))
+    const groups: Prisma.UserWhereInput[] = []
+    if (filter.isActive !== false) groups.push({ AND: [...base, UsersRepository.EFFECTIVE_ACTIVE] })
+    if (filter.isActive !== true) groups.push({ AND: [...base, UsersRepository.EFFECTIVE_INACTIVE] })
+    const counts = await Promise.all(groups.map((g) => this.prisma.client.user.count({ where: g })))
+    const total = counts.reduce((a, b) => a + b, 0)
+    const page = Math.min(Math.max(1, filter.page), Math.max(1, Math.ceil(total / filter.pageSize)))
+    const skip = (page - 1) * filter.pageSize
+    const rows: UserRecord[] = []
+    let offset = 0
+    for (const [i, where] of groups.entries()) {
+      const size = counts[i] ?? 0
+      const from = Math.max(0, skip - offset)
+      const take = Math.min(filter.pageSize - rows.length, size - from)
+      if (take > 0) {
+        const found = await this.prisma.client.user.findMany({ where, include: INCLUDE, orderBy: [{ id: 'desc' }], skip: from, take })
+        rows.push(...found.map(toRecord))
+      }
+      offset += size
+    }
+    return { rows, total, page }
+  }
+
+  /** Totals of one role in a school, ignoring every list filter: `total`, effective `active` and `inactive` (suspended included). */
+  async countsBySchoolRole(schoolId: string, role: ManagedRole): Promise<ManagedCounts> {
+    if (!isIdString(schoolId)) return { total: 0, active: 0, inactive: 0 }
+    const base = this.managedBase(idFromString(schoolId), role)
+    const [total, active] = await Promise.all([
+      this.prisma.client.user.count({ where: { AND: base } }),
+      this.prisma.client.user.count({ where: { AND: [...base, UsersRepository.EFFECTIVE_ACTIVE] } }),
+    ])
+    return { total, active, inactive: total - active }
+  }
+
+  /** Every account for the CSV export (same filters as the list, no paging), id ascending, at most `MANAGED_EXPORT_MAX`. */
+  async exportBySchoolRole(schoolId: string, role: ManagedRole, filter: { isActive?: boolean; search?: string }): Promise<UserRecord[]> {
+    if (!isIdString(schoolId)) return []
+    const and = this.managedBase(idFromString(schoolId), role)
+    if (filter.search) and.push(textSearch(filter.search))
+    if (filter.isActive === true) and.push(UsersRepository.EFFECTIVE_ACTIVE)
+    if (filter.isActive === false) and.push(UsersRepository.EFFECTIVE_INACTIVE)
+    const rows = await this.prisma.client.user.findMany({ where: { AND: and }, include: INCLUDE, orderBy: [{ id: 'asc' }], take: MANAGED_EXPORT_MAX })
+    return rows.map(toRecord)
   }
 
   // --- lookups ----------------------------------------------------------------------------------

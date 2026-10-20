@@ -1,43 +1,17 @@
 import { Controller, Get, HttpCode, Inject, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import type { Request } from 'express'
 
 import { ApiError } from '../../common/errors/api-error'
 import { Roles } from '../../common/guards/decorators'
 import { NoStoreInterceptor, ok } from '../../common/http'
-import { requestIdOf } from '../../common/request/request-id'
-import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-context'
+import { AUTH_CONTEXT_KEY } from '../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { callerOf } from '../users/caller'
 import { DashboardService } from './dashboard.service'
-import { PendingTeachersService, type SchoolAdminActor } from './pending-teachers.service'
+import { PendingTeachersService } from './pending-teachers.service'
+import { schoolAdminOf, type SchoolAdminReq } from './school-admin.actor'
 import { SCHOOL_ADMIN_LIMITS } from './school-admin.constants'
 
-type Req = Request & RequestWithAuth
-
-/**
- * The school of the signed-in school admin, from the session ONLY (nothing in the query or body can choose it). A school admin
- * without a school is refused (403): a missing school never means "all schools". Admin Pusat is excluded by `@Roles`.
- */
-function schoolAdminOf(req: Req): { actor: SchoolAdminActor; schoolId: string } {
-  const auth = req[AUTH_CONTEXT_KEY]
-  if (!auth) throw ApiError.of('UNAUTHORIZED')
-  const { scope } = auth.active
-  const schoolId = (scope.level === 'school' || scope.level === 'class') && scope.schoolId ? scope.schoolId : null
-  if (schoolId === null) throw ApiError.of('FORBIDDEN')
-  return {
-    schoolId,
-    actor: {
-      userId: auth.userId,
-      role: auth.active.role,
-      schoolId,
-      sessionRowId: auth.sessionRowId,
-      scopeLevel: scope.level,
-      isTest: auth.mode !== null,
-      requestId: requestIdOf(req) ?? null,
-      ip: req.ip ?? req.socket.remoteAddress ?? null,
-    },
-  }
-}
+type Req = SchoolAdminReq
 
 /**
  * `/admin-sekolah/*` slice of BE-21: the school dashboard and the pending teachers. Every answer is `no-store`. The global

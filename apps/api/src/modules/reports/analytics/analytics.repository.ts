@@ -563,4 +563,37 @@ export class AnalyticsRepository {
       WHERE q.id = ANY(${keys}::bigint[])`
     return new Map(rows.map((r) => [r.id, { stem: r.stem_ms ?? '', subjectId: r.subject_id }]))
   }
+
+  // --- school admin reports (BE-21 Part B, additive read-only) -----------------------------------------------------------
+
+  /** Seconds spent in completed non-test sessions per pupil in the window (`time_spent_sec`). */
+  async secondsByUser(userIds: readonly string[], from: Date, to: Date): Promise<Map<string, number>> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ user_id: string; seconds: number }[]>`
+      SELECT s.user_id::text AS user_id, coalesce(sum(s.time_spent_sec), 0)::int AS seconds
+      FROM practice_sessions s
+      WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test
+        AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+      GROUP BY 1`
+    return new Map(rows.map((r) => [r.user_id, r.seconds]))
+  }
+
+  /** Answers and correct answers per subject and pupil in the window (clean log only); rows without a subject are left out. */
+  async subjectTallies(
+    userIds: readonly string[],
+    from: Date,
+    to: Date,
+  ): Promise<{ subjectId: string; userId: string; answers: number; correct: number }[]> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ subject_id: string; user_id: string; answers: number; correct: number }[]>`
+      SELECT a.subject_id::text AS subject_id, a.user_id::text AS user_id, count(*)::int AS answers,
+        count(*) FILTER (WHERE a.is_correct)::int AS correct
+      FROM ${CLEAN_ANSWERS}
+      WHERE ${CLEAN_WHERE} AND a.subject_id IS NOT NULL AND a.user_id = ANY(${keys}::bigint[])
+        AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY 1, 2`
+    return rows.map((r) => ({ subjectId: r.subject_id, userId: r.user_id, answers: r.answers, correct: r.correct }))
+  }
 }
