@@ -38,7 +38,8 @@ interface Ctx {
 
 const defaultStreams: StreamFactory = (name) => prngStream(name)
 
-const draw = (c: Ctx): Prng => c.streams(`m16:room:${c.room.code}:d${String(c.s.draws++)}`)
+const draw = (c: Ctx): Prng =>
+  c.streams(`m16:room:${c.room.code}:${c.s.seed}:d${String(c.s.draws++)}`)
 const human = (c: Ctx): EnginePlayer =>
   c.players.find((x) => x.userId === c.s.humanId) as EnginePlayer
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
@@ -49,8 +50,9 @@ const nextQ = (c: Ctx): string => {
 }
 const clampSeconds = (v: number): number => Math.min(15, Math.max(0, Math.floor(v)))
 
-export function emptyState(humanId: string): RoomState {
+export function emptyState(humanId: string, seed: string): RoomState {
   return {
+    seed,
     round: 1,
     total: 0,
     qIds: [],
@@ -80,6 +82,8 @@ export interface StartInput {
   room: EngineRoom
   players: EnginePlayer[]
   humanId: string
+  /** The room's secret seed (stored at create). */
+  seed: string
   /** The drawn question pool, in draw order (the service draws it through BE-09). */
   pool: PoolQuestion[]
   quizTiles: number
@@ -95,7 +99,7 @@ export function startGame(input: StartInput): EngineOut {
   const c: Ctx = {
     room,
     players: input.players.map((x) => ({ ...x })),
-    s: emptyState(input.humanId),
+    s: emptyState(input.humanId, input.seed),
     streams,
     p: input.p,
   }
@@ -106,7 +110,7 @@ export function startGame(input: StartInput): EngineOut {
   const key = (pl: EnginePlayer): string => pl.userId
   switch (room.game) {
     case 'papan-bijak': {
-      c.s.board = buildBoard(input.quizTiles, streams(`m16:room:${room.code}:board`))
+      c.s.board = buildBoard(input.quizTiles, streams(`m16:room:${room.code}:${input.seed}:board`))
       for (const pl of c.players) c.s.positions[key(pl)] = 1
       c.s.total = BOARD_SIZE
       break

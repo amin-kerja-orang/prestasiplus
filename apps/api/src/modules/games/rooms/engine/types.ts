@@ -34,6 +34,8 @@ export interface PoolQuestion extends StoredQuestion {
 
 /** The engine document stored whole in `game_rooms.state` (jsonb). Contains the answer keys: server side only. */
 export interface RoomState {
+  /** Per-room secret seed (128-bit hex) in every stream name; SERVER ONLY, never in a view. */
+  seed: string
   round: number
   total: number
   /** Question pool ids (decimal strings); the cursor cycles through them. */

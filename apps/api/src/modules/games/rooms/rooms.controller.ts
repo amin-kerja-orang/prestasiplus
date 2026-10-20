@@ -28,12 +28,12 @@ type Req = Request & RequestWithAuth
  */
 @Controller('games')
 @UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
 export class RoomsController {
   constructor(@Inject(RoomsService) private readonly rooms: RoomsService) {}
 
   @Get('hub')
   @RateLimit(GAMES_LIMITS.read)
-  @UseInterceptors(NoStoreInterceptor)
   async hub(@Req() req: Req) {
     return ok(await this.rooms.hub(callerOf(req)))
   }
@@ -46,7 +46,6 @@ export class RoomsController {
 
   @Post(':game/rooms')
   @RateLimit(GAMES_LIMITS.write)
-  @UseInterceptors(NoStoreInterceptor)
   async create(@Param('game') game: string, @Body() body: unknown, @Req() req: Req) {
     return ok(await this.rooms.create(callerOf(req), game, body))
   }
@@ -54,14 +53,12 @@ export class RoomsController {
   @Post(':game/rooms/join')
   @HttpCode(200)
   @RateLimit(GAMES_LIMITS.write)
-  @UseInterceptors(NoStoreInterceptor)
   async join(@Param('game') game: string, @Body() body: unknown, @Req() req: Req) {
     return ok(await this.rooms.join(callerOf(req), game, body))
   }
 
   @Get(':game/rooms/:code')
   @RateLimit(GAMES_LIMITS.read)
-  @UseInterceptors(NoStoreInterceptor)
   async view(@Param('game') game: string, @Param('code') code: string, @Req() req: Req) {
     return ok(await this.rooms.view(callerOf(req), game, code))
   }

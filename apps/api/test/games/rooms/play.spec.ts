@@ -196,7 +196,10 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
           'CONFLICT',
           M.startNotEnoughQuestions,
         )
-        expect(await roomOf(t.db, code)).toMatchObject({ status: 'waiting', state: null })
+        expect(await roomOf(t.db, code)).toMatchObject({
+          status: 'waiting',
+          state: { seed: expect.any(String) },
+        })
       } finally {
         await t.db.query('update questions set is_active = true')
       }
@@ -315,9 +318,25 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       }
     })
 
-    it('a started room is never cacheable', async () => {
+    it('a started room is never cacheable and never shows the seed', async () => {
       const { code } = await started('perang-fakta')
-      expect((await student.get(P('perang-fakta', code))).headers['cache-control']).toBe('no-store')
+      const seed = (await stateOf(t.db, code)).seed
+      expect(seed).toMatch(/^[0-9a-f]{32}$/)
+      const res = await student.get(P('perang-fakta', code))
+      expect(res.headers['cache-control']).toBe('no-store')
+      expect(JSON.stringify(res.body)).not.toContain(seed)
+      expect(JSON.stringify(res.body)).not.toContain('seed')
+      const st = await stateOf(t.db, code)
+      const act2 = await student.post(P('perang-fakta', code, '/action'), {
+        type: 'answer',
+        questionId: st.pendingQ,
+        value: true,
+      })
+      expect(act2.headers['cache-control']).toBe('no-store')
+      expect(JSON.stringify(act2.body)).not.toContain(seed)
+      const again = await started('benteng-ilmu', { ...FORM, match_mode: 'same_level' })
+      const startRes = await student.get(P('benteng-ilmu', again.code))
+      expect(startRes.headers['cache-control']).toBe('no-store')
     })
   })
 

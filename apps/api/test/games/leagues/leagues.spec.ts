@@ -168,12 +168,12 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(codes.size).toBe(6)
     })
 
-    it('retries on an invite code collision (the same stream position is already taken)', async () => {
+    it('invite codes are random (not a function of user and clock)', async () => {
       const s = await loginAs(t, ACCOUNTS.student2)
       const a = parseData(await s.post('/api/leagues', { ...VALID, name: 'Satu' }), GamesLeagueIdResultSchema).id
-      // The frozen clock gives the same stream for the same user: the second create must move to the next code.
       const b = parseData(await s.post('/api/leagues', { ...VALID, name: 'Dua' }), GamesLeagueIdResultSchema).id
       const [ca, cb] = await Promise.all([a, b].map(async (id) => parseData(await s.get(`/api/leagues/${id}`), GamesLeagueDetailSchema).inviteCode))
+      expect(ca).toMatch(INVITE)
       expect(ca).not.toBe(cb)
     })
 

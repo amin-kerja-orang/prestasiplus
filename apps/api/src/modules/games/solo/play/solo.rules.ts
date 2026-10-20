@@ -131,3 +131,13 @@ export const JUTAWAN_LIFELINES = 3
 export const jutawanDifficulty = (n: number): number => (n <= 4 ? 1 : n <= 8 ? 2 : n <= 12 ? 3 : 4)
 /** Coins of the level reached: 1000 at level 15, 50 at levels 10 to 14, otherwise 0 (PROPOSED ladder). */
 export const jutawanCoins = (level: number): number => (level >= 15 ? 1000 : level >= 10 ? 50 : 0)
+
+/**
+ * [PROPOSED, LEAD to confirm] Pacing guard against reward farming by a scripted client. A run whose server time from creation
+ * to submit is shorter than this per checked item is stored and returned, but earns 0 coins (no reward call) and is not a
+ * personal-best record. Jutawan Ilmu: the same with its own per-question minimum.
+ */
+export const MIN_MS_PER_ITEM = 1000
+export const JUTAWAN_MIN_MS_PER_QUESTION = 2000
+/** True when `elapsedMs` is too short for `items` checked items (a Kad Memori item is a move). */
+export const tooFast = (elapsedMs: number, items: number, msPerItem: number): boolean => elapsedMs < msPerItem * items

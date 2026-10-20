@@ -3,6 +3,7 @@ import type { GamesSoloGame } from '@pp/contract'
 
 import type { Prng } from '../../../../db/prng'
 import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
+import { secretRng } from './secret-rng'
 import { MEMORY_PAIRS, SOLO_INFO, SUSUN_MAX_ANSWER, susunPoints } from './solo.rules'
 
 /** One `game_session_items` row to insert (server-only facts included; never sent to the client). */
@@ -53,6 +54,11 @@ function scramble(answer: string, rng: Prng): { type: 'letters' | 'words'; tiles
     tiles = shuffled(original, rng)
     if (tiles.join('|') !== original.join('|')) break
   }
+  if (tiles.length > 1 && tiles.join('|') === original.join('|')) {
+    // still solved: swap the first tile with the first one that differs (none differs only when all tiles are identical)
+    const j = tiles.findIndex((x) => x !== tiles[0])
+    if (j > 0) [tiles[0], tiles[j]] = [tiles[j] as string, tiles[0] as string]
+  }
   return { type, tiles }
 }
 
@@ -65,14 +71,14 @@ export class SoloItemBuilder {
   constructor(@Inject(GameQuestions) private readonly questions: GameQuestions) {}
 
   /** `levelIds` is one education level for the four question games and levels D1..D4 for Kad Memori. */
-  async build(game: GamesSoloGame, levelIds: readonly string[], rng: Prng, cardRng: Prng = rng): Promise<BuiltSolo> {
+  async build(game: GamesSoloGame, levelIds: readonly string[], rng: Prng, secret: Prng = secretRng()): Promise<BuiltSolo> {
     const info = SOLO_INFO[game]
-    if (game === 'kad-memori') return this.memory(levelIds, rng, cardRng)
+    if (game === 'kad-memori') return this.memory(levelIds, rng, secret)
     const first = levelIds[0]
     const drawn = first === undefined ? [] : await this.questions.sample({ educationLevelId: first }, info.items * info.oversample, rng)
     switch (game) {
       case 'betul-salah':
-        return this.betulSalah(drawn.slice(0, info.items), rng)
+        return this.betulSalah(drawn.slice(0, info.items), secret)
       case 'cabaran-kilat':
         return this.fourOption(drawn.filter(fourOptions).slice(0, info.items), true)
       case 'tembak-jawapan':
@@ -120,23 +126,23 @@ export class SoloItemBuilder {
   }
 
   /** Kad Memori: 6 questions drawn over the levels, 12 cards with opaque ids and a shuffled board; no face in the payload. */
-  private async memory(levelIds: readonly string[], rng: Prng, cardRng: Prng): Promise<BuiltSolo> {
+  private async memory(levelIds: readonly string[], rng: Prng, secret: Prng): Promise<BuiltSolo> {
     const pool: ServedQuestion[] = []
     for (const level of levelIds) {
       for (const s of await this.questions.sample({ educationLevelId: level }, MEMORY_PAIRS, rng)) {
         if (!pool.some((p) => p.question.id === s.question.id)) pool.push(s)
       }
     }
-    const chosen = shuffled(pool, rng).slice(0, MEMORY_PAIRS)
+    const chosen = shuffled(pool, secret).slice(0, MEMORY_PAIRS)
     const cards: ItemRow[] = []
     chosen.forEach((s, pair) => {
       cards.push(row(0, s, { face: 'question', pairKey: pair, keyIndex: null }), row(0, s, { face: 'answer', pairKey: pair, keyIndex: null }))
     })
     const used = new Set<string>()
-    const board = shuffled(cards, rng).map((c, i) => {
+    const board = shuffled(cards, secret).map((c, i) => {
       let id = ''
       do {
-        id = Array.from({ length: 8 }, () => CARD_ALPHABET[cardRng.int(0, CARD_ALPHABET.length - 1)] as string).join('')
+        id = Array.from({ length: 8 }, () => CARD_ALPHABET[secret.int(0, CARD_ALPHABET.length - 1)] as string).join('')
       } while (used.has(id))
       used.add(id)
       return { ...c, position: i + 1, cardId: id }

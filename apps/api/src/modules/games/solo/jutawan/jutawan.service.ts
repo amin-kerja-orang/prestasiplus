@@ -25,9 +25,10 @@ import {
   jutawanSubjectInvalid,
   levelInvalid,
 } from '../../errors'
+import { secretRng } from '../play/secret-rng'
 import { shuffled } from '../play/solo-items'
-import { JUTAWAN_LIFELINES, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty } from '../play/solo.rules'
-import { JutawanRepository } from './jutawan.repository'
+import { JUTAWAN_LIFELINES, JUTAWAN_MIN_MS_PER_QUESTION, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty, tooFast } from '../play/solo.rules'
+import { JutawanRepository, type JutawanSession } from './jutawan.repository'
 
 /** Tile emoji and colour of the observed subjects (by curriculum code); every other subject gets the fallback. */
 const TILES: Readonly<Record<string, { emoji: string; colour: string }>> = {
@@ -115,6 +116,7 @@ export class JutawanService {
         darjah,
         subjectId,
         isTest: caller.isTest,
+        createdAt: this.clock.now(),
         items: run.map((q, i) => ({ questionId: q.question.id, keyIndex: q.keyIndex, difficulty: q.difficultyTp ?? jutawanDifficulty(i + 1) })),
       }),
     )
@@ -147,7 +149,7 @@ export class JutawanService {
         return { correct: true, level, next: next.question }
       }
       const level = correct ? s.level + 1 : s.level
-      const credited = await this.finish(caller, s.id, s.subjectId, level, common, tx)
+      const credited = await this.finish(caller, s, level, common, tx)
       return { correct, level, result: { level, credited } }
     })
   }
@@ -155,15 +157,19 @@ export class JutawanService {
   /** End of a run: best level and games count, the one reward report (only when allowed, never for Mod Pelajar). */
   private async finish(
     caller: GamesCaller,
-    sessionId: string,
-    subjectId: string | null,
+    s: JutawanSession,
     level: number,
     common: { checks: number; correctCount: number },
     tx: TxClient,
   ): Promise<number> {
-    const coins = jutawanCoins(level)
+    const sessionId = s.id
+    const subjectId = s.subjectId
+    const now = this.clock.now()
+    // pacing guard: a run faster than a human can read and answer keeps its level but is credited nothing
+    const fast = tooFast(now.getTime() - s.createdAt.getTime(), common.checks, JUTAWAN_MIN_MS_PER_QUESTION)
+    const coins = fast ? 0 : jutawanCoins(level)
     let credited = 0
-    if (!caller.isTest && (await this.ports.rewards.canEarnSyiling(caller.userId, { tx }))) {
+    if (!fast && !caller.isTest && (await this.ports.rewards.canEarnSyiling(caller.userId, { tx }))) {
       const subject = subjectId === null ? null : await this.curriculum.subject(idFromString(subjectId))
       const out = await this.ports.rewards.onGameResult(
         caller.userId,
@@ -177,7 +183,7 @@ export class JutawanService {
       jutawanLevel: level,
       jutawanRemovedOptions: [],
       jutawanOver: true,
-      submittedAt: this.clock.now(),
+      submittedAt: now,
       score: level,
       coinsComputed: coins,
       coinsCredited: credited,
@@ -198,7 +204,7 @@ export class JutawanService {
       const served = (await this.questions.byIds([current.questionId]))[0]
       if (!served) throw jutawanQuestionNotFound()
       const wrong = served.question.options.filter((o) => o.id !== current.keyIndex && o.text.trim() !== '').map((o) => o.id)
-      const removed = shuffled(wrong, prngStream(`games:jutawan:${s.id}:ll:${String(s.level)}`)).slice(0, 2).sort((x, y) => x - y)
+      const removed = shuffled(wrong, secretRng()).slice(0, 2).sort((x, y) => x - y)
       const lifelines = s.lifelines - 1
       await this.repo.update(s.id, { jutawanLifelines: lifelines, jutawanRemovedOptions: removed })
       return { removedOptionIds: removed, lifelines }

@@ -68,12 +68,13 @@ function start(
   game: EngineRoom['game'],
   n: number,
   p: number,
-  opts: { code?: string; quiz?: number; streams?: StreamFactory } = {},
+  opts: { code?: string; seed?: string; quiz?: number; streams?: StreamFactory } = {},
 ) {
   return startGame({
     room: room(game, opts.code),
     players: players(n),
     humanId: HOST,
+    seed: opts.seed ?? 'seed-a',
     pool: pool(POOL_SIZE[game]),
     quizTiles: opts.quiz ?? 35,
     p,
@@ -160,7 +161,18 @@ describe('board (BR-M16-20)', () => {
   })
 })
 
-describe('determinism (named streams m16:room:<code>:...)', () => {
+describe('determinism (named streams m16:room:<code>:<secret seed>:...)', () => {
+  it('the public room code alone does not fix the game: another seed gives another board, facts and dice', () => {
+    const a = start('perang-fakta', 2, 0.5, { code: 'AAAAAA', seed: 'one' })
+    const b = start('perang-fakta', 2, 0.5, { code: 'AAAAAA', seed: 'two' })
+    const again = start('perang-fakta', 2, 0.5, { code: 'AAAAAA', seed: 'one' })
+    expect(again.state).toEqual(a.state)
+    expect(b.state.facts.map((f) => f.isTrue)).not.toEqual(a.state.facts.map((f) => f.isTrue))
+    const pa = start('papan-bijak', 2, 0.5, { code: 'AAAAAA', seed: 'one' })
+    const pb = start('papan-bijak', 2, 0.5, { code: 'AAAAAA', seed: 'two' })
+    expect(pb.state.board).not.toEqual(pa.state.board)
+  })
+
   it('the same room and the same actions give the same game; another code gives another game', () => {
     const play = (code: string): RoomState => {
       let o = start('papan-bijak', 3, 0.5, { code })
@@ -186,7 +198,7 @@ describe('determinism (named streams m16:room:<code>:...)', () => {
     }
     const o = start('perang-fakta', 2, 0.5, { code: 'ZZ99ZZ', streams })
     expect(opened.every((n) => n.startsWith('m16:room:ZZ99ZZ:'))).toBe(true)
-    expect(opened).toContain('m16:room:ZZ99ZZ:d0')
+    expect(opened).toContain('m16:room:ZZ99ZZ:seed-a:d0')
     expect(o.state.draws).toBe(PF_ROUNDS)
   })
 
@@ -661,6 +673,7 @@ describe('Kuiz Relay (10 rounds, two teams)', () => {
       room: r,
       players: players(4),
       humanId: HOST,
+      seed: 'seed-a',
       pool: pool(KR_ROUNDS),
       quizTiles: 35,
       p: 1,
@@ -677,6 +690,7 @@ describe('Kuiz Relay (10 rounds, two teams)', () => {
       room: r,
       players: players(4),
       humanId: HOST,
+      seed: 'seed-a',
       pool: pool(KR_ROUNDS),
       quizTiles: 35,
       p: 1,

@@ -12,12 +12,15 @@ import {
   memoryAccuracy,
   normaliseAnswer,
   scoreRun,
+  MIN_MS_PER_ITEM,
   susunGain,
   susunPoints,
   tembakLevel,
+  tooFast,
 } from '../../../src/modules/games/solo/play/solo.rules'
 import { shuffled } from '../../../src/modules/games/solo/play/solo-items'
-import { drawSegment, segmentOf, SPIN_SEGMENTS } from '../../../src/modules/games/solo/spin/spin.rules'
+import { SpinDraw } from '../../../src/modules/games/solo/spin/spin-draw'
+import { segmentOf, SPIN_SEGMENTS } from '../../../src/modules/games/solo/spin/spin.rules'
 
 const run = (flags: string) => flags.split('').map((c) => ({ correct: c === 'T', points: null }))
 
@@ -86,12 +89,18 @@ describe('Roda Nasib wheel', () => {
     expect([0, 24.99, 25, 44.99, 45, 59.99, 60, 67.99, 68, 70.99, 71, 85.99, 86, 95.99, 96, 99.99].map(segmentOf)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7])
   })
 
-  it('the named stream is deterministic and the long-run shares follow the weights', () => {
-    expect(drawSegment(prngStream('games:spin:1:2026-10-19'))).toBe(drawSegment(prngStream('games:spin:1:2026-10-19')))
+  it('the crypto draw follows the weights in the long run; forceNext is a one-shot seam', () => {
+    const draw = new SpinDraw()
     const counts = new Array<number>(8).fill(0)
-    const rng = prngStream('games:spin:distribution')
-    for (let i = 0; i < 20_000; i++) counts[drawSegment(rng)]! += 1
+    for (let i = 0; i < 20_000; i++) counts[draw.draw()]! += 1
     SPIN_SEGMENTS.forEach((s, i) => expect(Math.abs((counts[i] as number) / 200 - s.weight)).toBeLessThan(1.5))
+  })
+})
+
+describe('pacing guard and scramble', () => {
+  it('tooFast compares the elapsed server time with the minimum per item', () => {
+    expect(tooFast(5_999, 6, MIN_MS_PER_ITEM)).toBe(true)
+    expect(tooFast(6_000, 6, MIN_MS_PER_ITEM)).toBe(false)
   })
 })
 

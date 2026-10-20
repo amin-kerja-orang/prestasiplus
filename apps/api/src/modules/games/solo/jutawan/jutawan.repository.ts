@@ -16,6 +16,7 @@ export interface JutawanSession {
   checks: number
   correctCount: number
   isTest: boolean
+  createdAt: Date
 }
 
 export interface JutawanItem {
@@ -40,7 +41,7 @@ export class JutawanRepository {
     return { bestLevel: r?.bestLevel ?? 0, games: r?.games ?? 0 }
   }
 
-  async create(input: { userId: string; darjah: number; subjectId: string; isTest: boolean; items: readonly { questionId: string; keyIndex: number; difficulty: number }[] }): Promise<string> {
+  async create(input: { userId: string; darjah: number; subjectId: string; isTest: boolean; createdAt: Date; items: readonly { questionId: string; keyIndex: number; difficulty: number }[] }): Promise<string> {
     const row = await this.db.gameSession.create({
       data: {
         userId: idFromString(input.userId),
@@ -53,6 +54,7 @@ export class JutawanRepository {
         jutawanRemovedOptions: [],
         jutawanOver: false,
         isTest: input.isTest,
+        createdAt: input.createdAt,
       },
       select: { id: true },
     })
@@ -82,6 +84,7 @@ export class JutawanRepository {
       checks: r.checks,
       correctCount: r.correctCount,
       isTest: r.isTest,
+      createdAt: r.createdAt,
     }
   }
 

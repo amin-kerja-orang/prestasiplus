@@ -151,15 +151,11 @@ export class RoomsRepository {
     return rows.map(toPlayer)
   }
 
-  async countRooms(): Promise<number> {
-    return this.db.gameRoom.count()
-  }
-
   /** Inserts a waiting room with `code`; false when the code is taken (the caller draws the next code). */
-  async insertRoom(code: string, r: NewRoom): Promise<boolean> {
+  async insertRoom(code: string, r: NewRoom, seed: string): Promise<boolean> {
     const n = await this.db.$executeRaw`
-      INSERT INTO game_rooms (code, game, subject, grade_level, match_mode, grade_min, grade_max, max_players, host_id, status, is_test, created_at, updated_at)
-      VALUES (${code}, ${r.game}, ${r.subject}, ${r.gradeLevel}, ${r.matchMode}, ${r.gradeMin}, ${r.gradeMax}, ${r.maxPlayers}, ${idFromString(r.hostId)}, 'waiting', ${r.isTest}, ${r.createdAt}, ${r.createdAt})
+      INSERT INTO game_rooms (code, game, subject, grade_level, match_mode, grade_min, grade_max, max_players, host_id, status, state, is_test, created_at, updated_at)
+      VALUES (${code}, ${r.game}, ${r.subject}, ${r.gradeLevel}, ${r.matchMode}, ${r.gradeMin}, ${r.gradeMax}, ${r.maxPlayers}, ${idFromString(r.hostId)}, 'waiting', ${JSON.stringify({ seed })}::jsonb, ${r.isTest}, ${r.createdAt}, ${r.createdAt})
       ON CONFLICT (code) DO NOTHING`
     return n === 1
   }

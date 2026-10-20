@@ -170,7 +170,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
         const original = p.type === 'letters' ? [...answer] : answer.split(' ')
         expect(p.type).toBe(answer.includes(' ') ? 'words' : 'letters')
         expect([...p.scrambled].sort()).toEqual([...original].sort())
-        expect(p.scrambled.join('|')).not.toBe(original.join('|'))
+        if (new Set(original).size > 1) expect(p.scrambled.join('|')).not.toBe(original.join('|'))
         expect(p.points).toBe(rows[i]?.points)
         total += p.points
       }
@@ -290,6 +290,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         expect((res.body as { data: { correct: boolean } }).data.correct).toBe(f === 'T')
       }
+      t.clock.advance(1000 * flags.length) // a human pace: the pacing guard wants 1 s per checked item
       return { sessionId, rows }
     }
 
@@ -387,6 +388,25 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(best?.best_score).toBe(26)
     })
 
+    it('pacing guard: a run faster than 1 s per checked item keeps its score but earns nothing and is no record', async () => {
+      const fast = await open(student2, 'cabaran-kilat')
+      for (const item of fast.rows.slice(0, 3)) await answerItem(student2, 'cabaran-kilat', fast.sessionId, item, true)
+      t.clock.advance(2_999)
+      const res = await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: fast.sessionId })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: false, syiling_awarded: 0, score: 60, correct_count: 3, total_answered: 3 })
+      expect(rewards.calls).toHaveLength(0)
+      expect(await sessionRow(fast.sessionId)).toMatchObject({ score: 60, coins_computed: 0, coins_credited: 0, is_new_record: false })
+      const [none] = await t.db.query<{ n: string }>(`select count(*)::text as n from personal_bests where user_id = $1::bigint and game = 'cabaran-kilat'`, [student2.userId])
+      expect(none?.n).toBe('0')
+
+      const paced = await open(student2, 'cabaran-kilat')
+      for (const item of paced.rows.slice(0, 3)) await answerItem(student2, 'cabaran-kilat', paced.sessionId, item, true)
+      t.clock.advance(3_000)
+      const ok = await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: paced.sessionId })
+      expect(GamesSoloSubmitResponseSchema.parse(ok.body)).toMatchObject({ is_new_record: true, syiling_awarded: 6, score: 60 })
+      expect(rewards.calls).toHaveLength(1)
+    })
+
     it('rewards are reported only when syiling can be earned; the score is still computed', async () => {
       rewards.canEarn = false
       const { sessionId } = await play(student, 'cabaran-kilat', 'TT')
@@ -475,6 +495,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       for (const item of rows.slice(0, 3)) {
         expect((await answerItem(admin, 'betul-salah', sessionId, item, true)).status).toBe(200)
       }
+      t.clock.advance(3000)
       const submit = await admin.post('/api/games/solo/betul-salah/submit', { session_id: sessionId })
       expect(GamesSoloSubmitResponseSchema.parse(submit.body)).toMatchObject({ score: 12 + 14 + 16, syiling_awarded: 0, correct_count: 3 })
       expect(rewards.calls).toHaveLength(0)

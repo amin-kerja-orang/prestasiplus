@@ -1,5 +1,3 @@
-import type { Prng } from '../../../../db/prng'
-
 export interface SpinSegment {
   label: string
   type: 'syiling' | 'nothing'
@@ -27,6 +25,3 @@ export function segmentOf(r: number): number {
   const i = SPIN_SEGMENTS.findIndex((s) => (left -= s.weight) < 0)
   return i < 0 ? SPIN_SEGMENTS.length - 1 : i
 }
-
-/** The segment drawn by a named stream. */
-export const drawSegment = (rng: Prng): number => segmentOf(rng.next() * 100)

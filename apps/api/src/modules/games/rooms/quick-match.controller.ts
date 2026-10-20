@@ -1,6 +1,18 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
 import type { Request, Response } from 'express'
 
+import { NoStoreInterceptor } from '../../../common/http/no-store.interceptor'
 import type { RequestWithAuth } from '../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { callerOf } from '../caller'
@@ -13,6 +25,7 @@ type Req = Request & RequestWithAuth
 /** Papan Bijak quick match (M16-29..31): RAW bodies; the 422 is raw `{ error }`. 401/403/429 stay standard. */
 @Controller('papan-bijak/quick-match')
 @UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
 export class QuickMatchController {
   constructor(@Inject(QuickMatchService) private readonly quick: QuickMatchService) {}
 

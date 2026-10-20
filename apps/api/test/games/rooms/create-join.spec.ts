@@ -217,7 +217,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
           grade_level: 'TINGKATAN_4',
           match_mode: 'same_level',
           is_test: false,
-          state: null,
+          state: { seed: expect.stringMatching(/^[0-9a-f]{32}$/) },
           settled_at: null,
         })
         expect(room.grade_min).toBeNull()
@@ -440,18 +440,38 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       }
     })
 
-    it('Mod Pelajar joiners are stamped is_test', async () => {
-      const code = await createRoom(student, 'perang-fakta', { ...FORM, match_mode: 'same_level' })
+    it('no mixed rooms: a test caller cannot join a normal room and a normal caller cannot join a test room (404)', async () => {
       const mod = await loginAs(t, ACCOUNTS.schoolAdmin, { mod: true })
+      const normal = await createRoom(student, 'perang-fakta', {
+        ...FORM,
+        match_mode: 'same_level',
+      })
+      expectError(
+        await mod.post(P('perang-fakta', undefined, '/join'), { room_code: normal }),
+        'NOT_FOUND',
+        M.roomNotFound,
+      )
+      const testRoom = await createRoom(mod, 'perang-fakta', { ...FORM, match_mode: 'same_level' })
+      expectError(
+        await student2.post(P('perang-fakta', undefined, '/join'), { room_code: testRoom }),
+        'NOT_FOUND',
+        M.roomNotFound,
+      )
+      const other = await loginAs(t, ACCOUNTS.admin, { mod: true })
       expect(
-        (await mod.post(P('perang-fakta', undefined, '/join'), { room_code: code })).status,
+        (await other.post(P('perang-fakta', undefined, '/join'), { room_code: testRoom })).status,
       ).toBe(200)
       expect(
         await t.db.query(
           'select is_test from game_room_players where room_code = $1 and user_id = $2',
-          [code, mod.userId],
+          [testRoom, other.userId],
         ),
       ).toEqual([{ is_test: true }])
+      expect(
+        await t.db.query('select user_id::text from game_room_players where room_code = $1', [
+          normal,
+        ]),
+      ).toEqual([{ user_id: student.userId }])
     })
   })
 
@@ -549,7 +569,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       const pick = bots.picks.at(-1)
       expect(pick?.hostId).toBe(student.userId)
       expect(pick?.exclude).toEqual([student.userId])
-      expect(pick?.stream).toBe(`m16:room:${code}:bot:1`)
+      expect(pick?.stream).toMatch(new RegExp(`^m16:room:${code}:[0-9a-f]{32}:bot:1$`))
       const mod = await loginAs(t, ACCOUNTS.admin, { mod: true })
       const testRoom = await createRoom(mod, 'perang-fakta')
       parseRoom(await mod.get(P('perang-fakta', testRoom)))
@@ -572,6 +592,30 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       } finally {
         bots.list.push(...saved)
       }
+    })
+
+    it('the secret seed never leaves the server; codes are crypto-random A-Z0-9', async () => {
+      const code = await createRoom(student, 'perang-fakta')
+      expect(code).toMatch(/^[A-Z0-9]{6}$/)
+      const seed = (
+        await t.db.query<{ state: { seed: string } }>(
+          'select state from game_rooms where code = $1',
+          [code],
+        )
+      )[0]?.state.seed as string
+      expect(seed).toMatch(/^[0-9a-f]{32}$/)
+      const waiting = await student.get(P('perang-fakta', code))
+      expect(JSON.stringify(waiting.body)).not.toContain(seed)
+      expect(parseRoom(waiting).state).toBeNull()
+      const other = await createRoom(student, 'perang-fakta')
+      expect(
+        (
+          await t.db.query<{ state: { seed: string } }>(
+            'select state from game_rooms where code = $1',
+            [other],
+          )
+        )[0]?.state.seed,
+      ).not.toBe(seed)
     })
 
     it('the user ids in the room view are decimal strings of the owner users', async () => {

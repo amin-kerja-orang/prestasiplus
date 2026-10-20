@@ -1,8 +1,8 @@
 import { GAMES_MESSAGES, GamesRawMessageSchema, GamesSpinPageSchema, GamesSpinRefusedSchema, GamesSpinResponseSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { prngStream } from '../../../src/db/prng'
-import { drawSegment, SPIN_SEGMENTS } from '../../../src/modules/games/solo/spin/spin.rules'
+import { SpinDraw } from '../../../src/modules/games/solo/spin/spin-draw'
+import { SPIN_SEGMENTS } from '../../../src/modules/games/solo/spin/spin.rules'
 import { ACCOUNTS, bootGamesApp, expectCsrfInvalid, expectError, FakeRewards, loginAs, parseData, START, type GamesTestApp } from '../helpers'
 
 const M = GAMES_MESSAGES
@@ -10,8 +10,10 @@ const rewards = new FakeRewards()
 
 describe('Roda Nasib (M16-34, M16-35)', () => {
   let t: GamesTestApp
+  let draw: SpinDraw
   beforeAll(async () => {
     t = await bootGamesApp({ ports: { rewards } })
+    draw = t.app.get(SpinDraw, { strict: false })
   })
   afterAll(async () => {
     await t.close()
@@ -41,9 +43,10 @@ describe('Roda Nasib (M16-34, M16-35)', () => {
     expect(parseData(await c.get('/api/games/roda-nasib'), GamesSpinPageSchema).canEarnSyiling).toBe(false)
   })
 
-  it('a spin draws the segment server side from the named stream, credits through the port once, and a second spin that day is 409 raw', async () => {
+  it('a spin draws the segment server side, credits through the port once, and a second spin that day is 409 raw', async () => {
     const c = await loginAs(t, ACCOUNTS.student)
-    const index = drawSegment(prngStream(`games:spin:${c.userId}:2026-10-19`))
+    const index = 3
+    draw.forceNext(index)
     const seg = SPIN_SEGMENTS[index] as (typeof SPIN_SEGMENTS)[number]
     const res = await c.post('/api/games/roda-nasib/spin')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -98,7 +101,7 @@ describe('Roda Nasib (M16-34, M16-35)', () => {
     expect(next.status).toBe(200)
     expect(rewards.calls.map((x) => x.input.key)).toEqual(['spin:2026-10-19', 'spin:2026-10-20'])
     expect((await spinsOf(c.userId)).map((s) => s.spin_date)).toEqual(['2026-10-19', '2026-10-20'])
-    expect(GamesSpinResponseSchema.parse(next.body).result.segment_index).toBe(drawSegment(prngStream(`games:spin:${c.userId}:2026-10-20`)))
+    expect(SPIN_SEGMENTS[GamesSpinResponseSchema.parse(next.body).result.segment_index]).toBeDefined()
   })
 
   it('nothing is credited when syiling cannot be earned, but the spin is recorded', async () => {

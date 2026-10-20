@@ -5,6 +5,7 @@ import { AdminGamesController } from './admin/admin-games.controller'
 import { AdminGamesService } from './admin/admin-games.service'
 import { QuickMatchController } from './quick-match.controller'
 import { QuickMatchService } from './quick-match.service'
+import { RoomSecrets } from './room-secrets'
 import { RoomsController } from './rooms.controller'
 import { RoomsRepository } from './rooms.repository'
 import { RoomsService } from './rooms.service'
@@ -17,7 +18,7 @@ import { RoomsService } from './rooms.service'
 @Module({
   imports: [GamesCoreModule],
   controllers: [RoomsController, QuickMatchController, AdminGamesController],
-  providers: [RoomsRepository, RoomsService, QuickMatchService, AdminGamesService],
+  providers: [RoomSecrets, RoomsRepository, RoomsService, QuickMatchService, AdminGamesService],
   exports: [],
 })
 export class RoomsModule {}

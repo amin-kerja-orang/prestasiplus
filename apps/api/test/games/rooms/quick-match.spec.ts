@@ -62,6 +62,11 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     expect(await searches()).toEqual([])
   })
 
+  it('poll, start and cancel are no-store', async () => {
+    for (const res of [await student2.get(`${QM}/poll`), await student2.post(`${QM}/cancel`)])
+      expect(res.headers['cache-control']).toBe('no-store')
+  })
+
   it('start: 200 { status: "searching" } and a stored search; a plain poll with no search is cancelled', async () => {
     expect(await poll(student2)).toEqual({ status: 'cancelled' })
     const res = await student.post(QM, FORM)

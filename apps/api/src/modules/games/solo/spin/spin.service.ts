@@ -2,12 +2,12 @@ import { Inject, Injectable } from '@nestjs/common'
 import { idFromString } from '../../../../db/ids'
 
 import { CLOCK, type Clock, mytDay } from '../../../../db/clock'
-import { prngStream } from '../../../../db/prng'
 import { PrismaService } from '../../../../db/prisma.service'
 import type { GamesCaller } from '../../caller'
 import { GamesPorts } from '../../core/ports'
 import { rawSpinRefused } from '../../errors'
-import { drawSegment, SPIN_SEGMENTS } from './spin.rules'
+import { SpinDraw } from './spin-draw'
+import { SPIN_SEGMENTS } from './spin.rules'
 
 export type SpinOutcome = { status: 200; body: Record<string, unknown> } | { status: 409; body: ReturnType<typeof rawSpinRefused> }
 
@@ -18,6 +18,7 @@ export class SpinService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(SpinDraw) private readonly draw: SpinDraw,
   ) {}
 
   async page(caller: GamesCaller): Promise<Record<string, unknown>> {
@@ -38,7 +39,7 @@ export class SpinService {
     const now = this.clock.now()
     const date = mytDay(now)
     const uid = idFromString(caller.userId)
-    const index = drawSegment(prngStream(`games:spin:${caller.userId}:${date}`))
+    const index = this.draw.draw()
     const seg = SPIN_SEGMENTS[index] as (typeof SPIN_SEGMENTS)[number]
     return this.prisma.transaction(async (tx): Promise<SpinOutcome> => {
       // The unique (user_id, spin_date) decides a race: the loser waits for the winner's commit, then inserts nothing.

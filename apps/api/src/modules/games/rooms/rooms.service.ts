@@ -16,7 +16,7 @@ import { ApiError } from '../../../common/errors/api-error'
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
-import { prngStream, type Prng } from '../../../db/prng'
+import { prngStream } from '../../../db/prng'
 import {
   fieldError,
   gameNotFound,
@@ -51,20 +51,13 @@ import {
   type RoomAction,
   type RoomState,
 } from './engine'
+import { RoomSecrets } from './room-secrets'
 import { type PlayerRow, type RoomRow, RoomsRepository } from './rooms.repository'
 
-const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 const CODE_PATTERN = /^[A-Z0-9]{6}$/
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
-
-/** 6 characters from [A-Z0-9] (room codes, BR-M16-18). */
-function roomCodeFrom(rng: Prng): string {
-  let out = ''
-  for (let i = 0; i < 6; i++) out += ALNUM[Math.floor(rng.next() * ALNUM.length)] ?? 'A'
-  return out
-}
 
 /** The room game of a path value, else 404 "Permainan tidak dijumpai.". */
 export function parseGame(value: string): GamesRoomGame {
@@ -106,6 +99,7 @@ export class RoomsService {
     @Inject(GameQuestions) private readonly questions: GameQuestions,
     @Inject(GameSubjects) private readonly subjects: GameSubjects,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(RoomSecrets) private readonly secrets: RoomSecrets,
   ) {}
 
   // --- hub and lobby ---------------------------------------------------------------------------------------
@@ -204,24 +198,28 @@ export class RoomsService {
     }))
   }
 
-  /** Inserts the room and its human host; the code is drawn from a named stream and retried on collision. */
+  /** Inserts the room and its human host; the code and the secret seed come from crypto randomness; a taken code is retried on collision. */
   async createRoom(host: Caller, game: GamesRoomGame, input: NewRoomInput): Promise<string> {
     const now = this.clock.now()
-    const total = await this.repo.countRooms()
+    const seed = this.secrets.newSeed()
     for (let attempt = 0; attempt < 1000; attempt++) {
-      const code = roomCodeFrom(prngStream(`m16:room-code:${String(total)}:${String(attempt)}`))
-      const inserted = await this.repo.insertRoom(code, {
-        game,
-        subject: input.subject,
-        gradeLevel: input.gradeLevel,
-        matchMode: input.matchMode,
-        gradeMin: input.gradeMin,
-        gradeMax: input.gradeMax,
-        maxPlayers: input.maxPlayers,
-        hostId: host.userId,
-        isTest: host.isTest,
-        createdAt: now,
-      })
+      const code = this.secrets.roomCode()
+      const inserted = await this.repo.insertRoom(
+        code,
+        {
+          game,
+          subject: input.subject,
+          gradeLevel: input.gradeLevel,
+          matchMode: input.matchMode,
+          gradeMin: input.gradeMin,
+          gradeMax: input.gradeMax,
+          maxPlayers: input.maxPlayers,
+          hostId: host.userId,
+          isTest: host.isTest,
+          createdAt: now,
+        },
+        seed,
+      )
       if (inserted) {
         await this.repo.addPlayer(code, host.userId, false, host.isTest, now)
         return code
@@ -247,7 +245,8 @@ export class RoomsService {
       if (
         room.status !== 'waiting' ||
         ps.length >= room.maxPlayers ||
-        !gradeFits(room, viewer?.grade ?? null)
+        !gradeFits(room, viewer?.grade ?? null) ||
+        room.isTest !== caller.isTest // no mixed rooms: test actors and normal users never share one
       ) {
         throw roomNotFound()
       }
@@ -316,6 +315,7 @@ export class RoomsService {
         room: engineRoom(room),
         players: enginePlayers(players),
         humanId: caller.userId,
+        seed: seedOf(room, this.secrets),
         pool,
         quizTiles: (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES,
         p: await this.botAccuracy(),
@@ -516,7 +516,7 @@ export class RoomsService {
   /** One fictitious student of a fitting grade not yet in the room (BR-M16-19); none when the pool is empty. */
   async addBot(room: RoomRow, players: PlayerRow[]): Promise<void> {
     const exclude = players.map((p) => p.userId)
-    const stream = `m16:room:${room.code}:bot:${String(players.length)}`
+    const stream = `m16:room:${room.code}:${seedOf(room, this.secrets)}:bot:${String(players.length)}`
     const pick =
       (await this.ports.botPool.pick({
         hostId: room.hostId,
@@ -537,7 +537,7 @@ export class RoomsService {
         : (): boolean => true
     const subjectId = await this.subjects.subjectId(room.subject as GamesRoomSubject)
     const levelId = await this.subjects.levelIdOfEnum(room.gradeLevel)
-    const rng = prngStream(`m16:room:${room.code}:pool`)
+    const rng = prngStream(`m16:room:${room.code}:${seedOf(room, this.secrets)}:pool`)
     const tries =
       subjectId === null
         ? [{}]
@@ -572,7 +572,7 @@ export class RoomsService {
   private async viewOf(room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
     const ids = [room.hostId, ...players.map((p) => p.userId)]
-    const st = room.state
+    const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
     if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
     const nameOf = (id: string): string => names.get(id)?.name ?? ''
@@ -621,6 +621,12 @@ export class RoomsService {
     }
     return view
   }
+}
+
+/** The room's secret seed (stored at create); a room without one (older rows) gets a fresh one. */
+function seedOf(room: RoomRow, secrets: RoomSecrets): string {
+  const seed = (room.state as { seed?: unknown } | null)?.seed
+  return typeof seed === 'string' && seed !== '' ? seed : secrets.newSeed()
 }
 
 function rank(field: string): number {

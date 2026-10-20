@@ -36,7 +36,9 @@ import {
   memoryAccuracy,
   normaliseAnswer,
   scoreRun,
+  MIN_MS_PER_ITEM,
   SOLO_INFO,
+  tooFast,
 } from './solo.rules'
 
 const M = GAMES_MESSAGES
@@ -99,11 +101,10 @@ export class SoloService {
       const level = await this.subjects.levelIdOfGrade(darjah)
       levelIds = level === null ? [] : [level]
     }
-    // The streams are salted with fresh entropy: a stream named only by public values would let a client replay it and
-    // learn the statements' truth or the card layout. The salt never leaves this method.
-    const salt = randomBytes(12).toString('hex')
-    const stem = `games:solo:${caller.userId}:${game}:${salt}`
-    const built = await this.builder.build(game, levelIds, prngStream(stem), prngStream(`${stem}:cards`))
+    // Question sampling and puzzle scrambling use a named stream; every secret-bearing value (statement truth, card layout and
+    // ids) is drawn from node:crypto inside the builder, because a 32-bit seeded stream could be recovered by a client.
+    const stem = `games:solo:${caller.userId}:${game}:${randomBytes(12).toString('hex')}`
+    const built = await this.builder.build(game, levelIds, prngStream(stem))
     const itemCount = game === 'kad-memori' ? built.rows.length / 2 : built.rows.length
     const sessionId = await this.prisma.transaction(async () => {
       const id = await this.repo.createSession({ userId: caller.userId, game, darjah, itemCount, maxScore: built.maxScore, isTest: caller.isTest, createdAt: this.clock.now() })
@@ -254,6 +255,7 @@ export class SoloService {
       if (!s || s.game !== game) return refuse(422, M.soloInvalidResult)
       if (s.submittedAt !== null) return refuse(409, M.soloAlreadySubmitted)
       const at = this.clock.now()
+      const elapsed = at.getTime() - s.createdAt.getTime()
       const earn = await this.canEarn(caller, { tx })
       const report = async (coins: number, correct: number, total: number, detail: Record<string, unknown>): Promise<number> => {
         if (!earn) return 0
@@ -268,8 +270,9 @@ export class SoloService {
       if (game === 'kad-memori') {
         const items = await this.repo.items(s.id)
         if (items.filter((i) => i.matched).length < MEMORY_PAIRS * 2) return refuse(422, M.soloInvalidResult)
-        const credited = await report(MEMORY_COINS, MEMORY_PAIRS, MEMORY_PAIRS, { moves: s.moves })
-        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: MEMORY_COINS, coinsCredited: credited })
+        const fast = tooFast(elapsed, s.moves, MIN_MS_PER_ITEM)
+        const credited = fast ? 0 : await report(MEMORY_COINS, MEMORY_PAIRS, MEMORY_PAIRS, { moves: s.moves })
+        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: fast ? 0 : MEMORY_COINS, coinsCredited: credited })
         return {
           status: 200,
           body: {
@@ -286,15 +289,18 @@ export class SoloService {
       const checked = await this.repo.checkedItems(s.id)
       if (checked.length === 0) return refuse(422, M.soloInvalidResult)
       const run = scoreRun(game, checked.map((c) => ({ correct: c.correct === true, points: c.points })))
-      const isNewRecord = await this.repo.recordBest(caller.userId, game, run.score, s.isTest, at)
+      // pacing guard: a run faster than a human can play keeps its score but earns nothing and is no record
+      const fast = tooFast(elapsed, run.total, MIN_MS_PER_ITEM)
+      const coins = fast ? 0 : run.coins
+      const isNewRecord = fast ? false : await this.repo.recordBest(caller.userId, game, run.score, s.isTest, at)
       const detail =
         game === 'betul-salah' ? { maxStreak: run.best } : game === 'cabaran-kilat' ? { maxCombo: run.best } : game === 'tembak-jawapan' ? { level: run.best } : { solved: run.best }
-      const credited = await report(run.coins, run.correct, run.total, detail)
+      const credited = fast ? 0 : await report(coins, run.correct, run.total, detail)
       await this.repo.updateSession(s.id, {
         submittedAt: at,
         score: run.score,
         correctCount: run.correct,
-        coinsComputed: run.coins,
+        coinsComputed: coins,
         coinsCredited: credited,
         isNewRecord,
       })

@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto'
+
 import { Inject, Injectable } from '@nestjs/common'
 import {
   GAMES_LEAGUE_CLASS_LEVELS,
@@ -13,7 +15,6 @@ import {
 
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, isIdString } from '../../../db/ids'
-import { prngStream } from '../../../db/prng'
 import { CurriculumRepository } from '../../curriculum'
 import { SchoolsRepository } from '../../schools'
 import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueInviteInvalid, leagueNeedsSchool, leagueNotFound } from '../errors'
@@ -135,8 +136,8 @@ export class LeaguesService {
     const now = this.clock.now()
     return this.repo.transaction(async () => {
       for (let n = 0; n < CODE_TRIES; n++) {
-        const rng = prngStream(`games:league-code:${caller.userId}:${String(now.getTime())}:${String(n)}`)
-        const code = Array.from({ length: 8 }, () => INVITE_ALPHABET[rng.int(0, INVITE_ALPHABET.length - 1)]).join('')
+        // Invite codes are unguessable: CSPRNG, not the seeded stream (security M3).
+        const code = Array.from({ length: 8 }, () => INVITE_ALPHABET[randomInt(INVITE_ALPHABET.length)]).join('')
         const id = await this.repo.insertLeague(
           {
             name: input.name,
