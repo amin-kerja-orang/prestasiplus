@@ -10,6 +10,7 @@ import { videosScenarios } from './content/videos'
 import { bijakPapersScenarios } from './bijak/papers'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
+import { questionsScenarios } from './questions/questions'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
@@ -29,6 +30,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...questionsScenarios,
     ...walletScenarios,
     ...audioScenarios,
     ...articleScenarios,

@@ -373,7 +373,7 @@ export const QuestionStructuredDetailSchema = z
     dskpSpId: IdSchema.nullable(),
     scriptType: z.string(),
     textDirection: z.string(),
-    questionTemplate: z.literal('eksperimen').nullable(),
+    questionTemplate: z.enum(['eksperimen']).nullable(),
     subQuestions: z.array(QuestionStructuredSubSchema),
     createdBy: z.object({ id: IdSchema, name: z.string().nullable() }),
     createdAt: TimestampSchema,
