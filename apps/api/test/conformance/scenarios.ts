@@ -21,6 +21,8 @@ import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
 import { walletScenarios } from './wallet/wallet'
 import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
+import { kirkpatrickScenarios } from './analytics/kirkpatrick'
+import { analyticsScenarios } from './analytics/analytics'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -51,5 +53,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...bijakBuilderScenarios,
     ...performanceScenarios,
     ...classesScenarios,
+    ...kirkpatrickScenarios,
+    ...analyticsScenarios,
   ]
 }

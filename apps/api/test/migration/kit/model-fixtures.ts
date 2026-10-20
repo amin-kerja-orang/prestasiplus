@@ -83,6 +83,17 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
+  // feedback (BE-20): the user must exist; role and satisfaction have checks.
+  feedback: async (query) => ({ user_id: await parentUser(query), role: 'student', month: '2026-10-01', satisfaction: 4 }),
+  // interventions (BE-20): pupil and author must exist; alert type and the free text are required.
+  interventions: async (query) => ({
+    student_id: await parentUser(query),
+    created_by_id: await parentUser(query),
+    alert_type: 'inactive',
+    action_date: '2026-10-01',
+    alert_description: 'Huraian contoh',
+    action_taken: 'Tindakan contoh',
+  }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),

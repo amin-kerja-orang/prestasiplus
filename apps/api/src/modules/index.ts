@@ -25,6 +25,8 @@ import { ExamBuilderModule } from './exam/builder'
 import { ExamBlueprintsModule } from './exam/blueprints'
 import { PerformanceModule } from './reports/performance'
 import { ClassesModule } from './classes'
+import { KirkpatrickModule } from './reports/kirkpatrick'
+import { AnalyticsReportsModule } from './reports/analytics'
 
 /**
  * Module registry. Each lane adds ONE import and ONE array entry for its Nest module
@@ -33,4 +35,4 @@ import { ClassesModule } from './classes'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ExamBuilderModule, ExamBlueprintsModule, PerformanceModule, ClassesModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ExamBuilderModule, ExamBlueprintsModule, PerformanceModule, ClassesModule, KirkpatrickModule, AnalyticsReportsModule]

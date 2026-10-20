@@ -43,5 +43,6 @@ export const AUDIT_ACTIONS = {
   BIJAK_BLUEPRINT_CREATED: 'bijak.blueprint.created',
   BIJAK_BLUEPRINT_VERSION_CREATED: 'bijak.blueprint.version_created',
   BIJAK_BLUEPRINT_RETIRED: 'bijak.blueprint.retired',
+  KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

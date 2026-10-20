@@ -102,6 +102,11 @@ export const EnvSchema = z.object({
   THROTTLE_CLASSES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   PUBLIC_BASE_URL: z.url().optional(),
+  // BE-20 (Kirkpatrick, feedback). Throttles per user; the code applies the defaults when unset.
+  THROTTLE_KIRKPATRICK_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-20 (M11 monitoring and teacher report). Throttle per user; the code applies the default when unset.
+  THROTTLE_ANALYTICS_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
