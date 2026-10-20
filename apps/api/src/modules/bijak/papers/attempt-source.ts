@@ -5,44 +5,15 @@ import { PapersRepository } from './papers.repository'
 import { BijakPapersPorts } from './ports'
 import { ruleOf } from './rules'
 import { bijakCodeOf } from './subject-codes'
+import type { AttemptPaper, BijakPaperSource, PaperResolution } from '../attempts/ports'
 
 /*
- * The types below MIRROR `apps/api/src/modules/bijak/attempts/ports.ts` of BE-16 (`AttemptPaper`,
- * `PaperResolution`, `BijakPaperSource`) and `SectionSnapshot` of the prototype domain. They are
- * declared here, not imported, because BE-16 is not on this branch (it owns `bijak/attempts/**`).
- * TypeScript compares them structurally, so `BijakPapersAttemptSource` is assignable to BE-16's
- * `BijakPaperSource`. Keep them identical to BE-16 when either side changes.
+ * The attempt-side types are BE-16's own (`bijak/attempts/ports.ts`); they used to be mirrored here
+ * while the two cards lived on separate branches. Importing them (type-only) means a drift is now
+ * a compile error instead of a silent mismatch.
  */
-export interface AttemptSectionSnapshot {
-  /** The section's wire id (`paper_sections.id` as a decimal string). */
-  id: string
-  label: string
-  compulsory?: boolean
-  instruction?: string
-  rule: { type: 'all' } | { type: 'choose'; n: number }
-  questionIds: string[]
-}
-
-export interface AttemptPaper {
-  id: string
-  kind: 'pilihan' | 'jana'
-  title: string
-  subject: string
-  subjectName: string
-  kertas: number
-  code: string
-  durationMin: number
-  sections: AttemptSectionSnapshot[]
-}
-
-export type PaperResolution =
-  | { ok: true; paper: AttemptPaper }
-  | { ok: false; reason: 'not_found' }
-  | { ok: false; reason: 'not_eligible' }
-
-export interface BijakPaperSource {
-  resolveForAttempt(input: { userId: string; paperId: string; isTest: boolean }): Promise<PaperResolution>
-}
+export type { AttemptPaper, BijakPaperSource, PaperResolution }
+export type AttemptSectionSnapshot = AttemptPaper['sections'][number]
 
 /**
  * Attempt eligibility for BE-16 (`BijakPaperSource`).
@@ -56,11 +27,8 @@ export interface BijakPaperSource {
  * `isTest` is the caller's Mod Pelajar flag. It does not widen access: test data is flagged on the
  * rows the caller writes, never used to see another user's paper. No answer key is read here.
  *
- * WIRE-UP (main session, after BE-15 and BE-16 are both merged): in `BijakAttemptsModule`
- * (or an `onModuleInit` of a module that imports both), call
- * `attemptPorts.providePaperSource(inject(BijakPapersAttemptSource))`.
- * TODO(BE-15/BE-16): this module deliberately does NOT register itself, because
- * `BijakAttemptPorts` does not exist on this branch.
+ * Registered with `BijakAttemptPorts.providePaperSource` by `BijakIntegrationModule`
+ * (`bijak/integration`), which imports both cards.
  */
 @Injectable()
 export class BijakPapersAttemptSource implements BijakPaperSource {

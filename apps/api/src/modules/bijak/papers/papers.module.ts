@@ -14,9 +14,8 @@ import { BijakPapersPorts } from './ports'
  * `BijakPapersPorts` (BE-09 provides the question source, BE-16 the progress and served sources, see
  * `ports.ts`). Neither card edits this file.
  *
- * TODO(main session, after BE-15 and BE-16 merge): register `BijakPapersAttemptSource` with
- * `BijakAttemptPorts.providePaperSource(...)` from an `onModuleInit` (see `attempt-source.ts`). It is not
- * done here because BE-16's ports do not exist on this branch.
+ * `BijakPapersAttemptSource` is registered with `BijakAttemptPorts.providePaperSource(...)` by
+ * `BijakIntegrationModule` (`bijak/integration`), so this module's own test app stays standalone.
  */
 @Module({
   imports: [ThrottleModule],
