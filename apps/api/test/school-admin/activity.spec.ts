@@ -106,3 +106,28 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     }
   })
 })
+
+/** DB spec (not run by the fixer): both anti-cache headers on the 200 and on the 429 of the activity report. */
+describe('GET /admin-sekolah/laporan-aktiviti anti-cache headers', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp({ env: { THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: '1' } })
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('sends no-store and Pragma: no-cache on the 200 and on the 429', async () => {
+    const ok = await admin.get('/admin-sekolah/laporan-aktiviti')
+    expect(ok.status).toBe(200)
+    expect(ok.headers['cache-control']).toBe('no-store')
+    expect(ok.headers.pragma).toBe('no-cache')
+    const limited = await admin.get('/admin-sekolah/laporan-aktiviti')
+    expect(limited.status).toBe(429)
+    expect(limited.headers['cache-control']).toBe('no-store')
+    expect(limited.headers.pragma).toBe('no-cache')
+  })
+})

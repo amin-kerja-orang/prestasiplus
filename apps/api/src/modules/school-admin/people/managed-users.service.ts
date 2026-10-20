@@ -17,6 +17,7 @@ import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { RateLimiter } from '../../../common/throttle'
 import { isOverloadError } from '../../auth/auth.errors'
 import { PasswordService } from '../../auth/password.service'
 import { ClassesRepository } from '../../classes'
@@ -24,7 +25,7 @@ import { SchoolsRepository, type SchoolRow } from '../../schools'
 import type { Caller } from '../../users/caller'
 import { generatePassword, UsersRepository, uniqueField, type ManagedCounts, type ManagedRole, type UserRecord } from '../../users'
 import type { SchoolAdminActor } from '../school-admin.actor'
-import { SCHOOL_ADMIN_AUDIT, WRITE_TX } from '../school-admin.constants'
+import { SCHOOL_ADMIN_AUDIT, SCHOOL_ADMIN_LIMITS, WRITE_TX } from '../school-admin.constants'
 import { exportFileName, type PeopleExportQuery, type PeopleListQuery } from './people.query'
 import { invalidFields, parseReset, parseUserUpdate, type Fields } from './people.input'
 import { isEffectivelyActive, toSchoolInfo, toUserDetail, usersCsv } from './people.mapper'
@@ -104,6 +105,7 @@ export class ManagedUsersService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(RateLimiter) private readonly limiter: RateLimiter,
   ) {}
 
   // --- reads --------------------------------------------------------------------------------------
@@ -173,13 +175,13 @@ export class ManagedUsersService {
   async create(ctx: PeopleCtx, kind: PeopleKind, parsed: { value: NewAccount | null; fields: Fields }, classId: string | null): Promise<CreatedAccount> {
     const fields: Fields = { ...parsed.fields }
     const school = await this.schoolOf(ctx)
+    // Hash FIRST so the taken-e-mail path costs the same as the success path (no timing oracle on the e-mail).
+    const password = generatePassword()
+    const passwordHash = await this.passwords.hash(password)
     if (classId !== null && !(await this.guard(() => this.classIsValid(ctx, classId)))) fields.classId = V.invalid('class id')
     if (parsed.value && (await this.guard(() => this.users.emailTaken(parsed.value?.email ?? '')))) fields.email = V.taken('email')
     if (Object.keys(fields).length > 0 || !parsed.value) throw invalidFields(fields)
     const input = parsed.value
-
-    const password = generatePassword()
-    const passwordHash = await this.passwords.hash(password)
     const now = this.clock.now()
 
     const id = await this.write(async (tx) => {
@@ -227,10 +229,14 @@ export class ManagedUsersService {
     if (!target.isActive) throw ApiError.of('FORBIDDEN')
     const parsed = parseUserUpdate(raw)
     const fields: Fields = { ...parsed.fields }
+    // Hash BEFORE the e-mail check (equal timing); an e-mail CHANGE is charged to the create bucket (10 per minute per user).
+    const newHash = parsed.value?.newPassword === undefined ? null : await this.passwords.hash(parsed.value.newPassword)
+    if (parsed.value && parsed.value.email.trim().toLowerCase() !== (target.email ?? '').trim().toLowerCase()) {
+      this.limiter.consume(SCHOOL_ADMIN_LIMITS.create, ctx.actor.userId)
+    }
     if (parsed.value && (await this.guard(() => this.users.emailTaken(parsed.value?.email ?? '', id)))) fields.email = V.taken('email')
     if (Object.keys(fields).length > 0 || !parsed.value) throw invalidFields(fields)
     const input = parsed.value
-    const newHash = input.newPassword === undefined ? null : await this.passwords.hash(input.newPassword)
     const school = await this.schoolOf(ctx)
     const now = this.clock.now()
 

@@ -10,6 +10,20 @@ import { K_COHORT } from '../school-admin.constants'
 import { SchoolPopulation, type PupilFact } from './population'
 import { accuracyOf, activityWindow } from './windows'
 
+/** At most this many teacher question-stat reads run at the same time. */
+const STATS_POOL = 8
+
+/** Maps with at most `limit` calls in flight; the result keeps the input order. */
+async function mapPool<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    for (let i = next++; i < items.length; i = next++) out[i] = await fn(items[i] as T)
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return out
+}
+
 /** Rows of one pupil pill (contract max). */
 const PILL_MAX = 200
 
@@ -187,22 +201,19 @@ export class ActivityService {
     coins: Map<string, number>,
     headcount: Set<string>,
   ): Promise<SchoolAdminActivityReport['teachers']> {
-    const rows: SchoolAdminActivityReport['teachers'] = []
-    for (const t of [...teachers].sort(byName)) {
-      const q = await this.ports.questions.statsOf(t.id)
-      rows.push({
-        userId: t.id,
-        name: t.name,
-        email: t.email,
-        loggedIn: t.lastLoginAt !== null,
-        mcq: q.total,
-        structured: 0,
-        coins: coins.get(t.id) ?? 0,
-        hasHeadcount: headcount.has(t.id),
-        lastLoginAt: stamp(t.lastLoginAt),
-      })
-    }
-    return rows
+    const sorted = [...teachers].sort(byName)
+    const stats = await mapPool(sorted, STATS_POOL, (t) => this.ports.questions.statsOf(t.id))
+    return sorted.map((t, i) => ({
+      userId: t.id,
+      name: t.name,
+      email: t.email,
+      loggedIn: t.lastLoginAt !== null,
+      mcq: stats[i]?.total ?? 0,
+      structured: 0,
+      coins: coins.get(t.id) ?? 0,
+      hasHeadcount: headcount.has(t.id),
+      lastLoginAt: stamp(t.lastLoginAt),
+    }))
   }
 
   /** Current coin balance per user (the mock's `currentSyiling` / wallet balance, not windowed): one batched wallet read. */

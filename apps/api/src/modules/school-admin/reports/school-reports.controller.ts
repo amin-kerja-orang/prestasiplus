@@ -5,6 +5,7 @@ import { Roles } from '../../../common/guards/decorators'
 import { NoStoreInterceptor, ok } from '../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { isOverloadError } from '../../auth/auth.errors'
+import { PeopleHeadersGuard, PragmaNoCache } from '../people/people-headers.guard'
 import { schoolAdminOf, type SchoolAdminReq } from '../school-admin.actor'
 import { SCHOOL_ADMIN_LIMITS } from '../school-admin.constants'
 import { ActivityService } from './activity.service'
@@ -25,7 +26,7 @@ const text = (v: unknown): string | undefined => (typeof v === 'string' ? v : un
  */
 @Controller('admin-sekolah')
 @Roles('school_admin')
-@UseGuards(RateLimitGuard)
+@UseGuards(PeopleHeadersGuard, RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 export class SchoolReportsController {
   constructor(
@@ -43,7 +44,9 @@ export class SchoolReportsController {
     return ok(await this.guard(() => this.usage.usage(schoolId, text(period))))
   }
 
+  /** Per-pupil names, coins and logins of minors: also `Pragma: no-cache`, on 200 and on 429 (the guard runs before the limiter). */
   @Get('laporan-aktiviti')
+  @PragmaNoCache()
   @RateLimit(SCHOOL_ADMIN_LIMITS.read)
   async getActivity(@Req() req: Req, @Query('range') range: unknown) {
     const { schoolId } = schoolAdminOf(req)

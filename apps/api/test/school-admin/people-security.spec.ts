@@ -439,3 +439,36 @@ describe('BE-21 people security: 429 with Retry-After per bucket', () => {
     expect429(await admin.get('/admin-sekolah/guru'), false)
   })
 })
+
+/** DB spec (not run by the fixer): e-mail enumeration through PUT is throttled by the create bucket. */
+describe('BE-21 people security: an e-mail change is charged to the create bucket', () => {
+  let t: SchoolAdminTestApp
+  let admin: PeopleApi
+  let pupil: string
+
+  beforeAll(async () => {
+    t = await bootPeopleApp({ env: { THROTTLE_SCHOOL_ADMIN_CREATE_PER_MINUTE: '2' } }) // write bucket stays at 30
+    admin = peopleApiOf(await login(t, SCHOOL_ADMIN))
+    pupil = await userIdOf(t.db, STUDENT)
+  }, 120_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('the third PUT that changes the e-mail in a minute is 429; a PUT that keeps the e-mail is not counted', async () => {
+    const put = (email: string) => admin.put(`/admin-sekolah/pelajar/${pupil}`, { name: 'Murid Demo', email })
+    for (let i = 0; i < 5; i++) expect((await put('pelajar@demo.test')).status).toBe(200)
+    expect((await put('ubah1@ujian.test')).status).toBe(200)
+    expect((await put('ubah2@ujian.test')).status).toBe(200)
+    const res = await put('ubah3@ujian.test')
+    errorOf(res, 429, 'RATE_LIMITED')
+    expect(res.headers['retry-after']).toBeDefined()
+    expect((await userRow(t.db, pupil))?.email).toBe('ubah2@ujian.test')
+  })
+
+  it('a taken e-mail is still the contract 422 (and counts against the bucket)', async () => {
+    t.clock.advance(61_000)
+    const res = await admin.put(`/admin-sekolah/pelajar/${pupil}`, { name: 'Murid Demo', email: 'guru@demo.test' })
+    errorOf(res, 422, 'VALIDATION_ERROR', 'The email has already been taken.')
+  })
+})
