@@ -41,7 +41,6 @@ export interface SpmCaller {
 }
 
 const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
-const DIFFICULTIES = ['1', '2', '3', '4', '5'] as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 

@@ -34,7 +34,7 @@ let student2: Client
 let admin: Client
 
 /** Ids of the ADDMATH set fixtures (target 20). */
-let am: string[] = []
+const am: string[] = []
 
 const uid = async (email: string) => (await t.db.query<{ id: string }>('select id::text from users where email = $1', [email]))[0]?.id as string
 
