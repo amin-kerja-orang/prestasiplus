@@ -26,5 +26,10 @@ export const AUDIT_ACTIONS = {
   CURRICULUM_SUBTOPIC_CREATED: 'curriculum.subtopic.created',
   CURRICULUM_SUBTOPIC_UPDATED: 'curriculum.subtopic.updated',
   CURRICULUM_SUBTOPIC_DELETED: 'curriculum.subtopic.deleted',
+  QUESTION_CREATED: 'question.created',
+  QUESTION_UPDATED: 'question.updated',
+  QUESTION_DELETED: 'question.deleted',
+  QUESTION_BULK_ACTION: 'question.bulk_action',
+  QUESTION_STATUS_CHANGED: 'question.status.changed',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
