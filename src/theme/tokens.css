@@ -712,3 +712,14 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/* Focus ring reset for the DS composites; their ring is a box-shadow in src/ds/states.css (G-3b). */
+:is(
+    [data-ds='stat-tile'],
+    [data-ds='pill-nav'] a,
+    [data-ds='pill-nav'] button,
+    [data-ds='native-select'],
+    [data-ds='media-card'] a
+  ):focus-visible {
+  outline: none;
+}
