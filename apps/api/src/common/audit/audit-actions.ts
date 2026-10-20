@@ -1,6 +1,6 @@
 /**
  * Action names written to `audit_events.action`. Append-only registry: a card adds its own lines at
- * the end, never reorders or renames. BE-03: `auth.*` and `session.*`; BE-08: `curriculum.*`; BE-39: `bijak.paper.*`, `bijak.blueprint.*`.
+ * the end, never reorders or renames. BE-03: `auth.*` and `session.*`; BE-08: `curriculum.*`; BE-16: `bijak.attempt.*`; BE-39: `bijak.paper.*`, `bijak.blueprint.*`.
  */
 export const AUDIT_ACTIONS = {
   LOGIN_FAILED: 'auth.login.failed',
@@ -26,6 +26,10 @@ export const AUDIT_ACTIONS = {
   CURRICULUM_SUBTOPIC_CREATED: 'curriculum.subtopic.created',
   CURRICULUM_SUBTOPIC_UPDATED: 'curriculum.subtopic.updated',
   CURRICULUM_SUBTOPIC_DELETED: 'curriculum.subtopic.deleted',
+  BIJAK_ATTEMPT_STARTED: 'bijak.attempt.started',
+  BIJAK_ATTEMPT_SUBMITTED: 'bijak.attempt.submitted',
+  BIJAK_ATTEMPT_AUTO_SUBMITTED: 'bijak.attempt.auto_submitted',
+  BIJAK_ATTEMPT_ABANDONED: 'bijak.attempt.abandoned',
   QUESTION_CREATED: 'question.created',
   QUESTION_UPDATED: 'question.updated',
   QUESTION_DELETED: 'question.deleted',
