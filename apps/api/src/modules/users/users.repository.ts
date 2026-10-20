@@ -133,6 +133,9 @@ export interface PendingTeacherRow {
   createdAt: Date
 }
 
+/** Most pending teachers one list returns (oldest first). */
+export const PENDING_LIST_MAX = 200
+
 export interface StudentRow {
   id: string
   name: string
@@ -433,7 +436,8 @@ export class UsersRepository {
   async pendingTeachersOfSchool(schoolId: string): Promise<PendingTeacherRow[]> {
     if (!isIdString(schoolId)) return []
     const rows = await this.prisma.client.user.findMany({
-      where: { pendingSchoolId: idFromString(schoolId), roles: { some: { role: 'teacher' } } },
+      where: { pendingSchoolId: idFromString(schoolId), isSuspended: false, roles: { some: { role: 'teacher' } } },
+      take: PENDING_LIST_MAX,
       select: { id: true, name: true, email: true, phone: true, createdAt: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })

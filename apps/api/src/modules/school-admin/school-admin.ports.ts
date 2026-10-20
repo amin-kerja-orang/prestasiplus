@@ -33,7 +33,6 @@ export interface SchoolPerformanceView {
     /** 0..100, one decimal, `gradedScore / gradedMax` (BE-19). */
     accuracy: number
   }
-  gps: { value: number | null; band: string | null; entries: number }
   /** Grade rows with pupil counts (BE-19: zero rows until its GPS slice lands). */
   distribution: { grade: string; count: number; pct: number }[]
   /** `students` is the number of pupils behind the level (the cohort size). */
@@ -51,7 +50,6 @@ export class NoSchoolPerformance implements SchoolPerformancePort {
   async school(): Promise<SchoolPerformanceView> {
     return {
       stats: { students: 0, sessions: 0, answered: 0, accuracy: 0 },
-      gps: { value: null, band: null, entries: 0 },
       distribution: [],
       levels: [],
     }
@@ -78,7 +76,7 @@ export class NoSchoolClasses implements SchoolClassCountPort {
  * `SchoolPerformanceService.school(ctx: Ctx): Promise<PerformanceSchool>` is structurally a `SchoolPerformancePort` (the view is a
  * subset of `PerformanceSchool`; `levels[].students` is already there), so no mapping code is needed. Import its module in
  * `SchoolAdminModule`. The ctx is `{ userId, role, scope: auth.active.scope, isTest }`. Missing in BE-19's frozen service today:
- * `gps.grade` (the dashboard leaves `performance.gps.grade` null) and non-zero `distribution` rows; report, do not derive.
+ * non-zero `distribution` rows (the GPS is not Bijak: it stays null until an SPM card wires a future SpmGradesPort); report, do not derive.
  *
  * TODO(BE-17 merge): register { provide: SCHOOL_CLASS_COUNT_PORT, useClass: <adapter over ClassesRepository> } where the adapter
  * returns the count of active classroom + school_class rows of the school (BE-17 ClassesRepository).

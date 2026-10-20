@@ -16,22 +16,19 @@ const LEVELS = [
  * k-cohort suppression (BE-19 OQ-7): a group of fewer than `K_COHORT` pupils is shown as empty, the school admin included.
  * No pupil name is ever on this block.
  *
- * `gps.grade` stays null: BE-19's frozen service has no grade for the GPS (the mock derived it with BR-M08-04). `risk` stays
+ * The whole `gps` block is always neutral (null): the GPS comes from SPM grades, not Bijak marks, and BE-19 will not fill it. A future SPM card wires an `SpmGradesPort` here without a shape change. `risk` stays
  * null (the panel is hidden): the Amaran Awal tally belongs to the M18 routes, which are outside this slice.
  */
 export function performanceBlock(view: SchoolPerformanceView): Performance {
   const cohortOk = view.stats.students >= K_COHORT
   const sessions = cohortOk ? view.stats.sessions : 0
 
-  const gpsOk = view.gps.entries >= K_COHORT && view.gps.value !== null
   const distribution = view.distribution.map((d) =>
     d.count >= K_COHORT ? { grade: d.grade, count: d.count, pct: d.pct } : { grade: d.grade, count: 0, pct: 0 },
   )
 
   return {
-    gps: gpsOk
-      ? { value: view.gps.value, grade: null, band: view.gps.band, entries: view.gps.entries }
-      : { value: null, grade: null, band: null, entries: 0 },
+    gps: { value: null, grade: null, band: null, entries: 0 },
     risk: null,
     practice: {
       accuracy: sessions === 0 ? null : view.stats.accuracy,

@@ -136,6 +136,20 @@ describe('BE-21 AC13: pending teachers and verification', () => {
     expect(await row(id)).toMatchObject({ is_active: false, school_id: null })
   })
 
+  it('a suspended pending teacher is not listed either (the list matches verify)', async () => {
+    const id = await insertPendingTeacher(t.db, 'p8b@ujian.test', s1)
+    await t.db.query('update users set is_suspended = true where id = $1::bigint', [id])
+    const list = SchoolAdminPendingTeacherListResponseSchema.parse((await admin.get('/admin-sekolah/guru/pending')).body)
+    expect(list.data.map((r) => r.id)).not.toContain(id)
+  })
+
+  it('a school admin cannot verify themselves (404, nothing changes)', async () => {
+    const me = (await t.db.query<{ id: string }>('select id::text from users where email = $1', [SCHOOL_ADMIN]))[0]?.id as string
+    const res = await admin.post(`/admin-sekolah/guru/${me}/verify`)
+    expect(res.status).toBe(404)
+    expect(await row(me)).toMatchObject({ is_active: true, school_id: s1, pending: null })
+  })
+
   it('a pending STUDENT-role row is not verifiable (the guarded update needs the teacher role)', async () => {
     const id = await insertPendingTeacher(t.db, 'p9@ujian.test', s1)
     await t.db.query(`update user_roles set role = 'student' where user_id = $1::bigint`, [id])

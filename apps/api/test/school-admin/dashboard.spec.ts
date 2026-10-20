@@ -62,13 +62,14 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
     }
   })
 
-  it('a school admin without a school is refused (403), never "all schools"', async () => {
+  it('a school admin without a school has no session at all (exactly 401): never "all schools"; the controller 403 is defence in depth', async () => {
     const id = (await t.db.query<{ id: string }>(`select id::text from users where email = $1`, [SCHOOL_ADMIN]))[0]?.id as string
     const who = apiOf(await login(t, SCHOOL_ADMIN))
     await t.db.query(`update users set school_id = null where id = $1::bigint`, [id])
     try {
       const res = await who.get('/admin-sekolah/dashboard')
-      expect([401, 403]).toContain(res.status)
+      // buildGrants() cannot derive a scope for a school-less school_admin, so the session is refused before the controller.
+      expect(res.status).toBe(401)
     } finally {
       await t.db.query(`update users set school_id = $1::bigint where id = $2::bigint`, [s1, id])
     }
@@ -82,7 +83,6 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
   const fake = new FakePerformance(
     emptyView({
       stats: { students: 12, sessions: 40, answered: 500, accuracy: 68.4 },
-      gps: { value: 3.1, band: 'Sederhana', entries: 11 },
       levels: [
         { code: 't4', accuracy: 71.2, students: 9 },
         { code: 't5', accuracy: 64.9, students: 3 },
@@ -122,7 +122,7 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
       { grade: 'C', count: 0, pct: 0 },
     ])
     expect(d.performance.total).toBe(6)
-    expect(d.performance.gps).toEqual({ value: 3.1, grade: null, band: 'Sederhana', entries: 11 })
+    expect(d.performance.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
 
     const ctx = fake.calls.at(-1)
     expect(ctx?.role).toBe('school_admin')
