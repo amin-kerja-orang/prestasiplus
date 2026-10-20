@@ -1,0 +1,197 @@
+// Battle tables (BE-44, owner module M16 battle part). Conventions: docs/architecture/v2-backend-plan.md section 14.2.
+// Hand-written in migration 0027_battle (number allocated "renumber-at-merge, LEAD to confirm"): identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), the foreign keys to tables of other owners
+// (users, schools, subjects, education_levels, questions), which are NOT declared as Prisma relations here
+// (no back-relations in other owners' schema files); the repository reads those tables only through the owners' services.
+// Only `battles` and `battle_participants` carry the LEG columns (legacy_source / legacy_id, battles also legacy_hash);
+// they never appear in the contract. The other tables are transient or born in v2.
+// `battles.id` and `battle_invitations.id` / `tournaments.id` are uuids that are also the wire ids.
+
+/// A battle (.cloud `battles`). `winner` is stored when the battle ends (0-0 goes to side B, DV-M16-35; a draw is null).
+model Battle {
+  /// uuid, also the id on the wire.
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// quick_match, school_battle, challenge, queue_join (check).
+  mode            String
+  /// biasa, pksk, spm (check).
+  questionType    String    @map("question_type")
+  subjectId       BigInt?   @map("subject_id")
+  /// No foreign key: PKSK domains are backlog (Open question 6).
+  pkskDomainId    BigInt?   @map("pksk_domain_id")
+  /// T1, T4 (check).
+  pkskTargetLevel String?   @map("pksk_target_level")
+  /// The queue owner's level at creation (education_levels.id).
+  levelId         BigInt?   @map("level_id")
+  answered        Int       @default(0) @db.SmallInt
+  /// A, B (check); null = draw or not decided.
+  winner          String?
+  /// active, finished, forfeited, abandoned (check).
+  status          String    @default("active")
+  finishedAt      DateTime? @map("finished_at") @db.Timestamptz(6)
+  /// Written while an admin or school admin is in Mod Pelajar (G-07): excluded from standings and counts.
+  isTest          Boolean   @default(false) @map("is_test")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource    String?   @map("legacy_source")
+  legacyId        String?   @map("legacy_id")
+  legacyHash      String?   @map("legacy_hash")
+
+  participants BattleParticipant[]
+  questions    BattleQuestion[]
+  answers      BattleAnswer[]
+
+  @@unique([legacySource, legacyId], map: "uq_battles_legacy")
+  @@index([status, createdAt], map: "ix_battles_status_created_at")
+  @@map("battles")
+}
+
+/// One side (A or B) of a battle (.cloud `battle_participants`). `schoolId` is the school at battle time.
+model BattleParticipant {
+  id           BigInt   @id @default(autoincrement())
+  battleId     String   @map("battle_id") @db.Uuid
+  /// A, B (check).
+  side         String
+  userId       BigInt   @map("user_id")
+  schoolId     BigInt?  @map("school_id")
+  isBot        Boolean  @default(false) @map("is_bot")
+  score        Int      @default(0)
+  correct      Int      @default(0) @db.SmallInt
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  battle Battle @relation(fields: [battleId], references: [id], onDelete: Cascade, map: "fk_battle_participants_battle_id")
+
+  @@unique([battleId, side], map: "uq_battle_participants_battle_id_side")
+  @@unique([legacySource, legacyId], map: "uq_battle_participants_legacy")
+  @@index([userId], map: "ix_battle_participants_user_id")
+  @@index([schoolId], map: "ix_battle_participants_school_id")
+  @@map("battle_participants")
+}
+
+/// The ten questions drawn once at creation (the mock's `questionIds[]`), position 1..10.
+model BattleQuestion {
+  id         BigInt @id @default(autoincrement())
+  battleId   String @map("battle_id") @db.Uuid
+  position   Int    @db.SmallInt
+  questionId BigInt @map("question_id")
+
+  battle Battle @relation(fields: [battleId], references: [id], onDelete: Cascade, map: "fk_battle_questions_battle_id")
+
+  @@unique([battleId, position], map: "uq_battle_questions_battle_id_position")
+  @@map("battle_questions")
+}
+
+/// One answer per player per position: the human's, and the bot's pre-computed ones.
+model BattleAnswer {
+  id         BigInt   @id @default(autoincrement())
+  battleId   String   @map("battle_id") @db.Uuid
+  userId     BigInt   @map("user_id")
+  position   Int      @db.SmallInt
+  questionId BigInt   @map("question_id")
+  /// 0..3; null = timeout.
+  optionId   Int?     @map("option_id") @db.SmallInt
+  correct    Boolean
+  seconds    Int      @db.SmallInt
+  points     Int
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  battle Battle @relation(fields: [battleId], references: [id], onDelete: Cascade, map: "fk_battle_answers_battle_id")
+
+  @@unique([battleId, userId, position], map: "uq_battle_answers_battle_id_user_id_position")
+  @@map("battle_answers")
+}
+
+/// Transient matchmaking queue (not migrated). The mock's `sim` test hook is not stored.
+model BattleQueue {
+  id               BigInt    @id @default(autoincrement())
+  ownerId          BigInt    @map("owner_id")
+  /// quick_match, school_battle (check).
+  mode             String
+  /// biasa, pksk, spm (check).
+  questionType     String    @map("question_type")
+  subjectId        BigInt?   @map("subject_id")
+  pkskDomainId     BigInt?   @map("pksk_domain_id")
+  pkskTargetLevel  String?   @map("pksk_target_level")
+  openToAll        Boolean   @default(false) @map("open_to_all")
+  /// waiting, incoming_challenge, matched, expired, abandoned (check).
+  status           String    @default("waiting")
+  challengerUserId BigInt?   @map("challenger_user_id")
+  /// FK battles(id) ON DELETE SET NULL (migration SQL, not a Prisma relation).
+  battleId         String?   @map("battle_id") @db.Uuid
+  polls            Int       @default(0)
+  /// Polls since the queue last returned to `waiting` (the 3rd one matches).
+  waitPolls        Int       @default(0) @map("wait_polls")
+  lastPolledAt     DateTime? @map("last_polled_at") @db.Timestamptz(6)
+  joinerUserId     BigInt?   @map("joiner_user_id")
+  /// pending, matched, rejected, expired (check); null = no joiner.
+  joinerOutcome    String?   @map("joiner_outcome")
+  isTest           Boolean   @default(false) @map("is_test")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([ownerId], map: "ix_battle_queues_owner_id")
+  @@map("battle_queues")
+}
+
+/// Transient 1:1 invitation (not migrated). The uuid is the wire id.
+model BattleInvitation {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId        BigInt   @map("sender_id")
+  receiverId      BigInt   @map("receiver_id")
+  questionType    String   @map("question_type")
+  subjectId       BigInt?  @map("subject_id")
+  pkskDomainId    BigInt?  @map("pksk_domain_id")
+  pkskTargetLevel String?  @map("pksk_target_level")
+  /// pending, accepted, declined, expired (check).
+  status          String   @default("pending")
+  isTest          Boolean  @default(false) @map("is_test")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([receiverId, status], map: "ix_battle_invitations_receiver_id_status")
+  @@map("battle_invitations")
+}
+
+/// Tournament (born in v2, no .cloud source). The mock's `liveMatch` is never written: the API returns null.
+model Tournament {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                String
+  description          String    @default("")
+  /// tingkatan4, tingkatan5, spm (check). A code, not a foreign key.
+  educationLevelId     String    @map("education_level_id")
+  /// single_match, knockout, league, hybrid (check).
+  format               String
+  groupsCount          Int?      @map("groups_count") @db.SmallInt
+  /// subject, exam_paper, random_mix (check).
+  questionMode         String    @map("question_mode")
+  subjectId            BigInt?   @map("subject_id")
+  /// Always null: exam_paper is refused (no exam paper exists).
+  examPaperId          BigInt?   @map("exam_paper_id")
+  totalQuestions       Int       @map("total_questions") @db.SmallInt
+  timeWindowMinutes    Int       @map("time_window_minutes") @db.SmallInt
+  topNScoring          Int       @map("top_n_scoring") @db.SmallInt
+  minParticipants      Int       @map("min_participants") @db.SmallInt
+  registrationOpensAt  DateTime? @map("registration_opens_at") @db.Timestamptz(6)
+  registrationClosesAt DateTime? @map("registration_closes_at") @db.Timestamptz(6)
+  /// draft, registration, ongoing, completed (check).
+  status               String    @default("draft")
+  createdBy            BigInt    @map("created_by")
+  isTest               Boolean   @default(false) @map("is_test")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subjects TournamentSubject[]
+
+  @@index([status, registrationOpensAt], map: "ix_tournaments_status_registration_opens_at")
+  @@map("tournaments")
+}
+
+/// The mock's `mixedSubjectIds[]` of a random_mix tournament.
+model TournamentSubject {
+  id           BigInt @id @default(autoincrement())
+  tournamentId String @map("tournament_id") @db.Uuid
+  subjectId    BigInt @map("subject_id")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade, map: "fk_tournament_subjects_tournament_id")
+
+  @@unique([tournamentId, subjectId], map: "uq_tournament_subjects_tournament_id_subject_id")
+  @@map("tournament_subjects")
+}
