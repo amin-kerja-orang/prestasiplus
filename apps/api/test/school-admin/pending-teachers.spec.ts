@@ -192,3 +192,21 @@ describe('BE-21 AC13: 429 on the write', () => {
     expect(statuses).toEqual([200, 200, 429])
   })
 })
+
+// DB spec: the static guru/pending segment must never be read as a future guru/:id.
+describe('BE-21 routing: guru/pending stays ahead of guru/:id', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp()
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+  it('GET /admin-sekolah/guru/pending still returns the pending list', async () => {
+    const res = await admin.get('/admin-sekolah/guru/pending')
+    expect(res.status).toBe(200)
+    SchoolAdminPendingTeacherListResponseSchema.parse(res.body)
+  })
+})

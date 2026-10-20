@@ -441,6 +441,17 @@ export class CurriculumRepository {
     return (await this.nodes(code, filter))[0] ?? null
   }
 
+  /**
+   * Every DSKP node (grouping, unit, sk, sp) of one level, for one subject or all subjects, in printed order. Additive read for
+   * the school admin heatmap (BE-21): it lists the subjects that have SPs and builds the bidang tree without a query per node.
+   */
+  dskpNodes(educationLevelId: bigint, subjectId?: bigint): Promise<CurriculumNode[]> {
+    return this.db.curriculumNode.findMany({
+      where: { educationLevelId, ...(subjectId === undefined ? {} : { subjectId }) },
+      orderBy: [{ subjectId: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+    })
+  }
+
   nodeById(id: bigint): Promise<CurriculumNode | null> {
     return this.db.curriculumNode.findUnique({ where: { id } })
   }
