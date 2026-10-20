@@ -360,6 +360,21 @@ describe('question workflow over the real question bank', () => {
       expect(own.status).toBe(200)
     })
 
+    it('create refuses more than 8 options as a 422 and writes nothing; attachDiagram on an unknown id leaves no stimulus', async () => {
+      const before = await rows(`select (select count(*) from questions)::int q, (select count(*) from stimuli)::int s`)
+      const options = Array.from({ length: 9 }, (_, i) => ({ label: String.fromCharCode(65 + i), text: `Pilihan ${String(i)}` }))
+      const err = await failure(
+        bank.create({
+          stemMs: 'Terlalu banyak pilihan?', options, correctLabel: 'A', subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3,
+          explanation: null, sourceType: 'excel', createdById: teacher.userId, status: 'draft', sourceSet: null,
+        }),
+      )
+      expect(err.code).toBe('VALIDATION_ERROR')
+      expect(err.fields).toHaveProperty('options')
+      expect(await bank.attachDiagram('999999999', '1')).toBe(false)
+      expect(await rows(`select (select count(*) from questions)::int q, (select count(*) from stimuli)::int s`)).toEqual(before)
+    })
+
     it('listIdsBySourcePaper finds the questions of a paper and the BE-10 takedown archives them (live and newer draft)', async () => {
       const id = await create(mcq({ status: 'published' }))
       await admin.put(`/api/questions/${id}`, mcq({ questionText: 'Versi dua untuk takedown?' }))

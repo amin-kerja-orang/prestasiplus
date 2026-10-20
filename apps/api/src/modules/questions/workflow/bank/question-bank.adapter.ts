@@ -25,6 +25,7 @@ import type {
   SetStatusOptions,
 } from '../ports'
 
+const MAX_OPTIONS = 8
 const WRITE_TX = { timeout: 20_000, maxWait: 10_000 } as const
 
 /** Plain text of a stem: markup removed, whitespace collapsed. */
@@ -170,6 +171,10 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async create(input: ImportedQuestionInput): Promise<string> {
+    // Option labels are A to H (check constraint); the CSV has four columns, so this is a backstop (422, not 500).
+    if (input.options.length > MAX_OPTIONS) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { options: `Satu soalan boleh mempunyai paling banyak ${String(MAX_OPTIONS)} pilihan.` } })
+    }
     const index = Math.max(0, input.options.findIndex((o) => o.label === input.correctLabel))
     const parts = partsFromFlat({
       questionType: 'mcq',
@@ -235,14 +240,8 @@ export class QuestionBankAdapter implements QuestionBankPort {
     const out = new Map<string, QuestionBrief>()
     if (records.length === 0) return out
     const names = await this.names()
-    const chapters = new Map<string, string | null>()
-    for (const r of records) {
-      const cid = r.version.chapterId
-      if (cid !== null && !chapters.has(cid)) {
-        const key = asId(cid)
-        chapters.set(cid, key === null ? null : ((await this.curriculum.chapter(key))?.name ?? null))
-      }
-    }
+    const chapterKeys = [...new Set(records.flatMap((r) => (r.version.chapterId === null ? [] : [asId(r.version.chapterId)])).filter((k): k is bigint => k !== null))]
+    const chapters = new Map((await this.curriculum.chaptersByIds(chapterKeys)).map((c) => [idToString(c.id), c.name]))
     for (const r of records) {
       const v = r.version
       out.set(r.id, {
@@ -309,17 +308,20 @@ export class QuestionBankAdapter implements QuestionBankPort {
     return []
   }
 
+  /** Edits the LATEST version in place (no new version); the question is locked so the position cannot race. */
   async attachDiagram(id: string, fileId: string): Promise<boolean> {
     const file = asId(fileId)
-    const r = await this.repo.get(id, 'latest')
-    if (!r || file === null) return false
+    if (file === null) return false
     return this.prisma.transaction(async () => {
-      const stimulusId = await this.repo.createStimulus({ kind: 'diagram', label: null, bodyMs: null, bodyEn: null, altText: null, assetFileId: file })
-      const version = await this.prisma.client.questionVersion.findFirst({
-        where: { question: { id: BigInt(id) }, versionNo: r.version.versionNo },
+      if (!(await this.repo.lock(id))) return false
+      const question = await this.prisma.client.question.findUnique({ where: { id: BigInt(id) }, select: { latestVersionNo: true } })
+      if (!question) return false
+      const version = await this.prisma.client.questionVersion.findUnique({
+        where: { questionId_versionNo: { questionId: BigInt(id), versionNo: question.latestVersionNo } },
         select: { id: true },
       })
       if (!version) return false
+      const stimulusId = await this.repo.createStimulus({ kind: 'diagram', label: null, bodyMs: null, bodyEn: null, altText: null, assetFileId: file })
       const last = await this.prisma.client.questionVersionStimulus.aggregate({ where: { questionVersionId: version.id }, _max: { position: true } })
       await this.prisma.client.questionVersionStimulus.create({
         data: { questionVersionId: version.id, stimulusId: BigInt(stimulusId), position: (last._max.position ?? 0) + 1 },
