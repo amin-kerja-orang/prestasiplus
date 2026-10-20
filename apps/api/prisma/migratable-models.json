@@ -3,6 +3,7 @@
   "audio_kbat_sets",
   "banners",
   "chapters",
+  "coin_ledger",
   "comp_students",
   "education_levels",
   "files",
@@ -15,12 +16,15 @@
   "school_packages",
   "school_subscriptions",
   "schools",
+  "streaks",
   "subject_levels",
   "subjects",
   "support_tickets",
+  "tiers",
   "topics",
   "user_roles",
   "user_scopes",
   "users",
-  "videos"
+  "videos",
+  "wallets"
 ]
