@@ -9,8 +9,11 @@ import { PerformanceModule, SchoolPerformanceService } from '../reports/performa
 import { SchoolsModule } from '../schools'
 import { SubscriptionsModule } from '../subscriptions'
 import { UsersModule } from '../users'
+import { AmaranModule } from './amaran/amaran.module'
 import { DashboardService } from './dashboard.service'
+import { PeopleModule } from './people/people.module'
 import { PendingTeachersService } from './pending-teachers.service'
+import { SchoolReportsModule } from './reports/school-reports.module'
 import { SchoolAdminController } from './school-admin.controller'
 import { SCHOOL_CLASS_COUNT_PORT, SCHOOL_PERFORMANCE_PORT } from './school-admin.ports'
 import { SchoolClassesAdapter } from './school-classes.adapter'
@@ -21,7 +24,8 @@ import { SchoolClassesAdapter } from './school-classes.adapter'
  * BE-17's `ClassesRepository` through `SCHOOL_CLASS_COUNT_PORT` (`SchoolClassesAdapter`).
  */
 @Module({
-  imports: [AuditModule, ClassesModule, ThrottleModule, NotificationsModule, PerformanceModule, PerutusanModule, SchoolsModule, SubscriptionsModule, UsersModule],
+  imports: [AuditModule, ClassesModule, ThrottleModule, NotificationsModule, PerformanceModule, PerutusanModule, SchoolsModule, SubscriptionsModule, UsersModule, PeopleModule, SchoolReportsModule, AmaranModule],
+  // SchoolAdminController is registered first: guru/pending must match before any guru/:id of the sub-modules.
   controllers: [SchoolAdminController],
   providers: [
     DashboardService,
