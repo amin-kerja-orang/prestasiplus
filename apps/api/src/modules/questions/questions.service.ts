@@ -25,9 +25,9 @@ import {
   type FlatSource,
   type FlatType,
 } from './projection'
-import { checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf } from './grading'
 import type {
   AdminListFilter,
@@ -100,6 +100,40 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
   return { path, message: issue.message }
 }
 
+const MAX_TOP_PARTS = 20
+const MAX_TOTAL_PARTS = 200
+const MAX_IMAGES = 50
+const PARTS_TOO_LARGE = 'Struktur soalan terlalu besar (maksimum 20 bahagian atas, 200 bahagian semua, 3 peringkat).'
+
+/** Number of parts in a tree, counting every level; stops early once past the cap. */
+function treeSize(parts: unknown, depth: number): number {
+  if (!Array.isArray(parts) || depth > MAX_PART_DEPTH + 1) return 0
+  let n = 0
+  for (const p of parts) {
+    n += 1 + treeSize((p as { children?: unknown } | null)?.children, depth + 1)
+    if (n > MAX_TOTAL_PARTS) return n
+  }
+  return n
+}
+
+function treeDepth(parts: unknown, depth = 1): number {
+  if (!Array.isArray(parts)) return depth - 1
+  let max = depth
+  for (const p of parts) {
+    const kids = (p as { children?: unknown } | null)?.children
+    if (Array.isArray(kids) && kids.length > 0) max = Math.max(max, treeDepth(kids, depth + 1))
+    if (max > MAX_PART_DEPTH) return max
+  }
+  return max
+}
+
+/** The status an edit leaves behind: it never keeps an approval or a live status (Q-5). */
+function statusAfterEdit(current: QuestionStatus, role: QuestionActor['role']): QuestionStatus {
+  if (current === 'published') return 'draft'
+  if (current === 'approved') return role === 'teacher' ? 'review' : 'draft'
+  return current
+}
+
 /** What create, update and the Guru routes all reduce to before touching the database. */
 interface Normalized {
   subjectId: string
@@ -115,6 +149,8 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /** Who writes: image files must be theirs (or the actor is an admin). */
+  actor: QuestionActor
   /** Message keys to use when a tag problem is found (flat bodies use `dskpSpId`). */
   flatSp: boolean
 }
@@ -198,6 +234,7 @@ export class QuestionsService {
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         stimulusGroupId: input.stimulusGroupId,
+        actor,
         flatSp: input.tag === undefined,
       },
       status,
@@ -206,10 +243,9 @@ export class QuestionsService {
   }
 
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
-    void actor // admin only (the controller guards the role); ownership rules are the Guru methods
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
-    return this.viewOf(await this.applyUpdate(record, input))
+    return this.viewOf(await this.applyUpdate(record, input, actor))
   }
 
   async remove(id: string, actor: QuestionActor): Promise<void> {
@@ -217,15 +253,20 @@ export class QuestionsService {
     if (!(await this.repo.remove(id))) throw questionNotFound()
   }
 
-  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number }> {
+  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[] }> {
     let affected = 0
+    const done: string[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
-          if (await this.repo.remove(id)) affected += 1
+          if (await this.repo.remove(id)) {
+            affected += 1
+            done.push(id)
+          }
         } else {
           await this.setStatus(id, action, actor.userId)
           affected += 1
+          done.push(id)
         }
       } catch (e) {
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
@@ -233,7 +274,7 @@ export class QuestionsService {
         throw e
       }
     }
-    return { affected }
+    return { affected, ids: done }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -261,6 +302,11 @@ export class QuestionsService {
         await this.repo.setLiveVersion(id, null)
       } else {
         await this.repo.setVersionStatus(id, v.versionNo, status)
+        if (status === 'archived' && record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
+          // Withdrawing a question whose latest edit is still a draft also ends the live version.
+          await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'withdrawn' })
+          await this.repo.setLiveVersion(id, null)
+        }
       }
     }, TX)
     const after = await this.repo.get(id, 'latest')
@@ -353,6 +399,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         topicId: input.curriculumTopicId,
+        actor: { userId, role: 'teacher' },
         flatSp: input.tag === undefined,
       },
       'review',
@@ -379,7 +426,7 @@ export class QuestionsService {
         : { options: [...input.options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) }),
       ...(input.correctOptionId === undefined ? {} : { correctAnswer: keyIndexOf(input.correctOptionId) ?? 0 }),
     }
-    return this.detail(await this.applyUpdate(record, body, { keepSubject: true }))
+    return this.detail(await this.applyUpdate(record, body, { userId, role: 'teacher' }, { keepSubject: true }))
   }
 
   async removeOwn(id: string, userId: string): Promise<void> {
@@ -402,7 +449,7 @@ export class QuestionsService {
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live')
-    if (!record || record.version.status !== 'published') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
 
@@ -435,6 +482,10 @@ export class QuestionsService {
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
   private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+    // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
+    if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
+      throw fail({ parts: PARTS_TOO_LARGE })
+    }
     const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
     if (res.success) return res.data
     const issue = res.error.issues[0]
@@ -461,6 +512,8 @@ export class QuestionsService {
         spIds: draft.spNodeIds.map(idToString),
         tp: draft.difficultyTp,
       })
+      // Same keys rule BE-10 offers: marks of a points key equal the leaf marks and the sum of its points.
+      Object.assign(fields, checkKeysGate(n.parts))
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -546,10 +599,17 @@ export class QuestionsService {
 
     // Images are existing `question_image` files; stimuli and the group must exist.
     const refs = referencedIds(n.parts)
-    for (const imageId of new Set(refs.imageIds)) {
-      const file = await this.files.readStored(imageId)
-      if (!file || file.purpose !== 'question_image') {
-        fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
+    const imageIds = [...new Set(refs.imageIds)]
+    if (imageIds.length > MAX_IMAGES) {
+      fields.imageIds = 'Satu soalan boleh mempunyai paling banyak ' + String(MAX_IMAGES) + ' imej.'
+    } else {
+      for (const imageId of imageIds) {
+        const meta = await this.files.metaOf(imageId)
+        if (!meta || meta.purpose !== 'question_image') {
+          fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
+        } else if (meta.ownerUserId !== null && meta.ownerUserId !== n.actor.userId && n.actor.role !== 'admin') {
+          fields.imageIds = QUESTION_MESSAGES.image
+        }
       }
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
@@ -605,7 +665,7 @@ export class QuestionsService {
   }
 
   /** PUT: merge the body over the stored latest version and write it (new version when published). */
-  private async applyUpdate(record: QuestionRecord, input: QuestionUpdateInput, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
+  private async applyUpdate(record: QuestionRecord, input: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
     const v = record.version
     const flat = flatFromVersion(v)
     const single = v.parts.length === 1 ? v.parts[0] : undefined
@@ -655,18 +715,24 @@ export class QuestionsService {
         : dskpSpId !== undefined
           ? { dskpSpId }
           : { tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp } }),
+      actor,
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
 
-    const draft = await this.draftOf(normalized, v.status === 'published' ? 'draft' : v.status, record)
+    const draft = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
     const now = this.clock.now()
     await this.prisma.transaction(async () => {
-      if (v.status === 'published') {
+      // Two concurrent edits serialise here; the second one sees the first one's version.
+      if (!(await this.repo.lock(record.id))) throw questionNotFound()
+      const fresh = await this.repo.get(record.id, 'latest')
+      if (!fresh) throw questionNotFound()
+      const next = { ...draft, status: statusAfterEdit(fresh.version.status, actor.role) }
+      if (fresh.version.status === 'published') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
-        await this.repo.addVersion(record.id, record.latestVersionNo + 1, draft, now)
+        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
-        await this.repo.rewriteVersion(record.id, v.versionNo, draft, now)
+        await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
       if (input.stimulusGroupId !== undefined) {
         const gid = input.stimulusGroupId

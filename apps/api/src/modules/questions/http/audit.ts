@@ -40,7 +40,8 @@ export class QuestionAudit {
     return this.write(AUDIT_ACTIONS.QUESTION_DELETED, actor, id)
   }
 
-  bulk(actor: HttpActor, action: string, requested: number, affected: number): Promise<void> {
-    return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, requested, affected })
+  /** Ids of the questions changed (ids only, at most 200). */
+  bulk(actor: HttpActor, action: string, requested: number, affected: number, ids: readonly string[] = []): Promise<void> {
+    return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, requested, affected, ids: ids.slice(0, 200) })
   }
 }
