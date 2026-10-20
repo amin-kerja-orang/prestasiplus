@@ -11,7 +11,7 @@
  * An unknown id rejects with a `404` `ApiError` (the screen shows the standard 404 page).
  */
 
-import { api, type ListResult } from '@/api'
+import { api, isHttpMode, type ListResult } from '@/api'
 
 export type QuestionStatus =
   | 'draft'
@@ -28,6 +28,30 @@ export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
 export type QuestionLanguage = 'bm' | 'en'
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review'
+
+/**
+ * http mode only (BE-09 `QuestionStatus`, BE-09 bulk actions): the mock vocabulary of the filter and
+ * the workflow actions mapped to the v2 wire codes (the contract says the mock's "approved" meant live,
+ * that is `published`). A value not listed has no 1:1 wire equivalent (`rejected`, `reject`).
+ */
+export const STATUS_FILTER_TO_WIRE: Readonly<Record<string, string>> = {
+  draft: 'draft',
+  pending_review: 'review',
+  approved: 'published',
+  archived: 'archived',
+}
+export const BULK_ACTION_TO_WIRE: Readonly<Record<string, string>> = {
+  pending_review: 'review',
+  approve: 'published',
+  archive: 'archived',
+  delete: 'delete',
+}
+/** Mock values with no wire equivalent; hidden from the UI in http mode. */
+export const NO_WIRE_STATUS_FILTERS: readonly string[] = ['rejected']
+export const NO_WIRE_BULK_ACTIONS: readonly string[] = ['reject']
+
+const wire = (map: Readonly<Record<string, string>>, v: string): string =>
+  Object.hasOwn(map, v) ? map[v] : v
 
 /** `{id, name}` of a subject or an education level (M03). */
 export interface NamedRef {
@@ -252,7 +276,8 @@ export function fetchQuestions(query: QuestionListQuery = {}): Promise<ListResul
       subjectId: query.subjectId ?? null,
       educationLevelId: query.educationLevelId ?? null,
       difficultyLevel: query.difficultyLevel ?? null,
-      status: query.status ?? null,
+      status:
+        query.status && isHttpMode() ? wire(STATUS_FILTER_TO_WIRE, query.status) : (query.status ?? null),
       dskpFilter: query.dskpFilter ?? null,
       complianceFilter: query.complianceFilter ?? null,
       sourceFilter: query.sourceFilter ?? null,
@@ -317,7 +342,7 @@ export function bulkQuestionAction(
   ids: readonly number[],
 ): Promise<QuestionMutation<{ affected: number }>> {
   return api.post<QuestionMutation<{ affected: number }>>('/api/questions/bulk-action', {
-    body: { action, ids },
+    body: { action: isHttpMode() ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
     raw: true,
   })
 }

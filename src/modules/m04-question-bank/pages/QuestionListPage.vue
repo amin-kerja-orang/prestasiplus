@@ -44,7 +44,7 @@ import {
 } from '../api'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
 import {
-  BULK_OPTIONS,
+  bulkOptionsFor,
   bulkConfirmText,
   COMPLIANCE_OPTIONS,
   complianceColor,
@@ -62,7 +62,7 @@ import {
   sourceLabel,
   statusDs,
   statusLabel,
-  STATUS_OPTIONS,
+  statusOptionsFor,
   type FilterKey,
 } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
@@ -179,7 +179,7 @@ const PRIMARY_FIELDS = computed<FieldDef[]>(() => [
     label: 'Status',
     empty: 'Semua Status',
     testid: 'questions-status',
-    options: STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+    options: statusOptionsFor().map((o) => ({ value: o.value, label: o.label })),
   },
 ])
 const MORE_FIELDS: FieldDef[] = [
@@ -313,7 +313,7 @@ async function reloadAfterMutation(): Promise<void> {
 
 async function submitBulk(): Promise<void> {
   // The native `required` on the select already blocked an empty action; this guard is for tests.
-  const option = BULK_OPTIONS.find((o) => o.value === bulkAction.value)
+  const option = bulkOptionsFor().find((o) => o.value === bulkAction.value)
   if (!option || busy.value || selected.value.length === 0) return
   if (!(await confirm({ message: bulkConfirmText(option.verb, selected.value.length) }))) return
   busy.value = true
@@ -533,7 +533,7 @@ const cardFields: CardField[] = [
               data-testid="questions-bulk-action"
             >
               <option value="">Pilih Tindakan</option>
-              <option v-for="o in BULK_OPTIONS" :key="o.value" :value="o.value">
+              <option v-for="o in bulkOptionsFor()" :key="o.value" :value="o.value">
                 {{ o.label }}
               </option>
             </DsNativeSelect>

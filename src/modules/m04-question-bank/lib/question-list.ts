@@ -5,7 +5,15 @@
 
 import type { DsStatus } from '@/ds'
 
-import type { BulkAction, ComplianceStatus, QuestionStatus, QuestionType } from '../api/questions'
+import { isHttpMode } from '@/api'
+
+import {
+  NO_WIRE_BULK_ACTIONS,
+  NO_WIRE_STATUS_FILTERS,
+  type BulkAction, ComplianceStatus,
+  type QuestionStatus,
+  type QuestionType,
+} from '../api/questions'
 
 export const QUESTIONS_LIST_PATH = '/admin/questions'
 export const QUESTIONS_CREATE_PATH = '/admin/questions/create'
@@ -72,6 +80,14 @@ export const BULK_OPTIONS: readonly { value: BulkAction; label: string; verb: st
   { value: 'archive', label: 'Arkibkan', verb: 'mengarkibkan' },
   { value: 'delete', label: 'Padam', verb: 'memadamkan' },
 ]
+
+/** The status filter options; http mode hides those with no v2 wire equivalent. */
+export const statusOptionsFor = (http: boolean = isHttpMode()) =>
+  http ? STATUS_OPTIONS.filter((o) => !NO_WIRE_STATUS_FILTERS.includes(o.value)) : STATUS_OPTIONS
+
+/** The bulk actions; http mode hides those with no v2 wire equivalent. */
+export const bulkOptionsFor = (http: boolean = isHttpMode()) =>
+  http ? BULK_OPTIONS.filter((o) => !NO_WIRE_BULK_ACTIONS.includes(o.value)) : BULK_OPTIONS
 
 export const bulkConfirmText = (verb: string, n: number): string =>
   `Adakah anda pasti mahu ${verb} ${String(n)} soalan?`

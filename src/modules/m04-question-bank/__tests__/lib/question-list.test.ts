@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { BULK_ACTION_TO_WIRE, STATUS_FILTER_TO_WIRE } from '../../api/questions'
 import { parseMarkdown } from '../../lib/markdown'
 import {
   complianceColor,
+  bulkOptionsFor,
   cut,
+  statusOptionsFor,
   errorTextOf,
   excerpt,
   sourceLabel,
@@ -108,5 +111,29 @@ describe('parseMarkdown', () => {
     expect(blocks[2]).toMatchObject({ kind: 'list', ordered: false })
     expect(blocks[3]).toMatchObject({ kind: 'table' })
     expect(blocks[4]).toEqual({ kind: 'code', text: 'x < y' })
+  })
+})
+
+describe('http mode wire values (BE-09 status, bulk actions)', () => {
+  it('maps each mock filter value and bulk action to its wire value', () => {
+    expect(STATUS_FILTER_TO_WIRE).toEqual({
+      draft: 'draft',
+      pending_review: 'review',
+      approved: 'published',
+      archived: 'archived',
+    })
+    expect(BULK_ACTION_TO_WIRE).toEqual({
+      pending_review: 'review',
+      approve: 'published',
+      archive: 'archived',
+      delete: 'delete',
+    })
+  })
+  it('hides options with no wire equivalent in http mode only', () => {
+    expect(statusOptionsFor(true).map((o) => o.value)).not.toContain('rejected')
+    expect(statusOptionsFor(false).map((o) => o.value)).toContain('rejected')
+    expect(bulkOptionsFor(true).map((o) => o.value)).not.toContain('reject')
+    expect(bulkOptionsFor(false).map((o) => o.value)).toContain('reject')
+    expect(bulkOptionsFor(true).map((o) => o.value)).toEqual(['approve', 'archive', 'delete'])
   })
 })

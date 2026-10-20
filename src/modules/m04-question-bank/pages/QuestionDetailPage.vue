@@ -402,7 +402,9 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
 
         <!-- INFERRED (FR-M04-42): the "Quick Actions" slot, only for draft and pending questions. -->
         <div
-          v-if="question.status === 'draft' || question.status === 'pending_review'"
+          v-if="question.status === 'draft' ||
+            question.status === 'pending_review' ||
+            question.status === 'review'"
           class="flex flex-wrap gap-2"
           data-testid="quick-actions"
         >
