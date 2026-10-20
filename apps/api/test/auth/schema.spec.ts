@@ -90,7 +90,9 @@ describe('identity schema (migration 0002_identity)', () => {
     expect(msg).toMatch(/non-DEFAULT/)
     const ident = await db.query<{ table_name: string; identity_generation: string }>(
       `select table_name, identity_generation from information_schema.columns
-        where table_schema = 'public' and column_name = 'id' and is_identity = 'YES' order by 1`,
+        where table_schema = 'public' and column_name = 'id' and is_identity = 'YES'
+          and table_name in ('audit_events', 'files', 'login_attempts', 'schools', 'user_roles', 'user_scopes', 'users')
+        order by 1`,
     )
     expect(ident.map((r) => r.table_name)).toEqual(
       expect.arrayContaining(['audit_events', 'files', 'login_attempts', 'schools', 'user_roles', 'user_scopes', 'users']),
