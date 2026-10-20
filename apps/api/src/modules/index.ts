@@ -17,9 +17,13 @@ import { CurriculumModule } from './curriculum'
 import { QuestionsModule } from './questions'
 import { WalletModule } from './wallet'
 import { ClassesModule } from './classes'
+import { BijakPapersModule } from './bijak/papers'
+import { BijakAttemptsModule } from './bijak/attempts'
+import { PracticeModule } from './practice'
+import { BijakIntegrationModule } from './bijak/integration'
 
 /**
  * Module registry. Each lane adds ONE import and ONE array entry for its Nest module
  * (append-only; never reorder). `app.module.ts` imports this list.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, ClassesModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, ClassesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule]
