@@ -145,16 +145,16 @@ describe('HttpBijakServer: reads', () => {
     expect(only('GET', '/api/bijak/subjects')).toHaveLength(1)
   })
 
-  it('subjects() retries on the next call after a failure', async () => {
+  it('subjects() retries on the next call after the immediate retry also failed', async () => {
     let calls = 0
     const { server } = setup({
       'GET /api/bijak/subjects': () => {
         calls += 1
-        return calls === 1 ? fail(500, 'SERVER_ERROR', 'x') : ok([{ code: 'SN', name: 'Sains' }])
+        return calls <= 2 ? fail(500, 'SERVER_ERROR', 'x') : ok([{ code: 'SN', name: 'Sains' }])
       },
     })
     server.subjects()
-    await vi.waitFor(() => expect(calls).toBe(1))
+    await vi.waitFor(() => expect(calls).toBe(2))
     await new Promise((r) => setTimeout(r, 10))
     const list = server.subjects()
     await vi.waitFor(() => expect(list).toHaveLength(1))
@@ -192,6 +192,31 @@ describe('HttpBijakServer: reads', () => {
     expect(server.serverNow()).toBe(T1_MS)
     clock.t += 2000
     expect(server.serverNow()).toBe(T1_MS + 2000)
+  })
+
+  it('learns the clock from the midpoint of the round trip', async () => {
+    const { server, clock } = setup({
+      'GET /api/bijak/attempts/att-1': () => {
+        clock.t += 200
+        return ok(VIEW)
+      },
+    })
+    await server.getAttemptView(7, 'att-1')
+    // local time after the call is t0 + 200; the server stamp is taken at t0 + 100.
+    expect(server.serverNow()).toBe(T1_MS + 100)
+  })
+
+  it('subjects() retries once at once when the first fetch fails', async () => {
+    let calls = 0
+    const { server, only } = setup({
+      'GET /api/bijak/subjects': () => {
+        calls += 1
+        return calls === 1 ? fail(500, 'SERVER_ERROR', 'x') : ok([{ code: 'SN', name: 'Sains' }])
+      },
+    })
+    const list = server.subjects()
+    await vi.waitFor(() => expect(list).toHaveLength(1))
+    expect(only('GET', '/api/bijak/subjects')).toHaveLength(2)
   })
 
   it('a null deadline (latihan) stays null', async () => {
@@ -531,6 +556,100 @@ describe('HttpBijakServer: CSRF', () => {
     await expect(server.abandon(7, 'att-1')).rejects.toBeDefined()
     await expect(server.abandon(7, 'att-1')).resolves.toBeUndefined()
     expect(only('GET', '/api/session')).toHaveLength(2)
+  })
+})
+
+describe('HttpBijakServer: photos', () => {
+  const file = () => new File(['x'], 'kerja.png', { type: 'image/png' })
+  const URL_ = '/api/bijak/attempts/att-1/photos'
+  const run = async (p: Promise<unknown>) => {
+    try {
+      await p
+    } catch (e) {
+      return e
+    }
+    throw new Error('expected rejection')
+  }
+
+  it('uploads multipart partId + file with the CSRF header and returns the meta', async () => {
+    const meta = { key: 'file-1', name: 'kerja.png', size: 1 }
+    const { server, last } = setup({ [`POST ${URL_}`]: ok(meta, 201) })
+    expect(await server.uploadPhoto(7, 'att-1', 'q-1', file(), 0)).toEqual(meta)
+    expect(last().url).toBe(URL_)
+    expect(last().headers['x-csrf-token']).toBe('csrf-1')
+    const body = last().body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('partId')).toBe('q-1')
+    expect((body.get('file') as File).name).toBe('kerja.png')
+  })
+
+  it('maps 422 file/partId field messages, 409 and network errors', async () => {
+    const cases: [TransportResponse, string, string][] = [
+      [
+        fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+          fields: { file: 'Gambar mesti JPG atau PNG, maksimum 5 MB.' },
+        }),
+        'bad_request',
+        'Gambar mesti JPG atau PNG, maksimum 5 MB.',
+      ],
+      [
+        fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+          fields: { file: 'Maksimum 3 gambar bagi setiap bahagian.' },
+        }),
+        'bad_request',
+        'Maksimum 3 gambar bagi setiap bahagian.',
+      ],
+      [
+        fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+          fields: { partId: 'Bahagian ini tidak menerima gambar.' },
+        }),
+        'bad_request',
+        'Bahagian ini tidak menerima gambar.',
+      ],
+      [fail(422, 'VALIDATION_ERROR', 'x', {}), 'bad_request', 'x'],
+      [fail(409, 'CONFLICT', 'Percubaan sudah tamat'), 'bad_request', 'Percubaan sudah tamat'],
+    ]
+    for (const [res, code, message] of cases) {
+      const { server } = setup({ [`POST ${URL_}`]: res })
+      const e = await run(server.uploadPhoto(7, 'att-1', 'q-1', file(), 0))
+      expect(e).toBeInstanceOf(BijakError)
+      expect(e).toMatchObject({ code, message })
+    }
+    const transport: Transport = {
+      request: () => Promise.reject(new TransportNetworkError('down')),
+    }
+    const server = new HttpBijakServer({
+      client: new ApiClient({ transport }),
+      getCsrf: () => Promise.resolve('x'),
+    })
+    expect(await run(server.uploadPhoto(7, 'att-1', 'q-1', file(), 0))).toMatchObject({
+      code: 'offline',
+      message: 'Luar talian',
+    })
+  })
+
+  it('refreshes the CSRF token and retries the upload once', async () => {
+    let session = 0
+    let posts = 0
+    const meta = { key: 'file-2', name: 'kerja.png', size: 1 }
+    const { server } = setup({
+      'GET /api/session': () => ok({ csrf: `csrf-${++session}` }),
+      [`POST ${URL_}`]: (req) => {
+        posts += 1
+        return req.headers['x-csrf-token'] === 'csrf-2'
+          ? ok(meta, 201)
+          : fail(403, 'CSRF_INVALID', 'Token CSRF tidak sah')
+      },
+    })
+    expect(await server.uploadPhoto(7, 'att-1', 'q-1', file(), 0)).toEqual(meta)
+    expect(posts).toBe(2)
+  })
+
+  it('photoUrl points at the files route; removePhoto is a no-op', async () => {
+    const { server, requests } = setup()
+    expect(await server.photoUrl('a b/1')).toBe('/api/files/a%20b%2F1')
+    await server.removePhoto('a')
+    expect(requests).toHaveLength(0)
   })
 })
 

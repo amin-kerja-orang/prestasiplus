@@ -5,7 +5,9 @@
  * - maps the wire to the domain (ISO 8601 instants become epoch ms, the numeric `userId` of the
  *   mock attempt is not on the wire and is filled with 0, `serverNow` is folded into `serverNow()`),
  * - maps `ApiError` to the `BijakError` codes the pages read (`not_found`, `offline`, ...),
- * - sends `X-CSRF-Token` (Session.csrf, from `GET /api/session`) on every mutating request.
+ * - sends `X-CSRF-Token` (Session.csrf, from `GET /api/session`) on every mutating request,
+ * - learns the server clock from the midpoint of the attempt-view round trip (`serverNow()`),
+ * - uploads working photos as multipart and serves them back from `GET /api/files/{key}`.
  *
  * It must never import `store.ts` / `data/registry` (the mock + seeds): the http bundle stays free
  * of them. Only type imports from the domain and the contract.
@@ -24,6 +26,7 @@ import type {
   BijakGenerateShortage,
   BijakPaperCover,
   BijakPaperSummary,
+  BijakAttemptPhoto,
   BijakAttemptQuestionResult,
 } from '@pp/contract'
 import { reactive } from 'vue'
@@ -38,6 +41,7 @@ import type {
   InProgressInfo,
   PaperCover,
   PaperSummary,
+  PhotoMeta,
   QuestionResult,
   ResultView,
   SaveChange,
@@ -62,26 +66,29 @@ export interface HttpBijakOptions {
   now?: () => number
 }
 
-type Body = Record<string, unknown>
+type Body = Record<string, unknown> | FormData
+
+/** Photo messages (verbatim from the contract / the device store; not imported to keep the mock out). */
+const MSG_PHOTO_TYPE = 'Gambar mesti JPG atau PNG, maksimum 5 MB.'
 
 /* ------------------------------------------------------------------------------ wire mapping */
 
 const toMs = (iso: string): number => Date.parse(iso)
 const toIso = (ms: number): string => new Date(ms).toISOString()
 
-function changeToWire(c: SaveChange): Body {
+function changeToWire(c: SaveChange): Record<string, unknown> {
   return { partId: c.partId, answer: c.answer, rev: c.rev, savedAt: toIso(c.savedAt) }
 }
 
-function payloadToWire(p: SavePayload): Body {
-  const out: Body = { changes: p.changes.map(changeToWire) }
+function payloadToWire(p: SavePayload): Record<string, unknown> {
+  const out: Record<string, unknown> = { changes: p.changes.map(changeToWire) }
   if (p.flags) out.flags = p.flags
   if (p.picks) out.picks = p.picks
   if (typeof p.position === 'number') out.position = p.position
   return out
 }
 
-function submitToWire(p: SubmitPayload): Body {
+function submitToWire(p: SubmitPayload): Record<string, unknown> {
   const out = payloadToWire(p)
   out.idempotencyKey = p.idempotencyKey
   if (p.answers) {
@@ -233,8 +240,12 @@ export class HttpBijakServer implements BijakApi {
     }
   }
 
-  private learnClock(serverNow: string): void {
-    this.clockOffsetMs = toMs(serverNow) - this.now()
+  /**
+   * The server stamped `serverNow` somewhere inside the round trip; the midpoint of the local
+   * clock before and after the request is the best estimate of the local time of that instant.
+   */
+  private learnClock(serverNow: string, sentAt: number, receivedAt: number): void {
+    this.clockOffsetMs = toMs(serverNow) - (sentAt + receivedAt) / 2
   }
 
   serverNow(): number {
@@ -245,17 +256,21 @@ export class HttpBijakServer implements BijakApi {
 
   /**
    * Sync, like the mock: returns a reactive list that fills from `GET /api/bijak/subjects` after the
-   * first call (a failed fetch is retried by the next call). Pages derive their lists with `computed`.
+   * first call (a failed fetch is retried once at once, then by the next call). Pages derive their lists with `computed`.
    */
   subjects(): readonly Subject[] {
     if (!this.subjectsRequested) {
       this.subjectsRequested = true
-      this.send<Subject[]>('GET', '/api/bijak/subjects').then(
-        (rows) => this.subjectList.splice(0, this.subjectList.length, ...rows),
-        () => {
-          this.subjectsRequested = false
-        },
-      )
+      // One immediate retry; if that fails too, the next call starts over.
+      const fetchOnce = () => this.send<Subject[]>('GET', '/api/bijak/subjects')
+      fetchOnce()
+        .catch(fetchOnce)
+        .then(
+          (rows) => this.subjectList.splice(0, this.subjectList.length, ...rows),
+          () => {
+            this.subjectsRequested = false
+          },
+        )
     }
     return this.subjectList
   }
@@ -309,18 +324,19 @@ export class HttpBijakServer implements BijakApi {
     mode: AttemptMode,
     opts: { restart?: boolean } = {},
   ): Promise<{ attemptId: string }> {
-    const body: Body = { paperId, mode }
+    const body: Record<string, unknown> = { paperId, mode }
     if (opts.restart !== undefined) body.restart = opts.restart
     const out = await this.send<BijakAttemptStartResult>('POST', '/api/bijak/attempts', body)
     return { attemptId: out.attemptId }
   }
 
   async getAttemptView(_userId: number, attemptId: string): Promise<AttemptPaperView> {
+    const sentAt = this.now()
     const wire = await this.send<BijakAttemptPaperView>(
       'GET',
       `/api/bijak/attempts/${encodeURIComponent(attemptId)}`,
     )
-    this.learnClock(wire.serverNow)
+    this.learnClock(wire.serverNow, sentAt, this.now())
     return viewFromWire(wire)
   }
 
@@ -373,6 +389,48 @@ export class HttpBijakServer implements BijakApi {
   async history(): Promise<HistoryRow[]> {
     const rows = await this.send<BijakAttemptHistoryRow[]>('GET', '/api/bijak/history')
     return rows.map((r) => ({ ...r, startedAt: toMs(r.startedAt) }))
+  }
+
+  /* --------------------------------------------------------------------------------- photos */
+
+  async uploadPhoto(
+    _userId: number,
+    attemptId: string,
+    partId: string,
+    file: File,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- part of the BijakApi signature
+    _existing?: number,
+  ): Promise<PhotoMeta> {
+    const form = new FormData()
+    form.append('partId', partId)
+    form.append('file', file, file.name)
+    try {
+      const out = await this.exec<BijakAttemptPhoto>(
+        'POST',
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/photos`,
+        form,
+      )
+      return { key: out.key, name: out.name, size: out.size }
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) {
+        throw new BijakError(
+          'bad_request',
+          e.fields?.file ?? e.fields?.partId ?? bodyMessage(e, MSG_PHOTO_TYPE),
+        )
+      }
+      throw toBijakError(e)
+    }
+  }
+
+  /** The bytes come back from the files service (owner only, same origin, cookie session). */
+  photoUrl(key: string): Promise<string | null> {
+    return Promise.resolve(`/api/files/${encodeURIComponent(key)}`)
+  }
+
+  /** The Bijak contract has no photo delete route: the server keeps the file (documented gap). */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- part of the BijakApi signature
+  removePhoto(_key?: string): Promise<void> {
+    return Promise.resolve()
   }
 }
 

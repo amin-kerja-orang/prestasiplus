@@ -24,6 +24,7 @@ import type {
   PaperDef,
   PaperKind,
   PaperSummary,
+  PhotoMeta,
   QuestionDef,
   QuestionResult,
   QuestionView,
@@ -38,6 +39,11 @@ import type {
   SubmitPayload,
 } from '../domain/types'
 
+import {
+  photoUrl as devicePhotoUrl,
+  putPhoto,
+  removePhoto as deviceRemovePhoto,
+} from '../lib/photo-store'
 import { BijakError } from './errors'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakApi, SaveResult, SubmitResult } from './types'
@@ -772,6 +778,28 @@ export class BijakServer implements BijakApi {
         ),
         ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
       }))
+  }
+
+  /* ---------------------------------------------------------------------------- photos */
+
+  // Working photos stay on the device in the mock (IndexedDB), exactly as before.
+
+  uploadPhoto(
+    _userId: number,
+    attemptId: string,
+    partId: string,
+    file: File,
+    existing: number,
+  ): Promise<PhotoMeta> {
+    return putPhoto(attemptId, partId, file, existing)
+  }
+
+  photoUrl(key: string): Promise<string | null> {
+    return devicePhotoUrl(key)
+  }
+
+  removePhoto(key: string): Promise<void> {
+    return deviceRemovePhoto(key)
   }
 
   /** Test helper: the saved answers of an attempt, as the server holds them. */

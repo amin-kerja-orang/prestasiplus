@@ -11,6 +11,7 @@ import type {
   InProgressInfo,
   PaperCover,
   PaperSummary,
+  PhotoMeta,
   QuestionResult,
   ResultView,
   SavePayload,
@@ -73,4 +74,20 @@ export interface BijakApi {
   ): Promise<QuestionResult>
   getResult(userId: number, attemptId: string): Promise<ResultView>
   history(userId: number): Promise<HistoryRow[]>
+  /**
+   * Stores one working photo of a part and returns the metadata kept in `PartAnswer.photos`.
+   * Mock: the device (IndexedDB). HTTP: `POST /api/bijak/attempts/{id}/photos` (server-issued key).
+   * `existing` is the number of photos the part already holds (client pre-check / key suffix).
+   */
+  uploadPhoto(
+    userId: number,
+    attemptId: string,
+    partId: string,
+    file: File,
+    existing: number,
+  ): Promise<PhotoMeta>
+  /** A URL the `<img>` can load for a stored photo, or null when it cannot be shown. */
+  photoUrl(key: string): Promise<string | null>
+  /** Drops the photo from the device. HTTP: no-op (the contract has no delete route). */
+  removePhoto(key: string): Promise<void>
 }

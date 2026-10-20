@@ -11,7 +11,9 @@ import { computed, ref } from 'vue'
 import { latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
 import type { McqOption, PartAnswer } from '../domain/types'
-import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
+import { checkPhoto, MSG_PHOTO_TYPE } from '../lib/photo-store'
+import { useBijakUser } from '../lib/use-bijak'
+import { bijakServer } from '../server/client'
 import MathField from './MathField.vue'
 
 const props = defineProps<{
@@ -29,6 +31,8 @@ const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : 
 const words = computed(() =>
   (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
 )
+const server = bijakServer()
+const user = useBijakUser()
 const photoError = ref('')
 const urls = ref<Record<string, string>>({})
 const fileInput = ref<{ $el: HTMLElement } | null>(null)
@@ -68,16 +72,30 @@ async function onFiles(ev: Event): Promise<void> {
       photoError.value = ok.message
       break
     }
-    const meta = await putPhoto(props.attemptId, props.leaf.id, file, photos.length)
-    photos = [...photos, meta]
-    const u = await photoUrl(meta.key)
-    if (u) urls.value = { ...urls.value, [meta.key]: u }
+    try {
+      const meta = await server.uploadPhoto(
+        user.value,
+        props.attemptId,
+        props.leaf.id,
+        file,
+        photos.length,
+      )
+      photos = [...photos, meta]
+      const u = await server.photoUrl(meta.key)
+      if (u) urls.value = { ...urls.value, [meta.key]: u }
+    } catch (e) {
+      // Keep what was uploaded so far; the server's BM message explains why not. A bare transport
+      // status (5xx/429 without a body message, e.g. from a proxy) reads as the offline message.
+      const msg = e instanceof Error ? e.message : ''
+      photoError.value = !msg ? MSG_PHOTO_TYPE : /^HTTP \d+$/.test(msg) ? 'Luar talian' : msg
+      break
+    }
   }
   input.value = ''
   update({ photos })
 }
 async function dropPhoto(key: string): Promise<void> {
-  await removePhoto(key)
+  await server.removePhoto(key)
   update({ photos: (answer.value.photos ?? []).filter((p) => p.key !== key) })
 }
 </script>
