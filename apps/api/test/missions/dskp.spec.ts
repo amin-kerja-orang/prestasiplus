@@ -71,7 +71,10 @@ describe('BE-18 B: teacher DSKP picks (bidang, SK, SP)', () => {
     it('a refusal writes nothing; a body that is not an object is a name refusal', async () => {
       const before = await count('dskp_bidang')
       refused(await bidang({ name: '' }), D.bidangName)
-      refused(await bidang({ name: 'a\u0000b', subjectId, educationLevelId: levelId }), D.bidangName)
+      // BE-33 global NulGuard (base): a U+0000 in a JSON body is 422 VALIDATION_ERROR before the controller, not the inline refusal.
+      const nul = await bidang({ name: 'a\u0000b', subjectId, educationLevelId: levelId })
+      expect(nul.status, JSON.stringify(nul.body)).toBe(422)
+      expect((nul.body as { error: { code: string; fields: Record<string, string> } }).error).toMatchObject({ code: 'VALIDATION_ERROR', fields: { name: 'Medan ini tidak sah.' } })
       const res = await teacher.who.agent.post('/api/guru/dskp/bidang').set('X-CSRF-Token', teacher.who.csrf).send([1, 2])
       refused(res, D.bidangName)
       expect(await count('dskp_bidang')).toBe(before)
