@@ -15,3 +15,4 @@ export {
 } from './ports'
 export { AdminOnly, AdminOrGuru, GuruOnly, assertCanActOn, isAdminPusat, isGuru, transitionActorOf, type WorkflowActor } from './actor'
 export { LifecycleService, gateFailure, type BulkResult, type BulkSkipped, type CreateGateInput, type TakedownResult, type TransitionOptions, type TransitionResult } from './lifecycle'
+export { QuestionBankAdapter } from './bank'

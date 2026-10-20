@@ -32,13 +32,13 @@ describe('imports: CSV parser (mock csv.test.ts)', () => {
 
 describe('imports: row planning (mock messages, verbatim)', () => {
   it('a valid row becomes an excel MCQ input, letter case ignored, marks default 1', () => {
-    const p = plan('"Soalan sepuluh aksara",A1,B1,,,b,3,4,2,,"Sebab"')
+    const p = plan('"Soalan sepuluh aksara",A1,B1,C1,,b,3,4,2,,"Sebab"')
     expect(p.failures).toEqual([])
     expect(p.rows[0]).toMatchObject({
       line: 2,
       input: {
         stemMs: 'Soalan sepuluh aksara',
-        options: [{ label: 'A', text: 'A1' }, { label: 'B', text: 'B1' }],
+        options: [{ label: 'A', text: 'A1' }, { label: 'B', text: 'B1' }, { label: 'C', text: 'C1' }],
         correctLabel: 'B',
         subjectId: '3',
         educationLevelId: '4',
@@ -52,8 +52,8 @@ describe('imports: row planning (mock messages, verbatim)', () => {
 
   it('the form defaults fill empty cells; a cell wins over the default', () => {
     const d = { subjectId: '3', educationLevelId: '4', difficultyLevel: 2 }
-    expect(plan('"Soalan sepuluh aksara",A,B,,,A,,,,,', d).rows[0]?.input).toMatchObject({ subjectId: '3', educationLevelId: '4', difficultyLevel: 2 })
-    expect(plan('"Soalan sepuluh aksara",A,B,,,A,1,1,5,,', d).rows[0]?.input).toMatchObject({ subjectId: '1', educationLevelId: '1', difficultyLevel: 5 })
+    expect(plan('"Soalan sepuluh aksara",A,B,C,,A,,,,,', d).rows[0]?.input).toMatchObject({ subjectId: '3', educationLevelId: '4', difficultyLevel: 2 })
+    expect(plan('"Soalan sepuluh aksara",A,B,C,,A,1,1,5,,', d).rows[0]?.input).toMatchObject({ subjectId: '1', educationLevelId: '1', difficultyLevel: 5 })
   })
 
   it('reports every bad row with its file line and the exact message', () => {
@@ -87,7 +87,7 @@ describe('imports: row planning (mock messages, verbatim)', () => {
   })
 
   it('matches headers in any case and order, and reports missing required columns', () => {
-    const p = planImport('Correct_Answer,Question_Text,OPTION_A,option_b\nb,"Soalan",A,B', lookups, { subjectId: '3', educationLevelId: '4', difficultyLevel: 1 })
+    const p = planImport('Correct_Answer,Question_Text,OPTION_A,option_b,option_c\nb,"Soalan",A,B,C', lookups, { subjectId: '3', educationLevelId: '4', difficultyLevel: 1 })
     expect(p.rows[0]?.input.correctLabel).toBe('B')
     expect(planImport('question_text,option_a\nx,y', lookups).missingColumns).toEqual(['option_b', 'correct_answer'])
     expect(planImport('', lookups).missingColumns).toHaveLength(4)
@@ -95,7 +95,7 @@ describe('imports: row planning (mock messages, verbatim)', () => {
 
   it('the Guru caps reject a long question text and a long option, after the other checks', () => {
     const long = (n: number) => 'x'.repeat(n)
-    const body = (q: string, a: string) => `"${q}",${a},B,,,A,3,4,1,1,`
+    const body = (q: string, a: string) => `"${q}",${a},B,C,,A,3,4,1,1,`
     const p = planImport(`${HEADER}\n${body(long(2001), 'A')}\n${body(long(2000), long(500))}\n${body('ok', long(501))}`, lookups, undefined, GURU_IMPORT_CAPS)
     expect(p.failures).toEqual([
       { row: 2, message: MSG.textTooLong },

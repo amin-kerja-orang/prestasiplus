@@ -6,4 +6,4 @@ question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,educ
 "Tahap kesukaran salah",A,B,C,D,A,{S},{L},9,1,
 "Markah salah",A,B,C,D,A,{S},{L},1,0,
 "Soalan dua baris
-bersambung",A,B,,,B,{S},{L},3,2,
+bersambung",A,B,C,,B,{S},{L},3,2,

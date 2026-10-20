@@ -12,13 +12,13 @@ import type { z } from 'zod'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
+import { questionsSeed } from '../../prisma/seed/questions'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { CurriculumModule } from '../../src/modules/curriculum'
-import { EmptyQuestionBank, QuestionWorkflowModule, type QuestionBankPort } from '../../src/modules/questions/workflow'
-import { QuestionBankAdapter } from '../../src/modules/questions/workflow/bank'
+import { EmptyQuestionBank, QuestionBankAdapter, QuestionWorkflowModule, QuestionWorkflowPorts, type QuestionBankPort } from '../../src/modules/questions/workflow'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { FakeQuestionBank } from './fake-question-bank'
 
@@ -50,8 +50,12 @@ export interface WorkflowTestApp {
 
 export interface BootOptions {
   db?: TestDatabase
-  /** A bank to plug in instead of the default `FakeQuestionBank`; `null` keeps the empty default. */
-  bank?: QuestionBankPort | null
+  /**
+   * The bank behind the port. Default: a `FakeQuestionBank`. `null`: an `EmptyQuestionBank`. `'real'`: the
+   * production `QuestionBankAdapter` over BE-09 (the database is then seeded with `questionsSeed`). Any
+   * other object replaces the adapter provider (`overrideProvider`), so the port is set exactly once.
+   */
+  bank?: QuestionBankPort | null | 'real'
   /** Extra environment variables (for example a low rate limit). */
   env?: Record<string, string>
 }
@@ -60,7 +64,7 @@ export interface BootOptions {
 export async function bootWorkflowApp(opts: BootOptions = {}): Promise<WorkflowTestApp> {
   const db = opts.db ?? (await createTestDatabase())
   if (!opts.db) {
-    await runSeeds([identitySeed, curriculumSeed], { prisma: db.prisma })
+    await runSeeds(opts.bank === 'real' ? [identitySeed, curriculumSeed, questionsSeed] : [identitySeed, curriculumSeed], { prisma: db.prisma })
     await cloneTeacher(db)
   }
   Object.assign(process.env, {
@@ -74,20 +78,19 @@ export async function bootWorkflowApp(opts: BootOptions = {}): Promise<WorkflowT
   })
   const clock = new FixedClock(START)
   const fake = new FakeQuestionBank()
-  // `null` keeps the empty bank, `undefined` the fake. Either way the module registers the one bank
-  // in its own `onModuleInit`: the real adapter is replaced here (the single-registration guard stays).
-  const bank: QuestionBankPort = opts.bank === undefined ? fake : (opts.bank ?? new EmptyQuestionBank())
-  const moduleRef = await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports: [defineAppModule([AuthModule, CurriculumModule, QuestionWorkflowModule])],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .overrideProvider(QuestionBankAdapter)
-    .useValue(bank)
-    .compile()
+  // The module sets the port from the adapter in onModuleInit; a test bank replaces the adapter.
+  const replacement: QuestionBankPort | null = opts.bank === 'real' ? null : opts.bank === null ? new EmptyQuestionBank() : (opts.bank ?? fake)
+  if (replacement) builder.overrideProvider(QuestionBankAdapter).useValue(replacement)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  const bank: QuestionBankPort = app.get(QuestionWorkflowPorts).questionBank
   return {
     app,
     db,
