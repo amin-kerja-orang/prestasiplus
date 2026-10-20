@@ -43,6 +43,8 @@ export const EnvSchema = z.object({
   THROTTLE_WALLET_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
   // BE-24 part C (support, audio KBAT): throttles per user (the support contact per client address), counted per process.
   THROTTLE_SUPPORT_TICKET_CREATE_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  THROTTLE_GAMIFICATION_CONVERT_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  THROTTLE_SHOP_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   THROTTLE_SUPPORT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_SUPPORT_CONFIG_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   THROTTLE_AUDIO_KBAT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
