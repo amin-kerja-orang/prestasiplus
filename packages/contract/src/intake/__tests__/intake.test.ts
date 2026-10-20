@@ -691,7 +691,7 @@ describe('OpenAPI registration', () => {
     expect(ROUTES).toHaveLength(13)
     for (const [m, p] of ROUTES) expect(doc.paths[p]?.[m], `${m} ${p}`).toBeDefined()
     const registered = Object.entries(doc.paths)
-      .filter(([p]) => p.startsWith('/intake'))
+      .filter(([p]) => p.startsWith('/intake') && !p.startsWith('/intake/dashboard')) // BE-40 routes: dashboard.test.ts
       .flatMap(([p, ops]) => Object.keys(ops).map((m) => `${m} ${p}`))
       .sort()
     expect(registered).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort())
