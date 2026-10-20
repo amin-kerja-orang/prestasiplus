@@ -31,8 +31,8 @@ const BASE: Record<number, string> = {
 <template>
   <div class="flex items-end justify-center gap-2 sm:gap-6" data-testid="podium">
     <div
-      v-for="row in podium"
-      :key="row.rank"
+      v-for="(row, i) in podium"
+      :key="`${String(row.rank)}-${String(i)}`"
       class="flex min-w-0 flex-1 flex-col items-center sm:w-32 sm:flex-none"
       :data-testid="`podium-${String(row.rank)}`"
     >

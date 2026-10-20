@@ -47,7 +47,7 @@ export const fetchOwnClasses = (o: Signal = {}) =>
   api.get<ClassCard[]>('/api/performance/classes', withSignal(o))
 
 /** #6 `GET /api/performance/students/:userId` (S6); 404 unknown, 403 not permitted. */
-export const fetchStudentPerformance = (userId: number, o: Signal = {}) =>
+export const fetchStudentPerformance = (userId: number | string, o: Signal = {}) =>
   api.get<StudentPerformance>(`/api/performance/students/${String(userId)}`, withSignal(o))
 
 /** #7 `GET /api/analytics/me` (S7). */
@@ -92,12 +92,12 @@ export function createTimelinePost(input: TimelineInput, o: Signal = {}): Promis
 }
 
 /** #20 `GET /api/public/students/:id` (S18; no session needed); 404 unknown. */
-export const fetchPublicProfile = (id: number, o: Signal = {}) =>
+export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>
   api.get<PublicProfile>(`/api/public/students/${String(id)}`, withSignal(o))
 
 /** #21 `GET /api/rankings` (S19). */
 export const fetchRankings = (
-  query: { scope?: string; subjectId?: number; tingkatan?: string; negeri?: string } = {},
+  query: { scope?: string; subjectId?: number | string; tingkatan?: string; negeri?: string } = {},
   o: Signal = {},
 ) => api.get<Ranking>('/api/rankings', { ...withSignal(o), query })
 

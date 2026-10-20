@@ -13,9 +13,10 @@ import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchHeadcountSummary } from '../api/headcount'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 
 const route = useRoute()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 const n = computed(() => (route.params.n === undefined ? null : Number(route.params.n)))
 
 const { data, error, reload } = useRouteData(

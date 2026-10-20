@@ -14,12 +14,13 @@ import { DsBackLink, DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/d
 import { fetchHeadcountStudent } from '../api/headcount'
 import StudentSection from '../components/headcount/StudentSection.vue'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
 
-const userId = computed(() => Number(route.params.id))
+const userId = computed(() => routeId(route.params.id))
 const { data, error, reload } = useRouteData(
   (signal) => fetchHeadcountStudent(userId.value, { signal }),
   [userId],

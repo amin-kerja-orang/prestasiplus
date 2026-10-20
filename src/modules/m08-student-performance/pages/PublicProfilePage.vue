@@ -14,13 +14,14 @@ import { formatDateLong } from '@/lib/time'
 import { fetchPublicProfile } from '../api/performance'
 import PostCard from '../components/timeline/PostCard.vue'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 import { shareProfile } from '../lib/timeline/clipboard'
 import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl, count, initialOf, percent, tierName } from '../lib/timeline/profile'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
-const userId = computed(() => Number(route.params.id))
+const userId = computed(() => routeId(route.params.id))
 
 const { data, error, reload } = useRouteData(
   (signal) => fetchPublicProfile(userId.value, { signal }),

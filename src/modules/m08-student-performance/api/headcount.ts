@@ -47,30 +47,30 @@ export const autoSetupHeadcounts = (input: AutoSetupInput, o: Signal = {}) =>
   api.post<{ created: number }>('/api/headcounts/auto-setup', { body: input, ...withSignal(o) })
 
 /** #17 `GET /api/headcounts/students/:userId` (S15); 404 unknown pupil, 403 not permitted. */
-export const fetchHeadcountStudent = (userId: number, o: Signal = {}) =>
+export const fetchHeadcountStudent = (userId: number | string, o: Signal = {}) =>
   api.get<HeadcountStudent>(`/api/headcounts/students/${String(userId)}`, withSignal(o))
 
 /** #24 `GET /api/headcounts/:id/summary` (S22); 404 unknown, 403 not permitted. */
-export const fetchHeadcountSummary = (id: number, o: Signal = {}) =>
+export const fetchHeadcountSummary = (id: number | string, o: Signal = {}) =>
   api.get<HeadcountSummary>(`/api/headcounts/${String(id)}/summary`, withSignal(o))
 
 /** #25 `GET /api/headcounts/:id` (S23); `sort` ranking (default) or name. */
-export const fetchHeadcountDetail = (id: number, options: { sort?: HeadcountSort } & Signal = {}) =>
+export const fetchHeadcountDetail = (id: number | string, options: { sort?: HeadcountSort } & Signal = {}) =>
   api.get<HeadcountDetail>(`/api/headcounts/${String(id)}`, {
     ...withSignal(options),
     ...(options.sort ? { query: { sort: options.sort } } : {}),
   })
 
 /** #26 `POST /api/headcounts/:id/reset` ("Ya, Reset"). */
-export const resetHeadcount = (id: number, o: Signal = {}) =>
+export const resetHeadcount = (id: number | string, o: Signal = {}) =>
   api.post<{ reset: true }>(`/api/headcounts/${String(id)}/reset`, withSignal(o))
 
 /** #27 `DELETE /api/headcounts/:id` ("Ya, Padam"). */
-export const deleteHeadcount = (id: number, o: Signal = {}) =>
+export const deleteHeadcount = (id: number | string, o: Signal = {}) =>
   api.delete<{ deleted: true }>(`/api/headcounts/${String(id)}`, withSignal(o))
 
 /** #28 `POST /api/headcounts/:id/drop-students` ("Gugurkan" / "Kembalikan"). */
-export const dropHeadcountStudents = (id: number, input: DropStudentsInput, o: Signal = {}) =>
+export const dropHeadcountStudents = (id: number | string, input: DropStudentsInput, o: Signal = {}) =>
   api.post<{ updated: number }>(`/api/headcounts/${String(id)}/drop-students`, {
     body: input,
     ...withSignal(o),
@@ -78,7 +78,7 @@ export const dropHeadcountStudents = (id: number, input: DropStudentsInput, o: S
 
 /** #29 `GET /api/headcounts/:id/export` (CSV download of the S23 table). */
 export const downloadHeadcountCsv = (
-  id: number,
+  id: number | string,
   options: { sort?: HeadcountSort } & Signal = {},
 ): Promise<BlobResult> =>
   api.blob(`/api/headcounts/${String(id)}/export`, {

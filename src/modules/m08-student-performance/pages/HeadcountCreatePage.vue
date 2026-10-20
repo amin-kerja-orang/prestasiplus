@@ -9,6 +9,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
 import { createHeadcount, fetchHeadcountFormOptions } from '../api/headcount'
@@ -84,9 +85,10 @@ async function submit() {
   messages.value = []
   try {
     await createHeadcount({
-      classroomId: Number(form.classroomId),
-      subjectId: Number(form.subjectId),
-      educationLevelId: Number(form.educationLevelId),
+      // The real API takes string ids (BE-19 `idField`); mock mode sends numbers.
+      classroomId: isHttpMode() ? form.classroomId : Number(form.classroomId),
+      subjectId: isHttpMode() ? form.subjectId : Number(form.subjectId),
+      educationLevelId: isHttpMode() ? form.educationLevelId : Number(form.educationLevelId),
       academicYear: Number(form.academicYear),
       activeOtrs: form.activeOtrs,
       mode: form.mode,

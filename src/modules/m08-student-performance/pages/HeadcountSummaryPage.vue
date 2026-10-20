@@ -13,13 +13,14 @@ import { saveBlob } from '@/lib/save-blob'
 
 import { downloadHeadcountCsv, fetchHeadcountSummary } from '../api/headcount'
 import { DASH, num1 } from '../lib/headcount/format'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { LOAD_ERROR, isLoadError, notFoundOutcome, useRouteData } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
 
 const route = useRoute()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 const { data, error, reload } = useRouteData(
   (signal) => fetchHeadcountSummary(id.value, { signal }),
   [id],
@@ -34,8 +35,8 @@ async function exportCsv() {
   try {
     const file = await downloadHeadcountCsv(id.value)
     saveBlob(file.blob, file.filename ?? `headcount-${String(id.value)}.csv`)
-  } catch {
-    actionError.value = LOAD_ERROR
+  } catch (err) {
+    if (!notFoundOutcome(err)) actionError.value = LOAD_ERROR
   } finally {
     downloading.value = false
   }

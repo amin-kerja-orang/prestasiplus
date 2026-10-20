@@ -7,6 +7,7 @@
 import { watch, type WatchSource } from 'vue'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, type ApiFetcher } from '@/composables'
 
@@ -34,6 +35,17 @@ export function useRouteData<T>(
     { immediate: true },
   )
   return result
+}
+
+/**
+ * Real API only (BE-19, privacy OQ-3): a 404 on a headcount action means the config is gone or outside the
+ * viewer's scope, so the page becomes the standard not-found page and nothing says which. Returns true when
+ * it handled the error. Mock mode (which answers 403) is unchanged.
+ */
+export function notFoundOutcome(err: unknown): boolean {
+  if (!isHttpMode() || !isApiError(err) || err.status !== 404) return false
+  setRouteOutcome(404)
+  return true
 }
 
 /** True when the failure is a plain load error (not the 404 / 403 page). */

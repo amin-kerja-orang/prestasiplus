@@ -19,12 +19,15 @@ const props = defineProps<{ detail: HeadcountDetail }>()
 const selected = defineModel<number[]>('selected', { required: true })
 
 const otrs = computed(() => Array.from({ length: props.detail.config.activeOtrs }, (_, i) => i))
+/** A pupil row without a user id (a masked name) can be neither opened nor selected. */
+const hasId = (id: unknown): boolean => id !== null && id !== undefined
+const selectable = computed(() => props.detail.rows.filter((r) => hasId(r.userId)))
 const allSelected = computed(
-  () => props.detail.rows.length > 0 && selected.value.length === props.detail.rows.length,
+  () => selectable.value.length > 0 && selected.value.length === selectable.value.length,
 )
 
 function toggleAll(checked: boolean | 'indeterminate') {
-  selected.value = checked === true ? props.detail.rows.map((r) => r.userId) : []
+  selected.value = checked === true ? selectable.value.map((r) => r.userId) : []
 }
 function toggleOne(id: number, checked: boolean | 'indeterminate') {
   const rest = selected.value.filter((v) => v !== id)
@@ -159,7 +162,7 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
     </template>
     <template #select-cell="{ row }">
       <UCheckbox
-        v-if="!row.original.average"
+        v-if="!row.original.average && hasId(row.original.userId)"
         :model-value="selected.includes(row.original.userId)"
         :aria-label="`Pilih ${row.original.name}`"
         :data-testid="`select-${String(row.original.userId)}`"
@@ -168,6 +171,9 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
     </template>
     <template #name-cell="{ row }">
       <span v-if="row.original.average" class="text-label text-highlighted" data-testid="average-row">{{
+        row.original.name
+      }}</span>
+      <span v-else-if="!hasId(row.original.userId)" data-testid="row-masked">{{
         row.original.name
       }}</span>
       <RouterLink
@@ -190,13 +196,13 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
     <template #card-actions="{ row }">
       <div class="flex items-center gap-2">
         <UCheckbox
-          v-if="!row.average"
+          v-if="!row.average && hasId(row.userId)"
           :model-value="selected.includes(row.userId)"
           :aria-label="`Pilih ${row.name}`"
           @update:model-value="toggleOne(row.userId, $event)"
         />
         <UButton
-          v-if="!row.average"
+          v-if="!row.average && hasId(row.userId)"
           :to="`/headcount/student/${String(row.userId)}`"
           color="neutral"
           variant="soft"

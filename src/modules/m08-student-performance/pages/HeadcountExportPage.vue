@@ -12,10 +12,11 @@ import { saveBlob } from '@/lib/save-blob'
 
 import { downloadHeadcountCsv } from '../api/headcount'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 
 const route = useRoute()
 const router = useRouter()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 const sort = computed(() => (route.query.sort === 'name' ? 'name' : 'ranking'))
 
 const { data, error, reload } = useRouteData((signal) =>

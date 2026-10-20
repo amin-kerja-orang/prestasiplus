@@ -4,6 +4,8 @@
  * title say which scope is shown.
  */
 
+import { isHttpMode } from '@/api/mode'
+
 import type { RankingScope } from '../api/types'
 
 export const RANKING_PATH = '/ranking'
@@ -98,14 +100,19 @@ export function formQuery(f: RankingFilters, scope: string): Record<string, stri
 /** The `fetchRankings` query for the URL state (absent values are not sent). */
 export function apiQuery(state: RankingState): {
   scope?: string
-  subjectId?: number
+  subjectId?: number | string
   tingkatan?: string
   negeri?: string
 } {
-  const q: { scope?: string; subjectId?: number; tingkatan?: string; negeri?: string } = {}
+  const q: { scope?: string; subjectId?: number | string; tingkatan?: string; negeri?: string } = {}
   if (state.scope !== '') q.scope = state.scope
-  const subject = Number.parseInt(state.subjectId, 10)
-  if (Number.isFinite(subject)) q.subjectId = subject
+  // The real API takes the opaque id string as it is (BE-19 `subjectId`); mock mode keeps the number.
+  if (isHttpMode()) {
+    if (state.subjectId !== '') q.subjectId = state.subjectId
+  } else {
+    const subject = Number.parseInt(state.subjectId, 10)
+    if (Number.isFinite(subject)) q.subjectId = subject
+  }
   if (state.tingkatan !== '') q.tingkatan = state.tingkatan
   if (state.negeri !== '') q.negeri = state.negeri
   return q

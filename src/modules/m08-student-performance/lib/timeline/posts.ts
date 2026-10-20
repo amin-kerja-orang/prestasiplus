@@ -21,13 +21,22 @@ export const categoryLabel = (c: TimelineCategory): string =>
 /** The date a post sorts and shows by: the event date, else the creation date (FR-M08-99). */
 export const postDate = (p: TimelinePost): string => p.eventDate ?? p.createdAt
 
+/** Larger id first; ids are numbers in mock mode and decimal strings on the real API (BE-19). */
+function idDesc(a: number | string, b: number | string): number {
+  if (typeof a === 'number' && typeof b === 'number') return b - a
+  const x = String(a)
+  const y = String(b)
+  if (x.length !== y.length) return y.length - x.length
+  return x === y ? 0 : y < x ? -1 : 1
+}
+
 /** Newest first by event date, else creation date; ties keep the newest created first. */
 export function sortPosts(posts: readonly TimelinePost[]): TimelinePost[] {
   return [...posts].sort(
     (a, b) =>
       toEpochMs(postDate(b)) - toEpochMs(postDate(a)) ||
       toEpochMs(b.createdAt) - toEpochMs(a.createdAt) ||
-      b.id - a.id,
+      idDesc(a.id, b.id),
   )
 }
 
