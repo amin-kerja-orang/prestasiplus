@@ -1,7 +1,7 @@
 // Question bank tables (BE-09 Part A, owner module M04). Data model 3.4, v2-exam-schema D1 to D12,
 // OD-28 child tables. Conventions: docs/architecture/v2-backend-plan.md section 14.2.
 //
-// Not expressible in Prisma and written by hand in migration 0010_question_bank: identity columns
+// Not expressible in Prisma and written by hand in migration 0011_question_bank: identity columns
 // (GENERATED ALWAYS), CHECK constraints (enums are text + check), partial and functional unique
 // indexes, the deferrable self FK `family_id`.
 //
