@@ -12,6 +12,8 @@ export interface ClassInfo {
   color: string | null
   /** 't4' | 't5' | ... */
   levelSlug: string
+  /** BE-17 display slug ('tahun-N' / 'tingkatan-N'): the wire `class.levelSlug` of Analisa Item. Absent or null: use `levelSlug`. */
+  classLevelSlug?: string | null
   year: number
   joinCode: string
   isActive: boolean

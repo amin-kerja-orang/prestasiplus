@@ -73,14 +73,14 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
   // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
-  // education_levels (BE-08): code must be upper-case, stage one of three.
-  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
-  // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
-  exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
   // classrooms (BE-17): the level must exist; the academic year has a check.
   classrooms: async (query) => ({ name: 'Kelas Contoh', education_level_id: await parentLevel(query), academic_year: 2026 }),
+  // education_levels (BE-08): code must be upper-case, stage one of three.
+  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // enrolments (BE-17): the class and the pupil must exist.
   enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
+  // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
+  exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // feedback (BE-20): the user must exist; role and satisfaction have checks.

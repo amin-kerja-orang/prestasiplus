@@ -124,6 +124,18 @@ export interface TeacherRow {
   email: string | null
 }
 
+/** A teacher waiting for verification by the school admin (BE-21 AC 13). */
+export interface PendingTeacherRow {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  createdAt: Date
+}
+
+/** Most pending teachers one list returns (oldest first). */
+export const PENDING_LIST_MAX = 200
+
 export interface StudentRow {
   id: string
   name: string
@@ -424,6 +436,44 @@ export class UsersRepository {
       where: { AND: [this.visibleWhere(caller), this.scopeWhere(caller), { schoolId: { not: null } }] },
     })
     return groups.flatMap((g) => (g.schoolId === null ? [] : [idToString(g.schoolId)]))
+  }
+  /**
+   * Teachers who asked for `schoolId` and wait for verification (BE-21 AC 13): `pending_school_id` equals the school,
+   * oldest request first. The school is the caller's; a malformed id matches nothing.
+   */
+  async pendingTeachersOfSchool(schoolId: string): Promise<PendingTeacherRow[]> {
+    if (!isIdString(schoolId)) return []
+    const rows = await this.prisma.client.user.findMany({
+      where: { pendingSchoolId: idFromString(schoolId), isSuspended: false, roles: { some: { role: 'teacher' } } },
+      take: PENDING_LIST_MAX,
+      select: { id: true, name: true, email: true, phone: true, createdAt: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    })
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name, email: r.email, phone: r.phone, createdAt: r.createdAt }))
+  }
+
+  /**
+   * Verifies a pending teacher (BE-21 AC 13) with ONE guarded statement: only a not-suspended teacher whose
+   * `pending_school_id` equals `schoolId` is touched, so a foreign school, a non-pending (already verified) account and a
+   * concurrent second call all match no row. Sets the account active, `school_id` = the school (a teacher's school scope),
+   * clears `pending_school_id` and ensures the teacher role. Returns the teacher, or null when no row matched.
+   * Call inside a transaction (the audit row commits with it).
+   */
+  async verifyPendingTeacher(id: string, schoolId: string, now: Date): Promise<PendingTeacherRow | null> {
+    if (!isIdString(id) || !isIdString(schoolId)) return null
+    const userId = idFromString(id)
+    const school = idFromString(schoolId)
+    const res = await this.prisma.client.user.updateMany({
+      where: { id: userId, pendingSchoolId: school, isSuspended: false, roles: { some: { role: 'teacher' } } },
+      data: { isActive: true, schoolId: school, pendingSchoolId: null, updatedAt: now },
+    })
+    if (res.count === 0) return null
+    await this.prisma.client.userRole.createMany({ data: [{ userId, role: 'teacher', createdAt: now }], skipDuplicates: true })
+    const row = await this.prisma.client.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, phone: true, createdAt: true },
+    })
+    return row ? { id: idToString(row.id), name: row.name, email: row.email, phone: row.phone, createdAt: row.createdAt } : null
   }
 
   // --- lookups ----------------------------------------------------------------------------------

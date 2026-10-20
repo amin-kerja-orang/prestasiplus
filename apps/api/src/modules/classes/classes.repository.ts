@@ -134,6 +134,9 @@ const NEWEST_FIRST: Prisma.ClassroomOrderByWithRelationInput[] = [{ createdAt: '
 const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
 const idsOf = (ids: readonly string[]): bigint[] => [...new Set(ids)].flatMap((i) => (isIdString(i) ? [idFromString(i)] : []))
 
+/** Ids per `IN (...)` list of the batch reads. */
+const READ_CHUNK = 1000
+
 function drawJoinCode(): string {
   let code = ''
   for (let i = 0; i < JOIN_CODE_LENGTH; i++) code += JOIN_CODE_ALPHABET[randomInt(JOIN_CODE_ALPHABET.length)]
@@ -269,14 +272,64 @@ export class ClassesRepository {
   async memberCounts(classIds: readonly string[]): Promise<Map<string, number>> {
     const keys = idsOf(classIds)
     const out = new Map<string, number>(classIds.map((id) => [id, 0]))
-    if (keys.length === 0) return out
-    const groups = await this.db.enrolment.groupBy({
-      by: ['classroomId'],
-      where: { classroomId: { in: keys }, status: 'active', isTest: false },
-      _count: { _all: true },
-    })
-    for (const g of groups) out.set(idToString(g.classroomId), g._count._all)
+    for (let i = 0; i < keys.length; i += READ_CHUNK) {
+      const groups = await this.db.enrolment.groupBy({
+        by: ['classroomId'],
+        where: { classroomId: { in: keys.slice(i, i + READ_CHUNK) }, status: 'active', isTest: false },
+        _count: { _all: true },
+      })
+      for (const g of groups) out.set(idToString(g.classroomId), g._count._all)
+    }
     return out
+  }
+
+  /** Classes by id in chunked single queries (BE-19 batch read); unknown and malformed ids are skipped. Newest first. */
+  async byIds(ids: readonly string[]): Promise<ClassRecord[]> {
+    const keys = idsOf(ids)
+    const out: ClassRecord[] = []
+    for (let i = 0; i < keys.length; i += READ_CHUNK) {
+      const rows = await this.db.classroom.findMany({ where: { id: { in: keys.slice(i, i + READ_CHUNK) } }, orderBy: NEWEST_FIRST })
+      out.push(...rows.map(toClass))
+    }
+    return out
+  }
+
+  /** Active, real member ids per class id (student id ascending); every asked class is present, with [] when empty. One query per 1000 classes. */
+  async memberIdsOf(classIds: readonly string[]): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>(classIds.map((id) => [id, []]))
+    const keys = idsOf(classIds)
+    for (let i = 0; i < keys.length; i += READ_CHUNK) {
+      const rows = await this.db.enrolment.findMany({
+        where: { classroomId: { in: keys.slice(i, i + READ_CHUNK) }, status: 'active', isTest: false },
+        select: { classroomId: true, studentId: true },
+        orderBy: [{ classroomId: 'asc' }, { studentId: 'asc' }],
+      })
+      for (const r of rows) out.get(idToString(r.classroomId))?.push(idToString(r.studentId))
+    }
+    return out
+  }
+
+  /** Class ids (ascending) of each student's active, real enrolments; every asked student is present, with [] when none. One query per 1000 students. */
+  async classIdsOfStudents(studentIds: readonly string[]): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>(studentIds.map((id) => [id, []]))
+    const keys = idsOf(studentIds)
+    for (let i = 0; i < keys.length; i += READ_CHUNK) {
+      const rows = await this.db.enrolment.findMany({
+        where: { studentId: { in: keys.slice(i, i + READ_CHUNK) }, status: 'active', isTest: false },
+        select: { classroomId: true, studentId: true },
+        orderBy: [{ studentId: 'asc' }, { classroomId: 'asc' }],
+      })
+      for (const r of rows) out.get(idToString(r.studentId))?.push(idToString(r.classroomId))
+    }
+    return out
+  }
+
+  /** True when the student is an active, real member of an ACTIVE class owned by the teacher (one count query). */
+  async isMemberOfTeacher(teacherId: string, studentId: string): Promise<boolean> {
+    const t = idOf(teacherId)
+    const s = idOf(studentId)
+    if (t === null || s === null) return false
+    return (await this.db.enrolment.count({ where: { studentId: s, status: 'active', isTest: false, classroom: { teacherId: t, isActive: true } } })) > 0
   }
 
   // --- enrolments -------------------------------------------------------------------------------

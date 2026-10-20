@@ -24,6 +24,7 @@ describe('env validation', () => {
       SESSION_REMEMBER_DAYS: 30,
       SESSION_REMEMBER_DAYS_STAFF: 1,
       ALLOW_DEMO_SEED: false,
+      BIJAK_POC_QUESTIONS: false,
       LEGACY_BCRYPT_DUMMY_COST: 12,
       LOGIN_FAILURE_FLOOR_MS: 1500,
       LOGIN_IDENTIFIER_FAIL_LIMIT: 100,
@@ -49,6 +50,8 @@ describe('env validation', () => {
       THROTTLE_AUDIO_KBAT_ATTEMPT_PER_MINUTE: 30,
       THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: 20,
       THROTTLE_PERFORMANCE_READ_PER_MINUTE: 120,
+      THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: 120,
+      THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: 30,
     })
   })
 
@@ -75,6 +78,11 @@ describe('env validation', () => {
     expect(() => loadEnv({ ...VALID, ALLOW_DEMO_SEED: 'yes' })).toThrow(/ALLOW_DEMO_SEED/)
     expect(loadEnv({ ...VALID, ALLOW_DEMO_SEED: '1' }).ALLOW_DEMO_SEED).toBe(true)
     expect(loadEnv({ ...VALID, ALLOW_DEMO_SEED: '0' }).ALLOW_DEMO_SEED).toBe(false)
+    expect(loadEnv({ ...VALID }).BIJAK_POC_QUESTIONS).toBe(false)
+    expect(loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: 'true' }).BIJAK_POC_QUESTIONS).toBe(true)
+    expect(loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: '1' }).BIJAK_POC_QUESTIONS).toBe(true)
+    expect(loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: 'false' }).BIJAK_POC_QUESTIONS).toBe(false)
+    expect(() => loadEnv({ ...VALID, BIJAK_POC_QUESTIONS: 'yes' })).toThrow(/BIJAK_POC_QUESTIONS/)
     expect(() => loadEnv({ ...VALID, LEGACY_BCRYPT_DUMMY_COST: '14' })).toThrow(/LEGACY_BCRYPT_DUMMY_COST/)
     expect(() => loadEnv({ ...VALID, LEGACY_BCRYPT_DUMMY_COST: '3' })).toThrow(/LEGACY_BCRYPT_DUMMY_COST/)
     expect(loadEnv({ ...VALID, LOGIN_FAILURE_FLOOR_MS: '0' }).LOGIN_FAILURE_FLOOR_MS).toBe(0)

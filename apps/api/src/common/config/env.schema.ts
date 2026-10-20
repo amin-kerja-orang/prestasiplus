@@ -51,6 +51,9 @@ export const EnvSchema = z.object({
   THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: z.coerce.number().int().min(1).default(20),
   // BE-19 (performance reports): read throttle per user, counted per process.
   THROTTLE_PERFORMANCE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  // BE-21 (school admin): throttles per user, counted per process.
+  THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */
@@ -63,6 +66,15 @@ export const EnvSchema = z.object({
   SESSION_REMEMBER_DAYS_STAFF: z.coerce.number().int().min(0).default(1),
   /** Allow seeding the demo accounts (never in production). */
   ALLOW_DEMO_SEED: z
+    .enum(['true', 'false', '1', '0'])
+    .default('false')
+    .transform((v) => v === 'true' || v === '1'),
+  /**
+   * Bijak SPM PoC questions (LEAD decision 2026-10-20 16:00: staging only, never prod). true serves the reserved
+   * PoC id block (seeded PoC papers, Jana pool); false (default) refuses those ids, so only BE-09 questions are served.
+   * Set true wherever ALLOW_DEMO_SEED loads the demo seed (staging, dev, e2e).
+   */
+  BIJAK_POC_QUESTIONS: z
     .enum(['true', 'false', '1', '0'])
     .default('false')
     .transform((v) => v === 'true' || v === '1'),
@@ -83,6 +95,8 @@ export const EnvSchema = z.object({
   /** Downloads per user per minute (anonymous cms_image reads: per address) before 429. */
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
+  // BE-33: global per-address ceiling on every /api route except /api/health (default 300 per minute, per process).
+  THROTTLE_GLOBAL_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-16 (Bijak attempts). All optional: the code applies the defaults (save 240, lifecycle 30, Semak 60, photo 20 per minute per user; sweep every 60 s, 0 = off, off under NODE_ENV=test).
   THROTTLE_BIJAK_ATTEMPT_SAVE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
