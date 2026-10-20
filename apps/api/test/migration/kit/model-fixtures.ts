@@ -54,6 +54,15 @@ async function parentChapter(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-17: a class needs a level (and a valid academic year, ck_classrooms_academic_year). */
+async function parentClassroom(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into classrooms (name, education_level_id, academic_year) values ('Kelas Contoh', $1, 2026) returning id::text as id`,
+    [await parentLevel(query)],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
@@ -64,8 +73,12 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
   // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
+  // classrooms (BE-17): the level must exist; the academic year has a check.
+  classrooms: async (query) => ({ name: 'Kelas Contoh', education_level_id: await parentLevel(query), academic_year: 2026 }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  // enrolments (BE-17): the class and the pupil must exist.
+  enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
   // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.
   exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
@@ -82,6 +95,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: null, subject_id: await parentSubject(query) }),
   // practice_sessions (BE-12): the user must exist; mode is one of the ten practice modes.
   practice_sessions: async (query) => ({ user_id: await parentUser(query), mode: 'random' }),
+  // question_reports (BE-10): reasons and source have checks; question_id has no foreign key (BE-09 owns questions).
+  question_reports: { reasons: ['typo'], source: 'latihan' },
   school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
   school_subscriptions: async (query) => ({
     school_id: await parentSchool(query),
@@ -106,6 +121,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   // streaks and wallets (BE-11): one row per user, so a parent user is all they need.
   streaks: async (query) => ({ user_id: await parentUser(query) }),
+  // teacher_profiles (BE-17): the user must exist.
+  teacher_profiles: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
   // users: name (text) is generated; nothing else is required.

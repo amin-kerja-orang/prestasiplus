@@ -696,11 +696,11 @@ describe('rate limits (D57a)', () => {
 })
 
 describe('hardening', () => {
-  it('a paper whose questions cannot be loaded is a 500 and creates no attempt', async () => {
+  it('a paper whose questions cannot be loaded is a handled 422 and creates no attempt', async () => {
     const orig = t.questions.loadQuestions.bind(t.questions)
     t.questions.loadQuestions = async () => new Map()
     try {
-      expectError(await me.post('/api/bijak/attempts', { paperId: PAPER.matK1, mode: 'exam' }), 'SERVER_ERROR')
+      expectError(await me.post('/api/bijak/attempts', { paperId: PAPER.matK1, mode: 'exam' }), 'VALIDATION_ERROR', 'Tiada soalan layak untuk kertas ini.', 422)
     } finally {
       t.questions.loadQuestions = orig
     }
