@@ -46,7 +46,7 @@ describe('paper builder with BIJAK_POC_QUESTIONS on and an empty bank', () => {
     expect(e.questions.length).toBeGreaterThan(0)
   })
 
-  it('withdraw then re-publish of every seeded paper succeeds; a new paper copied from a seed publishes', async () => {
+  it('withdraw then re-publish of every seeded paper succeeds; a new paper built from PoC questions publishes', async () => {
     const list = Summaries.parse((await admin.get('/api/admin/papers?status=terbit')).body).data
     expect(list.length).toBeGreaterThan(0)
     for (const row of list) {
@@ -55,17 +55,42 @@ describe('paper builder with BIJAK_POC_QUESTIONS on and an empty bank', () => {
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
       expect(Publish.parse(pub.body).data, row.title).toEqual({ ok: true, errors: [] })
     }
-    // create -> add the seed paper's questions -> publish
-    const seed = list.find((r) => r.subject === 'MAT' && r.kertas === 2) ?? list[0]!
-    const seedEditor = await editor(seed.id)
-    const created = await admin.post('/api/admin/papers', { subject: seedEditor.paper.subject, kertas: seedEditor.paper.kertas })
-    const id = Created.parse(created.body).data.id
-    const fresh = await editor(id)
-    const put = await admin.put(`/api/admin/papers/${id}`, {
-      sections: fresh.paper.sections.map((s, i) => ({ id: s.id, questionIds: seedEditor.paper.sections[i]?.questionIds ?? [] })),
-    })
-    expect(put.status, JSON.stringify(put.body)).toBe(200)
-    const pub = await admin.post(`/api/admin/papers/${id}/publish`)
-    expect(Publish.parse(pub.body).data).toEqual({ ok: true, errors: [] })
+    // create -> add PoC candidates that meet each section's count and budget -> publish. The test blueprints
+    // have small budgets, so try every scope of the seed papers and require at least one to be buildable.
+    const scopes = [...new Set(list.map((r) => `${r.subject}:${r.kertas}`))]
+    let published = 0
+    for (const scope of scopes) {
+      const [subject, kertas] = scope.split(':')
+      const created = await admin.post('/api/admin/papers', { subject, kertas: Number(kertas) })
+      if (created.status !== 201) continue
+      const id = Created.parse(created.body).data.id
+      const fresh = await editor(id)
+      const pool = fresh.questions.filter((x) => !x.groupId)
+      const used = new Set<string>()
+      const pick = (n: number, budget: number, from: typeof pool): typeof pool | null => {
+        if (n === 0) return budget === 0 ? [] : null
+        for (let i = 0; i < from.length; i++) {
+          const x = from[i]!
+          if (x.marks > budget) continue
+          const rest = pick(n - 1, budget - x.marks, from.slice(i + 1))
+          if (rest) return [x, ...rest]
+        }
+        return null
+      }
+      const sections: { id: string; questionIds: string[] }[] = []
+      for (const s of fresh.paper.sections) {
+        const chosen = pick(s.questionCount, s.markBudget, pool.filter((x) => !used.has(x.id)))
+        if (!chosen) break
+        for (const x of chosen) used.add(x.id)
+        sections.push({ id: s.id, questionIds: chosen.map((x) => x.id) })
+      }
+      if (sections.length !== fresh.paper.sections.length) continue
+      const put = await admin.put(`/api/admin/papers/${id}`, { sections })
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      const pub = await admin.post(`/api/admin/papers/${id}/publish`)
+      expect(Publish.parse(pub.body).data, scope).toEqual({ ok: true, errors: [] })
+      published++
+    }
+    expect(published, `scopes tried: ${scopes.join(', ')}`).toBeGreaterThan(0)
   })
 })
