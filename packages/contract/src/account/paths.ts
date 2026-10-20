@@ -4,7 +4,6 @@ import { z } from '../zod'
 import { AUTH_ERROR_MESSAGES } from '../auth/errors'
 import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
-import { SessionSchema } from '../session/session'
 import {
   ACCOUNT_AUTH_MESSAGES,
   ACCOUNT_MESSAGES,
