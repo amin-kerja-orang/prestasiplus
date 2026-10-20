@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import type { INestApplication } from '@nestjs/common'
+import type { INestApplication, Type } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
@@ -57,6 +57,8 @@ export interface BootOptions {
   env?: Record<string, string | undefined>
   performance?: SchoolPerformancePort
   classes?: SchoolClassCountPort
+  /** Feature modules to boot (default: auth, users and school-admin). Pass `featureModules` for the real wiring. */
+  modules?: Type<unknown>[]
 }
 
 /** Nest app with the auth, users and school-admin modules on a private migrated database (identity + schools seeds). */
@@ -83,7 +85,9 @@ export async function bootSchoolAdminApp(opts: BootOptions = {}): Promise<School
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
-  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, UsersModule, SchoolAdminModule])] })
+  let builder = Test.createTestingModule({
+    imports: [defineAppModule(opts.modules ?? [AuthModule, UsersModule, SchoolAdminModule])],
+  })
     .overrideProvider(CLOCK)
     .useValue(clock)
   if (opts.performance) builder = builder.overrideProvider(SCHOOL_PERFORMANCE_PORT).useValue(opts.performance)

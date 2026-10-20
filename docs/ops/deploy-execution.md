@@ -24,6 +24,7 @@ go only in the platform dashboards or your laptop shell, never in the repo. Plac
    ALLOW_DEMO_SEED=true npm run be:db:seed          # STAGING ONLY; default profile "poc"; idempotent
    ```
    Windows PowerShell: `$env:DATABASE_URL='...'; $env:ALLOW_DEMO_SEED='true'`. Do not use `be:db:reset`.
+   Re-seeding before a demo, a staging-only password hash, and the Bijak PoC data: see [demo-reseed.md](demo-reseed.md).
 5. Verify (Supabase SQL editor, or `psql "$DATABASE_URL"`):
    ```sql
    select count(*) as migrations from _prisma_migrations where finished_at is not null;
