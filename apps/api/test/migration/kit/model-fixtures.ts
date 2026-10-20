@@ -93,6 +93,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // feedback (BE-20): the user must exist; role and satisfaction have checks.
   feedback: async (query) => ({ user_id: await parentUser(query), role: 'student', month: '2026-10-01', satisfaction: 4 }),
+  // foster_applications (BE-47): the student and the applicant must exist; category has a check.
+  foster_applications: async (query) => ({ student_id: await parentUser(query), applicant_user_id: await parentUser(query), applicant_role: 'student', student_category: 'B40', reason: 'Sebab Contoh' }),
   // interventions (BE-20): pupil and author must exist; alert type and the free text are required.
   interventions: async (query) => ({
     student_id: await parentUser(query),
