@@ -11,6 +11,7 @@ import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
+import { questionsSeed } from '../../prisma/seed/questions'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
@@ -33,10 +34,14 @@ export interface IntegrationApp {
   close(): Promise<void>
 }
 
-/** The real wiring: auth + `BijakIntegrationModule` (papers, attempts, practice, wallet). No port is plugged by the test. */
-export async function bootIntegrationApp(): Promise<IntegrationApp> {
+/**
+ * The real wiring: auth + `BijakIntegrationModule` (papers, attempts, practice, wallet, BE-09 question bridge).
+ * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
+ * (PoC papers on the reserved ids AND bank questions in `question_versions`).
+ */
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, examSeed, walletSeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
@@ -57,6 +62,8 @@ export async function bootIntegrationApp(): Promise<IntegrationApp> {
     BIJAK_SWEEP_INTERVAL_SECONDS: '0',
     UPLOAD_RATE_PER_MINUTE: '1000',
     FILE_STORAGE_DIR: undefined,
+    // The test boot runs the demo seed, as staging does: PoC questions on unless a spec asks for the production default.
+    BIJAK_POC_QUESTIONS: opts.pocQuestions === false ? 'false' : 'true',
   }
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k]

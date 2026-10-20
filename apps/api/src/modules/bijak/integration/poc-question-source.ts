@@ -12,10 +12,9 @@ import { POC_BANK, pocQuestionId } from '../papers/poc'
  * - The question id (and the MCQ leaf id, which is the question id) is the reserved decimal id; structured
  *   part ids, group ids and stimulus ids keep their export keys.
  * - Schemes stay server-side: BE-16 only lets them out inside a graded result.
- * - `BijakIntegrationModule` binds it ONLY when the BE-09 tables are absent (`question_versions` does not
- *   exist). REPLACED BY BE-09: once BE-09 merges, its module binds `provideQuestionSource` itself, this
- *   class and its binding are deleted, and the PoC questions are loaded into the bank under the same
- *   reserved ids (see `papers/poc/index.ts`).
+ * - `BijakIntegrationModule` serves it for the reserved PoC id block through `CompositeBijakQuestionSource`
+ *   (`bijak/question-bridge`); every other id goes to the BE-09 bank. It stays while seeded PoC papers place
+ *   the reserved ids (the PoC questions are not loaded into BE-09; see the bridge PR for the open question).
  */
 export class PocBijakQuestionSource implements BijakQuestionSource {
   private readonly bundles = new Map<string, BijakQuestionBundle>()
