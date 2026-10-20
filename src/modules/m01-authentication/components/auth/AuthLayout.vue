@@ -25,7 +25,7 @@ useThemeMode('learner')
 </script>
 
 <template>
-  <main class="flex min-h-dvh flex-col bg-muted xl:grid xl:grid-cols-2" data-testid="auth-layout">
+  <main class="flex min-h-dvh flex-col overflow-x-clip bg-muted xl:grid xl:grid-cols-2" data-testid="auth-layout">
     <AuthBrandStrip />
 
     <aside
