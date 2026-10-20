@@ -71,12 +71,11 @@ export class NoSchoolClasses implements SchoolClassCountPort {
 }
 
 /*
- * TODO(BE-19 merge): register in the module
- *   { provide: SCHOOL_PERFORMANCE_PORT, useExisting: SchoolPerformanceService }   // reports/performance/services/school-performance.service.ts
- * `SchoolPerformanceService.school(ctx: Ctx): Promise<PerformanceSchool>` is structurally a `SchoolPerformancePort` (the view is a
- * subset of `PerformanceSchool`; `levels[].students` is already there), so no mapping code is needed. Import its module in
- * `SchoolAdminModule`. The ctx is `{ userId, role, scope: auth.active.scope, isTest }`. Missing in BE-19's frozen service today:
- * non-zero `distribution` rows (the GPS is not Bijak: it stays null until an SPM card wires a future SpmGradesPort); report, do not derive.
+ * BE-19 is wired: `SchoolAdminModule` binds `{ provide: SCHOOL_PERFORMANCE_PORT, useExisting: SchoolPerformanceService }`
+ * (reports/performance/services/school-performance.service.ts). `SchoolPerformanceService.school(ctx: Ctx): Promise<PerformanceSchool>`
+ * is structurally a `SchoolPerformancePort` (the view is a subset of `PerformanceSchool`), so there is no mapping code. The ctx is
+ * `{ userId, role, scope: auth.active.scope, isTest }`. BE-19 gives no non-zero `distribution` rows (the GPS is not Bijak: it stays
+ * null until an SPM card wires a future SpmGradesPort) and its `levels` stay empty until BE-17 provides the classes port; report, do not derive.
  *
  * TODO(BE-17 merge): register { provide: SCHOOL_CLASS_COUNT_PORT, useClass: <adapter over ClassesRepository> } where the adapter
  * returns the count of active classroom + school_class rows of the school (BE-17 ClassesRepository).
