@@ -21,5 +21,9 @@ import { QuestionWorkflowModule } from './questions/workflow'
 /**
  * Module registry. Each lane adds ONE import and ONE array entry for its Nest module
  * (append-only; never reorder). `app.module.ts` imports this list.
+ *
+ * Exception: `QuestionWorkflowModule` (BE-10) sits BEFORE `QuestionsModule` (BE-09) on purpose. Routes are
+ * registered in module order, and BE-09's `GET /guru/questions/:id` would otherwise shadow BE-10's static
+ * `GET /guru/questions/template` (404). `test/questions-workflow/wired-bank.spec.ts` guards the order.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, QuestionWorkflowModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule]

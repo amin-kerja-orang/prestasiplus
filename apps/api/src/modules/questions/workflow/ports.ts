@@ -5,7 +5,7 @@
  * question bank only through `QuestionBankPort`, and never imports from `modules/questions/*` outside
  * `workflow/`.
  *
- * Until BE-09 is merged and wired, the default is an EMPTY question bank: every id is unknown (the
+ * The default is an EMPTY question bank (BE-10 wiring replaces it with `bank/question-bank.adapter.ts`): every id is unknown (the
  * service answers 404) and every list is empty, so the API boots and the routes answer sensibly.
  * BE-09 (or the app wiring that merges both) replaces it once:
  *

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, type OnModuleInit } from '@nestjs/common'
 
 import { AiExplanationController, AiExplanationService } from './ai-explanation'
 import { DiagramAuditController, DiagramAuditService } from './diagram-audit'
@@ -9,10 +9,12 @@ import { FilesModule } from '../../files'
 
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
+import { QuestionBankAdapter } from './bank'
 import { LifecycleService } from './lifecycle'
 import { CurriculumModule } from '../../curriculum'
 import { GuruQuestionImportController, QuestionImportsController, QuestionImportsService } from './imports'
 import { NotificationsModule } from '../../notifications'
+import { QuestionsModule } from '../questions.module'
 import { QuestionWorkflowPorts } from './ports'
 import { QuestionReportsController, QuestionReportsService } from './reports'
 import { ReportsRepository } from './reports/reports.repository'
@@ -42,11 +44,11 @@ import { QuestionWorkflowService } from './question-workflow.service'
  *   lifecycle/      transition table + gates, status events, source takedown; exposes
  *                   `QuestionWorkflowService.transition(...)` for BE-09's `bulk-action` / `PUT`
  *
- * `QuestionWorkflowPorts` is exported: BE-09 calls `provideQuestionBank(adapter)` from its own
- * `onModuleInit` (see `ports.ts`); neither card edits the other's module file.
+ * `QuestionWorkflowPorts` is exported. This module imports `QuestionsModule` (BE-09) and registers
+ * `QuestionBankAdapter` (`bank/`) as the question bank in its own `onModuleInit`.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, NotificationsModule, CurriculumModule, FilesModule],
+  imports: [AuditModule, ThrottleModule, NotificationsModule, CurriculumModule, FilesModule, QuestionsModule],
   controllers: [
     // --- controllers: one line per route group ---------------------------------------------
     QualityController,
@@ -60,6 +62,7 @@ import { QuestionWorkflowService } from './question-workflow.service'
   ],
   providers: [
     QuestionWorkflowPorts,
+    QuestionBankAdapter,
     QuestionWorkflowService,
     LifecycleService,
     // --- providers: one line per route group service ---------------------------------------
@@ -74,4 +77,14 @@ import { QuestionWorkflowService } from './question-workflow.service'
   ],
   exports: [QuestionWorkflowPorts, QuestionWorkflowService, QuestionReportsService],
 })
-export class QuestionWorkflowModule {}
+export class QuestionWorkflowModule implements OnModuleInit {
+  constructor(
+    private readonly ports: QuestionWorkflowPorts,
+    private readonly bank: QuestionBankAdapter,
+  ) {}
+
+  /** Replaces the empty default with the BE-09 question bank (once; a second call throws). */
+  onModuleInit(): void {
+    this.ports.provideQuestionBank(this.bank)
+  }
+}

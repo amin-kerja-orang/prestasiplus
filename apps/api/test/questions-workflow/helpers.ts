@@ -17,7 +17,8 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { CurriculumModule } from '../../src/modules/curriculum'
-import { QuestionWorkflowModule, QuestionWorkflowPorts, type QuestionBankPort } from '../../src/modules/questions/workflow'
+import { EmptyQuestionBank, QuestionWorkflowModule, type QuestionBankPort } from '../../src/modules/questions/workflow'
+import { QuestionBankAdapter } from '../../src/modules/questions/workflow/bank'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { FakeQuestionBank } from './fake-question-bank'
 
@@ -72,17 +73,20 @@ export async function bootWorkflowApp(opts: BootOptions = {}): Promise<WorkflowT
     ...opts.env,
   })
   const clock = new FixedClock(START)
+  const fake = new FakeQuestionBank()
+  // `null` keeps the empty bank, `undefined` the fake. Either way the module registers the one bank
+  // in its own `onModuleInit`: the real adapter is replaced here (the single-registration guard stays).
+  const bank: QuestionBankPort = opts.bank === undefined ? fake : (opts.bank ?? new EmptyQuestionBank())
   const moduleRef = await Test.createTestingModule({
     imports: [defineAppModule([AuthModule, CurriculumModule, QuestionWorkflowModule])],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(QuestionBankAdapter)
+    .useValue(bank)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
-  const fake = new FakeQuestionBank()
-  const bank: QuestionBankPort = opts.bank === undefined ? fake : (opts.bank ?? app.get(QuestionWorkflowPorts).questionBank)
-  if (opts.bank !== null) app.get(QuestionWorkflowPorts).provideQuestionBank(bank)
   await app.init()
   return {
     app,
