@@ -16,6 +16,7 @@ import type { Scenario } from '../runner'
 const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /question-reports': 'admin', // "Admin only"
   'GET /admin-sekolah/dashboard': 'school_admin',
+  'GET /intake/batches': 'teacher', // Guru (own batches) and Admin Pusat (all); BE-37
   'GET /amaran/effectiveness': 'teacher', // admin, school_admin, teacher
   'GET /headcounts': 'teacher', // admin, teacher, school_admin
   'GET /monitoring/overview': 'teacher',

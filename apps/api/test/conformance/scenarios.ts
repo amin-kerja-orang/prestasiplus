@@ -10,6 +10,7 @@ import { perutusanScenarios } from './content/perutusan'
 import { videosScenarios } from './content/videos'
 import { bijakPapersScenarios } from './bijak/papers'
 import { filesScenarios } from './files/files'
+import { intakeScenarios } from './intake/intake'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
@@ -43,5 +44,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...bijakAttemptsScenarios,
     ...practiceScenarios,
     ...bijakIntegrationScenarios,
+    ...intakeScenarios,
   ]
 }

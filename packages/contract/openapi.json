@@ -105194,7 +105194,7 @@
     "/intake/batches": {
       "post": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Create a submission with its declaration",
         "description": "Card BE-37 (prototype createIntakeBatch). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Status starts `submitted` (Dihantar); files are added with POST /intake/batches/{id}/files. A teacher may have a limited number of open batches (INTAKE_MAX_ACTIVE_BATCHES; Admin Pusat exempt): over it is 429 RATE_LIMITED. `declaration` must be `true`.",
@@ -105295,7 +105295,7 @@
       },
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "List submissions (paginated)",
         "description": "Card BE-37 (prototype listIntakeBatches). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. A Guru sees own batches only; Admin Pusat sees all. Newest first; page size 20 (max 100).",
@@ -105378,7 +105378,7 @@
     "/intake/batches/{id}": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "One submission with its files and per-file progress",
         "description": "Card BE-37 (prototype getIntakeBatch). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. The client polls this while `status` is submitted or processing.",
@@ -105440,7 +105440,7 @@
     "/intake/batches/{id}/files": {
       "post": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Upload one or more PDF files to a submission",
         "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
@@ -105572,7 +105572,7 @@
     "/intake/batches/{id}/cancel": {
       "post": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Cancel a submission and its pending jobs",
         "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Queued and running jobs of the batch are cancelled; status becomes `cancelled` (Dibatalkan [PROPOSED]). Idempotent on a batch that is already cancelled (200). A batch that is `ready_for_review` or `failed` cannot be cancelled: 409 CONFLICT. The request body is empty.",
@@ -105674,7 +105674,7 @@
     "/intake/files/{id}/pages": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Pages of a file: text, source, blocks, figures, status",
         "description": "[PROPOSED] Gives the review UI what the prototype OCR produced client-side (PageText, blocks). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. The page image is a separate route; `hasImage` says whether it exists.",
@@ -105736,7 +105736,7 @@
     "/intake/files/{id}/pages/{n}/image": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Rendered page image",
         "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Authenticated and scope-checked; there is no public URL. Stored Content-Type, `nosniff`, `no-store`. A page without an image is 404. Rate limited per user.",
@@ -105861,7 +105861,7 @@
     "/intake/files/{id}/pages/{n}/thumb": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Page thumbnail",
         "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Same rules as the page image; 240 px wide.",
@@ -105986,7 +105986,7 @@
     "/intake/figures/{id}/image": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Figure crop image",
         "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Same rules as the page image.",
@@ -106100,7 +106100,7 @@
     "/intake/files/{id}/original": {
       "get": {
         "tags": [
-          "intake"
+          "intake-files"
         ],
         "summary": "Download the stored original PDF",
         "description": "Card BE-37 (replaces the mock GET /api/question-submissions/:id/files/:index). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. `Content-Disposition: attachment; filename=\"<sanitised>.pdf\"`, `application/pdf`, `nosniff`. Anyone else gets 404.",

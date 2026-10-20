@@ -100,7 +100,9 @@ const IMAGE_TYPES = ['image/webp', 'image/png', 'image/jpeg']
  * cancel); `GET /intake/files/{id}/pages` carries the page text and blocks the review UI needs.
  */
 export function registerIntakeFilesPaths(registry: OpenAPIRegistry): void {
-  const tags = ['intake']
+  // Own tag: BE-38 registers the item/review routes under `intake`; the conformance suite treats a tag with any
+  // served route as a built domain, so the two cards need separate tags until both are served.
+  const tags = ['intake-files']
 
   registerIntakeRoute(registry, {
     method: 'post',
