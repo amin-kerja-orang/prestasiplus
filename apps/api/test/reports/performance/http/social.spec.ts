@@ -18,10 +18,16 @@ import { bootWorld, EXTRA_PUPILS, type World } from './boot'
  */
 let w: World
 const as: Record<string, Client> = {}
+// requestId is unique per request by design; the privacy assertion is on everything else.
+const noReq = (b: unknown): string => {
+  const c = structuredClone(b) as { error?: { requestId?: unknown } }
+  if (c?.error) delete c.error.requestId
+  return JSON.stringify(c)
+}
 const who = ['pelajar', 'guru', 'admin', 'ibubapa'] as const
 
 beforeAll(async () => {
-  w = await bootWorld({ THROTTLE_PUBLIC_PER_MINUTE: '5' })
+  w = await bootWorld({ THROTTLE_PUBLIC_PER_MINUTE: '12' })
   for (const k of who) as[k] = await loginAs(w, `${k}@demo.test`)
   const practice = new InMemoryPracticeRead()
   const gamification = new InMemoryGamification()
@@ -57,7 +63,7 @@ describe('rankings', () => {
     const data = parseData(s, PerformanceRankingSchema)
     expect(data.rows[0]).toMatchObject({ userId: own })
     expect(data.rows[1]?.userId).toBeNull()
-    expect(data.rows[1]?.name).toMatch(/^Murid \S+ P\.$/)
+    expect(data.rows[1]?.name).toMatch(/^Murid P[.]$/)
     const t = parseData(await (as.guru as Client).get('/api/rankings'), PerformanceRankingSchema)
     expect(t.rows[1]?.name).toBe('Murid Ujian 2 Penuh')
     expect(t.rows[1]?.userId).not.toBeNull()
@@ -78,12 +84,12 @@ describe('leaderboard names', () => {
     const own = w.ids['pelajar@demo.test']
     const data = parseData(await (as.pelajar as Client).get('/api/leaderboard?period=all'), PerformanceLeaderboardSchema)
     const mine = data.rows.find((r) => r.userId === own)
-    expect(mine?.name).toMatch(/^Murid Ujian d+ Penuh$/)
+    expect(mine?.name).toMatch(/^Murid Ujian [0-9]+ Penuh$/)
     const others = data.rows.filter((r) => r.userId !== own)
     expect(others.length).toBeGreaterThan(0)
     for (const r of others) {
       expect(r.userId).toBeNull()
-      expect(r.name).toMatch(/^Murid S+ P.$/)
+      expect(r.name).toMatch(/^Murid P[.]$/)
     }
   })
 })
@@ -111,7 +117,7 @@ describe('public student profile', () => {
     for (const id of ['9999999', w.ids['guru@demo.test'], w.ids['ibubapa@demo.test'], 'abc']) {
       const res = await w.http().get(`/api/public/students/${id}`)
       expect(res.status).toBe(404)
-      bodies.add(JSON.stringify(res.body))
+      bodies.add(noReq(res.body))
     }
     expect(bodies.size).toBe(1)
   })
@@ -127,7 +133,7 @@ describe('public student profile', () => {
       for (const id of [inactive, suspended]) {
         const res = await w.http().get(`/api/public/students/${id}`)
         expect(res.status).toBe(404)
-        expect(JSON.stringify(res.body)).toBe(JSON.stringify(unknown.body))
+        expect(noReq(res.body)).toBe(noReq(unknown.body))
       }
     } finally {
       await w.db.query('update users set is_active = true where id = $1', [inactive])
@@ -137,7 +143,7 @@ describe('public student profile', () => {
 
   it('8. enumeration is rate limited per client address (429 with Retry-After)', async () => {
     let last = 0
-    for (let i = 0; i < 8; i++) last = (await w.http().get(`/api/public/students/${100000 + i}`)).status
+    for (let i = 0; i < 15; i++) last = (await w.http().get(`/api/public/students/${100000 + i}`)).status
     expect(last).toBe(429)
   })
 })

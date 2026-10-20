@@ -1,5 +1,6 @@
 import { afterAll, beforeAll } from 'vitest'
 
+import { PracticeReadsModule } from '../../../../src/modules/practice/reads'
 import { PerformancePorts } from '../../../../src/modules/reports/performance'
 import type {
   LeaderboardQuery,
@@ -28,7 +29,7 @@ let subjects: string[] = []
 let levels: Record<string, string> = {}
 
 beforeAll(async () => {
-  t = await bootIntegrationApp()
+  t = await bootIntegrationApp({ extraModules: [PracticeReadsModule] })
   real = t.app.get(PerformancePorts).practice
   subjects = (await t.db.query<{ id: string }>(`select id::text from subjects order by id limit 2`)).map((r) => r.id)
   const lv = await t.db.query<{ id: string; code: string }>(`select id::text, code from education_levels where code in ('T4','T5')`)
@@ -77,6 +78,7 @@ async function translating(seed: PracticeSeed): Promise<PracticeReadPort> {
       )
     }
   }
+  const suffix = counter // schools were created as `<name> <counter>`; the contract speaks the bare name
   const back = new Map([...userOf].map(([seedId, realId]) => [realId, seedId]))
   const toReal = (u: string): string => userOf.get(u) ?? '0'
   const scope = <T extends PracticeScopeQuery>(q: T): T => ({
@@ -90,7 +92,7 @@ async function translating(seed: PracticeSeed): Promise<PracticeReadPort> {
     practiceDays: (u: string) => real.practiceDays(toReal(u)),
     rankingRows: async (q: RankingQuery): Promise<RankingResult> => {
       const r = await real.rankingRows(scope(q))
-      return { ...r, rows: r.rows.map((x) => ({ ...x, userId: back.get(x.userId)!, name: x.name })) }
+      return { ...r, rows: r.rows.map((x) => ({ ...x, userId: back.get(x.userId)!, name: x.name, schoolName: x.schoolName.replace(` ${suffix}`, '') })) }
     },
     leaderboard: async (q: LeaderboardQuery): Promise<LeaderboardResult> => {
       const r = await real.leaderboard({ ...q, viewerId: toReal(q.viewerId) })
