@@ -33,6 +33,7 @@ import { analyticsScenarios } from './analytics/analytics'
 import { heatmapScenarios } from './heatmap/heatmap'
 import { intakeDashboardScenarios } from './intake/dashboard'
 import { cikguScenarios } from './cikgu/cikgu'
+import { commandCenterScenarios } from './command-center/command-center'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -75,5 +76,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...heatmapScenarios,
     ...intakeDashboardScenarios,
     ...cikguScenarios,
+    ...commandCenterScenarios,
   ]
 }
