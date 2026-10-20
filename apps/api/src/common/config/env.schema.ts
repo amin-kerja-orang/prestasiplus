@@ -82,6 +82,8 @@ export const EnvSchema = z.object({
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
   THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
+  THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-16 (Bijak attempts). All optional: the code applies the defaults (save 240, lifecycle 30, Semak 60, photo 20 per minute per user; sweep every 60 s, 0 = off, off under NODE_ENV=test).
   THROTTLE_BIJAK_ATTEMPT_SAVE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_BIJAK_ATTEMPT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),

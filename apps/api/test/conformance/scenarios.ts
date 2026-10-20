@@ -11,6 +11,7 @@ import { videosScenarios } from './content/videos'
 import { bijakPapersScenarios } from './bijak/papers'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
+import { questionsScenarios } from './questions/questions'
 import { practiceScenarios } from './practice/practice'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
@@ -31,6 +32,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...questionsScenarios,
     ...walletScenarios,
     ...audioScenarios,
     ...articleScenarios,

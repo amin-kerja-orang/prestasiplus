@@ -35256,7 +35256,8 @@
               "null"
             ],
             "enum": [
-              "eksperimen"
+              "eksperimen",
+              null
             ]
           },
           "subQuestions": {
