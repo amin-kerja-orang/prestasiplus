@@ -85,6 +85,10 @@ export interface CallerInfo {
 }
 
 const ts = (d: Date) => toMytTimestamp(d)
+/** BM message of a start that has no servable question (422 VALIDATION_ERROR, declared in the start contract). */
+export const NO_ELIGIBLE_QUESTIONS = 'Tiada soalan layak untuk kertas ini.'
+const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_ELIGIBLE_QUESTIONS })
+
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
@@ -127,13 +131,13 @@ export class BijakAttemptsService {
     return row
   }
 
-  private async loadBundles(composition: readonly SectionSnapshot[]): Promise<Bundles> {
+  private async loadBundles(composition: readonly SectionSnapshot[], onMissing: () => ApiError = () => ApiError.of('SERVER_ERROR')): Promise<Bundles> {
     const ids = [...new Set(questionIdsOf(composition))]
     const bundles = await this.ports.questionSource.loadQuestions(ids)
     const missing = ids.filter((id) => !bundles.has(id))
     if (missing.length) {
       this.logger.error(`Question bundles missing for ${String(missing.length)} question(s) of an attempt`)
-      throw ApiError.of('SERVER_ERROR')
+      throw onMissing()
     }
     return bundles
   }
@@ -209,9 +213,10 @@ export class BijakAttemptsService {
     const composition = freezeComposition(paper.sections)
     if (!composition.length || questionIdsOf(composition).length === 0) {
       this.logger.error('A paper without questions was offered for an attempt')
-      throw ApiError.of('SERVER_ERROR')
+      throw noEligibleQuestions()
     }
-    await this.loadBundles(composition) // fail now, not in the middle of a sitting
+    // Fail now, not in the middle of a sitting: a missing bundle at START is a handled 422 (nothing is created).
+    await this.loadBundles(composition, noEligibleQuestions)
     const out = await this.prisma.transaction(async () => {
       await this.repo.lockStart(userId, body.paperId)
       const open = await this.repo.openFor(userId, body.paperId)

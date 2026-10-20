@@ -15,7 +15,7 @@ const iso = (ms: number) => new Date(ms).toISOString()
 describe('F1: defuse of the engine root-index hang', () => {
 
   it('random root, bracket, brace and \\text tokens never hang the RAW engine once defused (child process, hard timeout)', () => {
-    const run = spawnSync('npx', ['tsx', fileURLToPath(new URL('./fuzz-worker.ts', import.meta.url))], { timeout: 25_000, killSignal: 'SIGKILL', encoding: 'utf8' })
+    const run = spawnSync(process.execPath, ['--import', 'tsx', fileURLToPath(new URL('./fuzz-worker.ts', import.meta.url))], { timeout: 25_000, killSignal: 'SIGKILL', encoding: 'utf8' })
     expect(run.error, 'the fuzz child timed out (engine hang)').toBeUndefined()
     expect(run.stdout + run.stderr).toContain('fuzz-ok')
     expect(run.status).toBe(0)
