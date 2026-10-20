@@ -69,6 +69,10 @@ model School {
   auditEvents   AuditEvent[]
   importJobs    ImportJob[]
   subscriptions SchoolSubscription[]
+  // BE-24 back-relations (content.prisma owns the models).
+  videos        Video[]              @relation("VideoSchool")
+  videoShares   VideoSchool[]        @relation("VideoSchoolShare")
+  perutusan     Perutusan[]          @relation("PerutusanSchool")
 
   // uq_schools_code_lower (unique on lower(code)) and ix_schools_name_lower are hand-written in migration
   // 0004 (Prisma cannot express functional indexes); `migrate diff` ignores them.

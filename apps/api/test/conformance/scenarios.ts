@@ -2,9 +2,14 @@ import { allScenarios, type ContractIndex, type Scenario } from '@pp/contract-te
 
 import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
+import { articleScenarios } from './content/articles'
+import { audioScenarios } from './content/audio'
+import { perutusanScenarios } from './content/perutusan'
+import { videosScenarios } from './content/videos'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { schoolsScenarios } from './schools/schools'
+import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
 import { walletScenarios } from './wallet/wallet'
 
@@ -23,5 +28,10 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...accountScenarios,
     ...notificationsScenarios,
     ...walletScenarios,
+    ...audioScenarios,
+    ...articleScenarios,
+    ...supportTicketScenarios,
+    ...videosScenarios,
+    ...perutusanScenarios,
   ]
 }

@@ -55,11 +55,15 @@ async function parentChapter(query: FixtureQuery): Promise<string> {
 }
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
-  // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
-  chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
+  articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
+  audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
+  banners: { banner_type: 'HERO' },
   // coin_ledger (BE-11): type has a check and the sign of amount follows it.
   coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
+  notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
+  // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
+  chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
@@ -81,6 +85,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     ends_on: '2026-12-31',
   }),
   // schools: name (text) is generated; nothing else is required.
+  support_tickets: async (query) => ({ user_id: await parentUser(query) }),
+  videos: async (query) => ({ uploader_id: await parentUser(query), platform: 'Youtube', category: 'tutorial' }),
   // subject_levels (BE-08): both parents must exist.
   subject_levels: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query) }),
   // subjects (BE-08): code must be upper-case.

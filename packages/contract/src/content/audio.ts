@@ -88,7 +88,7 @@ export const AudioKbatPlaySectionSchema = z
     no: z.number().int().min(1).max(AUDIO_SECTION_COUNT),
     title: z.string(),
     audioUrl: z.string().nullable().meta({
-      description: 'Authenticated URL served through BE-04 FileStorage (not a public path); null when the section has no audio.',
+      description: 'Authenticated stream URL, `/api/audio-kbat-sets/{id}/sections/{no}/audio` (the audio sits in files with purpose audio_kbat, not readable through /files by students); null when the section has no audio.',
     }),
     questions: z.array(AudioKbatPlayQuestionSchema),
   })

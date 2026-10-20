@@ -41,6 +41,8 @@ export const UPLOAD_ROLES: Readonly<Record<FilePurpose, readonly RoleCode[] | 'a
   bijak_photo: ['student'],
   question_image: ['admin', 'teacher'],
   cms_image: ['admin'],
+  audio_kbat: ['admin'],
+  cms_screenshot: ['admin'],
 }
 
 export function isFilePurpose(value: unknown): value is FilePurpose {
@@ -82,14 +84,18 @@ export interface FileContent extends StoredFile {
 }
 
 /** The effective byte limit of `purpose`: its own rule, capped by the global ceiling. */
+/** Purposes whose own rule is not lowered by MAX_UPLOAD_MB (audio sets are 20 MB, the global default is 10). */
+const OWN_CEILING: readonly FilePurpose[] = ['audio_kbat']
+
 export function limitFor(purpose: FilePurpose, maxUploadBytes: number): number {
+  if (OWN_CEILING.includes(purpose)) return FILE_PURPOSE_RULES[purpose].maxBytes
   return Math.min(FILE_PURPOSE_RULES[purpose].maxBytes, maxUploadBytes)
 }
 
 /** The "must not be greater than" message for `purpose`, honouring a lower global ceiling. */
 export function sizeMessageFor(purpose: FilePurpose, maxUploadBytes: number): string {
   const rule = FILE_PURPOSE_RULES[purpose]
-  if (maxUploadBytes >= rule.maxBytes) return rule.sizeMessage
+  if (maxUploadBytes >= rule.maxBytes || OWN_CEILING.includes(purpose)) return rule.sizeMessage
   return `The file field must not be greater than ${Math.floor(maxUploadBytes / 1024)} kilobytes.`
 }
 
@@ -119,6 +125,11 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   question_image: (c) => isRole(c, 'admin', 'teacher'),
   // Interim (F2): public, reachable only through the opaque token, until BE-24 gates it on publish state.
   cms_image: () => true,
+  // BE-24: section audio of Audio KBAT sets. Admin only, fail closed: students never read it through /files, they
+  // reach it only through the stream route of an approved set (`FilesService.readManaged`, which does its own check).
+  audio_kbat: (c) => isRole(c, 'admin'),
+  // BE-24: private admin screenshots.
+  cms_screenshot: (c) => isRole(c, 'admin'),
   // Personal data of a minor: the owner, admin, and staff whose scope covers the owner.
   // Classmates and other users in the same school are NOT entitled here (leaderboards and class lists are the
   // user cards' job). A teacher of the owner's class is entitled once class membership exists.
@@ -209,6 +220,49 @@ export class FilesService {
       bytes: inspected.bytes,
       isTest: input.isTest ?? false,
     })
+  }
+
+  /**
+   * A service-side upload of a public purpose (BE-24 audio sets): the same size and type rules as `upload`
+   * (type from the bytes, `FILE_PURPOSE_RULES`), but no role check and no route: the caller did its own
+   * authorisation. A refusal is the same 422 `fields.file`.
+   */
+  async storeManaged(input: { ownerUserId: string; purpose: FilePurpose; bytes: Buffer; isTest?: boolean }): Promise<StoredFile> {
+    const rule = FILE_PURPOSE_RULES[input.purpose]
+    if (input.bytes.length === 0) throw invalidFile(FILE_MESSAGES.required)
+    if (input.bytes.length > limitFor(input.purpose, this.config.maxUploadBytes)) {
+      throw invalidFile(sizeMessageFor(input.purpose, this.config.maxUploadBytes))
+    }
+    const inspected = inspectUpload(input.bytes)
+    if (!inspected || !(rule.mimes as readonly string[]).includes(inspected.mime)) throw invalidFile(rule.typeMessage)
+    return this.persist({ ownerUserId: input.ownerUserId, purpose: input.purpose, mime: inspected.mime, bytes: inspected.bytes, isTest: input.isTest ?? false })
+  }
+
+  /**
+   * The bytes of a file of exactly `purpose`, by public token, for a service that already decided the caller
+   * may read it (the Audio KBAT stream route). No visibility rule runs; a token of another purpose is null.
+   */
+  async readManaged(token: string, purpose: FilePurpose): Promise<FileContent | null> {
+    const row = await this.findByToken(token)
+    if (!row || row.purpose !== purpose) return null
+    const bytes = await this.storage.get(row.storageKey)
+    if (!bytes) {
+      this.logger.error(`File object missing for file ${idToString(row.id)}`)
+      return null
+    }
+    return { ...this.summary(row), bytes }
+  }
+
+  /** Removes a file row and its object (clean-up after a failed write). Never throws. */
+  async discard(token: string, purpose: FilePurpose): Promise<void> {
+    try {
+      const row = await this.findByToken(token)
+      if (!row || row.purpose !== purpose) return
+      await this.prisma.client.file.delete({ where: { id: row.id } })
+      await this.storage.delete(row.storageKey)
+    } catch {
+      this.logger.warn('Could not discard a managed file')
+    }
   }
 
   /** `GET /files/:token`. `auth` is null for an anonymous caller. Anything not visible is 404 (401 when anonymous). */
