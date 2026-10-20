@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { ErrorBodySchema, PERFORMANCE_TIMELINE_MESSAGES as MSG, PerformanceTimelinePostSchema, PerformanceTimelineSchema, envelopeOf } from '@pp/contract'
+import { PERFORMANCE_TIMELINE_MESSAGES as MSG, PerformanceTimelinePostSchema, PerformanceTimelineSchema, envelopeOf } from '@pp/contract'
 import type { Response } from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -67,7 +67,6 @@ const countPosts = async (userId: string): Promise<number> =>
   Number((await w.db.query<{ n: string }>(`select count(*)::text as n from timeline_posts where user_id = $1`, [userId]))[0]?.n)
 const countFiles = async (): Promise<number> =>
   Number((await w.db.query<{ n: string }>(`select count(*)::text as n from files where purpose = 'timeline_photo'`))[0]?.n)
-const bodyError = (res: Response) => ErrorBodySchema.parse(res.body).error
 
 describe('authentication, roles and CSRF', () => {
   it('answers 401 without a session on GET and POST', async () => {
@@ -164,14 +163,17 @@ describe('a student posts and reads the timeline', () => {
     expect(envelopeOf(PerformanceTimelineSchema).parse(sneaky.body).data.posts).toEqual([])
   })
 
-  it('lets any signed-in user read a timeline photo, and refuses an anonymous caller (401)', async () => {
+  it('photo reads follow the avatar rules: owner and the school admin of the owner school 200; another pupil, a teacher, a school admin of another school and anonymous are refused', async () => {
     const owner = await login('pelajar@demo.test')
-    const url = (envelopeOf(PerformanceTimelineSchema).parse((await owner.agent.get('/api/timeline')).body).data.posts[0]?.photos[0]?.url) as string
+    const url = envelopeOf(PerformanceTimelineSchema).parse((await owner.agent.get('/api/timeline')).body).data.posts[0]?.photos[0]?.url as string
     expect(url).toBeTruthy()
-    for (const email of ['ujian3@demo.test', 'guru@demo.test']) {
+    for (const email of ['pelajar@demo.test', 'adminsekolah@demo.test', 'admin@demo.test']) {
       const res = await (await login(email)).agent.get(url)
-      expect(res.status).toBe(200)
+      expect(res.status, email).toBe(200)
       expect(res.headers['content-type']).toMatch(/^image\//)
+    }
+    for (const email of ['ujian3@demo.test', 'guru@demo.test', 'admin2@demo.test', 'ibubapa@demo.test']) {
+      expectError(await (await login(email)).agent.get(url), 'NOT_FOUND')
     }
     expectError(await w.http().get(url), 'UNAUTHORIZED')
   })
@@ -223,9 +225,9 @@ describe('validation, spoofing and limits', () => {
 
   it('refuses a photo over 2 MB (cut off while streaming) and accepts one of exactly 2 MB', async () => {
     const s = await login('ujian1@demo.test')
-    const over = await unchanged(s, () => post(s, fields, [{ bytes: makePng({ padTo: 2 * 1024 * 1024 + 1 }) }]))
+    const over = await unchanged(s, () => post(s, fields, [{ bytes: makePng({ padTo: 2 * 1024 * 1024 + 44 }) }]))
     expect(expectError(over, 'VALIDATION_ERROR').fields).toEqual({ photos: MSG.photoInvalid })
-    const exact = await post(s, { ...fields, title: 'Tepat 2 MB' }, [{ bytes: makePng({ padTo: 2 * 1024 * 1024 }) }])
+    const exact = await post(s, { ...fields, title: 'Tepat 2 MB' }, [{ bytes: makePng({ padTo: 2 * 1024 * 1024 + 43 }) }])
     expect(exact.status, JSON.stringify(exact.body)).toBe(201)
   })
 

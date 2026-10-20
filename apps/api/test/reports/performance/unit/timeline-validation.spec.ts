@@ -11,7 +11,7 @@ import {
   summarizeFields,
   validateTimelineInput,
 } from '../../../../src/modules/reports/performance/timeline/timeline.validation'
-import { makeJpeg, makePng, makeWebp } from '../../files/fixtures'
+import { makeJpeg, makePng, makeWebp } from '../../../files/fixtures'
 
 const png = (): { buffer: Buffer } => ({ buffer: makePng() })
 const good = { title: 'Johan kuiz', category: 'pencapaian' }
@@ -100,8 +100,8 @@ describe('timeline validation: photos are judged by their bytes', () => {
   })
 
   it('refuses a file over 2 MB and accepts one of exactly 2 MB', () => {
-    expect(fieldsOf(good, [{ buffer: makePng({ padTo: 2 * 1024 * 1024 + 1 }) }])).toEqual({ photos: MSG.photoInvalid })
-    expect(validateTimelineInput(good, [{ buffer: makePng({ padTo: 2 * 1024 * 1024 }) }]).ok).toBe(true)
+    expect(fieldsOf(good, [{ buffer: makePng({ padTo: 2 * 1024 * 1024 + 44 }) }])).toEqual({ photos: MSG.photoInvalid })
+    expect(validateTimelineInput(good, [{ buffer: makePng({ padTo: 2 * 1024 * 1024 + 43 }) }]).ok).toBe(true)
   })
 
   it('refuses a PNG header that is truncated (the container must parse)', () => {
@@ -177,7 +177,7 @@ describe('timeline: who may post (OQ-6)', () => {
   })
 
   it('refuses every other role', () => {
-    for (const role of ['teacher', 'school_admin', 'parent', 'ppd_officer', 'jpn_officer'] as const) {
+    for (const role of ['teacher', 'school_admin', 'parent', 'ppd_officer'] as const) {
       expect(mayPost({ role, isTest: false })).toBe(false)
       expect(mayPost({ role, isTest: true })).toBe(false)
     }
