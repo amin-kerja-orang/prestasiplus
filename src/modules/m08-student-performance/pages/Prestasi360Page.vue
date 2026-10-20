@@ -7,7 +7,8 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsStatTile } from '@/ds'
+import { DsBackLink, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsSection, DsStatRow, DsStatTile } from '@/ds'
+import { isHttpMode } from '@/api/mode'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchStudentPerformance } from '../api/performance'
@@ -49,9 +50,25 @@ const back = (): void => {
   router.back()
 }
 
+/**
+ * US-33: in http mode the figures come from Bijak SPM sittings (BE-19), so the summary says so, and the
+ * panels the backend returns neutral (study time, streaks, coins, heatmap, weak topics, suggestions) are hidden
+ * instead of showing a misleading 0. Mock mode (practice figures) is unchanged.
+ */
+const bijak = isHttpMode()
+/** Empty = no Bijak SPM sitting recorded for this pupil. */
+const bijakEmpty = computed(() => bijak && (data.value?.stats.sessions ?? 0) === 0)
+
 const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
+  if (bijak) {
+    return [
+      { id: 'sesi', label: 'Sesi Kuiz', value: plain(s.sessions), icon: 'clipboard-text' },
+      { id: 'ketepatan', label: 'Ketepatan', value: pct1(s.accuracy), icon: 'check-circle' },
+      { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
+    ]
+  }
   return [
     { id: 'sesi', label: 'Sesi Kuiz', value: plain(s.sessions), icon: 'clipboard-text' },
     { id: 'ketepatan', label: 'Ketepatan', value: pct1(s.accuracy), icon: 'check-circle' },
@@ -109,14 +126,14 @@ const activity = computed(() => {
             <UAvatar :text="data.user.initial" size="xl" data-testid="avatar" />
           </template>
           <template #actions>
-            <div class="hidden gap-3 lg:flex" data-testid="hero-mini">
+            <div v-if="!bijakEmpty" class="hidden gap-3 lg:flex" data-testid="hero-mini">
               <p class="flex flex-col items-center bg-elevated px-4 py-2">
                 <span class="tabular text-heading text-highlighted" data-testid="hero-accuracy"
                   >{{ data.heroAccuracy }}%</span
                 >
                 <span class="text-caption text-muted">Ketepatan</span>
               </p>
-              <p class="flex flex-col items-center bg-elevated px-4 py-2">
+              <p v-if="!bijak" class="flex flex-col items-center bg-elevated px-4 py-2">
                 <span class="tabular text-heading text-highlighted" data-testid="hero-streak">{{
                   data.streak
                 }}</span>
@@ -127,7 +144,13 @@ const activity = computed(() => {
         </DsPageHeader>
       </div>
 
-      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
+      <DsSection v-if="bijak" title="Keputusan Bijak SPM" variant="subheading" data-testid="bijak-summary">
+        <div v-if="bijakEmpty" data-testid="bijak-empty">
+          <DsEmptyState title="Tiada data" icon="tray" />
+        </div>
+        <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="3" prefix="stat" />
+      </DsSection>
+      <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <HeadcountCards
         v-if="data.headcount.length > 0"
@@ -138,7 +161,7 @@ const activity = computed(() => {
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <MasteryCard :mastery="data.mastery" />
         <div class="flex min-w-0 flex-col gap-4 md:gap-6">
-          <DsPanel class="min-w-0" data-testid="activity-card">
+          <DsPanel v-if="!bijak" class="min-w-0" data-testid="activity-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('fire')" class="size-5 text-primary-t" />Aktiviti
@@ -182,9 +205,9 @@ const activity = computed(() => {
         </div>
       </div>
 
-      <ActivityHeatmap :days="data.heatmap" />
+      <ActivityHeatmap v-if="!bijak" :days="data.heatmap" />
 
-      <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+      <div v-if="!bijak" class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         <WeakTopicsCard :topics="data.weakTopics" />
         <SuggestionsCard :items="data.suggestions" />
       </div>
