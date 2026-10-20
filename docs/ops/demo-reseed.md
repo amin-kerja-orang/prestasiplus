@@ -96,7 +96,7 @@ Also check that `Demo1234` is **rejected** for these accounts.
 Then check the data:
 1. School-admin dashboard (`adminsekolah@demo.test`, school DEMO001): at least 5 pupils and a non-empty practice block.
 2. Teacher `guru@demo.test` -> Kelas Saya (`/guru/kelas`) -> "Kelas Demo Matematik T4" (code `DEMO4M`): sessions are listed.
-3. Teacher -> Analisa Item (`/guru/analisis-item`): the Bijak item analysis is not empty (Matematik Kertas 1 Set A).
+3. Teacher -> Analisa Item (`/guru/analisis-item`): the Bijak item analysis is not empty. Its rows come from the demo bank paper "Latihan Demo Matematik Bank Soalan (Contoh)" (6 lettered MCQ); the PoC papers have no lettered options, so they do not appear there.
 
 ## Notes
 
