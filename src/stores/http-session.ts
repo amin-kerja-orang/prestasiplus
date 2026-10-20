@@ -15,6 +15,7 @@
  */
 
 import { api, ApiError } from '@/api'
+import { scopeHomePath } from '@/app/prototype-scope'
 
 import { readStoredSession, useSessionStore } from './session'
 import type { ClientSession, Role, UserMe } from './session-types'
@@ -31,7 +32,7 @@ export interface ApiSession {
   }
   roles: { role: string }[]
   active: { role: string }
-  mode: unknown
+  mode: { kind: string; returnRole: string; since: string } | null
   landingPath: string
   expiresAt: string
   csrf: string
@@ -69,7 +70,32 @@ export function toClientSessionFromApi(session: ApiSession, remember: boolean): 
     school: null,
     landingPath: session.landingPath,
   }
-  return { token: session.csrf, csrf: session.csrf, remember, expiresAt: session.expiresAt, user }
+  const out: ClientSession = {
+    token: session.csrf,
+    csrf: session.csrf,
+    remember,
+    expiresAt: session.expiresAt,
+    user,
+  }
+  // Mod Pelajar is a server-side mode here: nothing is parked client-side, so `parent` is only a
+  // placeholder (the staff identity under the return role) that keeps the stored shape valid.
+  // Leaving is `DELETE /api/session/mode`, which returns the real staff session.
+  if (session.mode?.kind === 'mod_pelajar') {
+    const returnRole = session.mode.returnRole as Role
+    out.mode = {
+      kind: 'mod_pelajar',
+      returnRole,
+      since: session.mode.since,
+      returnTo: scopeHomePath(returnRole),
+      parent: {
+        token: session.csrf,
+        remember,
+        expiresAt: session.expiresAt,
+        user: { ...user, role: returnRole },
+      },
+    }
+  }
+  return out
 }
 
 /** CSRF token of the stored session; the HTTP transport reads it lazily on every write. */
