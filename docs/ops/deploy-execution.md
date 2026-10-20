@@ -27,7 +27,7 @@ go only in the platform dashboards or your laptop shell, never in the repo. Plac
 5. Verify (Supabase SQL editor, or `psql "$DATABASE_URL"`):
    ```sql
    select count(*) as migrations from _prisma_migrations where finished_at is not null;
-   select role, count(*) from users group by role;     -- demo accounts exist (table/column names per the Prisma schema; adjust if different)
+   select role, count(*) from user_roles group by role;   -- demo accounts exist, per role (prisma/schema/identity.prisma: UserRole -> user_roles)
    ```
    The migrations count should equal the number of folders in `apps/api/prisma/migrations`.
 
