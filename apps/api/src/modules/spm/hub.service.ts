@@ -40,6 +40,23 @@ export interface SpmCaller {
   isTest: boolean
 }
 
+/** Subjects whose pool facts are loaded at the same time (each is one hydration of the subject's questions). */
+export const POOL_LOAD_CONCURRENCY = 4
+
+/** Maps `items` with at most `limit` calls in flight; the result order is the input order. */
+export async function mapBounded<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const i = next++
+      out[i] = await fn(items[i] as T)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return out
+}
+
 const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
@@ -77,11 +94,10 @@ export class SpmHubService {
     return this.questions.count({ subjectId, status: 'published', active: true, type: 'structured' })
   }
 
-  /** Pool sizes of the configured subjects, one read each. */
+  /** Pool sizes of the configured subjects: one hydration each, at most POOL_LOAD_CONCURRENCY at a time. */
   private async poolSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
-    const out = new Map<string, number>()
-    for (const s of subjects) out.set(s.subjectId, await this.pool.count(s.subjectId))
-    return out
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.count(s.subjectId))
+    return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
   }
 
   // --- M06-01 -----------------------------------------------------------------------------------
@@ -119,9 +135,8 @@ export class SpmHubService {
     const listed = (await this.catalog.spmSubjects())
       .filter((s) => s.databankOrder !== null)
       .sort((a, b) => (a.databankOrder as number) - (b.databankOrder as number))
-    const out: SpmDatabankSubject[] = []
-    for (const s of listed) out.push({ code: s.code, ...metaOf(s), databankCount: await this.pool.count(s.subjectId) })
-    return out
+    const sizes = await this.poolSizes(listed)
+    return listed.map((s) => ({ code: s.code, ...metaOf(s), databankCount: sizes.get(s.subjectId) ?? 0 }))
   }
 
   async latihTubiList(): Promise<SpmLatihTubiList> {

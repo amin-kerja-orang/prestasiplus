@@ -8,13 +8,14 @@ import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { DUTA_PROFILES, SPM_SUBJECT_CONFIGS, spmSeed } from '../../prisma/seed/spm'
+import { spmSubjectConfigsSeed } from '../../prisma/seed/spm-subject-configs'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { dropDatabase } from '../curriculum/helpers'
 
 let db: TestDatabase
 beforeAll(async () => {
   db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, questionsSeed, spmSeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, curriculumSeed, questionsSeed, spmSubjectConfigsSeed, spmSeed], { prisma: db.prisma })
 }, 120_000)
 afterAll(async () => {
   await dropDatabase(db)
@@ -28,6 +29,19 @@ const snapshot = async () => ({
 })
 
 describe('SPM seed', () => {
+  it('the configuration module is a reference seed that skips subjects that do not exist', async () => {
+    expect(spmSubjectConfigsSeed.kind).toBe('reference')
+    expect(spmSeed.kind).toBe('demo')
+    const other = await createTestDatabase()
+    try {
+      // No curriculum: every code is skipped without error.
+      await runSeeds([spmSubjectConfigsSeed], { prisma: other.prisma })
+      expect(await other.query('select 1 from spm_subject_configs')).toHaveLength(0)
+    } finally {
+      await dropDatabase(other)
+    }
+  })
+
   it('loads the 19 subject configs of the mock (groups, orders, targets) by subject code', async () => {
     expect(SPM_SUBJECT_CONFIGS).toHaveLength(19)
     const rows = await db.query<{ code: string; grp: string; display_order: number; databank_order: number | null; target_type: string | null; target_size: number | null }>(
@@ -81,12 +95,14 @@ describe('SPM seed', () => {
 
   it('is idempotent: a second run changes nothing', async () => {
     const before = await snapshot()
-    await runSeeds([spmSeed], { prisma: db.prisma })
+    await runSeeds([spmSubjectConfigsSeed, spmSeed], { prisma: db.prisma })
     expect(await snapshot()).toEqual(before)
   })
 
   it('is deterministic: no randomness and no real clock in the seed source', () => {
-    const source = readFileSync(join(__dirname, '../../prisma/seed/spm.ts'), 'utf8')
-    expect(source).not.toMatch(/Math\.random|Date\.now|new Date\(/)
+    for (const file of ['spm.ts', 'spm-subject-configs.ts']) {
+      const source = readFileSync(join(__dirname, '../../prisma/seed', file), 'utf8')
+      expect(source).not.toMatch(/Math\.random|Date\.now|new Date\(/)
+    }
   })
 })

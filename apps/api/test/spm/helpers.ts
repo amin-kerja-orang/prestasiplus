@@ -10,6 +10,7 @@ import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { spmSeed } from '../../prisma/seed/spm'
+import { spmSubjectConfigsSeed } from '../../prisma/seed/spm-subject-configs'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
@@ -70,7 +71,7 @@ export interface BootOptions {
 /** Nest app with auth + the SPM module (and the curriculum, questions and practice it needs) on a seeded private database. */
 export async function bootSpmApp(opts: BootOptions = {}): Promise<SpmTestApp> {
   const db = opts.db ?? (await createTestDatabase())
-  if (!opts.db) await runSeeds([identitySeed, curriculumSeed, questionsSeed, ...(opts.seeds ?? [spmSeed])], { prisma: db.prisma })
+  if (!opts.db) await runSeeds([identitySeed, curriculumSeed, questionsSeed, ...(opts.seeds ?? [spmSubjectConfigsSeed, spmSeed])], { prisma: db.prisma })
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

@@ -25,6 +25,10 @@ const inPool = (r: QuestionRecord): boolean => r.spmPool && r.isActive && r.vers
  * `getMany(..., 'live')` and a filter on `spmPool` in memory. `QuestionFilter` has no pool filter (cross-lane ask:
  * add `spmPool`; see the deviations log). Facts per subject are reused for `SPM_POOL_CACHE_SECONDS` (default 60;
  * 0 turns the cache off) because a read hydrates every eligible question of the subject.
+ *
+ * Load note: a cold hub read is one hydration per subject (19), loaded in bounded parallel (POOL_LOAD_CONCURRENCY in
+ * hub.service) and single-flight per subject. The real fix waits on the BE-09 `spmPool` filter ask, which turns it
+ * into one SQL count.
  */
 @Injectable()
 export class SpmPoolService {
