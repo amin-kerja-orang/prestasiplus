@@ -134,6 +134,49 @@ async function ensurePupils(prisma: PrismaClient, ctx: SeedContext): Promise<Map
   return ids
 }
 
+export const MATH_CLASS_CODE = 'DEMO4M'
+export const MATH_CLASS_NAME = 'Kelas Demo Matematik T4'
+/** Pupils with Matematik sittings: the members of the demo Matematik class. */
+export const MATH_CLASS_PUPILS: readonly string[] = [TEMPLATE_EMAIL, ...BIJAK_DEMO_PUPILS.map((p) => p.email)]
+
+/**
+ * A second demo class, Matematik, so the BE-19 class dashboard (which filters sittings by the class subject) shows the
+ * Matematik sittings; the Bahasa Melayu demo class (DEMO4S) is left as it is. Same teacher, school and level as DEMO4S, so
+ * no pupil, teacher or account count changes; only the class counts go up by one.
+ */
+async function ensureMathClass(ctx: SeedContext, pupils: Map<string, bigint>): Promise<void> {
+  const { prisma } = ctx
+  const now = ctx.clock.now()
+  const base = await prisma.classroom.findFirst({ where: { joinCode: { equals: CLASS_CODE, mode: 'insensitive' } } })
+  if (!base) throw new Error(`Bijak sittings seed needs class ${CLASS_CODE}; run the classes seed first.`)
+  const math = await prisma.subject.findFirst({ where: { code: 'MATH' }, select: { id: true } })
+  if (!math) throw new Error('Bijak sittings seed needs the MATH subject; run the curriculum seed first.')
+  const existing = await prisma.classroom.findFirst({ where: { joinCode: { equals: MATH_CLASS_CODE, mode: 'insensitive' } } })
+  if (existing?.legacySource != null) return // a migrated class owns the code: never touched
+  const data = {
+    kind: 'classroom',
+    name: MATH_CLASS_NAME,
+    teacherId: base.teacherId,
+    schoolId: base.schoolId,
+    subjectId: math.id,
+    educationLevelId: base.educationLevelId,
+    academicYear: base.academicYear,
+    isActive: true,
+  }
+  const row = existing
+    ? await prisma.classroom.update({ where: { id: existing.id }, data })
+    : await prisma.classroom.create({ data: { ...data, joinCode: MATH_CLASS_CODE, createdAt: now, updatedAt: now } })
+  for (const email of MATH_CLASS_PUPILS) {
+    const studentId = pupils.get(email)
+    if (studentId === undefined) throw new Error(`Bijak sittings seed: pupil ${email} is missing.`)
+    await prisma.enrolment.upsert({
+      where: { classroomId_studentId: { classroomId: row.id, studentId } },
+      create: { classroomId: row.id, studentId, status: 'active', source: 'teacher', joinedAt: now, createdAt: now, updatedAt: now },
+      update: {},
+    })
+  }
+}
+
 type Bundles = Awaited<ReturnType<PocBijakQuestionSource['loadQuestions']>>
 
 interface Target {
@@ -434,6 +477,7 @@ export const bijakSittingsSeed: SeedModule = {
     assertSeedAllowed()
     const { prisma } = ctx
     const pupils = await ensurePupils(prisma, ctx)
+    await ensureMathClass(ctx, pupils)
     const service = { client: prisma, transaction: (fn: Parameters<PrismaClient['$transaction']>[0]) => prisma.$transaction(fn as never) } as unknown as PrismaService
     const aggregates = new PracticeAggregateService(service)
 

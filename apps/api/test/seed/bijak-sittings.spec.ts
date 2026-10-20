@@ -10,7 +10,7 @@ import { examSeed } from '../../prisma/seed/exam'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { BIJAK_BANK_SITTINGS, BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
 import { classesSeed } from '../../prisma/seed/poc/classes'
-import { ItemAnalysisService, PerformancePorts } from '../../src/modules/reports/performance'
+import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
 import { MIN_COHORT } from '../../src/modules/reports/performance/domain/constants'
 import { SchoolAdminDashboardSchema } from '@pp/contract'
 
@@ -37,7 +37,7 @@ async function fingerprint(db: Pick<TestDatabase, 'query'>) {
     ),
     pupils: await db.query(`select email, grade, school_id is not null has_school from users where email like 'murid%@demo.test' order by email`),
     enrolments: await db.query(
-      `select u.email, e.status from enrolments e join users u on u.id = e.student_id join classrooms c on c.id = e.classroom_id where c.join_code = 'DEMO4S' order by u.email`,
+      `select c.join_code, u.email, e.status from enrolments e join users u on u.id = e.student_id join classrooms c on c.id = e.classroom_id where c.join_code in ('DEMO4S', 'DEMO4M') order by c.join_code, u.email`,
     ),
   }
 }
@@ -130,6 +130,42 @@ describe('PoC Bijak sittings seed', () => {
     expect(q?.popularWrongOption?.letter).toMatch(/^[A-D]$/)
     expect(q?.popularWrongCount).toBeGreaterThan(0)
     expect(q?.wrongPct).toBeGreaterThan(0)
+  })
+
+  it('adds a Matematik demo class (DEMO4M) with the 6 pupils who sat, and the class dashboard filters by its subject', async () => {
+    const members = await t.db.query<{ email: string }>(
+      `select u.email from enrolments e join users u on u.id = e.student_id join classrooms c on c.id = e.classroom_id
+        where c.join_code = 'DEMO4M' and e.status = 'active' order by u.email`,
+    )
+    expect(members).toHaveLength(6)
+    const [cls] = await t.db.query<{ id: string; teacher: string; subject: string; school: string }>(
+      `select c.id::text, t.email teacher, s.code subject, sc.code school from classrooms c
+        join users t on t.id = c.teacher_id join subjects s on s.id = c.subject_id join schools sc on sc.id = c.school_id where c.join_code = 'DEMO4M'`,
+    )
+    expect(cls).toMatchObject({ teacher: 'guru@demo.test', subject: 'MATH', school: 'DEMO001' })
+    const [teacher] = await t.db.query<{ id: string; school_id: string }>(`select id::text, school_id::text from users where email = 'guru@demo.test'`)
+    const dash = await t.app
+      .get(ClassPerformanceService, { strict: false })
+      .classDashboard({ userId: teacher!.id, role: 'teacher', scope: { level: 'school', schoolId: teacher!.school_id, label: 'SMK Demo Satu' }, isTest: false }, cls!.id)
+    expect(dash.stats.students).toBe(6)
+    expect(dash.stats.sessions).toBeGreaterThan(0)
+  })
+
+  it('adding the class leaves the pupil and teacher counts of DEMO001 at the account counts (only the class count grows)', async () => {
+    const [school] = await t.db.query<{ id: string }>(`select id::text from schools where code = 'DEMO001'`)
+    const [accounts] = await t.db.query<{ students: number; teachers: number }>(
+      `select count(*) filter (where r.role = 'student')::int students, count(*) filter (where r.role = 'teacher')::int teachers
+         from users u join user_roles r on r.user_id = u.id where u.school_id = $1::bigint and r.role in ('student', 'teacher')`,
+      [school!.id],
+    )
+    const [admin] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
+    const view = await t.app
+      .get(SchoolPerformanceService, { strict: false })
+      .school({ userId: admin!.id, role: 'school_admin', scope: { level: 'school', schoolId: school!.id, label: 'SMK Demo Satu' }, isTest: false })
+    expect(view.stats.students).toBe(accounts?.students)
+    expect(view.stats.teachers).toBe(accounts?.teachers)
+    const [classes] = await t.db.query<{ n: number }>(`select count(*)::int n from classrooms where school_id = $1::bigint and is_active and kind = 'classroom'`, [school!.id])
+    expect(view.stats.classes).toBe(classes?.n)
   })
 
   it('is idempotent: a re-run creates nothing and keeps the ids', async () => {
