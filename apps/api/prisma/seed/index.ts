@@ -18,6 +18,7 @@ import { schoolPackagesSeed } from './core/school-packages'
 import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
+import { practiceSeed } from './practice'
 import { assertSeedAllowed } from './guard'
 import { contentSeed } from './content'
 import { walletSeed } from './wallet'
@@ -59,7 +60,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, contentSeed, walletSeed, examSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, contentSeed, walletSeed, examSeed, practiceSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */

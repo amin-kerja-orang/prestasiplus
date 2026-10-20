@@ -77,6 +77,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     expires_at: '2027-01-01T00:00:00Z',
   }),
   parent_links: async (query) => ({ parent_id: await parentUser(query), student_id: await parentUser(query) }),
+  // practice_answers (BE-12): the user must exist; a row links to a question or a subject (ck_practice_answers_link).
+  practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: 1 }),
+  // practice_sessions (BE-12): the user must exist; mode is one of the ten practice modes.
+  practice_sessions: async (query) => ({ user_id: await parentUser(query), mode: 'random' }),
   school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
   school_subscriptions: async (query) => ({
     school_id: await parentSchool(query),
