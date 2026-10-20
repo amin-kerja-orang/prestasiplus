@@ -43,7 +43,7 @@ export const UPLOAD_ROLES: Readonly<Record<FilePurpose, readonly RoleCode[] | 'a
   cms_image: ['admin'],
   audio_kbat: ['admin'],
   cms_screenshot: ['admin'],
-  // BE-19: written only by `POST /timeline` (storeManaged); no public upload route.
+  // BE-19: written only by POST /timeline, never through POST /files (403 for every role).
   timeline_photo: [],
 }
 
