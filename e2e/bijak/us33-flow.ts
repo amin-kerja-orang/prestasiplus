@@ -2,11 +2,10 @@
  * Expected shapes, routes and TODO selectors for the US-33 (b) Bijak results UI (branch
  * `be/us33-ui`, not on origin yet). Everything marked TODO is filled in once the UI lands.
  *
- * Grounding: docs/requirements/v2-bijak-spm.md US-33 / AC-33.1..33.5 (attempt record + one
- * aggregate per submitted sitting for Guru modules; AC-33.5 Mod Pelajar writes no aggregate).
- * The contracts on origin/be/BE-19-reports-slice and origin/be/BE-21-school-dashboard define NO
- * Bijak-specific field yet (grep "bijak" finds nothing under reports/ or school-admin/), so the
- * shapes below are PROVISIONAL and must be replaced by the real ones from `be/us33-ui`.
+ * Decision: NO new Bijak fields in the contract. "Bijak" is the http-mode data source plus a UI
+ * label; Bijak data reaches the screens through the EXISTING performance fields. The types below
+ * are plain copies of those contract shapes (the e2e tsconfig does not import `packages/contract`,
+ * which is not on this branch), each with its source.
  */
 import type { Page } from '@playwright/test'
 
@@ -17,8 +16,6 @@ import { expectNoHorizontalScroll } from '../support'
 export const US33_ROUTES = {
   /** School admin dashboard: src/modules/m27-school-admin/routes/dashboard.ts */
   schoolDashboard: '/admin-sekolah',
-  /** Contract: GET /admin-sekolah/dashboard, SchoolAdminDashboardSchema (school-admin/reports.ts) */
-  schoolUsageApi: '/admin-sekolah/usage',
   /** Guru modules: src/modules/m08-student-performance/routes/{class,analitik}.ts */
   teacherClassPrestasi: '/prestasi/kelas/:id',
   teacherAnalitikKelas: '/analitik/kelas',
@@ -34,44 +31,82 @@ export const US33_ACCOUNTS = {
 } as const
 
 /**
- * PROVISIONAL aggregate shape of a Bijak results block (AC-33.1/33.4: subject, units = marks,
- * duration, start type, score, maximum). TODO: replace with the contract type from be/us33-ui.
+ * School dashboard performance block.
+ * Source: origin/be/BE-21-school-dashboard, packages/contract/src/school-admin/reports.ts,
+ * `SchoolAdminDashboardSchema.performance` (GET /admin-sekolah/dashboard).
  */
-export interface BijakResultsBlock {
-  attempts: number
-  /** Mean percent, 0..100, null when there are no attempts (never 0%). */
-  averagePercent: number | null
-  /** One row per paper or subject. */
-  rows: { label: string; attempts: number; averagePercent: number }[]
+export interface SchoolDashboardPerformance {
+  gps: { value: number | null; grade: string | null; band: string | null; entries: number }
+  risk: { safe: number; watch: number; high: number; total: number } | null
+  practice: {
+    /** null (never 0%) when there are no sessions. */
+    accuracy: number | null
+    sessions: number
+    questions: number
+  }
+  levels: { code: 't4' | 't5'; name: string; accuracy: number }[]
+  distribution: { grade: string; count: number; pct: number }[]
+  /** Sum of the distribution counts. */
+  total: number
+}
+
+/**
+ * Teacher / school reports figures.
+ * Source: origin/be/BE-19-reports-slice, packages/contract/src/reports/performance/schema.ts,
+ * `PerformanceSchoolSchema` (GET /performance/school): stats, levels, distribution.
+ */
+export interface PerformanceSchoolFigures {
+  stats: {
+    students: number
+    teachers: number
+    classes: number
+    subjects: number
+    sessions: number
+    answered: number
+    accuracy: number
+  }
+  levels: { code: string; accuracy: number; classes: number; students: number; sessions: number }[]
+  distribution: { grade: string; count: number; pct: number }[]
+}
+
+/**
+ * Per-student rows of a class (teacher scoping: own students only).
+ * Source: same file, `PerformanceClassAnalyticsSchema.rows` (GET /performance/classes).
+ */
+export interface PerformanceClassRow {
+  userId: number
+  name: string
+  accuracy: number
+  answered: number
+  riskLevel: string
 }
 
 /** TODO selectors: fill in from be/us33-ui. */
 export const US33_SELECTORS = {
-  schoolBlock: '[data-testid="TODO-school-bijak-block"]',
-  teacherBlock: '[data-testid="TODO-teacher-bijak-block"]',
-  attemptsStat: '[data-testid="TODO-bijak-attempts"]',
-  averageStat: '[data-testid="TODO-bijak-average"]',
-  rows: '[data-testid="TODO-bijak-row"]',
+  /** The "Bijak" label the UI puts on the Bijak-sourced figures. */
+  bijakLabel: '[data-testid="TODO-bijak-label"]',
+  /** The no-data state shown instead of zeros when there are no Bijak attempts. */
+  noData: '[data-testid="TODO-bijak-no-data"]',
+  schoolPerformance: '[data-testid="TODO-school-performance"]',
+  teacherReports: '[data-testid="TODO-teacher-reports"]',
+  sessions: '[data-testid="TODO-sessions"]',
+  answered: '[data-testid="TODO-answered"]',
+  accuracy: '[data-testid="TODO-accuracy"]',
+  levels: '[data-testid="TODO-levels"]',
+  distribution: '[data-testid="TODO-distribution"]',
+  studentRow: '[data-testid="TODO-student-row"]',
 } as const
 
-/** Reads a block's visible numbers (TODO: adjust to the real markup). */
-export async function readBlock(page: Page, selector: string): Promise<BijakResultsBlock> {
-  const block = page.locator(selector)
-  await expect(block).toBeVisible()
+/** Reads a number out of a stat element (TODO: adjust to the real markup). */
+export async function readStat(page: Page, scope: string, selector: string): Promise<number> {
+  const el = page.locator(scope).locator(selector)
+  await expect(el).toBeVisible()
+  return Number.parseFloat((await el.innerText()).replace(/[^\d.]/g, ''))
+}
+
+/** Asserts the "Bijak" label inside a block and no horizontal scroll. */
+export async function expectBijakBlock(page: Page, scope: string): Promise<void> {
+  await expect(page.locator(scope)).toBeVisible()
+  await expect(page.locator(scope).locator(US33_SELECTORS.bijakLabel)).toBeVisible()
   await expectNoHorizontalScroll(page)
-  const num = async (sel: string): Promise<number> =>
-    Number.parseFloat((await block.locator(sel).innerText()).replace(/[^\d.]/g, ''))
-  const rows = await block.locator(US33_SELECTORS.rows).allInnerTexts()
-  return {
-    attempts: await num(US33_SELECTORS.attemptsStat),
-    averagePercent: await num(US33_SELECTORS.averageStat),
-    rows: rows.map((t) => {
-      const [label = '', attempts = '0', pct = '0'] = t.split('\n')
-      return {
-        label,
-        attempts: Number.parseInt(attempts, 10),
-        averagePercent: Number.parseFloat(pct),
-      }
-    }),
-  }
 }
