@@ -9,6 +9,7 @@ import { videosScenarios } from './content/videos'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { questionsScenarios } from './questions/questions'
+import { schoolAdminScenarios } from './school-admin/school-admin'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
@@ -35,5 +36,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...supportTicketScenarios,
     ...videosScenarios,
     ...perutusanScenarios,
+    ...schoolAdminScenarios,
   ]
 }
