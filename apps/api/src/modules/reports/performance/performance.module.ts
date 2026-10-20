@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common'
 
+import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
 import { CurriculumModule } from '../../curriculum/curriculum.module'
 import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
 import { UsersDirectoryAdapter } from './adapters'
+import { HeadcountFactsService } from './headcount/headcount-facts.service'
+import { HeadcountController } from './headcount/headcount.controllers'
+import { HeadcountRepository } from './headcount/headcount.repository'
+import { HeadcountService } from './headcount/headcount.service'
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
 import { PerformancePorts, DIRECTORY_PORT } from './ports'
@@ -24,8 +29,8 @@ import {
  * empty payload. The services and ports are exported for BE-21.
  */
 @Module({
-  imports: [ThrottleModule, UsersModule, SchoolsModule, CurriculumModule],
-  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController],
+  imports: [AuditModule, ThrottleModule, UsersModule, SchoolsModule, CurriculumModule],
+  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, HeadcountController],
   providers: [
     PerformancePorts,
     { provide: DIRECTORY_PORT, useClass: UsersDirectoryAdapter },
@@ -36,6 +41,9 @@ import {
     SchoolPerformanceService,
     ClassPerformanceService,
     ItemAnalysisService,
+    HeadcountRepository,
+    HeadcountService,
+    HeadcountFactsService,
   ],
   exports: [
     PerformancePorts,
@@ -45,6 +53,7 @@ import {
     SchoolPerformanceService,
     ClassPerformanceService,
     ItemAnalysisService,
+    HeadcountFactsService,
   ],
 })
 export class PerformanceModule {}
