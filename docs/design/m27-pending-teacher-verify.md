@@ -1,7 +1,7 @@
 # M27 Admin Sekolah: Sahkan guru yang mendaftar sendiri (verify self-registered teachers)
 
 - **Slug:** `m27-pending-teacher-verify`
-- **Status:** Draft for G2 (design only; no code written)
+- **Status:** Draft for G2, revised 2026-10-21 with the lead's decisions (section 14). Design only; no code written.
 - **Date:** 2026-10-21
 - **Owner:** ui-ux-designer
 - **Backlog:** #78 (FE has nothing; backend done in BE-21 AC#13)
@@ -15,7 +15,7 @@
 | `docs/plan/backend-tasks/BE-21-school-admin.md` AC#13 | Intent and side effects | See section 1. |
 | `apps/api/src/modules/school-admin/pending-teachers.service.ts` | Real behaviour of list and verify | Audit and notice confirmed in code. |
 | `src/modules/m27-school-admin/` (S7 `SchoolUserList.vue`, `SenaraiGuruPage.vue`, `UserRowActions.vue`, `users-format.ts`, `SchoolDashboardPage.vue`, `SummaryCards.vue`, `routes/guru.ts`) and `src/ds/` | Patterns to copy | Section 4. |
-| prestasiplus.cloud (v2, primary visual reference) | Visual reference | **Not observed.** The lane-3 browser tools (`mcp__playwright3__*`) were not available to this session, so no page was opened and no login was used. Fallback used: the existing M27 FE patterns and the v2 design system. Nothing in this spec claims a .cloud behaviour. |
+| prestasiplus.cloud (v2, primary visual reference) | Visual reference | Per D24, no role account is requested for .cloud. **Not observed.** The lane-3 browser tools (`mcp__playwright3__*`) were not available to this session, so no page was opened and no login was used. Fallback used: the existing M27 FE patterns and the v2 design system. Nothing in this spec claims a .cloud behaviour. |
 
 ## 1. What the contract gives (nothing more is designed)
 
@@ -29,6 +29,7 @@
 - 200 `{ data: { id, isActive: true, schoolId }, status: "Guru berjaya disahkan." }`.
 - One transaction: account becomes active, `school_id` set to the admin's school, pending marker cleared, audit event written (ids only). After commit the teacher gets an inbox notice (system category): title "Akaun guru anda telah disahkan", body "Pentadbir sekolah telah mengesahkan akaun guru anda. Anda kini boleh log masuk dan menggunakan PrestasiPlus." A failed notice is only logged; the verify still succeeds.
 - Errors: 401; 403 (role, no school, or CSRF_INVALID); **404 "Not Found." for everything else** (unknown id, other school, not pending, **already verified**, non-teacher, suspended); 429.
+- **Role and scope (decision 4):** the page is for `school_admin` only, and only for their own school. Admin Pusat gets 403 (no school to scope to) and the page has no school picker. Admin Pusat activates accounts through M02 user management, not through this screen. BE-21 AC#13 ("admin may verify any") is being aligned with the contract by the lead's session.
 - **There is no 409.** The brief asked for 409 "already verified by someone else"; the contract says a repeat or concurrent loser call is 404, never 409 (anti-enumeration). The UI therefore handles that case through 404. A defensive 409 is mapped to the same behaviour in case it ever appears.
 - **There is no reject or decline endpoint.** The screen has one action only: Sahkan. No "Tolak" button, no reason field, no bulk verify (all would be new scope).
 
@@ -38,17 +39,16 @@
 |---|---|---|
 | A. New page `/admin-sekolah/guru/menunggu` (S7b) holding the pending list and the Sahkan action | **Chosen (the work surface)** | The contract is a separate, unpaged list with its own row shape (`requestedAt`, no `isActive`, no classes). Mixing it into S7 would force a different column set and a second "Aktif?" meaning. A page keeps S7 untouched (S7 is a replicated live screen, CLAUDE.md section 6). |
 | B. Callout on S7 "Senarai Guru" above the filter bar: "{n} guru menunggu pengesahan" + button "Semak" -> S7b | **Chosen (primary entry)** | The admin already goes to Senarai Guru to manage teachers; the callout appears only when n > 0, so S7 looks unchanged otherwise. The extra call is `GET .../guru/pending`; if it fails, the callout is hidden silently (S7 itself must not break). |
-| C. Callout strip on S0 "Dashboard Sekolah" (same text and button, only when n > 0, under the school banner) | **Recommended, but optional (Q1)** | Lets the admin notice new registrations without opening S7. The dashboard contract has no pending count, so it costs one extra non-blocking call. It is not a fifth stat tile: the four-card row (`DsStatRow` `:cols="4"`) is a live replicated layout. |
+| C. Callout strip on S0 "Dashboard Sekolah" | **LATER (decision 1)** | Not part of this build. See section 7. |
 | D. Tab or filter inside S7 (status "Menunggu") | Rejected | The S7 list endpoint cannot return pending teachers (different endpoint, different shape, 25 per page vs unpaged), and `Status` is a GET filter on the URL. |
 | E. Badge count on a nav item | Rejected | The shell menu is live-replicated and a count needs the extra call on every page. |
 
-No new nav item. S7b is reached from the S7 callout (and the optional S0 strip) and has a back link to S7.
+No new nav item. S7b is reached from the S7 callout and has a back link to S7.
 
 ## 3. Flow
 
 ```mermaid
 flowchart TD
-  S0[S0 Dashboard Sekolah] -. optional strip, n>0 .-> S7b
   S7[S7 Senarai Guru] -->|callout 'Semak' when n>0| S7b[S7b Guru Menunggu Pengesahan]
   S7b --> L{GET guru/pending}
   L -->|memuat| LD[Skeleton]
@@ -67,7 +67,7 @@ flowchart TD
   OK -. guru kini aktif .-> S7
 ```
 
-Steps as the admin sees them: (1) sees the callout on S7 or the strip on S0; (2) opens S7b; (3) reads name, e-mail, phone, registration date for each row to recognise the person (these four fields are all the contract gives; no extra detail page exists, and the S10 edit page returns 403/404 for a pending account, so rows are **not** links); (4) presses "Sahkan"; (5) confirms in the dialog; (6) the row leaves the list and a success flash shows; the teacher now appears in S7 as "Aktif".
+Steps as the admin sees them: (1) sees the callout on S7; (2) opens S7b; (3) reads name, e-mail, phone, registration date for each row to recognise the person (these four fields are all the contract gives; no extra detail page exists, and the S10 edit page returns 403/404 for a pending account, so rows are **not** links); (4) presses "Sahkan"; (5) confirms in the dialog; (6) the row leaves the list and a success flash shows; the teacher now appears in S7 as "Aktif".
 
 ## 4. Existing patterns reused (from the worktree)
 
@@ -161,7 +161,7 @@ Card (`card-title="name"`): fields Emel, Telefon, Tarikh Daftar; `#card-actions`
 | 403 on load | `setRouteOutcome(403)`: global 403 page in place | School admin without a school, or wrong role |
 | 401 | Existing session handling (login redirect) | Not a screen of its own |
 | Verifying a row | That row's "Sahkan" is `loading` + `disabled`; other rows' buttons stay clickable but a second action while one is in flight is ignored (as `togglingId`) | |
-| Verify success | List reloaded (the row is gone), success flash "Guru berjaya disahkan." (text comes from `result.status`); tile and found line update | If it was the last row, the empty state shows under the flash |
+| Verify success | List reloaded (the row is gone), success flash "Guru berjaya disahkan." (text comes from `result.status`); tile and found line update | If it was the last row, the empty state shows under the flash. Focus moves per section 10 (next row, previous row, or the heading) |
 | Verify 404 (or 409) | List reloaded (so the stale row disappears) and a flash of type `error`: "Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini." | Covers "already verified by someone else", "removed", "wrong school". The server text "Not Found." is **not** shown (English, and ambiguous). |
 | Verify 429 | Flash `error`: server message "Terlalu banyak percubaan. Sila cuba sebentar lagi."; row stays; the admin presses "Sahkan" again | |
 | Verify 403 (e.g. CSRF_INVALID) | Flash `error` with the server message; row stays | A 403 on a POST is **not** routed to the global 403 page (the list already loaded, so role is fine). **Perlu pengesahan** (S7 toggle does the same via `errorLines`). |
@@ -176,9 +176,9 @@ Card (`card-title="name"`): fields Emel, Telefon, Tarikh Daftar; `#card-actions`
 - Is not shown on S6 (pupils).
 - Nothing else on S7 changes (columns, filters, export, toggle stay as live).
 
-## 7. Screen S0 addition (optional, Q1): strip on Dashboard Sekolah
+## 7. Later (decision 1): strip on Dashboard Sekolah
 
-Same component and copy as section 6, placed under `SchoolBanner`, above `SummaryCards`. Shown only when n > 0; the pending call must not delay or fail the dashboard (it loads after the dashboard data; a failure hides the strip).
+Not in this build. For the record only: the same component and copy as section 6, placed under `SchoolBanner` and above `SummaryCards`, shown only when n > 0, loaded after the dashboard data, hidden silently on failure. It must not become a fifth stat tile (the four-card row is a live replicated layout). Nothing in sections 3, 5, 8 or 12 depends on it.
 
 ## 8. Copy table
 
@@ -191,11 +191,12 @@ Source key: **existing** = already in the M27 FE or DS; **contract** = in `pendi
 | 3 | Header subtitle | {nama sekolah} | existing (S7) |
 | 4 | Back link | Senarai Guru | existing |
 | 5 | Count tile unit; callout badge | Menunggu Pengesahan | **Perlu pengesahan** |
-| 6 | Found line; callout and strip text | {n} guru menunggu pengesahan | **Perlu pengesahan** (form follows "{n} pengguna dijumpai") |
+| 6 | Found line; callout text | {n} guru menunggu pengesahan | **Perlu pengesahan** (form follows "{n} pengguna dijumpai") |
 | 7 | Column headers | #, Nama, Emel, Telefon, Tindakan | existing |
 | 8 | Column header (date) | Tarikh Daftar | **Perlu pengesahan** ("Tarikh" exists on S7; "Daftar" disambiguates) |
 | 9 | Empty cell (phone, e-mail) | - | existing (phone); e-mail is **Perlu pengesahan** (no new copy string, behaviour only) |
 | 10 | Row button; dialog confirm label | Sahkan | **Perlu pengesahan** (feature name from the brief) |
+| 10a | Row button accessible name (not visible) | Sahkan {nama} | **Perlu pengesahan** (decision 3; starts with the visible label) |
 | 11 | Dialog title | Sahkan Guru | **Perlu pengesahan** |
 | 12 | Dialog message | Sahkan {nama} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan. | **Perlu pengesahan** |
 | 13 | Dialog cancel | Batal | existing (DS `cancel`) |
@@ -207,10 +208,10 @@ Source key: **existing** = already in the M27 FE or DS; **contract** = in `pendi
 | 19 | Load error message | server message via `errorLines`, else row 17 | existing |
 | 20 | Empty title | Tiada guru menunggu pengesahan | **Perlu pengesahan** |
 | 21 | Empty description | Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini. | **Perlu pengesahan** |
-| 22 | Callout / strip button | Semak | **Perlu pengesahan** |
+| 22 | Callout button | Semak | **Perlu pengesahan** |
 | 23 | Teacher inbox notice (sent by the server, not a UI string) | Akaun guru anda telah disahkan / Pentadbir sekolah telah mengesahkan akaun guru anda. Anda kini boleh log masuk dan menggunakan PrestasiPlus. | contract |
 
-**Count of distinct strings marked Perlu pengesahan: 12** (rows 1, 2, 5, 6, 8, 10, 11, 12, 15, 20, 21, 22). Plus 3 behaviour points flagged the same way in the text (null e-mail shown as "-", pager hiding, reload/flash order).
+**Count of distinct strings marked Perlu pengesahan: 13** (rows 1, 2, 5, 6, 8, 10, 10a, 11, 12, 15, 20, 21, 22). The lead approved the original 12 as provisional (decision 2); row 10a is new from decision 3. All keep the mark until the final copy review. Plus 3 behaviour points flagged the same way in the text (null e-mail shown as "-", pager hiding, reload/flash order).
 
 ## 9. Interaction notes
 
@@ -222,21 +223,29 @@ Source key: **existing** = already in the M27 FE or DS; **contract** = in `pendi
 - The S7 callout count is read once on S7 load. After the admin returns from S7b (back link or browser back), S7 re-mounts and re-reads it. No polling.
 - Do not log or echo e-mail/phone in analytics or console (PDPA; the response is `no-store`).
 
-## 10. Accessibility (replicate the existing patterns, no additions per D10)
+## 10. Accessibility (new screen: D10 does not apply, decision 3)
 
-- Every control is a real `<button>`/`<a>` through `UButton`; labels are visible text ("Sahkan", "Semak", "Batal"). Touch targets `min-h-11` (44 px) on every row button, the callout button and the dialog buttons.
-- Tab order: back link -> (count tile, not focusable) -> row buttons top to bottom -> (table pager absent). In the cards view the order is card by card, button inside each card.
-- Dialog: `DsDialog` behaviour as for the S7 toggle (focus into the dialog, Esc cancels, focus returns to the "Sahkan" button that opened it). Do not change.
-- Table: caption = "Guru Menunggu Pengesahan" (DataTable `caption` prop, as S7 sets it from the list title); status shown in text, not colour only (the callout badge has icon + word).
-- Flash: the existing `useFlash` region (announces to assistive tech as used on S7). Do not add a second live region.
-- Contrast and focus rings come from the DS tokens (no one-off colours; no hex in this spec).
-- Reduced motion: no new animation.
-- Gaps found, **not** fixed here because D10 says replicate (see Q3): several identical "Sahkan" buttons have no per-row accessible name (same as S7 "Edit"/"Aktif?"), and after a verify the focused button disappears with its row.
-- Keyboard-only walk-through to test: Tab to the first "Sahkan" -> Enter -> dialog -> Enter on "Sahkan" -> flash -> the list updates.
+S7b has no live counterpart, so it is specified for WCAG 2.2 AA directly. The shared DS behaviours (dialog, flash region, table caption) are reused unchanged.
+
+- Every control is a real `<button>`/`<a>` through `UButton`; visible labels "Sahkan", "Semak", "Batal". Touch targets `min-h-11` (44 px) on every row button, the callout button and the dialog buttons.
+- **Per-row accessible name:** every row's button (table and card variants) has `aria-label="Sahkan {nama}"` (copy row 10a). It starts with the visible label "Sahkan", so the accessible name contains the visible text (WCAG 2.5.3). The confirm dialog message also names the teacher.
+- **Focus after verify:**
+  1. When a verify succeeds and the list reloads, focus moves to the "Sahkan" button of the **next row** (the row now at the removed row's position).
+  2. If the removed row was the last one, focus moves to the **previous row's** "Sahkan" button.
+  3. If no row is left (empty state), focus moves to the **page heading** (`h1` "Guru Menunggu Pengesahan", `tabindex="-1"` for this purpose only, test id `pt-heading`).
+  4. Batal, Esc or backdrop: focus returns to the "Sahkan" button that opened the dialog. A failed verify (429, 5xx, network): the row stays and focus returns to the same button. 404/409: the stale row disappears on reload; apply rules 1 to 3.
+  5. Move focus after the list has rendered and the dialog is closed.
+- Tab order: back link -> row buttons top to bottom (the count tile is not focusable; no pager). In the cards view: card by card, one button per card. Rows are not links.
+- Dialog: `DsDialog` behaviour (focus into the dialog, trapped, Esc cancels). The confirm button is primary, not destructive.
+- Table: `caption` = "Guru Menunggu Pengesahan"; real `th` headers. Status is never colour only (callout badge has icon + word).
+- Flash: the existing `useFlash` region; do not add a second live region. The found line is not a live region because the flash already announces the outcome.
+- Callout "Semak" on S7: the visible label is the accessible name (a longer hidden name would break 2.5.3); the sentence next to it gives the context.
+- Contrast and focus rings come from DS tokens (no one-off colours). Reduced motion: no new animation.
+- Keyboard-only walk-through to test: Tab to the first "Sahkan" -> Enter -> dialog -> Enter on "Sahkan" -> flash -> focus on the next row's button; with a single row, focus on the heading.
 
 ## 11. Component inventory (existing DS only)
 
-`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/school-admin.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component shared by S7 and S0. No new DS component and no new token.
+`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/school-admin.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component used on S7. No new DS component and no new token.
 
 ## 12. Proposed test ids (e2e)
 
@@ -254,19 +263,33 @@ Source key: **existing** = already in the M27 FE or DS; **contract** = in `pendi
 | `pt-error` | `DsLoadError` |
 | `pt-loading` | loading wrapper |
 | `pt-callout` | S7 callout; `pt-callout-count`; `pt-callout-link` ("Semak") |
-| `pt-strip` | S0 strip (if approved) |
+| `pt-heading` | the `h1` that receives focus when the list becomes empty |
 
 The confirm dialog uses the DS host; the e2e finds its buttons by role and name ("Sahkan", "Batal") unless the DS host already exposes ids (it has none today).
 
-E2E cases (each at 375, 768, 1280): list shows n rows; verify success removes the row and shows the flash; cancel does nothing; empty state; callout visible only when n > 0 and link target; 404 on a stale row (verify in another session first) shows copy 15 and the row disappears; 429 keeps the row; no horizontal scroll at 320; teacher appears as Aktif on S7 after verify; a school_admin never sees another school's pending teacher.
+E2E cases (each at 375, 768, 1280): each `pt-verify` has the accessible name "Sahkan {nama}"; after a verify, focus is on the next row's `pt-verify` (previous one if it was last, `pt-heading` when empty); Admin Pusat gets the 403 page; list shows n rows; verify success removes the row and shows the flash; cancel does nothing; empty state; callout visible only when n > 0 and link target; 404 on a stale row (verify in another session first) shows copy 15 and the row disappears; 429 keeps the row; no horizontal scroll at 320; teacher appears as Aktif on S7 after verify; a school_admin never sees another school's pending teacher.
 
-## 13. Open questions (need the user's decision)
+## 13. Open questions
 
-1. **Dashboard strip (S0):** include the optional strip (section 7) now, or only the S7 callout? Recommendation: S7 callout now, strip as a follow-up, because the dashboard has no pending count in its contract.
-2. **Copy approval:** the 12 strings marked Perlu pengesahan, especially "Sahkan" as the action word, the dialog text, and "Tarikh Daftar".
-3. **Accessibility gap vs D10:** add a per-row accessible name (`aria-label="Sahkan {nama}"`) and move focus to the page heading or the next row after verify? D10 says replicate live with no enhancements, but there is no live reference for this new screen. Recommendation: yes (small, starts with the visible label so WCAG 2.5.3 holds). Default if not answered: replicate S7 exactly.
-4. **Contract tip check:** the frontend developer should diff the contract against `origin/feature/v2-backend` 0896421f (not done here); in particular confirm there is still no 409 and no reject route.
-5. **BE-21 AC#13 vs contract on Admin Pusat:** the card says "`admin` may verify any"; the contract says Admin Pusat gets 403 (no school). The screen follows the contract (school_admin only). Backend/LEAD to align the card.
-6. **No reject action:** if the school should be able to refuse a self-registration (wrong school chosen), that needs a new backend route; not designed here.
-7. **Unpaged list:** a school with a very large number of pending teachers would render them all. Acceptable for now; ask backend for paging if registrations are expected in bulk.
-8. **.cloud reference:** not observed in this session; if the user wants a visual check against .cloud before build, a session with browser lane 3 should look at the school-admin teacher list only (read-only).
+1. **Contract tip check:** the frontend developer diffs the contract against `origin/feature/v2-backend` 0896421f (not done here); confirm there is still no 409 and no reject route.
+2. **Reject action (decision 5):** none. The contract has no route, so nothing is designed. If a school must be able to refuse a self-registration (for example a wrong school chosen), that needs a new backend route first, then a design pass (button, reason, copy, teacher notice).
+3. **Final copy review:** the 13 strings marked Perlu pengesahan stay provisional until the user's copy review ("Sahkan", dialog text, "Tarikh Daftar").
+4. **Reload-then-flash order and pager hiding:** the two behaviour points in section 8 need a quick check when built.
+5. **Dashboard strip:** later (section 7); revisit when the dashboard contract carries a pending count.
+6. **.cloud reference:** not observed (D24: no role account is requested). A visual check, if wanted, is read-only on whatever .cloud already shows without a new role account.
+
+Closed by the lead: S0 strip later (1); 12 strings approved as provisional (2); a11y specified, D10 not applicable (3); Admin Pusat follows the contract (4); unpaged list accepted (6, see risk R1).
+
+## 14. Decisions and risks
+
+| # | Decision (lead, 2026-10-21) | Where applied |
+|---|---|---|
+| 1 | S0 dashboard strip is LATER | sections 2, 3, 7 |
+| 2 | The 12 proposed strings are approved as provisional; marks kept | section 8 |
+| 3 | New screen: D10 does not apply; `aria-label="Sahkan {nama}"` per row; focus to next row, else previous, else heading | sections 8 (10a), 10, 12 |
+| 4 | Follow the contract: school_admin only, own school; Admin Pusat gets 403 and uses M02 user management; BE-21 AC#13 is being aligned by the lead's session | section 1 |
+| 5 | No reject action | section 1, Q2 |
+| 6 | Unpaged list accepted | risk R1 |
+| 7 | Never request role accounts for .cloud (D24); copy stays Perlu pengesahan | section 0 |
+
+**Risk R1 (unpaged list):** `GET /admin-sekolah/guru/pending` returns every pending teacher in one response, with no limit. It is expected to be small. If a school ever has hundreds of pending teachers, the page renders all rows (long DOM, long scroll, slow list). Mitigation if it happens: ask backend for paging; the UI then reuses the `DsDataTable` pager and the S7 `page` query. No UI work is needed now.
