@@ -61,5 +61,8 @@ export const AUDIT_ACTIONS = {
   SHOP_REWARD_BULK_ACTION: 'shop.reward.bulk_action',
   SHOP_REDEMPTION_DELIVERED: 'shop.redemption.delivered',
   SHOP_REDEMPTION_CANCELLED: 'shop.redemption.cancelled',
+  INTAKE_BATCH_CREATED: 'intake.batch_created',
+  INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
+  INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
