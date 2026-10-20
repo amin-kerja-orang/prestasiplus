@@ -353,7 +353,9 @@ describe('BE-21 people security', () => {
       expect(r.actor_role).toBe('school_admin')
       expect(r.actor_user_id).toBeTruthy()
       expect(r.scope_level).toBe('school')
-      expect(r.scope_school_id).toBe(s1)
+      // The scope is always the acting admin's own school (the second school's admin also writes in this file).
+      expect(r.scope_school_id).toBe((await userRow(t.db, r.actor_user_id))?.school_id)
+      expect([s1, s2]).toContain(r.scope_school_id)
       expect(r.target_type).toMatch(/^(user|school)$/)
       expect(r.target_id).toMatch(/^\d+$/)
       expect(r.request_id).toBeTruthy()
