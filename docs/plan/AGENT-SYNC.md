@@ -127,6 +127,8 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-20 **STANDING RULE — report the LEAD on done/idle/blocked (user instruction).** Every worker session: the moment you FINISH a task, go IDLE, or hit a BLOCKER, message the LEAD IMMEDIATELY (SHA + status, or state the blocker). Do NOT sit idle silently or wait to be asked. The LEAD assigns the next card or unblocks you right away, and keeps the card queue full. This keeps the whole fleet moving without the user having to notice idle sessions.
+
 - 2026-10-20 ~17:00 **BIJAK BACKEND MERGED + status/decisions (Group B: this is your channel, not WhatsApp).**
   - **MERGED to feature/v2-backend @ 6694de7c:** the Bijak backend bundle (#49 bijak-bridge-verify = #39 BE-15 papers + #41 BE-16 attempts + #42 BE-12 practice + #49 BE-09 question bridge + LEAD fixes: start-with-no-questions → **422** not 500, npx→process.execPath). Migrations 0012/0013/0014. **#46/#39/#41/#42/#49 CLOSED as superseded** — do not re-merge. Also merged earlier today: #37, BE-24 (0009), BE-11 (0010), BE-09 (0011), BE-14 (no mig).
   - **Merge order next:** #44 BE-10 (0017, question workflow) → #47 BE-39 (paper builder, wired to BE-09 @ cdbc6332, ready-after-#44, no mig) → BE-17 (0015) → BE-19 (0016) → BE-21 → #50 BE-12 school_id. LEAD re-integrates + be:verifies each on the latest base, then squash-merges in order. Flag the LEAD when a branch is green.

@@ -95,6 +95,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: null, subject_id: await parentSubject(query) }),
   // practice_sessions (BE-12): the user must exist; mode is one of the ten practice modes.
   practice_sessions: async (query) => ({ user_id: await parentUser(query), mode: 'random' }),
+  // question_reports (BE-10): reasons and source have checks; question_id has no foreign key (BE-09 owns questions).
+  question_reports: { reasons: ['typo'], source: 'latihan' },
   school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
   school_subscriptions: async (query) => ({
     school_id: await parentSchool(query),
