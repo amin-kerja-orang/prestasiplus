@@ -98,6 +98,12 @@ afterEach(() => {
 })
 
 describe('S10 StructuredListPage', () => {
+  it.each([4454, 'clx9abc123'])('links "Mula" for a card id of %s (mock number / API string)', async (id) => {
+    api.fetchStructured.mockResolvedValue(listOf([card({ id, subjectId: String(id) })]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(t(w, 'card-start').attributes('href')).toBe(`/latihan-berstruktur/${String(id)}/jawab`)
+  })
+
   it('shows cards with the KBAT badge, hides a null school and links "Mula"', async () => {
     api.fetchStructured.mockResolvedValue(listOf([card()]))
     const w = await render(StructuredListPage, '/latihan-berstruktur')
@@ -183,11 +189,33 @@ const DETAIL = {
 }
 
 describe('Q3 StructuredAnswerPage', () => {
+  it.each([4454, 'clx9abc123'])('loads and submits a set whose id is %s', async (id) => {
+    api.fetchStructuredDetail.mockResolvedValue({ ...DETAIL, id, subjectId: String(id) })
+    api.submitStructuredAttempt.mockResolvedValue({
+      id: 'a1',
+      marks: [],
+      totalAwarded: 0,
+      totalMax: 0,
+      modelAnswers: [],
+    })
+    const w = await render(StructuredAnswerPage, `/latihan-berstruktur/${String(id)}/jawab`)
+    expect(api.fetchStructuredDetail).toHaveBeenCalledWith(
+      String(id),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(outcome.setRouteOutcome).not.toHaveBeenCalledWith(404)
+    await w.findAll('[data-testid=sub-answer]')[0]?.setValue('x')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.submitStructuredAttempt).toHaveBeenCalledWith(String(id), expect.anything())
+  })
+
   it('renders the stimulus as plain text and the sub-questions with marks', async () => {
     api.fetchStructuredDetail.mockResolvedValue(DETAIL)
     const w = await render(StructuredAnswerPage, '/latihan-berstruktur/4454/jawab?scope=spm')
     expect(api.fetchStructuredDetail).toHaveBeenCalledWith(
-      4454,
+      '4454',
       { scope: 'spm', track: null },
       expect.anything(),
     )
@@ -230,7 +258,7 @@ describe('Q3 StructuredAnswerPage', () => {
     await w.findAll('[data-testid=sub-answer]')[0]?.setValue('jawapan')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(api.submitStructuredAttempt).toHaveBeenCalledWith(4454, {
+    expect(api.submitStructuredAttempt).toHaveBeenCalledWith('4454', {
       answers: [
         { subQuestionId: 1, text: 'jawapan' },
         { subQuestionId: 2, text: '' },
@@ -265,7 +293,7 @@ describe('Q3 StructuredAnswerPage', () => {
     expect(t(w, 'answer-errors').text()).toContain('Jawapan tidak sah.')
   })
 
-  it('shows the 404 page for an unknown or non-numeric id', async () => {
+  it('shows the 404 page for an unknown id (the API decides, also for a non-numeric id)', async () => {
     api.fetchStructuredDetail.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
     )
@@ -275,7 +303,7 @@ describe('Q3 StructuredAnswerPage', () => {
     outcome.setRouteOutcome.mockReset()
     await render(StructuredAnswerPage, '/latihan-berstruktur/abc/jawab')
     expect(outcome.setRouteOutcome).toHaveBeenCalledWith(404)
-    expect(api.fetchStructuredDetail).toHaveBeenCalledTimes(1)
+    expect(api.fetchStructuredDetail).toHaveBeenCalledTimes(2)
   })
 })
 

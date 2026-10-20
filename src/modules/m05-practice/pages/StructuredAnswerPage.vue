@@ -30,15 +30,14 @@ const SUBMIT_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const route = useRoute()
 
-const id = computed(() => {
-  const raw = String(route.params.id ?? '')
-  return /^\d+$/.test(raw) ? Number(raw) : NaN
-})
+// The id is opaque: a string from the API, decimal text for a mock number. An unknown id is a 404
+// from the API (both modes), so only an empty param is rejected here.
+const id = computed(() => String(route.params.id ?? ''))
 const variant = computed(() => parseVariant(route.query))
 
 const { data, error, reload } = useApi(
   (signal) =>
-    Number.isNaN(id.value)
+    id.value === ''
       ? Promise.reject(Object.assign(new Error('not found'), { status: 404 }))
       : fetchStructuredDetail(id.value, variant.value, { signal }),
   [id, () => route.query],

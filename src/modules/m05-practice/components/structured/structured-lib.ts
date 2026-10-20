@@ -58,7 +58,7 @@ export function parsePage(query: LocationQuery): number {
   return Number.isFinite(n) && n >= 1 ? n : 1
 }
 
-export function answerUrl(id: number, v: Variant): string {
+export function answerUrl(id: number | string, v: Variant): string {
   return `/latihan-berstruktur/${String(id)}/jawab${variantQuery(v)}`
 }
 

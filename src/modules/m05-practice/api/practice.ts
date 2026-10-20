@@ -219,7 +219,7 @@ export function fetchStructured(
 
 /** #16 `GET /api/practice/structured/:id?scope=&track=` (404 for an unknown or unlisted set). */
 export function fetchStructuredDetail(
-  id: number,
+  id: number | string,
   query: { scope?: StructuredScope | null; track?: StructuredTrack | null } = {},
   options: Signal = {},
 ): Promise<StructuredDetail> {
@@ -231,7 +231,7 @@ export function fetchStructuredDetail(
 
 /** #17 `POST /api/practice/structured/:id/attempts` (404, 422). */
 export function submitStructuredAttempt(
-  id: number,
+  id: number | string,
   body: StructuredAttemptRequest,
 ): Promise<StructuredAttemptResult> {
   return api.post<StructuredAttemptResult>(`/api/practice/structured/${String(id)}/attempts`, {
