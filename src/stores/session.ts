@@ -161,6 +161,24 @@ function isModPelajar(value: unknown): value is ModPelajarMode {
   )
 }
 
+/**
+ * The real API (`VITE_API_MODE=http`) sends ids as opaque strings (`"1"`), while the prototype
+ * `UserMe` and `parseClientSession` still expect numbers (V2-T09 moves them to strings). Without
+ * this, the background `GET /api/me` refresh stores a user that `check()` rejects, and the next
+ * navigation logs the user out. A missing `landingPath` keeps the current one. Mock users pass through.
+ */
+export function withPrototypeIds(next: UserMe, current: UserMe): UserMe {
+  const num = (v: unknown): unknown =>
+    typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : v
+  const raw = next as unknown as { id: unknown; schoolId: unknown; landingPath?: unknown }
+  return {
+    ...next,
+    id: num(raw.id) as number,
+    schoolId: num(raw.schoolId) as number | null,
+    landingPath: typeof raw.landingPath === 'string' ? raw.landingPath : current.landingPath,
+  }
+}
+
 export function readStoredSession(): ClientSession | null {
   return parseClientSession(storage()?.getItem(PP_AUTH_STORAGE_KEY) ?? null)
 }
@@ -278,7 +296,7 @@ export const useSessionStore = defineStore('session', () => {
   /** Replaces the cached user (after `GET /api/me` or a profile update). */
   function setUser(next: UserMe): void {
     if (!auth.value) return
-    commit({ ...auth.value, user: next })
+    commit({ ...auth.value, user: withPrototypeIds(next, auth.value.user) })
   }
 
   /** Mirrors the server's sliding expiry (BR-06): non-remember → now + 120 min. */
@@ -313,7 +331,7 @@ export const useSessionStore = defineStore('session', () => {
       const me = await api.get<UserMe>('/api/me')
       if (auth.value?.token !== sent) return null
       setUser(me)
-      return me
+      return auth.value?.user ?? me
     } catch {
       return null
     }
