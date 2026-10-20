@@ -6,7 +6,6 @@
  * The backend submission is a declaration plus PDF files and their OCR pages. The extracted
  * questions (BE-38 items) have no controller yet, so a mapped batch carries no questions.
  */
-import type { SubjectCode } from '../domain/types'
 import type { IntakeBatch, IntakeStatus, IntakeSummary, PageText } from '../admin/intake/types'
 
 export type WireBatchStatus = 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
@@ -73,7 +72,7 @@ export function paperTypeFromWire(code: string): string {
  * is a processing state; only a cancelled/failed one is closed. Editing is unavailable anyway
  * (no items route), so every batch is shown as Draf.
  */
-export function statusFromWire(_s: WireBatchStatus): IntakeStatus {
+export function statusFromWire(): IntakeStatus {
   return 'draf'
 }
 
@@ -87,11 +86,11 @@ export function summaryFromWire(
   return {
     id: b.id,
     title: `${name} Kertas ${b.kertas} ${b.year}`,
-    subject: b.subject as SubjectCode,
+    subject: b.subject,
     subjectName: name,
     kertas: b.kertas,
     year: b.year,
-    status: statusFromWire(b.status),
+    status: statusFromWire(),
     sourceKind: 'pdf',
     fileName: `${b.fileCount} fail · ${b.statusLabel}`,
     questionCount: 0,
@@ -124,7 +123,7 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[]): IntakeBatc
   const first = b.files[0]
   return {
     id: b.id,
-    subject: b.subject as SubjectCode,
+    subject: b.subject,
     kertas: b.kertas,
     year: b.year,
     paperType: paperTypeFromWire(b.paperType),
@@ -136,7 +135,7 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[]): IntakeBatc
     pageCount: b.pageCount,
     sourceKind: 'pdf',
     userId: 0,
-    status: statusFromWire(b.status),
+    status: statusFromWire(),
     createdAt: ms(b.createdAt),
     updatedAt: ms(b.updatedAt),
     ...(b.submittedAt ? { submittedAt: ms(b.submittedAt) } : {}),

@@ -62,7 +62,9 @@ export interface HttpBijakOptions {
   now?: () => number
 }
 
-type Body = Record<string, unknown> | FormData
+type Body = Record<string, unknown>
+/** `exec` also carries the multipart upload of the admin intake (BE-37). */
+export type ExecBody = Body | FormData
 
 /* ------------------------------------------------------------------------------ wire mapping */
 
@@ -202,7 +204,7 @@ export class HttpBijakServer implements BijakApi {
   }
 
   /** One request, the `ApiError` untouched: CSRF header on mutations, one refresh + retry on `CSRF_INVALID`. */
-  protected async exec<T>(method: HttpMethod, url: string, body?: Body): Promise<T> {
+  protected async exec<T>(method: HttpMethod, url: string, body?: ExecBody): Promise<T> {
     const run = (csrf?: string) =>
       this.client.request<{ data: T } | null>(method, url, {
         raw: true,

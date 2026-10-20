@@ -48,7 +48,7 @@ const summary = {
   submittedAt: null,
 }
 const detail: WireBatchDetail = {
-  ...(summary as never),
+  ...(summary as unknown as Omit<WireBatchDetail, 'files'>),
   files: [
     { id: 'f1', originalName: 'k2.pdf', sizeBytes: 10, pageCount: 2, status: 'done', errorCode: null },
   ],
@@ -111,7 +111,7 @@ describe('intake wire mappers', () => {
   it('maps upload errors', () => {
     const e413 = new ApiError({
       status: 413,
-      code: 'PAYLOAD_TOO_LARGE' as never,
+      code: 'PAYLOAD_TOO_LARGE',
       message: 'x',
       body: null,
     })
@@ -121,7 +121,7 @@ describe('intake wire mappers', () => {
     })
     const e422 = new ApiError({
       status: 422,
-      code: 'VALIDATION_ERROR' as never,
+      code: 'VALIDATION_ERROR',
       message: 'Data tidak sah',
       fields: { files: 'Jenis fail tidak disokong. Gunakan PDF.' },
       body: null,
@@ -136,7 +136,7 @@ describe('intake client', () => {
       'GET /api/intake/batches': ok([summary], { meta: { totalPages: 1 } }),
     })
     expect(await server.listIntakeBatches()).toHaveLength(1)
-    expect(await server.listIntakeBatches({ subject: 'BM' as never })).toHaveLength(0)
+    expect(await server.listIntakeBatches({ subject: 'BM' })).toHaveLength(0)
     expect(requests.some((r) => r.url.startsWith('/api/intake/batches'))).toBe(true)
   })
 
