@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ModuleRef } from '@nestjs/core'
 import type {
   CommandCenterClass,
@@ -11,7 +11,6 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { PrismaService } from '../../../db/prisma.service'
 import { PracticePorts, type PracticeQuestion, versionKey } from '../../practice'
 import { notFound } from '../http/errors'
 import { dateRangeOf } from '../http/request'
@@ -21,6 +20,7 @@ import { percent } from '../shared/math'
 import { HEADCOUNT_PORT, type HeadcountReadPort, MOOD_PORT, type MoodReadPort } from '../shared/ports'
 import { type CcScope, ScopeService } from '../shared/scope.service'
 import { addDays, dateKey, DAY_MS, startOfDateKey, startOfIsoWeek, toMytTimestamp } from '../shared/windows'
+import { SESSION_LIST_LIMIT } from '../command-center.constants'
 import { DrillReads } from './reads'
 
 const FREE_CODE = 'UMUM'
@@ -78,19 +78,17 @@ function listOf(sessions: SessionRow[]): CommandCenterSessionList {
  */
 @Injectable()
 export class DrillService {
-  private readonly reads: DrillReads
+  private readonly logger = new Logger(DrillService.name)
 
   constructor(
     @Inject(CommandCenterRepository) readonly repo: CommandCenterRepository,
     @Inject(ScopeService) readonly scopes: ScopeService,
     @Inject(CLOCK) readonly clock: Clock,
-    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(DrillReads) private readonly reads: DrillReads,
     @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
     @Inject(MOOD_PORT) private readonly mood: MoodReadPort,
     @Inject(HEADCOUNT_PORT) private readonly headcountPort: HeadcountReadPort,
-  ) {
-    this.reads = new DrillReads(prisma)
-  }
+  ) {}
 
   // --- 4: school ------------------------------------------------------------------------------------------------
 
@@ -319,7 +317,7 @@ export class DrillService {
     const scope = await this.scopes.scopeOf(viewer)
     await this.scopes.assertStudentInScope(scope, studentId)
     if (!code) return listOf([])
-    return listOf(await this.repo.completedSessions({ userId: studentId, subjectCode: code, newestFirst: true }))
+    return listOf(await this.repo.completedSessions({ userId: studentId, subjectCode: code, newestFirst: true, limit: SESSION_LIST_LIMIT }))
   }
 
   /** `start`/`end` are the raw query values, parsed after the scope check; sessions completed in `[start 00:00, end + 1 day 00:00)` MYT, oldest first. */
@@ -329,7 +327,7 @@ export class DrillService {
     const range = dateRangeOf(start, end)
     const from = startOfDateKey(range.start)
     const to = new Date(startOfDateKey(range.end).getTime() + DAY_MS)
-    return listOf(await this.repo.completedSessions({ userId: studentId, from, to }))
+    return listOf(await this.repo.completedSessions({ userId: studentId, from, to, limit: SESSION_LIST_LIMIT }))
   }
 
   // --- 11: session detail ---------------------------------------------------------------------------------------
@@ -339,7 +337,9 @@ export class DrillService {
     if (refs.length === 0) return new Map()
     try {
       return await this.moduleRef.get(PracticePorts, { strict: false }).questions.versions(refs)
-    } catch {
+    } catch (err) {
+      // The questions are display text only: the session still answers (blank text), but the failure is logged, never hidden.
+      this.logger.warn(`Command Center session questions lookup failed (${refs.length} refs): ${err instanceof Error ? err.name : 'unknown error'}`)
       return new Map()
     }
   }

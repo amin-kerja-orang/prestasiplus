@@ -26,6 +26,13 @@ describe('GET /guru/command-center/drill: validation (422 with the BM texts)', (
     }
   })
 
+  it('an Object.prototype key is not a drill type (422, never a 500)', async () => {
+    for (const q of ['?type=constructor', '?type=__proto__', '?type=toString', '?type=hasOwnProperty', '?type=constructor&filter=x']) {
+      const err = expectError(await drill(q), 'VALIDATION_ERROR', 'Jenis drill tidak sah.')
+      expect(err.fields).toEqual({ type: 'Jenis drill tidak sah.' })
+    }
+  })
+
   it('bad filter -> fields.filter, and the type check comes first', async () => {
     for (const q of ['?type=students&filter=x', '?type=today&filter=active', '?type=subjects&filter=t1', '?type=kirk', '?type=kirk&filter=t5', '?type=mood&filter=angry', '?type=engagement&filter=best', '?type=gps&filter=a']) {
       const err = expectError(await drill(q), 'VALIDATION_ERROR', 'Penapis tidak sah.')

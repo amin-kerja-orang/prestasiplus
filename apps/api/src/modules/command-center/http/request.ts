@@ -4,10 +4,9 @@ import { COMMAND_CENTER_GURU_MESSAGES, COMMAND_CENTER_RANGE_INVALID, type COMMAN
 import { ApiError } from '../../../common/errors/api-error'
 import { isIdString } from '../../../db/ids'
 import { isOverloadError, rateLimited } from '../../auth/auth.errors'
-import { QUERY_TEXT_MAX } from '../command-center.constants'
+import { QUERY_TEXT_MAX, SESSION_RANGE_MAX_DAYS } from '../command-center.constants'
 import { invalid } from './errors'
 
-const QUERY_KEYS_MAX = 20
 /** Seconds a client is told to wait after an overload answer. */
 const OVERLOAD_RETRY_AFTER = 5
 
@@ -30,27 +29,6 @@ export async function overloadTo429<T>(work: () => Promise<T>): Promise<T> {
 export class SafeIdPipe implements PipeTransform<unknown, string> {
   transform(value: unknown): string {
     return typeof value === 'string' && isIdString(value) ? value : '0'
-  }
-}
-
-/** Caps the number and length of query values before a schema reads them (422 on the key). Arrays are refused. */
-@Injectable()
-export class BoundedQueryPipe implements PipeTransform<unknown, unknown> {
-  transform(value: unknown): unknown {
-    const fields: Record<string, string> = Object.create(null) as Record<string, string>
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      const entries = Object.entries(value as Record<string, unknown>)
-      if (entries.length > QUERY_KEYS_MAX) fields._ = `The query must not have more than ${QUERY_KEYS_MAX} keys.`
-      for (const [key, raw] of entries) {
-        const shown = key.slice(0, QUERY_TEXT_MAX)
-        if (Array.isArray(raw)) fields[shown] = `The ${shown} field must not be repeated.`
-        else if (typeof raw === 'string' && raw.length > QUERY_TEXT_MAX) {
-          fields[shown] = `The ${shown} field must not be greater than ${QUERY_TEXT_MAX} characters.`
-        }
-      }
-    }
-    if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
-    return value
   }
 }
 
@@ -82,14 +60,19 @@ function isRealDate(key: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === key
 }
 
+const DAY_MS = 86_400_000
+
 /**
- * `start` and `end` of the student week list: both real `YYYY-MM-DD` dates with start <= end, else 422 `fields.start`
+ * `start` and `end` of the student week list: both real `YYYY-MM-DD` dates with start <= end and at most
+ * `SESSION_RANGE_MAX_DAYS` days inclusive (a v2 bound, see the deviations), else 422 `fields.start`
  * "Julat tarikh tidak sah." with the same text as `message`. Call it AFTER the scope check (an out-of-scope id is 404 even for a bad range).
  */
 export function dateRangeOf(start: unknown, end: unknown): { start: string; end: string } {
   if (typeof start !== 'string' || typeof end !== 'string' || !isRealDate(start) || !isRealDate(end) || start > end) {
     throw invalid({ start: COMMAND_CENTER_RANGE_INVALID })
   }
+  const days = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY_MS + 1
+  if (days > SESSION_RANGE_MAX_DAYS) throw invalid({ start: COMMAND_CENTER_RANGE_INVALID })
   return { start, end }
 }
 
@@ -107,7 +90,7 @@ const GURU_FILTERS: Record<string, readonly string[]> = {
 
 /** Guru drill query: `type` is checked first ("Jenis drill tidak sah."), then `filter` ("Penapis tidak sah."), 422 with the text as `message`. */
 export function guruDrillQueryOf(raw: { type?: unknown; filter?: unknown }): { type: CommandCenterGuruDrillType; filter: string } {
-  const type = typeof raw.type === 'string' && raw.type in GURU_FILTERS ? (raw.type as CommandCenterGuruDrillType) : null
+  const type = typeof raw.type === 'string' && Object.hasOwn(GURU_FILTERS, raw.type) ? (raw.type as CommandCenterGuruDrillType) : null
   if (type === null) throw invalid({ type: COMMAND_CENTER_GURU_MESSAGES.drillType })
   const filter = raw.filter === undefined ? '' : typeof raw.filter === 'string' ? raw.filter.trim() : null
   if (filter === null || !(GURU_FILTERS[type] as readonly string[]).includes(filter)) throw invalid({ filter: COMMAND_CENTER_GURU_MESSAGES.drillFilter })

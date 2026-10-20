@@ -182,6 +182,16 @@ describe('GET /command-center/student/:id/week', () => {
     }
     await expect404(teacherB, `/command-center/student/${w.p.p1}/week?start=bad&end=bad`)
   })
+
+  it('the range is capped at 366 days inclusive (a wider range is 422, so a 0001..9999 range never scans every session)', async () => {
+    const wide = await getAs(admin, `/command-center/student/${w.p.p1}/week?start=2025-10-19&end=2026-10-19`)
+    expect(wide.status).toBe(200)
+    expect(CommandCenterSessionListResponseSchema.parse(wide.body).data.sessions.length).toBeGreaterThan(0)
+    for (const q of ['?start=2025-10-18&end=2026-10-19', '?start=0001-01-01&end=9999-12-31']) {
+      const error = expectError(await getAs(admin, `/command-center/student/${w.p.p1}/week${q}`), 'VALIDATION_ERROR', 'Julat tarikh tidak sah.')
+      expect(error.fields).toEqual({ start: 'Julat tarikh tidak sah.' })
+    }
+  })
 })
 
 describe('GET /command-center/session/:sessionId', () => {

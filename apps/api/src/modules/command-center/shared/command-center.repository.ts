@@ -1,10 +1,13 @@
 /**
- * The one READ-ONLY repository of the Command Center (BE-22). The cross-user tallies the board and the drill-downs need do not
- * exist on any owner repository (`PracticeRepository` is per user), so they are read here with `$queryRaw`, the documented
- * precedent being `exam/builder/question-bank.source.ts`. Nothing here writes, and no value is ever concatenated into SQL:
- * every input is a bound parameter.
+ * The shared READ-ONLY repository of the Command Center (BE-22). It is one of three raw-SQL read classes of the module, with
+ * `board/reads.ts` (`BoardReads`) and `drill/reads.ts` (`DrillReads`); all three are DI providers of `CommandCenterModule`.
+ * The cross-user tallies the board and the drill-downs need do not exist on any owner repository (`PracticeRepository` is per
+ * user), so they are read here with `$queryRaw`, the documented precedent being `exam/builder/question-bank.source.ts`.
+ * Simple lookups that an owner repository already exports exactly go through it: user briefs and names through
+ * `UsersRepository` (M01/M02), school refs through `SchoolsRepository` (M02). Nothing here writes, and no value is ever
+ * concatenated into SQL: every input is a bound parameter.
  *
- * Tables read: `users`, `user_roles`, `schools`, `school_subscriptions`, `classrooms`, `enrolments`, `teacher_profiles`,
+ * Tables read with SQL: `users`, `user_roles`, `schools`, `school_subscriptions`, `classrooms`, `enrolments`, `teacher_profiles`,
  * `practice_sessions`, `practice_answers`, `subjects`, `chapters`.
  *
  * `is_test` (Mod Pelajar): `users` has no such column; the rows an admin wrote while acting as a student carry
@@ -19,6 +22,10 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { SchoolsRepository } from '../../schools'
+import { UsersRepository } from '../../users'
+
+import { SCHOOL_DRILL_ROW_LIMIT } from '../command-center.constants'
 
 import { dateKey } from './windows'
 
@@ -173,7 +180,11 @@ const bigintOrNull = (id: string): bigint | null => {
 
 @Injectable()
 export class CommandCenterRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(UsersRepository) private readonly users: UsersRepository,
+    @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
+  ) {}
 
   private q<T = Row>(query: Prisma.Sql): Promise<T[]> {
     return this.prisma.client.$queryRaw<T[]>(query)
@@ -211,15 +222,16 @@ export class CommandCenterRepository {
     return { answers: n(r?.answers), correct: n(r?.correct), students: n(r?.students) }
   }
 
-  /** One row per answering student, ordered by answers desc then id. */
-  async answerTallyByUser(f: AnswerFilter): Promise<UserTally[]> {
+  /** One row per answering student, ordered by answers desc then id; at most `limit` rows when given. */
+  async answerTallyByUser(f: AnswerFilter, limit?: number): Promise<UserTally[]> {
+    const cap = limit === undefined ? Prisma.empty : Prisma.sql`LIMIT ${Math.max(0, Math.trunc(limit))}`
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS user_id, u.name, u.school_id::text AS school_id, sc.name AS school_name,
              count(*)::int AS answers, count(*) FILTER (WHERE a.is_correct)::int AS correct,
              min(a.answered_at) AS first_at, max(a.answered_at) AS last_at
         FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
        WHERE ${this.answerWhere(f)}
-       GROUP BY u.id, u.name, u.school_id, sc.name ORDER BY answers DESC, u.id ASC`)
+       GROUP BY u.id, u.name, u.school_id, sc.name ORDER BY answers DESC, u.id ASC ${cap}`)
     return rows.map((r) => ({
       userId: String(r.user_id),
       name: String(r.name),
@@ -267,7 +279,7 @@ export class CommandCenterRepository {
     return rows.map((r) => ({ hour: n(r.hour), answers: n(r.answers) }))
   }
 
-  /** Per subject (a null-subject row stands for free practice), answers desc then code. */
+  /** Per ANSWER subject (`practice_answers.subject_id`, as the mock's board `subjectBars`; a null-subject row stands for free practice), answers desc then code. */
   async subjectTally(f: AnswerFilter): Promise<SubjectTally[]> {
     const rows = await this.q(Prisma.sql`
       SELECT sub.code, sub.name, count(*)::int AS answers, count(*) FILTER (WHERE a.is_correct)::int AS correct,
@@ -403,20 +415,16 @@ export class CommandCenterRepository {
   // People and schools
   // ------------------------------------------------------------------------------------------------------------------
 
+  /** One user (any state) with its roles, through the owner `UsersRepository`; unknown or malformed id = null. */
   async userBrief(id: string): Promise<UserBrief | null> {
-    const key = bigintOrNull(id)
-    if (key === null) return null
-    const rows = await this.q(Prisma.sql`
-      SELECT u.id::text AS id, u.name, u.school_id::text AS school_id, u.is_active,
-             coalesce((SELECT array_agg(ur.role ORDER BY ur.role) FROM user_roles ur WHERE ur.user_id = u.id), '{}') AS roles
-        FROM users u WHERE u.id = ${key}`)
-    const r = rows[0]
-    return r ? { id: String(r.id), name: String(r.name), schoolId: s(r.school_id), isActive: Boolean(r.is_active), roles: (r.roles as string[]) ?? [] } : null
+    const u = await this.users.get(id)
+    return u ? { id: u.id, name: u.name, schoolId: u.schoolId, isActive: u.isActive, roles: [...u.roles] } : null
   }
 
+  /** `{id, name}` of schools through the owner `SchoolsRepository`; unknown and malformed ids are absent. */
   async schoolRefs(schoolIds: string[]): Promise<Map<string, Ref>> {
-    const rows = await this.q(Prisma.sql`SELECT id::text AS id, name FROM schools WHERE id = ANY(${ids(schoolIds)}::bigint[])`)
-    return new Map(rows.map((r) => [String(r.id), { id: String(r.id), name: String(r.name) }]))
+    const rows = await this.schools.getMany(schoolIds)
+    return new Map(rows.map((r) => [r.id, { id: r.id, name: r.name }]))
   }
 
   async schoolRef(schoolId: string): Promise<Ref | null> {
@@ -447,10 +455,10 @@ export class CommandCenterRepository {
     return rows.map((r) => ({ id: String(r.id), name: String(r.name), isActive: Boolean(r.is_active) }))
   }
 
-  /** Names of any users (missing ids are absent). */
+  /** Names of any users through the owner `UsersRepository` (missing ids are absent). */
   async userNames(userIds: string[]): Promise<Map<string, string>> {
-    const rows = await this.q(Prisma.sql`SELECT id::text AS id, name FROM users WHERE id = ANY(${ids(userIds)}::bigint[])`)
-    return new Map(rows.map((r) => [String(r.id), String(r.name)]))
+    const rows = await this.users.getMany(userIds)
+    return new Map(rows.map((r) => [r.id, r.name]))
   }
 
   /** Teachers of a school (role teacher, users.school_id), by name then id, with the profile subject. */
@@ -532,7 +540,7 @@ export class CommandCenterRepository {
 
   /** Users of ONE school who logged in inside the window, newest first (school drill `logins`). */
   async schoolLogins(schoolId: string, window: { from: Date; to: Date }): Promise<LoginRow[]> {
-    return this.recentLogins(window, 1000, schoolId)
+    return this.recentLogins(window, SCHOOL_DRILL_ROW_LIMIT, schoolId)
   }
 
   private schoolCond(alias: string, schoolId?: string): Prisma.Sql {

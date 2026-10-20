@@ -1,7 +1,7 @@
 import { statfs } from 'node:fs/promises'
 import os from 'node:os'
 
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import type { ServerStatus } from '@pp/contract'
 
 const GB = 1024 ** 3
@@ -22,6 +22,9 @@ export interface OsProbe {
   /** Bytes of the root volume; zeros when it cannot be read. */
   disk(): Promise<{ total: number; free: number }>
 }
+
+/** DI token of the host probe (`nodeProbe` in the app; a test binds a fixed probe so the readings, and the ETag, are stable). */
+export const OS_PROBE = Symbol('OS_PROBE')
 
 export const nodeProbe: OsProbe = {
   cpuTimes() {
@@ -89,8 +92,10 @@ export async function readServerStatus(probe: OsProbe, previous: CpuTimes | null
 export class ServerStatusService {
   private previous: CpuTimes | null = null
 
-  async status(probe: OsProbe = nodeProbe): Promise<ServerStatus> {
-    const { status, cpu } = await readServerStatus(probe, this.previous)
+  constructor(@Inject(OS_PROBE) private readonly probe: OsProbe) {}
+
+  async status(): Promise<ServerStatus> {
+    const { status, cpu } = await readServerStatus(this.probe, this.previous)
     this.previous = cpu
     return status
   }

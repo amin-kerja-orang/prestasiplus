@@ -11,7 +11,6 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { PrismaService } from '../../../db/prisma.service'
 import { notFound } from '../http/errors'
 import type { Viewer } from '../http/viewer'
 import { CommandCenterRepository, type LoginRow } from '../shared/command-center.repository'
@@ -19,7 +18,7 @@ import { BADGE_READ_PORT, type BadgeReadPort, FEEDBACK_PORT, type FeedbackReadPo
 import { ScopeService } from '../shared/scope.service'
 import { shortSubjectName } from '../shared/subjects'
 import { addDays, boardWindows, dateKey, periodWindow, startOfDay, timeOfDay, toMytTimestamp, weekdayLabelBm, type Window } from '../shared/windows'
-import { FEED_LIMIT, TOP_LIMIT } from '../command-center.constants'
+import { FEED_LIMIT, SCHOOL_DRILL_ROW_LIMIT, TOP_LIMIT } from '../command-center.constants'
 import { diffForHumans } from './diff-for-humans'
 import { BoardReads } from './reads'
 import { ServerStatusService } from './server-status.service'
@@ -70,22 +69,18 @@ const roleShown = (roles: string[]): string => ROLE_SHOWN.find((r) => roles.incl
  */
 @Injectable()
 export class BoardService {
-  private readonly reads: BoardReads
-
   constructor(
     @Inject(CommandCenterRepository) readonly repo: CommandCenterRepository,
     @Inject(ScopeService) readonly scope: ScopeService,
     @Inject(CLOCK) readonly clock: Clock,
     @Inject(ServerStatusService) private readonly host: ServerStatusService,
-    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(BoardReads) private readonly reads: BoardReads,
     @Inject(MOOD_PORT) private readonly mood: MoodReadPort,
     @Inject(FEEDBACK_PORT) private readonly feedback: FeedbackReadPort,
     @Inject(HEADCOUNT_PORT) private readonly headcount: HeadcountReadPort,
     @Inject(BADGE_READ_PORT) private readonly badges: BadgeReadPort,
     @Inject(QUIZ_SET_PORT) private readonly quizSets: QuizSetReadPort,
-  ) {
-    this.reads = new BoardReads(prisma)
-  }
+  ) {}
 
   /** Student ids of the school view (the ports take id lists); `null` on the platform view. */
   private async studentIds(schoolId: string | undefined): Promise<string[] | null> {
@@ -325,7 +320,11 @@ export class BoardService {
     const now = this.clock.now()
     const { window } = periodWindow(period, now)
     const span = { from: window.from, to: window.to, schoolId }
-    const [teachers, pupils, logins] = await Promise.all([this.reads.teacherDrill(span), this.repo.answerTallyByUser(span), this.repo.schoolLogins(schoolId, window)])
+    const [teachers, pupils, logins] = await Promise.all([
+      this.reads.teacherDrill(span, SCHOOL_DRILL_ROW_LIMIT),
+      this.repo.answerTallyByUser(span, SCHOOL_DRILL_ROW_LIMIT),
+      this.repo.schoolLogins(schoolId, window),
+    ])
     return {
       school: { id: school.id, name: school.name },
       period: period ?? 'today',

@@ -1,6 +1,7 @@
 import { ServerStatusResponseSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { OS_PROBE, type OsProbe } from '../../src/modules/command-center/board/server-status.service'
 import { etagOf } from '../../src/modules/command-center/http/etag.interceptor'
 import {
   bootCommandCenterApp,
@@ -16,11 +17,23 @@ import {
   schoolIdOf,
 } from './helpers'
 
+/** A fixed host: the readings never move, so two calls answer the same body and the same ETag (deterministic 304). */
+const GIB = 1024 ** 3
+const fixedProbe: OsProbe = {
+  cpuTimes: () => ({ idle: 800, total: 1000 }),
+  cores: () => 4,
+  load1: () => 1,
+  totalMem: () => 8 * GIB,
+  freeMem: () => 2 * GIB,
+  uptimeSec: () => 90_061,
+  disk: () => Promise.resolve({ total: 100 * GIB, free: 40 * GIB }),
+}
+
 let t: CcTestApp
 const sessions: Partial<Record<CcRole, LoggedIn>> = {}
 
 beforeAll(async () => {
-  t = await bootCommandCenterApp()
+  t = await bootCommandCenterApp({ overrides: [{ token: OS_PROBE, useValue: fixedProbe }] })
   for (const role of ['admin', 'school_admin', 'teacher', 'student'] as CcRole[]) sessions[role] = await loginRole(t, role)
 })
 afterAll(async () => {
@@ -62,41 +75,39 @@ describe('server-status', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/postgres|DATABASE_URL|SESSION_SECRET|\/home|\/root/i)
   })
 
+  it('reads the injected probe: fixed host readings', async () => {
+    const res = await getAs(sessions.admin as LoggedIn, '/admin/server-status')
+    expect(ServerStatusResponseSchema.parse(res.body).data).toEqual({
+      cpuPct: 25,
+      ramPct: 75,
+      diskPct: 60,
+      uptime: '1d 1h',
+      load: 1,
+      cores: 4,
+      ramUsedGb: 6,
+      ramTotalGb: 8,
+      diskUsedGb: 60,
+      diskTotalGb: 100,
+    })
+  })
+
   it('ETag / If-None-Match: a matching tag answers 304 with an empty body and still no-store; a different tag answers 200', async () => {
     const admin = sessions.admin as LoggedIn
-    // Pin the validator to a stub so the host readings (which drift) do not decide the test.
     const first = await getAs(admin, '/admin/server-status')
     const tag = first.headers.etag as string
-    const same = await admin.agent.get('/api/admin/server-status').set('If-None-Match', etagOf(first.body))
-    // The readings may move between two calls; both outcomes must be consistent with the validator.
-    if (same.headers.etag === etagOf(first.body)) expect(same.status).toBe(304)
-    else expect(same.status).toBe(200)
-    expect(same.headers['cache-control']).toBe('no-store')
     expect(tag).toBe(etagOf(first.body))
+    const same = await admin.agent.get('/api/admin/server-status').set('If-None-Match', tag)
+    expect(same.status).toBe(304)
+    expect(same.text).toBe('')
+    expect(same.headers['cache-control']).toBe('no-store')
     const other = await admin.agent.get('/api/admin/server-status').set('If-None-Match', 'W/"other"')
     expect(other.status).toBe(200)
+    expect(other.headers.etag).toBe(tag)
   })
 
   it('the validator ignores generatedAt, so a poll with only a new timestamp is still 304', () => {
     expect(etagOf({ data: { generatedAt: 'a', n: 1 } })).toBe(etagOf({ data: { generatedAt: 'b', n: 1 } }))
     expect(etagOf({ data: { generatedAt: 'a', n: 1 } })).not.toBe(etagOf({ data: { generatedAt: 'a', n: 2 } }))
-  })
-
-  it('answers 304 on a repeated unchanged body (stub the clock-free route with a fixed body)', async () => {
-    // Two calls to server-status inside one tick normally share readings only by chance; assert 304 deterministically
-    // by replaying the exact tag of a response: Express compares If-None-Match with the ETag set by the interceptor.
-    const admin = sessions.admin as LoggedIn
-    let hit = false
-    for (let i = 0; i < 20 && !hit; i++) {
-      const a = await getAs(admin, '/admin/server-status')
-      const b = await admin.agent.get('/api/admin/server-status').set('If-None-Match', a.headers.etag as string)
-      if (b.status === 304) {
-        hit = true
-        expect(b.text).toBe('')
-        expect(b.headers['cache-control']).toBe('no-store')
-      }
-    }
-    expect(hit, 'a 304 is produced when the validator matches').toBe(true)
   })
 })
 

@@ -2,9 +2,11 @@
  * Read-only SQL of the board that the shared repository does not offer (BE-22 board slice). Same population rules as
  * `CommandCenterRepository`: answers with `is_test = false` of ACTIVE users holding the `student` role; every input is a bound parameter.
  */
+import { Inject, Injectable } from '@nestjs/common'
+
 import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
-import type { PrismaService } from '../../../db/prisma.service'
+import { PrismaService } from '../../../db/prisma.service'
 
 type Row = Record<string, unknown>
 const n = (v: unknown): number => Number(v ?? 0)
@@ -70,8 +72,9 @@ function span(s: AnswerSpan): Prisma.Sql {
   return Prisma.sql`${POPULATION} AND a.answered_at <= ${s.to} ${from} ${schoolCond(s.schoolId)}`
 }
 
+@Injectable()
 export class BoardReads {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   private q(query: Prisma.Sql): Promise<Row[]> {
     return this.prisma.client.$queryRaw<Row[]>(query)
@@ -175,8 +178,11 @@ export class BoardReads {
     return new Map(rows.map((r) => [String(r.school_id), n(r.teachers)]))
   }
 
-  /** School drill teachers: class owners of answering pupils of the school with the pupils' totals (a pupil of two owners counts for both). */
-  async teacherDrill(s: AnswerSpan): Promise<TeacherDrillRow[]> {
+  /**
+   * School drill teachers: class owners of answering pupils of the school with the pupils' totals (a pupil of two owners counts
+   * for both). At most `limit` rows, the ones with the most pupils (the service sorts the same way).
+   */
+  async teacherDrill(s: AnswerSpan, limit: number): Promise<TeacherDrillRow[]> {
     const rows = await this.q(Prisma.sql`
       SELECT c.teacher_id::text AS teacher_id, o.name, count(*)::int AS students, sum(p.answers)::int AS answers, sum(p.correct)::int AS correct, max(p.last_at) AS last_at
         FROM (SELECT a.user_id, count(*) AS answers, count(*) FILTER (WHERE a.is_correct) AS correct, max(a.answered_at) AS last_at
@@ -185,7 +191,9 @@ export class BoardReads {
                WHERE e.status = 'active' AND e.is_test = false AND c2.is_active AND c2.kind = 'classroom' AND c2.teacher_id IS NOT NULL) c
           ON c.student_id = p.user_id
         JOIN users o ON o.id = c.teacher_id
-       GROUP BY c.teacher_id, o.name`)
+       GROUP BY c.teacher_id, o.name
+       ORDER BY students DESC, o.name ASC, c.teacher_id ASC
+       LIMIT ${Math.max(0, Math.trunc(limit))}`)
     return rows.map((r) => ({
       teacherId: String(r.teacher_id),
       name: String(r.name),

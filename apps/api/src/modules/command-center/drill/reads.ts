@@ -3,9 +3,11 @@
  * `shared/command-center.repository.ts`: bound parameters only, `is_test` rows never counted, nothing written).
  * Tables read: `users`, `user_roles`, `teacher_profiles`, `streaks`, `practice_answers`, `practice_sessions`, `subjects`.
  */
+import { Inject, Injectable } from '@nestjs/common'
+
 import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
-import type { PrismaService } from '../../../db/prisma.service'
+import { PrismaService } from '../../../db/prisma.service'
 
 type Row = Record<string, unknown>
 const n = (v: unknown): number => Number(v ?? 0)
@@ -30,8 +32,9 @@ export interface SubjectBreakdownRow {
   correct: number
 }
 
+@Injectable()
 export class DrillReads {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   private q(query: Prisma.Sql): Promise<Row[]> {
     return this.prisma.client.$queryRaw<Row[]>(query)
@@ -65,7 +68,11 @@ export class DrillReads {
     return n(rows[0]?.current)
   }
 
-  /** One student's answers up to `to`, by the subject of the answer's session (no session = free practice). */
+  /**
+   * One student's answers up to `to`, by the subject of the answer's SESSION (no session = free practice), as the mock's student
+   * page "Pecahan Subjek" does. The board bars (`CommandCenterRepository.subjectTally`) use the ANSWER's subject, as the mock's
+   * `subjectBars` does: the two rules differ on purpose (G4 minor 5).
+   */
   async subjectBreakdown(userId: string, to: Date): Promise<SubjectBreakdownRow[]> {
     const ids = bigints([userId])
     if (ids.length === 0) return []
