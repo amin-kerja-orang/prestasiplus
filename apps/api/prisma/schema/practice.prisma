@@ -247,3 +247,59 @@ model PracticeAttemptAggregateItem {
   @@index([questionId], map: "ix_practice_attempt_aggregate_items_question_id")
   @@map("practice_attempt_aggregate_items")
 }
+
+// ---------------------------------------------------------------------------------------------
+// BE-13 (practice reads): SPM targets and structured-question attempts. Migration 0022_practice_reads
+// (PROPOSED number, renumber at merge). No back-relations on User, Subject or Question (same as the
+// BE-12 tables above): the foreign keys live in the migration SQL only. `question_id` has no FK because
+// BE-09 owns the bank and an attempt keeps its history whatever happens to the question row.
+// ---------------------------------------------------------------------------------------------
+
+/// DATA-M05-04: one student target grade per SPM subject (BR-26). A subject without a target has no row.
+model SpmTarget {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  subjectId    BigInt   @map("subject_id")
+  /// A+, A, A-, B+, B, C+, C, D, E (check).
+  targetGrade  String   @map("target_grade")
+  /// Written while an admin or school admin is in Mod Pelajar (G-07); never counted in other users' aggregates.
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  @@unique([userId, subjectId], map: "uq_spm_targets_user_id_subject_id")
+  @@unique([legacySource, legacyId], map: "uq_spm_targets_legacy")
+  @@index([subjectId], map: "ix_spm_targets_subject_id")
+  @@map("spm_targets")
+}
+
+/// DATA-M05-06: one submitted structured attempt (LS-7 placeholder marking). Each call stores a new row.
+model StructuredAttempt {
+  id                BigInt   @id @default(autoincrement())
+  userId            BigInt   @map("user_id")
+  /// BE-09 question id and the live version that was answered. No FK.
+  questionId        BigInt   @map("question_id")
+  questionVersionNo Int      @map("question_version_no")
+  /// spm (check) or null.
+  scope             String?
+  /// bahasa (check), only together with scope spm.
+  track             String?
+  /// `[{ subQuestionId, text }]`, in the order the learner sent them.
+  answers           Json     @default("[]")
+  /// `[{ subQuestionId, awarded, max }]`, one per sub-question of the question.
+  marks             Json     @default("[]")
+  totalAwarded      Int      @map("total_awarded")
+  totalMax          Int      @map("total_max")
+  submittedAt       DateTime @map("submitted_at") @db.Timestamptz(6)
+  isTest            Boolean  @default(false) @map("is_test")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource      String?  @map("legacy_source")
+  legacyId          String?  @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_structured_attempts_legacy")
+  @@index([userId, submittedAt(sort: Desc)], map: "ix_structured_attempts_user_id_submitted_at")
+  @@index([questionId], map: "ix_structured_attempts_question_id")
+  @@map("structured_attempts")
+}
