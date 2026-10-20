@@ -17,12 +17,14 @@ const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /question-reports': 'admin', // "Admin only"
   'GET /admin-sekolah/dashboard': 'school_admin',
   'GET /admin-sekolah/guru/pending': 'school_admin', // BE-21 AC13
+  'GET /intake/batches': 'teacher', // Guru (own batches) and Admin Pusat (all); BE-37
   'GET /amaran/effectiveness': 'teacher', // admin, school_admin, teacher
   'GET /headcounts': 'teacher', // admin, teacher, school_admin
   'GET /monitoring/overview': 'teacher',
   'GET /kirkpatrick/reaction': 'teacher',
   'GET /cikgu/rph': 'teacher', // teacher or admin
   'GET /questions/summary': 'admin', // role list not stated in the contract: best guess
+  'GET /intake/dashboard': 'admin', // Admin Pusat only; BE-40 (smoke picks this one op for the intake-dashboard tag)
 }
 
 /** A role that must get 403 where a student is allowed (default: student). */
