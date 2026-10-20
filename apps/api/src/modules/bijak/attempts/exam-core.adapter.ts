@@ -1,19 +1,17 @@
 /**
  * The ONE place the attempts module imports the marking engine from (BE-14 / ADR-0021).
  *
- * Today the engine lives in the prototype folder `src/modules/m28-bijak-spm/domain` (outside
- * `apps/api`; the vite SSR build bundles relative imports, `ssr.noExternal` is only needed for
- * packages). When BE-14 merges, `@pp/exam-core` replaces it: the main session changes ONLY the
- * import specifiers below to `@pp/exam-core` (and adds the workspace dependency plus
- * `ssr.noExternal: ['@pp/exam-core']` to `apps/api/vite.build.config.ts`). Nothing else in
- * `bijak/attempts` imports the engine, and the pure marking code (`marking.ts`) sees only the names
- * exported here.
+ * The engine is the `@pp/exam-core` workspace (BE-14), imported by its subpath exports and bundled
+ * into `dist/main.js` by `ssr.noExternal` in `apps/api/vite.build.config.ts`. Nothing under
+ * `apps/api` may import the repo-root `src/` (the API Docker image does not contain it; #45 C4).
+ * Nothing else in `bijak/attempts` imports the engine, and the pure marking code (`marking.ts`)
+ * sees only the names exported here.
  *
  * `gradePart`, `isBlank` and `numericValue` are WRAPPERS, not re-exports: see `defuseRootIndex`.
  */
-import { gradePart as engineGradePart, isBlank as engineIsBlank } from '../../../../../../src/modules/m28-bijak-spm/domain/grading'
-import { numericValue as engineNumericValue } from '../../../../../../src/modules/m28-bijak-spm/domain/math-expr'
-import type { PartAnswer } from '../../../../../../src/modules/m28-bijak-spm/domain/types'
+import { gradePart as engineGradePart, isBlank as engineIsBlank } from '@pp/exam-core/grading'
+import { numericValue as engineNumericValue } from '@pp/exam-core/math-expr'
+import type { PartAnswer } from '@pp/exam-core/types'
 
 /**
  * Student text reaches the engine's LaTeX reader. Its `\sqrt[...]` branch never terminates on an
@@ -54,7 +52,7 @@ export function isBlank(a: PartAnswer | undefined): boolean {
 export function numericValue(raw: string): number | null {
   return engineNumericValue(defuseRootIndex(raw))
 }
-export { effectiveMarks, leavesOf, type Leaf } from '../../../../../../src/modules/m28-bijak-spm/domain/paper-model'
+export { effectiveMarks, leavesOf, type Leaf } from '@pp/exam-core/paper-model'
 export type {
   CurriculumTag,
   LeafKind,
@@ -68,4 +66,4 @@ export type {
   SectionResult,
   SectionSnapshot,
   StimulusDef,
-} from '../../../../../../src/modules/m28-bijak-spm/domain/types'
+} from '@pp/exam-core/types'

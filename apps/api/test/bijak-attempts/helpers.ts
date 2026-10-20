@@ -232,6 +232,7 @@ export const STUDENT = 'pelajar@demo.test'
 export const OTHER_STUDENT = 'pelajar2@demo.test'
 export const TEACHER = 'guru@demo.test'
 export const ADMIN = 'admin@demo.test'
+export const SCHOOL_ADMIN = 'adminsekolah@demo.test'
 
 /** An MCQ answer set helper: the correct choice of an MCQ question from the bank scheme. */
 export function correctChoice(qid: string): string {

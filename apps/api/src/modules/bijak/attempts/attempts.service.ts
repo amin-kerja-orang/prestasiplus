@@ -640,7 +640,7 @@ export class BijakAttemptsService {
               description: BIJAK_REWARD_DESCRIPTION,
             })
           } catch (err) {
-            this.logger.warn(`Reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+            this.logger.error(`Reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -649,6 +649,9 @@ export class BijakAttemptsService {
           attemptId: a.id,
           userId: a.userId,
           isTest: a.isTest,
+          paperKind: a.paperKind,
+          startedAt: a.startedAt,
+          submittedAt: a.submittedAt,
           paperId: a.paperId,
           subject: a.subject,
           kertas: a.kertas,
@@ -661,7 +664,7 @@ export class BijakAttemptsService {
           questions: e.result.questions.map((q) => ({ questionId: q.questionId, marks: q.marks, awarded: q.awarded, attempted: q.attempted, counted: q.counted })),
         })
       } catch (err) {
-        this.logger.warn(`Aggregate port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+        this.logger.error(`Aggregate port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
   }

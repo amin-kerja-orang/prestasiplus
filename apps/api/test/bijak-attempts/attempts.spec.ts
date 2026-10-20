@@ -24,7 +24,8 @@
  * | no answer key leaves the server before submit (3 papers)             | "reveal rules" 1                        |
  * | locks a question after three checks (Latihan cap)                    | "latihan Semak"                         |
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BijakAttemptHistoryRowSchema,
   BijakAttemptInProgressSchema,
@@ -39,6 +40,7 @@ import { BANK } from '../../../../src/modules/m28-bijak-spm/data/registry'
 import { leavesOf } from '../../src/modules/bijak/attempts/exam-core.adapter'
 import {
   ADMIN,
+  SCHOOL_ADMIN,
   allKeys,
   type AttemptsTestApp,
   bootAttemptsApp,
@@ -344,6 +346,40 @@ describe('submit (AC6, idempotency)', () => {
     expect(t.reward.calls).toHaveLength(1)
   })
 
+  it('5b. a throwing reward and aggregate port is logged at error level with the attemptId; the submit still succeeds', async () => {
+    t.reward.fail = true
+    const aggregate = t.aggregate
+    const original = aggregate.recordGraded.bind(aggregate)
+    aggregate.recordGraded = async () => {
+      throw new Error('aggregate down')
+    }
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    try {
+      const id = await startAttempt(me, PAPER.matK1)
+      const res = await submit(me, id, { idempotencyKey: 'k', changes: [] })
+      expect(res.status).toBe(200)
+      const errors = errorSpy.mock.calls.map((c) => String(c[0]))
+      expect(errors.some((m) => m.includes('Reward port failed') && m.includes(id))).toBe(true)
+      expect(errors.some((m) => m.includes('Aggregate port failed') && m.includes(id))).toBe(true)
+      expect(warnSpy.mock.calls.map((c) => String(c[0])).some((m) => m.includes('port failed'))).toBe(false)
+    } finally {
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+      aggregate.recordGraded = original
+    }
+  })
+
+  it('5c. the aggregate input carries paperKind, startedAt and submittedAt (BE-12 start_type and duration_sec)', async () => {
+    const id = await startAttempt(me, PAPER.matK1)
+    await submit(me, id, { idempotencyKey: 'k', changes: [] })
+    const row = (await t.db.query<{ paper_kind: string; started_at: Date; submitted_at: Date }>('select paper_kind, started_at, submitted_at from exam_attempts where id = $1', [id]))[0]!
+    const call = t.aggregate.calls.at(-1)!
+    expect(call.paperKind).toBe(row.paper_kind)
+    expect(call.startedAt?.getTime()).toBe(new Date(row.started_at).getTime())
+    expect(call.submittedAt?.getTime()).toBe(new Date(row.submitted_at).getTime())
+  })
+
   it('6. validation: idempotencyKey is required (1 to 64 characters)', async () => {
     const id = await startAttempt(me, PAPER.matK1)
     expectError(await submit(me, id, { changes: [] }), 'VALIDATION_ERROR')
@@ -404,6 +440,9 @@ describe('timer (AC2, AC-05.x)', () => {
     expect(r.attempt.lateBySeconds).toBeLessThanOrEqual(GRACE)
     expect(t.reward.calls).toHaveLength(1)
     expect(t.aggregate.calls[0]).toMatchObject({ status: 'auto_submitted', score: 1, regraded: false })
+    expect(t.aggregate.calls[0]!.paperKind).toBe('pilihan')
+    expect(t.aggregate.calls[0]!.startedAt).toBeInstanceOf(Date)
+    expect(t.aggregate.calls[0]!.submittedAt).toBeInstanceOf(Date)
   })
 
   it('4. without any sweep run, touching an expired attempt closes it (correctness never depends on the timer)', async () => {
@@ -619,6 +658,15 @@ describe('ownership, roles, CSRF (AC7, AC10)', () => {
     // a student's own attempts are not test data
     const mine = await startAttempt(me, PAPER.matK1)
     expect((await t.db.query<{ is_test: boolean }>('select is_test from exam_attempts where id = $1', [mine]))[0]!.is_test).toBe(false)
+  })
+
+  it('a school_admin in Mod Pelajar can start and submit; the attempt is stamped is_test and the ports see isTest', async () => {
+    const sa = await loginAs(t, SCHOOL_ADMIN, true)
+    const id = await startAttempt(sa, PAPER.matK1)
+    expect((await t.db.query<{ is_test: boolean }>('select is_test from exam_attempts where id = $1', [id]))[0]!.is_test).toBe(true)
+    expect((await submit(sa, id, { idempotencyKey: 'k', changes: [] })).status).toBe(200)
+    expect(t.reward.calls.at(-1)).toMatchObject({ isTest: true, attemptId: id })
+    expect(t.aggregate.calls.at(-1)).toMatchObject({ isTest: true, attemptId: id })
   })
 
   it('responses are Cache-Control: no-store', async () => {

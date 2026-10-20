@@ -108,6 +108,10 @@ export interface BijakAttemptAggregateInput {
   attemptId: string
   userId: string
   isTest: boolean
+  /** Optional context BE-12 uses for `start_type` and `duration_sec` (AC-33.4). */
+  paperKind?: 'pilihan' | 'jana'
+  startedAt?: Date
+  submittedAt?: Date | null
   /** Decimal-string paper id; null for a migrated attempt. */
   paperId: string | null
   subject: string
