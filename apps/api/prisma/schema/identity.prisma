@@ -58,6 +58,13 @@ model User {
   passwordResets        PasswordReset[]
   settings              UserSettings?
   notifications         Notification[]
+  // BE-11 back-relations (wallet.prisma owns the models).
+  wallet                Wallet?
+  coinLedger            CoinLedger[]
+  streak                Streak?
+  sessionCredits        SessionCredit[]
+  dailyLoginMarks       DailyLoginMark[]
+  tokenMovements        TokenMovement[]
   // BE-24 back-relations (content.prisma owns the models).
   articles              Article[]           @relation("ArticleAuthor")
   notes                 Note[]              @relation("NoteAuthor")
