@@ -1,10 +1,39 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- frozen signatures; bodies are filled in by the next commit */
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
+import {
+  isQuestionWorkflowTransitionAllowed,
+  QUESTION_MESSAGES,
+  QuestionPartSchema,
+  type QuestionPart,
+} from '@pp/contract'
 
+import { ApiError } from '../../common/errors/api-error'
+import { CLOCK, type Clock } from '../../db/clock'
+import { idToString } from '../../db/ids'
+import { PrismaService } from '../../db/prisma.service'
+import { CurriculumRepository } from '../curriculum'
+import { FilesService } from '../files'
+import { UsersRepository } from '../users'
+import { questionNotFound, transitionConflict } from './errors'
+import { gradeQuestion } from './grading'
+import {
+  difficultyOf,
+  flatFromVersion,
+  keyIndexOf,
+  languageToStore,
+  partsFromFlat,
+  toPublic,
+  type FlatSource,
+  type FlatType,
+} from './projection'
+import { checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
+import { draftsFromParts, referencedIds, versionTypeOf } from './tree'
+import { isLeaf } from './grading'
 import type {
   AdminListFilter,
   AdminListResult,
   ContributionCounts,
+  NamedRef,
   Page,
   PartAnswer,
   PublicQuestion,
@@ -15,9 +44,11 @@ import type {
   QuestionGrade,
   QuestionGuruCreateInput,
   QuestionGuruUpdateInput,
+  QuestionRecord,
   QuestionStatus,
   QuestionStatusInfo,
   QuestionSummaryView,
+  QuestionTag,
   QuestionUpdateInput,
   QuestionView,
   SetStatusOptions,
@@ -25,8 +56,36 @@ import type {
   StructuredListResult,
 } from './types'
 
-const todo = (): never => {
-  throw new Error('QuestionsService: not implemented yet')
+/** A transaction that writes a whole version tree: raised above the Prisma default of 5 s. */
+const TX = { timeout: 20_000, maxWait: 10_000 } as const
+
+const parse = (text: string): bigint | null => {
+  try {
+    return BigInt(/^(0|[1-9]\d{0,18})$/.test(text) ? text : 'x')
+  } catch {
+    return null
+  }
+}
+
+const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
+
+/** What create, update and the Guru routes all reduce to before touching the database. */
+interface Normalized {
+  subjectId: string
+  educationLevelId: string
+  /** 1..6, stored in `difficulty_tp`. */
+  tp: number
+  stem: string
+  parts: QuestionPart[]
+  language: VersionDraft['language']
+  explanation: string | null
+  tag?: QuestionTag | undefined
+  dskpSpId?: string | null | undefined
+  chapterId?: string | null | undefined
+  topicId?: string | null | undefined
+  stimulusGroupId?: string | null | undefined
+  /** Message keys to use when a tag problem is found (flat bodies use `dskpSpId`). */
+  flatSp: boolean
 }
 
 /**
@@ -36,123 +95,609 @@ const todo = (): never => {
  *
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
- *
- * FROZEN SIGNATURES. Bodies are filled in by BE-09 Part B.
  */
 @Injectable()
 export class QuestionsService {
+  private readonly logger = new Logger(QuestionsService.name)
+
+  constructor(
+    @Inject(QuestionsRepository) private readonly repo: QuestionsRepository,
+    @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
+    @Inject(UsersRepository) private readonly users: UsersRepository,
+    @Inject(FilesService) private readonly files: FilesService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
+
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
 
-  /** Latest-version rows, newest first, with `counts` per status. Unknown filter values match nothing. */
-  list(_filter: AdminListFilter): Promise<AdminListResult> {
-    return todo()
+  async list(filter: AdminListFilter): Promise<AdminListResult> {
+    const page = await this.repo.listIds(filter)
+    const records = await this.repo.getMany(page.ids, 'latest')
+    return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total, counts: page.counts }
   }
 
-  summary(): Promise<QuestionSummaryView> {
-    return todo()
+  async summary(): Promise<QuestionSummaryView> {
+    const [subjects, totals] = await Promise.all([this.curriculum.subjects({ active: true }), this.repo.subjectTotals()])
+    return {
+      total: totals.total,
+      subjects: subjects.map((s) => {
+        const t = totals.bySubject.get(idToString(s.id))
+        return {
+          id: idToString(s.id),
+          name: s.name,
+          icon: s.icon,
+          group: s.isCore ? ('teras' as const) : ('elektif' as const),
+          total: t?.total ?? 0,
+          approved: t?.published ?? 0,
+        }
+      }),
+    }
   }
 
-  /** 404 when the id is unknown. */
-  getAdmin(_id: string): Promise<QuestionDetailView> {
-    return todo()
+  async getAdmin(id: string): Promise<QuestionDetailView> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    return this.detail(record)
   }
 
-  /** Status defaults to `draft`; `published` runs the tag gate (422). Returns the stored question. */
-  create(_input: QuestionCreateInput, _actor: QuestionActor): Promise<QuestionView> {
-    return todo()
+  async create(input: QuestionCreateInput, actor: QuestionActor): Promise<QuestionView> {
+    const flat: FlatSource = {
+      questionType: input.questionType,
+      questionText: input.questionText,
+      ...(input.options === undefined ? {} : { options: input.options }),
+      ...(input.correctAnswer === undefined ? {} : { correctAnswer: input.correctAnswer }),
+      ...(input.tfAnswer === undefined ? {} : { tfAnswer: input.tfAnswer }),
+      ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
+      ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
+      ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
+      ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
+    }
+    const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
+    const status = input.status ?? 'draft'
+    return this.createFrom(
+      {
+        subjectId: input.subjectId,
+        educationLevelId: input.educationLevelId,
+        tp: input.tag?.tp ?? input.difficultyLevel,
+        stem: input.questionText,
+        parts,
+        language: languageToStore(input.language, undefined),
+        explanation: input.explanation?.trim() || null,
+        tag: input.tag,
+        dskpSpId: input.dskpSpId,
+        stimulusGroupId: input.stimulusGroupId,
+        flatSp: input.tag === undefined,
+      },
+      status,
+      actor,
+    )
   }
 
-  /** On a published question this creates version n+1 as `draft`; version n keeps serving (Q-5). */
-  update(_id: string, _input: QuestionUpdateInput, _actor: QuestionActor): Promise<QuestionView> {
-    return todo()
+  async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
+    void actor // admin only (the controller guards the role); ownership rules are the Guru methods
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    return this.viewOf(await this.applyUpdate(record, input))
   }
 
-  remove(_id: string, _actor: QuestionActor): Promise<void> {
-    return todo()
+  async remove(id: string, actor: QuestionActor): Promise<void> {
+    void actor
+    if (!(await this.repo.remove(id))) throw questionNotFound()
   }
 
-  /** `delete` removes; any other action is `setStatus` per id (one transaction each). Unknown ids are skipped, duplicates count once. */
-  bulkAction(_action: QuestionBulkAction, _ids: readonly string[], _actor: QuestionActor): Promise<{ affected: number }> {
-    return todo()
+  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number }> {
+    let affected = 0
+    for (const id of new Set(ids)) {
+      try {
+        if (action === 'delete') {
+          if (await this.repo.remove(id)) affected += 1
+        } else {
+          await this.setStatus(id, action, actor.userId)
+          affected += 1
+        }
+      } catch (e) {
+        // An unknown id, a refused transition and a failed publish gate leave that id untouched.
+        if (e instanceof ApiError && (e.code === 'NOT_FOUND' || e.code === 'CONFLICT' || e.code === 'VALIDATION_ERROR')) continue
+        throw e
+      }
+    }
+    return { affected }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
 
-  /**
-   * Moves the LATEST version of a question to `status`: 404 unknown id; 409 when the pair is not in
-   * `QUESTION_WORKFLOW_TRANSITIONS` for the actor; for `published` also 422 unless subject, level,
-   * unit, 1 to 3 SP and TP are set (`fields.{subjectId, educationLevelId, unitId, spIds, tp}`).
-   * Publishing sets `live_version_no` and archives the superseded live version (`superseded`) in one
-   * transaction. No quality gates and no status events here (BE-10).
-   */
-  setStatus(_id: string, _status: QuestionStatus, _actorId: string, _options?: SetStatusOptions): Promise<QuestionView> {
-    return todo()
+  async setStatus(id: string, status: QuestionStatus, _actorId: string, options: SetStatusOptions = {}): Promise<QuestionView> {
+    const actor = options.actor ?? 'admin'
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) throw questionNotFound()
+      const record = await this.repo.get(id, 'latest')
+      if (!record) throw questionNotFound()
+      const v = record.version
+      if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
+      if (status === 'published') {
+        const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
+        if (Object.keys(fields).length > 0) throw fail(fields)
+        // The version that served until now is superseded in the same transaction.
+        if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
+          await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
+        }
+        await this.repo.setVersionStatus(id, v.versionNo, 'published', { publishedAt: this.clock.now() })
+        await this.repo.setLiveVersion(id, v.versionNo)
+      } else if (v.status === 'published') {
+        // Taking the live version down (published -> archived) ends its serving at once.
+        await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
+        await this.repo.setLiveVersion(id, null)
+      } else {
+        await this.repo.setVersionStatus(id, v.versionNo, status)
+      }
+    }, TX)
+    const after = await this.repo.get(id, 'latest')
+    if (!after) throw questionNotFound()
+    return this.viewOf(after)
   }
 
-  /** 404 unknown id. */
-  getStatus(_id: string): Promise<QuestionStatusInfo> {
-    return todo()
+  async getStatus(id: string): Promise<QuestionStatusInfo> {
+    const r = await this.repo.get(id, 'latest')
+    if (!r) throw questionNotFound()
+    return {
+      id: r.id,
+      status: r.version.status,
+      latestVersionNo: r.latestVersionNo,
+      liveVersionNo: r.liveVersionNo,
+      isActive: r.isActive,
+      createdById: r.createdById,
+    }
   }
 
-  /** `is_active = false`; the question leaves practice at once. 404 unknown id. */
-  deactivate(_id: string): Promise<void> {
-    return todo()
+  async deactivate(id: string): Promise<void> {
+    if (!(await this.repo.deactivate(id))) throw questionNotFound()
   }
 
-  reactivate(_id: string): Promise<void> {
-    return todo()
+  async reactivate(id: string): Promise<void> {
+    if (!(await this.repo.reactivate(id))) throw questionNotFound()
   }
 
   // --- structured (admin reads) -----------------------------------------------------------------
 
-  listStructured(_filter: StructuredListFilter): Promise<StructuredListResult> {
-    return todo()
+  async listStructured(filter: StructuredListFilter): Promise<StructuredListResult> {
+    const [page, stats, subjects] = await Promise.all([this.repo.structuredIds(filter), this.repo.structuredStats(), this.curriculum.subjects()])
+    const records = await this.repo.getMany(page.ids, 'latest')
+    const names = new Map(subjects.map((s) => [idToString(s.id), s.name]))
+    return {
+      rows: await this.named(records),
+      page: filter.page,
+      pageSize: filter.pageSize,
+      total: page.total,
+      stats: {
+        total: stats.total,
+        published: stats.published,
+        bySubject: [...stats.bySubject.entries()]
+          .map(([sid, count]) => ({ name: names.get(sid) ?? '', count }))
+          .filter((s) => s.name !== '')
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      },
+    }
   }
 
-  getStructured(_id: string): Promise<QuestionDetailView> {
-    return todo()
+  async getStructured(id: string): Promise<QuestionDetailView> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record || record.version.type !== 'structured') throw questionNotFound()
+    return this.detail(record)
   }
 
   // --- Guru (own rows only; another teacher id is 404) ------------------------------------------
 
-  listOwn(_userId: string, _page: number, _pageSize?: number): Promise<Page<QuestionView>> {
-    return todo()
+  async listOwn(userId: string, page: number, pageSize = 20): Promise<Page<QuestionView>> {
+    const res = await this.repo.listOwn({ ownerId: userId, page, pageSize })
+    return { ...res, rows: await this.named(res.rows) }
   }
 
-  getOwn(_id: string, _userId: string): Promise<QuestionDetailView> {
-    return todo()
+  async getOwn(id: string, userId: string): Promise<QuestionDetailView> {
+    return this.detail(await this.owned(id, userId))
   }
 
-  /** Saved straight as `review`, owner = `userId`, no gate (Q-11). */
-  createGuru(_input: QuestionGuruCreateInput, _userId: string): Promise<QuestionDetailView> {
-    return todo()
+  async createGuru(input: QuestionGuruCreateInput, userId: string): Promise<QuestionDetailView> {
+    const flat: FlatSource = {
+      questionType: input.questionType,
+      questionText: input.questionText,
+      ...(input.options === undefined ? {} : { options: input.options }),
+      ...(input.correctAnswer === undefined ? {} : { correctAnswer: input.correctAnswer }),
+      ...(input.tfAnswer === undefined ? {} : { tfAnswer: input.tfAnswer }),
+      ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
+      ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
+      ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
+    }
+    const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
+    const created = await this.createFrom(
+      {
+        subjectId: input.subjectId,
+        educationLevelId: input.educationLevelId,
+        tp: input.tag?.tp ?? difficultyOf(input.difficultyLevel),
+        stem: input.questionText,
+        parts,
+        language: languageToStore(undefined, input.scriptType),
+        explanation: input.explanation?.trim() || null,
+        tag: input.tag,
+        dskpSpId: input.dskpSpId,
+        chapterId: input.curriculumChapterId,
+        topicId: input.curriculumTopicId,
+        flatSp: input.tag === undefined,
+      },
+      'review',
+      { userId, role: 'teacher' },
+    )
+    return this.detail(created)
   }
 
-  updateOwn(_id: string, _input: QuestionGuruUpdateInput, _userId: string): Promise<QuestionDetailView> {
-    return todo()
+  async updateOwn(id: string, input: QuestionGuruUpdateInput, userId: string): Promise<QuestionDetailView> {
+    const record = await this.owned(id, userId)
+    const flat = flatFromVersion(record.version)
+    const touchesKey = input.options !== undefined || input.correctOptionId !== undefined
+    if (touchesKey && flat.questionType !== 'mcq') {
+      throw fail({ options: QUESTION_MESSAGES.options })
+    }
+    const body: QuestionUpdateInput = {
+      subjectId: record.version.subjectId ?? '',
+      educationLevelId: record.version.educationLevelId ?? '',
+      difficultyLevel: input.difficultyLevel === undefined ? flat.difficultyLevel : difficultyOf(input.difficultyLevel),
+      questionText: input.questionText,
+      ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
+      ...(input.options === undefined
+        ? {}
+        : { options: [...input.options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) }),
+      ...(input.correctOptionId === undefined ? {} : { correctAnswer: keyIndexOf(input.correctOptionId) ?? 0 }),
+    }
+    return this.detail(await this.applyUpdate(record, body, { keepSubject: true }))
   }
 
-  removeOwn(_id: string, _userId: string): Promise<void> {
-    return todo()
+  async removeOwn(id: string, userId: string): Promise<void> {
+    await this.owned(id, userId)
+    await this.repo.remove(id)
   }
 
-  /** Counts for BE-17 (contributions): total and per latest-version status of the caller own questions. */
-  contributionCountsFor(_userId: string): Promise<ContributionCounts> {
-    return todo()
+  async contributionCountsFor(userId: string): Promise<ContributionCounts> {
+    const byStatus = await this.repo.ownerStatusCounts(userId)
+    return { total: Object.values(byStatus).reduce((s, n) => s + n, 0), byStatus }
   }
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
 
-  /**
-   * 404 unless the live version is `published` AND the question is active. Projected through
-   * `QuestionPublicSchema`: no key, explanation, model answer, source file or flat answer fields.
-   */
-  getPublicForLearner(_id: string): Promise<PublicQuestion> {
-    return todo()
+  async getPublicForLearner(id: string): Promise<PublicQuestion> {
+    const record = await this.repo.get(id, 'live')
+    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
+    return toPublic(record)
   }
 
-  /** Grades MCQ, match, short text, numeric and table_fill leaves; subjective leaves return `needs_review`. Reads the LIVE version. */
-  gradeAnswer(_id: string, _answers: readonly PartAnswer[]): Promise<QuestionGrade> {
-    return todo()
+  async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
+    const record = await this.repo.get(id, 'live')
+    if (!record || record.version.status !== 'published') throw questionNotFound()
+    return gradeQuestion(record.id, record.version.parts, answers)
+  }
+
+  // --- stimuli and groups (tests and later cards; no HTTP route in this contract) ---------------
+
+  createStimulus(input: NewStimulus): Promise<string> {
+    return this.repo.createStimulus(input)
+  }
+
+  /** At most 3 stimuli per group (OD-28): a 4th is a 422 on `stimuli`. */
+  async createStimulusGroup(input: Omit<NewGroup, 'stimulusIds'> & { stimulusIds: readonly string[] }): Promise<string> {
+    if (input.stimulusIds.length < 1 || input.stimulusIds.length > 3) {
+      throw fail({ stimuli: 'Satu kumpulan mesti mempunyai 1 hingga 3 stimulus.' })
+    }
+    if (new Set(input.stimulusIds).size !== input.stimulusIds.length || !(await this.repo.stimuliExist(input.stimulusIds))) {
+      throw fail({ stimuli: 'Stimulus tidak sah.' })
+    }
+    return this.repo.createGroup({ ...input, stimulusIds: input.stimulusIds.map((s) => BigInt(s)) })
+  }
+
+  // --- internals ----------------------------------------------------------------------------------
+
+  private async owned(id: string, userId: string): Promise<QuestionRecord> {
+    const owner = await this.repo.ownerOf(id)
+    if (owner === undefined || owner !== userId) throw questionNotFound()
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    return record
+  }
+
+  /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
+  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    if (res.success) return res.data
+    const issue = res.error.issues[0]
+    const path = issue?.path ?? []
+    const key = supplied ? ['parts', ...path.map(String)].join('.') : this.flatKeyOf(path)
+    throw fail({ [key]: issue?.message ?? 'Data tidak sah.' })
+  }
+
+  /** The flat body field that a failure inside the single generated leaf points to. */
+  private flatKeyOf(path: readonly PropertyKey[]): string {
+    const flat = path.map(String)
+    if (flat.includes('options')) return 'options'
+    if (flat.includes('key')) return 'correctAnswer'
+    return 'questionText'
+  }
+
+  private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor): Promise<QuestionView> {
+    const draft = await this.draftOf(n, status, null)
+    if (status === 'published') {
+      const fields = checkTagGate({
+        subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
+        educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
+        unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
+        spIds: draft.spNodeIds.map(idToString),
+        tp: draft.difficultyTp,
+      })
+      if (Object.keys(fields).length > 0) throw fail(fields)
+    }
+    const creator = parse(actor.userId)
+    const id = await this.prisma.transaction(async () => {
+      const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
+      const created = await this.repo.create({
+        sourceType: 'manual',
+        createdById: creator,
+        groupId: groupId === null ? null : BigInt(groupId),
+        groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
+        spmPool: false,
+        now: this.clock.now(),
+        version: draft,
+      })
+      return created
+    }, TX)
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    return this.viewOf(record)
+  }
+
+  /**
+   * Validates references (subject, level, tag nodes, chapter, topic, images, stimuli, group) against
+   * their owners and builds the version columns. All failures land in one `fields` map.
+   * `previous`: the version being edited (keeps its non-edited columns).
+   */
+  private async draftOf(n: Normalized, status: QuestionStatus, previous: QuestionRecord | null): Promise<VersionDraft> {
+    const fields: Record<string, string> = {}
+    const subjectKey = parse(n.subjectId)
+    const levelKey = parse(n.educationLevelId)
+    const subject = subjectKey === null ? null : await this.curriculum.subject(subjectKey)
+    const level = levelKey === null ? null : await this.curriculum.level(levelKey)
+    if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
+    if (!level) fields.educationLevelId = QUESTION_MESSAGES.level
+    if (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
+
+    // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
+    let unitKey: bigint | null = null
+    let spKeys: bigint[] = []
+    const spField = n.flatSp ? 'dskpSpId' : 'tag.spIds'
+    const spMessage = n.flatSp ? QUESTION_MESSAGES.sp : 'SP DSKP tidak sah.'
+    const wantedSp = [...new Set(n.tag ? n.tag.spIds : n.dskpSpId ? [n.dskpSpId] : [])]
+    if (wantedSp.length > MAX_SP_NODES) fields.tag = 'Satu soalan boleh mempunyai 1 hingga 3 SP sahaja.'
+    const belongs = (node: { subjectId: bigint; educationLevelId: bigint }): boolean =>
+      subject !== null && level !== null && node.subjectId === subject.id && node.educationLevelId === level.id
+    if (wantedSp.length <= MAX_SP_NODES) {
+      for (const spId of wantedSp) {
+        const key = parse(spId)
+        const node = key === null ? null : await this.curriculum.nodeById(key)
+        if (!node || node.kind !== 'sp' || (subject && level && !belongs(node))) {
+          fields[spField] = spMessage
+          break
+        }
+        spKeys.push(node.id)
+      }
+      if (fields[spField] !== undefined) spKeys = []
+    }
+    if (n.tag?.unitId) {
+      const key = parse(n.tag.unitId)
+      const node = key === null ? null : await this.curriculum.nodeById(key)
+      if (!node || node.kind !== 'unit' || (subject && level && !belongs(node))) fields['tag.unitId'] = 'Unit DSKP tidak sah.'
+      else unitKey = node.id
+    } else if (spKeys.length > 0 && fields[spField] === undefined) {
+      // No unit sent: the unit is the ancestor of the first SP, when it has one.
+      const chain = await this.curriculum.ancestorsOf(spKeys[0] as bigint)
+      unitKey = chain.find((a) => a.kind === 'unit')?.id ?? null
+    }
+
+    let chapterKey: bigint | null = null
+    let topicKey: bigint | null = null
+    if (n.chapterId) {
+      const key = parse(n.chapterId)
+      const chapter = key === null ? null : await this.curriculum.chapter(key)
+      if (!chapter || (subject && chapter.subjectId !== subject.id)) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
+      else chapterKey = chapter.id
+    }
+    if (n.topicId) {
+      const key = parse(n.topicId)
+      const topic = key === null ? null : await this.curriculum.topic(key)
+      if (!topic || (chapterKey !== null && topic.chapterId !== chapterKey)) fields.curriculumTopicId = QUESTION_MESSAGES.guruTopic
+      else topicKey = topic.id
+    }
+
+    // Images are existing `question_image` files; stimuli and the group must exist.
+    const refs = referencedIds(n.parts)
+    for (const imageId of new Set(refs.imageIds)) {
+      const file = await this.files.readStored(imageId)
+      if (!file || file.purpose !== 'question_image') {
+        fields[this.imageKey(n.parts, imageId)] = QUESTION_MESSAGES.image
+      }
+    }
+    if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
+
+    if (Object.keys(fields).length > 0) throw fail(fields)
+
+    const v = previous?.version
+    return {
+      status,
+      type: versionTypeOf(n.parts),
+      stemMs: n.stem,
+      stemEn: v?.stemEn ?? null,
+      numberLabel: v?.numberLabel ?? null,
+      language: n.language,
+      explanationMs: n.explanation,
+      explanationEn: v?.explanationEn ?? null,
+      subjectId: subject?.id ?? null,
+      educationLevelId: level?.id ?? null,
+      unitNodeId: unitKey,
+      chapterId: n.chapterId === undefined ? (v?.chapterId ? BigInt(v.chapterId) : null) : chapterKey,
+      topicId: n.topicId === undefined ? (v?.topicId ? BigInt(v.topicId) : null) : topicKey,
+      formOrigin: v?.formOrigin ?? this.formOriginOf(level?.code),
+      cognitiveLevel: v?.cognitiveLevel ?? null,
+      difficultyTp: n.tp,
+      sourcePage: v?.sourcePage ?? null,
+      setLabel: v?.setLabel ?? null,
+      spNodeIds: spKeys,
+      stimulusIds: v?.stimulusIds.map((s) => BigInt(s)) ?? [],
+      parts: draftsFromParts(n.parts),
+    }
+  }
+
+  private formOriginOf(levelCode: string | undefined): VersionDraft['formOrigin'] {
+    return levelCode === 'T5' ? 't5' : levelCode === 'T4' ? 't4' : 't1_t3'
+  }
+
+  /** The `fields` key of a bad option image: `parts.<path>.options.<i>.imageId`. */
+  private imageKey(parts: readonly QuestionPart[], imageId: string, prefix: string[] = []): string {
+    for (const part of parts) {
+      const path = [...prefix, part.label]
+      if (isLeaf(part)) {
+        if (part.mode === 'mcq') {
+          const i = part.options.findIndex((o) => o.imageId === imageId)
+          if (i >= 0) return `optionImages.${String(i)}`
+        }
+      } else {
+        const inner = this.imageKey(part.children as QuestionPart[], imageId, path)
+        if (inner !== 'questionImage') return inner
+      }
+    }
+    return 'questionImage'
+  }
+
+  /** PUT: merge the body over the stored latest version and write it (new version when published). */
+  private async applyUpdate(record: QuestionRecord, input: QuestionUpdateInput, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
+    const v = record.version
+    const flat = flatFromVersion(v)
+    const single = v.parts.length === 1 ? v.parts[0] : undefined
+    const flatShaped = single !== undefined && isLeaf(single) && (single.mode === 'mcq' || single.mode === 'short_text' || single.mode === 'essay')
+
+    let parts: QuestionPart[]
+    if (input.parts) {
+      parts = this.checkedParts(input.parts, true)
+    } else if (flatShaped) {
+      const optionImageIds = flat.optionImageIds.map((id, i) => (input.removeOptionImage?.[i] ? null : id))
+      const src: FlatSource = {
+        questionType: flat.questionType as FlatType,
+        questionText: input.questionText,
+        pointsValue: input.pointsValue ?? flat.pointsValue,
+        optionImageIds,
+        options: input.options ?? flat.options ?? [],
+        correctAnswer: input.correctAnswer ?? flat.correctAnswer ?? 0,
+        tfAnswer: input.tfAnswer === undefined ? flat.tfAnswer : input.tfAnswer,
+        correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
+        altAnswers: input.altAnswers ?? flat.altAnswers,
+        modelAnswer: input.modelAnswer === undefined ? flat.modelAnswer : input.modelAnswer,
+      }
+      if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
+      parts = this.checkedParts(partsFromFlat(src), false)
+    } else {
+      parts = v.parts
+    }
+
+    // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
+    const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
+    const language = input.language === undefined
+      ? v.language
+      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+        ? v.language
+        : languageToStore(input.language, undefined)
+    const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
+    const normalized: Normalized = {
+      subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
+      educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
+      tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
+      stem: input.questionText,
+      parts,
+      language,
+      explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,
+      ...(input.tag
+        ? { tag: input.tag }
+        : dskpSpId !== undefined
+          ? { dskpSpId }
+          : { tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp } }),
+      flatSp: !input.tag && dskpSpId !== undefined,
+    }
+    if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+
+    const draft = await this.draftOf(normalized, v.status === 'published' ? 'draft' : v.status, record)
+    const now = this.clock.now()
+    await this.prisma.transaction(async () => {
+      if (v.status === 'published') {
+        // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
+        await this.repo.addVersion(record.id, record.latestVersionNo + 1, draft, now)
+      } else {
+        await this.repo.rewriteVersion(record.id, v.versionNo, draft, now)
+      }
+      if (input.stimulusGroupId !== undefined) {
+        const gid = input.stimulusGroupId
+        await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
+      }
+    }, TX)
+    const after = await this.repo.get(record.id, 'latest')
+    if (!after) throw questionNotFound()
+    return after
+  }
+
+  // --- views --------------------------------------------------------------------------------------
+
+  private async refs(): Promise<{ subjects: Map<string, NamedRef>; levels: Map<string, NamedRef> }> {
+    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
+    return {
+      subjects: new Map(subjects.map((s) => [idToString(s.id), { id: idToString(s.id), name: s.name }])),
+      levels: new Map(levels.map((l) => [idToString(l.id), { id: idToString(l.id), name: l.name }])),
+    }
+  }
+
+  private async named(records: QuestionRecord[]): Promise<QuestionView[]> {
+    if (records.length === 0) return []
+    const refs = await this.refs()
+    return records.map((r) => ({
+      ...r,
+      subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
+      level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
+    }))
+  }
+
+  private async viewOf(record: QuestionRecord): Promise<QuestionView> {
+    const [view] = await this.named([record])
+    return view as QuestionView
+  }
+
+  private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
+    const view = await this.viewOf(record)
+    const creator = record.createdById ? await this.users.get(record.createdById) : null
+    return {
+      ...view,
+      dskp: await this.dskpOf(record.version.spIds[0]),
+      createdByName: creator?.name ?? null,
+      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+    }
+  }
+
+  /** The DSKP chain of the first SP: bidang (grouping, else unit), SK and the SP itself. */
+  private async dskpOf(spId: string | undefined): Promise<QuestionDetailView['dskp']> {
+    const key = spId === undefined ? null : parse(spId)
+    if (key === null) return null
+    const sp = await this.curriculum.nodeById(key)
+    if (!sp) return null
+    const chain = await this.curriculum.ancestorsOf(sp.id)
+    const sk = chain.find((a) => a.kind === 'sk')
+    const bidang = chain.find((a) => a.kind === 'grouping') ?? chain.find((a) => a.kind === 'unit')
+    if (!sk || !bidang) return null
+    return {
+      bidang: { id: idToString(bidang.id), code: bidang.kind === 'grouping' ? null : bidang.code, name: bidang.title },
+      sk: { id: idToString(sk.id), code: sk.code, description: sk.title },
+      sp: { id: idToString(sp.id), code: sp.code, description: sp.title },
+    }
   }
 }
+
