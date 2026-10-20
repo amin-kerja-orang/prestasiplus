@@ -116,6 +116,12 @@ export const EnvSchema = z.object({
   THROTTLE_CLASSES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   PUBLIC_BASE_URL: z.url().optional(),
+  // BE-45 (games). Optional: the code applies the defaults (write 60, read 240, spin 10, solo start 30, solo check 600 per minute per user).
+  THROTTLE_GAMES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_GAMES_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_GAMES_SPIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_GAMES_SOLO_START_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_GAMES_SOLO_CHECK_PER_MINUTE: z.coerce.number().int().min(1).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
