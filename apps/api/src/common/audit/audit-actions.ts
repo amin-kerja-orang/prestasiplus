@@ -64,5 +64,6 @@ export const AUDIT_ACTIONS = {
   INTAKE_BATCH_CREATED: 'intake.batch_created',
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
+  KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

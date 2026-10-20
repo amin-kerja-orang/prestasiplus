@@ -28,6 +28,8 @@ import { questionsWorkflowScenarios } from './questions-workflow/questions-workf
 import { gamificationScenarios } from './gamification/gamification'
 import { shopScenarios } from './gamification/shop'
 import { practiceReadsScenarios } from './practice-reads'
+import { kirkpatrickScenarios } from './analytics/kirkpatrick'
+import { analyticsScenarios } from './analytics/analytics'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -65,5 +67,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...missionsScenarios,
     ...questionSetsScenarios,
     ...practiceReadsScenarios,
+    ...kirkpatrickScenarios,
+    ...analyticsScenarios,
   ]
 }
