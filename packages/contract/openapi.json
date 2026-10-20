@@ -62582,6 +62582,718 @@
         "additionalProperties": false,
         "description": "[PROPOSED] All pages of one file, in page order."
       },
+      "IntakeDashboardBatchStatus": {
+        "type": "string",
+        "enum": [
+          "submitted",
+          "processing",
+          "ready_for_review",
+          "failed",
+          "cancelled"
+        ],
+        "description": "[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, failed, cancelled."
+      },
+      "IntakeDashboardTagField": {
+        "type": "string",
+        "enum": [
+          "subject",
+          "level",
+          "chapter",
+          "dskpTopic",
+          "difficulty"
+        ],
+        "description": "[PROPOSED] subject = tag.subject, level = tag.level, chapter = tag.unit, dskpTopic = tag.sp, difficulty = tag.tp."
+      },
+      "IntakeDashboardQuery": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "example": "2026-10"
+          }
+        },
+        "description": "[PROPOSED] Query of GET /intake/dashboard. Unknown keys are ignored (as AiUsageQuery)."
+      },
+      "IntakeDashboardCostQuery": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "example": "2026-10"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible"
+            ],
+            "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered."
+          }
+        },
+        "description": "[PROPOSED] Query of GET /intake/dashboard/cost. Unknown keys are ignored (as AiUsageQuery)."
+      },
+      "IntakeDashboardSources": {
+        "type": "object",
+        "properties": {
+          "batches": {
+            "type": "boolean",
+            "description": "intake_batches (BE-37) was readable."
+          },
+          "items": {
+            "type": "boolean",
+            "description": "intake_items and intake_item_events (BE-38) were readable."
+          },
+          "duplicates": {
+            "type": "boolean",
+            "description": "duplicate_links (BE-38) was readable; without it only items marked Pendua count."
+          },
+          "usage": {
+            "type": "boolean",
+            "description": "ai_usage_logs (BE-36) was readable."
+          },
+          "settings": {
+            "type": "boolean",
+            "description": "ai_settings (BE-36) was readable."
+          }
+        },
+        "required": [
+          "batches",
+          "items",
+          "duplicates",
+          "usage",
+          "settings"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Which stores the figures come from. A false store contributes the empty aggregate (its card is not merged on this server yet)."
+      },
+      "IntakeBudgetSource": {
+        "type": "string",
+        "enum": [
+          "settings",
+          "env",
+          "none"
+        ],
+        "description": "[PROPOSED] Where the cap comes from: settings = ai_settings.monthly_budget_sen (the admin override), env = AI_MONTHLY_BUDGET_SEN, none = neither (cap 0)."
+      },
+      "IntakeBudget": {
+        "type": "object",
+        "properties": {
+          "costSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Month cost of every provider (mock counts 0). This is what the BE-36 budget guard compares."
+          },
+          "budgetSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "budgetSource": {
+            "$ref": "#/components/schemas/IntakeBudgetSource"
+          },
+          "remainingSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "max(0, budgetSen - costSen)."
+          },
+          "percentUsed": {
+            "type": "number",
+            "minimum": 0,
+            "description": "costSen / budgetSen * 100 rounded to one decimal; 0 when budgetSen is 0 and costSen is 0, 100 when budgetSen is 0 and costSen > 0 (as AiStatus.percentUsed)."
+          },
+          "budgetState": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "exhausted"
+            ],
+            "description": "ok / warning / exhausted from the exact (unrounded) ratio: warning from 80 %, exhausted from 100 %. A cap of 0 is exhausted (every new extraction is queued, AiSettings.monthlyBudgetSen)."
+          },
+          "warnReached": {
+            "type": "boolean",
+            "description": "True from 80 % (AC-29.2 notification threshold)."
+          },
+          "capReached": {
+            "type": "boolean",
+            "description": "True from 100 % (new extractions are queued, AC-29.2)."
+          }
+        },
+        "required": [
+          "costSen",
+          "budgetSen",
+          "budgetSource",
+          "remainingSen",
+          "percentUsed",
+          "budgetState",
+          "warnReached",
+          "capReached"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] AI cost of the month against the monthly cap (NFR-03, AC-29.2)."
+      },
+      "IntakeDashboard": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "$ref": "#/components/schemas/AiMonth"
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "First instant of the month (00:00 +08:00), inclusive.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "First instant of the next month, exclusive.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Server time of the answer; the queue snapshot is taken at this instant.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "submissions": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byStatus": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/IntakeDashboardBatchStatus"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every status, in the order of INTAKE_DASHBOARD_BATCH_STATUSES, zero included."
+              }
+            },
+            "required": [
+              "total",
+              "byStatus"
+            ],
+            "additionalProperties": false,
+            "description": "Submissions (intake batches) created in the month, by their current status."
+          },
+          "queue": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Review queue size now: items in an open state (generated, needs_review, duplicate)."
+              },
+              "oldestItemAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "pattern": "\\+08:00$",
+                "description": "Creation time of the oldest open item; null when the queue is empty.",
+                "example": "2026-10-16T09:30:00+08:00"
+              },
+              "oldestItemAgeSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "generatedAt - oldestItemAt in whole seconds; null when the queue is empty."
+              },
+              "pendingSubmissions": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions waiting for extraction now (submitted or processing), including the ones queued by the budget cap."
+              },
+              "oldestPendingSubmissionAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "oldestItemAt",
+              "oldestItemAgeSeconds",
+              "pendingSubmissions",
+              "oldestPendingSubmissionAt"
+            ],
+            "additionalProperties": false,
+            "description": "Snapshot at generatedAt, not limited to the month."
+          },
+          "extraction": {
+            "type": "object",
+            "properties": {
+              "succeeded": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions of the month that reached ready_for_review."
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Submissions of the month that ended failed."
+              },
+              "successRate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "succeeded / (succeeded + failed) * 100, one decimal; null when both are 0. Submissions still pending or cancelled are not counted."
+              }
+            },
+            "required": [
+              "succeeded",
+              "failed",
+              "successRate"
+            ],
+            "additionalProperties": false
+          },
+          "tagAcceptance": {
+            "type": "object",
+            "properties": {
+              "acceptedItems": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Items accepted (an `accepted` event) in the month."
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "$ref": "#/components/schemas/IntakeDashboardTagField"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The item field path, e.g. tag.unit."
+                    },
+                    "unchanged": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Accepted items with no edit event on this field (the AI tag was kept)."
+                    },
+                    "ratePercent": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "unchanged / acceptedItems * 100, one decimal; null when acceptedItems is 0."
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "path",
+                    "unchanged",
+                    "ratePercent"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every field, in the order of INTAKE_DASHBOARD_TAG_FIELDS."
+              }
+            },
+            "required": [
+              "acceptedItems",
+              "fields"
+            ],
+            "additionalProperties": false,
+            "description": "Percentage of AI tags accepted unchanged, per field."
+          },
+          "duplicates": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Items created in the month."
+              },
+              "duplicates": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Of those, items with an exact or near duplicate finding, or marked Pendua. Variants are informational and not counted."
+              },
+              "ratePercent": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "duplicates / items * 100, one decimal; null when items is 0."
+              }
+            },
+            "required": [
+              "items",
+              "duplicates",
+              "ratePercent"
+            ],
+            "additionalProperties": false
+          },
+          "aiCost": {
+            "$ref": "#/components/schemas/IntakeBudget"
+          },
+          "sources": {
+            "$ref": "#/components/schemas/IntakeDashboardSources"
+          }
+        },
+        "required": [
+          "month",
+          "from",
+          "to",
+          "generatedAt",
+          "submissions",
+          "queue",
+          "extraction",
+          "tagAcceptance",
+          "duplicates",
+          "aiCost",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Every AC-29.1 figure for one Malaysia month (card BE-40)."
+      },
+      "IntakeCostDay": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "Malaysia calendar day.",
+            "example": "2026-10-16"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "day",
+          "calls",
+          "costSen"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one Malaysia day."
+      },
+      "IntakeCostProvider": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible",
+              null
+            ],
+            "description": "Null for rows without a provider (migrated legacy log rows)."
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "provider",
+          "calls",
+          "costSen",
+          "pages",
+          "tokensIn",
+          "tokensOut"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one provider. The mock provider always costs 0."
+      },
+      "IntakeCostBatch": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Null for calls not tied to a submission (health check, Cikgu Alesa text).",
+            "example": "1042"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costSen": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensIn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokensOut": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "batchId",
+          "calls",
+          "costSen",
+          "pages",
+          "tokensIn",
+          "tokensOut"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Usage of one submission."
+      },
+      "IntakeCost": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "$ref": "#/components/schemas/AiMonth"
+          },
+          "from": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "generatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mock",
+              "anthropic",
+              "openai",
+              "gemini",
+              "openai-compatible",
+              null
+            ],
+            "description": "The provider filter applied, null for all."
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "calls": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "costSen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pages": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensOut": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "calls",
+              "costSen",
+              "pages",
+              "tokensIn",
+              "tokensOut"
+            ],
+            "additionalProperties": false,
+            "description": "Totals of the filtered rows."
+          },
+          "byDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostDay"
+            },
+            "description": "Every day of the month in order, zero days included."
+          },
+          "byProvider": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostProvider"
+            },
+            "description": "Providers with at least one call, highest cost first, then by provider id."
+          },
+          "byBatch": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeCostBatch"
+            },
+            "description": "At most 100 rows, highest cost first, then by id (the no-batch row last on a tie)."
+          },
+          "byBatchTruncated": {
+            "type": "boolean",
+            "description": "True when more than 100 batch rows exist."
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "costSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Month cost of every provider (mock counts 0). This is what the BE-36 budget guard compares."
+              },
+              "budgetSen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "budgetSource": {
+                "$ref": "#/components/schemas/IntakeBudgetSource"
+              },
+              "remainingSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "max(0, budgetSen - costSen)."
+              },
+              "percentUsed": {
+                "type": "number",
+                "minimum": 0,
+                "description": "costSen / budgetSen * 100 rounded to one decimal; 0 when budgetSen is 0 and costSen is 0, 100 when budgetSen is 0 and costSen > 0 (as AiStatus.percentUsed)."
+              },
+              "budgetState": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "warning",
+                  "exhausted"
+                ],
+                "description": "ok / warning / exhausted from the exact (unrounded) ratio: warning from 80 %, exhausted from 100 %. A cap of 0 is exhausted (every new extraction is queued, AiSettings.monthlyBudgetSen)."
+              },
+              "warnReached": {
+                "type": "boolean",
+                "description": "True from 80 % (AC-29.2 notification threshold)."
+              },
+              "capReached": {
+                "type": "boolean",
+                "description": "True from 100 % (new extractions are queued, AC-29.2)."
+              }
+            },
+            "required": [
+              "costSen",
+              "budgetSen",
+              "budgetSource",
+              "remainingSen",
+              "percentUsed",
+              "budgetState",
+              "warnReached",
+              "capReached"
+            ],
+            "additionalProperties": false,
+            "description": "Never filtered by provider: the cap is for all usage."
+          },
+          "sources": {
+            "type": "object",
+            "properties": {
+              "usage": {
+                "type": "boolean",
+                "description": "ai_usage_logs (BE-36) was readable."
+              },
+              "settings": {
+                "type": "boolean",
+                "description": "ai_settings (BE-36) was readable."
+              }
+            },
+            "required": [
+              "usage",
+              "settings"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "month",
+          "from",
+          "to",
+          "generatedAt",
+          "provider",
+          "total",
+          "byDay",
+          "byProvider",
+          "byBatch",
+          "byBatchTruncated",
+          "budget",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] AI cost by day, provider and submission, with the budget (card BE-40)."
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -106437,6 +107149,229 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown file, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/dashboard": {
+      "get": {
+        "tags": [
+          "intake-dashboard"
+        ],
+        "summary": "Intake dashboard: submissions, queue, extraction, tag acceptance, duplicates, AI cost",
+        "description": "Every AC-29.1 figure for one Malaysia month (default the current one). Test submissions are excluded; the queue is a snapshot at the time of the request. Admin Pusat only (role code `admin`); every other role gets 403, no session 401. GET only: no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+              "example": "2026-10"
+            },
+            "required": false,
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard figures.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: platform cost and queue figures (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/IntakeDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (month is not YYYY-MM).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/dashboard/cost": {
+      "get": {
+        "tags": [
+          "intake-dashboard"
+        ],
+        "summary": "AI cost of a month by day, provider and submission, with the budget",
+        "description": "Usage from ai_usage_logs grouped by Malaysia day, provider and submission, optionally for one provider; the budget block (cap from ai_settings, else AI_MONTHLY_BUDGET_SEN; percent used; 80 % / 100 % flags) always covers every provider. Mock-provider usage costs 0. Admin Pusat only (role code `admin`); every other role gets 403, no session 401. GET only: no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+              "example": "2026-10"
+            },
+            "required": false,
+            "description": "Malaysia month YYYY-MM. Defaults to the current Malaysia month.",
+            "name": "month",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mock",
+                "anthropic",
+                "openai",
+                "gemini",
+                "openai-compatible"
+              ],
+              "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered."
+            },
+            "required": false,
+            "description": "Only usage of this provider in the breakdowns and the total (card AC3: leave out `mock` development runs by choosing the real provider). The budget block is never filtered.",
+            "name": "provider",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cost figures.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: platform cost and queue figures (D57b applied conservatively).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/IntakeCost"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (month is not YYYY-MM, unknown provider).",
             "content": {
               "application/json": {
                 "schema": {
