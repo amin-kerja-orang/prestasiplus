@@ -7,9 +7,10 @@ import { runSeeds, seedModules } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
-import { BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
+import { questionsSeed } from '../../prisma/seed/questions'
+import { BIJAK_BANK_SITTINGS, BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
 import { classesSeed } from '../../prisma/seed/poc/classes'
-import { PerformancePorts } from '../../src/modules/reports/performance'
+import { ItemAnalysisService, PerformancePorts } from '../../src/modules/reports/performance'
 import { MIN_COHORT } from '../../src/modules/reports/performance/domain/constants'
 import { SchoolAdminDashboardSchema } from '@pp/contract'
 
@@ -17,7 +18,8 @@ import { bootIntegrationApp, type IntegrationApp } from '../bijak-integration/he
 import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, type SchoolAdminTestApp } from '../school-admin/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
-const MODULES = [identitySeed, curriculumSeed, examSeed, classesSeed, bijakSittingsSeed]
+const ALL_SITTINGS = BIJAK_DEMO_SITTINGS.length + BIJAK_BANK_SITTINGS.length
+const MODULES = [identitySeed, curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed]
 
 /** Everything the seed wrote, ids included (the ids must be stable). */
 async function fingerprint(db: Pick<TestDatabase, 'query'>) {
@@ -74,14 +76,14 @@ describe('PoC Bijak sittings seed', () => {
         where s.code = 'DEMO001' and a.status in ('submitted', 'auto_submitted') and a.is_test = false`,
     )
     expect(Number(row?.pupils)).toBeGreaterThanOrEqual(6)
-    expect(Number(row?.sittings)).toBe(BIJAK_DEMO_SITTINGS.length)
+    expect(Number(row?.sittings)).toBe(ALL_SITTINGS)
   })
 
   it('has varied scores, right and wrong MCQ answers, and no wallet rows from the seed', async () => {
     const rows = await t.db.query<{ score: string; max_score: string }>(`select score::text, max_score::text from attempt_results`)
     const scores = new Set(rows.map((r) => Number(r.score)))
     expect(scores.size).toBeGreaterThanOrEqual(4)
-    for (const r of rows) expect(Number(r.max_score)).toBe(10)
+    expect(rows.map((r) => Number(r.max_score)).sort((a, b) => a - b)).toEqual([...Array(BIJAK_BANK_SITTINGS.length).fill(2), ...Array(BIJAK_DEMO_SITTINGS.length).fill(10)])
     const [wrong] = await t.db.query<{ n: string }>(
       `select count(*)::text n from attempt_results r, jsonb_array_elements(r.graded->'questions') q where (q->>'attempted')::boolean and (q->>'awarded')::numeric = 0`,
     )
@@ -94,7 +96,7 @@ describe('PoC Bijak sittings seed', () => {
     const [agg] = await t.db.query<{ n: string; with_school: string; days: string }>(
       `select count(*)::text n, count(school_id)::text with_school, count(distinct (submitted_at at time zone 'Asia/Kuala_Lumpur')::date)::text days from practice_attempt_aggregates where source = 'bijak'`,
     )
-    expect(Number(agg?.n)).toBe(BIJAK_DEMO_SITTINGS.length)
+    expect(Number(agg?.n)).toBe(ALL_SITTINGS)
     expect(agg?.with_school).toBe(agg?.n)
     expect(Number(agg?.days)).toBeGreaterThanOrEqual(5)
   })
@@ -105,11 +107,29 @@ describe('PoC Bijak sittings seed', () => {
     const totals = await bijak.totals({ schoolIds: [school!.id], modes: ['exam', 'latihan'] }, 'school')
     expect(totals).toHaveLength(1)
     expect(totals[0]?.pupils).toBeGreaterThanOrEqual(MIN_COHORT)
-    expect(totals[0]?.sittings).toBe(BIJAK_DEMO_SITTINGS.length)
+    expect(totals[0]?.sittings).toBe(ALL_SITTINGS)
     const perUser = await bijak.totals({ schoolIds: [school!.id], modes: ['exam', 'latihan'] }, 'user')
     expect(perUser.length).toBeGreaterThanOrEqual(6)
     const sittings = await bijak.sittings({ schoolIds: [school!.id] })
     expect(sittings.every((s) => s.subjectCode === 'MAT' && !s.provisional)).toBe(true)
+  })
+
+  it('BE-19 item analysis of DEMO001 is not empty: lettered correct option, popular wrong option, at least 5 attempts', async () => {
+    const [school] = await t.db.query<{ id: string }>(`select id::text from schools where code = 'DEMO001'`)
+    const [admin] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
+    const items = t.app.get(ItemAnalysisService, { strict: false })
+    const res = await items.school(
+      { userId: admin!.id, role: 'admin', scope: { level: 'national', label: 'Kebangsaan' }, isTest: false },
+      {} as never,
+      school!.id,
+    )
+    expect(res.questions.length).toBeGreaterThanOrEqual(1)
+    const q = res.questions.find((x) => x.attempts >= 5)
+    expect(q, JSON.stringify(res.questions)).toBeDefined()
+    expect(q?.correctOption.letter).toMatch(/^[A-D]$/)
+    expect(q?.popularWrongOption?.letter).toMatch(/^[A-D]$/)
+    expect(q?.popularWrongCount).toBeGreaterThan(0)
+    expect(q?.wrongPct).toBeGreaterThan(0)
   })
 
   it('is idempotent: a re-run creates nothing and keeps the ids', async () => {
@@ -138,7 +158,7 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
 
   beforeAll(async () => {
     t = await bootSchoolAdminApp()
-    await runSeeds([curriculumSeed, examSeed, classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
+    await runSeeds([curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
   }, 180_000)
   afterAll(async () => {
     await t.close()
