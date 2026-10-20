@@ -9,7 +9,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import AlesaPanel from '../components/command-center-board/AlesaPanel.vue'
 import { boardPaths, S2_COPY } from '../components/command-center-board/board-copy'
@@ -29,7 +29,7 @@ import CcBoardFrame from '../components/frame/CcBoardFrame.vue'
 const props = withDefaults(defineProps<{ alias?: boolean }>(), { alias: false })
 
 const paths = computed(() => boardPaths(props.alias))
-const { data } = useLiveBoard()
+const { data, unavailable } = useLiveBoard()
 </script>
 
 <template>
@@ -38,6 +38,14 @@ const { data } = useLiveBoard()
       <BoardHeader :paths="paths" :school="alias" />
 
       <div class="flex min-w-0 flex-col gap-4" data-testid="cc-body">
+        <DsEmptyState
+          v-if="unavailable"
+          size="sm"
+          icon="plugs"
+          :title="S2_COPY.unavailable"
+          data-testid="cc-unavailable"
+        />
+
         <BoardKpis :data="data" :school="alias" />
 
         <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="cc-panels">

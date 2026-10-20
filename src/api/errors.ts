@@ -8,6 +8,7 @@
  */
 
 import { isErrorBody } from './envelope'
+import { isHttpMode } from './mode'
 import type { HttpMethod } from './transport'
 
 export const API_ERROR_CODES = {
@@ -113,6 +114,9 @@ function readFields(value: unknown): Record<string, string> | undefined {
   return fields
 }
 
+/** BM copy for a rate-limited response; the backend's 429 envelope carries English (BE-47 deferred). */
+export const RATE_LIMITED_MESSAGE_BM = 'Terlalu banyak percubaan. Cuba sebentar lagi.'
+
 /** Builds the `ApiError` for a non-2xx response. */
 export function errorFromResponse(res: {
   status: number
@@ -129,7 +133,11 @@ export function errorFromResponse(res: {
     return new ApiError({
       ...base,
       code,
-      message,
+      // Http mode only (mock unchanged): map by code/status, never by the English text.
+      message:
+        isHttpMode() && (code === API_ERROR_CODES.RATE_LIMITED || res.status === 429)
+          ? RATE_LIMITED_MESSAGE_BM
+          : message,
       fields: readFields(fields),
       retryAfter: typeof retryAfter === 'number' ? retryAfter : headerRetry,
     })
