@@ -6,6 +6,7 @@ import { articleScenarios } from './content/articles'
 import { audioScenarios } from './content/audio'
 import { perutusanScenarios } from './content/perutusan'
 import { videosScenarios } from './content/videos'
+import { bijakPapersScenarios } from './bijak/papers'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { schoolsScenarios } from './schools/schools'
@@ -33,5 +34,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...videosScenarios,
     ...perutusanScenarios,
     ...walletScenarios,
+    ...bijakPapersScenarios,
   ]
 }
