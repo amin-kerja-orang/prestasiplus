@@ -39,13 +39,24 @@ export interface PartRow {
   key: { kind: string } | null
 }
 
-/** Kertas of a question from its pool codes, else its paper code; null when neither says. */
-export function kertasOf(poolCodes: readonly string[], paperCode: string | null): number | null {
-  for (const code of poolCodes) {
-    const m = /^[A-Za-z]+(\d)-/.exec(code)
-    if (m) return Number(m[1])
-  }
-  const m = paperCode ? /\/(\d)\s*$/.exec(paperCode) : null
+const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** Regex source of a pool code of the paper subject: `MAT2-B` for subject `MAT` (digit = kertas). Same text is used in SQL. */
+export const poolPattern = (bijakSubject: string): string => `^${escapeRegex(bijakSubject)}([0-9])-`
+
+/**
+ * Kertas of a question: the LOWEST digit among its pool codes of the form `<SUBJECT><kertas>-<section>`, else the
+ * trailing digit of its paper code (`1449/2`); null when neither says. Deterministic for conflicting tags.
+ * `candidates` applies the same rule in SQL.
+ */
+export function kertasOf(poolCodes: readonly string[], paperCode: string | null, bijakSubject: string): number | null {
+  const re = new RegExp(poolPattern(bijakSubject))
+  const digits = poolCodes.flatMap((c) => {
+    const m = re.exec(c)
+    return m ? [Number(m[1])] : []
+  })
+  if (digits.length > 0) return Math.min(...digits)
+  const m = paperCode ? /\/([0-9])\s*$/.exec(paperCode) : null
   return m ? Number(m[1]) : null
 }
 

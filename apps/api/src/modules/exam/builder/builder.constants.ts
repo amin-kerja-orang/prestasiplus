@@ -12,3 +12,8 @@ export const BIJAK_BUILDER_LIMITS = {
 
 /** Default page size of `GET /admin/papers` and `GET /admin/blueprints` (contract max 100). */
 export const BIJAK_BUILDER_PAGE_SIZE = 20
+
+/** The editor picker shows at most this many candidates (BE-39, security review M3). */
+export const MAX_EDITOR_CANDIDATES = 1000
+/** Extra candidates the source returns, because the editor drops those already on the paper before it caps. */
+export const CANDIDATE_SLACK = 500

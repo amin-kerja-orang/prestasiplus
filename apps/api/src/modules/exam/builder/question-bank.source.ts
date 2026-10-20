@@ -7,8 +7,9 @@
  * PINNED version (the repository serves only the live and the latest version), the pool tags and paper
  * code used for the kertas, and stimulus groups with their stimuli. Nothing here writes.
  *
- * - candidates: live version published AND active (BE-09 Q-2), subject = the paper subject, kertas from
- *   `kertasOf`, in bank order (question id ascending).
+ * - candidates: one bounded SQL query (limit = editor cap + slack): live version published AND active (BE-09 Q-2),
+ *   subject = the paper subject, kertas by the `kertasOf` rule, in bank order (question id ascending).
+ * - review: shows the live version, else the latest (the port takes ids only, no version).
  * - describe: the pinned version when the ref has one, else the live version, else the latest (a question
  *   that is not published yet can still be placed in a draft paper; publish refuses it). `status` is the
  *   current status of the question.
@@ -20,11 +21,13 @@ import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { QuestionsRepository } from '../../questions'
+import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
   formOriginWire,
   kertasOf,
   kindOfRows,
+  poolPattern,
   levelOf,
   marksOfRows,
   previewOfRows,
@@ -66,23 +69,22 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
   async candidates(scope: BuilderCandidateScope): Promise<string[]> {
     const subject = await this.builder.subjectByCode(curriculumCodeOf(scope.subject))
     if (!subject) return []
-    const eligible = await this.questions.eligibleIds({ subjectId: subject.id.toString() })
-    const ids = eligible.flatMap((id) => {
-      const key = toBigint(id)
-      return key === null ? [] : [key]
-    })
-    if (ids.length === 0) return []
-    const tags = await this.db.questionTag.findMany({ where: { questionId: { in: ids }, kind: 'pool' }, select: { questionId: true, code: true } })
-    const versions = await this.db.questionVersion.findMany({
-      where: { questionId: { in: ids }, status: 'published' },
-      select: { questionId: true, versionNo: true, paperCode: true },
-    })
-    const live = await this.db.question.findMany({ where: { id: { in: ids } }, select: { id: true, liveVersionNo: true } })
-    const liveNo = new Map(live.map((q) => [q.id, q.liveVersionNo]))
-    const paperCode = new Map(versions.filter((v) => liveNo.get(v.questionId) === v.versionNo).map((v) => [v.questionId, v.paperCode]))
-    const pools = new Map<bigint, string[]>()
-    for (const t of tags) pools.set(t.questionId, [...(pools.get(t.questionId) ?? []), t.code])
-    return ids.filter((id) => kertasOf(pools.get(id) ?? [], paperCode.get(id) ?? null) === scope.kertas).map((id) => id.toString())
+    const pool = poolPattern(scope.subject)
+    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version published AND
+    // active) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${subject.id}
+         AND COALESCE(
+               (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
+                 WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
+               CASE WHEN v.paper_code ~ '/[0-9][[:space:]]*$' THEN (substring(v.paper_code from '/([0-9])[[:space:]]*$'))::int END
+             ) = ${scope.kertas}
+       ORDER BY q.id ASC
+       LIMIT ${MAX_EDITOR_CANDIDATES + CANDIDATE_SLACK}`
+    return rows.map((r) => r.id.toString())
   }
 
   async describe(refs: readonly BuilderQuestionRef[]): Promise<ReadonlyMap<string, BuilderQuestionInfo>> {
@@ -101,7 +103,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         groupId: true,
         liveVersionNo: true,
         latestVersionNo: true,
-        tags: { where: { kind: 'pool' }, select: { code: true } },
+        tags: { where: { kind: 'pool' }, orderBy: { code: 'asc' }, select: { code: true } },
         group: {
           select: { stimuli: { orderBy: { position: 'asc' }, select: { stimulus: { select: { kind: true, label: true } } } } },
         },
@@ -146,7 +148,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         }),
         subject: subject ? bijakCodeOf(subject.code) : '',
         // A question without a kertas can never be a candidate; 0 keeps it out of every blueprint match.
-        kertas: kertasOf(q.tags.map((t) => t.code), v.paperCode) ?? 0,
+        kertas: kertasOf(q.tags.map((t) => t.code), v.paperCode, subject ? bijakCodeOf(subject.code) : '') ?? 0,
         groupId: q.groupId === null ? null : q.groupId.toString(),
         ...(stimulusLabel ? { stimulusLabel } : {}),
         preview: previewOfRows(v.stemMs, rows),

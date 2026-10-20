@@ -215,4 +215,37 @@ describe('paper builder wired to the BE-09 question bank', () => {
     expect(only.mcq?.options.map((o) => o.text)).toEqual(['4', '5', '6', '7'])
     expect(only.scheme[only.id]).toEqual({ marks: 1, lines: [{ text: 'Jawapan betul: B' }] })
   })
+
+  describe('kertas rule', () => {
+    const pools = (id: string, ...codes: string[]) =>
+      Promise.all(codes.map((c) => q(`insert into question_tags (question_id, kind, code) values ($1, 'pool', $2)`, [id, c])))
+    const candidates = async (kertas: number): Promise<string[]> => {
+      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas })
+      if (res.status !== 201) return []
+      return (await editor(Created.parse(res.body).data.id)).questions.map((x) => x.id)
+    }
+
+    it('conflicting pool tags give the lowest digit, whatever the insert order', async () => {
+      const x = await mk()
+      await pools(x, 'MAT2-B', 'MAT1-A')
+      const y = await mk()
+      await pools(y, 'MAT1-A', 'MAT2-B')
+      expect(await candidates(1)).toEqual(expect.arrayContaining([x, y]))
+      expect(await candidates(2)).not.toContain(x)
+      expect(await candidates(2)).not.toContain(y)
+    })
+
+    it('a pool code that is not of the paper subject form (F4-A, SN2-A) is ignored; the paper code decides', async () => {
+      const z = await mk()
+      await pools(z, 'F4-A', 'SN3-A')
+      await setCode(z, '1449/2')
+      expect(await candidates(2)).toContain(z)
+      expect(await candidates(1)).not.toContain(z)
+    })
+
+    it('candidates come in question id order', async () => {
+      const list = (await candidates(2)).map(BigInt)
+      expect(list).toEqual([...list].sort((a, b) => (a < b ? -1 : 1)))
+    })
+  })
 })

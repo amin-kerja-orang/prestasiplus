@@ -30,7 +30,7 @@ import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
 import { blueprintView } from '../blueprints/blueprint-view'
 import type { AuditActor } from './actor'
-import { BIJAK_BUILDER_PAGE_SIZE } from './builder.constants'
+import { BIJAK_BUILDER_PAGE_SIZE, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository, type PaperTree, type SubjectRef } from './builder.repository'
 import { checkPaper, publishErrors, type PaperCheck } from './paper-check'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionRef } from './ports'
@@ -220,10 +220,10 @@ export class BuilderService {
     const wire = this.paperWire(paper, subject)
     const used = this.refsOf(paper)
     const usedInfo = used.length ? await this.questions.describe(used) : new Map<string, BuilderQuestionInfo>()
-    // The picker shows at most 1000 candidates, so a large bank cannot make one editor read unbounded.
+    // The picker shows at most MAX_EDITOR_CANDIDATES candidates, so a large bank cannot make one editor read unbounded.
     const candidateIds = (await this.questions.candidates({ subject: wire.subject, kertas: paper.kertas }))
       .filter((id) => !usedInfo.has(id))
-      .slice(0, 1000)
+      .slice(0, MAX_EDITOR_CANDIDATES)
     const candInfo = candidateIds.length ? await this.questions.describe(candidateIds.map((id) => ({ id }))) : new Map<string, BuilderQuestionInfo>()
     const ordered: BuilderQuestionInfo[] = []
     const seen = new Set<string>()
