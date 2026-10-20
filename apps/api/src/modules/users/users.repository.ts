@@ -254,6 +254,14 @@ export class UsersRepository {
     return row ? toRecord(row) : null
   }
 
+  /** Users by id in one read (any state); unknown and malformed ids are skipped. Order is not guaranteed. */
+  async getMany(ids: readonly string[]): Promise<UserRecord[]> {
+    const valid = [...new Set(ids.filter(isIdString))].map(idFromString)
+    if (valid.length === 0) return []
+    const rows = await this.prisma.client.user.findMany({ where: { id: { in: valid } }, include: INCLUDE })
+    return rows.map(toRecord)
+  }
+
   /** The user with this e-mail (case-insensitive) or null. */
   async findByEmail(email: string): Promise<UserRecord | null> {
     const rows = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
