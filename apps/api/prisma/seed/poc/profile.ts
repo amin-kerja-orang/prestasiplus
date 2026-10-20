@@ -47,7 +47,11 @@ export async function listTables(db: Queryable): Promise<string[]> {
   return rows.map((r) => r.table_name).filter((t) => !EXCLUDED_TABLES.has(t))
 }
 
-/** Primary key columns of a table in key order (falls back to every column when a table has no key). */
+/**
+ * Primary key columns of a table in key order. A table with no primary key is ordered by every column in column
+ * order, each compared as text (json and other types without a btree order still sort), so the order never
+ * depends on the stripped row text.
+ */
 async function orderBy(db: Queryable, table: string): Promise<string> {
   const rows = await db.query<{ col: string }>(
     `select a.attname as col from pg_index i
@@ -55,7 +59,13 @@ async function orderBy(db: Queryable, table: string): Promise<string> {
       where i.indrelid = '"public"."${table}"'::regclass and i.indisprimary
       order by array_position(i.indkey::int2[], a.attnum)`,
   )
-  return rows.length > 0 ? rows.map((r) => `"${r.col}"`).join(', ') : '1'
+  if (rows.length > 0) return rows.map((r) => `t."${r.col}"`).join(', ')
+  const cols = await db.query<{ col: string }>(
+    `select a.attname as col from pg_attribute a
+      where a.attrelid = '"public"."${table}"'::regclass and a.attnum > 0 and not a.attisdropped
+      order by a.attnum`,
+  )
+  return cols.map((c) => `t."${c.col}"::text`).join(', ')
 }
 
 /** Row count per table, tables with no rows included (value 0). */

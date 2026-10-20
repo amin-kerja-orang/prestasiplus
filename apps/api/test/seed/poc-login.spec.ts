@@ -64,6 +64,19 @@ describe('PoC profile: every demo account of docs/AKAUN-DEMO.md', () => {
     expect(d.cards.activeClasses).toBeGreaterThan(0)
   })
 
+  it('the parent, sponsor, PPD and JPN accounts each complete a read with their own role (out of PoC scope, D43/D48)', async () => {
+    for (const [email, role] of [
+      ['ibubapa@demo.test', 'parent'],
+      ['penaja@demo.test', 'sponsor'],
+      ['ppd@demo.test', 'ppd_officer'],
+      ['jpn@demo.test', 'ppd_officer'],
+    ] as const) {
+      const session = (await read(email, '/api/session')) as { active: { role: string } }
+      expect(session.active.role, email).toBe(role)
+      expect(await read(email, '/api/me/notifications/unread-count'), email).toBeDefined()
+    }
+  })
+
   it('the admin sees non-empty aggregates over several schools', async () => {
     const d = (await read('admin@demo.test', '/api/monitoring/overview')) as { kpi: { schools: number; students: number; answers: number } }
     expect(d.kpi.schools).toBeGreaterThan(1)

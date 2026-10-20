@@ -167,4 +167,20 @@ describe('PoC profile seed (BE-26)', () => {
   it('AC6 the whole seed takes under 60 seconds', () => {
     expect(seedMs).toBeLessThan(60_000)
   })
+
+  it('a table without a primary key is ordered by every column, so insertion order does not change its hash', async () => {
+    const hashOf = async (values: string): Promise<string | undefined> => {
+      await a.query(`create table zz_poc_no_pk (k int, note text, doc json)`)
+      try {
+        await a.query(`insert into zz_poc_no_pk (k, note, doc) values ${values}`)
+        return (await pocFingerprint(asQueryable(a))).tables['zz_poc_no_pk']
+      } finally {
+        await a.query(`drop table zz_poc_no_pk`)
+      }
+    }
+    const forward = await hashOf(`(1, 'b', '{"x":1}'), (1, 'a', '{"x":2}'), (2, null, null)`)
+    const reverse = await hashOf(`(2, null, null), (1, 'a', '{"x":2}'), (1, 'b', '{"x":1}')`)
+    expect(forward).toBeDefined()
+    expect(reverse).toBe(forward)
+  })
 })
