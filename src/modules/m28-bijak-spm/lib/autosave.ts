@@ -5,7 +5,7 @@
  * ALSO carries the full local answer set, which fixes the .cloud race (N-01) where the debounce
  * had not fired when the student tapped Hantar.
  */
-import type { KeyValueStore } from '../server/store'
+import type { KeyValueStore } from '../server/storage'
 import type { PartAnswer, SavePayload, StoredAnswer } from '../domain/types'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error' | 'closed'

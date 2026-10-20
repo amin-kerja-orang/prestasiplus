@@ -38,10 +38,10 @@ const { data: contracts } = useApi(() => server.listContracts())
 /* ----------------------------------------------------------------- Kertas Pilihan */
 const subjectFilter = ref<string>('semua')
 const kertasFilter = ref<'semua' | '1' | '2'>('semua')
-const subjectItems = [
+const subjectItems = computed(() => [
   { label: 'Semua subjek', value: 'semua' },
   ...SUBJECTS.map((s) => ({ label: s.name, value: s.code })),
-]
+])
 const kertasItems = [
   { label: 'Semua kertas', value: 'semua' },
   { label: 'Kertas 1', value: '1' },
@@ -94,7 +94,7 @@ const contract = computed(() =>
   ),
 )
 const usable = computed(() => !!contract.value && contract.value.source !== 'Draf')
-const janaSubjectItems = SUBJECTS.map((s) => ({ label: s.name, value: s.code }))
+const janaSubjectItems = computed(() => SUBJECTS.map((s) => ({ label: s.name, value: s.code })))
 const janaKertasItems = [
   { label: 'Kertas 1', value: '1' },
   { label: 'Kertas 2', value: '2' },
