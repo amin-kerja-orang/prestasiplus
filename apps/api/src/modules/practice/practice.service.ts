@@ -19,7 +19,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
 import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
 import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
-import { type PracticeQuestion, PracticePorts, versionKey } from './ports'
+import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey } from './ports'
 import {
   HISTORY_MAX_ROWS,
   type CompletedSession,
@@ -250,6 +250,7 @@ export class PracticeService {
               userId: s.userId,
               sessionId: s.id,
               mode: s.mode,
+              source: practiceRewardSource(s.mode),
               correct: completed.correct,
               total: completed.total,
               timeSpent: completed.timeSpentSec,

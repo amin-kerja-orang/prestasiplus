@@ -151,13 +151,36 @@ export class NoRamalan implements PracticeRamalanSource {
 
 /* ---------------------------------------------------------------------- BE-11 / BE-23: rewards */
 
-/** Static BM ledger description template (PDPA: never a name or other identifier). */
+/** Ledger `source` of the practice modes (`random`, `chapter`, `revision`, `mission`, `remedial`, `question_set`). */
 export const PRACTICE_REWARD_SOURCE = 'quiz_practice'
+
+/** Wallet ledger `source` of a practice session credit (M14 BR-M14-03 / DATA-M14-02). */
+export type PracticeRewardSource = 'quiz_practice' | 'quiz_spm' | 'quiz_pksk'
+
+/**
+ * M14 BR-M14-03: the ledger source follows the session mode. The SPM modes `past_year`, `latih_tubi` and
+ * `ramalan` credit as `quiz_spm`, `pksk` as `quiz_pksk`, and every other (practice) mode as `quiz_practice`.
+ * The reward binding passes this as `CreditInput.source`.
+ */
+export function practiceRewardSource(mode: PracticeMode): PracticeRewardSource {
+  switch (mode) {
+    case 'past_year':
+    case 'latih_tubi':
+    case 'ramalan':
+      return 'quiz_spm'
+    case 'pksk':
+      return 'quiz_pksk'
+    default:
+      return PRACTICE_REWARD_SOURCE
+  }
+}
 
 export interface PracticeSessionCompleted {
   userId: string
   sessionId: string
   mode: PracticeMode
+  /** Wallet ledger source for this mode (`practiceRewardSource(mode)`, M14 BR-M14-03). */
+  source: PracticeRewardSource
   correct: number
   total: number
   timeSpent: number
@@ -187,7 +210,7 @@ export interface PracticeRewardPort {
    * ```ts
    * const streak = await streakService.touch(userId, { at: completedAt, tx })
    * const credit = sessionCoins > 0
-   *   ? await walletService.credit({ userId, amount: sessionCoins, isTest, source: PRACTICE_REWARD_SOURCE,
+   *   ? await walletService.credit({ userId, amount: sessionCoins, isTest, source: input.source,
    *       sourceId: sessionId, description: 'Latihan: jawapan betul' }, { tx })   // static BM, idempotent key
    *   : null
    * await walletService.recordSessionCredit({ sessionId, userId, coinsEarned, pointsEarned,
