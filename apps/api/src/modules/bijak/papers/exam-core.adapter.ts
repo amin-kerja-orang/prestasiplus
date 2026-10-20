@@ -1,18 +1,16 @@
 /**
  * The ONE place the papers module imports the exam domain from (BE-14 / ADR-0021).
  *
- * Today the domain lives in the prototype folder `src/modules/m28-bijak-spm/domain` (outside
- * `apps/api`; the vite SSR build bundles relative imports, the same way `bijak/attempts` does).
- * When BE-14 merges, `@pp/exam-core` replaces it: the main session changes ONLY the import
- * specifiers below to `@pp/exam-core` (and adds the workspace dependency plus
- * `ssr.noExternal: ['@pp/exam-core']` to `apps/api/vite.build.config.ts`). Nothing else in
- * `bijak/papers` imports the domain.
+ * The domain is the `@pp/exam-core` workspace package (BE-14, #43; bundled by the vite SSR build through
+ * `ssr.noExternal: ['@pp/exam-core']`). It is imported by package name, never by a relative path into the
+ * repo-root `src/`, so the API Docker image (which copies only `packages` and `apps/api`) can build it
+ * (#45 C4). Nothing else in `bijak/papers` imports the domain.
  *
  * Functions used: `composeFromBlueprint` (Jana Kertas composition), `poolUnits` (stimulus groups kept
  * whole), `effectiveMarks` (choose-N marks of a section, so a paper total is derived, never stored)
  * and `shortageLine` (BM shortage line). Pinned by `test/bijak-papers/exam-core-adapter.spec.ts`.
  */
-import type { SectionSnapshot } from '../../../../../../src/modules/m28-bijak-spm/domain/types'
+import type { SectionSnapshot } from '@pp/exam-core/types'
 
 export {
   composeFromBlueprint,
@@ -21,8 +19,8 @@ export {
   shortageLine,
   type BlueprintOutcome,
   type PoolUnit,
-} from '../../../../../../src/modules/m28-bijak-spm/domain/blueprint'
-export { effectiveMarks } from '../../../../../../src/modules/m28-bijak-spm/domain/paper-model'
+} from '@pp/exam-core/blueprint'
+export { effectiveMarks } from '@pp/exam-core/paper-model'
 export type {
   Blueprint,
   BlueprintSection,
@@ -30,7 +28,7 @@ export type {
   PoolEntry,
   SectionSnapshot,
   Shortage,
-} from '../../../../../../src/modules/m28-bijak-spm/domain/types'
+} from '@pp/exam-core/types'
 
 /** `all` or `choose n` (the prototype does not export a name for it). */
 export type SectionRule = SectionSnapshot['rule']
