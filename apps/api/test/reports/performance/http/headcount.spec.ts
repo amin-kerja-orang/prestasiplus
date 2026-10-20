@@ -18,6 +18,12 @@ const as: Record<string, Client> = {}
 const who = ['guru', 'guru2', 'adminsekolah', 'admin2', 'admin', 'pelajar', 'ibubapa'] as const
 const MSG = PERFORMANCE_HEADCOUNT_MESSAGES
 const UNKNOWN = '987654321'
+// requestId is unique per request by design; the privacy assertion is on everything else.
+const noReq = (b: unknown): unknown => {
+  const c = structuredClone(b) as { error?: { requestId?: unknown } }
+  if (c?.error) delete c.error.requestId
+  return c
+}
 
 beforeAll(async () => {
   w = await bootHeadcountWorld()
@@ -106,7 +112,7 @@ describe('create (S14)', () => {
       const e = expectError(res, 'VALIDATION_ERROR', MSG.classInvalid)
       expect(e.fields).toEqual({ classroomId: MSG.classInvalid })
     }
-    expect(foreign.body).toEqual(unknown.body)
+    expect(noReq(foreign.body)).toEqual(noReq(unknown.body))
     for (const k of ['admin', 'adminsekolah']) {
       expectError(await (as[k] as Client).post('/api/headcounts', body()), 'VALIDATION_ERROR', MSG.classInvalid)
     }
@@ -263,7 +269,7 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
     for (const k of ['guru2', 'admin2']) {
       const res = await call(as[k] as Client, cfg)
       expect(res.status).toBe(unknown.status)
-      expect(res.body).toEqual(unknown.body)
+      expect(noReq(res.body)).toEqual(noReq(unknown.body))
     }
   })
 
@@ -281,16 +287,16 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
     // pelajar is in none of guru2's classes.
     const notMine = await (as.guru2 as Client).get(`/api/headcounts/students/${w.ids['pelajar@demo.test']}`)
     expect(notMine.status).toBe(unknown.status)
-    expect(notMine.body).toEqual(unknown.body)
+    expect(noReq(notMine.body)).toEqual(noReq(unknown.body))
     // a teacher account is not a student; a pupil of another school is out of a school admin's scope.
     const teacher = await (as.admin as Client).get(`/api/headcounts/students/${w.ids['guru@demo.test']}`)
     expect(teacher.status).toBe(404)
     const otherSchool = await (as.adminsekolah as Client).get(`/api/headcounts/students/${w.ids['ujian9@demo.test']}`)
     expect(otherSchool.status).toBe(404)
-    expect(otherSchool.body).toEqual(unknown.body)
+    expect(noReq(otherSchool.body)).toEqual(noReq(unknown.body))
     // the school admin of the OTHER school cannot see the pupil of DEMO001 either.
     const fromOther = await (as.admin2 as Client).get(`/api/headcounts/students/${w.ids['pelajar@demo.test']}`)
-    expect(fromOther.body).toEqual(unknown.body)
+    expect(noReq(fromOther.body)).toEqual(noReq(unknown.body))
   })
 
   it('list and dashboard: a teacher sees only own configs; admin and school admin get empty ones', async () => {
@@ -318,7 +324,7 @@ describe('drop, reset and delete', () => {
     const foreign = await t.post(url, { action: 'drop', studentIds: [w.ids['ujian9@demo.test']] })
     const missing = await t.post(url, { action: 'drop', studentIds: [UNKNOWN] })
     expectError(foreign, 'VALIDATION_ERROR', MSG.studentsInvalid)
-    expect(foreign.body).toEqual(missing.body)
+    expect(noReq(foreign.body)).toEqual(noReq(missing.body))
 
     const pupil = w.ids['pelajar2@demo.test']
     const dropped = await t.post(url, { action: 'drop', studentIds: [pupil, pupil] })
@@ -341,7 +347,7 @@ describe('drop, reset and delete', () => {
     expect(d.rows.every((r) => r.tov === null && r.etr === null && r.cells.every((c) => c.target === null && c.ar === null))).toBe(true)
     const audit = await w.db.query<{ detail: unknown }>(`select detail from audit_events where action = 'headcount.config.reset' and target_id = $1`, [cfg])
     expect(audit).toHaveLength(1)
-    expect(Object.keys(audit[0]?.detail as object).sort()).toEqual(['configId', 'entries'])
+    expect(Object.keys(audit[0]?.detail as object).sort()).toEqual(['configId', 'entries', 'sessionRowId'])
   })
 
   it('delete removes the config, its entries and marks; it is audited; a second delete is 404', async () => {
