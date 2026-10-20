@@ -4,6 +4,7 @@ import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
+import { questionsScenarios } from './questions/questions'
 import { schoolsScenarios } from './schools/schools'
 import { usersScenarios } from './users/users'
 
@@ -21,5 +22,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...questionsScenarios,
   ]
 }
