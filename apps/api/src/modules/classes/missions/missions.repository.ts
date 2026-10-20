@@ -256,17 +256,18 @@ export class MissionsRepository {
 
   /**
    * Called inside the practice submit transaction (`tx`): the student's active test becomes `completed`.
-   * Idempotent: a test that is not active (completed already, cancelled) is left as it is.
+   * Idempotent: a test that is not active (completed already, cancelled) is left as it is. A session of the other mode
+   * (`is_test` differs, Mod Pelajar) never completes the test.
    */
   async completeRemedial(
     tx: TxClient,
-    input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date },
+    input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean },
   ): Promise<void> {
     const id = idOf(input.remedialTestId)
     const student = idOf(input.userId)
     if (id === null || student === null) return
     await tx.remedialTest.updateMany({
-      where: { id, studentId: student, status: 'active' },
+      where: { id, studentId: student, status: 'active', isTest: input.isTest },
       data: { status: 'completed', afterAccuracy: input.afterAccuracy, completedAt: input.completedAt, updatedAt: input.completedAt },
     })
   }

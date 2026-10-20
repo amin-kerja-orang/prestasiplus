@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { QuestionsService } from '../../src/modules/questions'
 import {
   ADMIN, STUDENT_1, STUDENT_2, TEACHER_A, TEACHER_B, TEACHER_C,
-  bootMissionsApp, client, errorIs, insertRemedial, loadWorld, publishedMcq,
+  bootMissionsApp, client, errorIs, idOfEmail, insertRemedial, loadWorld, publishedMcq,
   type Client, type MissionsTestApp, type World,
 } from './helpers'
 
@@ -15,6 +15,7 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
   let s2: Client
   let teacherA: Client
   let qs: string[]
+  let teacherBId: string
 
   beforeAll(async () => {
     t = await bootMissionsApp()
@@ -22,6 +23,7 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
     s1 = await client(t, STUDENT_1)
     s2 = await client(t, STUDENT_2)
     teacherA = await client(t, TEACHER_A)
+    teacherBId = await idOfEmail(t, TEACHER_B)
     qs = [await publishedMcq(t, w, { text: 'Soalan satu' }), await publishedMcq(t, w, { text: 'Soalan dua' }), await publishedMcq(t, w, { text: 'Soalan tiga' })]
   }, 120_000)
   afterAll(async () => {
@@ -42,8 +44,8 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
 
     it('lists the caller\'s active and completed tests newest first, never a cancelled one or another pupil\'s', async () => {
       const oldest = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'completed', questionIds: qs.slice(0, 2), createdAt: '2026-10-01T09:00:00+08:00' })
-      const newest = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'active', questionIds: qs, createdAt: '2026-10-18T09:00:00+08:00' })
-      const middle = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'active', questionIds: qs.slice(0, 1), createdAt: '2026-10-10T09:00:00+08:00' })
+      const newest = await insertRemedial(t, w, { teacherId: teacherBId, studentId: w.student1, status: 'active', questionIds: qs, createdAt: '2026-10-18T09:00:00+08:00' })
+      const middle = await insertRemedial(t, w, { teacherId: w.teacherC, studentId: w.student1, status: 'active', questionIds: qs.slice(0, 1), createdAt: '2026-10-10T09:00:00+08:00' })
       const cancelled = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'cancelled', questionIds: qs, createdAt: '2026-10-19T08:00:00+08:00' })
       const others = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student2, status: 'active', questionIds: qs })
       const data = RemedialMineResponseSchema.parse((await s1.get('/remedial-tests/mine')).body).data
@@ -64,7 +66,7 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
     })
 
     it('hides tests written under Mod Pelajar (is_test) from a real pupil', async () => {
-      const hidden = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, questionIds: qs, isTest: true })
+      const hidden = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'completed', questionIds: qs, isTest: true })
       const ids = RemedialMineResponseSchema.parse((await s1.get('/remedial-tests/mine')).body).data.map((r) => r.id)
       expect(ids).not.toContain(hidden)
     })

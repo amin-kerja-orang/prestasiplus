@@ -62,7 +62,7 @@ export class TeacherQuestionToolsController {
   ) {}
 
   @Post('question-papers')
-  @RateLimit(QUESTION_SET_LIMITS.write)
+  @RateLimit(QUESTION_SET_LIMITS.paper)
   @UseInterceptors(PaperUploadInterceptor)
   async uploadPaper(@Actor() actor: ClassActor, @Body() body: unknown, @UploadedFiles() files: RawPart[] | undefined) {
     return ok(await this.papers.submit(actor, body, files))

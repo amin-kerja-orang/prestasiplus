@@ -3,6 +3,7 @@ import type { QuestionSetStudentItem } from '@pp/contract'
 
 import { isIdString } from '../../../db/ids'
 import { PracticeRepository } from '../../practice'
+import { ATTEMPT_LOOKUP_CONCURRENCY } from './question-sets.constants'
 import { QuestionsRepository } from '../../questions'
 import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
@@ -49,23 +50,32 @@ export class QuestionSetsService {
       this.eligibleItems(sets),
       this.classes.userNames(sets.map((s) => s.teacherId)),
     ])
-    const out: QuestionSetStudentItem[] = []
-    for (const s of sets) {
-      out.push({
-        id: s.id,
-        title: s.title,
-        teacherName: teachers.get(s.teacherId) ?? null,
-        questionCount: items.get(s.id)?.length ?? 0,
-        timeLimitMinutes: s.timeLimitMinutes,
-        attemptsLeft: s.maxAttempts === 0 ? null : Math.max(0, s.maxAttempts - (await this.completedAttempts(actor.userId, s.id))),
-      })
-    }
-    return out
+    const used = await this.completedAttempts(actor.userId, sets.filter((x) => x.maxAttempts > 0).map((x) => x.id))
+    return sets.map((s) => ({
+      id: s.id,
+      title: s.title,
+      teacherName: teachers.get(s.teacherId) ?? null,
+      questionCount: items.get(s.id)?.length ?? 0,
+      timeLimitMinutes: s.timeLimitMinutes,
+      attemptsLeft: s.maxAttempts === 0 ? null : Math.max(0, s.maxAttempts - (used.get(s.id) ?? 0)),
+    }))
   }
 
-  /** Completed question_set sessions of the user for the set (the same count BE-12 enforces at start). */
-  private async completedAttempts(userId: string, setId: string): Promise<number> {
-    return (await this.practice.linkedSessions(userId, 'questionSetId', setId)).filter((s) => s.status === 'completed').length
+  /**
+   * Completed question_set sessions of the user per set (the same count BE-12 enforces at start). The practice
+   * repository has no batch read, so the lookups run a few at a time instead of one after another.
+   */
+  private async completedAttempts(userId: string, setIds: readonly string[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    for (let i = 0; i < setIds.length; i += ATTEMPT_LOOKUP_CONCURRENCY) {
+      await Promise.all(
+        setIds.slice(i, i + ATTEMPT_LOOKUP_CONCURRENCY).map(async (id) => {
+          const sessions = await this.practice.linkedSessions(userId, 'questionSetId', id)
+          out.set(id, sessions.filter((x) => x.status === 'completed').length)
+        }),
+      )
+    }
+    return out
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { QuestionSetPaperSchema, type QuestionSetPaper } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit'
@@ -14,6 +14,8 @@ import { QuestionSetsPorts } from './question-sets.ports'
  */
 @Injectable()
 export class QuestionPapersService {
+  private readonly logger = new Logger(QuestionPapersService.name)
+
   constructor(
     @Inject(QuestionSetsPorts) private readonly ports: QuestionSetsPorts,
     @Inject(AuditService) private readonly audit: AuditService,
@@ -28,10 +30,12 @@ export class QuestionPapersService {
       role: actor.role,
       isTest: actor.isTest,
       declaration,
-      files: files.map((f, index) => ({ index, name: f.originalname, size: f.size, declaredMime: f.mimetype, buffer: f.buffer })),
+      files: files.map((f, index) => ({ index, name: f.name, size: f.size, declaredMime: f.mimetype, buffer: f.buffer })),
       at,
     })
-    await this.audit.record({
+    // Best effort: a failed audit write must not turn a created submission into a 500.
+    await this.audit
+      .record({
       action: QUESTION_SET_AUDIT.PAPER_SUBMITTED,
       actorUserId: actor.userId,
       actorRole: actor.role,
@@ -43,6 +47,10 @@ export class QuestionPapersService {
       ip: actor.ip,
       isTest: actor.isTest,
     })
+      .catch((err: unknown) => {
+        this.logger.warn(`Audit of question paper ${paper.id} failed: ${err instanceof Error ? err.message : String(err)}`)
+      })
+
     return QuestionSetPaperSchema.parse(paper)
   }
 }

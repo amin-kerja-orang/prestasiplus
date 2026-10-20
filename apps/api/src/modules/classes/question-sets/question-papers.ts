@@ -31,6 +31,16 @@ export function displayName(name: string): string {
   }
 }
 
+/**
+ * The file name handed to the intake: the re-decoded name reduced to its last path part (no `/` or `\\` part),
+ * with control characters removed. Never the raw `originalname`; "file" when nothing is left.
+ */
+export function cleanName(name: string): string {
+  const base = displayName(name).split(/[\\/]/).filter((p) => p !== '' && p !== '.' && p !== '..').at(-1) ?? ''
+  const cleaned = base.replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()
+  return cleaned === '' ? 'file' : cleaned
+}
+
 function wholeNumber(value: unknown): number | undefined {
   if (typeof value === 'number') return Number.isSafeInteger(value) ? value : undefined
   if (typeof value === 'string' && /^\s*-?\d+\s*$/.test(value)) {
@@ -51,7 +61,8 @@ const NUL_MESSAGE: Record<string, string> = {
 
 export interface ValidatedPaper {
   declaration: PaperDeclaration
-  files: RawPart[]
+  /** The parts with `name` = the cleaned name (see `cleanName`). */
+  files: (RawPart & { name: string })[]
 }
 
 /**
@@ -61,7 +72,7 @@ export interface ValidatedPaper {
  */
 export function validatePaper(body: unknown, parts: readonly RawPart[] | undefined, currentYear: number): ValidatedPaper {
   const input = typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
-  const files = paperPartsOf(parts)
+  const files = paperPartsOf(parts).map((f) => ({ ...f, name: cleanName(f.originalname) }))
   const fields: Record<string, string> = {}
 
   const parsed = QuestionSetPaperFieldsSchema.safeParse(input)
@@ -76,10 +87,10 @@ export function validatePaper(body: unknown, parts: readonly RawPart[] | undefin
     if (typeof v === 'string' && v.includes('\u0000')) fields[key] ??= message
   }
 
-  const described = files.map((f) => ({ name: displayName(f.originalname), size: f.size, type: f.mimetype }))
+  const described = files.map((f) => ({ name: f.name, size: f.size, type: f.mimetype }))
   const checked = QuestionSetPaperFilesSchema.safeParse(described)
   if (!checked.success) fields.files = checked.error.issues[0]?.message ?? QUESTION_SET_PAPER_MESSAGES.files
-  else if (!described.every((f) => QUESTION_SET_PAPER_FILE_PATTERN.test(f.name) && !f.name.includes('\u0000'))) {
+  else if (!described.every((f) => QUESTION_SET_PAPER_FILE_PATTERN.test(f.name))) {
     fields.files = QUESTION_SET_PAPER_MESSAGES.files
   }
 

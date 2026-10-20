@@ -7,6 +7,7 @@ import { PracticeModule } from '../../practice'
 import { QuestionsModule } from '../../questions'
 import { ClassesModule } from '../classes.module'
 import { DskpService } from './dskp.service'
+import { PaperUploadSlots } from './paper-upload.slots'
 import { QuestionPapersService } from './question-papers.service'
 import { QuestionSetAssignments } from './question-sets.assignments'
 import { StudentQuestionSetsController, TeacherQuestionToolsController } from './question-sets.controller'
@@ -22,7 +23,7 @@ import { QuestionSetsService } from './question-sets.service'
 @Module({
   imports: [AuditModule, ThrottleModule, ClassesModule, CurriculumModule, PracticeModule, QuestionsModule],
   controllers: [StudentQuestionSetsController, TeacherQuestionToolsController],
-  providers: [QuestionSetsRepository, QuestionSetsService, QuestionSetAssignments, QuestionSetsPorts, QuestionPapersService, DskpService],
+  providers: [QuestionSetsRepository, QuestionSetsService, QuestionSetAssignments, QuestionSetsPorts, QuestionPapersService, DskpService, PaperUploadSlots],
   exports: [QuestionSetAssignments, QuestionSetsPorts],
 })
 export class QuestionSetsModule {}

@@ -30,6 +30,14 @@ import { QuestionPool } from './question-pool'
 import { type AnswerFact, percent, round, shuffled, type TopicInfo, topicKeyOf, weakTopicsOf, type WeakTopic } from './remedial.rules'
 
 const LETTERS = 'ABCDEFGH'
+/** Parallel reads of the scan (per-pupil answer logs, SP lookups). */
+const SCAN_CONCURRENCY = 8
+
+/** A Postgres/Prisma unique violation (P2002 / 23505). */
+const isUnique = (e: unknown): boolean => {
+  const code = typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined
+  return code === 'P2002' || code === '23505'
+}
 
 const notFound = (message?: string): ApiError => ApiError.of('NOT_FOUND', message ? { message } : {})
 const refused = (message: string): ApiError => ApiError.of('VALIDATION_ERROR', { message })
@@ -166,7 +174,12 @@ export class RemedialService {
     const studentIds = await this.classes.teacherStudentIds(actor.userId)
     const names = await this.classes.userNames(studentIds)
     const facts = new Map<string, AnswerFact[]>()
-    for (const id of studentIds) facts.set(id, await this.factsOf(id))
+    // Bounded concurrency: a read per pupil, at most SCAN_CONCURRENCY at a time; the order of `studentIds` is kept.
+    for (let i = 0; i < studentIds.length; i += SCAN_CONCURRENCY) {
+      const batch = studentIds.slice(i, i + SCAN_CONCURRENCY)
+      const rows = await Promise.all(batch.map((id) => this.factsOf(id)))
+      batch.forEach((id, k) => facts.set(id, rows[k] ?? []))
+    }
     const info = await this.topicInfo([...facts.values()].flatMap((l) => l.flatMap((a) => (a.questionId ? [a.questionId] : []))))
 
     const perStudent = studentIds.map((id) => ({ id, weak: weakTopicsOf(facts.get(id) ?? [], info) })).filter((s) => s.weak.length > 0)
@@ -207,13 +220,20 @@ export class RemedialService {
     }
   }
 
+  /** One lookup per distinct SP among the topic keys, SCAN_CONCURRENCY at a time. */
   private async spNames(keys: readonly string[]): Promise<Map<string, string>> {
+    const ids = [...new Set(keys.flatMap((k) => {
+      const [kind, id = ''] = k.split(':')
+      return kind === 'sp' && isRealId(id) ? [id] : []
+    }))]
     const out = new Map<string, string>()
-    for (const key of keys) {
-      const [kind, id = ''] = key.split(':')
-      if (kind !== 'sp' || !isRealId(id)) continue
-      const node = await this.curriculum.nodeById(idFromString(id))
-      if (node) out.set(id, node.title)
+    for (let i = 0; i < ids.length; i += SCAN_CONCURRENCY) {
+      const batch = ids.slice(i, i + SCAN_CONCURRENCY)
+      const nodes = await Promise.all(batch.map((id) => this.curriculum.nodeById(idFromString(id))))
+      batch.forEach((id, k) => {
+        const node = nodes[k]
+        if (node) out.set(id, node.title)
+      })
     }
     return out
   }
@@ -256,7 +276,22 @@ export class RemedialService {
     if (!subject) throw invalid({ subject: REMEDIAL_MESSAGES.noSubject })
 
     const now = this.clock.now()
-    const test = await this.prisma.transaction(async (tx) => {
+    const test = await this.generateTx(actor, studentId, subject, now)
+    return { quizId: test.id, totalQuestions: test.totalQuestions }
+  }
+
+  private async generateTx(actor: ClassActor, studentId: string, subject: { id: string; name: string }, now: Date): Promise<RemedialRecord> {
+    try {
+      return await this.generateIn(actor, studentId, subject, now)
+    } catch (err) {
+      // The partial unique index of open tests is the last line of defence behind the advisory lock.
+      if (isUnique(err)) throw refused(REMEDIAL_MESSAGES.alreadyOpen)
+      throw err
+    }
+  }
+
+  private generateIn(actor: ClassActor, studentId: string, subject: { id: string; name: string }, now: Date): Promise<RemedialRecord> {
+    return this.prisma.transaction(async (tx) => {
       await this.repo.lockGeneration(actor.userId, studentId, subject.id)
       if (await this.repo.hasOpen(actor.userId, studentId, subject.id)) throw refused(REMEDIAL_MESSAGES.alreadyOpen)
 
@@ -296,7 +331,6 @@ export class RemedialService {
       })
       return created
     })
-    return { quizId: test.id, totalQuestions: test.totalQuestions }
   }
 
   /**
@@ -345,6 +379,8 @@ export class RemedialService {
       }
     }
     const base = { subjectId, ...(educationLevelId ? { educationLevelId } : {}) }
+    // Read at most once, and only when a chapter topic needs it; filtered in memory for every topic.
+    let catalog: Awaited<ReturnType<QuestionPool['catalog']>> | null = null
 
     for (const w of weak) {
       if (picked.length >= REMEDIAL_MAX_QUESTIONS) break
@@ -354,7 +390,8 @@ export class RemedialService {
       if (kind === 'sp') {
         take(await this.questions.sample({ ...base, type: 'mcq', spId: id, excludeIds: [...taken] }, want, rng))
       } else {
-        const inChapter = await this.pool.ids({ ...base, excludeIds: [...taken] }, (r) => r.version.chapterId === id)
+        catalog ??= await this.pool.catalog(base)
+        const inChapter = catalog.filter((e) => e.chapterId === id && !taken.has(e.id)).map((e) => e.id)
         take(shuffled(inChapter, rng).slice(0, want))
       }
     }

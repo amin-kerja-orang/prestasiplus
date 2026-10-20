@@ -15,8 +15,10 @@ export interface PaperDeclaration {
 }
 
 /**
- * One uploaded file as the parser read it. `declaredMime` is what the client claimed and MUST NOT be trusted:
- * the intake (BE-37) inspects `buffer` itself before storing or processing it.
+ * One uploaded file as the parser read it. `name` is the validated, re-decoded name reduced to a basename with
+ * control characters removed; it is a LABEL for display only. BE-37 must never use the client name (or any part of
+ * it) as a storage key or path, and `declaredMime` is what the client claimed and MUST NOT be trusted: the intake
+ * sniffs `buffer` itself before storing or processing it.
  */
 export interface PaperUpload {
   index: number

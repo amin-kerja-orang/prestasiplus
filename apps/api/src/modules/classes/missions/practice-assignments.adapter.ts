@@ -52,12 +52,12 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
     if (mission.missionType !== 'latih_tubi') return []
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
+    const pool = await this.pool.catalog({ subjectId: mission.subjectId }) // one read, reused for the fallback
     if (mission.chapterId !== null) {
-      const chapterId = mission.chapterId
-      const inChapter = await this.pool.ids({ subjectId: mission.subjectId }, (r) => r.version.chapterId === chapterId)
+      const inChapter = pool.filter((e) => e.chapterId === mission.chapterId).map((e) => e.id)
       if (inChapter.length > 0) return shuffled(inChapter, rng).slice(0, mission.questionCount)
     }
-    const spm = await this.pool.ids({ subjectId: mission.subjectId }, (r) => r.spmPool)
+    const spm = pool.filter((e) => e.spmPool).map((e) => e.id)
     return shuffled(spm, rng).slice(0, mission.questionCount)
   }
 
@@ -83,6 +83,7 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
       userId: input.userId,
       afterAccuracy: round(input.afterAccuracy, 1),
       completedAt: input.completedAt,
+      isTest: input.isTest,
     })
   }
 }

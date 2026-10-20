@@ -154,6 +154,9 @@ CREATE UNIQUE INDEX "uq_mission_items_mission_id_student_id" ON "mission_items"(
 CREATE INDEX "ix_mission_items_student_id" ON "mission_items"("student_id");
 CREATE INDEX "ix_remedial_tests_teacher_id_created_at" ON "remedial_tests"("teacher_id", "created_at");
 CREATE INDEX "ix_remedial_tests_student_id_status" ON "remedial_tests"("student_id", "status");
+-- One open (active) remedial test per teacher, pupil and subject (BR-M10-12): the advisory lock in the service is the first guard, this index the last.
+-- Prisma cannot express a partial index, so it is documented on the RemedialTest model instead.
+CREATE UNIQUE INDEX "uq_remedial_tests_open" ON "remedial_tests"("teacher_id", "student_id", "subject_id") WHERE "status" = 'active';
 CREATE UNIQUE INDEX "uq_remedial_test_items_remedial_test_id_position" ON "remedial_test_items"("remedial_test_id", "position");
 CREATE UNIQUE INDEX "uq_remedial_test_items_remedial_test_id_question_id" ON "remedial_test_items"("remedial_test_id", "question_id");
 CREATE INDEX "ix_remedial_test_items_question_id" ON "remedial_test_items"("question_id");

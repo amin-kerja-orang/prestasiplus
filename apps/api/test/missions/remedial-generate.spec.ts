@@ -1,5 +1,7 @@
 import { RemedialGenerateResponseSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { MissionsRepository } from '../../src/modules/classes/missions/missions.repository'
 
 import { QuestionsService } from '../../src/modules/questions'
 import {
@@ -287,6 +289,26 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
       ])
       expect([x.status, y.status].sort()).toEqual([201, 422])
       expect(await count(t, 'remedial_tests')).toBe(1)
+      await t.db.query(`delete from remedial_tests`)
+    })
+
+    it('the partial unique index backs the lock: a second active test for the same teacher, pupil and subject is refused, and mapped to the "already open" 422', async () => {
+      await t.db.query(`delete from remedial_tests`)
+      const open = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, questionIds: [qa[0] as string] })
+      await expect(insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, questionIds: [qa[1] as string] })).rejects.toMatchObject({ code: '23505' })
+      // A cancelled or completed twin, another subject or another pupil is fine.
+      await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, status: 'cancelled', questionIds: [qa[1] as string] })
+      // The service check is bypassed on purpose: the index alone must turn the race into the same refusal.
+      const spy = vi.spyOn(MissionsRepository.prototype, 'hasOpen').mockResolvedValue(false)
+      try {
+        const res = await teacherA.post(GEN, { studentId: w.student1, subject: w.subjectName })
+        expect(res.status).toBe(422)
+        expect(res.body.error.message).toBe('Ujian remedial aktif sudah wujud untuk pelajar ini. Batalkan dahulu.')
+      } finally {
+        spy.mockRestore()
+      }
+      expect(await count(t, 'remedial_tests', )).toBe(2)
+      await t.db.query(`delete from remedial_tests where id = $1`, [open])
       await t.db.query(`delete from remedial_tests`)
     })
   })

@@ -118,6 +118,7 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
     })
 
     it('remedialCompleted writes inside the given transaction: rolled back with it, committed with it', async () => {
+      await t.db.query(`delete from remedial_tests`)
       const id = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, questionIds: [eligible[0] as string] })
       const prisma = t.get(PrismaService)
       const input = { remedialTestId: id, userId: w.student1, afterAccuracy: 66.666, completedAt: new Date('2026-10-19T09:30:00+08:00'), isTest: false }
@@ -133,6 +134,22 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
       expect(row?.status).toBe('completed')
       expect(row?.after).toBe(66.7)
       expect(row?.completed_at.toISOString()).toBe('2026-10-19T01:30:00.000Z')
+    })
+
+    it('remedialCompleted never flips a test of the other mode: a Mod Pelajar session leaves a real test active, and a real session a test-mode one', async () => {
+      await t.db.query(`delete from remedial_tests`)
+      const prisma = t.get(PrismaService)
+      const real = await insertRemedial(t, w, { teacherId: w.teacherA, studentId: w.student1, subjectId: w.tag.subjectId, questionIds: [eligible[0] as string] })
+      const completedAt = new Date('2026-10-19T10:00:00+08:00')
+      await prisma.transaction((tx) => adapter.remedialCompleted({ remedialTestId: real, userId: w.student1, afterAccuracy: 90, completedAt, isTest: true }, tx))
+      expect((await t.db.query<{ status: string }>(`select status from remedial_tests where id = $1`, [real]))[0]?.status).toBe('active')
+      await prisma.transaction((tx) => adapter.remedialCompleted({ remedialTestId: real, userId: w.student1, afterAccuracy: 90, completedAt, isTest: false }, tx))
+      expect((await t.db.query<{ status: string }>(`select status from remedial_tests where id = $1`, [real]))[0]?.status).toBe('completed')
+      const test = await insertRemedial(t, w, { teacherId: w.teacherC, studentId: w.student1, isTest: true, questionIds: [eligible[0] as string] })
+      await prisma.transaction((tx) => adapter.remedialCompleted({ remedialTestId: test, userId: w.student1, afterAccuracy: 90, completedAt, isTest: false }, tx))
+      expect((await t.db.query<{ status: string }>(`select status from remedial_tests where id = $1`, [test]))[0]?.status).toBe('active')
+      await prisma.transaction((tx) => adapter.remedialCompleted({ remedialTestId: test, userId: w.student1, afterAccuracy: 90, completedAt, isTest: true }, tx))
+      expect((await t.db.query<{ status: string }>(`select status from remedial_tests where id = $1`, [test]))[0]?.status).toBe('completed')
     })
 
     it('remedialCompleted is idempotent and never touches another pupil\'s, a cancelled or an unknown test', async () => {

@@ -4,6 +4,11 @@ import type { RateLimitSpec } from '../../../common/throttle'
 export const QUESTION_SET_LIMITS = {
   read: { bucket: 'question-sets.read', env: 'THROTTLE_CLASSES_READ_PER_MINUTE', default: 300, per: 'user' },
   write: { bucket: 'question-sets.write', env: 'THROTTLE_CLASSES_WRITE_PER_MINUTE', default: 30, per: 'user' },
+  /**
+   * The paper upload buffers up to 100 MB per request in memory, so it has its own tighter bucket. It shares the
+   * existing env key (no new key in the env schema): unset means 5 a minute, a set value overrides it (tests).
+   */
+  paper: { bucket: 'question-papers.write', env: 'THROTTLE_CLASSES_WRITE_PER_MINUTE', default: 5, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
 /** `audit_events.action` names of this module (ids only, never names or text). */
@@ -31,3 +36,18 @@ export const PAPER_MULTER_LIMITS = {
   parts: 40,
   headerPairs: 50,
 } as const
+
+/**
+ * A body larger than this cannot be a valid upload (5 files of 20 MB plus multipart framing and text fields),
+ * so it is refused from the `Content-Length` header before a byte is read.
+ */
+export const PAPER_MAX_BODY_BYTES = 5 * 20 * 1024 * 1024 + 1024 * 1024
+
+/** Uploads being read or processed at once: one per user, a few for the whole process (each can hold ~100 MB). */
+export const PAPER_MAX_IN_FLIGHT_PER_USER = 1
+export const PAPER_MAX_IN_FLIGHT_GLOBAL = 4
+/** `Retry-After` seconds sent when an upload slot is not free. */
+export const PAPER_SLOT_RETRY_SECONDS = 5
+
+/** Sessions looked up at the same time when the student list counts attempts. */
+export const ATTEMPT_LOOKUP_CONCURRENCY = 8

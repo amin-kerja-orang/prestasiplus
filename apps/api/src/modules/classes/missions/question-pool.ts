@@ -3,6 +3,14 @@ import { Inject, Injectable } from '@nestjs/common'
 import { type QuestionFilter, type QuestionRecord, QuestionsRepository } from '../../questions'
 
 const CHUNK = 200
+/** Upper bound of one pool read (eligible questions of a subject and level). */
+export const POOL_CAP = 5000
+
+export interface PoolEntry {
+  id: string
+  chapterId: string | null
+  spmPool: boolean
+}
 
 /**
  * Eligible questions for assigned work, read through the question bank (BE-09, ADR-0014): published live
@@ -24,16 +32,21 @@ export class QuestionPool {
     return out
   }
 
-  /** Ascending ids of the eligible `mcq` questions that satisfy `filter` and `keep` (checked on the live record). */
-  async ids(filter: QuestionFilter, keep?: (r: QuestionRecord) => boolean): Promise<string[]> {
-    const ids = await this.questions.eligibleIds({ ...filter, type: 'mcq' })
-    if (!keep) return ids
-    const out: string[] = []
+  /**
+   * The eligible `mcq` questions of `filter` with the two facts the bank cannot filter on yet (chapter, SPM pool),
+   * ascending by id and bounded to `POOL_CAP`. Read ONCE per mission start or remedial generation and reused for every
+   * topic, so a start never scans the bank more than once. HOOK (BE-09): `chapterId` and `spmPool` in
+   * `QuestionFilter` would push both down to SQL and remove the hydration.
+   */
+  async catalog(filter: QuestionFilter): Promise<PoolEntry[]> {
+    const ids = (await this.questions.eligibleIds({ ...filter, type: 'mcq' })).slice(0, POOL_CAP)
+    const out: PoolEntry[] = []
     for (let i = 0; i < ids.length; i += CHUNK) {
-      const records = await this.questions.getMany(ids.slice(i, i + CHUNK), 'live')
-      for (const r of records) if (keep(r)) out.push(r.id)
+      for (const r of await this.questions.getMany(ids.slice(i, i + CHUNK), 'live')) {
+        out.push({ id: r.id, chapterId: r.version.chapterId, spmPool: r.spmPool })
+      }
     }
-    return out.sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0))
+    return out.sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : BigInt(a.id) > BigInt(b.id) ? 1 : 0))
   }
 
   /** The records of ids, live version first, else the latest one (a preview shows a withdrawn question too); absent ids are skipped. */
