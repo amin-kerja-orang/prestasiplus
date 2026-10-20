@@ -17,6 +17,8 @@ import {
 } from '../../src/modules/exam/builder/paper-check'
 
 const REPO = resolve(__dirname, '../../../..')
+/** Forward slashes, so the rewritten import also resolves on Windows (Vite drops backslashes). */
+const posix = (p: string) => p.replace(/\\/g, '/')
 const MOCK = join(REPO, 'docs/reference/bijak-paper-builder-mock/domain_paper-builder.ts.txt')
 const DOMAIN = join(REPO, 'src/modules/m28-bijak-spm/domain')
 
@@ -31,8 +33,8 @@ beforeAll(async () => {
   await mkdir(base, { recursive: true })
   const dir = await mkdtemp(join(base, 'paper-check-mock-'))
   const src = (await readFile(MOCK, 'utf8'))
-    .replace("from './paper-model'", `from '${join(DOMAIN, 'paper-model.ts')}'`)
-    .replace("from './types'", `from '${join(DOMAIN, 'types.ts')}'`)
+    .replace("from './paper-model'", `from '${posix(join(DOMAIN, 'paper-model.ts'))}'`)
+    .replace("from './types'", `from '${posix(join(DOMAIN, 'types.ts'))}'`)
   const file = join(dir, 'mock-paper-builder.ts')
   await writeFile(file, src)
   mock = (await import(/* @vite-ignore */ file)) as Mock
