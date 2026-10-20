@@ -4,6 +4,7 @@ import { buildOpenApiDocument } from '../../openapi'
 import { CURRICULUM_COMPONENT_SCHEMAS } from '../paths'
 import {
   CURRICULUM_FLASH_MESSAGES,
+  CURRICULUM_CONFLICT_MESSAGES,
   CURRICULUM_NOT_FOUND_MESSAGES,
   CurriculumChapterCreateSchema,
   CurriculumChapterDeletedSchema,
@@ -170,6 +171,24 @@ describe('curriculum contract: OpenAPI', () => {
   it('contains all 29 M03 operations', () => {
     expect(expected).toHaveLength(29)
     for (const [method, path] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
+  })
+
+  it('documents 409 on the four deletes that can have children and 429 with Retry-After on every admin write', () => {
+    const responses = (method: string, path: string) =>
+      (doc.paths[path]?.[method] as { responses: Record<string, { headers?: Record<string, unknown> }> }).responses
+    const withChildren = ['/admin/education-levels/{id}', '/admin/subjects/{id}', '/admin/curriculum/chapters/{id}', '/admin/curriculum/topics/{id}']
+    for (const path of withChildren) expect(responses('delete', path)['409'], path).toBeDefined()
+    expect(responses('delete', '/admin/curriculum/subtopics/{id}')['409']).toBeUndefined()
+    for (const [method, path] of expected) {
+      const r = responses(method, path)
+      if (method === 'get' || !path.startsWith('/admin')) {
+        expect(r['429'], `${method} ${path}`).toBeUndefined()
+      } else {
+        expect(r['429'], `${method} ${path}`).toBeDefined()
+        expect(r['429']?.headers?.['Retry-After'], `${method} ${path}`).toBeDefined()
+      }
+    }
+    expect(CURRICULUM_CONFLICT_MESSAGES.chapter).toBe('Bab ini masih mempunyai topik.')
   })
 
   it('contains every curriculum component', () => {

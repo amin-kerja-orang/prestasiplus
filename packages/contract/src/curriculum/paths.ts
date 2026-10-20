@@ -4,7 +4,9 @@ import { z } from '../zod'
 import { envelopeOf, listEnvelopeOf } from '../common/envelope'
 import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
+import { rateLimitedResponse } from '../schools/http'
 import {
+  CURRICULUM_CONFLICT_MESSAGES as CF,
   CURRICULUM_FLASH_MESSAGES as FLASH,
   CURRICULUM_NOT_FOUND_MESSAGES as NF,
   CurriculumActiveStateSchema,
@@ -132,6 +134,8 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
       ok: { status: 200 | 201; schema: z.ZodType; text: string }
       notFound?: string
       validation?: boolean
+      /** The 409 copy of a delete that still has children. */
+      conflict?: string
       description?: string
     },
   ) =>
@@ -152,7 +156,10 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
         401: UNAUTHORIZED,
         403: ADMIN_ONLY,
         ...(opts.notFound ? { 404: notFound(opts.notFound) } : {}),
+        ...(opts.conflict ? { 409: err(`CONFLICT with message "${opts.conflict}"; nothing is deleted.`) } : {}),
         ...(opts.validation ? { 422: invalid() } : {}),
+        // Every admin write is rate limited per user (D57a, BE-08 follow-up); admin reads are not.
+        ...(method === 'get' ? {} : { 429: rateLimitedResponse }),
       },
     })
 
@@ -223,9 +230,10 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     ok: { status: 200, schema: envelopeOf(CurriculumActiveStateSchema), text: 'The new state (no status flash).' },
   })
   admin('delete', '/admin/education-levels/{id}', 'Delete an education level', {
-    tag: 'curriculum-admin', params: true, notFound: NF.level,
+    tag: 'curriculum-admin', params: true, notFound: NF.level, conflict: CF.level,
     ok: { status: 200, schema: withStatus(CurriculumDeletedOneSchema), text: `Deleted; status "${L.deleted}"` },
-    description: 'Cascade (BR-10): subject links and every chapter of the level with topics and subtopics.',
+    description:
+      '409 CONFLICT (and nothing deleted) while the level still has linked subjects, chapters (in the tree or not) or DSKP nodes; only an empty level is deleted. Supersedes the BR-10 cascade (LEAD 2026-10-20).',
   })
 
   // --- Admin subjects ---
@@ -251,9 +259,10 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     ok: { status: 200, schema: envelopeOf(CurriculumActiveStateSchema), text: 'The new state (no status flash).' },
   })
   admin('delete', '/admin/subjects/{id}', 'Delete a subject', {
-    tag: 'curriculum-admin', params: true, notFound: NF.subject,
+    tag: 'curriculum-admin', params: true, notFound: NF.subject, conflict: CF.subject,
     ok: { status: 200, schema: withStatus(CurriculumDeletedOneSchema), text: `Deleted; status "${S.deleted}"` },
-    description: 'Cascade (BR-10): level links and every chapter of the subject with topics and subtopics.',
+    description:
+      '409 CONFLICT (and nothing deleted) while the subject still has level links, chapters (in the tree or not), DSKP nodes or TP descriptors; only an empty subject is deleted. Supersedes the BR-10 cascade (LEAD 2026-10-20).',
   })
 
   // --- Admin curriculum tree ---
@@ -278,9 +287,10 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     tag: 'curriculum-admin', params: true, req: CurriculumChapterUpdateSchema, notFound: NF.chapter, validation: true,
     ok: { status: 200, schema: withStatus(CurriculumChapterSchema), text: `Updated; status "${C.updated}"` },
   })
-  admin('delete', '/admin/curriculum/chapters/{id}', 'Delete a chapter with its topics and subtopics', {
-    tag: 'curriculum-admin', params: true, notFound: NF.chapter,
-    ok: { status: 200, schema: withStatus(CurriculumChapterDeletedSchema), text: `Deleted with cascade counts; status "${C.deleted}"` },
+  admin('delete', '/admin/curriculum/chapters/{id}', 'Delete a chapter', {
+    tag: 'curriculum-admin', params: true, notFound: NF.chapter, conflict: CF.chapter,
+    ok: { status: 200, schema: withStatus(CurriculumChapterDeletedSchema), text: `Deleted; status "${C.deleted}"` },
+    description: '409 CONFLICT (and nothing deleted) while the chapter still has topics, so `deleted.topics` and `deleted.subtopics` are always 0.',
   })
   admin('get', '/admin/curriculum/topics/{id}', 'Get a topic', {
     tag: 'curriculum-admin', params: true, notFound: NF.topic,
@@ -294,9 +304,10 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     tag: 'curriculum-admin', params: true, req: CurriculumTopicUpdateSchema, notFound: NF.topic, validation: true,
     ok: { status: 200, schema: withStatus(CurriculumTopicSchema), text: `Updated; status "${T.updated}"` },
   })
-  admin('delete', '/admin/curriculum/topics/{id}', 'Delete a topic with its subtopics', {
-    tag: 'curriculum-admin', params: true, notFound: NF.topic,
-    ok: { status: 200, schema: withStatus(CurriculumTopicDeletedSchema), text: `Deleted with cascade counts; status "${T.deleted}"` },
+  admin('delete', '/admin/curriculum/topics/{id}', 'Delete a topic', {
+    tag: 'curriculum-admin', params: true, notFound: NF.topic, conflict: CF.topic,
+    ok: { status: 200, schema: withStatus(CurriculumTopicDeletedSchema), text: `Deleted; status "${T.deleted}"` },
+    description: '409 CONFLICT (and nothing deleted) while the topic still has subtopics, so `deleted.subtopics` is always 0.',
   })
   admin('post', '/admin/curriculum/subtopics', 'Create a subtopic', {
     tag: 'curriculum-admin', req: CurriculumSubtopicCreateSchema, validation: true,

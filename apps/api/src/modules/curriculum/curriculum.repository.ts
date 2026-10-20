@@ -78,8 +78,9 @@ export type TreeChapter = Chapter & { topics: TreeTopic[] }
  * query these tables. Ids are bigint here; the service maps them to the decimal strings of the wire.
  *
  * Every method uses `prisma.client`, so it joins the transaction a service opened with
- * `prisma.transaction(...)`. Deleting a level, subject, chapter or topic cascades in the database
- * (foreign keys `ON DELETE CASCADE`, BR-10).
+ * `prisma.transaction(...)`. The foreign keys are `ON DELETE CASCADE` (migration 0008), but the admin
+ * service only deletes a level, subject, chapter or topic that has no children (409 otherwise, LEAD
+ * 2026-10-20): it calls `lock*` and then `*HasChildren` in the delete transaction.
  */
 @Injectable()
 export class CurriculumRepository {
@@ -135,7 +136,28 @@ export class CurriculumRepository {
     return this.db.educationLevel.update({ where: { id }, data: { isActive, updatedAt: now } })
   }
 
-  /** BR-10: the level, its subject links and its chapters with topics and subtopics (FK cascade). */
+  /**
+   * Locks the level row (`FOR UPDATE`) for the rest of the transaction; false when it is gone. A
+   * concurrent insert of a child (subject link, chapter, node) takes a `FOR KEY SHARE` lock on this
+   * row through its foreign key, so it waits for the delete (and then fails) instead of slipping in
+   * between the child check and the delete.
+   */
+  async lockLevel(id: bigint): Promise<boolean> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM education_levels WHERE id = ${id} FOR UPDATE`
+    return rows.length > 0
+  }
+
+  /** True when a subject link, a chapter (in the tree or not) or a DSKP node still points at the level. */
+  async levelHasChildren(id: bigint): Promise<boolean> {
+    const [links, chapters, nodes] = await Promise.all([
+      this.db.subjectLevel.count({ where: { educationLevelId: id } }),
+      this.db.chapter.count({ where: { educationLevelId: id } }),
+      this.db.curriculumNode.count({ where: { educationLevelId: id } }),
+    ])
+    return links + chapters + nodes > 0
+  }
+
+  /** Deletes a level that has no children (the caller checked under `lockLevel`). */
   async deleteLevel(id: bigint): Promise<void> {
     await this.db.educationLevel.delete({ where: { id } })
   }
@@ -233,7 +255,24 @@ export class CurriculumRepository {
     return this.db.subject.update({ where: { id }, data: { isActive, updatedAt: now } })
   }
 
-  /** BR-10: the subject, its level links and every chapter of the subject, out-of-tree ones included (FK cascade). */
+  /** `FOR UPDATE` on the subject row; false when it is gone. See `lockLevel`. */
+  async lockSubject(id: bigint): Promise<boolean> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM subjects WHERE id = ${id} FOR UPDATE`
+    return rows.length > 0
+  }
+
+  /** True when a level link, a chapter (in the tree or not), a DSKP node or a TP descriptor still points at the subject. */
+  async subjectHasChildren(id: bigint): Promise<boolean> {
+    const [links, chapters, nodes, descriptors] = await Promise.all([
+      this.db.subjectLevel.count({ where: { subjectId: id } }),
+      this.db.chapter.count({ where: { subjectId: id } }),
+      this.db.curriculumNode.count({ where: { subjectId: id } }),
+      this.db.curriculumTpDescriptor.count({ where: { subjectId: id } }),
+    ])
+    return links + chapters + nodes + descriptors > 0
+  }
+
+  /** Deletes a subject that has no children (the caller checked under `lockSubject`). */
   async deleteSubject(id: bigint): Promise<void> {
     await this.db.subject.delete({ where: { id } })
   }
@@ -329,12 +368,14 @@ export class CurriculumRepository {
     return this.db.chapter.update({ where: { id }, data: { ...input, updatedAt: now } })
   }
 
-  async countTopicsOfChapter(chapterId: bigint): Promise<{ topics: number; subtopics: number }> {
-    const [topics, subtopics] = await Promise.all([
-      this.db.topic.count({ where: { chapterId } }),
-      this.db.subtopic.count({ where: { topic: { chapterId } } }),
-    ])
-    return { topics, subtopics }
+  /** `FOR UPDATE` on the chapter row; false when it is gone. See `lockLevel`. */
+  async lockChapter(id: bigint): Promise<boolean> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM chapters WHERE id = ${id} FOR UPDATE`
+    return rows.length > 0
+  }
+
+  async chapterHasTopics(chapterId: bigint): Promise<boolean> {
+    return (await this.db.topic.count({ where: { chapterId } })) > 0
   }
 
   async deleteChapter(id: bigint): Promise<void> {
@@ -349,8 +390,14 @@ export class CurriculumRepository {
     return this.db.topic.update({ where: { id }, data: { ...input, updatedAt: now } })
   }
 
-  countSubtopicsOfTopic(topicId: bigint): Promise<number> {
-    return this.db.subtopic.count({ where: { topicId } })
+  /** `FOR UPDATE` on the topic row; false when it is gone. See `lockLevel`. */
+  async lockTopic(id: bigint): Promise<boolean> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM topics WHERE id = ${id} FOR UPDATE`
+    return rows.length > 0
+  }
+
+  async topicHasSubtopics(topicId: bigint): Promise<boolean> {
+    return (await this.db.subtopic.count({ where: { topicId } })) > 0
   }
 
   async deleteTopic(id: bigint): Promise<void> {

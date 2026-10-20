@@ -179,13 +179,13 @@ describe('admin subjects and education levels', () => {
       expectError(await admin.patch('/api/admin/subjects/99999999/active', { isActive: true }), 'NOT_FOUND', 'Subjek tidak dijumpai.')
     })
 
-    it('#6 deletes with the cascade (links, chapters, topics, subtopics), counted before and after; 404 afterwards', async () => {
+    it('#6 409 while the subject has level links, chapters or DSKP nodes (nothing deleted); an empty subject is deleted; 404 afterwards', async () => {
       const id = await idOf(t.db, 'subjects', 'MATH')
       const counts = async () => ({
         links: await count(t.db, 'select count(*) n from subject_levels where subject_id = $1', [id]),
         chapters: await count(t.db, 'select count(*) n from chapters where subject_id = $1', [id]),
         topics: await count(t.db, 'select count(*) n from topics where chapter_id in (select id from chapters where subject_id = $1)', [id]),
-        allChapters: await count(t.db, 'select count(*) n from chapters where in_tree'),
+        allChapters: await count(t.db, 'select count(*) n from chapters'),
         allTopics: await count(t.db, 'select count(*) n from topics'),
         nodes: await count(t.db, 'select count(*) n from curriculum_nodes where subject_id = $1', [id]),
       })
@@ -193,16 +193,17 @@ describe('admin subjects and education levels', () => {
       expect(before.links).toBe(11)
       expect(before.chapters).toBe(94)
       expect(before.nodes).toBeGreaterThan(0)
-      const res = await admin.delete(`/api/admin/subjects/${id}`)
+      expectError(await admin.delete(`/api/admin/subjects/${id}`), 'CONFLICT', 'Subjek ini masih mempunyai tahap, bab atau nod DSKP.')
+      expect(await counts()).toEqual(before)
+      expect(parseData(await admin.get(`/api/admin/subjects/${id}`), CurriculumSubjectSchema).id).toBe(id)
+
+      const empty = parseStatus(await admin.post('/api/admin/subjects', subjectWrite({ code: 'del1' })), CurriculumSubjectSchema, 201).data.id
+      const res = await admin.delete(`/api/admin/subjects/${empty}`)
       expect(res.body).toEqual({ data: { deleted: 1 }, status: 'Subjek berjaya dipadam.' })
       parseStatus(res, CurriculumDeletedOneSchema, 200)
-      const after = await counts()
-      expect(after).toMatchObject({ links: 0, chapters: 0, topics: 0, nodes: 0 })
-      expect(after.allChapters).toBe(before.allChapters - 94)
-      expect(after.allTopics).toBe(before.allTopics - before.topics)
-      expect(await count(t.db, 'select count(*) n from topics t where not exists (select 1 from chapters c where c.id = t.chapter_id)')).toBe(0)
-      expectError(await admin.delete(`/api/admin/subjects/${id}`), 'NOT_FOUND', 'Subjek tidak dijumpai.')
-      expectError(await admin.get(`/api/admin/subjects/${id}`), 'NOT_FOUND', 'Subjek tidak dijumpai.')
+      expect(await count(t.db, 'select count(*) n from subjects where id = $1', [empty])).toBe(0)
+      expectError(await admin.delete(`/api/admin/subjects/${empty}`), 'NOT_FOUND', 'Subjek tidak dijumpai.')
+      expectError(await admin.get(`/api/admin/subjects/${empty}`), 'NOT_FOUND', 'Subjek tidak dijumpai.')
     })
   })
 
@@ -271,28 +272,26 @@ describe('admin subjects and education levels', () => {
       expectError(await admin.patch('/api/admin/education-levels/99999999/active', { isActive: true }), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
     })
 
-    it('#12 deletes with the cascade (links and chapters, topics, subtopics), counted before and after', async () => {
+    it('#12 409 while the level has subjects, chapters or DSKP nodes (nothing deleted); an empty level is deleted; 404 afterwards', async () => {
       const id = await idOf(t.db, 'education_levels', 'D1')
       const counts = async () => ({
         links: await count(t.db, 'select count(*) n from subject_levels where education_level_id = $1', [id]),
         chapters: await count(t.db, 'select count(*) n from chapters where education_level_id = $1', [id]),
-        all: await count(t.db, 'select count(*) n from chapters where in_tree'),
+        all: await count(t.db, 'select count(*) n from chapters'),
         topics: await count(t.db, 'select count(*) n from topics'),
         subtopics: await count(t.db, 'select count(*) n from subtopics'),
-        levelTopics: await count(t.db, 'select count(*) n from topics where chapter_id in (select id from chapters where education_level_id = $1)', [id]),
-        levelSubtopics: await count(t.db, 'select count(*) n from subtopics where topic_id in (select id from topics where chapter_id in (select id from chapters where education_level_id = $1))', [id]),
+        nodes: await count(t.db, 'select count(*) n from curriculum_nodes where education_level_id = $1', [id]),
       })
       const before = await counts()
       expect(before.chapters).toBeGreaterThan(0)
-      const res = await admin.delete(`/api/admin/education-levels/${id}`)
+      expectError(await admin.delete(`/api/admin/education-levels/${id}`), 'CONFLICT', 'Tahap Pendidikan ini masih mempunyai subjek, bab atau nod DSKP.')
+      expect(await counts()).toEqual(before)
+
+      const empty = parseStatus(await admin.post('/api/admin/education-levels', levelWrite({ code: 'del1' })), CurriculumEducationLevelSchema, 201).data.id
+      const res = await admin.delete(`/api/admin/education-levels/${empty}`)
       expect(res.body).toEqual({ data: { deleted: 1 }, status: 'Tahap Pendidikan berjaya dipadam.' })
-      const after = await counts()
-      expect(after.links).toBe(0)
-      expect(after.chapters).toBe(0)
-      expect(after.all).toBe(before.all - before.chapters)
-      expect(after.topics).toBe(before.topics - before.levelTopics)
-      expect(after.subtopics).toBe(before.subtopics - before.levelSubtopics)
-      expectError(await admin.delete(`/api/admin/education-levels/${id}`), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
+      expect(await count(t.db, 'select count(*) n from education_levels where id = $1', [empty])).toBe(0)
+      expectError(await admin.delete(`/api/admin/education-levels/${empty}`), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
     })
   })
 
