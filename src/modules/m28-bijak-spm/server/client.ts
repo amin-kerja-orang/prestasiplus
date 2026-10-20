@@ -8,6 +8,7 @@
  * branch and never emits the mock chunk.
  */
 import { createHttpBijakServer } from './http'
+import { createHttpBijakAdminServer, type BijakAdminMethods } from './http-admin'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakServer } from './store'
 import type { BijakApi } from './types'
@@ -44,15 +45,21 @@ export function bijakServer(): BijakApi {
 }
 
 /**
- * Admin (staff) pages still use the mock only: the admin Bijak routes have no HTTP client yet.
- * In http mode this fails loudly instead of returning a server without the admin methods.
+ * Admin (staff) server: in http mode the admin HTTP client (`./http-admin`: paper builder and
+ * blueprints; methods without a backend route reject with `BijakError('unavailable')`), which also
+ * carries the student surface. Otherwise the in-browser mock. Never throws at page setup.
  */
-export function bijakAdminServer(): BijakServer {
-  const server = bijakServer()
-  if (!('listAdminPapers' in server)) {
-    throw new Error('Bijak admin API is not available in http mode (student routes only).')
+export type BijakAdminApi = BijakApi & BijakAdminMethods
+
+let adminInstance: BijakAdminApi | null = null
+
+export function bijakAdminServer(): BijakAdminApi {
+  if (instance && 'listAdminPapers' in instance) return instance as BijakAdminApi
+  if (createMock === null) {
+    adminInstance ??= createHttpBijakAdminServer()
+    return adminInstance
   }
-  return server as BijakServer
+  return bijakServer() as BijakServer
 }
 
 /** Test hook: swap in a server (and its device storage). */
