@@ -4,6 +4,9 @@ import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
 import { requestIdMiddleware } from './common/request/request-id'
+import { DEFAULT_COOKIE_NAME } from './modules/auth/auth.constants'
+import { readCookie } from './modules/auth/cookies'
+import { SESSION_TOKEN_SHAPE } from './modules/auth/tokens'
 
 /** `TRUST_PROXY_HOPS`: number of reverse proxies in front of the API (integer 0..10, default 0). */
 export function trustProxyHops(raw: unknown): number {
@@ -20,6 +23,29 @@ export const IMPORT_JSON_PATH = '/api/admin/users/bulk-import'
 /** The DELIMa student import (BE-25) takes the same large JSON body. */
 export const STUDENT_IMPORT_JSON_PATH = '/api/admin/students/import'
 
+/**
+ * JSON limit of the article and note write routes (BE-24): the contract allows 200,000 characters of HTML, and
+ * JSON escaping can grow that to 6 bytes per character in the worst case (control characters as \u00XX), so 1300kb.
+ */
+export const CONTENT_JSON_LIMIT = '1300kb'
+export const CONTENT_JSON_PATHS = ['/api/admin/articles', '/api/admin/notes']
+
+/**
+ * Cheap gate in front of a large JSON parser (it runs before the guards). The large parser is used only when the
+ * request carries a session cookie of the right shape AND a `Content-Length` within the limit; everything else (no
+ * cookie, a bigger or unknown length) falls through to the default 100kb parser, so an anonymous oversize body is a
+ * cheap 413 and never parsed. The cookie is not verified here (the guards do that), so this limits cost, it is not auth.
+ */
+export function largeJsonGate(parser: (req: Request, res: Response, next: NextFunction) => void, methods: readonly string[], limitKb: number, cookieName: string) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!methods.includes(req.method)) return next()
+    const length = Number(req.headers['content-length'])
+    const cookie = readCookie(req, cookieName)
+    if (!Number.isFinite(length) || length > limitKb * 1024 || !cookie || !SESSION_TOKEN_SHAPE.test(cookie)) return next()
+    parser(req, res, next)
+  }
+}
+
 /** Cross-cutting setup shared by `main.ts` and the tests: prefix, request id, logger, proxy trust. */
 export function configureApp(app: INestApplication): void {
   // With 0 hops X-Forwarded-For is ignored and `req.ip` is the socket address, so a client cannot
@@ -30,9 +56,10 @@ export function configureApp(app: INestApplication): void {
   app.use(requestIdMiddleware) // before pino-http, so `req.id` is set when it logs
   // A larger JSON parser for the import route ONLY. `app.use` runs now, before Nest registers its own
   // parsers at init; a parser that has read the body sets `req._body`, so the later (100kb) parser skips it.
-  const largeJson = json({ limit: IMPORT_JSON_LIMIT })
-  for (const path of [IMPORT_JSON_PATH, STUDENT_IMPORT_JSON_PATH]) {
-    app.use(path, (req: Request, res: Response, next: NextFunction) => (req.method === 'POST' ? largeJson(req, res, next) : next()))
-  }
+  const cookieName = app.get(ConfigService).get<string>('SESSION_COOKIE_NAME') || DEFAULT_COOKIE_NAME
+  const largeJson = largeJsonGate(json({ limit: IMPORT_JSON_LIMIT }), ['POST'], 2200, cookieName)
+  for (const path of [IMPORT_JSON_PATH, STUDENT_IMPORT_JSON_PATH]) app.use(path, largeJson)
+  const contentJson = largeJsonGate(json({ limit: CONTENT_JSON_LIMIT }), ['POST', 'PUT'], 1300, cookieName)
+  for (const path of CONTENT_JSON_PATHS) app.use(path, contentJson)
   app.useLogger(app.get(Logger))
 }
