@@ -44198,7 +44198,8 @@
           "question_image",
           "cms_image",
           "audio_kbat",
-          "cms_screenshot"
+          "cms_screenshot",
+          "timeline_photo"
         ]
       },
       "FileRef": {
@@ -85248,6 +85249,14 @@
         "responses": {
           "200": {
             "description": "The product.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -85332,6 +85341,14 @@
         "responses": {
           "200": {
             "description": "The hand-off URL.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -104027,7 +104044,7 @@
           "files"
         ],
         "summary": "Upload one file",
-        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin. Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
+        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
         "parameters": [
           {
             "schema": {
@@ -104136,7 +104153,7 @@
           "files"
         ],
         "summary": "Download a file",
-        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
+        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
         "parameters": [
           {
             "schema": {
