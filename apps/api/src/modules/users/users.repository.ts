@@ -288,6 +288,16 @@ export class UsersRepository {
     return rows.map((r) => idToString(r.id))
   }
 
+  /** Ids of the active, unsuspended platform admins (recipients of admin notices, e.g. a new support ticket). */
+  async activeAdminIds(): Promise<string[]> {
+    const rows = await this.prisma.client.user.findMany({
+      where: { isActive: true, isSuspended: false, roles: { some: { role: 'admin' } } },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    })
+    return rows.map((r) => idToString(r.id))
+  }
+
   /** Users whose name or e-mail contains `q`, name A to Z. */
   async search(input: UserSearchInput): Promise<UserRecord[]> {
     const and: Prisma.UserWhereInput[] = [textSearch(input.q)]

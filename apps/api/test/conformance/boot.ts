@@ -8,6 +8,8 @@ import type { INestApplication, Type } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 
 import { runSeeds, type SeedModule } from '../../prisma/seed'
+import { contentSeed } from '../../prisma/seed/content'
+import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -25,7 +27,7 @@ export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
  * Seeds the conformance database is built from. HOOK FOR BE-07: add its demo-account seed here (and
  * update `accounts.ts`); the suite needs nothing else from the seed layer.
  */
-export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, examSeed]
+export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, contentSeed, examSeed]
 
 /**
  * Environment of the conformance app. Determinism, never weaker production code:

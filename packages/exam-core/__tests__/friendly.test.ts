@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { answersEquivalent, latexToFriendly, plainToLatex } from '../domain/math-expr'
+import { answersEquivalent, latexToFriendly, plainToLatex } from '../src/math-expr'
 
 describe('friendly notation (students never see LaTeX)', () => {
   it('converts what the on-screen keyboard inserts', () => {
