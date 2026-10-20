@@ -97,6 +97,8 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
 | BE-24 | full | 2026-10-20 | Group A (PC-1). Content (M09) + support tickets (M22). **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-24-content-support` from b5d5d7d4. Depends BE-03/04/05/06 (all done); uses BE-06 NotificationsService + BE-05 school scope. **Migration number 0009** (BE-08 curriculum holds 0008 and merges first; LEAD merges in numeric order). no-store/429 (D57). Security review. |
 | BE-36 | contract | 2026-10-19 | AI adapter wire types. **DONE — PR #27 merged 2026-10-20.** |
+| BE-37 | full | 2026-10-20 | **Group B (PC-5).** AI intake: files/OCR/job runner. Depends BE-04 (done), BE-36 (done), BE-38 contract (done). **Migration 0015** (NOT 0012 — that is BE-47/Group A). Opened for Group B. No real media/OCR output committed (source only). Security review (file uploads + external input). |
+| BE-14 | full | 2026-10-20 | **Group B.** `@pp/exam-core` shared package (no DB migration). Coordinate with LEAD: OD-5 and any `src/modules/m28-bijak-spm/domain` changes are cross-cutting — flag before the PR. Unblocks Bijak/paper-builder cards. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
 | BE-13 | contract-only | 2026-10-19 | Practice read models (Group B): `packages/contract/src/practice/reads/**` only; do not edit BE-12's files in `practice/`. |
