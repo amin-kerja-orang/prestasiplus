@@ -80,11 +80,30 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(row).toMatchObject({ status: 'pending', question_version_no: 2, source: 'spm', question_type: 'mcq', quiz_session_ref: 'sess_1:a', room_code: 'ROOM-9', is_test: false, reporter_id: c.student.userId })
     })
 
-    it('a draft question files against its latest version; a structured report defaults the source', async () => {
-      const id = seed({ status: 'draft', latestVersionNo: 4 })
-      expect((await c.student.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(201)
-      const [row] = await t.db.query<{ question_version_no: number; source: string }>(`select question_version_no, source from question_reports where question_id = $1::bigint`, [id])
-      expect(row).toEqual({ question_version_no: 4, source: 'structured_attempt' })
+    it('a structured question defaults the source and the type comes from the stored question', async () => {
+      const id = seed({ brief: { type: 'structured' } })
+      expect((await c.student.post('/api/question-reports', body(id))).status).toBe(201)
+      const [row] = await t.db.query<{ question_type: string; source: string }>(`select question_type, source from question_reports where question_id = $1::bigint`, [id])
+      expect(row).toEqual({ question_type: 'structured', source: 'structured_attempt' })
+      expect(t.fake.questions.get(id)?.isActive).toBe(true)
+    })
+
+    it('a question that is not live and active is 404 like an unknown one', async () => {
+      const draft = seed({ status: 'draft' })
+      const inactive = seed({ isActive: false })
+      const archived = seed({ status: 'archived', liveVersionNo: null })
+      for (const id of [draft, inactive, archived]) expectError(await c.student.post('/api/question-reports', body(id)), 'NOT_FOUND')
+      expect(await count(t.db, `select count(*) n from question_reports where question_id in ($1::bigint, $2::bigint, $3::bigint)`, [draft, inactive, archived])).toBe(0)
+    })
+
+    it('a body type that disagrees with the stored type is 422 and cannot lower the threshold', async () => {
+      const structured = seed({ brief: { type: 'structured' } })
+      const res = await c.student.post('/api/question-reports', body(structured, { questionType: 'mcq' }))
+      expectError(res, 'VALIDATION_ERROR')
+      expect(fields(res)).toEqual({ questionType: 'Jenis soalan tidak sah.' })
+      expect(fields(await c.student.post('/api/question-reports', body(seed(), { questionType: 'structured' })))).toEqual({ questionType: 'Jenis soalan tidak sah.' })
+      expect(t.fake.questions.get(structured)?.isActive).toBe(true)
+      expect(fields(await c.student.post('/api/question-reports', body(structured, { reasons: ['missing_options'] })))).toEqual({ reasons: 'Sebab laporan tidak sah.' })
     })
 
     it('accepts the other sources and the teacher-only reason outdated', async () => {
@@ -126,11 +145,18 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
     })
 
     it('a second report by the same user for the same question is accepted (201, as the mock) and keeps one row', async () => {
-      const id = seed()
+      const id = seed({ brief: { type: 'structured' } })
       expect((await c.student.post('/api/question-reports', body(id))).status).toBe(201)
       expect((await c.student.post('/api/question-reports', body(id, { reasons: ['typo'] }))).status).toBe(201)
       const rows = await t.db.query<{ reasons: string[] }>(`select reasons from question_reports where question_id = $1::bigint`, [id])
       expect(rows).toEqual([{ reasons: ['typo'] }])
+    })
+
+    it('two concurrent first reports by one user both succeed and leave one row', async () => {
+      const id = seed({ brief: { type: 'structured' } })
+      const res = await Promise.all([c.student.post('/api/question-reports', body(id)), c.student.post('/api/question-reports', body(id))])
+      expect(res.map((r) => r.status)).toEqual([201, 201])
+      expect(await count(t.db, `select count(*) n from question_reports where question_id = $1::bigint`, [id])).toBe(1)
     })
 
     it('an admin filing in Mod Pelajar writes test data', async () => {
@@ -151,7 +177,7 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
     })
 
     it('a structured question stays active for 2 reports and goes inactive at the third', async () => {
-      const id = seed()
+      const id = seed({ brief: { type: 'structured' } })
       const reporters = [c.student, c.teacher, c.otherTeacher]
       for (const [n, who] of reporters.entries()) {
         expect((await who.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(201)
@@ -302,7 +328,7 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
 
   describe('markFixedFor (AC 11, called by the lifecycle on publish)', () => {
     it('marks open reports of older versions fixed, records the version and notifies', async () => {
-      const qid = seed({ latestVersionNo: 1 })
+      const qid = seed({ latestVersionNo: 1, brief: { type: 'structured' } })
       await c.student.post('/api/question-reports', body(qid))
       await c.teacher.post('/api/question-reports', body(qid))
       const before = await notifications(c.student.userId)
@@ -315,7 +341,7 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
     })
 
     it('leaves reports filed against the published version alone', async () => {
-      const qid = seed({ latestVersionNo: 2 })
+      const qid = seed({ latestVersionNo: 2, brief: { type: 'structured' } })
       await c.student.post('/api/question-reports', body(qid))
       expect(await t.app.get(QuestionReportsService, { strict: false }).markFixedFor(qid, 2)).toBe(0)
     })

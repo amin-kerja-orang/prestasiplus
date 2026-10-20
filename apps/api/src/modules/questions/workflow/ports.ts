@@ -88,6 +88,18 @@ export interface SetStatusOptions {
   reason?: string | null
   /** Optional hint for BE-09 when it archives: stored as `question_versions.archive_reason`. */
   archiveReason?: 'withdrawn' | 'source_takedown'
+  /**
+   * Lost-update guard (BE-10): the status of the targeted version that BE-10 read inside its transaction. The adapter updates
+   * conditionally (or row-locks) and, when the version's status is no longer this, throws
+   * `ApiError` CONFLICT (409) without changing anything. Omitted = no guard.
+   */
+  expectedFrom?: QuestionWorkflowStatus
+  /**
+   * Which version to move. `latest` (default) is the newest version. `live` is the version served
+   * to learners (`liveVersionNo`), used to archive/withdraw it while a newer draft exists; the
+   * latest version is left alone unless it is the live one. No-op when nothing is live.
+   */
+  target?: 'latest' | 'live'
 }
 
 /** One question to create from an Excel/CSV row (BE-10 imports, an MCQ). */

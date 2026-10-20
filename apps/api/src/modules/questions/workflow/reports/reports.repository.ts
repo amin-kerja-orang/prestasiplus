@@ -35,24 +35,21 @@ export class ReportsRepository {
 
   /**
    * One report per reporter, question and version (unique index): a second report of the same user
-   * on the same version refreshes that row and re-opens it, so it is accepted like the first.
+   * on the same version refreshes that row and re-opens it, so it is accepted like the first. A
+   * single `INSERT ... ON CONFLICT` keeps concurrent first reports from failing on the index (a
+   * unique violation would also abort the surrounding transaction, so a retry is not possible).
    */
-  upsert(n: NewReport): Promise<ReportRow> {
-    const data = {
-      questionType: n.questionType,
-      reasons: n.reasons,
-      comment: n.comment,
-      source: n.source,
-      quizSessionRef: n.quizSessionRef,
-      roomCode: n.roomCode,
-    }
-    return this.prisma.client.questionReport.upsert({
-      where: {
-        reporterId_questionId_questionVersionNo: { reporterId: n.reporterId, questionId: n.questionId, questionVersionNo: n.questionVersionNo },
-      },
-      create: { ...data, questionId: n.questionId, questionVersionNo: n.questionVersionNo, reporterId: n.reporterId, isTest: n.isTest, createdAt: n.now, updatedAt: n.now },
-      update: { ...data, status: 'pending', resolvedById: null, resolvedAt: null, fixedInVersionNo: null, updatedAt: n.now },
-    })
+  async upsert(n: NewReport): Promise<void> {
+    await this.prisma.client.$executeRaw`
+      INSERT INTO question_reports
+        (question_id, question_version_no, question_type, reporter_id, reasons, comment, source, quiz_session_ref, room_code, is_test, created_at, updated_at)
+      VALUES
+        (${n.questionId}, ${n.questionVersionNo}, ${n.questionType}, ${n.reporterId}, ${n.reasons}::text[], ${n.comment}, ${n.source},
+         ${n.quizSessionRef}, ${n.roomCode}, ${n.isTest}, ${n.now}, ${n.now})
+      ON CONFLICT (reporter_id, question_id, question_version_no) DO UPDATE SET
+        question_type = EXCLUDED.question_type, reasons = EXCLUDED.reasons, comment = EXCLUDED.comment, source = EXCLUDED.source,
+        quiz_session_ref = EXCLUDED.quiz_session_ref, room_code = EXCLUDED.room_code, status = 'pending',
+        resolved_by_id = NULL, resolved_at = NULL, fixed_in_version_no = NULL, updated_at = EXCLUDED.updated_at`
   }
 
   countOpenStructured(questionId: bigint): Promise<number> {

@@ -15,6 +15,9 @@ import { QuestionWorkflowPorts } from '../ports'
 import type { WorkflowActor } from '../actor'
 import { bucketOfScore, scoreQuestion } from './quality-score'
 
+/** The audit writes the whole catalogue in one transaction: allow far more than Prisma's 5 s. */
+const AUDIT_TX = { maxWait: 20_000, timeout: 120_000 } as const
+
 const round1 = (n: number): number => Math.round(n * 10) / 10
 const cmpId = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
 
@@ -134,16 +137,16 @@ export class QualityService {
         return { id: q.id, score, bucket: bucketOfScore(score) }
       })
       const run = await tx.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
-      const keep = scores.map((s) => idFromString(s.id))
-      await tx.questionQualityScore.deleteMany({ where: { questionId: { notIn: keep } } })
-      for (const s of scores) {
-        const questionId = idFromString(s.id)
-        await tx.questionQualityScore.upsert({
-          where: { questionId },
-          create: { questionId, score: s.score, bucket: s.bucket, auditId: run.id, scoredAt: now },
-          update: { score: s.score, bucket: s.bucket, auditId: run.id, scoredAt: now },
-        })
-      }
+      // One statement for all scores (three array parameters, any catalogue size).
+      await tx.$executeRaw`
+        INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
+        SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
+          FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
+               AS t(question_id, score, bucket)
+        ON CONFLICT (question_id) DO UPDATE
+          SET score = EXCLUDED.score, bucket = EXCLUDED.bucket, audit_id = EXCLUDED.audit_id, scored_at = EXCLUDED.scored_at`
+      // Every current question was just stamped with this run; what is left belongs to deleted questions.
+      await tx.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${run.id}`
       const changed = scores.filter((s) => before.get(s.id) !== s.score).length
       const sum = scores.reduce((a, s) => a + s.score, 0)
       await tx.qualityAudit.update({
@@ -156,7 +159,7 @@ export class QualityService {
         },
       })
       return now
-    })
+    }, AUDIT_TX)
     return { data: { lastAuditAt: toMytTimestamp(finishedAt) }, status: QUESTION_QUALITY_FLASH }
   }
 }

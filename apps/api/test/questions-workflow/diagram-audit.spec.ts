@@ -176,6 +176,8 @@ describe('diagram audit (BE-10 AC 7 area, BR-M04-19)', () => {
         ['gif', { data: Buffer.from('GIF89a\u0001\u0000\u0001\u0000', 'latin1'), name: 'rajah.gif', type: 'image/gif' }],
         ['extension', { data: makePng(), name: 'rajah.bmp', type: 'image/png' }],
         ['bytes', { data: Buffer.from('bukan gambar sebenar'), name: 'rajah.png', type: 'image/png' }],
+        ['svg as png', { data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), name: 'rajah.png', type: 'image/png' }],
+        ['html as png', { data: Buffer.from('<html><script>alert(1)</script></html>'), name: 'rajah.png', type: 'image/png' }],
         ['size', { data: makePng({ padTo: 2 * 1024 * 1024 + 4096 }), name: 'besar.png', type: 'image/png' }],
       ]
       for (const [label, file] of cases) {

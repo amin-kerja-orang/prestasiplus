@@ -142,6 +142,8 @@ export class DiagramAuditService {
     who: { ip: string | null; requestId: string | null },
   ): Promise<{ data: { id: string; needsDiagram: false }; status: string }> {
     await this.requireQuestion(kind, id)
+    // Confirm the bank still knows the question before a file is stored, so a failure leaves no orphan.
+    if (!(await this.ports.questionBank.getStatus(id))) throw ApiError.of('NOT_FOUND')
     let publicId: string
     try {
       publicId = (await this.files.upload(auth, 'question_image', { buffer: bytes }, who)).id

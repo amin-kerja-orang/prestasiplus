@@ -1,3 +1,4 @@
+import { ApiError } from '../../src/common/errors/api-error'
 import type { QuestionWorkflowStatus } from '@pp/contract'
 
 import type {
@@ -27,6 +28,8 @@ export interface FakeQuestion {
   explanationSource: ExplanationSource
   sourcePaperId: string | null
   diagramFileId: string | null
+  /** Live versions archived through `target: 'live'` (for tests). */
+  archivedLive: number[]
 }
 
 export interface FakeSeed {
@@ -135,6 +138,7 @@ export class FakeQuestionBank implements QuestionBankPort {
       },
       sourcePaperId: input.sourcePaperId ?? null,
       diagramFileId: null,
+      archivedLive: [],
     }
     this.questions.set(input.id, q)
     return q
@@ -166,6 +170,18 @@ export class FakeQuestionBank implements QuestionBankPort {
     }
     const q = this.questions.get(id)
     if (!q) return null
+    if (options.target !== 'live' && options.expectedFrom !== undefined && q.status !== options.expectedFrom) throw ApiError.of('CONFLICT')
+    if (options.target === 'live') {
+      // Archive/withdraw the live version only; a newer latest version keeps its own status.
+      if (q.liveVersionNo === null) return this.info(q)
+      if (q.liveVersionNo === q.latestVersionNo) {
+        q.status = to
+        q.brief.status = to
+      }
+      q.archivedLive.push(q.liveVersionNo)
+      q.liveVersionNo = null
+      return this.info(q)
+    }
     if (to === 'published') {
       q.liveVersionNo = q.latestVersionNo
     } else if (q.status === 'published') {

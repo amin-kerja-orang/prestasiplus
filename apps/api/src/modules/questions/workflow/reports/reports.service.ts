@@ -59,14 +59,22 @@ export class QuestionReportsService {
 
   /** POST /question-reports: the report and its deactivation commit together (BR-M04-11/12). */
   async create(actor: WorkflowActor, body: unknown): Promise<{ success: true; message: string }> {
-    const v = validateCreate(body)
-    const id = idToString(v.questionId)
+    const first = validateCreate(body) // shape first: a bad body is 422 before the question is looked up
+    const raw = body as { questionType?: unknown }
+    const id = idToString(first.questionId)
     return this.prisma.transaction(async () => {
       const info = await this.bank.getStatus(id)
-      if (!info) throw ApiError.of('NOT_FOUND')
+      // Only a question served to learners (live version, active) can be reported; else as unknown.
+      if (!info || info.liveVersionNo === null || !info.isActive) throw ApiError.of('NOT_FOUND')
+      // The stored type decides the reason set and the deactivation threshold, never the client.
+      const stored: 'mcq' | 'structured' = (await this.bank.describe([id])).get(id)?.type === 'structured' ? 'structured' : 'mcq'
+      if (raw.questionType !== undefined && raw.questionType !== stored) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
+      }
+      const v = validateCreate({ ...(body as object), questionType: stored })
       await this.repo.upsert({
         questionId: v.questionId,
-        questionVersionNo: info.liveVersionNo ?? info.latestVersionNo,
+        questionVersionNo: info.liveVersionNo,
         questionType: v.questionType,
         reporterId: idFromString(actor.userId),
         reasons: v.reasons,

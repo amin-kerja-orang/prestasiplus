@@ -13,6 +13,9 @@ import { QuestionReportsService } from '../reports'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionGateData, type QuestionStatusInfo } from '../ports'
 import { GATE_SUMMARY, GATES, type GateFields, type GateName } from './gates'
 
+/** The takedown touches every question of a paper: sized like BE-09's bulk work. */
+const TAKEDOWN_TX = { timeout: 20_000, maxWait: 10_000 } as const
+
 export const REASON_REQUIRED_MESSAGE = 'Sila nyatakan sebab.'
 export const STATUS_INVALID_MESSAGE = 'Status tidak sah.'
 export const TAKEDOWN_REASON_MESSAGE = 'Sila nyatakan sebab penarikan sumber.'
@@ -78,31 +81,37 @@ export class LifecycleService {
     return this.ports.questionBank
   }
 
-  /** Moves the question; one transaction covers the bank change and every status event. */
+  /**
+   * Moves the question; one transaction covers the status read (no lost update), the bank change and
+   * every status event. `setStatus` also carries `expectedFrom`, so a change that commits between the
+   * read and the write is a 409.
+   */
   async transition(questionId: string, toRaw: string, actor: WorkflowActor, options: TransitionOptions = {}): Promise<TransitionResult> {
     const to = parseStatus(toRaw)
     const kind = this.roleKind(actor)
-    const info = await this.bank.getStatus(questionId)
-    if (!info) throw ApiError.of('NOT_FOUND')
-    assertCanActOn(actor, info.createdById)
-    const from = info.status
-    const reason = options.reason?.trim() ? options.reason.trim() : null
+    return this.prisma.transaction(async () => {
+      const info = await this.bank.getStatus(questionId)
+      if (!info) throw ApiError.of('NOT_FOUND')
+      assertCanActOn(actor, info.createdById)
+      const from = info.status
+      const reason = options.reason?.trim() ? options.reason.trim() : null
 
-    // "Lulus & Terbit": review -> approved -> published in one call, admin only, both gates.
-    if (from === 'review' && to === 'published') {
-      if (kind !== 'admin') throw ApiError.of('FORBIDDEN')
-      return this.apply(info, actor, [
-        { from: 'review', to: 'approved', gate: 'approve', reason: null },
-        { from: 'approved', to: 'published', gate: 'publish', reason: null },
-      ])
-    }
-    const rule = questionWorkflowTransitionRule(from, to)
-    if (!rule) throw ApiError.of('CONFLICT')
-    if (!rule.actors.includes(kind)) throw ApiError.of('FORBIDDEN')
-    if (rule.reasonRequired && reason === null) {
-      throw ApiError.of('VALIDATION_ERROR', { message: REASON_REQUIRED_MESSAGE, fields: { reason: REASON_REQUIRED_MESSAGE } })
-    }
-    return this.apply(info, actor, [{ from, to, gate: rule.gate, reason }])
+      // "Lulus & Terbit": review -> approved -> published in one call, admin only, both gates.
+      if (from === 'review' && to === 'published') {
+        if (kind !== 'admin') throw ApiError.of('FORBIDDEN')
+        return this.apply(info, actor, [
+          { from: 'review', to: 'approved', gate: 'approve', reason: null },
+          { from: 'approved', to: 'published', gate: 'publish', reason: null },
+        ])
+      }
+      const rule = questionWorkflowTransitionRule(from, to)
+      if (!rule) throw ApiError.of('CONFLICT')
+      if (!rule.actors.includes(kind)) throw ApiError.of('FORBIDDEN')
+      if (rule.reasonRequired && reason === null) {
+        throw ApiError.of('VALIDATION_ERROR', { message: REASON_REQUIRED_MESSAGE, fields: { reason: REASON_REQUIRED_MESSAGE } })
+      }
+      return this.apply(info, actor, [{ from, to, gate: rule.gate, reason }])
+    })
   }
 
   /** "No bypass": the same gates per question; failures are skipped and reported. */
@@ -156,15 +165,16 @@ export class LifecycleService {
     return this.prisma.transaction(async () => {
       const paper = await this.prisma.client.sourcePaper.findUnique({ where: { id: BigInt(sourcePaperId) } })
       if (!paper) throw ApiError.of('NOT_FOUND')
-      await this.prisma.client.sourcePaper.update({
-        where: { id: paper.id },
+      // Idempotent: the first takedown_at / takedown_by_id are kept.
+      await this.prisma.client.sourcePaper.updateMany({
+        where: { id: paper.id, takedownAt: null },
         data: { takedownAt: new Date(), takedownById: BigInt(actor.userId) },
       })
       let archived = 0
       let skipped = 0
       for (const id of await this.bank.listIdsBySourcePaper(sourcePaperId)) {
         const info = await this.bank.getStatus(id)
-        if (!info || info.status === 'archived') {
+        if (!info) {
           skipped += 1
           continue
         }
@@ -172,11 +182,22 @@ export class LifecycleService {
         // The table only allows draft/published -> archived, but review/approved questions of a withdrawn
         // source must go too, so the table is not consulted here; no gate runs and a status event
         // records each move with the takedown reason.
-        await this.applyOne(info, actor, { from: info.status, to: 'archived', gate: null, reason }, { archiveReason: 'source_takedown' })
-        archived += 1
+        const hint = { archiveReason: 'source_takedown' } as const
+        let did = false
+        // The live version survives a newer draft: archive it first (version = the live one).
+        if (info.liveVersionNo !== null && info.liveVersionNo !== info.latestVersionNo) {
+          await this.applyOne(info, actor, { from: 'published', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' }, hint)
+          did = true
+        }
+        if (info.status !== 'archived') {
+          await this.applyOne(info, actor, { from: info.status, to: 'archived', gate: null, reason }, hint)
+          did = true
+        }
+        if (did) archived += 1
+        else skipped += 1
       }
       return { sourcePaperId, archived, skipped }
-    })
+    }, TAKEDOWN_TX)
   }
 
   private roleKind(actor: WorkflowActor): QuestionWorkflowActor {
@@ -185,16 +206,14 @@ export class LifecycleService {
     return transitionActorOf(actor)
   }
 
-  private apply(info: QuestionStatusInfo, actor: WorkflowActor, steps: Step[]): Promise<TransitionResult> {
-    return this.prisma.transaction(async () => {
-      const events: TransitionResult['events'] = []
-      for (const step of steps) {
-        await this.applyOne(info, actor, step)
-        events.push({ from: step.from, to: step.to })
-      }
-      const last = steps[steps.length - 1]!
-      return { id: info.id, from: steps[0]!.from, to: last.to, versionNo: info.latestVersionNo, events }
-    })
+  private async apply(info: QuestionStatusInfo, actor: WorkflowActor, steps: Step[]): Promise<TransitionResult> {
+    const events: TransitionResult['events'] = []
+    for (const step of steps) {
+      await this.applyOne(info, actor, step)
+      events.push({ from: step.from, to: step.to })
+    }
+    const last = steps[steps.length - 1]!
+    return { id: info.id, from: steps[0]!.from, to: last.to, versionNo: info.latestVersionNo, events }
   }
 
   private async applyOne(
@@ -211,10 +230,12 @@ export class LifecycleService {
     const updated = await this.bank.setStatus(info.id, step.to, actor.userId, {
       actor: isAdminPusat(actor) ? 'admin' : 'owner_teacher',
       reason: step.reason,
+      expectedFrom: step.from,
+      ...(step.target ? { target: step.target } : {}),
       ...extra,
     })
     if (!updated) throw ApiError.of('NOT_FOUND')
-    await this.writeEvent(info.id, info.latestVersionNo, step.from, step.to, actor, step.reason)
+    await this.writeEvent(info.id, step.versionNo ?? info.latestVersionNo, step.from, step.to, actor, step.reason)
     // AC 11: reports filed against an older version become Diperbaiki, in this same transaction.
     if (step.to === 'published') await this.reports.markFixedFor(info.id, info.latestVersionNo)
   }
@@ -247,4 +268,7 @@ interface Step {
   to: QuestionWorkflowStatus
   gate: GateName | null
   reason: string | null
+  /** Version the event is about when it is not the latest (the live one on takedown). */
+  versionNo?: number
+  target?: 'latest' | 'live'
 }

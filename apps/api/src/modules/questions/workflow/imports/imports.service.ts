@@ -66,6 +66,9 @@ function gateInputOf(row: ImportedQuestionInput, status: QuestionWorkflowStatus)
  */
 const GATE_STATUS: QuestionWorkflowStatus = 'draft'
 
+/** Sized for a 5 MB file (tens of thousands of rows): all rows are planned before it opens, so it only creates. */
+const IMPORT_TX = { timeout: 120_000, maxWait: 10_000 } as const
+
 const FILE_NAME_MAX = 255
 const MIMES: readonly string[] = QUESTION_IMPORT_MIME_TYPES
 
@@ -171,7 +174,7 @@ export class QuestionImportsService {
           updatedAt: this.clock.now(),
         },
       })
-    })
+    }, IMPORT_TX)
   }
 }
 

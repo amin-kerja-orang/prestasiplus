@@ -73,4 +73,32 @@ describe('source takedown (BE-10 AC 6)', () => {
     const [row] = await t.db.query<{ takedown_at: Date | null }>('select takedown_at from source_papers where id = $1', [id])
     expect(row?.takedown_at).toBeNull()
   })
+
+  it('archives the live version too when a newer draft exists (live 1 + draft 2)', async () => {
+    const id = await paper()
+    t.fake.seed({ id: '6201', status: 'draft', latestVersionNo: 2, liveVersionNo: 1, sourcePaperId: id })
+    const res = await svc.takedownSource(id, actorOf(c.admin), 'Tarik')
+    expect(res.archived).toBe(1)
+    const q = t.fake.questions.get('6201')!
+    expect(q.liveVersionNo).toBeNull()
+    expect(q.archivedLive).toEqual([1])
+    expect(q.status).toBe('archived')
+    const ev = await t.db.query<{ version_no: number; from_status: string }>(
+      'select version_no, from_status from question_status_events where question_id = 6201 order by id',
+    )
+    expect(ev).toEqual([{ version_no: 1, from_status: 'published' }, { version_no: 2, from_status: 'draft' }])
+  })
+
+  it('is idempotent: a second takedown keeps the first takedown_at and takedown_by', async () => {
+    const id = await paper()
+    t.fake.seed({ id: '6301', status: 'draft', sourcePaperId: id })
+    await svc.takedownSource(id, actorOf(c.admin), 'Pertama')
+    const first = await t.db.query<{ takedown_at: Date; takedown_by_id: string }>('select takedown_at, takedown_by_id::text from source_papers where id = $1', [id])
+    await t.db.query("update source_papers set takedown_by_id = null where id = $1", [id]) // would be overwritten if re-stamped
+    const res = await svc.takedownSource(id, actorOf(c.admin), 'Kedua')
+    expect(res).toMatchObject({ archived: 0, skipped: 1 })
+    const [again] = await t.db.query<{ takedown_at: Date; takedown_by_id: string | null }>('select takedown_at, takedown_by_id::text from source_papers where id = $1', [id])
+    expect(again?.takedown_at).toEqual(first[0]?.takedown_at)
+    expect(again?.takedown_by_id).toBeNull()
+  })
 })
