@@ -27,3 +27,13 @@ export function idempotencyConflict(): ApiError {
 export function sessionCreditOwnerConflict(): ApiError {
   return ApiError.of('CONFLICT', { message: 'This session was already credited to another user.', details: { reason: 'SESSION_OWNER_MISMATCH' } })
 }
+
+/** 422 `VALIDATION_ERROR` (`details.reason = AMOUNT_CEILING`): one call above `MAX_AMOUNT_PER_CALL`. Nothing is written. */
+export function amountCeiling(): ApiError {
+  return ApiError.of('VALIDATION_ERROR', { message: 'The amount is too large for one movement.', details: { reason: 'AMOUNT_CEILING' } })
+}
+
+/** 409 `CONFLICT` (`details.reason = BALANCE_LIMIT`): the balance, lifetime total, XP or token balance would pass the integer range. Nothing is written. */
+export function balanceLimit(): ApiError {
+  return ApiError.of('CONFLICT', { message: 'The balance limit would be exceeded.', details: { reason: 'BALANCE_LIMIT' } })
+}

@@ -1,6 +1,8 @@
 import { ApiError } from '../../src/common/errors/api-error'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { MAX_AMOUNT_PER_CALL } from '../../src/modules/wallet/wallet.constants'
+import { isTestActor } from '../../src/modules/wallet/wallet.types'
 import { bareUser, bootWalletApp, ledgerOf, walletOf, type WalletTestApp } from './helpers'
 
 async function refused(p: Promise<unknown>): Promise<ApiError> {
@@ -28,7 +30,7 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
   it('creates the wallet on the first credit with the default tier, one ledger row, and balance_after = the balance', async () => {
     const u = await fresh()
     expect(await walletOf(t, u)).toBeUndefined() // nothing before the first credit
-    const r = await t.wallet.credit({ userId: u, amount: 12, source: 'quiz_practice', sourceId: 's-1', description: 'Latih Tubi: 12 betul — 100%' })
+    const r = await t.wallet.credit({ userId: u, amount: 12, source: 'quiz_practice', sourceId: 's-1', description: 'Latih Tubi: 12 betul — 100%', isTest: false })
     expect(r).toMatchObject({ replayed: false, type: 'earn', amount: 12, balanceAfter: 12, currentSyiling: 12, totalSyilingEarned: 12, tokenBalance: 0, tierKey: 'bronze' })
     expect(await walletOf(t, u)).toMatchObject({ current_syiling: 12, total_syiling_earned: 12, token_balance: 0, xp: 0, level: 1, tier_name: 'bronze' })
     const rows = await ledgerOf(t, u)
@@ -42,10 +44,10 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
   it('balance_after is the running balance over several credits and debits', async () => {
     const u = await fresh()
-    await t.wallet.credit({ userId: u, amount: 10, source: 'a', sourceId: '1', description: 'd' })
-    await t.wallet.credit({ userId: u, amount: 5, source: 'a', sourceId: '2', description: 'd', type: 'bonus' })
-    await t.wallet.debit({ userId: u, amount: 7, source: 'shop', sourceId: '3', description: 'd' })
-    await t.wallet.credit({ userId: u, amount: 20, source: 'a', sourceId: '4', description: 'd', type: 'refund' })
+    await t.wallet.credit({ userId: u, amount: 10, source: 'a', sourceId: '1', description: 'd', isTest: false })
+    await t.wallet.credit({ userId: u, amount: 5, source: 'a', sourceId: '2', description: 'd', type: 'bonus', isTest: false })
+    await t.wallet.debit({ userId: u, amount: 7, source: 'shop', sourceId: '3', description: 'd', isTest: false })
+    await t.wallet.credit({ userId: u, amount: 20, source: 'a', sourceId: '4', description: 'd', type: 'refund', isTest: false })
     expect((await ledgerOf(t, u)).map((r) => [r.type, r.amount, r.balance_after])).toEqual([
       ['earn', 10, 10],
       ['bonus', 5, 15],
@@ -58,9 +60,9 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
   describe('idempotency per (user, source, source_id)', () => {
     it('a replay in a separate call returns the first result and writes no second row', async () => {
       const u = await fresh()
-      const first = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'sess-9', description: 'SPM' })
-      await t.wallet.credit({ userId: u, amount: 4, source: 'other', sourceId: 'x', description: 'later movement' })
-      const again = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'sess-9', description: 'SPM' })
+      const first = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'sess-9', description: 'SPM', isTest: false })
+      await t.wallet.credit({ userId: u, amount: 4, source: 'other', sourceId: 'x', description: 'later movement', isTest: false })
+      const again = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'sess-9', description: 'SPM', isTest: false })
       expect(again).toMatchObject({ replayed: true, entryId: first.entryId, amount: 30, balanceAfter: 30, currentSyiling: 34 })
       expect(await ledgerOf(t, u)).toHaveLength(2)
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 34, total_syiling_earned: 34 })
@@ -68,9 +70,9 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('a replay with the same type and amount but other text still returns the first result (and the current totals)', async () => {
       const u = await fresh()
-      const first = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'k', description: 'one' })
-      await t.wallet.credit({ userId: u, amount: 5, source: 'other', sourceId: 'later', description: 'later' })
-      const again = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'k', description: 'two' })
+      const first = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'k', description: 'one', isTest: false })
+      await t.wallet.credit({ userId: u, amount: 5, source: 'other', sourceId: 'later', description: 'later', isTest: false })
+      const again = await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'k', description: 'two', isTest: false })
       // The FIRST entry (balanceAfter 30) with the CURRENT totals (35).
       expect(again).toMatchObject({ replayed: true, entryId: first.entryId, amount: 30, balanceAfter: 30, currentSyiling: 35, totalSyilingEarned: 35 })
       expect((await ledgerOf(t, u)).find((r) => r.id === first.entryId)?.description).toBe('one')
@@ -79,8 +81,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('M1: the same key with another amount is a 409 CONFLICT and writes nothing', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'm', description: 'one' })
-      const err = await refused(t.wallet.credit({ userId: u, amount: 999, source: 'quiz_spm', sourceId: 'm', description: 'two' }))
+      await t.wallet.credit({ userId: u, amount: 30, source: 'quiz_spm', sourceId: 'm', description: 'one', isTest: false })
+      const err = await refused(t.wallet.credit({ userId: u, amount: 999, source: 'quiz_spm', sourceId: 'm', description: 'two', isTest: false }))
       expect(err).toMatchObject({ code: 'CONFLICT', details: { reason: 'IDEMPOTENCY_MISMATCH' } })
       expect(err.getStatus()).toBe(409)
       expect(await ledgerOf(t, u)).toHaveLength(1)
@@ -89,29 +91,29 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('M1: a refund that reuses the key of a spend is refused, not swallowed (and the opposite way)', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 100, source: 'seed', sourceId: 'fund', description: 'fund' })
-      const spend = await t.wallet.debit({ userId: u, amount: 40, source: 'shop', sourceId: 'order-1', description: 'buy' })
-      const refund = await refused(t.wallet.credit({ userId: u, amount: 40, type: 'refund', source: 'shop', sourceId: 'order-1', description: 'refund' }))
+      await t.wallet.credit({ userId: u, amount: 100, source: 'seed', sourceId: 'fund', description: 'fund', isTest: false })
+      const spend = await t.wallet.debit({ userId: u, amount: 40, source: 'shop', sourceId: 'order-1', description: 'buy', isTest: false })
+      const refund = await refused(t.wallet.credit({ userId: u, amount: 40, type: 'refund', source: 'shop', sourceId: 'order-1', description: 'refund', isTest: false }))
       expect(refund).toMatchObject({ code: 'CONFLICT', details: { reason: 'IDEMPOTENCY_MISMATCH' } })
       expect(await ledgerOf(t, u)).toHaveLength(2)
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 60, total_syiling_earned: 100 })
       // The same spend retried is still a replay; a spend with another amount is a conflict.
-      expect(await t.wallet.debit({ userId: u, amount: 40, source: 'shop', sourceId: 'order-1', description: 'buy' })).toMatchObject({ replayed: true, entryId: spend.entryId, amount: -40 })
-      await refused(t.wallet.debit({ userId: u, amount: 41, source: 'shop', sourceId: 'order-1', description: 'buy' }))
+      expect(await t.wallet.debit({ userId: u, amount: 40, source: 'shop', sourceId: 'order-1', description: 'buy', isTest: false })).toMatchObject({ replayed: true, entryId: spend.entryId, amount: -40 })
+      await refused(t.wallet.debit({ userId: u, amount: 41, source: 'shop', sourceId: 'order-1', description: 'buy', isTest: false }))
       // A refund under its own key works; a spend that reuses the key of a credit is refused.
-      await t.wallet.credit({ userId: u, amount: 40, type: 'refund', source: 'shop_refund', sourceId: 'order-1', description: 'refund' })
-      await refused(t.wallet.debit({ userId: u, amount: 30, source: 'seed', sourceId: 'fund', description: 'x' }))
+      await t.wallet.credit({ userId: u, amount: 40, type: 'refund', source: 'shop_refund', sourceId: 'order-1', description: 'refund', isTest: false })
+      await refused(t.wallet.debit({ userId: u, amount: 30, source: 'seed', sourceId: 'fund', description: 'x', isTest: false }))
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 140 })
     })
 
     it('M1: a convert replay needs the same amount and tokens; type earn versus bonus is a conflict too', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 200, source: 'seed', sourceId: 'cv', description: 'fund' })
-      await t.wallet.debit({ userId: u, amount: 100, tokens: 2, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert' })
-      expect(await t.wallet.debit({ userId: u, amount: 100, tokens: 2, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert' })).toMatchObject({ replayed: true })
-      await refused(t.wallet.debit({ userId: u, amount: 100, tokens: 3, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert' }))
-      await refused(t.wallet.debit({ userId: u, amount: 100, type: 'spend', source: 'token_conversion', sourceId: 'cv-1', description: 'convert' }))
-      await refused(t.wallet.credit({ userId: u, amount: 200, type: 'bonus', source: 'seed', sourceId: 'cv', description: 'fund' }))
+      await t.wallet.credit({ userId: u, amount: 200, source: 'seed', sourceId: 'cv', description: 'fund', isTest: false })
+      await t.wallet.debit({ userId: u, amount: 100, tokens: 2, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert', isTest: false })
+      expect(await t.wallet.debit({ userId: u, amount: 100, tokens: 2, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert', isTest: false })).toMatchObject({ replayed: true })
+      await refused(t.wallet.debit({ userId: u, amount: 100, tokens: 3, type: 'convert', source: 'token_conversion', sourceId: 'cv-1', description: 'convert', isTest: false }))
+      await refused(t.wallet.debit({ userId: u, amount: 100, type: 'spend', source: 'token_conversion', sourceId: 'cv-1', description: 'convert', isTest: false }))
+      await refused(t.wallet.credit({ userId: u, amount: 200, type: 'bonus', source: 'seed', sourceId: 'cv', description: 'fund', isTest: false }))
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, token_balance: 2 })
       expect(await ledgerOf(t, u)).toHaveLength(2)
     })
@@ -119,8 +121,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     it('two calls with one key in ONE transaction write one row', async () => {
       const u = await fresh()
       const [a, b] = await t.prisma.transaction(async () => [
-        await t.wallet.credit({ userId: u, amount: 8, source: 'daily_login', sourceId: 'd-1', description: 'Streak activity (daily_login)' }),
-        await t.wallet.credit({ userId: u, amount: 8, source: 'daily_login', sourceId: 'd-1', description: 'Streak activity (daily_login)' }),
+        await t.wallet.credit({ userId: u, amount: 8, source: 'daily_login', sourceId: 'd-1', description: 'Streak activity (daily_login)', isTest: false }),
+        await t.wallet.credit({ userId: u, amount: 8, source: 'daily_login', sourceId: 'd-1', description: 'Streak activity (daily_login)', isTest: false }),
       ])
       expect(a).toMatchObject({ replayed: false })
       expect(b).toMatchObject({ replayed: true, entryId: a!.entryId })
@@ -131,23 +133,23 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     it('the key is scoped to the user and to the source; no key means no idempotency', async () => {
       const u1 = await fresh()
       const u2 = await fresh()
-      await t.wallet.credit({ userId: u1, amount: 1, source: 'a', sourceId: 'same', description: 'd' })
-      await t.wallet.credit({ userId: u2, amount: 1, source: 'a', sourceId: 'same', description: 'd' }) // other user
-      await t.wallet.credit({ userId: u1, amount: 1, source: 'b', sourceId: 'same', description: 'd' }) // other source
-      await t.wallet.credit({ userId: u1, amount: 1, source: 'c', description: 'd' })
-      await t.wallet.credit({ userId: u1, amount: 1, source: 'c', sourceId: null, description: 'd' })
+      await t.wallet.credit({ userId: u1, amount: 1, source: 'a', sourceId: 'same', description: 'd', isTest: false })
+      await t.wallet.credit({ userId: u2, amount: 1, source: 'a', sourceId: 'same', description: 'd', isTest: false }) // other user
+      await t.wallet.credit({ userId: u1, amount: 1, source: 'b', sourceId: 'same', description: 'd', isTest: false }) // other source
+      await t.wallet.credit({ userId: u1, amount: 1, source: 'c', description: 'd', isTest: false, sourceId: null, noKeyReason: 'test' })
+      await t.wallet.credit({ userId: u1, amount: 1, source: 'c', sourceId: null, noKeyReason: 'test', description: 'd', isTest: false })
       expect(await ledgerOf(t, u1)).toHaveLength(4)
       expect(await ledgerOf(t, u2)).toHaveLength(1)
     })
 
     it('concurrent calls with one key write one row; concurrent distinct credits keep a consistent running balance', async () => {
       const u = await fresh()
-      const same = await Promise.all(Array.from({ length: 8 }, () => t.wallet.credit({ userId: u, amount: 3, source: 'race', sourceId: 'one', description: 'd' })))
+      const same = await Promise.all(Array.from({ length: 8 }, () => t.wallet.credit({ userId: u, amount: 3, source: 'race', sourceId: 'one', description: 'd', isTest: false })))
       expect(same.filter((r) => !r.replayed)).toHaveLength(1)
       expect(await ledgerOf(t, u)).toHaveLength(1)
 
       const v = await fresh()
-      await Promise.all(Array.from({ length: 12 }, (_, i) => t.wallet.credit({ userId: v, amount: i + 1, source: 'race', sourceId: String(i), description: 'd' })))
+      await Promise.all(Array.from({ length: 12 }, (_, i) => t.wallet.credit({ userId: v, amount: i + 1, source: 'race', sourceId: String(i), description: 'd', isTest: false })))
       const rows = await ledgerOf(t, v)
       expect(rows).toHaveLength(12)
       let running = 0
@@ -164,7 +166,7 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       const u = await fresh()
       await expect(
         t.prisma.transaction(async () => {
-          await t.wallet.credit({ userId: u, amount: 600, source: 'quiz', sourceId: 'rb', description: 'd' })
+          await t.wallet.credit({ userId: u, amount: 600, source: 'quiz', sourceId: 'rb', description: 'd', isTest: false })
           throw new Error('caller failed after the credit')
         }),
       ).rejects.toThrow('caller failed')
@@ -175,14 +177,14 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     it('an explicit transaction handle is used as given', async () => {
       const u = await fresh()
       await t.prisma.$transaction(async (tx) => {
-        await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-1', description: 'd' }, { tx })
-        const replay = await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-1', description: 'd' }, { tx })
+        await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-1', description: 'd', isTest: false }, { tx })
+        const replay = await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-1', description: 'd', isTest: false }, { tx })
         expect(replay.replayed).toBe(true)
       })
       expect(await ledgerOf(t, u)).toHaveLength(1)
       await expect(
         t.prisma.$transaction(async (tx) => {
-          await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-2', description: 'd' }, { tx })
+          await t.wallet.credit({ userId: u, amount: 5, source: 'quiz', sourceId: 'tx-2', description: 'd', isTest: false }, { tx })
           throw new Error('boom')
         }),
       ).rejects.toThrow('boom')
@@ -193,8 +195,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       const u = await fresh()
       await expect(
         t.prisma.transaction(async () => {
-          await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd' })
-          await t.wallet.debit({ userId: u, amount: 11, source: 'shop', sourceId: 'b', description: 'd' })
+          await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
+          await t.wallet.debit({ userId: u, amount: 11, source: 'shop', sourceId: 'b', description: 'd', isTest: false })
         }),
       ).rejects.toMatchObject({ code: 'INSUFFICIENT_BALANCE' })
       expect(await walletOf(t, u)).toBeUndefined()
@@ -204,27 +206,27 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
   describe('tier (BR-M14-08)', () => {
     it('moves up to the highest active tier reached by the current syiling and never down', async () => {
       const u = await fresh()
-      expect((await t.wallet.credit({ userId: u, amount: 499, source: 't', sourceId: '1', description: 'd' })).tierKey).toBe('bronze')
-      expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '2', description: 'd' })).tierKey).toBe('silver')
-      expect((await t.wallet.credit({ userId: u, amount: 1600, source: 't', sourceId: '3', description: 'd' })).tierKey).toBe('gold')
+      expect((await t.wallet.credit({ userId: u, amount: 499, source: 't', sourceId: '1', description: 'd', isTest: false })).tierKey).toBe('bronze')
+      expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '2', description: 'd', isTest: false })).tierKey).toBe('silver')
+      expect((await t.wallet.credit({ userId: u, amount: 1600, source: 't', sourceId: '3', description: 'd', isTest: false })).tierKey).toBe('gold')
       // A big spend drops the balance under the gold threshold: the tier stays.
-      const spent = await t.wallet.debit({ userId: u, amount: 2000, source: 'shop', sourceId: '4', description: 'd' })
+      const spent = await t.wallet.debit({ userId: u, amount: 2000, source: 'shop', sourceId: '4', description: 'd', isTest: false })
       expect(spent).toMatchObject({ currentSyiling: 100, tierKey: 'gold' })
-      expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '5', description: 'd' })).tierKey).toBe('gold')
+      expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '5', description: 'd', isTest: false })).tierKey).toBe('gold')
       expect((await walletOf(t, u))?.tier_name).toBe('gold')
     })
 
     it('skips tiers: a single large credit lands on the highest one reached', async () => {
       const u = await fresh()
-      expect((await t.wallet.credit({ userId: u, amount: 6000, source: 't', sourceId: '1', description: 'd' })).tierKey).toBe('platinum')
+      expect((await t.wallet.credit({ userId: u, amount: 6000, source: 't', sourceId: '1', description: 'd', isTest: false })).tierKey).toBe('platinum')
     })
 
     it('an inactive tier is never a target', async () => {
       const u = await fresh()
       await t.db.query(`update tiers set is_active = false where tier_name = 'silver'`)
       try {
-        expect((await t.wallet.credit({ userId: u, amount: 600, source: 't', sourceId: '1', description: 'd' })).tierKey).toBe('bronze')
-        expect((await t.wallet.credit({ userId: u, amount: 1500, source: 't', sourceId: '2', description: 'd' })).tierKey).toBe('gold')
+        expect((await t.wallet.credit({ userId: u, amount: 600, source: 't', sourceId: '1', description: 'd', isTest: false })).tierKey).toBe('bronze')
+        expect((await t.wallet.credit({ userId: u, amount: 1500, source: 't', sourceId: '2', description: 'd', isTest: false })).tierKey).toBe('gold')
       } finally {
         await t.db.query(`update tiers set is_active = true where tier_name = 'silver'`)
       }
@@ -232,15 +234,15 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('a debit changes neither the lifetime total nor the tier', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 700, source: 't', sourceId: '1', description: 'd' })
-      await t.wallet.debit({ userId: u, amount: 300, source: 'shop', sourceId: '2', description: 'd' })
+      await t.wallet.credit({ userId: u, amount: 700, source: 't', sourceId: '1', description: 'd', isTest: false })
+      await t.wallet.debit({ userId: u, amount: 300, source: 'shop', sourceId: '2', description: 'd', isTest: false })
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 400, total_syiling_earned: 700, tier_name: 'silver' })
     })
   })
 
   it('stamps Mod Pelajar writes (is_test) and keeps the balance consistent', async () => {
     const u = await fresh()
-    await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd' })
+    await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
     await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'b', description: 'd', isTest: true })
     await t.wallet.debit({ userId: u, amount: 5, source: 'shop', sourceId: 'c', description: 'd', isTest: true })
     expect((await ledgerOf(t, u)).map((r) => r.is_test)).toEqual([false, true, true])
@@ -253,44 +255,44 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
   describe('debit (AC7)', () => {
     it('refuses more than the balance with 409 INSUFFICIENT_BALANCE and the exact BM message; nothing is written', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 50, source: 'quiz', sourceId: 'a', description: 'd' })
-      const err = await refused(t.wallet.debit({ userId: u, amount: 51, source: 'shop', sourceId: 'z', description: 'd' }))
+      await t.wallet.credit({ userId: u, amount: 50, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
+      const err = await refused(t.wallet.debit({ userId: u, amount: 51, source: 'shop', sourceId: 'z', description: 'd', isTest: false }))
       expect(err.getStatus()).toBe(409)
       expect(err).toMatchObject({ code: 'INSUFFICIENT_BALANCE', message: 'Baki syiling tidak mencukupi.' })
       expect(await ledgerOf(t, u)).toHaveLength(1)
       expect(await walletOf(t, u)).toMatchObject({ current_syiling: 50, total_syiling_earned: 50 })
       // The exact balance is allowed and leaves 0.
-      expect(await t.wallet.debit({ userId: u, amount: 50, source: 'shop', sourceId: 'ok', description: 'd' })).toMatchObject({ currentSyiling: 0, balanceAfter: 0 })
+      expect(await t.wallet.debit({ userId: u, amount: 50, source: 'shop', sourceId: 'ok', description: 'd', isTest: false })).toMatchObject({ currentSyiling: 0, balanceAfter: 0 })
     })
 
     it('a user without a wallet is refused and no wallet is created', async () => {
       const u = await fresh()
-      const err = await refused(t.wallet.debit({ userId: u, amount: 1, source: 'shop', sourceId: 'z', description: 'd' }))
+      const err = await refused(t.wallet.debit({ userId: u, amount: 1, source: 'shop', sourceId: 'z', description: 'd', isTest: false }))
       expect(err.message).toBe('Baki syiling tidak mencukupi.')
       expect(await walletOf(t, u)).toBeUndefined()
     })
 
     it('a replay of a debit returns the first result even when the balance would now be too small', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd' })
-      const first = await t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: 'buy-1', description: 'd' })
-      const again = await t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: 'buy-1', description: 'd' })
+      await t.wallet.credit({ userId: u, amount: 10, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
+      const first = await t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: 'buy-1', description: 'd', isTest: false })
+      const again = await t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: 'buy-1', description: 'd', isTest: false })
       expect(again).toMatchObject({ replayed: true, entryId: first.entryId, amount: -10 })
       expect(await ledgerOf(t, u)).toHaveLength(2)
     })
 
     it('concurrent debits never overdraw the wallet', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 25, source: 'quiz', sourceId: 'a', description: 'd' })
-      const results = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: `b${String(i)}`, description: 'd' })))
+      await t.wallet.credit({ userId: u, amount: 25, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
+      const results = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => t.wallet.debit({ userId: u, amount: 10, source: 'shop', sourceId: `b${String(i)}`, description: 'd', isTest: false })))
       expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2)
       expect((await walletOf(t, u))?.current_syiling).toBe(5)
     })
 
     it('a convert pays the tokens in the same step, stores them on the row and logs no token movement', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 120, source: 'quiz', sourceId: 'a', description: 'd' })
-      const r = await t.wallet.debit({ userId: u, amount: 100, type: 'convert', tokens: 2, source: 'token_conversion', sourceId: 'c-1', description: 'Tukar 100 syiling → 2 token' })
+      await t.wallet.credit({ userId: u, amount: 120, source: 'quiz', sourceId: 'a', description: 'd', isTest: false })
+      const r = await t.wallet.debit({ userId: u, amount: 100, type: 'convert', tokens: 2, source: 'token_conversion', sourceId: 'c-1', description: 'Tukar 100 syiling → 2 token', isTest: false })
       expect(r).toMatchObject({ type: 'convert', amount: -100, balanceAfter: 20, currentSyiling: 20, tokenBalance: 2 })
       expect((await ledgerOf(t, u)).at(-1)).toMatchObject({ type: 'convert', tokens: 2, amount: -100 })
       expect(await t.db.query(`select 1 from token_movements where user_id = $1`, [u])).toHaveLength(0)
@@ -299,9 +301,9 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('programming errors are RangeErrors, not API errors', async () => {
       const u = await fresh()
-      await expect(t.wallet.debit({ userId: u, amount: 5, type: 'convert', source: 's', description: 'd' })).rejects.toThrow(RangeError) // needs tokens
-      await expect(t.wallet.debit({ userId: u, amount: 5, tokens: 1, source: 's', description: 'd' })).rejects.toThrow(RangeError) // spend with tokens
-      await expect(t.wallet.debit({ userId: u, amount: 5, type: 'earn' as never, source: 's', description: 'd' })).rejects.toThrow(RangeError)
+      await expect(t.wallet.debit({ userId: u, amount: 5, type: 'convert', source: 's', description: 'd', isTest: false, sourceId: null, noKeyReason: 'test' })).rejects.toThrow(RangeError) // needs tokens
+      await expect(t.wallet.debit({ userId: u, amount: 5, tokens: 1, source: 's', description: 'd', isTest: false, sourceId: null, noKeyReason: 'test' })).rejects.toThrow(RangeError) // spend with tokens
+      await expect(t.wallet.debit({ userId: u, amount: 5, type: 'earn' as never, source: 's', description: 'd', isTest: false, sourceId: null, noKeyReason: 'test' })).rejects.toThrow(RangeError)
     })
   })
 
@@ -321,20 +323,78 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       ['a malformed user id', { userId: '12abc' }],
     ])('credit rejects %s', async (_name, over) => {
       const u = await fresh()
-      await expect(t.wallet.credit({ userId: u, amount: 1, source: 's', sourceId: 'k', description: 'd', ...over })).rejects.toThrow(RangeError)
+      await expect(t.wallet.credit({ userId: u, amount: 1, source: 's', sourceId: 'k', description: 'd', ...over, isTest: false })).rejects.toThrow(RangeError)
       expect(await ledgerOf(t, u)).toHaveLength(0)
       expect(await walletOf(t, u)).toBeUndefined()
     })
 
-    it('a credit that would pass the integer range is refused and rolls back', async () => {
+    it('L5: a credit, token credit or XP that would pass the integer range is a 409 CONFLICT (BALANCE_LIMIT), not a 500, and writes nothing', async () => {
       const u = await fresh()
-      await t.wallet.credit({ userId: u, amount: 2_147_483_000, source: 'big', sourceId: '1', description: 'd' })
-      await expect(t.wallet.credit({ userId: u, amount: 1000, source: 'big', sourceId: '2', description: 'd' })).rejects.toThrow(RangeError)
-      expect((await walletOf(t, u))?.current_syiling).toBe(2_147_483_000)
+      await t.wallet.credit({ userId: u, amount: 1, source: 'big', sourceId: '1', description: 'd', isTest: false })
+      await t.db.query(`update wallets set current_syiling = 2147483000, total_syiling_earned = 2147483000, token_balance = 2147483000, xp = 2147483000 where user_id = $1`, [u])
+      for (const call of [
+        () => t.wallet.credit({ userId: u, amount: 1000, source: 'big', sourceId: '2', description: 'd', isTest: false }),
+        () => t.wallet.creditTokens({ userId: u, amount: 1000, source: 'big', refId: 'o-1', isTest: false }),
+        () => t.wallet.addXp({ userId: u, amount: 1000, isTest: false }),
+      ]) {
+        const err = await refused(call())
+        expect(err).toMatchObject({ code: 'CONFLICT', details: { reason: 'BALANCE_LIMIT' } })
+        expect(err.getStatus()).toBe(409)
+      }
+      expect(await walletOf(t, u)).toMatchObject({ current_syiling: 2_147_483_000, token_balance: 2_147_483_000, xp: 2_147_483_000 })
+      expect(await ledgerOf(t, u)).toHaveLength(1)
+      expect(await t.db.query(`select 1 from token_movements where user_id = $1`, [u])).toHaveLength(0)
+    })
+
+    it('L5: one call above MAX_AMOUNT_PER_CALL (100000) is a 422 VALIDATION_ERROR (AMOUNT_CEILING) on every write, and the ceiling itself is allowed', async () => {
+      const u = await fresh()
+      const over = MAX_AMOUNT_PER_CALL + 1
+      expect(MAX_AMOUNT_PER_CALL).toBe(100_000)
+      for (const call of [
+        () => t.wallet.credit({ userId: u, amount: over, source: 'big', sourceId: 'c', description: 'd', isTest: false }),
+        () => t.wallet.debit({ userId: u, amount: over, source: 'big', sourceId: 'd', description: 'd', isTest: false }),
+        () => t.wallet.debit({ userId: u, amount: 5, tokens: over, type: 'convert', source: 'big', sourceId: 'e', description: 'd', isTest: false }),
+        () => t.wallet.creditTokens({ userId: u, amount: over, source: 'big', refId: 'c', isTest: false }),
+        () => t.wallet.debitTokens({ userId: u, amount: over, source: 'big', refId: 'd', isTest: false }),
+        () => t.wallet.addXp({ userId: u, amount: over, isTest: false }),
+      ]) {
+        const err = await refused(call())
+        expect(err).toMatchObject({ code: 'VALIDATION_ERROR', details: { reason: 'AMOUNT_CEILING' } })
+        expect(err.getStatus()).toBe(422)
+      }
+      expect(await walletOf(t, u)).toBeUndefined()
+      expect(await t.wallet.credit({ userId: u, amount: MAX_AMOUNT_PER_CALL, source: 'big', sourceId: 'ok', description: 'd', isTest: false })).toMatchObject({ amount: MAX_AMOUNT_PER_CALL })
+    })
+
+    it('L6: sourceId is required; null is allowed only with a noKeyReason and is then not idempotent', async () => {
+      const u = await fresh()
+      const base = { userId: u, amount: 1, source: 's', description: 'd', isTest: false }
+      await expect(t.wallet.credit({ ...base } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.credit({ ...base, sourceId: null } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.credit({ ...base, sourceId: null, noKeyReason: '' })).rejects.toThrow(RangeError)
+      await expect(t.wallet.debit({ ...base } as never)).rejects.toThrow(RangeError)
+      await t.wallet.credit({ ...base, sourceId: null, noKeyReason: 'manual admin award, no natural key' })
+      await t.wallet.credit({ ...base, sourceId: null, noKeyReason: 'manual admin award, no natural key' })
+      expect(await ledgerOf(t, u)).toHaveLength(2)
+    })
+
+    it('M3: isTest is a required boolean on every write (no default)', async () => {
+      const u = await fresh()
+      const noFlag = { userId: u, amount: 1, source: 's' }
+      await expect(t.wallet.credit({ ...noFlag, sourceId: 'k', description: 'd' } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.debit({ ...noFlag, sourceId: 'k', description: 'd' } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.creditTokens({ ...noFlag, refId: 'k' } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.debitTokens({ ...noFlag, refId: 'k' } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.addXp({ userId: u, amount: 1 } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.recordSessionCredit({ sessionId: '3f2b8c1e-5d4a-4f6b-9a7c-0e1d2c3b4a70', userId: u, coinsEarned: 0, pointsEarned: 0, streakCount: 0, totalBalance: 0, completedAt: new Date() } as never)).rejects.toThrow(RangeError)
+      await expect(t.wallet.credit({ ...noFlag, sourceId: 'k', description: 'd', isTest: 'yes' } as never)).rejects.toThrow(RangeError)
+      expect(await walletOf(t, u)).toBeUndefined()
+      expect(isTestActor({ mode: null })).toBe(false)
+      expect(isTestActor({ mode: { kind: 'mod_pelajar' } })).toBe(true)
     })
 
     it('an unknown user is a foreign-key error and leaves nothing behind', async () => {
-      await expect(t.wallet.credit({ userId: '999999999', amount: 1, source: 's', sourceId: 'k', description: 'd' })).rejects.toThrow()
+      await expect(t.wallet.credit({ userId: '999999999', amount: 1, source: 's', sourceId: 'k', description: 'd', isTest: false })).rejects.toThrow()
       expect(await t.db.query(`select 1 from wallets where user_id = 999999999`)).toHaveLength(0)
     })
   })
@@ -342,8 +402,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
   describe('tokens and XP (BR-M14-22)', () => {
     it('token credit and debit move the balance and log token_movements, never the coin ledger', async () => {
       const u = await fresh()
-      expect(await t.wallet.creditTokens({ userId: u, amount: 5, source: 'hadiah_refund', refId: 'r-1' })).toEqual({ tokenBalance: 5 })
-      expect(await t.wallet.debitTokens({ userId: u, amount: 3, source: 'hadiah_redeem', refId: 'r-2' })).toEqual({ tokenBalance: 2 })
+      expect(await t.wallet.creditTokens({ userId: u, amount: 5, source: 'hadiah_refund', refId: 'r-1', isTest: false })).toEqual({ tokenBalance: 5, replayed: false })
+      expect(await t.wallet.debitTokens({ userId: u, amount: 3, source: 'hadiah_redeem', refId: 'r-2', isTest: false })).toEqual({ tokenBalance: 2, replayed: false })
       const moves = await t.db.query<{ delta: number; source: string; ref_id: string | null; is_test: boolean }>(
         `select delta, source, ref_id, is_test from token_movements where user_id = $1 order by id`,
         [u],
@@ -358,47 +418,81 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('a token debit over the balance is 409 INSUFFICIENT_BALANCE "Baki token tidak mencukupi." and writes nothing', async () => {
       const u = await fresh()
-      await t.wallet.creditTokens({ userId: u, amount: 2, source: 'hadiah_refund' })
-      const err = await refused(t.wallet.debitTokens({ userId: u, amount: 3, source: 'hadiah_redeem' }))
+      await t.wallet.creditTokens({ userId: u, amount: 2, source: 'hadiah_refund', isTest: false, refId: 'ref-1' })
+      const err = await refused(t.wallet.debitTokens({ userId: u, amount: 3, source: 'hadiah_redeem', isTest: false, refId: 'ref-2' }))
       expect(err.getStatus()).toBe(409)
       expect(err).toMatchObject({ code: 'INSUFFICIENT_BALANCE', message: 'Baki token tidak mencukupi.' })
       expect(await t.db.query(`select 1 from token_movements where user_id = $1`, [u])).toHaveLength(1)
       // No wallet at all: same refusal, no wallet created.
       const v = await fresh()
-      expect((await refused(t.wallet.debitTokens({ userId: v, amount: 1, source: 'mystery_box' }))).message).toBe('Baki token tidak mencukupi.')
+      expect((await refused(t.wallet.debitTokens({ userId: v, amount: 1, source: 'mystery_box', isTest: false, refId: 'ref-3' }))).message).toBe('Baki token tidak mencukupi.')
       expect(await walletOf(t, v)).toBeUndefined()
     })
 
     it('a seeded negative token balance can rise but is not debited', async () => {
       const u = await fresh()
-      await t.wallet.creditTokens({ userId: u, amount: 1, source: 'hadiah_refund' })
+      await t.wallet.creditTokens({ userId: u, amount: 1, source: 'hadiah_refund', isTest: false, refId: 'ref-4' })
       await t.db.query(`update wallets set token_balance = -3 where user_id = $1`, [u])
-      await expect(t.wallet.debitTokens({ userId: u, amount: 1, source: 'hadiah_redeem' })).rejects.toMatchObject({ code: 'INSUFFICIENT_BALANCE' })
-      expect(await t.wallet.creditTokens({ userId: u, amount: 2, source: 'hadiah_refund' })).toEqual({ tokenBalance: -1 })
+      await expect(t.wallet.debitTokens({ userId: u, amount: 1, source: 'hadiah_redeem', isTest: false, refId: 'ref-5' })).rejects.toMatchObject({ code: 'INSUFFICIENT_BALANCE' })
+      expect(await t.wallet.creditTokens({ userId: u, amount: 2, source: 'hadiah_refund', isTest: false, refId: 'ref-6' })).toEqual({ tokenBalance: -1, replayed: false })
+    })
+
+    it('M2: token movements are idempotent per (user, source, refId): a replay writes nothing, another amount or direction is a 409 IDEMPOTENCY_MISMATCH', async () => {
+      const u = await fresh()
+      expect(await t.wallet.creditTokens({ userId: u, amount: 5, source: 'hadiah_refund', refId: 'redeem-9', isTest: false })).toEqual({ tokenBalance: 5, replayed: false })
+      await t.wallet.creditTokens({ userId: u, amount: 2, source: 'other', refId: 'x', isTest: false })
+      // Same movement again: a replay with the CURRENT balance, no second row.
+      expect(await t.wallet.creditTokens({ userId: u, amount: 5, source: 'hadiah_refund', refId: 'redeem-9', isTest: false })).toEqual({ tokenBalance: 7, replayed: true })
+      const mismatch = [
+        () => t.wallet.creditTokens({ userId: u, amount: 6, source: 'hadiah_refund', refId: 'redeem-9', isTest: false }),
+        () => t.wallet.debitTokens({ userId: u, amount: 5, source: 'hadiah_refund', refId: 'redeem-9', isTest: false }),
+      ]
+      for (const call of mismatch) {
+        const err = await refused(call())
+        expect(err).toMatchObject({ code: 'CONFLICT', details: { reason: 'IDEMPOTENCY_MISMATCH' } })
+        expect(err.getStatus()).toBe(409)
+      }
+      // A debit retried is a replay too, and it is checked before the balance (a spent token debit stays a replay).
+      await t.wallet.debitTokens({ userId: u, amount: 7, source: 'hadiah_redeem', refId: 'redeem-10', isTest: false })
+      expect(await t.wallet.debitTokens({ userId: u, amount: 7, source: 'hadiah_redeem', refId: 'redeem-10', isTest: false })).toEqual({ tokenBalance: 0, replayed: true })
+      // Other user or other source with the same refId is a different key.
+      const v = await fresh()
+      await t.wallet.creditTokens({ userId: v, amount: 5, source: 'hadiah_refund', refId: 'redeem-9', isTest: false })
+      expect(await t.db.query(`select 1 from token_movements where user_id = $1`, [u])).toHaveLength(3)
+      expect((await walletOf(t, u))?.token_balance).toBe(0)
+    })
+
+    it('M2: refId is required for a token movement', async () => {
+      const u = await fresh()
+      for (const refId of [undefined, null, '', 'x'.repeat(201)]) {
+        await expect(t.wallet.creditTokens({ userId: u, amount: 1, source: 's', isTest: false, refId } as never)).rejects.toThrow(RangeError)
+        await expect(t.wallet.debitTokens({ userId: u, amount: 1, source: 's', isTest: false, refId } as never)).rejects.toThrow(RangeError)
+      }
+      expect(await walletOf(t, u)).toBeUndefined()
     })
 
     it('token writes under Mod Pelajar are stamped', async () => {
       const u = await fresh()
-      await t.wallet.creditTokens({ userId: u, amount: 1, source: 'hadiah_refund', isTest: true })
+      await t.wallet.creditTokens({ userId: u, amount: 1, source: 'hadiah_refund', isTest: true, refId: 'ref-7' })
       expect((await t.db.query<{ is_test: boolean }>(`select is_test from token_movements where user_id = $1`, [u]))[0]?.is_test).toBe(true)
     })
 
     it('addXp adds without a ledger row; 0 creates nothing; the level never changes', async () => {
       const u = await fresh()
-      expect(await t.wallet.addXp({ userId: u, amount: 0 })).toEqual({ xp: 0 })
+      expect(await t.wallet.addXp({ userId: u, amount: 0, isTest: false })).toEqual({ xp: 0 })
       expect(await walletOf(t, u)).toBeUndefined()
-      expect(await t.wallet.addXp({ userId: u, amount: 250 })).toEqual({ xp: 250 })
-      expect(await t.wallet.addXp({ userId: u, amount: 10 })).toEqual({ xp: 260 })
+      expect(await t.wallet.addXp({ userId: u, amount: 250, isTest: false })).toEqual({ xp: 250 })
+      expect(await t.wallet.addXp({ userId: u, amount: 10, isTest: false })).toEqual({ xp: 260 })
       expect(await walletOf(t, u)).toMatchObject({ xp: 260, level: 1, current_syiling: 0 })
       expect(await ledgerOf(t, u)).toHaveLength(0)
-      await expect(t.wallet.addXp({ userId: u, amount: -1 })).rejects.toThrow(RangeError)
+      await expect(t.wallet.addXp({ userId: u, amount: -1, isTest: false })).rejects.toThrow(RangeError)
     })
 
     it('token amounts must be positive integers', async () => {
       const u = await fresh()
       for (const amount of [0, -1, 1.2]) {
-        await expect(t.wallet.creditTokens({ userId: u, amount, source: 's' })).rejects.toThrow(RangeError)
-        await expect(t.wallet.debitTokens({ userId: u, amount, source: 's' })).rejects.toThrow(RangeError)
+        await expect(t.wallet.creditTokens({ userId: u, amount, source: 's', isTest: false, refId: 'ref-8' })).rejects.toThrow(RangeError)
+        await expect(t.wallet.debitTokens({ userId: u, amount, source: 's', isTest: false, refId: 'ref-9' })).rejects.toThrow(RangeError)
       }
     })
   })
@@ -408,10 +502,10 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
 
     it('stores the result once; a second call returns the stored result', async () => {
       const u = await fresh()
-      const input = { sessionId: sid, userId: u, coinsEarned: 6, pointsEarned: 60, streakCount: 3, totalBalance: 239, completedAt: new Date('2026-10-19T01:15:00Z') }
+      const input = { sessionId: sid, userId: u, coinsEarned: 6, pointsEarned: 60, streakCount: 3, totalBalance: 239, completedAt: new Date('2026-10-19T01:15:00Z'), isTest: false }
       const first = await t.wallet.recordSessionCredit(input)
       expect(first).toEqual({ recorded: true, result: { sessionId: sid, coinsEarned: 6, pointsEarned: 60, streakCount: 3, totalBalance: 239 } })
-      const again = await t.wallet.recordSessionCredit({ ...input, coinsEarned: 99 })
+      const again = await t.wallet.recordSessionCredit({ ...input, coinsEarned: 99, isTest: false })
       expect(again).toEqual({ recorded: false, result: first.result })
       expect(await t.wallet.sessionCredit(sid, u)).toEqual(first.result)
       expect(await t.wallet.sessionCredit('3f2b8c1e-5d4a-4f6b-9a7c-0e1d2c3b4a00', u)).toBeNull()
@@ -422,9 +516,9 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     it('m6: a session credited to another user is a 409 CONFLICT, on write and on read, and never returns that user data', async () => {
       const [owner, other] = [await fresh(), await fresh()]
       const id = '3f2b8c1e-5d4a-4f6b-9a7c-0e1d2c3b4a61'
-      const input = { sessionId: id, userId: owner, coinsEarned: 6, pointsEarned: 60, streakCount: 3, totalBalance: 239, completedAt: new Date('2026-10-19T01:15:00Z') }
+      const input = { sessionId: id, userId: owner, coinsEarned: 6, pointsEarned: 60, streakCount: 3, totalBalance: 239, completedAt: new Date('2026-10-19T01:15:00Z'), isTest: false }
       await t.wallet.recordSessionCredit(input)
-      const write = await refused(t.wallet.recordSessionCredit({ ...input, userId: other }))
+      const write = await refused(t.wallet.recordSessionCredit({ ...input, userId: other, isTest: false }))
       expect(write).toMatchObject({ code: 'CONFLICT', details: { reason: 'SESSION_OWNER_MISMATCH' } })
       const read = await refused(t.wallet.sessionCredit(id, other))
       expect(read).toMatchObject({ code: 'CONFLICT', details: { reason: 'SESSION_OWNER_MISMATCH' } })
@@ -437,8 +531,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       const id = '3f2b8c1e-5d4a-4f6b-9a7c-0e1d2c3b4a60'
       await t.wallet.recordSessionCredit({ sessionId: id, userId: u, coinsEarned: 0, pointsEarned: 0, streakCount: 1, totalBalance: 0, completedAt: new Date('2026-10-19T01:15:00Z'), isTest: true })
       expect((await t.db.query<{ is_test: boolean }>(`select is_test from session_credits where session_id = $1`, [id]))[0]?.is_test).toBe(true)
-      await expect(t.wallet.recordSessionCredit({ sessionId: 'P1', userId: u, coinsEarned: 0, pointsEarned: 0, streakCount: 0, totalBalance: 0, completedAt: new Date() })).rejects.toThrow(RangeError)
-      await expect(t.wallet.recordSessionCredit({ sessionId: id, userId: u, coinsEarned: -1, pointsEarned: 0, streakCount: 0, totalBalance: 0, completedAt: new Date() })).rejects.toThrow(RangeError)
+      await expect(t.wallet.recordSessionCredit({ sessionId: 'P1', userId: u, coinsEarned: 0, pointsEarned: 0, streakCount: 0, totalBalance: 0, completedAt: new Date(), isTest: false })).rejects.toThrow(RangeError)
+      await expect(t.wallet.recordSessionCredit({ sessionId: id, userId: u, coinsEarned: -1, pointsEarned: 0, streakCount: 0, totalBalance: 0, completedAt: new Date(), isTest: false })).rejects.toThrow(RangeError)
     })
   })
 
@@ -446,19 +540,19 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     it('a credit that waits for the wallet lock is stamped after the holder, so balance_after follows created_at, id', async () => {
       const u = await fresh()
       t.clock.set('2026-10-19T09:00:00+08:00')
-      await t.wallet.credit({ userId: u, amount: 1, source: 'seed', sourceId: 'base', description: 'base' })
+      await t.wallet.credit({ userId: u, amount: 1, source: 'seed', sourceId: 'base', description: 'base', isTest: false })
 
       // The holder keeps the wallet lock; B is started while the clock still reads 09:00 and waits on the lock.
       let release: () => void = () => undefined
       const gate = new Promise<void>((resolve) => (release = resolve))
       const holder = t.prisma.transaction(async () => {
-        await t.wallet.credit({ userId: u, amount: 10, source: 'seed', sourceId: 'holder-1', description: 'holder 1' })
+        await t.wallet.credit({ userId: u, amount: 10, source: 'seed', sourceId: 'holder-1', description: 'holder 1', isTest: false })
         await gate
         t.clock.set('2026-10-19T10:00:00+08:00')
-        await t.wallet.credit({ userId: u, amount: 100, source: 'seed', sourceId: 'holder-2', description: 'holder 2' })
+        await t.wallet.credit({ userId: u, amount: 100, source: 'seed', sourceId: 'holder-2', description: 'holder 2', isTest: false })
       })
       await new Promise((r) => setTimeout(r, 100))
-      const waiting = t.wallet.credit({ userId: u, amount: 1000, source: 'seed', sourceId: 'waiter', description: 'waiter' })
+      const waiting = t.wallet.credit({ userId: u, amount: 1000, source: 'seed', sourceId: 'waiter', description: 'waiter', isTest: false })
       for (let i = 0; i < 100; i++) {
         const [lock] = await t.db.query<{ n: string }>(`select count(*)::text as n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`)
         if (Number(lock?.n) > 0) break
@@ -491,7 +585,7 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
         return real()
       }
       try {
-        await Promise.all(Array.from({ length: 12 }, (_, i) => t.wallet.credit({ userId: u, amount: i + 1, source: 'seed', sourceId: `burst-${String(i)}`, description: 'b' })))
+        await Promise.all(Array.from({ length: 12 }, (_, i) => t.wallet.credit({ userId: u, amount: i + 1, source: 'seed', sourceId: `burst-${String(i)}`, description: 'b', isTest: false })))
       } finally {
         t.clock.now = real
       }

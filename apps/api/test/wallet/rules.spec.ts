@@ -10,6 +10,7 @@ import {
   nextTitleOf,
   previousDay,
   stepStreak,
+  walletLockOrder,
   titleOf,
   upgradedTierId,
   xpNeeded,
@@ -107,5 +108,10 @@ describe('wallet rules (pure, mock rules.ts)', () => {
       expect(stepStreak(s, '2026-10-10')).toBe(s)
       expect(stepStreak(s, '2026-10-18')).toBe(s)
     })
+  })
+
+  it('L3: walletLockOrder sorts distinct user ids numerically, ascending', () => {
+    expect(walletLockOrder(['10', '9', '10', '100', '2'])).toEqual(['2', '9', '10', '100'])
+    expect(walletLockOrder([])).toEqual([])
   })
 })

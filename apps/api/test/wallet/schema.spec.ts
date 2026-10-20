@@ -88,6 +88,30 @@ describe('wallet schema (migration 0010_wallet_streak)', () => {
     expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description) values ($1, 'earn', '', 1, 1, 'd')`, [a])).toMatch(/ck_coin_ledger_source/)
   })
 
+  it('L5: description is at most 500 characters; tokens belong to a convert row and are positive', async () => {
+    const u = await user()
+    const insert = (type: string, amount: number, tokens: number | null, description = 'd') =>
+      db.query(`insert into coin_ledger (user_id, type, source, amount, balance_after, description, tokens) values ($1, $2, 's', $3, 0, $4, $5)`, [u, type, amount, description, tokens])
+    await insert('earn', 1, null, 'x'.repeat(500))
+    expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description) values ($1, 'earn', 's', 1, 0, $2)`, [u, 'x'.repeat(501)])).toMatch(/ck_coin_ledger_description/)
+    await insert('convert', -100, 2)
+    expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description, tokens) values ($1, 'convert', 's', -100, 0, 'd', 0)`, [u])).toMatch(/ck_coin_ledger_tokens/)
+    expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description, tokens) values ($1, 'convert', 's', -100, 0, 'd', -2)`, [u])).toMatch(/ck_coin_ledger_tokens/)
+    expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description, tokens) values ($1, 'spend', 's', -100, 0, 'd', 2)`, [u])).toMatch(/ck_coin_ledger_tokens/)
+    expect(await rejects(`insert into coin_ledger (user_id, type, source, amount, balance_after, description, tokens) values ($1, 'earn', 's', 1, 0, 'd', 2)`, [u])).toMatch(/ck_coin_ledger_tokens/)
+  })
+
+  it('M2: token movements are unique per (user, source, ref_id) when a ref_id is given; ref_id length is checked', async () => {
+    const [a, b] = [await user(), await user()]
+    await db.query(`insert into token_movements (user_id, delta, source, ref_id) values ($1, 2, 'hadiah_refund', 'r1')`, [a])
+    expect(await rejects(`insert into token_movements (user_id, delta, source, ref_id) values ($1, 2, 'hadiah_refund', 'r1')`, [a])).toMatch(/uq_token_movements_user_source_ref_id/)
+    await db.query(`insert into token_movements (user_id, delta, source, ref_id) values ($1, 2, 'hadiah_refund', 'r1')`, [b]) // other user
+    await db.query(`insert into token_movements (user_id, delta, source, ref_id) values ($1, 2, 'other', 'r1')`, [a]) // other source
+    await db.query(`insert into token_movements (user_id, delta, source) values ($1, 2, 'hadiah_refund')`, [a]) // no ref_id: outside the index
+    await db.query(`insert into token_movements (user_id, delta, source) values ($1, 2, 'hadiah_refund')`, [a])
+    expect(await rejects(`insert into token_movements (user_id, delta, source, ref_id) values ($1, 2, 's', '')`, [a])).toMatch(/ck_token_movements_ref_id/)
+  })
+
   describe('coin_ledger is append-only in the database (AC2)', () => {
     it('refuses UPDATE and DELETE of a row born in v2', async () => {
       const u = await user()

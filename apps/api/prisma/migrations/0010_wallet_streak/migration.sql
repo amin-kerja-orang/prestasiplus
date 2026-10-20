@@ -197,6 +197,10 @@ ALTER TABLE "token_movements" ADD CONSTRAINT "fk_token_movements_user_id" FOREIG
 -- written in Prisma, so it lives here only (like ix_notifications_user_id_unread).
 CREATE UNIQUE INDEX "uq_coin_ledger_user_source_source_id" ON "coin_ledger"("user_id", "source", "source_id") WHERE "source_id" IS NOT NULL;
 
+-- Token idempotency, the same shape: one movement per (user, source, ref_id) when a ref_id is given.
+-- The service always supplies a ref_id; rows without one (migrated data) stay outside the index.
+CREATE UNIQUE INDEX "uq_token_movements_user_source_ref_id" ON "token_movements"("user_id", "source", "ref_id") WHERE "ref_id" IS NOT NULL;
+
 -- Legacy source values, as in the other migratable tables.
 ALTER TABLE "tiers" ADD CONSTRAINT "ck_tiers_legacy_source" CHECK ("legacy_source" IS NULL OR "legacy_source" IN ('cloud', 'my'));
 ALTER TABLE "wallets" ADD CONSTRAINT "ck_wallets_legacy_source" CHECK ("legacy_source" IS NULL OR "legacy_source" IN ('cloud', 'my'));
@@ -211,6 +215,9 @@ ALTER TABLE "coin_ledger" ADD CONSTRAINT "ck_coin_ledger_amount_sign" CHECK (
 );
 ALTER TABLE "coin_ledger" ADD CONSTRAINT "ck_coin_ledger_source" CHECK (char_length("source") BETWEEN 1 AND 100);
 ALTER TABLE "coin_ledger" ADD CONSTRAINT "ck_coin_ledger_source_id" CHECK ("source_id" IS NULL OR char_length("source_id") BETWEEN 1 AND 200);
+-- description is at most DESCRIPTION_MAX (500) characters; tokens belong to a convert row and are positive.
+ALTER TABLE "coin_ledger" ADD CONSTRAINT "ck_coin_ledger_description" CHECK (char_length("description") <= 500);
+ALTER TABLE "coin_ledger" ADD CONSTRAINT "ck_coin_ledger_tokens" CHECK ("tokens" IS NULL OR ("type" = 'convert' AND "tokens" > 0));
 
 -- Balances and counters. The syiling balance is never negative; the token balance may be (migrated or seeded data, DV-M14-10).
 ALTER TABLE "wallets" ADD CONSTRAINT "ck_wallets_current_syiling" CHECK ("current_syiling" >= 0);
@@ -224,6 +231,7 @@ ALTER TABLE "tiers" ADD CONSTRAINT "ck_tiers_name" CHECK (char_length("tier_name
 ALTER TABLE "session_credits" ADD CONSTRAINT "ck_session_credits_counts" CHECK ("coins_earned" >= 0 AND "points_earned" >= 0 AND "streak_count" >= 0 AND "total_balance" >= 0);
 ALTER TABLE "token_movements" ADD CONSTRAINT "ck_token_movements_delta" CHECK ("delta" <> 0);
 ALTER TABLE "token_movements" ADD CONSTRAINT "ck_token_movements_source" CHECK (char_length("source") BETWEEN 1 AND 100);
+ALTER TABLE "token_movements" ADD CONSTRAINT "ck_token_movements_ref_id" CHECK ("ref_id" IS NULL OR char_length("ref_id") BETWEEN 1 AND 200);
 
 -- Append-only ledger: no UPDATE, no DELETE and no TRUNCATE of coin_ledger. Two narrow doors stay open, on purpose:
 --  1. A DELETE is allowed only when the owning user no longer exists (NOT EXISTS on users): that is the

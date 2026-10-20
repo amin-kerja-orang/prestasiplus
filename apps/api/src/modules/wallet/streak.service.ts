@@ -5,7 +5,7 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { EMPTY_STREAK, stepStreak, type StreakState } from './rules'
-import { STREAK_MULTIPLIER } from './wallet.constants'
+import { STREAK_FUTURE_SKEW_MS, STREAK_MULTIPLIER } from './wallet.constants'
 import { WalletRepository, type Db } from './wallet.repository'
 import type { StreakView } from './wallet.types'
 
@@ -46,14 +46,23 @@ export class StreakService {
    * Records a qualifying activity (a completed session, a student's password login) and returns the new
    * streak. On the same Malaysia day nothing changes (`changed: false`); on the next day `current` + 1;
    * after a gap `current` restarts at 1; `best` is the maximum; `totalDays` grows on each new streak day.
+   *
+   * `at` (optional) is the moment of a LATE completion, taken from SERVER state (a stored session completion
+   * time), never from a request. It may be in the past, but not in the future: an `at` more than
+   * `STREAK_FUTURE_SKEW_MS` (5 minutes, clock skew) after the server clock throws a `RangeError` and writes
+   * nothing, so a caller cannot farm days ahead. (Chosen over clamping: a wrong `at` is a caller bug that
+   * must be seen, not hidden.)
+   *
    * An `at` on a day BEFORE the last activity (a late or replayed event) changes nothing (`changed: false`):
    * the streak never moves backwards.
    */
   async touch(userId: string, options: { at?: Date; tx?: TxClient } = {}): Promise<StreakView & { changed: boolean }> {
     assertUser(userId)
     return this.run(options.tx, async (db) => {
-      const at = options.at ?? this.clock.now()
-      if (Number.isNaN(at.getTime())) throw new RangeError('StreakService.touch: invalid time')
+      const now = this.clock.now()
+      const at = options.at ?? now
+      if (!(at instanceof Date) || Number.isNaN(at.getTime())) throw new RangeError('StreakService.touch: invalid time')
+      if (at.getTime() > now.getTime() + STREAK_FUTURE_SKEW_MS) throw new RangeError('StreakService.touch: at is in the future')
       await this.repo.ensureStreak(db, userId, at)
       const before = await this.repo.lockStreak(db, userId)
       const state: StreakState = before ?? { ...EMPTY_STREAK }
@@ -67,13 +76,14 @@ export class StreakService {
   /**
    * Marks the first password login of the Malaysia day (BR-M14-14: the +2 `daily_login` credit is paid once a
    * day). `firstToday` is true for the call that wrote the mark and false for every later call of the same day.
-   * Crediting the syiling stays with the caller (`WalletService.credit`, source `daily_login`).
+   * The day is ALWAYS the server clock's (`Clock.now()`): there is no caller time, so a login cannot be marked
+   * for another day. Crediting the syiling stays with the caller (`WalletService.credit`, source `daily_login`,
+   * key `daily_login:<day>`), only when `firstToday` is true.
    */
-  async markDailyLogin(userId: string, options: { at?: Date; tx?: TxClient } = {}): Promise<{ firstToday: boolean; day: string }> {
+  async markDailyLogin(userId: string, options: { tx?: TxClient } = {}): Promise<{ firstToday: boolean; day: string }> {
     assertUser(userId)
     return this.run(options.tx, async (db) => {
-      const at = options.at ?? this.clock.now()
-      if (Number.isNaN(at.getTime())) throw new RangeError('StreakService.markDailyLogin: invalid time')
+      const at = this.clock.now()
       const day = mytDay(at)
       return { firstToday: await this.repo.insertDailyLoginMark(db, userId, day, at), day }
     })

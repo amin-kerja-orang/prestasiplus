@@ -40,6 +40,7 @@ export const EnvSchema = z.object({
   // BE-06 (notifications): inbox throttles per user, counted per process.
   THROTTLE_NOTIFICATION_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
   THROTTLE_NOTIFICATION_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  THROTTLE_WALLET_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** Reverse-proxy hops to trust for the client address (0 = none). */

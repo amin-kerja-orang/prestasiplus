@@ -195,6 +195,21 @@ describe('wallet read endpoints (AC6, AC8)', () => {
       return WalletTransactionsResponseSchema.parse(res.body)
     }
 
+    it('L1: the list is capped at the 500 newest rows (unpaginated, but bounded)', async () => {
+      const u = await bareUser(t, 'cap')
+      await t.db.query(
+        `insert into coin_ledger (user_id, type, source, amount, balance_after, description, created_at)
+         select $1, 'earn', 'cap', 1, g, 'd', timestamptz '2026-01-01 00:00:00+08' + (g || ' minutes')::interval from generate_series(1, 520) g`,
+        [u],
+      )
+      const out = await t.wallet.transactions(u, '')
+      expect(out.data).toHaveLength(500)
+      expect(out.data[0]!.balanceAfter).toBe(520) // newest first
+      expect(out.data.at(-1)!.balanceAfter).toBe(21) // the 20 oldest rows are left out
+      expect((await t.wallet.transactions(u, 'earn')).data).toHaveLength(500)
+      expect((await t.wallet.transactions(u, 'spend')).data).toHaveLength(0)
+    })
+
     it('lists every row of the caller, newest first (created_at desc, id desc), with meta { currentSyiling, type }', async () => {
       const res = await student.get('/gamification/transactions')
       expect(res.headers['cache-control']).toMatch(/no-store/)
@@ -248,11 +263,11 @@ describe('wallet read endpoints (AC6, AC8)', () => {
 
     it('rows of every type are returned with the contract types (spend, convert, bonus, refund)', async () => {
       const u = await bareUser(t, 'tipe')
-      await t.wallet.credit({ userId: u, amount: 100, source: 'a', sourceId: '1', description: 'd' })
-      await t.wallet.credit({ userId: u, amount: 10, source: 'admin_award', sourceId: '2', description: 'Hadiah', type: 'bonus' })
-      await t.wallet.debit({ userId: u, amount: 20, source: 'shop', sourceId: '3', description: 'Beli' })
-      await t.wallet.debit({ userId: u, amount: 50, type: 'convert', tokens: 1, source: 'token_conversion', sourceId: '4', description: 'Tukar 50 syiling → 1 token' })
-      await t.wallet.credit({ userId: u, amount: 20, source: 'shop', sourceId: '5', description: 'Pulangan', type: 'refund' })
+      await t.wallet.credit({ userId: u, amount: 100, source: 'a', sourceId: '1', description: 'd', isTest: false })
+      await t.wallet.credit({ userId: u, amount: 10, source: 'admin_award', sourceId: '2', description: 'Hadiah', type: 'bonus', isTest: false })
+      await t.wallet.debit({ userId: u, amount: 20, source: 'shop', sourceId: '3', description: 'Beli', isTest: false })
+      await t.wallet.debit({ userId: u, amount: 50, type: 'convert', tokens: 1, source: 'token_conversion', sourceId: '4', description: 'Tukar 50 syiling → 1 token', isTest: false })
+      await t.wallet.credit({ userId: u, amount: 20, source: 'shop', sourceId: '5', description: 'Pulangan', type: 'refund', isTest: false })
       const res = WalletTransactionsResponseSchema.parse(await t.wallet.transactions(u, ''))
       expect(res.data.map((r) => [r.type, r.amount, r.balanceAfter])).toEqual([
         ['refund', 20, 60],
@@ -285,8 +300,8 @@ describe('wallet read endpoints (AC6, AC8)', () => {
 
     it('agrees with the wallet endpoint after a credit', async () => {
       const u = await userIdOf(t.db, STUDENT_EMPTY)
-      await t.wallet.credit({ userId: u, amount: 7, source: 'quiz_practice', sourceId: 'chip', description: 'd' })
-      await t.wallet.addXp({ userId: u, amount: 70 })
+      await t.wallet.credit({ userId: u, amount: 7, source: 'quiz_practice', sourceId: 'chip', description: 'd', isTest: false })
+      await t.wallet.addXp({ userId: u, amount: 70, isTest: false })
       await t.streak.touch(u)
       expect(await chips(empty)).toEqual({ coins: 7, points: 70, streakDays: 1 })
       const w = await wallet(empty)
@@ -315,7 +330,7 @@ describe('wallet routes under a low read limit and without tiers', () => {
     const t = await bootWalletApp({ seeds: [identitySeed] })
     try {
       const u = await bareUser(t, 'tanpa tier')
-      expect(await t.wallet.credit({ userId: u, amount: 5, source: 'a', sourceId: '1', description: 'd' })).toMatchObject({ currentSyiling: 5, tierKey: null })
+      expect(await t.wallet.credit({ userId: u, amount: 5, source: 'a', sourceId: '1', description: 'd', isTest: false })).toMatchObject({ currentSyiling: 5, tierKey: null })
       await expect(t.wallet.summary(u)).rejects.toThrow('no tier is defined')
       expect(await t.wallet.gamificationSummary(u)).toEqual({ coins: 5, points: 0, streakDays: 0 }) // the chips need no tier
     } finally {

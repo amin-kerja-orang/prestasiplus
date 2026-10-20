@@ -167,6 +167,7 @@ model TokenMovement {
   /// Signed, never 0.
   delta     Int
   source    String
+  /// Idempotency key with (user_id, source): partial unique index uq_token_movements_user_source_ref_id (migration only).
   refId     String?  @map("ref_id")
   isTest    Boolean  @default(false) @map("is_test")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

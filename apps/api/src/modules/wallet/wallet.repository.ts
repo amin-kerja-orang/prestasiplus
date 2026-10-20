@@ -238,11 +238,12 @@ export class WalletRepository {
     return r ? toLedger(r) : null
   }
 
-  /** Newest first (`created_at` desc, then `id` desc, BR-M14-33). `type` null = all types. */
-  async ledgerOf(db: Db, userId: string, type: string | null): Promise<LedgerRow[]> {
+  /** Newest first (`created_at` desc, then `id` desc, BR-M14-33), at most `limit` rows. `type` null = all types. */
+  async ledgerOf(db: Db, userId: string, type: string | null, limit: number): Promise<LedgerRow[]> {
     const rows = await db.coinLedger.findMany({
       where: { userId: idFromString(userId), ...(type ? { type } : {}) },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
     })
     return rows.map(toLedger)
   }
@@ -265,6 +266,12 @@ export class WalletRepository {
     await db.tokenMovement.create({
       data: { userId: idFromString(row.userId), delta: row.delta, source: row.source, refId: row.refId, isTest: row.isTest, createdAt: row.createdAt },
     })
+  }
+
+  /** The movement that already holds this idempotency key `(user, source, ref_id)`, if any. */
+  async tokenMovementByKey(db: Db, userId: string, source: string, refId: string): Promise<{ delta: number } | null> {
+    const r = await db.tokenMovement.findFirst({ where: { userId: idFromString(userId), source, refId }, select: { delta: true } })
+    return r ? { delta: r.delta } : null
   }
 
   // --- streak ------------------------------------------------------------------------------------

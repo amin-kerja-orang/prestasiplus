@@ -168,4 +168,31 @@ describe('StreakService (AC3): streak by Malaysia day', () => {
     t.clock.set('2026-10-19T09:00:00+08:00')
     expect(await t.streak.touch(u)).toMatchObject({ current: 8, best: 8, changed: true })
   })
+
+  it('M1: an `at` in the future beyond the 5 minute skew is refused (no farming days ahead); a past `at` and a small skew are accepted', async () => {
+    const u = await fresh()
+    t.clock.set('2026-10-19T09:00:00+08:00')
+    await t.streak.touch(u)
+    for (const days of [1, 2, 30]) {
+      await expect(t.streak.touch(u, { at: new Date(t.clock.now().getTime() + days * 86_400_000) })).rejects.toThrow(RangeError)
+    }
+    await expect(t.streak.touch(u, { at: new Date(t.clock.now().getTime() + 5 * 60_000 + 1000) })).rejects.toThrow(/future/)
+    expect(await row(u)).toEqual({ current: 1, best: 1, last_activity_date: '2026-10-19', total_days: 1 })
+    // Within the skew it is today's activity; a late completion from yesterday works as before.
+    expect(await t.streak.touch(u, { at: new Date(t.clock.now().getTime() + 4 * 60_000) })).toMatchObject({ current: 1, changed: false })
+    expect(await t.streak.touch(u, { at: new Date('2026-10-18T20:00:00+08:00') })).toMatchObject({ current: 1, changed: false })
+  })
+
+  it('M1: the daily login is marked once per Malaysia day from the server clock; a caller time is ignored', async () => {
+    const u = await fresh()
+    t.clock.set('2026-10-19T09:00:00+08:00')
+    expect(await t.streak.markDailyLogin(u)).toEqual({ firstToday: true, day: '2026-10-19' })
+    // A forged `at` (other day, future day) changes nothing: there is no caller time on this method.
+    const forged = { at: new Date('2027-01-01T09:00:00+08:00') } as never
+    expect(await t.streak.markDailyLogin(u, forged)).toEqual({ firstToday: false, day: '2026-10-19' })
+    expect(await t.db.query(`select mark_date::text from daily_login_marks where user_id = $1`, [u])).toEqual([{ mark_date: '2026-10-19' }])
+    t.clock.set('2026-10-20T00:00:01+08:00')
+    expect(await t.streak.markDailyLogin(u, forged)).toEqual({ firstToday: true, day: '2026-10-20' })
+    expect(await t.db.query(`select 1 from daily_login_marks where user_id = $1`, [u])).toHaveLength(2)
+  })
 })

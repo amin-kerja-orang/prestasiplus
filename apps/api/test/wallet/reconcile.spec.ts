@@ -54,7 +54,7 @@ describe('ledger reconciliation (AC2)', () => {
       const amount = prng.int(1, 250)
       if (prng.next() < 0.6) {
         const type = prng.pick(['earn', 'earn', 'bonus', 'refund'] as const)
-        await t.wallet.credit({ userId, amount, type, source: 'prng', sourceId: `c${String(i)}`, description: `Kredit ${String(i)}` })
+        await t.wallet.credit({ userId, amount, type, source: 'prng', sourceId: `c${String(i)}`, description: `Kredit ${String(i)}`, isTest: false })
         credits++
       } else {
         const type = prng.pick(['spend', 'convert'] as const)
@@ -66,8 +66,7 @@ describe('ledger reconciliation (AC2)', () => {
             ...(type === 'convert' ? { tokens: prng.int(1, 5) } : {}),
             source: 'prng',
             sourceId: `d${String(i)}`,
-            description: `Debit ${String(i)}`,
-          })
+            description: `Debit ${String(i)}`, isTest: false })
           debits++
         } catch (err) {
           expect(err).toMatchObject({ code: 'INSUFFICIENT_BALANCE' })
@@ -75,7 +74,7 @@ describe('ledger reconciliation (AC2)', () => {
         }
       }
       // A replay of an earlier key in the middle of the run changes nothing.
-      if (i % 10 === 9) await t.wallet.credit({ userId, amount: 999, source: 'prng', sourceId: `c${String(i - 9)}`, description: 'replay' }).catch(() => undefined)
+      if (i % 10 === 9) await t.wallet.credit({ userId, amount: 999, source: 'prng', sourceId: `c${String(i - 9)}`, description: 'replay', isTest: false }).catch(() => undefined)
     }
     expect(credits + debits + refused).toBe(100)
     expect(credits).toBeGreaterThan(30)

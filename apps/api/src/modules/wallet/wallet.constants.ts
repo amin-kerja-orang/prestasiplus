@@ -37,10 +37,24 @@ export const DESCRIPTION_MAX = 500
 /** The largest value of the Postgres `integer` columns that hold balances. */
 export const INT_MAX = 2_147_483_647
 
-/** Per signed-in user. The three reads are cheap and own-scope; the ceiling only stops scraping loops. */
+/**
+ * Per-call ceiling for ONE movement (syiling credit/debit, convert tokens, token credit/debit, XP). A real
+ * movement is a few hundred at most (the biggest observed reward is 25 syiling); the ceiling stops a caller bug
+ * or an unvalidated admin input from minting or draining a wallet in one call. Raising it is a reviewed code change.
+ * A call above it is refused with 422 `VALIDATION_ERROR` (`details.reason = AMOUNT_CEILING`) and writes nothing.
+ */
+export const MAX_AMOUNT_PER_CALL = 100_000
+
+/** `GET /gamification/transactions` returns at most this many rows, newest first (an unpaginated route stays bounded). */
+export const TRANSACTIONS_MAX_ROWS = 500
+
+/** A caller `at` for a streak may be at most this far ahead of the server clock (clock skew between nodes). */
+export const STREAK_FUTURE_SKEW_MS = 5 * 60_000
+
+/** Per signed-in user. The three reads are own-scope and the ledger read is the heavy one; the ceiling stops scraping loops. */
 export const WALLET_READ_LIMIT = {
   bucket: 'wallet.read',
   env: 'THROTTLE_WALLET_READ_PER_MINUTE',
-  default: 600,
+  default: 240,
   per: 'user',
 } as const satisfies RateLimitSpec

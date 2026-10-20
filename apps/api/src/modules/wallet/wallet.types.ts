@@ -1,44 +1,59 @@
 import type { CreditType, DebitType } from './wallet.constants'
 
 /**
+ * The idempotency key of a movement. `sourceId` is REQUIRED so a caller decides on purpose:
+ * - a string: the natural key (a practice session id for `quiz_practice`, `challenge:5:2026-09-24` for a daily
+ *   challenge, `achievement:3`). Together with `userId` and `source` it makes the call idempotent: a second call
+ *   with the same key and the same movement returns the first result and writes nothing.
+ * - `null` plus `noKeyReason`: the explicit opt-out for a movement that has no natural key (for example a manual
+ *   admin award). It is NOT idempotent; a retry writes a second row. `noKeyReason` (1 to 200 characters, not
+ *   stored) records in the code why there is no key.
+ */
+export type MovementKey = { sourceId: string } | { sourceId: null; noKeyReason: string }
+
+/**
  * `WalletService.credit`: adds syiling and one `earn`/`bonus`/`refund` ledger row.
  *
- * `sourceId` is the idempotency key together with `userId` and `source`: a second call with the same key
- * returns the first result and writes nothing. Leave it null only for a movement that has no natural key
- * (it is then NOT idempotent). Examples: a practice session id for `quiz_practice`, `challenge:5:2026-09-24`
- * for a daily challenge (one per challenge per Malaysia day), `achievement:3`.
+ * PDPA: `description` is shown to the user and kept for good, so it must be a STATIC BM template (for example
+ * `Latih Tubi: 12 betul`); it must never hold a name, an IC number, an e-mail, a phone number or another
+ * person's identifier.
  */
-export interface CreditInput {
+export type CreditInput = MovementKey & {
   userId: string
-  /** Positive integer. */
+  /** Positive integer, at most `MAX_AMOUNT_PER_CALL`. */
   amount: number
   /** What caused it (1 to 100 characters), for example `quiz_practice`, `quiz_spm`, `daily_login`, `admin_award`. */
   source: string
-  sourceId?: string | null
-  /** BM text shown to the user in the ledger (1 to 500 characters). */
+  /** Static BM text shown to the user in the ledger (1 to 500 characters, no personal data). */
   description: string
   /** Default `earn`. */
   type?: CreditType
-  /** True while an admin is in Mod Pelajar (`auth.mode !== null`): the row is stamped `is_test`. */
-  isTest?: boolean
+  /**
+   * REQUIRED. True while an admin is in Mod Pelajar (`auth.mode !== null`, see `isTestActor`): the row is
+   * stamped `is_test`. There is no default, so every caller decides.
+   */
+  isTest: boolean
 }
 
 /** `WalletService.debit`: removes syiling and writes one `spend` or `convert` row (409 `INSUFFICIENT_BALANCE` when short). */
-export interface DebitInput {
+export type DebitInput = MovementKey & {
   userId: string
-  /** Positive integer (the ledger stores it negative). */
+  /** Positive integer (the ledger stores it negative), at most `MAX_AMOUNT_PER_CALL`. */
   amount: number
   source: string
-  sourceId?: string | null
+  /** Static BM text, no personal data (see `CreditInput.description`). */
   description: string
   /** Default `spend`. */
   type?: DebitType
   /**
    * `convert` only (BR-M14-10): the tokens this conversion pays out. They are added to the token balance in the
    * same step and stored in the ledger row; a conversion writes no `token_movements` row (as the mock).
+   * SERVER-SIDE ONLY: the caller computes them from the tier `conversionRate` in the database and never takes
+   * them (or the syiling amount) from a request body.
    */
   tokens?: number
-  isTest?: boolean
+  /** REQUIRED (see `CreditInput.isTest`). */
+  isTest: boolean
 }
 
 export interface LedgerOutcome {
@@ -62,14 +77,21 @@ export interface LedgerOutcome {
   tierKey: string | null
 }
 
+/**
+ * Token credit/debit input. `refId` is REQUIRED and is the idempotency key together with `userId` and `source`
+ * (unique index on `token_movements`): the same key with the same movement is a replay (nothing written), with
+ * another amount or direction a 409 `CONFLICT` (`IDEMPOTENCY_MISMATCH`).
+ */
 export interface TokenInput {
   userId: string
-  /** Positive integer. */
+  /** Positive integer, at most `MAX_AMOUNT_PER_CALL`. */
   amount: number
   /** For example `hadiah_redeem`, `mystery_box`, `hadiah_refund`. */
   source: string
-  refId?: string | null
-  isTest?: boolean
+  /** The cause of the movement (1 to 200 characters): a redemption id, a refund id... */
+  refId: string
+  /** REQUIRED (see `CreditInput.isTest`). */
+  isTest: boolean
 }
 
 export interface SessionCreditInput {
@@ -81,7 +103,8 @@ export interface SessionCreditInput {
   streakCount: number
   totalBalance: number
   completedAt: Date
-  isTest?: boolean
+  /** REQUIRED (see `CreditInput.isTest`). */
+  isTest: boolean
 }
 
 export interface SessionCreditResult {
@@ -99,3 +122,6 @@ export interface StreakView {
   totalDays: number
   multiplier: number
 }
+
+/** The `isTest` value for a write made on behalf of a signed-in actor: true while an admin is in Mod Pelajar (`auth.mode !== null`). */
+export const isTestActor = (auth: { mode: unknown }): boolean => auth.mode !== null && auth.mode !== undefined

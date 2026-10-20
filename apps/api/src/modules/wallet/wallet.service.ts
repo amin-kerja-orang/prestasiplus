@@ -13,15 +13,17 @@ import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, startOfMytDay } from '../../db/clock'
 import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { idempotencyConflict, insufficientBalance, sessionCreditOwnerConflict } from './errors'
+import { amountCeiling, balanceLimit, idempotencyConflict, insufficientBalance, sessionCreditOwnerConflict } from './errors'
 import { levelProgressPct, nextTierOf, nextTierProgress, nextTitleOf, titleOf, upgradedTierId, defaultTier, xpNeeded } from './rules'
 import {
   CREDIT_TYPES,
   DEBIT_TYPES,
   DESCRIPTION_MAX,
   INT_MAX,
+  MAX_AMOUNT_PER_CALL,
   SOURCE_ID_MAX,
   SOURCE_MAX,
+  TRANSACTIONS_MAX_ROWS,
   STREAK_MULTIPLIER,
   type CreditType,
   type DebitType,
@@ -46,10 +48,22 @@ function assertText(value: string, max: number, what: string): void {
   if (typeof value !== 'string' || value.length < 1 || value.length > max) throw new RangeError(`WalletService: ${what} must be 1 to ${String(max)} characters`)
 }
 
-function assertKey(source: string, sourceId: string | null | undefined, description: string): void {
-  assertText(source, SOURCE_MAX, 'source')
-  if (sourceId !== undefined && sourceId !== null) assertText(sourceId, SOURCE_ID_MAX, 'sourceId')
-  assertText(description, DESCRIPTION_MAX, 'description')
+/** Source, description and the idempotency key: `sourceId` is a string, or null with a `noKeyReason` (an explicit opt-out). */
+function assertKey(input: { source: string; sourceId: string | null; description: string; isTest: boolean }): void {
+  assertText(input.source, SOURCE_MAX, 'source')
+  if (typeof input.isTest !== 'boolean') throw new RangeError('WalletService: isTest is required (true while an admin is in Mod Pelajar)')
+  if (input.sourceId === null || input.sourceId === undefined) {
+    const reason = (input as { noKeyReason?: unknown }).noKeyReason
+    if (input.sourceId === undefined || typeof reason !== 'string' || reason.length < 1 || reason.length > 200) {
+      throw new RangeError('WalletService: sourceId is required; pass sourceId: null with a noKeyReason (1 to 200 characters) for a movement with no natural key')
+    }
+  } else assertText(input.sourceId, SOURCE_ID_MAX, 'sourceId')
+  assertText(input.description, DESCRIPTION_MAX, 'description')
+}
+
+/** One call may not move more than `MAX_AMOUNT_PER_CALL` (422, nothing written). */
+function assertCeiling(amount: number): void {
+  if (amount > MAX_AMOUNT_PER_CALL) throw amountCeiling()
 }
 
 /** Monday 00:00 of the Malaysia week that contains `at`, as an instant (the week is Monday to Sunday, BR-M14-07). */
@@ -104,6 +118,19 @@ export const toLedgerEntry = (r: LedgerRow): WalletLedgerEntry => ({
  * `tokenBalance`, `tierKey`), which may be newer than that entry. A call that reuses the key for a different
  * movement (a refund with the key of a spend, another amount) throws 409 `CONFLICT` and writes nothing.
  *
+ * PDPA. A ledger `description` is shown to the user and kept for good: callers pass a STATIC BM template (for
+ * example `Latih Tubi: 12 betul`) and never a name, IC number, e-mail, phone number or other identifier.
+ *
+ * SEVERAL USERS. A transaction that writes the wallets of more than one user locks them in ASCENDING `user_id`
+ * order (`walletLockOrder` in rules.ts); the same order everywhere means no cycle, so no deadlock.
+ *
+ * SERVER-SIDE AMOUNTS. A `convert` pays tokens computed by the caller on the server from the tier
+ * `conversionRate` in the database; the syiling amount and the tokens are never taken from a request body.
+ * Every amount is capped per call (`MAX_AMOUNT_PER_CALL`), and a balance that would pass the integer range
+ * is refused with 409 `CONFLICT` (`BALANCE_LIMIT`), never a 500.
+ *
+ * IS_TEST. `isTest` is a REQUIRED boolean on every write: there is no default, so each caller decides.
+ *
  * LEDGER. `coin_ledger` is append-only: a movement is a new row, never an edit. The wallet row is a stored
  * balance kept in step with the ledger inside the same transaction (card open question 2): for rows born in
  * v2, `wallets.current_syiling` equals the sum of the user's ledger amounts (test/wallet/reconcile.spec.ts).
@@ -132,10 +159,11 @@ export class WalletService {
    */
   async credit(input: CreditInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
     assertUser(input.userId)
-    assertKey(input.source, input.sourceId, input.description)
+    assertKey(input)
     const type: CreditType = input.type ?? 'earn'
     if (!(CREDIT_TYPES as readonly string[]).includes(type)) throw new RangeError('WalletService.credit: type must be earn, bonus or refund')
     if (!isPositive(input.amount)) throw new RangeError('WalletService.credit: amount must be a positive integer')
+    assertCeiling(input.amount)
     return this.run(options.tx, async (db) => {
       const tiers = await this.repo.tiers(db)
       await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, this.clock.now())
@@ -145,7 +173,7 @@ export class WalletService {
       if (replay) return replay
       const balance = wallet.currentSyiling + input.amount
       const lifetime = wallet.totalSyilingEarned + input.amount
-      if (balance > INT_MAX || lifetime > INT_MAX) throw new RangeError('WalletService.credit: the balance would exceed the integer range')
+      if (balance > INT_MAX || lifetime > INT_MAX) throw balanceLimit()
       const tierId = upgradedTierId(tiers, wallet.tierId, balance)
       const row = await this.repo.appendLedger(db, {
         userId: input.userId,
@@ -156,7 +184,7 @@ export class WalletService {
         amount: input.amount,
         balanceAfter: balance,
         description: input.description,
-        isTest: input.isTest ?? false,
+        isTest: input.isTest,
         createdAt: at,
       })
       await this.repo.saveWallet(db, input.userId, { currentSyiling: balance, totalSyilingEarned: lifetime, tierId }, at)
@@ -172,11 +200,13 @@ export class WalletService {
    */
   async debit(input: DebitInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
     assertUser(input.userId)
-    assertKey(input.source, input.sourceId, input.description)
+    assertKey(input)
     const type: DebitType = input.type ?? 'spend'
     if (!(DEBIT_TYPES as readonly string[]).includes(type)) throw new RangeError('WalletService.debit: type must be spend or convert')
     if (!isPositive(input.amount)) throw new RangeError('WalletService.debit: amount must be a positive integer')
+    assertCeiling(input.amount)
     if (type === 'convert' && !isPositive(input.tokens)) throw new RangeError('WalletService.debit: a convert needs a positive integer tokens')
+    if (type === 'convert') assertCeiling(input.tokens as number)
     if (type === 'spend' && input.tokens !== undefined) throw new RangeError('WalletService.debit: tokens belong to a convert')
     return this.run(options.tx, async (db) => {
       const wallet = await this.repo.lockWallet(db, input.userId)
@@ -189,7 +219,7 @@ export class WalletService {
       if (!wallet || wallet.currentSyiling < input.amount) throw insufficientBalance('syiling')
       const balance = wallet.currentSyiling - input.amount
       const tokenBalance = wallet.tokenBalance + (tokens ?? 0)
-      if (tokenBalance > INT_MAX) throw new RangeError('WalletService.debit: the token balance would exceed the integer range')
+      if (tokenBalance > INT_MAX) throw balanceLimit()
       const row = await this.repo.appendLedger(db, {
         userId: input.userId,
         type,
@@ -199,7 +229,7 @@ export class WalletService {
         amount: -input.amount,
         balanceAfter: balance,
         description: input.description,
-        isTest: input.isTest ?? false,
+        isTest: input.isTest,
         createdAt: at,
       })
       await this.repo.saveWallet(db, input.userId, { currentSyiling: balance, ...(tokens === null ? {} : { tokenBalance }) }, at)
@@ -207,38 +237,47 @@ export class WalletService {
     })
   }
 
-  /** Adds tokens (BR-M14-22, for example `hadiah_refund`): the token balance goes up and a `token_movements` row is logged. No ledger row. */
-  async creditTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number }> {
+  /**
+   * Adds tokens (BR-M14-22, for example `hadiah_refund`): the token balance goes up and a `token_movements` row is
+   * logged. No ledger row. Idempotent per `(userId, source, refId)`: the same movement again is a replay
+   * (`replayed: true`, nothing written, the current balance); the same key with another amount or direction is
+   * a 409 `CONFLICT` (`IDEMPOTENCY_MISMATCH`).
+   */
+  async creditTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number; replayed: boolean }> {
     this.assertTokenInput(input)
     return this.run(options.tx, async (db) => {
       const tiers = await this.repo.tiers(db)
       await this.repo.ensureWallet(db, input.userId, defaultTier(tiers)?.id ?? null, this.clock.now())
       const wallet = await this.lockedWallet(db, input.userId)
       const at = this.clock.now() // after the lock
+      if (await this.tokenReplay(db, input, input.amount)) return { tokenBalance: wallet.tokenBalance, replayed: true }
       const tokenBalance = wallet.tokenBalance + input.amount
-      if (tokenBalance > INT_MAX) throw new RangeError('WalletService.creditTokens: the token balance would exceed the integer range')
+      if (tokenBalance > INT_MAX) throw balanceLimit()
       await this.moveTokens(db, input, input.amount, tokenBalance, at)
-      return { tokenBalance }
+      return { tokenBalance, replayed: false }
     })
   }
 
-  /** Removes tokens (`hadiah_redeem`, `mystery_box`): 409 `INSUFFICIENT_BALANCE` ("Baki token tidak mencukupi.") when short; no ledger row. */
-  async debitTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number }> {
+  /** Removes tokens (`hadiah_redeem`, `mystery_box`): 409 `INSUFFICIENT_BALANCE` ("Baki token tidak mencukupi.") when short; no ledger row. Idempotent per `(userId, source, refId)` like `creditTokens`. */
+  async debitTokens(input: TokenInput, options: { tx?: TxClient } = {}): Promise<{ tokenBalance: number; replayed: boolean }> {
     this.assertTokenInput(input)
     return this.run(options.tx, async (db) => {
       const wallet = await this.repo.lockWallet(db, input.userId)
       const at = this.clock.now() // after the lock
+      if (wallet && (await this.tokenReplay(db, input, -input.amount))) return { tokenBalance: wallet.tokenBalance, replayed: true }
       if (!wallet || wallet.tokenBalance < input.amount) throw insufficientBalance('token')
       const tokenBalance = wallet.tokenBalance - input.amount
       await this.moveTokens(db, input, -input.amount, tokenBalance, at)
-      return { tokenBalance }
+      return { tokenBalance, replayed: false }
     })
   }
 
   /** Adds XP without a ledger row (BR-M14-22). 0 changes nothing. `level` never changes at runtime (FR-M14-62). */
-  async addXp(input: { userId: string; amount: number; isTest?: boolean }, options: { tx?: TxClient } = {}): Promise<{ xp: number }> {
+  async addXp(input: { userId: string; amount: number; isTest: boolean }, options: { tx?: TxClient } = {}): Promise<{ xp: number }> {
     assertUser(input.userId)
     if (!isCount(input.amount)) throw new RangeError('WalletService.addXp: amount must be a non-negative integer')
+    if (typeof input.isTest !== 'boolean') throw new RangeError('WalletService.addXp: isTest is required')
+    assertCeiling(input.amount)
     return this.run(options.tx, async (db) => {
       if (input.amount === 0) return { xp: (await this.repo.wallet(db, input.userId))?.xp ?? 0 }
       const tiers = await this.repo.tiers(db)
@@ -246,7 +285,7 @@ export class WalletService {
       const wallet = await this.lockedWallet(db, input.userId)
       const at = this.clock.now() // after the lock
       const xp = wallet.xp + input.amount
-      if (xp > INT_MAX) throw new RangeError('WalletService.addXp: xp would exceed the integer range')
+      if (xp > INT_MAX) throw balanceLimit()
       await this.repo.saveWallet(db, input.userId, { xp }, at)
       return { xp }
     })
@@ -261,11 +300,12 @@ export class WalletService {
   async recordSessionCredit(input: SessionCreditInput, options: { tx?: TxClient } = {}): Promise<{ recorded: boolean; result: SessionCreditResult }> {
     assertUser(input.userId)
     if (!UUID.test(input.sessionId)) throw new RangeError('WalletService.recordSessionCredit: sessionId must be a uuid')
+    if (typeof input.isTest !== 'boolean') throw new RangeError('WalletService.recordSessionCredit: isTest is required')
     for (const key of ['coinsEarned', 'pointsEarned', 'streakCount', 'totalBalance'] as const) {
       if (!isCount(input[key])) throw new RangeError(`WalletService.recordSessionCredit: ${key} must be a non-negative integer`)
     }
     return this.run(options.tx, async (db) => {
-      const recorded = await this.repo.insertSessionCredit(db, { ...input, isTest: input.isTest ?? false }, this.clock.now())
+      const recorded = await this.repo.insertSessionCredit(db, input, this.clock.now())
       const stored = await this.repo.sessionCredit(db, input.sessionId)
       if (!stored) throw new Error('WalletService.recordSessionCredit: the stored result is missing')
       if (stored.userId !== input.userId) throw sessionCreditOwnerConflict() // never hand back another user's result
@@ -325,13 +365,14 @@ export class WalletService {
   /**
    * `GET /api/gamification/transactions`: every ledger row of the user, newest first (`created_at` desc, `id`
    * desc, BR-M14-33), not paginated (contract OQ-API-B4-2). `type` empty = all; a value outside the five
-   * types is not an error and gives no rows (FR-M14-08). `meta.type` echoes the query.
+   * types is not an error and gives no rows (FR-M14-08). `meta.type` echoes the query. Not paginated (contract
+   * OQ-API-B4-2) but bounded: at most `TRANSACTIONS_MAX_ROWS` (500) rows, the newest ones.
    */
   async transactions(userId: string, type: string, options: { tx?: TxClient } = {}): Promise<WalletTransactionsResponse> {
     assertUser(userId)
     const db = this.repo.handle(options.tx)
     const known = type === '' || (WALLET_LEDGER_TYPES as readonly string[]).includes(type)
-    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null) : Promise.resolve([]), this.repo.wallet(db, userId)])
+    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null, TRANSACTIONS_MAX_ROWS) : Promise.resolve([]), this.repo.wallet(db, userId)])
     return { data: rows.map(toLedgerEntry), meta: { currentSyiling: wallet?.currentSyiling ?? 0, type } }
   }
 
@@ -391,12 +432,23 @@ export class WalletService {
   private assertTokenInput(input: TokenInput): void {
     assertUser(input.userId)
     assertText(input.source, SOURCE_MAX, 'source')
-    if (input.refId !== undefined && input.refId !== null) assertText(input.refId, SOURCE_ID_MAX, 'refId')
+    if (typeof input.refId !== 'string') throw new RangeError('WalletService: refId is required for a token movement (it is the idempotency key)')
+    assertText(input.refId, SOURCE_ID_MAX, 'refId')
+    if (typeof input.isTest !== 'boolean') throw new RangeError('WalletService: isTest is required (true while an admin is in Mod Pelajar)')
     if (!isPositive(input.amount)) throw new RangeError('WalletService: token amount must be a positive integer')
+    assertCeiling(input.amount)
+  }
+
+  /** True when the key `(user, source, refId)` already holds the SAME movement (same signed delta); a different one is a 409 `CONFLICT`. */
+  private async tokenReplay(db: Db, input: TokenInput, delta: number): Promise<boolean> {
+    const first = await this.repo.tokenMovementByKey(db, input.userId, input.source, input.refId)
+    if (!first) return false
+    if (first.delta !== delta) throw idempotencyConflict()
+    return true
   }
 
   private async moveTokens(db: Db, input: TokenInput, delta: number, tokenBalance: number, at: Date): Promise<void> {
     await this.repo.saveWallet(db, input.userId, { tokenBalance }, at)
-    await this.repo.appendTokenMovement(db, { userId: input.userId, delta, source: input.source, refId: input.refId ?? null, isTest: input.isTest ?? false, createdAt: at })
+    await this.repo.appendTokenMovement(db, { userId: input.userId, delta, source: input.source, refId: input.refId, isTest: input.isTest, createdAt: at })
   }
 }

@@ -111,3 +111,12 @@ export function stepStreak(state: StreakState, date: string): StreakState {
   const current = state.lastActivityDate === previousDay(date) ? state.current + 1 : 1
   return { current, best: Math.max(state.best, current), lastActivityDate: date, totalDays: state.totalDays + 1 }
 }
+
+/**
+ * LOCK ORDER FOR SEVERAL USERS. A transaction that writes the wallets of more than one user (a transfer, a
+ * class reward, a gift) must touch them in ASCENDING `user_id` order, so two such transactions cannot wait on
+ * each other in a cycle. Returns the distinct ids sorted numerically (ids are decimal strings of a bigint).
+ */
+export function walletLockOrder(userIds: readonly string[]): string[] {
+  return [...new Set(userIds)].sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0))
+}
