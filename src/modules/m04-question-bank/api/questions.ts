@@ -31,13 +31,13 @@ export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_
 
 /**
  * http mode only (BE-09 `QuestionStatus`, BE-09 bulk actions): the mock vocabulary of the filter and
- * the workflow actions mapped to the v2 wire codes (the contract says the mock's "approved" meant live,
- * that is `published`). A value not listed has no 1:1 wire equivalent (`rejected`, `reject`).
+ * the workflow actions mapped to the v2 wire codes (filter: approved stays `approved`, `published` is its own option). A value not listed has no 1:1 wire equivalent (`rejected`, `reject`).
  */
 export const STATUS_FILTER_TO_WIRE: Readonly<Record<string, string>> = {
   draft: 'draft',
   pending_review: 'review',
-  approved: 'published',
+  approved: 'approved',
+  published: 'published',
   archived: 'archived',
 }
 export const BULK_ACTION_TO_WIRE: Readonly<Record<string, string>> = {

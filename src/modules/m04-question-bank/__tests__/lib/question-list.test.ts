@@ -119,7 +119,8 @@ describe('http mode wire values (BE-09 status, bulk actions)', () => {
     expect(STATUS_FILTER_TO_WIRE).toEqual({
       draft: 'draft',
       pending_review: 'review',
-      approved: 'published',
+      approved: 'approved',
+      published: 'published',
       archived: 'archived',
     })
     expect(BULK_ACTION_TO_WIRE).toEqual({
@@ -128,6 +129,17 @@ describe('http mode wire values (BE-09 status, bulk actions)', () => {
       archive: 'archived',
       delete: 'delete',
     })
+  })
+  it('adds the Diterbitkan filter option in http mode only', () => {
+    expect(statusOptionsFor(true).map((o) => o.value)).toEqual([
+      'draft',
+      'pending_review',
+      'approved',
+      'published',
+      'archived',
+    ])
+    expect(statusOptionsFor(true).find((o) => o.value === 'published')?.label).toBe('Diterbitkan')
+    expect(statusOptionsFor(false).map((o) => o.value)).not.toContain('published')
   })
   it('hides options with no wire equivalent in http mode only', () => {
     expect(statusOptionsFor(true).map((o) => o.value)).not.toContain('rejected')

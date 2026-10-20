@@ -81,9 +81,15 @@ export const BULK_OPTIONS: readonly { value: BulkAction; label: string; verb: st
   { value: 'delete', label: 'Padam', verb: 'memadamkan' },
 ]
 
-/** The status filter options; http mode hides those with no v2 wire equivalent. */
-export const statusOptionsFor = (http: boolean = isHttpMode()) =>
-  http ? STATUS_OPTIONS.filter((o) => !NO_WIRE_STATUS_FILTERS.includes(o.value)) : STATUS_OPTIONS
+/** The status filter options; http mode hides those with no v2 wire equivalent and adds Diterbitkan. */
+export const statusOptionsFor = (
+  http: boolean = isHttpMode(),
+): readonly { value: string; label: string }[] => {
+  if (!http) return STATUS_OPTIONS
+  const kept = STATUS_OPTIONS.filter((o) => !NO_WIRE_STATUS_FILTERS.includes(o.value))
+  const at = kept.findIndex((o) => o.value === 'approved') + 1
+  return [...kept.slice(0, at), { value: 'published', label: 'Diterbitkan' }, ...kept.slice(at)]
+}
 
 /** The bulk actions; http mode hides those with no v2 wire equivalent. */
 export const bulkOptionsFor = (http: boolean = isHttpMode()) =>
