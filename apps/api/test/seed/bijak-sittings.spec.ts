@@ -11,6 +11,7 @@ import { questionsSeed } from '../../prisma/seed/questions'
 import { BIJAK_BANK_SITTINGS, BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
 import { classesSeed } from '../../prisma/seed/poc/classes'
 import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
+import { featureModules } from '../../src/modules'
 import { MIN_COHORT } from '../../src/modules/reports/performance/domain/constants'
 import { SchoolAdminDashboardSchema } from '@pp/contract'
 
@@ -193,7 +194,8 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
   let t: SchoolAdminTestApp
 
   beforeAll(async () => {
-    t = await bootSchoolAdminApp()
+    // The full feature set, so the dashboard reads Bijak data through the real BE-19 wiring (BijakIntegrationModule).
+    t = await bootSchoolAdminApp({ modules: featureModules, env: { BIJAK_POC_QUESTIONS: 'true' } })
     await runSeeds([curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
   }, 180_000)
   afterAll(async () => {
@@ -208,7 +210,11 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
     expect(d.cards.pupils).toBeGreaterThanOrEqual(5)
   })
 
-  // NOTE: this app binds the default NoSchoolPerformance port (the real BE-19 binding is on branch
-  // be/BE-21-perf-port, not merged on this base), so the dashboard performance block is empty here. The Bijak
-  // data behind it is asserted in the first describe through the BE-19 aggregate (PerformancePorts) instead.
+  it('shows the seeded Bijak sittings in the practice block through the real BE-19 port', async () => {
+    const res = await apiOf(await login(t, SCHOOL_ADMIN)).get('/admin-sekolah/dashboard')
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const d = SchoolAdminDashboardSchema.parse(res.body.data)
+    expect(d.performance.practice.sessions).toBeGreaterThan(0)
+    expect(d.performance.practice.accuracy).not.toBeNull()
+  })
 })
