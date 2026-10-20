@@ -58,6 +58,18 @@ model User {
   passwordResets        PasswordReset[]
   settings              UserSettings?
   notifications         Notification[]
+  // BE-24 back-relations (content.prisma owns the models).
+  articles              Article[]           @relation("ArticleAuthor")
+  notes                 Note[]              @relation("NoteAuthor")
+  videos                Video[]             @relation("VideoUploader")
+  perutusan             Perutusan[]         @relation("PerutusanAuthor")
+  perutusanComments     PerutusanComment[]  @relation("PerutusanCommentUser")
+  perutusanReactions    PerutusanReaction[] @relation("PerutusanReactionUser")
+  perutusanReads        PerutusanRead[]     @relation("PerutusanReadUser")
+  screenshots           Screenshot[]        @relation("ScreenshotUploader")
+  audioKbatSets         AudioKbatSet[]      @relation("AudioKbatSetCreator")
+  audioKbatAttempts     AudioKbatAttempt[]  @relation("AudioKbatAttemptUser")
+  supportTickets        SupportTicket[]     @relation("SupportTicketUser")
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")
