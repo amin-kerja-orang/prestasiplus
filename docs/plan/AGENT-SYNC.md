@@ -96,7 +96,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-21 | contract-only | 2026-10-19 | School admin: `packages/contract/src/school-admin/**`. |
 | BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
 | BE-24 | full | 2026-10-20 | Group A (PC-1). Content (M09) + support tickets (M22). **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-24-content-support` from b5d5d7d4. Depends BE-03/04/05/06 (all done); uses BE-06 NotificationsService + BE-05 school scope. **Migration number 0009** (BE-08 curriculum holds 0008 and merges first; LEAD merges in numeric order). no-store/429 (D57). Security review. |
-| BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
+| BE-36 | contract | 2026-10-19 | AI adapter wire types. **DONE — PR #27 merged 2026-10-20.** |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
 | BE-13 | contract-only | 2026-10-19 | Practice read models (Group B): `packages/contract/src/practice/reads/**` only; do not edit BE-12's files in `practice/`. |
@@ -104,14 +104,14 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
 | BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
 | BE-22 | contract-only | 2026-10-19 | Command Center and admin dashboard: `packages/contract/src/admin/command-center/**`. |
-| BE-38 | contract-only | 2026-10-19 | Intake batches and review: `packages/contract/src/intake/**`. Match the prototype intake in `src/modules/m28-bijak-spm/admin/intake` (types.ts, server/store.ts) and the five lifecycle states (D54a). |
-| BE-39 | contract-only | 2026-10-19 | Paper builder and blueprints: `packages/contract/src/bijak/builder/**` only. Match `src/modules/m28-bijak-spm/admin/papers` and server/admin.ts. |
+| BE-38 | contract | 2026-10-19 | Intake batches and review contract. **DONE — PR #35 merged 2026-10-20** (combined with #28, openapi.json regenerated). |
+| BE-39 | contract | 2026-10-19 | Paper builder and blueprints contract. **DONE — PR #28 merged 2026-10-20** (contract-breaking; combined with #35). |
 | BE-42 | contract-only | 2026-10-19 | PKSK: `packages/contract/src/pksk/**`. |
 | BE-43 | contract-only | 2026-10-19 | Cikgu Alesa: `packages/contract/src/cikgu/**`. |
 | BE-44 | contract-only | 2026-10-19 | Battle: `packages/contract/src/battle/**`. |
 | BE-45 | contract-only | 2026-10-19 | Papan Bijak, games hub, leagues: `packages/contract/src/games/**`. |
-| BE-46 | contract-only | 2026-10-19 | Marketplace: `packages/contract/src/marketplace/**`. |
-| BE-47 | contract-only | 2026-10-19 | Keluarga Angkat (student side): `packages/contract/src/sponsorship/**`. |
+| BE-46 | full | 2026-10-20 | Group A (PC-1). Marketplace (M15 rest). Depends BE-03/05 (done). Contract merged. Opened for s-aminfaudzi-e3m2. Branch `be/BE-46-marketplace`. |
+| BE-47 | full | 2026-10-20 | Group A (PC-1). Keluarga Angkat / sponsorship (student side). Depends BE-03/05 (done). Contract merged. Opened for s-aminfaudzi-e3m2. Branch `be/BE-47-sponsorship`. |
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
@@ -124,6 +124,12 @@ Rules for `contract-only`:
   5. `npm run contract:emit`, commit the changed `packages/contract/openapi.json` (never hand-edit it), then `npm run contract:check` and `npm test -- packages/contract` (about 10 seconds).
 
 ### Lead notices (current instructions; newest first)
+
+- 2026-10-20 **MANDATORY — read before any push**:
+  1. **GitHub Actions billing hit 90% (1800/2000 free min).** A $0 Actions budget is set, so overage is BLOCKED (no charge) and runs stop when the limit is reached. CI is advisory, not a gate — the LEAD verifies every merge LOCALLY with be:verify. Do NOT rely on GitHub CI; do NOT push WIP repeatedly (each push burns minutes).
+  2. **Before EVERY push / PR:** `git fetch origin && git rebase origin/feature/v2-backend`, then `npm run contract:emit` (regenerate `packages/contract/openapi.json` on the CURRENT base). The 4 Group B PRs conflicted badly because each regenerated openapi.json on a stale base. Rebase + regenerate first, then push ONCE.
+  3. **Group B PRs all merged** (2026-10-20): #27 BE-36, #31 BE-08 (curriculum, migration 0008), #35 BE-38, #28 BE-39 (contract-breaking). Base CI fixed directly by the LEAD (untracked .claude/worktrees gitlinks + gitleaks allowlist for PASSWORD_ALPHABET & .env.api.example false positives). #33 redundant; close it.
+  4. **Opened:** BE-46 (Marketplace), BE-47 (Keluarga Angkat) full for Group A.
 
 - 2026-10-20: **BE-06 merged** (b5d5d7d4; account, mustChangePassword guard, teacher self-register fail-closed, register throttle decoupled from the login brute-force throttle). **BE-24 opened + claimed** (pc-aminfaudzi/S2, migration 0009). Done: 12/48 (BE-01,02,03,04,05,06,07,25,27,31,34,35); P0 9/13, P1 3/23. **Migrations merged 0001-0007; allocated: 0008 = BE-08 curriculum (Group B, merges next, critical path), 0009 = BE-24.** LEAD merges in numeric order. **Group B coordinates migration numbers via git** (BE-08 correctly took 0008 after 0007=BE-06). Teacher self-register verification flow recorded as BE-21 AC#13.
 - 2026-10-20: **BE-07, BE-31 merged + LEAD contract change (session.mustChangePassword + PASSWORD_CHANGE_REQUIRED, a6c16790).** be:verify now runs `npm test -w @pp/contract-tests` (gate gap closed). **BE-32 opened + claimed (PC-1 part, e3m2); LEAD owns L1/V2-T31.** BE-06 (61) rebasing onto the contract change to build the mustChangePassword guard. Done: BE-01,02,03,04,05,07,25,27,31,34,35 (11/48); P0 9/13. **Group B (collaborator PC): active today — BE-08 curriculum (full, critical path) pushed, last at ~03:51; BE-36/39 contracts ~05:01.** Group B coordination is via the project owner (relay), not GitHub issues (gh not available to the LEAD here).

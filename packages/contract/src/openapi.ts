@@ -53,6 +53,7 @@ import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './sch
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
 import { FILES_COMPONENT_SCHEMAS, registerFilesPaths } from './files/paths'
 import { AI_COMPONENT_SCHEMAS, registerAiPaths } from './ai/paths'
+import { INTAKE_COMPONENT_SCHEMAS, registerIntakePaths } from './intake/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -120,6 +121,7 @@ export const COMPONENT_SCHEMAS = {
   ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
   ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
+  ...INTAKE_COMPONENT_SCHEMAS, // BE-38
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -167,6 +169,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCikguPaths(registry) // BE-43 (M13)
   registerFilesPaths(registry) // BE-04
   registerAiPaths(registry) // BE-36 (AI adapter wire types, admin routes)
+  registerIntakePaths(registry) // BE-38
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
