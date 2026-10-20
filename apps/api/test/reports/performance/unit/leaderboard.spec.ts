@@ -28,18 +28,20 @@ describe('Leaderboard (S20)', () => {
   it('week: ordered by coins DESC; accuracy is the mean of the session percentages; me is the viewer', async () => {
     const r = await w.board.leaderboard(viewer, 'week')
     expect(r.period).toBe('week')
+    // the viewer is pupil 1: own row keeps the id, the other pupil's id is hidden
     expect(r.rows.map((x) => [x.rank, x.userId, x.coins, x.sessions, x.accuracy, x.avatarUrl])).toEqual([
-      [1, '2', 50, 1, 100, null],
+      [1, null, 50, 1, 100, null],
       [2, '1', 50, 2, 70, null],
     ])
+    expect(r.rows.map((x) => x.name)).toEqual(['Bakar I.', 'Aina Binti Hassan'])
     expect(r.me).toEqual({ rank: 2, coins: 50, sessions: 2, accuracy: 70 })
     expect(r.participants).toBe(2)
     PerformanceLeaderboardSchema.parse(r)
   })
 
   it('window edges in MYT: Sunday 23:59 is last week; month and all widen the window', async () => {
-    expect((await w.board.leaderboard(viewer, 'week')).rows.map((x) => x.userId)).not.toContain('3')
-    expect((await w.board.leaderboard(viewer, 'month')).rows.find((x) => x.userId === '3')?.coins).toBe(100)
+    expect((await w.board.leaderboard(ctxOf('admin', 'a1'), 'week')).rows.map((x) => x.userId)).not.toContain('3')
+    expect((await w.board.leaderboard(ctxOf('admin', 'a1'), 'month')).rows.find((x) => x.userId === '3')?.coins).toBe(100)
     expect((await w.board.leaderboard(viewer, 'all')).rows).toHaveLength(3)
     expect(periodWindow('week', new Date(NOW)).from?.toISOString()).toBe('2026-09-20T16:00:00.000Z')
     expect(periodWindow('month', new Date(NOW)).from?.toISOString()).toBe('2026-08-31T16:00:00.000Z')
@@ -57,7 +59,7 @@ describe('Leaderboard (S20)', () => {
   it('6. a pupil with only test sessions is never shown, in any period', async () => {
     addPupil(w, '8', 'Murid Ujian Lain', 's1')
     w.practice.addSession({ userId: '8', completedAt: new Date('2026-09-25T10:00:00+08:00'), questionCount: 10, correctCount: 10, coins: 500, isTest: true })
-    for (const p of ['week', 'month', 'all']) expect((await w.board.leaderboard(viewer, p)).rows.map((x) => x.userId)).not.toContain('8')
+    for (const p of ['week', 'month', 'all']) expect((await w.board.leaderboard(ctxOf('admin', 'a1'), p)).rows.map((x) => x.userId)).not.toContain('8')
     expect((await w.board.leaderboard(ctxOf('admin', '8'), 'all')).me).toMatchObject({ rank: null })
   })
 

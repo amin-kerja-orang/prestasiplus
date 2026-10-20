@@ -22,10 +22,12 @@ beforeEach(() => {
     w.practice.addAnswers(String(i), 10, 10 - i, { levelCode: i <= 8 ? 't4' : 't5' })
   }
   w.directory.addPupil({ id: 't1', name: 'Cikgu Ujian', schoolId: 's1', isStudent: false })
+  // The teacher's own class holds every pupil, so the teacher sees full names here (the scope matrix is in names-privacy.spec.ts).
+  w.classes.add({ id: 'c1', schoolId: 's1', teacherId: 't1' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
 })
 
 describe('Rankings: privacy (OQ-7)', () => {
-  it('names: staff see full names, others first name + last initial; ids only on the own row', async () => {
+  it('names: a teacher sees the own class in full, others first name + last initial; ids only where the name is full', async () => {
     const s = await w.ranking.rankings(student, {})
     expect(s.rows[0]).toMatchObject({ userId: '1', name: 'Murid1 Penuh Nama1' }) // own row, full name
     expect(s.rows[1]).toMatchObject({ userId: null, name: 'Murid2 N.' })

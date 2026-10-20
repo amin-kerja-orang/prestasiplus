@@ -73,6 +73,21 @@ describe('leaderboard', () => {
   })
 })
 
+describe('leaderboard names', () => {
+  it('a student sees the own id and full name, other rows first name + last initial with a null id', async () => {
+    const own = w.ids['pelajar@demo.test']
+    const data = parseData(await (as.pelajar as Client).get('/api/leaderboard?period=all'), PerformanceLeaderboardSchema)
+    const mine = data.rows.find((r) => r.userId === own)
+    expect(mine?.name).toMatch(/^Murid Ujian d+ Penuh$/)
+    const others = data.rows.filter((r) => r.userId !== own)
+    expect(others.length).toBeGreaterThan(0)
+    for (const r of others) {
+      expect(r.userId).toBeNull()
+      expect(r.name).toMatch(/^Murid S+ P.$/)
+    }
+  })
+})
+
 describe('weekly report', () => {
   it('is 403 for every role', async () => {
     for (const k of who) expectError(await (as[k] as Client).get('/api/weekly-report'), 'FORBIDDEN', 'This action is unauthorized.')
@@ -99,6 +114,25 @@ describe('public student profile', () => {
       bodies.add(JSON.stringify(res.body))
     }
     expect(bodies.size).toBe(1)
+  })
+
+  it('7b. an inactive and a suspended pupil give the same 404 as an unknown id (L6)', async () => {
+    // Users have no is_test column; Mod Pelajar data is excluded in the practice and gamification adapters.
+    const inactive = w.ids['ujian5@demo.test'] as string
+    const suspended = w.ids['ujian6@demo.test'] as string
+    const unknown = await w.http().get('/api/public/students/9999999')
+    await w.db.query('update users set is_active = false where id = $1', [inactive])
+    await w.db.query('update users set is_suspended = true where id = $1', [suspended])
+    try {
+      for (const id of [inactive, suspended]) {
+        const res = await w.http().get(`/api/public/students/${id}`)
+        expect(res.status).toBe(404)
+        expect(JSON.stringify(res.body)).toBe(JSON.stringify(unknown.body))
+      }
+    } finally {
+      await w.db.query('update users set is_active = true where id = $1', [inactive])
+      await w.db.query('update users set is_suspended = false where id = $1', [suspended])
+    }
   })
 
   it('8. enumeration is rate limited per client address (429 with Retry-After)', async () => {

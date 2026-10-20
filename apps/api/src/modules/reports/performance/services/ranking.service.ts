@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { RANKING_MIN_ANSWERS, RANKING_ROW_CAP } from '../domain/constants'
-import { displayName, isStaff, scopeVisible } from '../domain/privacy'
-import { levelCodeOf, parseScope, rankingAccuracy, rankingTitle, shortName, type RankingScope } from '../domain/ranking'
+import { canSeeName, displayName, scopeVisible } from '../domain/privacy'
+import { levelCodeOf, parseScope, rankingAccuracy, rankingTitle, type RankingScope } from '../domain/ranking'
+import { resolveNameScope } from './name-scope'
 import { DIRECTORY_PORT, PerformancePorts, type DirectoryPort, type PracticeScopeQuery } from '../ports'
 import type { Ctx, PerformanceRanking } from './types'
 
@@ -16,8 +17,9 @@ export interface RankingQueryInput {
 /**
  * Ranking table (S19). Source: `PracticeReadPort.rankingRows` (non-test practice answers), `tahap` from the
  * gamification port. A pupil is ranked from RANKING_MIN_ANSWERS answers; order: correct DESC, accuracy DESC,
- * id ASC (OQ-2). Privacy (OQ-7): staff see full names; everyone else the first name plus the last initial,
- * a pupil id only on the own row, and a school name only in the sekolah and daerah scopes; a non-staff viewer
+ * id ASC (OQ-2). Privacy (OQ-7): full name and id only where `canSeeName` holds (own row, a teacher's own
+ * class pupils, a school admin's own-school pupils, admin: all); every other row gets the first name plus the
+ * last initial and a null id; a school name only in the sekolah and daerah scopes; a non-staff viewer
  * gets an empty table (total 0) for a filtered scope holding fewer than MIN_COHORT ranked pupils, and the
  * state list leaves out states with fewer than MIN_COHORT ranked pupils.
  */
@@ -57,21 +59,25 @@ export class RankingService {
 
     const rows = result.rows.slice(0, RANKING_ROW_CAP)
     const profiles = await this.ports.gamification.profiles(rows.map((r) => r.userId))
+    const names = await resolveNameScope(ctx, rows.map((r) => r.userId), this.ports.classes, this.directory)
     const showSchool = scope === 'sekolah' || scope === 'daerah'
     return {
       scope,
       title,
       showFooter: scope === 'nasional',
       states,
-      rows: rows.map((r, i) => ({
-        rank: i + 1,
-        userId: r.userId === ctx.userId || isStaff(ctx.role) ? r.userId : null,
-        name: displayName(ctx.role, ctx.userId, r.userId, r.name, shortName(r.name)),
-        schoolName: showSchool ? r.schoolName : '',
-        tahap: profiles.get(r.userId)?.level ?? 1,
-        correct: r.correct,
-        accuracy: rankingAccuracy(r.correct, r.answered),
-      })),
+      rows: rows.map((r, i) => {
+        const visible = canSeeName(ctx.role, ctx.userId, r.userId, names.ownPupils, names.schoolPupils)
+        return {
+          rank: i + 1,
+          userId: visible ? r.userId : null,
+          name: displayName(r.name, visible),
+          schoolName: showSchool ? r.schoolName : '',
+          tahap: profiles.get(r.userId)?.level ?? 1,
+          correct: r.correct,
+          accuracy: rankingAccuracy(r.correct, r.answered),
+        }
+      }),
       total: result.total,
     }
   }

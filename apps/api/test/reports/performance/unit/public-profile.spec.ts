@@ -1,8 +1,8 @@
 import { PerformancePublicProfileSchema } from '@pp/contract'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '../../../../src/common/errors/api-error'
-import { ctxOf } from '../fakes/fixtures'
+import { PUBLIC_PROFILE_FLOOR_MS } from '../../../../src/modules/reports/performance/services/public-profile.service'
 import { addPupil, socialWorld, type SocialWorld } from '../fakes/social-world'
 
 let w: SocialWorld
@@ -28,7 +28,7 @@ beforeEach(() => {
 
 const refusal = async (id: string): Promise<string> => {
   try {
-    await w.profile.profile(id, null)
+    await w.profile.profile(id)
     return 'no error'
   } catch (e) {
     const err = e as ApiError
@@ -38,7 +38,7 @@ const refusal = async (id: string): Promise<string> => {
 
 describe('Public profile (S18)', () => {
   it('shows the first name only, no school, and the figures of the pupil', async () => {
-    const r = await w.profile.profile('1', null)
+    const r = await w.profile.profile('1')
     expect(r).toMatchObject({
       id: '1',
       name: 'Aina',
@@ -63,18 +63,37 @@ describe('Public profile (S18)', () => {
     expect(new Set(answers).size).toBe(1)
   })
 
-  it('posts are listed only to a signed-in viewer', async () => {
+  it('the anonymous profile never lists posts and does not even query the timeline', async () => {
     const post = { id: '5', userId: '1', title: 'Sijil', category: 'sijil' as const, eventDate: null, story: null, photos: [{ url: '/api/files/abc', caption: null }], createdAt: new Date('2026-09-20T10:00:00+08:00') }
-    w.ports.provideTimeline({ postsOf: async () => [post] })
-    expect((await w.profile.profile('1', null)).posts).toEqual([])
-    const signedIn = await w.profile.profile('1', ctxOf('student', '2'))
-    expect(signedIn.posts).toHaveLength(1)
-    expect(signedIn.posts[0]).toMatchObject({ id: '5', createdAt: '2026-09-20T10:00:00.000+08:00' })
+    const postsOf = vi.fn(async () => [post])
+    w.ports.provideTimeline({ postsOf })
+    expect((await w.profile.profile('1')).posts).toEqual([])
+    expect(postsOf).not.toHaveBeenCalled()
+  })
+
+  describe('response-time floor (L5)', () => {
+    afterEach(() => vi.useRealTimers())
+
+    it('holds every outcome, found or refused, until the floor has passed', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] })
+      for (const id of ['1', '999', 'sus']) {
+        let settled = false
+        const run = w.profile.profile(id).then(
+          () => (settled = true),
+          () => (settled = true),
+        )
+        await vi.advanceTimersByTimeAsync(PUBLIC_PROFILE_FLOOR_MS - 1)
+        expect(settled, `id ${id} answered before the floor`).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+        await run
+        expect(settled).toBe(true)
+      }
+    })
   })
 
   it('a pupil without activity gets neutral figures', async () => {
     addPupil(w, '2', 'Bakar Bin Ismail', 's1')
-    const r = await w.profile.profile('2', null)
+    const r = await w.profile.profile('2')
     expect(r.activity).toEqual({ sessions: 0, practiceDays: 0, correct: 0, bestStreak: 0 })
     expect(r.accuracy).toBe(0)
     expect(r.tier.ordinal).toBe(1)

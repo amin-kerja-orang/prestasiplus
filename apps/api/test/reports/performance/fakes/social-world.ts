@@ -2,12 +2,14 @@ import { FixedClock } from '../../../../src/db/clock'
 import { PerformancePorts } from '../../../../src/modules/reports/performance/ports'
 import { LeaderboardService, PublicProfileService, RankingService, WeeklyReportService } from '../../../../src/modules/reports/performance/services'
 import { NOW } from './fixtures'
+import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryPracticeRead } from './in-memory-practice-read'
 
 export interface SocialWorld {
   directory: InMemoryDirectory
+  classes: InMemoryClasses
   practice: InMemoryPracticeRead
   gamification: InMemoryGamification
   ports: PerformancePorts
@@ -24,18 +26,20 @@ export function socialWorld(): SocialWorld {
     .addSchool({ id: 's1', name: 'Sekolah Satu', state: 'Negeri A', district: 'Daerah A' })
     .addSchool({ id: 's2', name: 'Sekolah Dua', state: 'Negeri A', district: 'Daerah B' })
     .addSchool({ id: 's3', name: 'Sekolah Tiga', state: 'Negeri B', district: 'Daerah C' })
+  const classes = new InMemoryClasses()
   const practice = new InMemoryPracticeRead()
   const gamification = new InMemoryGamification()
-  const ports = new PerformancePorts(undefined, undefined, practice, gamification)
+  const ports = new PerformancePorts(undefined, classes, practice, gamification)
   const clock = new FixedClock(NOW)
   return {
     directory,
+    classes,
     practice,
     gamification,
     ports,
     clock,
     ranking: new RankingService(ports, directory),
-    board: new LeaderboardService(ports, clock),
+    board: new LeaderboardService(ports, clock, directory),
     profile: new PublicProfileService(ports, directory, clock),
     weekly: new WeeklyReportService(),
   }

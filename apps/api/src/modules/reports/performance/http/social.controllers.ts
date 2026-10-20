@@ -81,6 +81,6 @@ export class PublicStudentController {
   @Get('students/:id')
   @RateLimit(PUBLIC)
   async student(@Param('id', SafeIdPipe) id: string) {
-    return ok(await overloadTo429(async () => this.profiles.profile(id, null)))
+    return ok(await overloadTo429(async () => this.profiles.profile(id)))
   }
 }

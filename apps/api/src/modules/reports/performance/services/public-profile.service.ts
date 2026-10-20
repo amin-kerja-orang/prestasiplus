@@ -6,9 +6,22 @@ import { CLOCK, type Clock } from '../../../../db/clock'
 import { firstNameOf } from '../domain/ranking'
 import { accuracyOf } from '../domain/rules'
 import { DIRECTORY_PORT, PerformancePorts, type DirectoryPort, type TimelinePostView } from '../ports'
-import type { Ctx, PerformancePublicProfile, PerformanceTimelinePost } from './types'
+import type { PerformancePublicProfile, PerformanceTimelinePost } from './types'
 
 const DAY_MS = 86_400_000
+
+/**
+ * Uniform response-time floor of the anonymous profile (security L5): an unknown id returns before any query
+ * while a valid pupil runs 3, so every outcome (200 or the 404) is held until this many ms after the start,
+ * with a timer (no CPU), the way the login failure floor is held. Not an env key: it only needs to exceed the
+ * slowest normal answer.
+ */
+export const PUBLIC_PROFILE_FLOOR_MS = 150
+
+async function holdUntil(started: number, floorMs: number): Promise<void> {
+  const wait = floorMs - (performance.now() - started)
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+}
 
 export const toWirePost = (p: TimelinePostView): PerformanceTimelinePost => ({
   id: p.id,
@@ -23,8 +36,10 @@ export const toWirePost = (p: TimelinePostView): PerformanceTimelinePost => ({
 
 /**
  * Public student profile (S18), no session required. Privacy (OQ-8): the name is the FIRST NAME only, the
- * school is null, and every refusal (unknown id, not a student, inactive, suspended) is the same 404. Posts
- * are listed only to a signed-in viewer (`viewer`, OQ-5); the public route passes null.
+ * school is null, and every refusal (unknown id, not a student, inactive, suspended) is the same 404, after
+ * the same response-time floor as a found profile. The route is anonymous, so `posts` is always [] (OQ-5):
+ * timeline posts are read through the signed-in `GET /timeline` only. Mod Pelajar data is excluded in the
+ * practice and gamification adapters (users have no `is_test` column).
  */
 @Injectable()
 export class PublicProfileService {
@@ -34,15 +49,23 @@ export class PublicProfileService {
     @Inject(CLOCK) protected readonly clock: Clock,
   ) {}
 
-  async profile(userId: string, viewer: Ctx | null): Promise<PerformancePublicProfile> {
+  async profile(userId: string): Promise<PerformancePublicProfile> {
+    const started = performance.now()
+    try {
+      return await this.load(userId)
+    } finally {
+      await holdUntil(started, PUBLIC_PROFILE_FLOOR_MS)
+    }
+  }
+
+  private async load(userId: string): Promise<PerformancePublicProfile> {
     const pupil = (await this.directory.users([userId])).get(userId)
     if (!pupil || !pupil.isStudent || !pupil.isActive || pupil.isSuspended === true) throw ApiError.of('NOT_FOUND')
 
-    const [g, totals, days, posts] = await Promise.all([
+    const [g, totals, days] = await Promise.all([
       this.ports.gamification.profile(userId),
       this.ports.practice.userTotals({ userIds: [userId] }),
       this.ports.practice.practiceDays(userId),
-      viewer ? this.ports.timeline.postsOf(userId) : Promise.resolve([] as TimelinePostView[]),
     ])
     const t = totals.find((x) => x.userId === userId)
     const now = this.clock.now()
@@ -71,7 +94,7 @@ export class PublicProfileService {
       streak: { current: g?.streak.current ?? 0, best: g?.streak.best ?? 0 },
       accuracy: accuracyOf(t?.correct ?? 0, t?.questions ?? 0),
       activity: { sessions: t?.sessions ?? 0, practiceDays: days.length, correct: t?.correct ?? 0, bestStreak: g?.streak.best ?? 0 },
-      posts: posts.map(toWirePost),
+      posts: [],
     }
   }
 }
