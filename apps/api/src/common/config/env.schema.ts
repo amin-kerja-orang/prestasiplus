@@ -82,6 +82,8 @@ export const EnvSchema = z.object({
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
   THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
+  THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
 })
