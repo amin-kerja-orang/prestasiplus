@@ -138,6 +138,37 @@ describe('HttpBijakAdminServer', () => {
     await expect(server.getPaperEditor('zz')).rejects.toMatchObject({ code: 'not_found' })
   })
 
+  it('subjects() never calls the student route; it derives from admin blueprints', async () => {
+    const { server, requests } = setup({
+      'GET /api/admin/blueprints': ok(
+        [
+          { subject: 'MAT', subjectName: 'Matematik', kertas: 1 },
+          { subject: 'MAT', subjectName: 'Matematik', kertas: 2 },
+          { subject: 'SN', subjectName: 'Sains', kertas: 1 },
+        ],
+        { meta: { totalPages: 1 } },
+      ),
+    })
+    const list = server.subjects()
+    await vi.waitFor(() => expect(list).toHaveLength(2))
+    expect(list.map((s) => s.code)).toEqual(['MAT', 'SN'])
+    server.subjects()
+    expect(requests.some((r) => r.url === '/api/bijak/subjects')).toBe(false)
+  })
+
+  it('subjects() degrades quietly on 403 and does not retry', async () => {
+    const { server, requests } = setup({
+      'GET /api/admin/blueprints': fail(403, 'FORBIDDEN', 'x'),
+    })
+    expect(server.subjects()).toHaveLength(0)
+    await vi.waitFor(() => expect(requests.some((r) => r.url === '/api/admin/blueprints')).toBe(true))
+    await new Promise((r) => setTimeout(r, 10))
+    server.subjects()
+    server.subjects()
+    expect(requests.filter((r) => r.url === '/api/admin/blueprints')).toHaveLength(1)
+    expect(requests.some((r) => r.url === '/api/bijak/subjects')).toBe(false)
+  })
+
   it('lists blueprints', async () => {
     const { server } = setup({
       'GET /api/admin/blueprints': ok([{ subject: 'MAT', kertas: 1 }], {

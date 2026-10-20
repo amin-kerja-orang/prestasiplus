@@ -30,7 +30,7 @@ import type {
   QuestionStatus,
   ReviewQuestion,
 } from '../domain/admin-types'
-import type { StimulusDef, SubjectCode } from '../domain/types'
+import type { StimulusDef, Subject, SubjectCode } from '../domain/types'
 import { BijakError } from './errors'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
@@ -165,6 +165,28 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       throw toBijakError(e)
     }
     return out
+  }
+
+  /**
+   * Staff pages must not call the student-only `GET /api/bijak/subjects` (a teacher or admin gets
+   * 403, D43). The subject list comes from the admin blueprints (code and name) instead, fetched
+   * once; a failed fetch degrades to an empty list without retrying.
+   */
+  override subjects(): readonly Subject[] {
+    if (!this.subjectsRequested) {
+      this.subjectsRequested = true
+      this.listBlueprints().then(
+        (rows) => {
+          const seen = new Map<string, Subject>()
+          for (const b of rows) {
+            if (!seen.has(b.subject)) seen.set(b.subject, { code: b.subject, name: b.subjectName })
+          }
+          this.subjectList.splice(0, this.subjectList.length, ...seen.values())
+        },
+        () => {},
+      )
+    }
+    return this.subjectList
   }
 
   /* ---------------------------------------------------------------- with a backend route */

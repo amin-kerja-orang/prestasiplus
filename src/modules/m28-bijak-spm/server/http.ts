@@ -175,8 +175,8 @@ export class HttpBijakServer implements BijakApi {
   private readonly csrfSource: (refresh: boolean) => Promise<string>
   private csrfCache: Promise<string> | null = null
   private clockOffsetMs = 0
-  private readonly subjectList = reactive<Subject[]>([])
-  private subjectsRequested = false
+  protected readonly subjectList = reactive<Subject[]>([])
+  protected subjectsRequested = false
 
   constructor(options: HttpBijakOptions = {}) {
     this.client = options.client ?? api
