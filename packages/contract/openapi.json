@@ -18944,7 +18944,14 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+            "example": "1042"
           },
           "name": {
             "type": "string"
@@ -19152,7 +19159,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19180,7 +19194,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19343,7 +19364,14 @@
               "type": "object",
               "properties": {
                 "userId": {
-                  "$ref": "#/components/schemas/Id"
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                  "example": "1042"
                 },
                 "name": {
                   "type": "string"

@@ -16,7 +16,7 @@ describe('school battle page (M16-20)', () => {
 
   beforeAll(async () => {
     t = await bootStandings(NOW)
-    me = await t.login(S.PELAJAR)
+    me = await t.login(S.ADMIN) // full names and ids (the masking is covered in privacy.spec.ts)
     d1 = await schoolIdOf(t.db, 'DEMO001')
     d3 = await schoolIdOf(t.db, 'DEMO003')
   })

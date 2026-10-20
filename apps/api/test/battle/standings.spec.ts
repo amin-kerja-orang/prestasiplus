@@ -17,7 +17,7 @@ describe('battle standings (M16-18, M16-19)', () => {
 
   beforeAll(async () => {
     t = await bootStandings(NOW)
-    me = await t.login(S.PELAJAR)
+    me = await t.login(S.ADMIN) // full names and ids (the masking is covered in privacy.spec.ts)
   })
   afterAll(async () => {
     await t.close()
@@ -25,7 +25,7 @@ describe('battle standings (M16-18, M16-19)', () => {
   /** Moves the clock and signs in again (a session does not outlive the days the clock jumps). */
   const setNow = async (at: string): Promise<void> => {
     t.clock.set(at)
-    me = await t.login(S.PELAJAR)
+    me = await t.login(S.ADMIN) // full names and ids (the masking is covered in privacy.spec.ts)
   }
   beforeEach(async () => {
     if (t.clock.now().getTime() !== new Date(NOW).getTime()) await setNow(NOW)
@@ -206,7 +206,7 @@ describe('battle standings (M16-18, M16-19)', () => {
       await addBattle(t.db, { a: S.D1(1), b: S.D2(1), scoreA: 7000, scoreB: 3000, at: '2026-10-20T10:00:00+08:00', schoolA: 'DEMO004', schoolB: null })
       const rows = await students()
       const names = new Map((await t.db.query<{ id: string; s: string }>(`select u.id::text, sc.name s from users u join schools sc on sc.id = u.school_id`)).map((r) => [r.id, r.s]))
-      for (const r of rows) expect(r.school).toBe(names.get(r.userId))
+      for (const r of rows) expect(r.school).toBe(names.get(r.userId as string))
       expect(rows[0]!.school).toBe('SMK Demo Satu')
     })
   })

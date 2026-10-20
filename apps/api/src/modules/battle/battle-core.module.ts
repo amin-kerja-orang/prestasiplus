@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 
+import { ClassesModule } from '../classes'
 import { CurriculumModule } from '../curriculum'
 import { QuestionsModule } from '../questions'
 import { SchoolsModule } from '../schools'
@@ -14,7 +15,7 @@ import { BattleRawErrorFilter } from './raw-response'
  * come from the global `DbModule`. Not registered in `modules/index.ts` itself: `BattleModule` imports it.
  */
 @Module({
-  imports: [UsersModule, SchoolsModule, CurriculumModule, QuestionsModule],
+  imports: [ClassesModule, UsersModule, SchoolsModule, CurriculumModule, QuestionsModule],
   providers: [BattleDeps, BattleReadService, BattleRawErrorFilter, { provide: GAME_RESULT_PORT, useClass: NoopGameResultPort }],
   exports: [BattleDeps, BattleReadService, BattleRawErrorFilter, GAME_RESULT_PORT],
 })

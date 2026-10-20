@@ -66,7 +66,8 @@ export class ArenaService {
   private async load(uuid: string, userId: string) {
     if (!isUuid(uuid)) throw notFound()
     const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
-    const mine = battle?.participants.find((p) => idToString(p.userId) === userId)
+    // A pupil used as a simulated opponent (side B, is_bot) is not a participant of the battle: same not-found as a stranger.
+    const mine = battle?.participants.find((p) => idToString(p.userId) === userId && !p.isBot)
     if (!battle || !mine) throw notFound()
     return { battle, mine }
   }
@@ -214,7 +215,7 @@ export class ArenaService {
         throw e
       })
     const finished = ended as { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null
-    if (finished) await this.engine.report({ userId, forfeited: false, ...finished })
+    if (finished) await this.engine.reportSafely({ userId, forfeited: false, ...finished })
     return out
   }
 }

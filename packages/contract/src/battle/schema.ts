@@ -400,7 +400,7 @@ const nn = z.number().int().min(0)
 export const BattleStudentStandingSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema,
+    userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }),
     name: z.string(),
     school: z.string(),
     menang: nn,
@@ -452,10 +452,10 @@ export const BattleSchoolStandingsResultSchema = z
 export const BattleListRowSchema = z
   .strictObject({
     uuid: IdSchema,
-    playerA: z.strictObject({ id: IdSchema, name: z.string(), homeHere: z.boolean() }),
+    playerA: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), homeHere: z.boolean() }),
     scoreA: nn,
     scoreB: nn,
-    playerB: z.strictObject({ id: IdSchema, name: z.string() }),
+    playerB: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string() }),
     winner: BattleWinnerSchema,
     createdAt: TimestampSchema,
   })
@@ -472,7 +472,7 @@ export const BattleSchoolDetailSchema = z
     allTime: z.strictObject({ battles: nn, menang: nn, ketepatan: z.number().int().min(0).max(100), pelajar: nn }),
     week: BattleStandingBoxSchema.nullable(),
     month: BattleStandingBoxSchema.nullable(),
-    fighters: z.array(z.strictObject({ userId: IdSchema, name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
+    fighters: z.array(z.strictObject({ userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
     recent: z.array(BattleListRowSchema).max(BATTLE_RULES.recentShown),
   })
   .meta({ id: 'BattleSchoolDetail' })

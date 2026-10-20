@@ -36,23 +36,33 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       expect((await a.get('/battle/search-opponent?q=Murid&q=Demo')).body.users.length).toBe(0)
     })
 
-    it('students whose name contains the text, any case, caller excluded, name then id, at most 10, display fields only', async () => {
+    it('students whose name contains the text, any case, caller excluded, at most 10, display fields only; names masked outside the viewer scope', async () => {
       const res = await a.get('/battle/search-opponent?q=MURID%20demo')
       expect(res.status).toBe(200)
       const { users } = parse(BattleSearchResponseSchema, res)
       expect(users.length).toBeGreaterThan(1)
       expect(users.length).toBeLessThanOrEqual(10)
       expect(users.map((u) => u.id)).not.toContain(a.id)
-      const names = users.map((u) => u.name)
-      expect(names).toEqual([...names].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)))
       for (const u of users) {
         expect(Object.keys(u).sort()).toEqual(['avatar', 'id', 'name', 'school'])
-        expect(u.name.toLowerCase()).toContain('murid demo')
+        // Children's names rule (issue #76): a student sees first name + initial of other pupils; the id stays (invite handle).
+        expect(u.name).toMatch(/^Murid \S\.$/)
         expect(u.avatar).toBeNull()
       }
       const roles = await rows<{ role: string }>(`select distinct role from user_roles where user_id = any($1::bigint[])`, [users.map((u) => u.id)])
       expect(roles.map((r) => r.role)).toEqual(['student'])
       expect(JSON.stringify(res.body)).not.toMatch(/@|ic_|phone|email/i)
+    })
+
+    it('admin and the school admin of the pupil school see full names, sorted by name then id', async () => {
+      for (const email of ['admin@demo.test', 'adminsekolah@demo.test']) {
+        const who = await client(t, email)
+        const { users } = parse(BattleSearchResponseSchema, await who.get('/battle/search-opponent?q=MURID%20demo'))
+        expect(users.length).toBeGreaterThan(1)
+        const names = users.map((u) => u.name)
+        expect(names, email).toEqual([...names].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)))
+        for (const u of users) expect(u.name.toLowerCase()).toContain('murid demo')
+      }
     })
 
     it('never lists staff, inactive or suspended accounts', async () => {
@@ -71,6 +81,19 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       expect(parse(BattleSuccessSchema, res)).toEqual({ success: true })
       const [inv] = await rows<{ sender_id: string; receiver_id: string; status: string; is_test: boolean }>(`select sender_id::text, receiver_id::text, status, is_test from battle_invitations order by created_at desc, id limit 1`)
       expect(inv).toEqual({ sender_id: a.id, receiver_id: b.id, status: 'pending', is_test: false })
+    })
+
+    it('a second invitation to the same receiver while one is pending answers success and creates no new row', async () => {
+      await rows(`delete from battle_invitations`)
+      expect((await a.post('/battle/invite', body())).status).toBe(200)
+      const again = await a.post('/battle/invite', body())
+      expect(again.status).toBe(200)
+      expect(parse(BattleSuccessSchema, again)).toEqual({ success: true })
+      expect((await rows(`select 1 from battle_invitations`)).length).toBe(1)
+      // another receiver is a different invitation
+      expect((await a.post('/battle/invite', body({ receiver_id: c.id }))).status).toBe(200)
+      expect((await rows(`select 1 from battle_invitations`)).length).toBe(2)
+      await rows(`delete from battle_invitations`)
     })
 
     it.each([

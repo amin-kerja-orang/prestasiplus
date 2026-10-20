@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UseFilters, U
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../../common/http'
-import type { RequestWithAuth } from '../../../common/scope'
+import { ScopeContext, type RequestWithAuth } from '../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { BATTLE_LIMITS } from '../battle.limits'
 import { battleCaller } from '../engine'
@@ -28,7 +28,8 @@ export class InvitationsController {
   @Get('search-opponent')
   @RateLimit(BATTLE_LIMITS.search)
   search(@Req() req: Req, @Query() query: Record<string, unknown>) {
-    return this.invitations.search(who(req).userId, query.q)
+    const s = ScopeContext.fromRequest(req)
+    return this.invitations.search({ userId: s.userId, role: s.role, schoolId: s.scope.schoolId ?? null }, query.q)
   }
 
   @Post('invite')

@@ -10,6 +10,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { BattleEngine, isUuid, parseBattleParams, ParamRefusal, type BattleParams } from '../engine'
+import { canSeeName, displayName, NO_PUPILS, type BattleViewer } from '../privacy'
 import { rawForbidden, rawInvalid, rawNotFound } from '../raw-response'
 
 const EXPIRES_MS = BATTLE_RULES.invitationExpiresHours * 3_600_000
@@ -36,11 +37,20 @@ export class InvitationsService {
   ) {}
 
   /** M16-07. `q` is whatever the query carried (only a single string counts). */
-  async search(userId: string, q: unknown): Promise<{ users: { id: string; name: string; school: string; avatar: string | null }[] }> {
+  async search(viewer: BattleViewer, q: unknown): Promise<{ users: { id: string; name: string; school: string; avatar: string | null }[] }> {
     const term = typeof q === 'string' ? q.trim() : ''
     if (term.length < BATTLE_RULES.searchMinChars || term.length > SEARCH_MAX_CHARS) return { users: [] }
-    const rows = await this.engine.deps.searchStudents(term, userId, BATTLE_RULES.searchMaxResults)
-    return { users: rows.map((u) => ({ id: u.id, name: u.name, school: u.schoolName ?? '', avatar: u.avatar })) }
+    const rows = await this.engine.deps.searchStudents(term, viewer.userId, BATTLE_RULES.searchMaxResults)
+    // Children's names rule (LEAD 2026-10-21, issue #76): the id stays (it is the handle `POST invite` takes), the name is masked outside the viewer's scope.
+    const own = viewer.role === 'teacher' ? await this.engine.deps.ownPupilIdsOfTeacher(viewer.userId) : NO_PUPILS
+    return {
+      users: rows.map((u) => ({
+        id: u.id,
+        name: canSeeName(viewer, u.id, u.schoolId, own) ? u.name : displayName(u.name) || 'Pelajar',
+        school: u.schoolName ?? '',
+        avatar: u.avatar,
+      })),
+    }
   }
 
   /** M16-08. */
@@ -57,6 +67,18 @@ export class InvitationsService {
     const receiver = typeof rid === 'string' && isIdString(rid) && rid !== senderId ? await this.engine.deps.student(rid) : null
     if (!receiver) throw rawInvalid(BATTLE_MESSAGES.receiverInvalid)
     if (!(await this.engine.poolOk(params, grade, 'm16:pool-check'))) throw rawInvalid(BATTLE_MESSAGES.poolTooSmall)
+    // One open invitation per sender and receiver (same test flag): a repeat answers the same success and creates nothing.
+    const open = await this.prisma.client.battleInvitation.findFirst({
+      where: {
+        senderId: idFromString(senderId),
+        receiverId: idFromString(receiver.id),
+        status: 'pending',
+        isTest,
+        createdAt: { gte: new Date(this.clock.now().getTime() - EXPIRES_MS) },
+      },
+      select: { id: true },
+    })
+    if (open) return { success: true }
     await this.prisma.client.battleInvitation.create({
       data: {
         senderId: idFromString(senderId),

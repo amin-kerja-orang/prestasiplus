@@ -19,7 +19,7 @@ export class ForfeitService {
   async forfeit(userId: string, uuid: string): Promise<{ success: true }> {
     if (!isUuid(uuid)) throw rawNotFound(BATTLE_MESSAGES.battleNotFound)
     const done = await this.prisma.transaction(async () => {
-      const mine = await this.prisma.client.battleParticipant.findFirst({ where: { battleId: uuid, userId: idFromString(userId) } })
+      const mine = await this.prisma.client.battleParticipant.findFirst({ where: { battleId: uuid, userId: idFromString(userId), isBot: false } })
       if (!mine) throw rawNotFound(BATTLE_MESSAGES.battleNotFound)
       await this.prisma.client.$queryRaw`SELECT id FROM battles WHERE id = ${uuid}::uuid FOR UPDATE`
       const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid } })
@@ -30,7 +30,7 @@ export class ForfeitService {
       await this.prisma.client.battle.update({ where: { id: uuid }, data: { status: 'forfeited', winner, finishedAt: this.clock.now() } })
       return { side, winner, correct: mine.correct, total: battle.answered, isTest: battle.isTest }
     })
-    await this.engine.report({ userId, side: done.side, winner: done.winner, forfeited: true, correct: done.correct, total: done.total, isTest: done.isTest })
+    await this.engine.reportSafely({ userId, side: done.side, winner: done.winner, forfeited: true, correct: done.correct, total: done.total, isTest: done.isTest })
     return { success: true }
   }
 }

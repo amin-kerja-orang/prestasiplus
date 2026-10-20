@@ -25,6 +25,7 @@ import type { AuthContext } from '../../common/scope/auth-context'
 import { CLOCK, type Clock } from '../../db/clock'
 import type { Prng } from '../../db/prng'
 import { idFromString, idToString, isIdString } from '../../db/ids'
+import { ClassesRepository } from '../classes'
 import { CurriculumRepository } from '../curriculum'
 import { QuestionsRepository } from '../questions'
 import { flatFromVersion } from '../questions/projection'
@@ -102,6 +103,7 @@ export class BattleDeps {
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -197,6 +199,13 @@ export class BattleDeps {
   async schoolsByIds(ids: readonly string[]): Promise<Map<string, BattleSchool>> {
     const rows = await this.schools.getMany([...new Set(ids)])
     return new Map(rows.map((s) => [s.id, { id: s.id, name: s.name, state: s.state, type: s.type, district: s.district }]))
+  }
+
+  /** Pupil ids in the active classes of a teacher (BE-17 `forTeacher` + `memberIdsOf`: two batched reads). For the children's names rule. */
+  async ownPupilIdsOfTeacher(teacherId: string): Promise<Set<string>> {
+    const classes = (await this.classes.forTeacher(teacherId)).filter((c) => c.isActive)
+    const rosters = await this.classes.memberIdsOf(classes.map((c) => c.id))
+    return new Set([...rosters.values()].flat())
   }
 
   // --- curriculum (BE-08) ------------------------------------------------------------------------------

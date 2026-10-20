@@ -2,7 +2,7 @@
  * What the queue, the invitations and the arena share (BE-44): the pool pre-check, the bot pick, battle creation
  * (ten questions drawn once) and the report of a finished battle to M14.
  */
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
@@ -25,6 +25,7 @@ export interface BattleSide {
 
 @Injectable()
 export class BattleEngine {
+  private readonly logger = new Logger(BattleEngine.name)
   private accuracy: Promise<number> | null = null
 
   constructor(
@@ -36,7 +37,11 @@ export class BattleEngine {
 
   /** The platform answer accuracy for the bots, read once per process start. */
   botAccuracy(): Promise<number> {
-    this.accuracy ??= this.deps.platformAccuracy()
+    // A rejected read must not be cached: the next call retries.
+    this.accuracy ??= this.deps.platformAccuracy().catch((e: unknown) => {
+      this.accuracy = null
+      throw e
+    })
     return this.accuracy
   }
 
@@ -114,6 +119,15 @@ export class BattleEngine {
       data: ids.map((q, i) => ({ battleId: row.id, position: i + 1, questionId: idFromString(q) })),
     })
     return row.id
+  }
+
+  /** `report` after the battle is committed: a failing port is logged and never fails the response. */
+  async reportSafely(args: Parameters<BattleEngine['report']>[0]): Promise<void> {
+    try {
+      await this.report(args)
+    } catch (e) {
+      this.logger.error(`onGameResult failed for user ${args.userId}: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   /** M14 `onGameResult` for the caller at the end of a battle (AC 12): coins 0, xp 0. */

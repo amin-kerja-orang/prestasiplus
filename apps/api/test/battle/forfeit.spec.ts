@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BattleArenaViewSchema, BattleRawErrorSchema, BattleSuccessSchema } from '@pp/contract'
 
+import { GAME_RESULT_PORT, type GameResultPort } from '../../src/modules/battle/game-result.port'
 import { addMcqs, bootBattleApp, botBattle, client, parse, parseData, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 describe('forfeit (M16-14)', () => {
@@ -85,5 +86,36 @@ describe('forfeit (M16-14)', () => {
     const uuid = await botBattle(admin, s.math)
     expect((await admin.post(`/battle/forfeit/${uuid}`)).status).toBe(200)
     expect(t.reports.at(-1)).toMatchObject({ userId: admin.id, isTest: true, event: 'forfeit' })
+  })
+
+  it('the pupil used as the simulated opponent is not a participant: view, answer and forfeit are the stranger not-found', async () => {
+    const uuid = await botBattle(a, s.math)
+    const [bot] = await rows<{ email: string }>(`select u.email from battle_participants p join users u on u.id = p.user_id where p.battle_id = $1 and p.is_bot`, [uuid])
+    const pupil = await client(t, bot!.email)
+    const view = await pupil.get(`/battle/arena/${uuid}`)
+    expect(view.status).toBe(404)
+    const answer = await pupil.post(`/battle/arena/${uuid}/answer`, { questionId: '1', optionId: 1, seconds: 1 })
+    expect(answer.status).toBe(404)
+    const forfeit = await pupil.post(`/battle/forfeit/${uuid}`)
+    expect(forfeit.status).toBe(404)
+    expect(parse(BattleRawErrorSchema, forfeit)).toEqual({ error: 'Battle tidak dijumpai.' })
+    expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('active')
+  })
+
+  it('a failing M14 port after the commit is logged and does not fail the forfeit', async () => {
+    const port = t.get<GameResultPort>(GAME_RESULT_PORT as never)
+    const original = port.onGameResult
+    port.onGameResult = async () => {
+      throw new Error('port down')
+    }
+    try {
+      const uuid = await botBattle(a, s.math)
+      const res = await a.post(`/battle/forfeit/${uuid}`)
+      expect(res.status).toBe(200)
+      expect(parse(BattleSuccessSchema, res)).toEqual({ success: true })
+      expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('forfeited')
+    } finally {
+      port.onGameResult = original
+    }
   })
 })
