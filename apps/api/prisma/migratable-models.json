@@ -15,6 +15,8 @@
   "notifications",
   "parent_invites",
   "parent_links",
+  "pksk_accesses",
+  "pksk_packages",
   "ppds",
   "practice_answers",
   "practice_sessions",
