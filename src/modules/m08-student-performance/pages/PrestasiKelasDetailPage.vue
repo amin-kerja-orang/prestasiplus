@@ -8,7 +8,8 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
+import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsSection, DsStatRow } from '@/ds'
+import { isHttpMode } from '@/api/mode'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { formatNumber } from '@/lib/number'
 import { diffForHumans } from '@/lib/time'
@@ -60,9 +61,25 @@ const sessionChart = computed(() => classSessionSeries(data.value?.trend ?? []))
 const minutes = (n: number): string =>
   `${formatNumber(n, { decimals: 1, dropZeroFraction: true })}m`
 
+/**
+ * US-33: in http mode the class figures come from Bijak SPM sittings (BE-19), so the summary says so and the
+ * time / 7-day activity tiles (neutral there) are left out. Mock mode (practice figures) is unchanged.
+ */
+const bijak = isHttpMode()
+/** Empty = no Bijak SPM sitting recorded for this class. */
+const bijakEmpty = computed(() => bijak && (data.value?.stats.sessions ?? 0) === 0)
+
 const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
+  if (bijak) {
+    return [
+      { id: 'murid', label: 'Jumlah Murid', value: plain(s.students), icon: 'users' },
+      { id: 'ketepatan', label: 'Purata Ketepatan', value: pctTrim(capPct(s.accuracy)), icon: 'target' },
+      { id: 'sesi', label: 'Jumlah Sesi', value: plain(s.sessions), icon: 'lightning' },
+      { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
+    ]
+  }
   return [
     { id: 'murid', label: 'Jumlah Murid', value: plain(s.students), icon: 'users' },
     {
@@ -162,7 +179,13 @@ const cardFields = [
         </template>
       </DsPageHeader>
 
-      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
+      <DsSection v-if="bijak" title="Keputusan Bijak SPM" variant="subheading" data-testid="bijak-summary">
+        <div v-if="bijakEmpty" data-testid="bijak-empty">
+          <DsEmptyState title="Tiada data" icon="tray" />
+        </div>
+        <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
+      </DsSection>
+      <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
       <ClassHeadcountBlock v-if="data.headcount" :block="data.headcount" />
 

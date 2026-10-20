@@ -6,15 +6,31 @@
  * resolved). The TINGKATAN panel is the link to `/prestasi/tingkatan`. No-data states follow BR-M27-18.
  * Colour appears only on the figures that carry a meaning (GPS band, risk, level accuracy).
  */
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsIconChip, DsPanel } from '@/ds'
+import { isHttpMode } from '@/api/mode'
+import { DsEmptyState, DsIconChip, DsPanel } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
 import { barWidth, count, gps, PATHS, percent } from './dashboard-format'
 
-defineProps<{ performance: SchoolDashboard['performance'] }>()
+const props = defineProps<{ performance: SchoolDashboard['performance'] }>()
+
+/** Http mode only: the block is built from Bijak SPM sittings, so it is labelled as such (US-33). */
+const bijak = isHttpMode()
+/** No Bijak SPM data (none, or k=5 suppressed): no practice, no levels, no non-zero grade. */
+const isEmpty = computed(() => {
+  const p = props.performance
+  return (
+    p.practice.accuracy == null &&
+    p.practice.sessions === 0 &&
+    p.practice.questions === 0 &&
+    p.levels.length === 0 &&
+    p.distribution.every((d) => d.count === 0)
+  )
+})
 
 </script>
 
@@ -29,9 +45,24 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
         <p class="text-caption text-muted" data-testid="sd-performance-subtitle">
           GPS, risiko murid, ketepatan latihan &amp; perbandingan tingkatan
         </p>
+        <UBadge
+          v-if="bijak"
+          label="Keputusan Bijak SPM"
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          data-testid="sd-performance-source"
+        />
       </div>
     </div>
 
+    <DsEmptyState
+      v-if="bijak && isEmpty"
+      size="sm"
+      title="Tiada data"
+      data-testid="sd-performance-empty"
+    />
+    <template v-else>
     <div
       class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       data-testid="sd-panels"
@@ -148,5 +179,6 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
     <div class="mt-6">
       <GradeList :distribution="performance.distribution" :total="performance.total" />
     </div>
+    </template>
   </DsPanel>
 </template>
