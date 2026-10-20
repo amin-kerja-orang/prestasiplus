@@ -1,0 +1,178 @@
+// Exam / Bijak SPM tables, papers and blueprints (BE-15, owner module M28). Data model section 3.8.
+// BE-16 appends the attempt tables to this file; BE-39 (paper builder) writes rows only and makes no
+// schema change, so the status, version, provenance and duration columns it needs exist from here.
+//
+// Not expressible in Prisma and written by hand in migration 0012_bijak_papers: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check, no Postgres enum types), the partial
+// unique index of `blueprints` (one `active` version per subject and kertas), the partial index of
+// `papers` (generated papers by owner) and every foreign key to a table of another card (`subjects`
+// by BE-08, `users` by BE-03/05): those are plain scalar columns here so this file does not edit
+// another card's models.
+//
+// `paper_placements.question_id` is a plain bigint with NO foreign key yet: the question store
+// (`questions`, BE-09, migration 0011) is not on the base this migration was written against. The
+// integrator adds `fk_paper_placements_question_id` (-> questions.id) once BE-09 is merged.
+//
+// None of these tables can receive .cloud rows (data model 3.8: `exam_papers` and the blueprints are
+// archived, not migrated), so they carry no `legacy_*` columns and are not in migratable-models.json.
+
+/// The "Kontrak Blueprint": validator and recipe for "Jana Kertas" (D32). A new version is a new row.
+model Blueprint {
+  id            BigInt   @id @default(autoincrement())
+  /// FK -> subjects.id (BE-08), SQL only.
+  subjectId     BigInt   @map("subject_id")
+  /// 1 or 2 in the seeded data (the mock's `kertas: number`).
+  kertas        Int      @db.SmallInt
+  /// Printed paper code such as 1449/2.
+  code          String
+  version       Int      @default(1)
+  /// draft, active, retired (check). Exactly one `active` row per (subject, kertas) (partial unique index).
+  status        String   @default("draft")
+  /// verified (Disahkan), spec (Spec), draft (Draf): the provenance tag of the m28 data (check).
+  source        String   @default("spec")
+  /// Exam schema D7 evidence tag: data, paper, dskp, inferred (check); not stored by the mock.
+  provenance    String?
+  /// high, medium, low (check).
+  confidence    String?
+  /// Default duration (Q-S1); each paper stores its own printed duration.
+  durationMin   Int      @map("duration_min")
+  totalMarks    Int?     @map("total_marks")
+  languageMode  String?  @map("language_mode")
+  autoMarkable  Boolean? @map("auto_markable")
+  instructions  String[] @default([])
+  /// Formula-sheet panels `[{ title, items[] }]` (a document, G-11).
+  referenceSheets Json   @default("[]") @map("reference_sheets") @db.JsonB
+  cognitiveMix  Json?    @map("cognitive_mix") @db.JsonB
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sections BlueprintSection[]
+  papers   Paper[]
+
+  @@unique([code, version], map: "uq_blueprints_code_version")
+  @@index([subjectId, kertas], map: "ix_blueprints_subject_id_kertas")
+  @@map("blueprints")
+}
+
+model BlueprintSection {
+  id            BigInt  @id @default(autoincrement())
+  blueprintId   BigInt  @map("blueprint_id")
+  position      Int     @db.SmallInt
+  label         String
+  instruction   String?
+  /// all, choose (check).
+  ruleType      String  @default("all") @map("rule_type")
+  /// n of "choose n"; required when ruleType is choose, null otherwise (check).
+  ruleN         Int?    @map("rule_n") @db.SmallInt
+  /// Questions the section holds; a stimulus group counts with all its questions (the mock's `take`).
+  questionCount Int     @map("question_count")
+  /// Marks after choose-N; null where the mock left it out (it then defaults to the question count).
+  markBudget    Int?    @map("mark_budget")
+  compulsory    Boolean @default(false)
+  /// The pool tag the section draws from (the mock's `pool`).
+  pool          String?
+  allowedModes  String[] @default([]) @map("allowed_modes")
+  /// `{ unit_code: target_count }`, INFERRED until a JSU is shared.
+  topicWeights  Json?   @map("topic_weights") @db.JsonB
+
+  blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade, map: "fk_blueprint_sections_blueprint_id")
+
+  @@unique([blueprintId, position], map: "uq_blueprint_sections_blueprint_id_position")
+  @@map("blueprint_sections")
+}
+
+/// Both kinds of paper: `pilihan` (curated "Kertas Pilihan") and `jana` (generated "Jana Kertas",
+/// private to `generated_for_user_id`). Total marks are never stored: they are derived from the
+/// placements (Q-S6, G-15).
+model Paper {
+  id                 BigInt    @id @default(autoincrement())
+  /// pilihan, jana (check). `jana` if and only if generated_for_user_id is set (check).
+  kind               String
+  title              String
+  /// FK -> subjects.id (BE-08), SQL only.
+  subjectId          BigInt    @map("subject_id")
+  kertas             Int       @db.SmallInt
+  year               Int?      @db.SmallInt
+  paperCode          String?   @map("paper_code")
+  /// t4, t5, t4_t5 (check).
+  levelScope         String?   @map("level_scope")
+  /// The printed duration (Q-S1), stored per paper.
+  printedDurationMin Int       @map("printed_duration_min")
+  languageMode       String?   @map("language_mode")
+  instructions       String[]  @default([])
+  referenceSheets    Json      @default("[]") @map("reference_sheets") @db.JsonB
+  /// The blueprint version the paper conforms to.
+  blueprintId        BigInt?   @map("blueprint_id")
+  /// draft, ready, published, withdrawn (check). Seeded papers and generated papers are published.
+  status             String    @default("draft")
+  version            Int       @default(1)
+  /// FK -> users.id on delete cascade (SQL only); set for `jana` papers.
+  generatedForUserId BigInt?   @map("generated_for_user_id")
+  /// True when generated in Mod Pelajar (test data of an admin or school admin).
+  isTest             Boolean   @default(false) @map("is_test")
+  publishedAt        DateTime? @map("published_at") @db.Timestamptz(6)
+  /// FK -> users.id on delete set null (SQL only).
+  createdById        BigInt?   @map("created_by_id")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  blueprint Blueprint?     @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_papers_blueprint_id")
+  sections  PaperSection[]
+
+  @@index([status], map: "ix_papers_status")
+  @@index([subjectId, kertas, status], map: "ix_papers_subject_id_kertas_status")
+  @@index([blueprintId], map: "ix_papers_blueprint_id")
+  @@map("papers")
+}
+
+model PaperSection {
+  id               BigInt  @id @default(autoincrement())
+  paperId          BigInt  @map("paper_id")
+  position         Int     @db.SmallInt
+  label            String
+  title            String?
+  /// The authored instruction line; null means derived from the rule.
+  instruction      String?
+  /// all, choose (check).
+  ruleType         String  @default("all") @map("rule_type")
+  ruleN            Int?    @map("rule_n") @db.SmallInt
+  /// Questions printed in the section (not the number to answer).
+  questionCount    Int     @map("question_count")
+  /// Marks the section is worth after choose-N (the printed budget).
+  markBudget       Int     @map("mark_budget")
+  marksPerQuestion Int?    @map("marks_per_question")
+  allowedModes     String[] @default([]) @map("allowed_modes")
+  /// "Soalan ini mesti dijawab".
+  compulsory       Boolean @default(false)
+  /// on_paper, separate_book, omr (check); informational.
+  answerMedium     String? @map("answer_medium")
+  /// none, group, per_part (check).
+  stimulusPolicy   String? @map("stimulus_policy")
+
+  paper      Paper            @relation(fields: [paperId], references: [id], onDelete: Cascade, map: "fk_paper_sections_paper_id")
+  placements PaperPlacement[]
+
+  @@unique([paperId, position], map: "uq_paper_sections_paper_id_position")
+  @@map("paper_sections")
+}
+
+/// One question placed in a section. The same question may sit in many papers (never copied).
+model PaperPlacement {
+  id             BigInt  @id @default(autoincrement())
+  paperSectionId BigInt  @map("paper_section_id")
+  /// -> questions.id (BE-09). No foreign key until BE-09 is merged (see the header).
+  questionId     BigInt  @map("question_id")
+  /// The question version printed on the paper (editing a published question makes version n+1).
+  pinnedVersionNo Int    @default(1) @map("pinned_version_no")
+  /// Order in the section; a stimulus group moves as a unit.
+  position       Int     @db.SmallInt
+  numberLabel    String? @map("number_label")
+  marksOverride  Int?    @map("marks_override") @db.SmallInt
+
+  section PaperSection @relation(fields: [paperSectionId], references: [id], onDelete: Cascade, map: "fk_paper_placements_paper_section_id")
+
+  @@unique([paperSectionId, position], map: "uq_paper_placements_paper_section_id_position")
+  @@unique([paperSectionId, questionId], map: "uq_paper_placements_paper_section_id_question_id")
+  @@index([questionId], map: "ix_paper_placements_question_id")
+  @@map("paper_placements")
+}
