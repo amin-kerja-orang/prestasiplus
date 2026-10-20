@@ -22,6 +22,7 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
 import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
@@ -90,6 +91,7 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     INTAKE_READS_PER_MINUTE: '10000',
     JOBS_WORKER_ENABLED: 'true',
     JOBS_POLL_MS: '100',
+    ...battleConformanceEnv,
   }
 }
 
@@ -110,6 +112,7 @@ export interface BootOptions {
 export async function bootConformanceApp(opts: BootOptions = {}): Promise<ConformanceApp> {
   const db = await createTestDatabase()
   await runSeeds(CONFORMANCE_SEEDS, { prisma: db.prisma })
+  await seedBattleConformance(db.prisma) // BE-44: published MCQs so a battle queue can draw its 10 questions
   const dir = await mkdtemp(join(tmpdir(), 'pp-conformance-'))
 
   for (const [k, v] of Object.entries({ ...conformanceEnv(db.url, dir), ...opts.env })) {

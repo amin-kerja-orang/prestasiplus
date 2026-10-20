@@ -24,6 +24,7 @@ import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
 import { walletScenarios } from './wallet/wallet'
+import { battleScenarios } from './battle/battle'
 import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
 import { gamificationScenarios } from './gamification/gamification'
 import { shopScenarios } from './gamification/shop'
@@ -77,5 +78,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...intakeDashboardScenarios,
     ...cikguScenarios,
     ...commandCenterScenarios,
+    ...battleScenarios,
   ]
 }
