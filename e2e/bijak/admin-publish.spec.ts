@@ -4,7 +4,7 @@
  * screens inside one page (a second `loginAs` or a fresh context would start from the seeds).
  * Needs the scope-ON build: `npm run test:e2e:bijak`.
  */
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell, isMobileWidth } from '../support'
@@ -29,6 +29,27 @@ async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void
   await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
   await expect(page.getByTestId('papers-page')).toBeVisible()
   await expectNoHorizontalScroll(page)
+}
+
+/** List actions: card buttons carry test ids below 640 px; the table row holds them above. */
+const openBtn = (page: Page, row: Locator, id: string): Locator =>
+  isMobileWidth(page)
+    ? page.getByTestId(`paper-open-${id}`)
+    : row.getByRole('link', { name: 'Buka' })
+const delBtn = (page: Page, row: Locator, id: string): Locator =>
+  isMobileWidth(page)
+    ? page.getByTestId(`paper-delete-${id}`)
+    : row.getByRole('button', { name: 'Padam kertas' })
+
+/** The draft id from the editor URL `/admin/spm/kertas/:id`. */
+function paperIdOf(page: Page): string {
+  return new URL(page.url()).pathname.split('/').pop() ?? ''
+}
+
+/** Editor -> papers list (the back link, an in-app navigation that keeps the mock state). */
+async function openListFromEditor(page: Page): Promise<void> {
+  await page.getByRole('link', { name: 'Pembina Kertas' }).first().click()
+  await expect(page.getByTestId('papers-page')).toBeVisible()
 }
 
 /** Kertas Baharu -> Cipta Kertas for Matematik Kertas 1 (one "Objektif" section, 10 questions). */
@@ -137,19 +158,64 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expect(page.getByText(TITLE)).toHaveCount(0)
   })
 
-  test('a draft can be deleted from the list @bijak', async ({ page, loginAs, gotoApp }) => {
-    test.fixme(
-      isMobileWidth(page),
-      'APP: below 640 px the papers list renders card rows with no Buka / Padam kertas / status (UAT-C-02, C-15)',
-    )
+  test('a draft can be deleted from the list (card button at 375, table button above) @bijak', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
     await loginAs('admin@demo.test')
     await openPaperBuilder(page, gotoApp)
     await createDraft(page)
-    await page.getByRole('link', { name: 'Pembina Kertas' }).first().click()
+    const id = paperIdOf(page)
+    await openListFromEditor(page)
     await expect(page.getByTestId('papers-table')).toContainText(TITLE)
-    await page.getByRole('button', { name: 'Padam kertas' }).first().click()
+    await expectNoHorizontalScroll(page)
+    const del = isMobileWidth(page)
+      ? page.getByTestId(`paper-delete-${id}`)
+      : page.getByRole('button', { name: 'Padam kertas' }).first()
+    await del.click()
     await expect(page.getByTestId('papers-table')).not.toContainText(TITLE)
     await expectNoHorizontalScroll(page)
+  })
+
+  test('C-02 list shows status, blueprint badge and actions; published has no delete @bijak', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('admin@demo.test')
+    await openPaperBuilder(page, gotoApp)
+    await createDraft(page)
+    const id = paperIdOf(page)
+    await openListFromEditor(page)
+    await expectNoHorizontalScroll(page)
+
+    const row = isMobileWidth(page)
+      ? page.getByTestId(`paper-card-${id}`)
+      : page.getByTestId('papers-table').locator('tr', { hasText: TITLE })
+    await expect(row).toContainText(TITLE)
+    await expect(row).toContainText('Draf')
+    await expect(row).toContainText('Belum sepadan')
+    await expect(row).toContainText('0 / 10')
+    await expect(openBtn(page, row, id)).toBeVisible()
+    await expect(delBtn(page, row, id)).toBeVisible()
+    if (isMobileWidth(page)) {
+      await expect(row).toContainText('Dikemas kini')
+      await expect(row).toContainText('Matematik')
+    }
+
+    // Publish it from the editor, then look at the list again.
+    await openBtn(page, row, id).click()
+    await fillObjektif(page)
+    await page.getByTestId('paper-publish').click()
+    await expect(page.getByTestId('paper-unpublish')).toBeVisible()
+    await openListFromEditor(page)
+    await expectNoHorizontalScroll(page)
+    await expect(row).toContainText('Diterbitkan')
+    await expect(row).toContainText('Sepadan')
+    await expect(row).not.toContainText('Belum sepadan')
+    await expect(openBtn(page, row, id)).toBeVisible()
+    await expect(delBtn(page, row, id)).toHaveCount(0)
   })
 
   test.fixme('C-11 paper-level answer-key and US-26 gates re-checked at Terbitkan @bijak', () => {
