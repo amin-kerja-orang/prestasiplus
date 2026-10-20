@@ -69,6 +69,15 @@ export const EnvSchema = z.object({
     .enum(['true', 'false', '1', '0'])
     .default('false')
     .transform((v) => v === 'true' || v === '1'),
+  /**
+   * Bijak SPM PoC questions (LEAD decision 2026-10-20 16:00: staging only, never prod). true serves the reserved
+   * PoC id block (seeded PoC papers, Jana pool); false (default) refuses those ids, so only BE-09 questions are served.
+   * Set true wherever ALLOW_DEMO_SEED loads the demo seed (staging, dev, e2e).
+   */
+  BIJAK_POC_QUESTIONS: z
+    .enum(['true', 'false', '1', '0'])
+    .default('false')
+    .transform((v) => v === 'true' || v === '1'),
   /** Cost (4..13) of the throw-away bcrypt hash that evens out login timing for unknown accounts. */
   LEGACY_BCRYPT_DUMMY_COST: z.coerce.number().int().min(4).max(13).default(12),
   /** A failed login (wrong password, unknown identifier) never answers sooner than this many ms (timing oracle floor). */
@@ -86,6 +95,8 @@ export const EnvSchema = z.object({
   /** Downloads per user per minute (anonymous cms_image reads: per address) before 429. */
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
+  // BE-33: global per-address ceiling on every /api route except /api/health (default 300 per minute, per process).
+  THROTTLE_GLOBAL_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-16 (Bijak attempts). All optional: the code applies the defaults (save 240, lifecycle 30, Semak 60, photo 20 per minute per user; sweep every 60 s, 0 = off, off under NODE_ENV=test).
   THROTTLE_BIJAK_ATTEMPT_SAVE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
