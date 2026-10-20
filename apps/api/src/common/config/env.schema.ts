@@ -49,6 +49,11 @@ export const EnvSchema = z.object({
   THROTTLE_AUDIO_KBAT_FILE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   THROTTLE_AUDIO_KBAT_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: z.coerce.number().int().min(1).default(20),
+  // BE-19 (performance reports): read throttle per user, counted per process.
+  THROTTLE_PERFORMANCE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  // BE-21 (school admin): throttles per user, counted per process.
+  THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */
@@ -95,6 +100,11 @@ export const EnvSchema = z.object({
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
+  // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.
+  THROTTLE_CLASSES_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CLASSES_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  PUBLIC_BASE_URL: z.url().optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 

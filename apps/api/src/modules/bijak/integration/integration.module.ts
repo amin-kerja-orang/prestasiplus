@@ -5,6 +5,7 @@ import { PracticeModule } from '../../practice'
 import { PracticeAggregateService } from '../../practice/aggregate'
 import { PracticePorts } from '../../practice/ports'
 import { QuestionsModule } from '../../questions'
+import { PerformanceModule, PerformancePorts } from '../../reports/performance'
 import { WalletModule } from '../../wallet'
 import { BijakAttemptsModule } from '../attempts'
 import { BijakAttemptPorts } from '../attempts/ports'
@@ -15,6 +16,7 @@ import { BijakPapersPorts } from '../papers/ports'
 import { PocQuestionSource } from '../papers/poc-question-source'
 import { Be09BijakQuestionSource, CompositeBijakQuestionSource, CompositePaperQuestionSource } from '../question-bridge'
 import { WalletBijakReward, WalletPracticeReward } from './bindings'
+import { PrismaBijakAggregate } from './performance-bijak-aggregate'
 import { PocBijakQuestionSource } from './poc-question-source'
 
 /**
@@ -29,6 +31,7 @@ import { PocBijakQuestionSource } from './poc-question-source'
  * - BE-11 wallet credit (`quiz_spm`)       -> BE-16 `provideReward` (exam only, idempotent per attempt,
  *   nothing under Mod Pelajar: AC-20.3)
  * - BE-11 streak + wallet (source by mode)  -> BE-12 `PracticePorts.provideReward`
+ * - `PrismaBijakAggregate` (attempts + results + BE-09 bank, read only) -> BE-19 `PerformancePorts.provideBijak`
  * - Questions, ALWAYS (#45 C2): `CompositeBijakQuestionSource` -> BE-16 `provideQuestionSource` and
  *   `CompositePaperQuestionSource` -> BE-15 `provideQuestionSource`. Ids in the reserved PoC block go to the
  *   PoC fixture (`PocBijakQuestionSource` / `PocQuestionSource`), so the seeded PoC papers keep working on a
@@ -38,8 +41,8 @@ import { PocBijakQuestionSource } from './poc-question-source'
  *   once BE-09 merged.
  */
 @Module({
-  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule],
-  providers: [WalletBijakReward, WalletPracticeReward, Be09BijakQuestionSource],
+  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule],
+  providers: [WalletBijakReward, WalletPracticeReward, Be09BijakQuestionSource, PrismaBijakAggregate],
 })
 export class BijakIntegrationModule implements OnModuleInit {
   constructor(
@@ -52,6 +55,8 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(WalletBijakReward) private readonly bijakReward: WalletBijakReward,
     @Inject(WalletPracticeReward) private readonly practiceReward: WalletPracticeReward,
     @Inject(Be09BijakQuestionSource) private readonly bankQuestions: Be09BijakQuestionSource,
+    @Inject(PerformancePorts) private readonly performancePorts: PerformancePorts,
+    @Inject(PrismaBijakAggregate) private readonly performanceAggregate: PrismaBijakAggregate,
   ) {}
 
   onModuleInit(): void {
@@ -63,5 +68,6 @@ export class BijakIntegrationModule implements OnModuleInit {
     this.practicePorts.provideReward(this.practiceReward)
     this.attemptPorts.provideQuestionSource(new CompositeBijakQuestionSource(new PocBijakQuestionSource(), this.bankQuestions))
     this.papersPorts.provideQuestionSource(new CompositePaperQuestionSource(new PocQuestionSource(), this.bankQuestions))
+    this.performancePorts.provideBijak(this.performanceAggregate)
   }
 }
