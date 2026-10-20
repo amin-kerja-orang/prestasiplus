@@ -5037,7 +5037,17 @@
             "maximum": 3
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           },
           "name": {
             "type": "string"
@@ -5087,7 +5097,17 @@
             "maximum": 50
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           },
           "name": {
             "type": "string"
