@@ -127,6 +127,65 @@ async function remove(row: Row): Promise<void> {
         <DsStatusBadge :status="row.original.status === 'terbit' ? 'published' : 'draft'" />
       </template>
       <template #updatedAt-cell="{ row }">{{ formatDateTime(row.original.updatedAt) }}</template>
+      <template #card="{ row }">
+        <div class="flex min-w-0 flex-col gap-1" :data-testid="`paper-card-${String(row.id)}`">
+          <UButton
+            type="button"
+            color="neutral"
+            variant="link"
+            class="h-auto justify-start p-0 text-start text-label whitespace-normal"
+            :label="String(row.title)"
+            @click="open(row as Row)"
+          />
+          <span class="text-caption text-muted">{{ row.code }} · Kertas {{ row.kertas }}</span>
+          <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div class="min-w-0">
+              <dt class="text-caption text-muted">Subjek</dt>
+              <dd class="text-body break-words">{{ row.subjectName }}</dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-caption text-muted">Markah</dt>
+              <dd class="tabular text-body">{{ row.marks }} / {{ row.budget }}</dd>
+            </div>
+            <div class="col-span-2 min-w-0">
+              <dt class="text-caption text-muted">Dikemas kini</dt>
+              <dd class="text-body">{{ formatDateTime(row.updatedAt as number) }}</dd>
+            </div>
+          </dl>
+          <div class="flex flex-wrap items-center gap-2">
+            <DsStatusBadge :status="row.status === 'terbit' ? 'published' : 'draft'" />
+            <UBadge
+              :color="row.ok ? 'success' : 'warning'"
+              variant="subtle"
+              :icon="row.ok ? 'i-ph-check-circle' : 'i-ph-warning'"
+              :label="row.ok ? 'Sepadan' : 'Belum sepadan'"
+            />
+          </div>
+        </div>
+      </template>
+      <template #card-actions="{ row }">
+        <div class="flex shrink-0 flex-col gap-1">
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            label="Buka"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.id } }"
+            :data-testid="`paper-open-${String(row.id)}`"
+          />
+          <UButton
+            v-if="row.status === 'draf'"
+            size="sm"
+            color="error"
+            variant="ghost"
+            icon="i-ph-trash"
+            aria-label="Padam kertas"
+            class="min-h-11 min-w-11"
+            :data-testid="`paper-delete-${String(row.id)}`"
+            @click.stop="remove(row as Row)"
+          />
+        </div>
+      </template>
       <template #actions-cell="{ row }">
         <div class="flex gap-1">
           <UButton
