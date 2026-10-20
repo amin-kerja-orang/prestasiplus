@@ -182,7 +182,8 @@ describe('School: GPS, distribution, subjects and teachers', () => {
     expect(hidden.subjects[0]).toMatchObject({ gps: null, grade: null, entries: 0, onTrack: 0, below: 0, noTarget: 0, achievementPct: null })
     expect((await small.school.school(schoolAdmin)).gps).toMatchObject({ entries: 4 })
     small.facts.add(...hcEntries().filter((e) => e.studentId === '5'))
-    expect((await small.school.school(student)).gps).toMatchObject({ value: 3, entries: 5 })
+    // A new request is a new Ctx object; the per-request memo would otherwise return the first read.
+    expect((await small.school.school(ctxOf('student', '1'))).gps).toMatchObject({ value: 3, entries: 5 })
   })
 
   it('privacy (test 15): a headcount-only subject row below 5 pupils is not listed to non-staff', async () => {
