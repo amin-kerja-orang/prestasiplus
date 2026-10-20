@@ -15,14 +15,14 @@ no options in `src/app/bootstrap.ts`.
 
 | # | Needed in `src/api` / `src/app` | Why | State |
 |---|---|---|---|
-| T1 | `credentials: 'include'` (same-origin default sends the cookie, but make it explicit for the Vite proxy and any `VITE_API_BASE_URL`) | session cookie `pp_session` is `HttpOnly; SameSite=Lax` | todo |
-| T2 | CSRF: read the token from the login / `GET /api/session` response and send `X-CSRF-Token` on every non-GET | the API answers 403 `CSRF_INVALID` otherwise (`apps/api/src/modules/auth/auth.constants.ts`) | todo |
-| T3 | 401 handling: clear the stored session and go to `/login` | session expires after 120 min idle | todo |
-| T4 | `requestId` logging: read `X-Request-Id` from responses | nginx sets one per request, the API echoes it | todo |
-| T5 | `HybridTransport` (`VITE_API_MODE=hybrid`, list of path prefixes served by the real API; the rest stays on the mock) | switch one domain at a time | todo |
-| T6 | `bootstrap.ts` builds `hybrid` mode and keeps the mock tree-shaken out of a pure `http` build | bundle size, no mock data in production | todo |
-| T7 | Session bootstrap in http mode: no `__MOCK_INIT__`; a reload restores the session from `GET /api/session` | `loginAs` fast login is mock-only | todo |
-| T8 | An e2e fixture for real-API specs (`e2e/fixtures/api.ts`: plain `@playwright/test` `test`, `page.goto`, wait for `#app`) | `e2e/fixtures/test.ts` installs the mock clock and `gotoApp` waits for `window.__mock.ready` | todo (LEAD owns `e2e/**`) |
+| T1 | `credentials: 'include'` (same-origin default sends the cookie, but make it explicit for the Vite proxy and any `VITE_API_BASE_URL`) | session cookie `pp_session` is `HttpOnly; SameSite=Lax` | done (V2-T31) |
+| T2 | CSRF: read the token from the login / `GET /api/session` response and send `X-CSRF-Token` on every non-GET | the API answers 403 `CSRF_INVALID` otherwise (`apps/api/src/modules/auth/auth.constants.ts`) | done (V2-T31) |
+| T3 | 401 handling: clear the stored session and go to `/login` | session expires after 120 min idle | done (V2-T31) |
+| T4 | `requestId` logging: read `X-Request-Id` from responses | nginx sets one per request, the API echoes it | done (V2-T31) |
+| T5 | `HybridTransport` (`VITE_API_MODE=hybrid`, list of path prefixes served by the real API; the rest stays on the mock) | switch one domain at a time | todo (http mode only; hybrid prefix list not built) |
+| T6 | `bootstrap.ts` builds `hybrid` mode and keeps the mock tree-shaken out of a pure `http` build | bundle size, no mock data in production | done (mock stays behind the dynamic import) |
+| T7 | Session bootstrap in http mode: no `__MOCK_INIT__`; a reload restores the session from `GET /api/session` | `loginAs` fast login is mock-only | done (V2-T31) |
+| T8 | An e2e fixture for real-API specs (`e2e/fixtures/api.ts`: plain `@playwright/test` `test`, `page.goto`, wait for `#app`) | `e2e/fixtures/test.ts` installs the mock clock and `gotoApp` waits for `window.__mock.ready` | done (V2-T31) |
 
 ## Per-domain checklist (copy for every new domain)
 

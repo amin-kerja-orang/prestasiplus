@@ -103,4 +103,46 @@ describe('HttpTransport', () => {
       abortError,
     )
   })
+
+  describe('cookie session (V2-T31)', () => {
+    const ok = () => fetchReturning(new Response(null, { status: 204, headers: { 'x-request-id': 'rid-1' } }))
+
+    it('always includes credentials and sends x-csrf-token on writes only', async () => {
+      const fetchMock = ok()
+      const transport = createHttpTransport({ fetch: fetchMock, csrfToken: () => 'csrf-1' })
+      await transport.request({ method: 'POST', url: '/api/x', body: {}, headers: {} })
+      await transport.request({ method: 'GET', url: '/api/x', headers: {} })
+      const [, post] = fetchMock.mock.calls[0] ?? []
+      const [, get] = fetchMock.mock.calls[1] ?? []
+      expect(post?.credentials).toBe('include')
+      expect(post?.headers).toMatchObject({ 'x-csrf-token': 'csrf-1' })
+      expect(get?.headers).not.toHaveProperty('x-csrf-token')
+    })
+
+    it('sends no csrf header without a token and can drop the bearer header', async () => {
+      const fetchMock = ok()
+      const transport = createHttpTransport({
+        fetch: fetchMock,
+        csrfToken: () => null,
+        sendAuthorization: false,
+      })
+      await transport.request({
+        method: 'DELETE',
+        url: '/api/x',
+        headers: { Authorization: 'Bearer abc', accept: 'application/json' },
+      })
+      const [, init] = fetchMock.mock.calls[0] ?? []
+      expect(init?.headers).toEqual({ accept: 'application/json' })
+    })
+
+    it('reports the x-request-id of a response', async () => {
+      const seen: string[] = []
+      const transport = createHttpTransport({
+        fetch: ok(),
+        onRequestId: (info) => seen.push(`${info.requestId} ${info.status}`),
+      })
+      await transport.request({ method: 'GET', url: '/api/x', headers: {} })
+      expect(seen).toEqual(['rid-1 204'])
+    })
+  })
 })

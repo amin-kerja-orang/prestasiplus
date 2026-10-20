@@ -9,7 +9,8 @@
  * - others: 422 `VALIDATION_ERROR` with `fields`.
  */
 
-import { api } from '@/api'
+import { api, isHttpMode } from '@/api'
+import { isApiSession, toClientSessionFromApi } from '@/stores/http-session'
 
 import type {
   ClientSession,
@@ -23,14 +24,18 @@ import type {
 } from './types'
 
 function toClientSession(payload: SessionPayload, remember: boolean): ClientSession {
+  // Real API (V2-T31): the body is the contract `Session` (cookie session + csrf), not a bearer payload.
+  if (isApiSession(payload)) return toClientSessionFromApi(payload, remember)
   return { token: payload.token, remember, expiresAt: payload.expiresAt, user: payload.user }
 }
 
 /** #1 `POST /api/auth/login`. Resolves to the session to store in `pp.auth` (FR-M01-07, 12). */
 export async function login(request: LoginRequest): Promise<ClientSession> {
-  const payload = await api.post<SessionPayload>('/api/auth/login', {
-    body: { email: request.email, password: request.password, remember: request.remember },
-  })
+  // The contract names the field `identifier` (e-mail or username); the mock still reads `email`.
+  const credentials = isHttpMode()
+    ? { identifier: request.email, password: request.password, remember: request.remember }
+    : { email: request.email, password: request.password, remember: request.remember }
+  const payload = await api.post<SessionPayload>('/api/auth/login', { body: credentials })
   return toClientSession(payload, request.remember)
 }
 

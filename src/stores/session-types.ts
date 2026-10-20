@@ -63,6 +63,8 @@ export interface ClientSession {
   /** ISO 8601 (+08:00). Remember: +5 years; otherwise +120 min, sliding on each request (BR-06). */
   expiresAt: string
   user: UserMe
+  /** Real API only (V2-T31): the CSRF token of the cookie session, sent as `X-CSRF-Token` on writes. */
+  csrf?: string
   /** Only on an impersonated session (XR-M27-21): the actor and the path "Kembali ke Admin" uses. */
   impersonator?: { id: number; name: string; returnTo: string }
   /** Only in Mod Pelajar (v2-portals US-07): the admin session parked while the student view is open. */

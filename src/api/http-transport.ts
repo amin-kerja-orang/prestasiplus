@@ -1,8 +1,7 @@
 /**
  * HttpTransport (overview §6.1, ADR-0004): `fetch` to the real REST backend.
  *
- * Unused in this prototype (`VITE_API_MODE=mock`); `bootstrap.ts` installs it when the backend
- * phase sets `VITE_API_MODE=http`. It sends the same `TransportRequest` the mock receives:
+ * `bootstrap.ts` installs it when `VITE_API_MODE=http` (cookie session + CSRF header, V2-T31). It sends the same `TransportRequest` the mock receives:
  * - URL = `baseUrl` + path + query (repeated keys for array values);
  * - body: `FormData`/`Blob`/string as-is, anything else as JSON;
  * - response: JSON (or text) for errors and `responseType: 'json'`, a `Blob` for a successful
@@ -18,8 +17,23 @@ export interface HttpTransportOptions {
   baseUrl?: string
   /** Injected for tests; defaults to the global `fetch`. */
   fetch?: typeof fetch
+  /** Default `'include'`: the real API session is the HttpOnly `pp_session` cookie (V2-T31 T1). */
   credentials?: RequestCredentials
+  /**
+   * CSRF token for the cookie session (V2-T31 T2). When it returns a value, every non-safe request
+   * (not GET/HEAD/OPTIONS) carries it as `x-csrf-token`; the API answers 403 `CSRF_INVALID` otherwise.
+   */
+  csrfToken?: () => string | null | undefined
+  /**
+   * Default `true`. Set `false` for the cookie-session API: the client's `Authorization: Bearer`
+   * header (a mock-era placeholder token) is then not sent.
+   */
+  sendAuthorization?: boolean
+  /** Called with the `x-request-id` of every response that has one (V2-T31 T4). */
+  onRequestId?: (info: { requestId: string; method: string; url: string; status: number }) => void
 }
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 export function buildUrl(baseUrl: string, path: string, query: TransportQuery | undefined): string {
   const params = new URLSearchParams()
@@ -66,6 +80,15 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
   return {
     async request(req: TransportRequest, signal?: AbortSignal): Promise<TransportResponse> {
       const headers = { ...req.headers }
+      if (options.sendAuthorization === false) {
+        for (const name of Object.keys(headers)) {
+          if (name.toLowerCase() === 'authorization') delete headers[name]
+        }
+      }
+      if (!SAFE_METHODS.has(req.method)) {
+        const csrf = options.csrfToken?.()
+        if (csrf) headers['x-csrf-token'] = csrf
+      }
       // The browser sets the multipart boundary itself.
       if (req.body instanceof FormData) delete headers['content-type']
 
@@ -73,7 +96,7 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
       const body = encodeBody(req.body)
       if (body !== undefined) init.body = body
       if (signal) init.signal = signal
-      if (options.credentials) init.credentials = options.credentials
+      init.credentials = options.credentials ?? 'include'
 
       let res: Response
       try {
@@ -89,6 +112,10 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
       res.headers.forEach((value, name) => {
         responseHeaders[name.toLowerCase()] = value
       })
+      const requestId = responseHeaders['x-request-id']
+      if (requestId) {
+        options.onRequestId?.({ requestId, method: req.method, url: req.url, status: res.status })
+      }
       return { status: res.status, headers: responseHeaders, body: await decodeBody(res, req) }
     },
   }
