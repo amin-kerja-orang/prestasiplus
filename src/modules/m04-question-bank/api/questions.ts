@@ -19,6 +19,9 @@ export type QuestionStatus =
   | 'approved'
   | 'rejected'
   | 'archived'
+  /** v2 wire lifecycle codes (BE-09 / D54a), received in http mode only. */
+  | 'review'
+  | 'published'
   /** PKSK rows only (M07 BR-M07-02). */
   | 'pending'
 export type QuestionType = 'mcq' | 'true_false' | 'short_answer' | 'fill_blank' | 'essay'
@@ -59,7 +62,7 @@ const BULK_TARGET_STATUS: Readonly<Record<string, string>> = {
 export const NO_WIRE_BULK_ACTIONS: readonly string[] = ['reject']
 
 const wire = (map: Readonly<Record<string, string>>, v: string): string =>
-  Object.hasOwn(map, v) ? map[v] : v
+  (Object.hasOwn(map, v) ? map[v] : undefined) ?? v
 
 /** `{id, name}` of a subject or an education level (M03). */
 export interface NamedRef {
@@ -378,4 +381,19 @@ export async function bulkQuestionAction(
   return { ...result, notUpdated }
 }
 
-
+/**
+ * #8 `POST /api/questions/:id/ai-explanation`. Resolves for every HTTP status with
+ * `{status, headers, body}` (`api.raw`), because the card reads the reply exactly as the live script
+ * does (FR-M04-46): JSON with `message`, JSON without one ("HTTP {status}"), a non-JSON body (the
+ * caller parses it) or, for a network failure, a rejected `ApiError` (`NETWORK_ERROR`).
+ * Success is HTTP 200 `{ok: true, message}`.
+ */
+export function generateAiExplanation(
+  id: number,
+  options: { force?: boolean; signal?: AbortSignal } = {},
+): Promise<{ status: number; headers: Record<string, string>; body: unknown }> {
+  return api.raw('POST', `/api/questions/${String(id)}/ai-explanation`, undefined, {
+    ...(options.force ? { query: { force: 1 } } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
+  })
+}

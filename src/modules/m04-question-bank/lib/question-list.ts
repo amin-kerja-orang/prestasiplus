@@ -10,7 +10,8 @@ import { isHttpMode } from '@/api'
 import {
   NO_WIRE_BULK_ACTIONS,
   NO_WIRE_STATUS_FILTERS,
-  type BulkAction, ComplianceStatus,
+  type BulkAction,
+  type ComplianceStatus,
   type QuestionStatus,
   type QuestionType,
 } from '../api/questions'
