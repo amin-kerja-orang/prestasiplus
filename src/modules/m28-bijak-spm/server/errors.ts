@@ -9,3 +9,9 @@ export class BijakError extends Error {
     super(message)
   }
 }
+
+/** The screen has no backend route yet (http mode): pages show a friendly demo state, not a load error. */
+export const UNAVAILABLE_TITLE = 'Fungsi ini belum tersedia dalam demo'
+export function isUnavailable(err: unknown): boolean {
+  return err instanceof BijakError && err.code === 'unavailable'
+}

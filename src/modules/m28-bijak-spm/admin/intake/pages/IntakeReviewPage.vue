@@ -8,11 +8,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
 import { formatDateTime } from '../../../lib/use-bijak'
 import { bijakAdminServer } from '../../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import {
   attachToStimulus,
@@ -33,7 +34,7 @@ const pageMeta = usePageMeta()
 const server = bijakAdminServer()
 
 const batch = ref<IntakeBatch | null>(null)
-const loadState = ref<'loading' | 'error' | 'missing' | 'ready'>('loading')
+const loadState = ref<'loading' | 'error' | 'missing' | 'unavailable' | 'ready'>('loading')
 const readonly = computed(() => batch.value?.status !== 'draf')
 /** A batch typed by hand has no file: no source panel, the editor takes the full width. */
 const isManual = computed(() => batch.value?.sourceKind === 'manual')
@@ -68,7 +69,11 @@ async function load(): Promise<void> {
     const first = batch.value.questions[0]
     if (first) open.value = new Set([first.id])
   } catch (e) {
-    loadState.value = (e as { code?: string }).code === 'not_found' ? 'missing' : 'error'
+    loadState.value = isUnavailable(e)
+      ? 'unavailable'
+      : (e as { code?: string }).code === 'not_found'
+        ? 'missing'
+        : 'error'
   }
 }
 onMounted(load)
@@ -257,7 +262,9 @@ async function submit(): Promise<void> {
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-review-page"
   >
+    <DsEmptyState v-if="loadState === 'unavailable'" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
     <DsStateView
+      v-else
       :status="loadState === 'ready' ? 'ready' : loadState === 'loading' ? 'loading' : 'error'"
       :error="
         loadState === 'missing'

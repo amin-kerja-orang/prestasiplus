@@ -4,9 +4,10 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables/useApi'
-import { DsDataTable, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from '@/ds'
 
 import { bijakAdminServer } from '../../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
 import { formatDateTime } from '../../../lib/use-bijak'
 import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
@@ -128,7 +129,9 @@ const COLUMNS: TableColumn<Row>[] = [
       </DsNativeSelect>
     </DsFilterBar>
 
+    <DsEmptyState v-if="isUnavailable(error)" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
     <DsDataTable
+      v-else
       :data="rows"
       :columns="COLUMNS"
       variant="flush"
