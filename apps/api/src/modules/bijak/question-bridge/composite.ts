@@ -42,17 +42,21 @@ async function merged<V>(
 /**
  * BE-16 attempts: ids in the reserved PoC block go to the PoC fixture (the seeded PoC papers keep
  * working after BE-09), every other id goes to the BE-09 bank. Each source only ever sees its own ids.
+ *
+ * `poc` is null when `BIJAK_POC_QUESTIONS` is off (production; LEAD decision 2026-10-20: PoC questions are
+ * staging only). Ids in the reserved block are then never served (absent from the map, never sent to BE-09).
  */
 export class CompositeBijakQuestionSource implements AttemptQuestionSource {
   constructor(
-    private readonly poc: AttemptQuestionSource,
+    private readonly poc: AttemptQuestionSource | null,
     private readonly bank: AttemptQuestionSource,
   ) {}
 
   loadQuestions(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionBundle>> {
     const { poc, bank } = split(questionIds)
+    const pocSource = this.poc
     return merged([
-      { ids: poc, load: (ids) => this.poc.loadQuestions(ids) },
+      { ids: pocSource ? poc : [], load: (ids) => pocSource!.loadQuestions(ids) },
       { ids: bank, load: (ids) => this.bank.loadQuestions(ids) },
     ])
   }
@@ -63,22 +67,28 @@ export class CompositeBijakQuestionSource implements AttemptQuestionSource {
  * places BE-09 ids). `pool` stays on the PoC fixture: BE-09 has only the flat `pool=spm` tag and no
  * mapping to blueprint pool tags such as `MAT1-A` exists yet (#45 M8), so Jana keeps drawing from the
  * PoC pool.
+ *
+ * `poc` is null when `BIJAK_POC_QUESTIONS` is off (production): reserved PoC ids are absent from `getMany`
+ * (a paper that places them is "not eligible", 403 on start) and `pool` is empty (Jana answers its usual
+ * 422 SHORTAGE).
  */
 export class CompositePaperQuestionSource implements PaperQuestionSource {
   constructor(
-    private readonly poc: PaperQuestionSource,
+    private readonly poc: PaperQuestionSource | null,
     private readonly bank: Pick<PaperQuestionSource, 'getMany'>,
   ) {}
 
   getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
     const { poc, bank } = split(questionIds)
+    const pocSource = this.poc
     return merged([
-      { ids: poc, load: (ids) => this.poc.getMany(ids) },
+      { ids: pocSource ? poc : [], load: (ids) => pocSource!.getMany(ids) },
       { ids: bank, load: (ids) => this.bank.getMany(ids) },
     ])
   }
 
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool> {
+    if (!this.poc) return Promise.resolve({ entries: [], groups: new Map() })
     return this.poc.pool(pool, scope)
   }
 }
