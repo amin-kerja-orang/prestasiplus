@@ -11,6 +11,7 @@ import { notificationsScenarios } from './notifications/notifications'
 import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
+import { walletScenarios } from './wallet/wallet'
 import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
 
 /**
@@ -27,6 +28,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...walletScenarios,
     ...audioScenarios,
     ...articleScenarios,
     ...supportTicketScenarios,
