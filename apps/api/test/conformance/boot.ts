@@ -68,6 +68,7 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
+    BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
   }
 }
 
