@@ -1,4 +1,7 @@
 export { ExamBuilderModule } from './builder.module'
+export { BuilderRepository } from './builder.repository'
+export { BuilderService } from './builder.service'
+export { checkPaper, publishErrors, type CheckInput, type PaperCheck } from './paper-check'
 export {
   BijakBuilderPorts,
   type BuilderCandidateScope,
