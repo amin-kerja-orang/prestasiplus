@@ -13,12 +13,14 @@ import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { questionsSeed } from '../../prisma/seed/questions'
-import { walletSeed } from '../../prisma/seed/wallet'
 import { examSeed } from '../../prisma/seed/exam'
+import { walletSeed } from '../../prisma/seed/wallet'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
+import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
+import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
@@ -63,6 +65,9 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_IMPORT_PER_HOUR: '100000',
     THROTTLE_BIJAK_PAPERS_READ_PER_MINUTE: '100000',
     THROTTLE_BIJAK_GENERATE_PER_MINUTE: '100000',
+    THROTTLE_CLASSES_READ_PER_MINUTE: '100000',
+    THROTTLE_CLASSES_WRITE_PER_MINUTE: '100000',
+    THROTTLE_CLASS_JOIN_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,
@@ -102,6 +107,12 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   })
     .overrideProvider(CLOCK)
     .useValue(new FixedClock(CONFORMANCE_START))
+    // The scenarios are shared with the mock and place the PoC questions (reserved ids, BE-15). The seed
+    // does not load them into the BE-09 tables yet (no PocQuestionLoader), so the builder keeps serving
+    // the PoC fixture here, like BE-15 does on the student side. The wired source is covered by
+    // test/exam-builder/wired-bank.spec.ts.
+    .overrideProvider(QuestionBankBuilderSource)
+    .useValue(new PocBuilderQuestionSource())
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

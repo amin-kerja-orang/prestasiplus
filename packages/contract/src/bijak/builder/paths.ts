@@ -148,6 +148,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       200: json(listEnvelopeOf(BijakBuilderPaperSummarySchema), 'Papers (paged).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
+      422: err('VALIDATION_ERROR with fields (page, pageSize, status).'),
     },
   })
 
@@ -287,6 +288,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       200: json(listEnvelopeOf(BijakBlueprintViewSchema), 'Blueprints (paged).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
+      422: err('VALIDATION_ERROR with fields (page, pageSize, subject, kertas).'),
     },
   })
 
