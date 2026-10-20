@@ -175,7 +175,7 @@ export function expectNoCache(res: Response, pragma = true): void {
 export const auditRows = (db: TestDatabase, action: string) =>
   db.query<{ id: string; actor_user_id: string | null; actor_role: string | null; scope_school_id: string | null; target_type: string | null; target_id: string | null; detail: Record<string, unknown> | null; is_test: boolean; scope_level: string | null; request_id: string | null; ip_hash: string | null }>(
     `select id::text, actor_user_id::text, actor_role, scope_school_id::text, target_type, target_id, detail, is_test, scope_level, request_id, ip_hash
-       from audit_events where action = $1 order by id desc`,
+       from audit_events where action = $1 order by audit_events.id desc`,
     [action],
   )
 
