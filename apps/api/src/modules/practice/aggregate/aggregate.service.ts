@@ -28,10 +28,29 @@ export interface AggregateRow {
   durationSec: number | null
   provisional: boolean
   submittedAt: Date | null
+  /** School snapshot at write time; null when the student had no school (or the school was removed). */
+  schoolId: string | null
 }
 
-export interface AggregateFilter {
-  userIds: string[]
+/**
+ * Scope of a read. Give `userIds`, `schoolId`, or both (AND). At least one is required: a read with no
+ * scope is refused (RangeError), never "every student".
+ *
+ * SCHOOL-SCOPED REPORTS (BE-19 student performance, BE-21 school admin): use `schoolId`. It filters on
+ * `practice_attempt_aggregates.school_id`, the student's school SNAPSHOT at write time (migration 0018,
+ * LEAD decision 4, 2026-10-20), served by the partial index (school_id, subject_code, submitted_at DESC)
+ * WHERE NOT is_test. A student who moved school keeps old sittings under the old school. The caller must
+ * have checked that the actor may see that school (this service does no authorisation).
+ * `userIds[]` stays for class / per-student views (at most 5000 ids).
+ */
+export interface AggregateScope {
+  /** Decimal-string user ids. An empty list reads nothing. */
+  userIds?: string[]
+  /** Decimal-string school id: only rows whose school snapshot is this school. */
+  schoolId?: string
+}
+
+export interface AggregateFilter extends AggregateScope {
   subjectCode?: string
   kertas?: number
   /** Inclusive lower bound on submitted_at. */
@@ -144,13 +163,36 @@ function checkIds(userIds: string[]): bigint[] {
   })
 }
 
+interface Scope {
+  /** undefined = no user filter (school scope only). */
+  ids: bigint[] | undefined
+  schoolId: bigint | undefined
+}
+
+/** Validates the scope. Returns null when the read is empty by definition (`userIds: []`). */
+function checkScope(f: AggregateScope): Scope | null {
+  if (f.userIds === undefined && f.schoolId === undefined) throw new RangeError('invalid scope: userIds or schoolId required')
+  const ids = f.userIds === undefined ? undefined : checkIds(f.userIds)
+  let schoolId: bigint | undefined
+  if (f.schoolId !== undefined) {
+    if (typeof f.schoolId !== 'string') throw new RangeError('invalid schoolId')
+    try {
+      schoolId = idFromString(f.schoolId)
+    } catch {
+      throw new RangeError('invalid schoolId')
+    }
+  }
+  if (ids !== undefined && ids.length === 0) return null
+  return { ids, schoolId }
+}
+
 function checkLimit(limit: number | undefined): number {
   if (limit === undefined) return DEFAULT_LIMIT
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw new RangeError('invalid limit')
   return limit
 }
 
-function checkFilter(f: Omit<AggregateFilter, 'userIds'>): void {
+function checkFilter(f: Omit<AggregateFilter, keyof AggregateScope>): void {
   if (f.subjectCode !== undefined && (typeof f.subjectCode !== 'string' || f.subjectCode.length < 1 || f.subjectCode.length > 32))
     throw new RangeError('invalid subjectCode')
   if (f.kertas !== undefined && (!Number.isInteger(f.kertas) || f.kertas < 1)) throw new RangeError('invalid kertas')
@@ -174,6 +216,7 @@ function toRow(r: DbRow): AggregateRow {
     durationSec: r.durationSec,
     provisional: r.provisional,
     submittedAt: r.submittedAt,
+    schoolId: r.schoolId === null ? null : r.schoolId.toString(),
   }
 }
 
@@ -181,6 +224,10 @@ function toRow(r: DbRow): AggregateRow {
  * US-33 attempt aggregate (owner M05). One row per submitted or marked Bijak sitting (AC-33.4), written by
  * `recordGraded` (BE-16 calls it after its commit). The read methods are for BE-19 and BE-21 and ALWAYS
  * exclude `is_test` rows (G-07, AC-18.3). Only `ownHistory` includes the owner's own test rows.
+ *
+ * Every row carries `school_id`, the student's `users.school_id` read in the same statement as the insert
+ * (a snapshot: a regrade or a later school move never changes it). BE-19 and BE-21 should scope
+ * school-level reports with `AggregateScope.schoolId`, not by expanding a school into `userIds[]`.
  */
 @Injectable()
 export class PracticeAggregateService implements BijakAttemptAggregatePort {
@@ -192,10 +239,12 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
       const inserted = await tx.$queryRaw<{ id: bigint }[]>`
         INSERT INTO practice_attempt_aggregates
           (source, attempt_id, user_id, paper_id, start_type, subject_code, kertas, mode, status,
-           units_awarded, units_max, duration_sec, provisional, regrade_count, started_at, submitted_at, is_test)
+           units_awarded, units_max, duration_sec, provisional, regrade_count, started_at, submitted_at, is_test,
+           school_id)
         VALUES (${SOURCE}, ${v.attemptId}::uuid, ${v.userId}, ${v.paperId}, ${v.startType}, ${input.subject},
            ${input.kertas}, ${input.mode}, ${input.status}, ${v.score}::numeric, ${v.max}::numeric, ${v.durationSec},
-           ${input.provisional}, ${input.regraded ? 1 : 0}, ${v.startedAt}, ${v.submittedAt}, ${input.isTest})
+           ${input.provisional}, ${input.regraded ? 1 : 0}, ${v.startedAt}, ${v.submittedAt}, ${input.isTest},
+           (SELECT u.school_id FROM users u WHERE u.id = ${v.userId}))
         ON CONFLICT (source, attempt_id) DO NOTHING
         RETURNING id`
       if (inserted.length > 0) {
@@ -209,6 +258,7 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
       if (!row) throw new Error('aggregate row vanished')
       if (row.user_id !== v.userId || row.is_test !== input.isTest) throw new RangeError('aggregate owner mismatch')
       if (!input.regraded) return // replay: change nothing
+      // Regrade: school_id is NOT updated (snapshot of the first write).
       await tx.practiceAttemptAggregate.update({
         where: { id: row.id },
         data: {
@@ -248,12 +298,12 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
   async forStudents(
     filter: AggregateFilter & { limit?: number },
   ): Promise<AggregateRow[]> {
-    const ids = checkIds(filter.userIds)
+    const scope = checkScope(filter)
     checkFilter(filter)
     const take = checkLimit(filter.limit)
-    if (ids.length === 0) return []
+    if (scope === null) return []
     const rows = await this.prisma.client.practiceAttemptAggregate.findMany({
-      where: this.where(ids, filter),
+      where: this.where(scope, filter),
       orderBy: [{ submittedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
       take,
     })
@@ -261,13 +311,13 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
   }
 
   /** Per (user, subject) totals. Test rows are excluded. */
-  async subjectSummary(filter: { userIds: string[]; from?: Date; to?: Date }): Promise<SubjectSummaryRow[]> {
-    const ids = checkIds(filter.userIds)
+  async subjectSummary(filter: AggregateScope & { from?: Date; to?: Date }): Promise<SubjectSummaryRow[]> {
+    const scope = checkScope(filter)
     checkFilter(filter)
-    if (ids.length === 0) return []
+    if (scope === null) return []
     const groups = await this.prisma.client.practiceAttemptAggregate.groupBy({
       by: ['userId', 'subjectCode'],
-      where: this.where(ids, filter),
+      where: this.where(scope, filter),
       _count: { _all: true },
       _sum: { unitsAwarded: true, unitsMax: true },
       orderBy: [{ userId: 'asc' }, { subjectCode: 'asc' }],
@@ -287,22 +337,23 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
   }
 
   /** Per-question figures over counted items. Test rows are excluded. */
-  async itemStats(filter: {
-    userIds: string[]
+  async itemStats(filter: AggregateScope & {
     paperId?: string
     subjectCode?: string
     kertas?: number
   }): Promise<ItemStatRow[]> {
-    const ids = checkIds(filter.userIds)
+    const scope = checkScope(filter)
     checkFilter(filter)
     const paperId = filter.paperId === undefined ? undefined : decimalId(filter.paperId, 'paperId')
-    if (ids.length === 0) return []
+    if (scope === null) return []
     const conds: Prisma.Sql[] = [
+      Prisma.sql`a.source = ${SOURCE}`,
       Prisma.sql`a.is_test = false`,
       Prisma.sql`i.is_test = false`,
       Prisma.sql`i.counted = true`,
-      Prisma.sql`a.user_id IN (${Prisma.join(ids)})`,
     ]
+    if (scope.ids !== undefined) conds.push(Prisma.sql`a.user_id IN (${Prisma.join(scope.ids)})`)
+    if (scope.schoolId !== undefined) conds.push(Prisma.sql`a.school_id = ${scope.schoolId}`)
     if (paperId !== undefined) conds.push(Prisma.sql`a.paper_id = ${paperId}`)
     if (filter.subjectCode !== undefined) conds.push(Prisma.sql`a.subject_code = ${filter.subjectCode}`)
     if (filter.kertas !== undefined) conds.push(Prisma.sql`a.kertas = ${filter.kertas}`)
@@ -348,11 +399,12 @@ export class PracticeAggregateService implements BijakAttemptAggregatePort {
     return rows.map(toRow)
   }
 
-  private where(ids: bigint[], f: Omit<AggregateFilter, 'userIds'>): Prisma.PracticeAttemptAggregateWhereInput {
+  private where(scope: Scope, f: Omit<AggregateFilter, keyof AggregateScope>): Prisma.PracticeAttemptAggregateWhereInput {
     return {
       source: SOURCE,
       isTest: false,
-      userId: { in: ids },
+      ...(scope.ids !== undefined ? { userId: { in: scope.ids } } : {}),
+      ...(scope.schoolId !== undefined ? { schoolId: scope.schoolId } : {}),
       ...(f.subjectCode !== undefined ? { subjectCode: f.subjectCode } : {}),
       ...(f.kertas !== undefined ? { kertas: f.kertas } : {}),
       ...(f.from || f.to ? { submittedAt: { ...(f.from ? { gte: f.from } : {}), ...(f.to ? { lt: f.to } : {}) } } : {}),
