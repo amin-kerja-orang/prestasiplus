@@ -26,12 +26,12 @@ import StimulusView from '../../components/StimulusView.vue'
 import QuestionEditor from '../intake/components/QuestionEditor.vue'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import { ADMIN_ROUTES, KIND_LABEL, STATUS_BADGE, detailMessage } from './ui'
 
 const props = defineProps<{ qid: string }>()
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const router = useRouter()
 const flash = useFlash()
 

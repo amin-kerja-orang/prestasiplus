@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { DsFileField, DsFormSection, DsPage, DsPanel } from '@/ds'
 
-import { bijakServer } from '../../../server/client'
+import { bijakAdminServer } from '../../../server/client'
 import { useBijakUser } from '../../../lib/use-bijak'
 import { createExtractor } from '../ai'
 import IntakeMetaFields, { type IntakeForm } from '../components/IntakeMetaFields.vue'
@@ -20,7 +20,7 @@ import { SAMPLE_PAGES } from '../lib/sample-paper'
 import { PAPER_TYPES, type PageImage, type PageText } from '../types'
 
 const router = useRouter()
-const server = bijakServer()
+const server = bijakAdminServer()
 const user = useBijakUser()
 const extractor = createExtractor()
 

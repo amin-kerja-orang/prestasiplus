@@ -21,7 +21,7 @@ import {
 
 import RichText from '../../components/RichText.vue'
 import type { QuestionStatus, QueueItem } from '../../domain/admin-types'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import {
   ADMIN_ROUTES,
   CONFIDENCE_LABEL,
@@ -34,7 +34,7 @@ import {
 
 type Row = QueueItem & Record<string, unknown>
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const router = useRouter()
 const subjects = server.subjects()
 const draft = reactive<{

@@ -11,14 +11,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { DsCluster, DsPage, DsStack } from '@/ds'
 
 import { useBijakUser } from '../../../lib/use-bijak'
-import { bijakServer } from '../../../server/client'
+import { bijakAdminServer } from '../../../server/client'
 import IntakeMetaFields, { type IntakeForm } from '../components/IntakeMetaFields.vue'
 import { INTAKE_LIST_PATH, intakeReviewPath } from '../lib/intake-routes'
 import { PAPER_TYPES } from '../types'
 
 const router = useRouter()
 const route = useRoute()
-const server = bijakServer()
+const server = bijakAdminServer()
 const user = useBijakUser()
 
 /** Coming from the paper builder: subject, kertas and the paper are pre-filled. */

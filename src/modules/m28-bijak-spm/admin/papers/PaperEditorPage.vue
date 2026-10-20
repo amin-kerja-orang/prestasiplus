@@ -15,11 +15,11 @@ import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const route = useRoute()
 const flash = useFlash()
 

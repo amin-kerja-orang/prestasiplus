@@ -43,6 +43,18 @@ export function bijakServer(): BijakApi {
   return instance
 }
 
+/**
+ * Admin (staff) pages still use the mock only: the admin Bijak routes have no HTTP client yet.
+ * In http mode this fails loudly instead of returning a server without the admin methods.
+ */
+export function bijakAdminServer(): BijakServer {
+  const server = bijakServer()
+  if (!('listAdminPapers' in server)) {
+    throw new Error('Bijak admin API is not available in http mode (student routes only).')
+  }
+  return server as BijakServer
+}
+
 /** Test hook: swap in a server (and its device storage). */
 export function setBijakServerForTests(
   server: BijakApi | null,

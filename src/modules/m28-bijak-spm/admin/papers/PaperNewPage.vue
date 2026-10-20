@@ -6,10 +6,10 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { DsFormBar, DsFormSection, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
 
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import { ADMIN_ROUTES, detailMessage } from './ui'
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const router = useRouter()
 const { data: blueprints, error, reload } = useApi(() => server.listBlueprints())
 

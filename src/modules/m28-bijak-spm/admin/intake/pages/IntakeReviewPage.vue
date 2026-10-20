@@ -12,7 +12,7 @@ import { DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
 import { formatDateTime } from '../../../lib/use-bijak'
-import { bijakServer } from '../../../server/client'
+import { bijakAdminServer } from '../../../server/client'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import {
   attachToStimulus,
@@ -30,7 +30,7 @@ import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '.
 
 const props = defineProps<{ batchId: string }>()
 const pageMeta = usePageMeta()
-const server = bijakServer()
+const server = bijakAdminServer()
 
 const batch = ref<IntakeBatch | null>(null)
 const loadState = ref<'loading' | 'error' | 'missing' | 'ready'>('loading')

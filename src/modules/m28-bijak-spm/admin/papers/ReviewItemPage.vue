@@ -14,11 +14,11 @@ import { DsDialog, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 import RichText from '../../components/RichText.vue'
 import type { DecisionAction } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, CONFIDENCE_LABEL, KIND_LABEL, STATUS_BADGE, ageText } from './ui'
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()

@@ -6,12 +6,12 @@ import { computed, ref } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { DsDataTable, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from '@/ds'
 
-import { bijakServer } from '../../../server/client'
+import { bijakAdminServer } from '../../../server/client'
 import { formatDateTime } from '../../../lib/use-bijak'
 import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 
-const server = bijakServer()
+const server = bijakAdminServer()
 
 const status = ref<'semua' | IntakeStatus>('semua')
 const subject = ref('semua')

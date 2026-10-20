@@ -24,13 +24,13 @@ import {
 import RichText from '../../components/RichText.vue'
 import type { BankRow, QuestionStatus } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE } from './ui'
 
 type Row = BankRow & Record<string, unknown>
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const route = useRoute()
 const subjects = server.subjects()
 

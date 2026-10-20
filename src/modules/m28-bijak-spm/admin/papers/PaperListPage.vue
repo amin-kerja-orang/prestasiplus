@@ -10,12 +10,12 @@ import { DsDataTable, DsLoadError, DsPage, DsStatRow, DsStatusBadge, type StatIt
 
 import type { AdminPaperSummary } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
-import { bijakServer } from '../../server/client'
+import { bijakAdminServer } from '../../server/client'
 import { ADMIN_ROUTES, detailMessage } from './ui'
 
 type Row = AdminPaperSummary & Record<string, unknown>
 
-const server = bijakServer()
+const server = bijakAdminServer()
 const router = useRouter()
 const flash = useFlash()
 const { data, error, loading, reload } = useApi(() => server.listAdminPapers())
