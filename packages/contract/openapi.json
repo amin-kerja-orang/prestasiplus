@@ -56794,7 +56794,108 @@
           "published",
           "archived"
         ],
-        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. The mock status values are realigned to these codes at the http switch."
+        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. Prototype mapping: semakan = review, terbit = published, draf = draft (the prototype also reports draf for a question that is not in the bank); ditolak (rejected) has no D54 code and maps to draft, a contract choice [PROPOSED]. The builder offers only published questions as candidates (`getPaperEditor`: terbit, same subject and kertas); a paper can reference questions of any status, and publish refuses any that is not published (\"{N} soalan belum Terbit\")."
+      },
+      "BijakBuilderQuestionKind": {
+        "type": "string",
+        "enum": [
+          "objektif",
+          "berstruktur",
+          "esei"
+        ],
+        "description": "QuestionKind of the prototype (admin-types.ts line 20). Derived as `kindOf` does (admin.ts lines 197-201): objektif = the question has MCQ options; esei = a structured question with at least one leaf whose scheme is a rubric; berstruktur = any other."
+      },
+      "BijakBuilderCurriculumTag": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "SubjectCode (open dictionary).",
+            "example": "MAT"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5",
+              "T4+T5"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "DSKP unit code, or null when the content lies outside the DSKP (always null for T1-T3 content)."
+          },
+          "unitLabel": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Display name of the unit."
+          },
+          "sp": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 20,
+            "description": "Standard Pembelajaran codes."
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan 1..6."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          }
+        },
+        "required": [
+          "subject",
+          "level",
+          "unit",
+          "unitLabel",
+          "sp",
+          "tp",
+          "formOrigin"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype CurriculumTag."
+      },
+      "BijakBuilderSchemeLine": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "pattern": "^[KNPBMFC][1-9][0-9]*$",
+            "example": "K1"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
       },
       "BijakBuilderPaperSection": {
         "type": "object",
@@ -56808,7 +56909,8 @@
             "example": "Bahagian A"
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Section title (`SectionDef.title`, types.ts line 182)."
           },
           "markBudget": {
             "type": "integer",
@@ -56876,17 +56978,10 @@
             "description": "Kertas number.",
             "example": 2
           },
-          "year": {
-            "type": "integer"
-          },
           "code": {
             "type": "string",
             "minLength": 1,
             "example": "1449/2"
-          },
-          "durationMin": {
-            "type": "integer",
-            "minimum": 1
           },
           "status": {
             "$ref": "#/components/schemas/BijakBuilderPaperStatus"
@@ -56899,7 +56994,7 @@
           "marks": {
             "type": "integer",
             "minimum": 0,
-            "description": "Total effective marks (derived)."
+            "description": "Total effective marks (choose-N applied), derived by checkPaper."
           },
           "budget": {
             "type": "integer",
@@ -56908,7 +57003,7 @@
           },
           "ok": {
             "type": "boolean",
-            "description": "True when the paper passes the publish check (no `errors` would be returned)."
+            "description": "checkPaper `ok`: no paper-wide error and every section ok (publish would succeed)."
           },
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
@@ -56920,9 +57015,7 @@
           "subject",
           "subjectName",
           "kertas",
-          "year",
           "code",
-          "durationMin",
           "status",
           "questionCount",
           "marks",
@@ -57039,21 +57132,21 @@
           },
           "preview": {
             "type": "string",
-            "description": "Start of the stem for the picker; may hold $latex$ spans."
+            "description": "Short text for the picker; may hold $latex$ spans. Composed as `previewOf` does (admin.ts lines 217-220): the stem, then \" {label} {prompt}\" of the first part when that part is a leaf (has no children); the stem alone otherwise."
           },
           "marks": {
             "type": "integer",
             "minimum": 0,
-            "description": "Total marks of the question."
+            "maximum": 1000,
+            "description": "Total marks of the question (`marksOf`, admin.ts lines 202-205): the MCQ scheme marks (1 when there is no scheme), else the sum of the leaf marks."
           },
           "kind": {
-            "type": "string",
-            "minLength": 1,
-            "description": "QuestionKind of the mock (for example mcq or a structured kind). The value set is not quoted by the review [PROPOSED]."
+            "$ref": "#/components/schemas/BijakBuilderQuestionKind"
           },
           "topic": {
             "type": "string",
-            "description": "Display name of the curriculum unit."
+            "maxLength": 200,
+            "description": "Display name of the curriculum unit (unitLabel)."
           },
           "status": {
             "$ref": "#/components/schemas/BijakBuilderQuestionStatus"
@@ -57182,7 +57275,7 @@
               "sections"
             ],
             "additionalProperties": false,
-            "description": "The blueprint of the paper subject and kertas; null when there is none."
+            "description": "The blueprint of the paper subject and kertas (any source, Draf included); null when there is none."
           },
           "questions": {
             "type": "array",
@@ -57215,7 +57308,8 @@
           },
           "markBudget": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Marks after choose-N; the mock defaults it to the question count."
           },
           "questionCount": {
             "type": "integer",
@@ -57227,7 +57321,7 @@
           },
           "instruction": {
             "type": "string",
-            "description": "Authored instruction; empty string when none."
+            "description": "Authored instruction, else the derived line (\"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"); never empty in the mock view."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -57235,7 +57329,7 @@
           "pool": {
             "type": "string",
             "minLength": 1,
-            "description": "Pool tag the section draws from; the builder uses it to suggest questions (internal, never sent to students)."
+            "description": "Pool the section draws from in Jana Kertas; the builder uses it to suggest questions."
           }
         },
         "required": [
@@ -57266,9 +57360,8 @@
           },
           "title": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 200,
-            "description": "Default title is chosen by the server when omitted [PROPOSED]."
+            "description": "Trimmed; omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
           }
         },
         "required": [
@@ -57400,27 +57493,17 @@
           "id": {
             "$ref": "#/components/schemas/Id"
           },
-          "topic": {
-            "type": "string",
-            "description": "Display name of the curriculum unit."
-          },
-          "formOrigin": {
-            "type": "string",
-            "enum": [
-              "T1-T3",
-              "T4",
-              "T5"
-            ]
-          },
-          "groupId": {
-            "$ref": "#/components/schemas/Id"
-          },
           "stem": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100000
           },
           "marks": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "curriculum": {
+            "$ref": "#/components/schemas/BijakBuilderCurriculumTag"
           },
           "mcq": {
             "type": "object",
@@ -57430,7 +57513,14 @@
                 "items": {
                   "$ref": "#/components/schemas/BijakAttemptOption"
                 },
-                "minItems": 2
+                "maxItems": 10
+              },
+              "correct": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Id of the correct option.",
+                "example": "1042"
               }
             },
             "required": [
@@ -57442,15 +57532,46 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BijakAttemptPartView"
-            }
+            },
+            "maxItems": 50,
+            "description": "Question parts (prototype PartDef, nested through `children`)."
+          },
+          "scheme": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "marks": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BijakBuilderSchemeLine"
+                  },
+                  "maxItems": 100
+                }
+              },
+              "required": [
+                "marks",
+                "lines"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Mark scheme per leaf id (the question id for an MCQ); null where a leaf has no scheme. Lines are built as `describeScheme` does: option = the reason; accepted = \"Diterima: {value} {unit}\"; mapping = \"{key} = {value}\"; rubric = one line per band, then the notes; points = one tagged line per mark point and a closing \"Jawapan akhir: $display$\" when the scheme has a final answer. An MCQ scheme starts with \"Jawapan betul: {letter}\"."
           }
         },
         "required": [
           "id",
-          "topic",
-          "formOrigin",
           "stem",
-          "marks"
+          "marks",
+          "curriculum",
+          "scheme"
         ],
         "additionalProperties": false
       },
@@ -57615,12 +57736,14 @@
           "markBudget": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1000
+            "maximum": 1000,
+            "description": "Marks after choose-N (required on the write; optional in the prototype, where it defaults to the question count)."
           },
           "questionCount": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 500
+            "maximum": 500,
+            "description": "Questions the section holds (prototype `BlueprintSection.take`)."
           },
           "compulsory": {
             "type": "boolean",
@@ -57629,7 +57752,7 @@
           "instruction": {
             "type": "string",
             "maxLength": 500,
-            "description": "Default: empty."
+            "description": "Authored instruction. Default: absent, and the view derives \"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -96460,7 +96583,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: list papers (draf and terbit)",
-        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -96544,7 +96667,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: create a paper (createPaper)",
-        "description": "Body { subject, kertas, title? }. The sections come from the blueprint of that subject and kertas and start empty; the status is draf. Answers the new id. No blueprint for the pair: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { subject, kertas, title? }. The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the default title is \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -96615,7 +96738,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR: no blueprint \"Tiada blueprint untuk subjek dan kertas ini\" (no field), or fields (subject, kertas, title \"Tajuk kertas diperlukan\").",
+            "description": "VALIDATION_ERROR: no blueprint \"Tiada blueprint untuk subjek dan kertas ini\" (no field), or fields (subject, kertas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -96652,7 +96775,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: student-view preview of questions, saved or not (previewQuestions)",
-        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the questions as a student sees them, the stimulus of each group by group id and the shared option bank of each group by group id. It never carries an answer key or scheme. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Ids that do not exist are left out [PROPOSED]. The ReviewQuestion field list is derived from the BE-16 student view [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only, nothing of it reaches students, and the 200 sends Cache-Control: no-store (D57b, conservative). It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -96679,6 +96802,17 @@
         "responses": {
           "200": {
             "description": "Questions, stimuli and option banks.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the answer carries answer keys and mark schemes (D57b, conservative).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -96760,7 +96894,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: the editor read (getPaperEditor)",
-        "description": "PaperEditorData: the paper (AdminPaper, with sections and question ids), the blueprint of its subject and kertas (BlueprintView, or null), the picker candidates (BuilderQuestion) and the stimulus groups (BuilderGroup). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "PaperEditorData: the paper (AdminPaper, with sections and question ids), the blueprint of its subject and kertas (BlueprintView, or null), the picker candidates (BuilderQuestion) and the stimulus groups (BuilderGroup). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -96832,7 +96966,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question whose curriculum subject differs from the paper subject \"Soalan tidak sah untuk kertas ini\" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the updated paper. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -96871,14 +97005,14 @@
         },
         "responses": {
           "200": {
-            "description": "The updated paper.",
+            "description": "The editor data after the edit.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                      "$ref": "#/components/schemas/BijakBuilderEditor"
                     }
                   },
                   "required": [
@@ -96961,7 +97095,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: delete a paper (idempotent)",
-        "description": "Idempotent, as the mock deletePaper: an unknown id also answers 200 { data: { ok: true } } (so there is no 404). A terbit paper answers 422 VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field); unpublish it first. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Idempotent, as the mock deletePaper: an unknown id also answers 200 { data: { ok: true } } (so there is no 404). A terbit paper answers 422 VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field); unpublish it first. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97072,7 +97206,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: publish (draf to terbit)",
-        "description": "No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines built by checkPaper, each prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"{N} soalan belum Terbit\", \"Kumpulan rangsangan G tidak berturutan\", \"tidak lengkap\", and the paper-wide \"Soalan berulang dalam kertas: ...\" and \"Kumpulan rangsangan X dipecahkan antara dua bahagian\". Nothing changes on ok: false. On ok: true the status becomes terbit and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). Publishing a paper that is already terbit is a no-op { ok: true, errors: [] } [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97183,7 +97317,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: unpublish, tarik balik (terbit back to draf)",
-        "description": "No request body. The status goes back to draf (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf is a no-op [PROPOSED]. The path name follows the card (\"tarik balik\"). The mock method returns void; this route answers the updated paper (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected [PROPOSED, not in the mock]. A paper that is already draf stays draf. The path name follows the card (\"tarik balik\"). The mock returns void; this route answers { ok: true } (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97212,14 +97346,14 @@
         ],
         "responses": {
           "200": {
-            "description": "The paper, now draf.",
+            "description": "Done; the paper is now draf.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                      "$ref": "#/components/schemas/BijakBuilderOk"
                     }
                   },
                   "required": [
@@ -97294,7 +97428,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint: list blueprints (BlueprintView, latest active version)",
-        "description": "One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView). Filters: subject, kertas. Retired blueprints are not listed [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView); blueprints whose source is Draf are not listed (the mock filter). Retired blueprints are not listed either [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97389,7 +97523,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint admin: create a blueprint, version 1 (NO MOCK)",
-        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97506,8 +97640,8 @@
         "tags": [
           "bijak-blueprint-admin"
         ],
-        "summary": "Blueprint: one blueprint by subject and kertas (BlueprintView)",
-        "description": "BlueprintView has no id, so a blueprint is addressed by subject and kertas, as the mock does. Route path is [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "summary": "Blueprint: one blueprint by subject and kertas (BlueprintView, NO MOCK)",
+        "description": "No mock route (the mock has listBlueprints and the blueprint inside getPaperEditor); kept because the card requires a blueprint get. BlueprintView has no id, so a blueprint is addressed by subject and kertas. Route path is [PROPOSED]. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97593,7 +97727,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint admin: add a new version, the only way to edit (NO MOCK)",
-        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -97746,7 +97880,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint admin: retire a blueprint (NO MOCK)",
-        "description": "No mock exists; kept because the card requires it. No request body. Every version becomes retired: it is no longer listed and new papers cannot be created from it. Terbit papers keep their version. Retiring a retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No mock exists; kept because the card requires it. No request body. Every version becomes retired: it is no longer listed and new papers cannot be created from it. Terbit papers keep their version. Retiring a retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
