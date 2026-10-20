@@ -38,6 +38,7 @@ import { HeatmapModule } from './heatmap'
 import { IntakeDashboardModule } from './intake/dashboard'
 import { CikguModule } from './cikgu'
 import { PkskModule } from './pksk'
+import { MarketplaceModule } from './marketplace'
 
 /**
  * Module registry. Each lane adds ONE import and ONE array entry for its Nest module
@@ -46,4 +47,4 @@ import { PkskModule } from './pksk'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, PkskModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, PkskModule, MarketplaceModule]

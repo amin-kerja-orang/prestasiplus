@@ -15,6 +15,7 @@ import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
 import { populationSeed } from './core/population'
 import { schoolPackagesSeed } from './core/school-packages'
+import { marketplaceCategoriesSeed } from './core/marketplace-categories'
 import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
@@ -23,6 +24,7 @@ import { practiceSeed } from './practice'
 import { questionsSeed } from './questions'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
+import { marketplaceSeed } from './marketplace'
 import { assertSeedAllowed } from './guard'
 import { walletSeed } from './wallet'
 import { contentSeed } from './content'
@@ -60,14 +62,15 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue only
- * (`core-school-packages`), pinned by test/subscriptions/seed-production.spec.ts.
+ * The set is minimal and explicit: today it contains the school_packages catalogue and the marketplace categories
+ * (`core-school-packages`, `core-marketplace-categories`), pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
+ * ORDER NOTE: the marketplace seeds sit BEFORE `gamification`, which must stay last (test/gamification/seed.spec.ts); marketplace imports nothing from wallet or gamification.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, cikguSeed, pkskSeed, practiceSeed, gamificationSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, cikguSeed, pkskSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
