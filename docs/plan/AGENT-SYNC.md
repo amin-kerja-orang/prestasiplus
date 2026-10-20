@@ -84,25 +84,25 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-35 | full | 2026-10-20 | Group A (PC-4). Anonymiser tool + synthetic .cloud fixture generator. Opened after BE-27 merged. No folder overlap with BE-04, so it may run in parallel. Security review. LEAD runs the anonymiser (OD-18). |
 | BE-05 | full | 2026-10-19 | Group A (PC-1). Users & schools (M02). **DONE — merged 2ab7976f (2026-10-20).** Unblocked BE-17 (also needs BE-08 full), BE-25. |
 | BE-08 | full | 2026-10-19 | Group B (PC-2). Curriculum (M03): levels, subjects, chapters, topics, DSKP tree. Opened after S3; contract already merged. Unblocks BE-09 full. |
-| BE-09 | full | 2026-10-20 | Question bank core (M04): schema, repository, question CRUD, eligibility. Depends BE-08 (done). Contract merged. **CLAIMED pc-aminfaudzi/S2 (61)** — LEAD assigned (critical bottleneck, unblocks BE-10/12/15). **Migration 0010** (after BE-24 0009). Branch `be/BE-09-question-bank-core`. Group B: do NOT take — 61 holds it. |
+| BE-09 | full | 2026-10-20 | Question bank core (M04): schema, repository, question CRUD, eligibility. Depends BE-08 (done). Contract merged. **ASSIGNED Group A S1 (bb / s-aminfaudzi-e3m2)** — LEAD reassigned 2026-10-20 (61 holds BE-24; BE-09 not yet started). Critical bottleneck, unblocks BE-10/12/15. **Migration 0011** (order: BE-24 0009 → BE-11 0010 → BE-09 0011). Branch `be/BE-09-question-bank-core`. Group B: do NOT take. |
 | BE-11 | full | 2026-10-20 | **Group B.** Wallet, ledger and streak core (M14 core). Depends BE-03 (done). Contract merged. Opened for Group B (#29). Unblocks BE-12, BE-16, BE-23. Branch `be/BE-11-wallet-streak-core`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
 | BE-25 | full | 2026-10-20 | Group A (PC-1). Subscriptions, packages, parent invites/links, complimentary students (M02 rest). **DONE — merged 6f634d67 (2026-10-20).** Migration 0006. Unblocks BE-12. |
 | BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01). **DONE — merged b5d5d7d4 (2026-10-20).** Migration 0007. mustChangePassword guard; teacher self-register fail-closed; register throttle decoupled from login. Unblocks BE-24. |
 | BE-10 | contract-only | 2026-10-19 | Question workflow: `packages/contract/src/question-workflow/**`. |
-| BE-15 | contract-only | 2026-10-19 | Bijak papers: `packages/contract/src/bijak/papers/**`. |
-| BE-17 | full | 2026-10-20 | Classes and teacher basics (M10 part A). Depends BE-05 + BE-08 (both done). Contract merged. Open for Group A (PC-6). Unblocks BE-18/19/22/28. Migration number from LEAD when claimed. Branch `be/BE-17-classes-teacher`. Also provides COMP_CLASSROOM_PORT (BE-25 comp-student class assignment) + verify-pending-teacher (BE-21 AC#13 lives here or BE-21). |
+| BE-15 | full | 2026-10-20 | **Group B (s-vm-obgn).** Bijak papers (M06): paper list, paper detail, start attempt eligibility. Depends BE-09 (question bank). Contract merged. **Migration 0012.** Branch `be/BE-15-bijak-papers`. Includes PoC paper + question seed from prototype (fictitious names only). Part of 6h Bijak sprint. |
+| BE-17 | full | 2026-10-20 | Classes and teacher basics (M10 part A). Depends BE-05 + BE-08 (both done). Contract merged. Open for Group A (PC-6). **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** Migration number from LEAD when claimed (renumber-at-merge). Branch `be/BE-17-classes-teacher`. Also provides COMP_CLASSROOM_PORT + verify-pending-teacher (BE-21 AC#13). |
 | BE-19 | contract-only | 2026-10-19 | Performance reports: `packages/contract/src/reports/performance/**`. |
 | BE-21 | contract-only | 2026-10-19 | School admin: `packages/contract/src/school-admin/**`. |
 | BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
 | BE-24 | full | 2026-10-20 | Group A (PC-1). Content (M09) + support tickets (M22). **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-24-content-support` from b5d5d7d4. Depends BE-03/04/05/06 (all done); uses BE-06 NotificationsService + BE-05 school scope. **Migration number 0009** (BE-08 curriculum holds 0008 and merges first; LEAD merges in numeric order). no-store/429 (D57). Security review. |
 | BE-36 | contract | 2026-10-19 | AI adapter wire types. **DONE — PR #27 merged 2026-10-20.** |
-| BE-37 | full | 2026-10-20 | **Group B (PC-5).** AI intake: files/OCR/job runner. Depends BE-04 (done), BE-36 (done), BE-38 contract (done). **Migration 0015** (NOT 0012 — that is BE-47/Group A). Opened for Group B. No real media/OCR output committed (source only). Security review (file uploads + external input). |
-| BE-14 | full | 2026-10-20 | **Group B.** `@pp/exam-core` shared package (no DB migration). Coordinate with LEAD: OD-5 and any `src/modules/m28-bijak-spm/domain` changes are cross-cutting — flag before the PR. Unblocks Bijak/paper-builder cards. |
+| BE-37 | full | 2026-10-20 | **Group B (PC-5).** AI intake: files/OCR/job runner. Depends BE-04/BE-36/BE-38 (done). **Migration 0015 reserved.** **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** No real media/OCR output committed (source only). Security review (file uploads + external input). |
+| BE-14 | full | 2026-10-20 | **Group B (s-vm-obgn).** `@pp/exam-core` shared package (no DB migration). **OD-5 APPROVED by LEAD 2026-10-20** — may touch `src/modules/m28-bijak-spm`, follow `sessions.md §5`. Unblocks BE-15/BE-16 (Bijak). Part of 6h Bijak sprint. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
 | BE-13 | contract-only | 2026-10-19 | Practice read models (Group B): `packages/contract/src/practice/reads/**` only; do not edit BE-12's files in `practice/`. |
-| BE-16 | contract-only | 2026-10-19 | Bijak attempts: `packages/contract/src/bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). |
+| BE-16 | full | 2026-10-20 | **Group B (s-vm-obgn).** Bijak attempts (M06): start, autosave, submit, result. `bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). Depends BE-11 (wallet, for reward on submit) + BE-15. **Migration 0013.** Branch `be/BE-16-bijak-attempts`. **FULL security review (submit answers / marks).** Part of 6h Bijak sprint. |
 | BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
 | BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
 | BE-22 | contract-only | 2026-10-19 | Command Center and admin dashboard: `packages/contract/src/admin/command-center/**`. |
@@ -112,8 +112,8 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-43 | contract-only | 2026-10-19 | Cikgu Alesa: `packages/contract/src/cikgu/**`. |
 | BE-44 | contract-only | 2026-10-19 | Battle: `packages/contract/src/battle/**`. |
 | BE-45 | contract-only | 2026-10-19 | Papan Bijak, games hub, leagues: `packages/contract/src/games/**`. |
-| BE-46 | full | 2026-10-20 | Group A (PC-1). Marketplace (M15 rest). Depends BE-03/05 (done). Contract merged. Opened for s-aminfaudzi-e3m2. Branch `be/BE-46-marketplace`. |
-| BE-47 | full | 2026-10-20 | Group A (PC-1). Keluarga Angkat / sponsorship (student side). Depends BE-03/05 (done). Contract merged. Opened for s-aminfaudzi-e3m2. Branch `be/BE-47-sponsorship`. |
+| BE-46 | full | 2026-10-20 | Group A (PC-1). Marketplace (M15 rest). Depends BE-03/05 (done). Contract merged. **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** Migration renumber-at-merge. Branch `be/BE-46-marketplace`. |
+| BE-47 | full | 2026-10-20 | Group A (PC-1). Keluarga Angkat / sponsorship (student side). Depends BE-03/05 (done). Contract merged. **DEFERRED — outside the 6h Bijak sprint (2026-10-20); resume after.** Migration renumber-at-merge. Branch `be/BE-47-sponsorship`. |
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
@@ -126,6 +126,17 @@ Rules for `contract-only`:
   5. `npm run contract:emit`, commit the changed `packages/contract/openapi.json` (never hand-edit it), then `npm run contract:check` and `npm test -- packages/contract` (about 10 seconds).
 
 ### Lead notices (current instructions; newest first)
+
+- 2026-10-20 **6-HOUR BIJAK SPM SPRINT (target ~17:00) — single focus: Bijak SPM end-to-end on the real API for student, teacher, school admin.** Defer everything else (BE-46/47/17 marked DEFERRED).
+  - **Card assignment:**
+    - **Group A S1 (bb / s-aminfaudzi-e3m2):** BE-09 question bank core — migration **0011**. Branch `be/BE-09-question-bank-core` (not yet started; start fresh from `origin/feature/v2-backend`).
+    - **Group A S2 (61 / pc-aminfaudzi/S2):** finish BE-24 content+support — migration **0009** (24 commits in; do NOT move it).
+    - **Group B (s-vm-obgn):** BE-14 `@pp/exam-core` (no migration, **OD-5 approved**), BE-15 Bijak papers (**0012**), BE-16 Bijak attempts (**0013**, full security review).
+  - **Migration order (LEAD merges in numeric order):** 0009 BE-24 → 0010 BE-11 (#36) → 0011 BE-09 → 0012 BE-15 → 0013 BE-16. (0015 reserved for deferred BE-37.)
+  - **Merge order (LEAD):** #37 (BE-08 follow-up, no mig) → BE-24 → #36 BE-11 → BE-09 → BE-14 → BE-15 → BE-16.
+  - **LEAD own work:** L1/V2-T31 HTTP transport **DONE** (branch `lead/v2-t31-hybrid-transport`, 785e9e70); next switch M28 Bijak to `VITE_API_MODE=http` + BE-32 e2e Bijak flow (login, paper list, start attempt, autosave, submit, result) × 3 roles × 375/768/1280.
+  - **Process:** be:verify locally, push ONCE per card, light review; **full security review only for BE-16** (submit answers/marks). Seed PoC paper + Bijak questions from prototype data (BE-15), fictitious names only.
+  - **Schedule:** 16:00 deploy staging + seed · 16:30 UAT 3 roles · 17:00 go/no-go.
 
 - 2026-10-20 **MANDATORY — read before any push**:
   1. **GitHub Actions billing hit 90% (1800/2000 free min).** A $0 Actions budget is set, so overage is BLOCKED (no charge) and runs stop when the limit is reached. CI is advisory, not a gate — the LEAD verifies every merge LOCALLY with be:verify. Do NOT rely on GitHub CI; do NOT push WIP repeatedly (each push burns minutes).
