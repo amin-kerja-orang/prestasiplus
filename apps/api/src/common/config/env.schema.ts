@@ -53,6 +53,8 @@ export const EnvSchema = z.object({
   THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: z.coerce.number().int().min(1).default(20),
   // BE-19 (performance reports): read throttle per user, counted per process.
   THROTTLE_PERFORMANCE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  // BE-19 headcount writes (create, auto-setup, drop, reset, delete): per user, counted per process.
+  THROTTLE_PERFORMANCE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   // BE-21 (school admin): throttles per user, counted per process.
   THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),

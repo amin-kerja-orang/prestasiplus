@@ -13,11 +13,19 @@ import { HeadcountService, type HeadcountWriteCtx } from './headcount.service'
 
 type Req = Request & RequestWithAuth
 
-/** Same per-user budget as the other performance reads (D57a); a write is also behind the CSRF guard. */
+/** Same per-user budget as the other performance reads (D57a). */
 const READ = {
   bucket: 'performance.read',
   env: 'THROTTLE_PERFORMANCE_READ_PER_MINUTE',
   default: 120,
+  per: 'user',
+} as const satisfies RateLimitSpec
+
+/** Own, tighter per-user bucket for the five write routes (they also sit behind the CSRF guard). */
+const WRITE = {
+  bucket: 'performance.write',
+  env: 'THROTTLE_PERFORMANCE_WRITE_PER_MINUTE',
+  default: 30,
   per: 'user',
 } as const satisfies RateLimitSpec
 
@@ -72,11 +80,13 @@ export class HeadcountController {
   }
 
   @Post()
+  @RateLimit(WRITE)
   async create(@Body() body: unknown, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.create(await this.ctx.of(req), body)))
   }
 
   @Post('auto-setup')
+  @RateLimit(WRITE)
   @HttpCode(200)
   async autoSetup(@Body() body: unknown, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.autoSetup(await this.ctx.of(req), body)))
@@ -112,18 +122,21 @@ export class HeadcountController {
   }
 
   @Post(':id/drop-students')
+  @RateLimit(WRITE)
   @HttpCode(200)
   async dropStudents(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.dropStudents(await this.ctx.of(req), id, body)))
   }
 
   @Post(':id/reset')
+  @RateLimit(WRITE)
   @HttpCode(200)
   async reset(@Param('id', SafeIdPipe) id: string, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.reset(writeCtxOf(req), id)))
   }
 
   @Delete(':id')
+  @RateLimit(WRITE)
   async remove(@Param('id', SafeIdPipe) id: string, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.remove(writeCtxOf(req), id)))
   }
