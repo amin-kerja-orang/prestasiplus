@@ -66,7 +66,7 @@ mock clock and whose `gotoApp` waits for `window.__mock.ready`. Selection is by 
 
 ## Environment promotion notes
 
-- `compose.http.yaml` is for dev and e2e. It sets `ALLOW_DEMO_SEED=true` on the `migrate` job and `COOKIE_SECURE=false`.
+- `compose.http.yaml` is for dev and e2e. It sets `ALLOW_DEMO_SEED=true` on the `migrate` job, `COOKIE_SECURE=false`, and `BIJAK_POC_QUESTIONS=true` on the `api` service. Any staging that loads the demo seed must also set `BIJAK_POC_QUESTIONS=true` on the API (Bijak PoC papers and Jana pool; LEAD decision 2026-10-20: staging only). Production leaves it `false`; never turn it off on a database with in-progress PoC attempts (they would fail with 500 until abandoned).
   Staging and production use `compose.yaml` (or the platform equivalent) only: `migrate` runs `prisma migrate deploy`
   and never seeds demo data.
 - `TRUST_PROXY_HOPS=1` is fixed in `compose.yaml` for the api service (one nginx hop). Change it only together with the proxy chain.
