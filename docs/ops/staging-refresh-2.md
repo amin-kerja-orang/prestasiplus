@@ -34,7 +34,7 @@ Staging only. Written from the repo at `origin/feature/v2-backend` 872e04ce; not
 | 0023_reports_analytics_kirkpatrick | yes | BE-20 | applies if pending |
 | 0026_cikgu_alesa | yes | BE-43 | applies if pending |
 | 0025 (BE-41), 0027 (BE-44) | no | Group B | only if merged at the tip |
-| 0028 (BE-42 PKSK) | no | Group A | only if merged; AGENT-SYNC also says 0031 `pksk_question_kind` lands with BE-42 (the notes disagree: 0028 vs 0031), Needs confirmation |
+| 0028 (BE-42 `pksk`) | no | Group A | only if merged; BE-42 has TWO migrations, `0028_pksk` and `0031_pksk_question_kind` (lead, 2026-10-21): apply both, in order |
 | 0029 | released, never used | BE-28 | none |
 | 0030 (BE-19 full: headcount, timeline) | no | Group A | only if merged |
 | 0031 (BE-42 `pksk_question_kind`) | no | Group A | only if merged |
