@@ -1,0 +1,320 @@
+// Question bank tables (BE-09 Part A, owner module M04). Data model 3.4, v2-exam-schema D1 to D12,
+// OD-28 child tables. Conventions: docs/architecture/v2-backend-plan.md section 14.2.
+//
+// Not expressible in Prisma and written by hand in migration 0011_question_bank: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), partial and functional unique
+// indexes, the deferrable self FK `family_id`.
+//
+// Foreign keys to tables owned by other modules (curriculum, users, files) are plain BigInt columns
+// here and real FOREIGN KEY constraints only in the migration SQL, so curriculum.prisma,
+// identity.prisma and files.prisma are not edited (LEAD decision Q-8). Columns whose target table
+// belongs to a later card (source_paper_id, intake_item_id, source_file_id, ai_run_id) have no FK
+// yet; the owning card adds it in its own migration (G-12).
+
+model Stimulus {
+  id             BigInt   @id @default(autoincrement())
+  /// passage, image, diagram, table, graph, map, infographic, audio (check constraint).
+  kind           String
+  label          String?
+  bodyMs         String?  @map("body_ms")
+  bodyEn         String?  @map("body_en")
+  caption        String?
+  altText        String?  @map("alt_text")
+  sourceCitation String?  @map("source_citation")
+  contentHash    String?  @map("content_hash")
+  /// Table grid (G-11: jsonb only for grids, keys, boxes).
+  tableData      Json?    @map("table_data") @db.JsonB
+  /// FK files(id) ON DELETE SET NULL (migration SQL, Q-8).
+  assetFileId    BigInt?  @map("asset_file_id")
+  reusable       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  groupLinks   StimulusGroupStimulus[]
+  versionLinks QuestionVersionStimulus[]
+  parts        QuestionPart[]
+
+  @@index([contentHash], map: "ix_stimuli_content_hash")
+  @@index([assetFileId], map: "ix_stimuli_asset_file_id")
+  @@map("stimuli")
+}
+
+model StimulusGroup {
+  id        BigInt   @id @default(autoincrement())
+  label     String?
+  /// section, paper (check constraint).
+  scope     String   @default("section")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  stimuli   StimulusGroupStimulus[]
+  options   StimulusGroupOption[]
+  questions Question[]
+
+  @@map("stimulus_groups")
+}
+
+/// At most 3 per group: position 1..3 plus unique (group, position) make a 4th row impossible.
+model StimulusGroupStimulus {
+  id         BigInt   @id @default(autoincrement())
+  groupId    BigInt   @map("group_id")
+  stimulusId BigInt   @map("stimulus_id")
+  position   Int      @db.SmallInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  group    StimulusGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, map: "fk_stimulus_group_stimuli_group_id")
+  stimulus Stimulus      @relation(fields: [stimulusId], references: [id], onDelete: Restrict, map: "fk_stimulus_group_stimuli_stimulus_id")
+
+  @@unique([groupId, stimulusId], map: "uq_stimulus_group_stimuli_group_id_stimulus_id")
+  @@unique([groupId, position], map: "uq_stimulus_group_stimuli_group_id_position")
+  @@index([stimulusId], map: "ix_stimulus_group_stimuli_stimulus_id")
+  @@map("stimulus_group_stimuli")
+}
+
+/// Lettered option bank (A to H) shared by the questions of a group (match_letter).
+model StimulusGroupOption {
+  id        BigInt   @id @default(autoincrement())
+  groupId   BigInt   @map("group_id")
+  label     String
+  bodyMs    String?  @map("body_ms")
+  bodyEn    String?  @map("body_en")
+  position  Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  group StimulusGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, map: "fk_stimulus_group_options_group_id")
+
+  @@unique([groupId, label], map: "uq_stimulus_group_options_group_id_label")
+  @@unique([groupId, position], map: "uq_stimulus_group_options_group_id_position")
+  @@map("stimulus_group_options")
+}
+
+/// The stable identity of a question; the content lives in `question_versions`.
+model Question {
+  id               BigInt   @id @default(autoincrement())
+  /// pdf, excel, manual, ai_variant (check constraint).
+  sourceType       String?  @map("source_type")
+  /// Owner (Guru ownership). FK users(id) ON DELETE SET NULL (migration SQL, Q-8).
+  createdById      BigInt?  @map("created_by_id")
+  latestVersionNo  Int      @default(1) @map("latest_version_no")
+  /// Version served to learners; written only by QuestionsService in the transaction that changes a status.
+  liveVersionNo    Int?     @map("live_version_no")
+  groupId          BigInt?  @map("group_id")
+  groupPosition    Int?     @map("group_position") @db.SmallInt
+  /// Self FKs (family_id DEFERRABLE INITIALLY DEFERRED, parent_question_id) are in the migration SQL.
+  familyId         BigInt?  @map("family_id")
+  /// variant (check constraint).
+  familyRelation   String?  @map("family_relation")
+  parentQuestionId BigInt?  @map("parent_question_id")
+  /// LEAD decision Q-2: eligibility = live version published AND is_active.
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  group    StimulusGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull, map: "fk_questions_group_id")
+  versions QuestionVersion[]
+  tags     QuestionTag[]
+
+  @@index([liveVersionNo], map: "ix_questions_live_version_no")
+  @@index([groupId, groupPosition], map: "ix_questions_group_id_group_position")
+  @@index([familyId], map: "ix_questions_family_id")
+  @@index([createdById], map: "ix_questions_created_by_id")
+  @@map("questions")
+}
+
+model QuestionVersion {
+  id            BigInt    @id @default(autoincrement())
+  questionId    BigInt    @map("question_id")
+  versionNo     Int       @map("version_no")
+  /// draft, review, approved, published, archived (check constraint).
+  status        String    @default("draft")
+  /// superseded, withdrawn, source_takedown; only when archived (check constraint).
+  archiveReason String?   @map("archive_reason")
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+
+  /// mcq, match, short, structured, working, essay, drawing, table (check constraint).
+  type          String
+  stemMs        String? @map("stem_ms")
+  stemEn        String? @map("stem_en")
+  numberLabel   String? @map("number_label")
+  /// ms, en, ms_en, ar, jawi (check constraint).
+  language      String  @default("ms")
+  explanationMs String? @map("explanation_ms")
+  explanationEn String? @map("explanation_en")
+
+  // Curriculum tag. FKs to curriculum tables are in the migration SQL (Q-8). All nullable: the
+  // publish gate (service) requires subject, level, unit, SP and TP.
+  subjectId         BigInt? @map("subject_id")
+  /// LEAD decision Q-1: replaces `level_scope` of data model 3.4.
+  educationLevelId  BigInt? @map("education_level_id")
+  unitNodeId        BigInt? @map("unit_node_id")
+  chapterId         BigInt? @map("chapter_id")
+  topicId           BigInt? @map("topic_id")
+  /// t1_t3, t4, t5 (check constraint).
+  formOrigin        String  @default("t4") @map("form_origin")
+  cognitiveLevel    Int?    @map("cognitive_level") @db.SmallInt
+  difficultyTp      Int?    @map("difficulty_tp") @db.SmallInt
+  textbookBab       Int?    @map("textbook_bab") @db.SmallInt
+  textbookTingkatan Int?    @map("textbook_tingkatan") @db.SmallInt
+  textbookPage      Int?    @map("textbook_page")
+
+  // Provenance (all optional).
+  year          Int?    @db.SmallInt
+  examType      String? @map("exam_type")
+  examBoard     String? @map("exam_board")
+  setLabel      String? @map("set_label")
+  paperCode     String? @map("paper_code")
+  sourceKind    String? @map("source_kind")
+  rightsStatus  String? @map("rights_status")
+  /// FK users(id) ON DELETE SET NULL (migration SQL).
+  contributorId BigInt? @map("contributor_id")
+  sourcePage    Int?    @map("source_page") @db.SmallInt
+  sourceRegion  Json?   @map("source_region") @db.JsonB
+  aiModel       String? @map("ai_model")
+  importIssues  Json?   @map("import_issues") @db.JsonB
+  // No FK yet (owning cards add it, G-12): BE-10 source_papers, BE-36/37/38 intake and AI run.
+  sourcePaperId BigInt? @map("source_paper_id")
+  intakeItemId  BigInt? @map("intake_item_id")
+  sourceFileId  BigInt? @map("source_file_id")
+  aiRunId       BigInt? @map("ai_run_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question                  @relation(fields: [questionId], references: [id], onDelete: Cascade, map: "fk_question_versions_question_id")
+  parts    QuestionPart[]
+  spNodes  QuestionVersionSpNode[]
+  stimuli  QuestionVersionStimulus[]
+
+  @@unique([questionId, versionNo], map: "uq_question_versions_question_id_version_no")
+  @@index([status], map: "ix_question_versions_status")
+  @@index([subjectId, educationLevelId, status], map: "ix_question_versions_subject_level_status")
+  @@index([unitNodeId], map: "ix_question_versions_unit_node_id")
+  @@index([sourcePaperId], map: "ix_question_versions_source_paper_id")
+  @@index([contributorId], map: "ix_question_versions_contributor_id")
+  @@map("question_versions")
+}
+
+/// 1 to 3 SP nodes per version (service check, 422 fields.tag).
+model QuestionVersionSpNode {
+  id                BigInt   @id @default(autoincrement())
+  questionVersionId BigInt   @map("question_version_id")
+  /// FK curriculum_nodes(id) ON DELETE RESTRICT (migration SQL), kind `sp` checked by the service.
+  nodeId            BigInt   @map("node_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  version QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade, map: "fk_question_version_sp_nodes_question_version_id")
+
+  @@unique([questionVersionId, nodeId], map: "uq_question_version_sp_nodes_question_version_id_node_id")
+  @@index([nodeId], map: "ix_question_version_sp_nodes_node_id")
+  @@map("question_version_sp_nodes")
+}
+
+model QuestionVersionStimulus {
+  id                BigInt   @id @default(autoincrement())
+  questionVersionId BigInt   @map("question_version_id")
+  stimulusId        BigInt   @map("stimulus_id")
+  position          Int      @db.SmallInt
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  version  QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade, map: "fk_question_version_stimuli_question_version_id")
+  stimulus Stimulus        @relation(fields: [stimulusId], references: [id], onDelete: Restrict, map: "fk_question_version_stimuli_stimulus_id")
+
+  @@unique([questionVersionId, stimulusId], map: "uq_question_version_stimuli_question_version_id_stimulus_id")
+  @@unique([questionVersionId, position], map: "uq_question_version_stimuli_question_version_id_position")
+  @@index([stimulusId], map: "ix_question_version_stimuli_stimulus_id")
+  @@map("question_version_stimuli")
+}
+
+/// Ordered tree node, depth 1 to 3. Branch: no marks/mode. Leaf: marks and mode (check constraint).
+/// Unique (version, COALESCE(parent, 0), position) is a functional index in the migration SQL.
+model QuestionPart {
+  id                BigInt   @id @default(autoincrement())
+  questionVersionId BigInt   @map("question_version_id")
+  parentPartId      BigInt?  @map("parent_part_id")
+  position          Int      @db.SmallInt
+  depth             Int      @db.SmallInt
+  label             String
+  promptMs          String   @map("prompt_ms")
+  promptEn          String?  @map("prompt_en")
+  marks             Int?     @db.SmallInt
+  /// mcq, match_letter, short_text, numeric, working, essay, drawing, table_fill (check constraint).
+  mode              String?
+  unit              String?
+  decimals          Int?     @db.SmallInt
+  sigFigs           Int?     @map("sig_figs") @db.SmallInt
+  blankCount        Int?     @map("blank_count") @db.SmallInt
+  wordMin           Int?     @map("word_min")
+  wordMax           Int?     @map("word_max")
+  /// graph, diagram, sketch (check constraint).
+  drawingKind       String?  @map("drawing_kind")
+  tableGrid         Json?    @map("table_grid") @db.JsonB
+  stimulusId        BigInt?  @map("stimulus_id")
+  choiceGroup       String?  @map("choice_group")
+  /// after_submit, never (check constraint).
+  reveal            String   @default("after_submit")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  version  QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade, map: "fk_question_parts_question_version_id")
+  parent   QuestionPart?   @relation("PartTree", fields: [parentPartId], references: [id], onDelete: Cascade, map: "fk_question_parts_parent_part_id")
+  children QuestionPart[]  @relation("PartTree")
+  stimulus Stimulus?       @relation(fields: [stimulusId], references: [id], onDelete: SetNull, map: "fk_question_parts_stimulus_id")
+  options  PartOption[]
+  key      AnswerKey?
+
+  @@index([questionVersionId], map: "ix_question_parts_question_version_id")
+  @@index([parentPartId], map: "ix_question_parts_parent_part_id")
+  @@index([stimulusId], map: "ix_question_parts_stimulus_id")
+  @@map("question_parts")
+}
+
+/// No `is_correct` column: the answer key holds the correct label.
+model PartOption {
+  id          BigInt   @id @default(autoincrement())
+  partId      BigInt   @map("part_id")
+  label       String
+  bodyMs      String?  @map("body_ms")
+  bodyEn      String?  @map("body_en")
+  /// FK files(id) ON DELETE SET NULL (migration SQL).
+  imageFileId BigInt?  @map("image_file_id")
+  position    Int      @db.SmallInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  part QuestionPart @relation(fields: [partId], references: [id], onDelete: Cascade, map: "fk_part_options_part_id")
+
+  @@unique([partId, label], map: "uq_part_options_part_id_label")
+  @@unique([partId, position], map: "uq_part_options_part_id_position")
+  @@map("part_options")
+}
+
+/// One key per leaf part. `content` is validated by the contract leaf schema on write and re-parsed on read.
+model AnswerKey {
+  id        BigInt   @id @default(autoincrement())
+  partId    BigInt   @map("part_id")
+  /// option, accepted, mapping, points, rubric (check constraint).
+  kind      String
+  content   Json     @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  part QuestionPart @relation(fields: [partId], references: [id], onDelete: Cascade, map: "fk_answer_keys_part_id")
+
+  @@unique([partId], map: "uq_answer_keys_part_id")
+  @@map("answer_keys")
+}
+
+model QuestionTag {
+  id         BigInt   @id @default(autoincrement())
+  questionId BigInt   @map("question_id")
+  /// pool, pksk_domain, pksk_level (check constraint).
+  kind       String
+  code       String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade, map: "fk_question_tags_question_id")
+
+  @@unique([questionId, kind, code], map: "uq_question_tags_question_id_kind_code")
+  @@index([kind, code], map: "ix_question_tags_kind_code")
+  @@map("question_tags")
+}
