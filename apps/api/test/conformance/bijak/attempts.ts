@@ -8,9 +8,9 @@ const UNKNOWN_PAPER = '999999999'
 const png = () => new Uint8Array(makePng())
 
 /**
- * Bijak attempts (BE-16). The conformance app has no paper or question source plugged in (BE-15 and
- * BE-09 own them), so no attempt can be started here; the success paths, marking and the reveal
- * rules are proved by `test/bijak-attempts/**` with fakes for the ports and the contract schemas.
+ * Bijak attempts (BE-16). These scenarios cover the error and access paths of every route; the wired
+ * success path (BE-15 paper source, PoC questions, BE-12 aggregate, BE-11 reward) is in
+ * `./integration.ts`, and marking and the reveal rules are proved by `test/bijak-attempts/**`.
  * These scenarios send a request to every route of the card and check status, error code, message and
  * the contract shape of each answer. API target only (cookie session with CSRF, multipart).
  */
