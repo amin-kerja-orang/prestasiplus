@@ -2,11 +2,17 @@ import { allScenarios, type ContractIndex, type Scenario } from '@pp/contract-te
 
 import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
+import { articleScenarios } from './content/articles'
+import { audioScenarios } from './content/audio'
+import { perutusanScenarios } from './content/perutusan'
+import { videosScenarios } from './content/videos'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { questionsScenarios } from './questions/questions'
 import { schoolsScenarios } from './schools/schools'
+import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
+import { walletScenarios } from './wallet/wallet'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -23,5 +29,11 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...accountScenarios,
     ...notificationsScenarios,
     ...questionsScenarios,
+    ...walletScenarios,
+    ...audioScenarios,
+    ...articleScenarios,
+    ...supportTicketScenarios,
+    ...videosScenarios,
+    ...perutusanScenarios,
   ]
 }

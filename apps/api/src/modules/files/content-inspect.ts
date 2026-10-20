@@ -19,7 +19,15 @@
  *   against MAX_PIXELS; the summed frame area of an animation (PNG fcTL, WebP ANMF) is capped at 4 x MAX_PIXELS. A file whose structure does not parse is refused like a wrong type.
  */
 
-export type DetectedMime = 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf'
+export type DetectedMime =
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+  | 'application/pdf'
+  | 'audio/mpeg'
+  | 'audio/mp4'
+  | 'audio/wav'
+  | 'audio/ogg'
 
 export interface Inspected {
   mime: DetectedMime
@@ -30,11 +38,16 @@ export interface Inspected {
 /** Decompression-bomb guard: largest accepted image area in pixels. */
 export const MAX_PIXELS = 50_000_000
 
-export const EXTENSION_OF: Readonly<Record<DetectedMime, string>> = {
+export const EXTENSION_OF: Readonly<Record<DetectedMime | 'image/gif', string>> = {
+  'image/gif': 'gif', // stored only by BE-24 perutusan images (no upload purpose detects gif)
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
   'application/pdf': 'pdf',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/wav': 'wav',
+  'audio/ogg': 'ogg',
 }
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -45,6 +58,13 @@ export function sniffMime(b: Buffer): DetectedMime | null {
   if (b.length >= 8 && b.subarray(0, 8).equals(PNG_SIGNATURE)) return 'image/png'
   if (b.length >= 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp'
   if (b.length >= 5 && b.toString('latin1', 0, 5) === '%PDF-') return 'application/pdf'
+  // Audio (BE-24, purpose audio_kbat). Raw ADTS AAC (layer bits 00) is not a storable type and stays unknown.
+  if (b.length >= 4 && b.toString('latin1', 0, 4) === 'OggS') return 'audio/ogg'
+  if (b.length >= 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WAVE') return 'audio/wav'
+  if (b.length >= 12 && b.toString('latin1', 4, 8) === 'ftyp') return 'audio/mp4'
+  if (b.length >= 4 && b.toString('latin1', 0, 3) === 'ID3') return 'audio/mpeg'
+  const b1 = b[1] ?? 0
+  if (b.length >= 4 && b[0] === 0xff && (b1 & 0xe0) === 0xe0 && (b1 & 0x06) !== 0 && (b1 & 0x18) !== 0x08) return 'audio/mpeg'
   return null
 }
 
@@ -64,6 +84,10 @@ export function inspectUpload(input: Buffer): Inspected | null {
       bytes = sanitizeWebp(input)
       break
     case 'application/pdf':
+    case 'audio/mpeg':
+    case 'audio/mp4':
+    case 'audio/wav':
+    case 'audio/ogg':
       bytes = input
       break
   }
