@@ -3,7 +3,7 @@
   "include": [
     "vite.config.*",
     "vitest.config.*",
-    "playwright.config.*",
+    "playwright*.config.*",
     "eslint.config.*",
     "eslint/**/*.d.mts",
     "scripts/**/*.ts",
