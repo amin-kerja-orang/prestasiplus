@@ -11,6 +11,7 @@ import { expect } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { marketplaceSeed } from '../../prisma/seed/marketplace'
+import { marketplaceCategoriesSeed } from '../../prisma/seed/core/marketplace-categories'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
@@ -32,7 +33,7 @@ export interface MarketplaceTestApp {
 /** Nest app with the auth and marketplace modules on a private migrated database seeded with identity + marketplace. */
 export async function bootMarketplaceApp(env: Record<string, string> = {}): Promise<MarketplaceTestApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, marketplaceSeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, marketplaceCategoriesSeed, marketplaceSeed], { prisma: db.prisma })
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

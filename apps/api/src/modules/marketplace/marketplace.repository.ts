@@ -3,12 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import type { MarketplaceSort } from '@pp/contract'
-
-/** BR-M20-08: active, and the seller (if any) active. Stock does not matter. */
-export const VISIBLE_PRODUCT: Prisma.MarketplaceProductWhereInput = {
-  status: 'active',
-  OR: [{ sellerId: null }, { seller: { status: 'active' } }],
-}
+import { VISIBLE_PRODUCT, VISIBLE_SQL } from './marketplace.visibility'
 
 const CARD_INCLUDE = {
   images: { orderBy: { position: 'asc' as const }, take: 1, select: { url: true } },
@@ -54,8 +49,6 @@ export interface HandoffTarget {
   sellerId: bigint | null
   sellerWhatsapp: string | null
 }
-
-const VISIBLE_SQL = Prisma.sql`p.status = 'active' AND (p.seller_id IS NULL OR s.status = 'active')`
 
 /**
  * The only doorway to the five marketplace tables (ADR-0014). Every statement is parameterised; sort
@@ -124,10 +117,9 @@ export class MarketplaceRepository {
   /** The id of a visible product by slug, adding 1 to `views` in the same statement (BR-M20-12). */
   async bumpViews(slug: string): Promise<ViewedProduct | null> {
     const rows = await this.prisma.client.$queryRaw<ViewedProduct[]>(Prisma.sql`
-      UPDATE marketplace_products p SET views = p.views + 1
-      WHERE p.slug = ${slug} AND p.status = 'active'
-        AND (p.seller_id IS NULL OR EXISTS (SELECT 1 FROM marketplace_sellers s WHERE s.id = p.seller_id AND s.status = 'active'))
-      RETURNING p.id, p.views`)
+      UPDATE marketplace_products SET views = views + 1
+      WHERE id = (SELECT p.id FROM marketplace_products p LEFT JOIN marketplace_sellers s ON s.id = p.seller_id WHERE p.slug = ${slug} AND ${VISIBLE_SQL})
+      RETURNING id, views`)
     return rows[0] ?? null
   }
 

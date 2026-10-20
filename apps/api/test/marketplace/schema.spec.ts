@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { marketplaceSeed, PRODUCTS } from '../../prisma/seed/marketplace'
+import { marketplaceCategoriesSeed } from '../../prisma/seed/core/marketplace-categories'
 import { money, starsOf } from '../../src/modules/marketplace/marketplace.mapper'
 import { count, insertProducts } from './helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -48,7 +49,7 @@ describe('tables, constraints and seed (AC9, plan 14.9)', () => {
   let db: TestDatabase
   beforeAll(async () => {
     db = await createTestDatabase()
-    await runSeeds([identitySeed, marketplaceSeed], { prisma: db.prisma })
+    await runSeeds([identitySeed, marketplaceCategoriesSeed, marketplaceSeed], { prisma: db.prisma })
   }, 120_000)
   afterAll(async () => {
     await db.drop()
@@ -75,7 +76,7 @@ describe('tables, constraints and seed (AC9, plan 14.9)', () => {
 
   it('a second seed run adds nothing and keeps a moved counter', async () => {
     await db.query(`update marketplace_products set views = views + 5 where id = 1`)
-    await runSeeds([marketplaceSeed], { prisma: db.prisma })
+    await runSeeds([marketplaceCategoriesSeed, marketplaceSeed], { prisma: db.prisma })
     expect(await count(db, `select count(*) as n from marketplace_products`)).toBe(10)
     expect(await count(db, `select count(*) as n from marketplace_product_images`)).toBe(45)
     expect(await count(db, `select count(*) as n from marketplace_categories`)).toBe(6)

@@ -1,28 +1,20 @@
 /**
- * Marketplace seed (BE-46): the 6 constant categories, the one observed shop "JomBelajar Official", the
+ * Marketplace seed (BE-46): the one observed shop "JomBelajar Official", the
  * 10 observed products and their 45 image paths. Values are the observed ones of the M20 mock seed
  * (`src/modules/m20-marketplace/mock/data/seed-data.ts`, SRS M20 6.11); the seller contact data is
- * fictitious. Idempotent (plan 14.9 item 4): a category is matched by slug, the seller by its owner,
+ * fictitious. Idempotent (plan 14.9 item 4): the 6 categories are the reference seed core-marketplace-categories; the seller is matched by its owner,
  * a product by slug and an image by (product, position); an existing row is never updated, so a
  * counter that moved since the first run survives. `legacy_*` is never set. Needs the identity seed
  * (the shop belongs to the seeded Admin Pusat account, BE-46 open question 6).
  */
 import type { PrismaClient } from '../../src/db/client'
 import type { SeedModule } from './index'
+import { MARKETPLACE_CATEGORIES } from './core/marketplace-categories'
 
 /** One instant for every seeded `created_at`: it reproduces the observed tie orders. */
 const SEED_AT = new Date('2026-02-09T12:00:00+08:00')
 /** Natural key of the owner: the canonical Admin Pusat demo account. */
 const SELLER_OWNER_EMAIL = 'admin@demo.test'
-
-const CATEGORIES = [
-  { slug: 'peralatan-sekolah', name: 'Peralatan Sekolah', icon: 'fa-pencil-ruler' },
-  { slug: 'buku-rujukan', name: 'Buku & Rujukan', icon: 'fa-book' },
-  { slug: 'uniform-pakaian', name: 'Uniform & Pakaian', icon: 'fa-tshirt' },
-  { slug: 'stationery', name: 'Stationery', icon: 'fa-pen' },
-  { slug: 'digital', name: 'Digital & E-Book', icon: 'fa-tablet-alt' },
-  { slug: 'lain-lain', name: 'Lain-lain', icon: 'fa-th-large' },
-] as const
 
 const SELLER = {
   shopName: 'JomBelajar Official',
@@ -37,7 +29,7 @@ type Shipping = 'pickup' | 'postage' | 'cod' | 'free'
 interface ProductSeed {
   slug: string
   name: string
-  /** 1-based index into CATEGORIES. */
+  /** 1-based index into MARKETPLACE_CATEGORIES. */
   category: number
   price: string
   originalPrice: string | null
@@ -78,8 +70,10 @@ export const imageUrl = (productNumber: number, position: number): string => `/i
 
 async function run(prisma: PrismaClient): Promise<void> {
   const categoryIds: bigint[] = []
-  for (const c of CATEGORIES) {
-    const row = (await prisma.marketplaceCategory.findUnique({ where: { slug: c.slug } })) ?? (await prisma.marketplaceCategory.create({ data: c }))
+  // The categories are reference data (core-marketplace-categories) and must already exist.
+  for (const c of MARKETPLACE_CATEGORIES) {
+    const row = await prisma.marketplaceCategory.findUnique({ where: { slug: c.slug } })
+    if (!row) throw new Error(`marketplace seed: category ${c.slug} is missing (run core-marketplace-categories first).`)
     categoryIds.push(row.id)
   }
 

@@ -17,6 +17,7 @@ import { examSeed } from '../../prisma/seed/exam'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { gamificationSeed } from '../../prisma/seed/gamification'
 import { marketplaceSeed } from '../../prisma/seed/marketplace'
+import { marketplaceCategoriesSeed } from '../../prisma/seed/core/marketplace-categories'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
@@ -32,7 +33,7 @@ export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
  * Seeds the conformance database is built from. HOOK FOR BE-07: add its demo-account seed here (and
  * update `accounts.ts`); the suite needs nothing else from the seed layer.
  */
-export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, gamificationSeed, marketplaceSeed]
+export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, gamificationSeed, marketplaceCategoriesSeed, marketplaceSeed]
 
 /**
  * Environment of the conformance app. Determinism, never weaker production code:
