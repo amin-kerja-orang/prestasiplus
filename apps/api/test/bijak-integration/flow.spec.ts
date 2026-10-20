@@ -77,7 +77,7 @@ const result = async (c: Client, attemptId: string) => {
 }
 const aggRows = (attemptId: string) => t.db.query('select * from practice_attempt_aggregates where attempt_id = $1', [attemptId])
 const ledgerRows = (attemptId: string) => t.db.query('select * from coin_ledger where source = $1 and source_id = $2', [SOURCE, attemptId])
-const balance = async (userId: string) => Number((await t.db.query('select current_syiling from wallets where user_id = $1', [userId]))[0]!.current_syiling)
+const balance = async (userId: string) => Number((await t.db.query('select current_syiling from wallets where user_id = $1', [userId]))[0]?.current_syiling ?? 0)
 
 describe('exam flow (student)', () => {
   let attemptId = ''
@@ -179,8 +179,9 @@ describe('latihan (practice mode)', () => {
 })
 
 describe('Mod Pelajar (admin in student mode)', () => {
-  it('6. flags the attempt, aggregate and ledger rows is_test and keeps them out of the shared aggregate reads', async () => {
+  it('6. flags the attempt and aggregate is_test, credits NO reward (AC-20.3) and keeps them out of the shared aggregate reads', async () => {
     const paper = await paperId(admin, '1449/1', 1)
+    const adminBefore = await balance(admin.userId)
     const s = await start(admin, paper.id, 'exam')
     await answerOne(admin, s.attemptId, s.view.questions.map((q) => q.id))
     const res = await submit(admin, s.attemptId, 'integ-admin')
@@ -193,9 +194,9 @@ describe('Mod Pelajar (admin in student mode)', () => {
     const agg = await aggRows(s.attemptId)
     expect(agg).toHaveLength(1)
     expect(agg[0]).toMatchObject({ is_test: true, user_id: admin.userId })
-    const ledger = await ledgerRows(s.attemptId)
-    expect(ledger).toHaveLength(1)
-    expect(ledger[0]).toMatchObject({ is_test: true, user_id: admin.userId, amount: r.result.coins })
+    // AC-20.3: Mod Pelajar earns no rewards: no ledger row of any source, no balance change
+    expect(await t.db.query('select 1 from coin_ledger where source_id = $1', [s.attemptId])).toHaveLength(0)
+    expect(await balance(admin.userId)).toBe(adminBefore)
 
     expect(await aggregate.forStudents({ userIds: [admin.userId] })).toEqual([])
     expect(await aggregate.subjectSummary({ userIds: [admin.userId] })).toEqual([])

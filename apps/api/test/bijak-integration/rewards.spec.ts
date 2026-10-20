@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaService } from '../../src/db/prisma.service'
 import { BIJAK_REWARD_DESCRIPTION } from '../../src/modules/bijak/attempts/ports'
 import { PRACTICE_REWARD_DESCRIPTION, WalletBijakReward, WalletPracticeReward } from '../../src/modules/bijak/integration'
-import type { PracticeSessionCompleted } from '../../src/modules/practice/ports'
+import { practiceRewardSource, type PracticeSessionCompleted } from '../../src/modules/practice/ports'
 import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, STUDENT } from './helpers'
 
 let t: IntegrationApp
@@ -28,7 +28,7 @@ afterAll(async () => {
   await t.close()
 })
 
-const balance = async (userId: string) => Number((await t.db.query('select current_syiling from wallets where user_id = $1', [userId]))[0]!.current_syiling)
+const balance = async (userId: string) => Number((await t.db.query('select current_syiling from wallets where user_id = $1', [userId]))[0]?.current_syiling ?? 0)
 const ledger = (sessionId: string) => t.db.query('select * from coin_ledger where source_id = $1', [sessionId])
 const credits = (sessionId: string) => t.db.query('select * from session_credits where session_id = $1', [sessionId])
 const streak = async (userId: string) => (await t.db.query('select * from streaks where user_id = $1', [userId]))[0]
@@ -37,6 +37,7 @@ const input = (over: Partial<PracticeSessionCompleted> = {}): PracticeSessionCom
   userId: studentId,
   sessionId: randomUUID(),
   mode: 'random',
+  source: 'quiz_practice',
   correct: 5,
   total: 10,
   timeSpent: 120,
@@ -109,6 +110,21 @@ describe('WalletPracticeReward.onSessionCompleted', () => {
     expect(await streak(adminId)).toEqual(streakBefore)
   })
 
+  it('7. the ledger source follows the mode (practiceRewardSource, M14 BR-M14-03)', async () => {
+    for (const [mode, source] of [
+      ['latih_tubi', 'quiz_spm'],
+      ['pksk', 'quiz_pksk'],
+      ['chapter', 'quiz_practice'],
+    ] as const) {
+      expect(practiceRewardSource(mode)).toBe(source)
+      const i = input({ mode, source })
+      await run(i)
+      const rows = await ledger(i.sessionId)
+      expect(rows, mode).toHaveLength(1)
+      expect(rows[0]).toMatchObject({ source, source_id: i.sessionId, amount: 5 })
+    }
+  })
+
   it('6. a throw after the call rolls the ledger row and the session credit back', async () => {
     const i = input()
     const before = await balance(studentId)
@@ -125,8 +141,8 @@ describe('WalletPracticeReward.onSessionCompleted', () => {
 })
 
 describe('WalletBijakReward.award', () => {
-  const award = (attemptId: string, coins: number) =>
-    bijak.award({ attemptId, userId: studentId, isTest: false, coins, points: coins * 5, score: coins / 2, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
+  const award = (attemptId: string, coins: number, over: { userId?: string; isTest?: boolean } = {}) =>
+    bijak.award({ attemptId, userId: over.userId ?? studentId, isTest: over.isTest ?? false, coins, points: coins * 5, score: coins / 2, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
 
   it('credits once per attempt, refuses the same attempt with another amount, and ignores zero coins', async () => {
     const attemptId = randomUUID()
@@ -146,5 +162,25 @@ describe('WalletBijakReward.award', () => {
     await award(zero, 0)
     expect(await ledger(zero)).toHaveLength(0)
     expect(await balance(studentId)).toBe(before + 4)
+  })
+
+  it('floors a fractional amount (half marks) and credits nothing when it floors to 0', async () => {
+    const half = randomUUID()
+    const before = await balance(studentId)
+    await award(half, 3.5)
+    expect((await ledger(half))[0]).toMatchObject({ amount: 3, source: 'quiz_spm' })
+    const tiny = randomUUID()
+    await award(tiny, 0.5)
+    await award(randomUUID(), -2)
+    expect(await ledger(tiny)).toHaveLength(0)
+    expect(await balance(studentId)).toBe(before + 3)
+  })
+
+  it('AC-20.3: a Mod Pelajar (is_test) attempt writes no ledger row and moves no balance', async () => {
+    const attemptId = randomUUID()
+    const before = await balance(adminId)
+    await award(attemptId, 8, { userId: adminId, isTest: true })
+    expect(await ledger(attemptId)).toHaveLength(0)
+    expect(await balance(adminId)).toBe(before)
   })
 })
