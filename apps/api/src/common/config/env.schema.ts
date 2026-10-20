@@ -43,6 +43,8 @@ export const EnvSchema = z.object({
   THROTTLE_WALLET_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
   // BE-24 part C (support, audio KBAT): throttles per user (the support contact per client address), counted per process.
   THROTTLE_SUPPORT_TICKET_CREATE_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  THROTTLE_GAMIFICATION_CONVERT_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  THROTTLE_SHOP_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   THROTTLE_SUPPORT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_SUPPORT_CONFIG_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   THROTTLE_AUDIO_KBAT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
@@ -107,6 +109,9 @@ export const EnvSchema = z.object({
   // BE-12 (practice). Optional: the code applies 120 writes (start, check, submit) per minute per user when unset.
   THROTTLE_PRACTICE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_PRACTICE_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-13 (practice reads). Optional: the code applies 30 SPM-target saves and 60 structured attempts per minute per user when unset.
+  THROTTLE_SPM_TARGETS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
@@ -119,6 +124,44 @@ export const EnvSchema = z.object({
   THROTTLE_PKSK_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CLASS_JOIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   PUBLIC_BASE_URL: z.url().optional(),
+  // BE-37 (jobs, OCR, intake files). All optional: the code applies the defaults named in .env.api.example (PC-5 block).
+  /** true starts the in-process job worker tick; false (default) runs nothing in this process. */
+  JOBS_WORKER_ENABLED: z.enum(['true', 'false']).optional(),
+  JOBS_POLL_MS: z.coerce.number().int().min(100).max(60_000).optional(),
+  JOBS_CONCURRENCY: z.coerce.number().int().min(1).max(32).optional(),
+  JOBS_LOCK_TIMEOUT_MS: z.coerce.number().int().min(1000).max(3_600_000).optional(),
+  JOBS_BACKOFF_BASE_MS: z.coerce.number().int().min(100).max(600_000).optional(),
+  /** none = no OCR (scanned pages fail with OCR_UNAVAILABLE); tesseract needs OCR_LANG_DIR with msa and eng traineddata. */
+  OCR_ENGINE: z.enum(['none', 'tesseract']).optional(),
+  /** Empty = unset. When OCR_ENGINE=tesseract: an absolute folder with msa.traineddata and eng.traineddata. */
+  OCR_LANG_DIR: z.string().trim().optional(),
+  OCR_WORKERS: z.coerce.number().int().min(1).max(16).optional(),
+  OCR_PAGE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  OCR_INSPECT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  OCR_MAX_PAGES: z.coerce.number().int().min(1).max(2000).optional(),
+  OCR_MIN_TEXT_CHARS: z.coerce.number().int().min(0).max(10_000).optional(),
+  OCR_RENDER_DPI: z.coerce.number().int().min(72).max(400).optional(),
+  OCR_MAX_PIXELS: z.coerce.number().int().min(100_000).max(100_000_000).optional(),
+  OCR_WORKER_MEMORY_MB: z.coerce.number().int().min(64).max(4096).optional(),
+  /** RSS growth (MB) of the process while one PDF worker runs before the watchdog stops it. Default 2 x OCR_WORKER_MEMORY_MB. */
+  OCR_WORKER_RSS_LIMIT_MB: z.coerce.number().int().min(64).max(16_384).optional(),
+  /** Uploads whose PDFs are inspected at the same time in this process (more wait). Default 2. */
+  INTAKE_UPLOAD_CONCURRENCY: z.coerce.number().int().min(1).max(16).optional(),
+  INTAKE_MAX_FILES_PER_BATCH: z.coerce.number().int().min(1).max(50).optional(),
+  INTAKE_MAX_ACTIVE_BATCHES: z.coerce.number().int().min(1).max(100).optional(),
+  INTAKE_DAILY_PAGE_QUOTA: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
+  INTAKE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).optional(),
+  // BE-20 (Kirkpatrick, feedback). Throttles per user; the code applies the defaults when unset.
+  THROTTLE_KIRKPATRICK_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-20 (M11 monitoring and teacher report). Throttle per user; the code applies the default when unset.
+  THROTTLE_ANALYTICS_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-43 (Cikgu Alesa). Throttles per user; the code applies the defaults when unset (send 20, read 120, write 30, CSV export 10 per minute).
+  THROTTLE_CIKGU_SEND_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
