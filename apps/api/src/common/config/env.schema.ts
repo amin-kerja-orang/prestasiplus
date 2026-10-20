@@ -40,8 +40,18 @@ export const EnvSchema = z.object({
   // BE-06 (notifications): inbox throttles per user, counted per process.
   THROTTLE_NOTIFICATION_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
   THROTTLE_NOTIFICATION_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  // BE-24 part C (support, audio KBAT): throttles per user (the support contact per client address), counted per process.
+  THROTTLE_SUPPORT_TICKET_CREATE_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  THROTTLE_SUPPORT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_SUPPORT_CONFIG_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  THROTTLE_AUDIO_KBAT_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_AUDIO_KBAT_FILE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  THROTTLE_AUDIO_KBAT_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: z.coerce.number().int().min(1).default(20),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
+  /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */
+  PUBLIC_ORIGINS: z.string().optional(),
   /** Reverse-proxy hops to trust for the client address (0 = none). */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   /** Lifetime of a "remember me" session in days (LEAD decision: 30). */

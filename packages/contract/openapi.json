@@ -3487,7 +3487,7 @@
               "string",
               "null"
             ],
-            "description": "Authenticated URL served through BE-04 FileStorage (not a public path); null when the section has no audio."
+            "description": "Authenticated stream URL, `/api/audio-kbat-sets/{id}/sections/{no}/audio` (the audio sits in files with purpose audio_kbat, not readable through /files by students); null when the section has no audio."
           },
           "questions": {
             "type": "array",
@@ -44093,7 +44093,9 @@
           "avatar",
           "bijak_photo",
           "question_image",
-          "cms_image"
+          "cms_image",
+          "audio_kbat",
+          "cms_screenshot"
         ]
       },
       "FileRef": {
@@ -44117,7 +44119,11 @@
             "enum": [
               "image/jpeg",
               "image/png",
-              "image/webp"
+              "image/webp",
+              "audio/mpeg",
+              "audio/mp4",
+              "audio/wav",
+              "audio/ogg"
             ]
           },
           "size": {
@@ -63859,6 +63865,82 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/audio-kbat-sets/{id}/sections/{no}/audio": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Stream the audio of one section of an approved set",
+        "description": "Any signed-in user (the only way a student reads Audio KBAT audio; the generic /files route refuses audio_kbat files to everyone but admin). Approved sets only: a draft, pending, archived or unknown set, a section number outside 1..4, or a section without audio is 404 \"Not Found.\". This is the `audioUrl` of the player data. Headers: `Content-Type` of the stored audio (audio/mpeg, audio/mp4, audio/wav, audio/ogg), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox`, `Cache-Control: private, no-store`, `Accept-Ranges: bytes`. One `Range: bytes=a-b` is honoured with 206 and `Content-Range`; a range whose start is past the end is 416 with `Content-Range: bytes */size`; a malformed range (for example end before start) is ignored and the whole body is served with 200 (RFC 7233).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-4]$"
+            },
+            "required": true,
+            "name": "no",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The whole audio file.",
+            "content": {
+              "audio/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "The requested byte range, with Content-Range.",
+            "content": {
+              "audio/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or not visible to the caller).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Range start is past the end of the file; Content-Range: bytes */size."
           }
         }
       }
@@ -102073,7 +102155,7 @@
           "files"
         ],
         "summary": "Upload one file",
-        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin. Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
+        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin. Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
         "parameters": [
           {
             "schema": {
@@ -102182,7 +102264,7 @@
           "files"
         ],
         "summary": "Download a file",
-        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
+        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
         "parameters": [
           {
             "schema": {

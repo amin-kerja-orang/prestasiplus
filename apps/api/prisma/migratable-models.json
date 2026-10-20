@@ -1,10 +1,14 @@
 [
+  "articles",
+  "audio_kbat_sets",
+  "banners",
   "chapters",
   "comp_students",
   "education_levels",
   "exam_attempts",
   "files",
   "jpns",
+  "notes",
   "notifications",
   "parent_invites",
   "parent_links",
@@ -14,8 +18,10 @@
   "schools",
   "subject_levels",
   "subjects",
+  "support_tickets",
   "topics",
   "user_roles",
   "user_scopes",
-  "users"
+  "users",
+  "videos"
 ]
