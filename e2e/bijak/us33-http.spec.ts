@@ -9,20 +9,19 @@
 import { expect, test } from '@playwright/test'
 
 import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
+import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 import { US33_COPY, US33_ROUTES, US33_SELECTORS as S, expectScreen, httpLogin } from './us33-flow'
 
-const SCHOOL_USER = process.env.BIJAK_ADMIN_SEKOLAH_USER
-const SCHOOL_PASS = process.env.BIJAK_ADMIN_SEKOLAH_PASS
-const GURU_USER = process.env.BIJAK_GURU_USER
-const GURU_PASS = process.env.BIJAK_GURU_PASS
+const { user: SCHOOL_USER, pass: SCHOOL_PASS } = demoCreds('adminSekolah')
+const { user: GURU_USER, pass: GURU_PASS } = demoCreds('guru')
 
-test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE (integration stack)')
+test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE or BASE_URL (integration stack)')
 
-test.describe('Bijak SPM US-33 results, http mode @bijak', () => {
+test.describe('Bijak SPM US-33 results, http mode @bijak @api', () => {
   test('school dashboard panel is labelled Keputusan Bijak SPM, with figures or Tiada data @bijak', async ({
     page,
   }) => {
-    test.skip(!SCHOOL_USER || !SCHOOL_PASS, 'needs BIJAK_ADMIN_SEKOLAH_USER and _PASS')
+    test.skip(!SCHOOL_USER || !SCHOOL_PASS, NEEDS_PASSWORD)
     await httpLogin(page, SCHOOL_USER ?? '', SCHOOL_PASS ?? '')
     await page.goto(US33_ROUTES.schoolDashboard)
     await expectScreen(page, S.schoolPanel)
@@ -42,7 +41,7 @@ test.describe('Bijak SPM US-33 results, http mode @bijak', () => {
   test('teacher class view has the Keputusan Bijak SPM section, figures or Tiada data @bijak', async ({
     page,
   }) => {
-    test.skip(!GURU_USER || !GURU_PASS, 'needs BIJAK_GURU_USER and _PASS')
+    test.skip(!GURU_USER || !GURU_PASS, NEEDS_PASSWORD)
     await httpLogin(page, GURU_USER ?? '', GURU_PASS ?? '')
     await page.goto(US33_ROUTES.classPicker)
     await expectNoHorizontalScrollHttp(page)

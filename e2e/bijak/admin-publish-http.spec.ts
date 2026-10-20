@@ -27,14 +27,13 @@ import { expect, test } from '@playwright/test'
 
 import { isDesktopShell } from '../support'
 import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
+import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 
-const ADMIN_USER = process.env.BIJAK_ADMIN_PUSAT_USER
-const ADMIN_PASS = process.env.BIJAK_ADMIN_PUSAT_PASS
-const STUDENT_USER = process.env.BIJAK_STUDENT_USER
-const STUDENT_PASS = process.env.BIJAK_STUDENT_PASS
+const { user: ADMIN_USER, pass: ADMIN_PASS } = demoCreds('adminPusat')
+const { user: STUDENT_USER, pass: STUDENT_PASS } = demoCreds('student')
 
-test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE (integration stack)')
-test.skip(!ADMIN_USER || !ADMIN_PASS, 'needs BIJAK_ADMIN_PUSAT_USER and BIJAK_ADMIN_PUSAT_PASS')
+test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE or BASE_URL (integration stack)')
+test.skip(!ADMIN_USER || !ADMIN_PASS, NEEDS_PASSWORD)
 
 async function login(page: Page, user: string, pass: string): Promise<void> {
   await page.goto('/login')
@@ -120,7 +119,7 @@ async function studentSees(browser: Browser, info: TestInfo, title: string): Pro
   }
 }
 
-test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
+test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () => {
   // Works today: the real login, the Pentadbiran shell and the menu entry (no Bijak admin API call).
   test('admin logs in and the Pentadbiran menu offers Pembina Kertas at /admin/spm/kertas @bijak', async ({
     page,
@@ -241,7 +240,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak', () => {
     page,
     browser,
   }, testInfo) => {
-    test.skip(!STUDENT_USER || !STUDENT_PASS, 'needs BIJAK_STUDENT_USER and BIJAK_STUDENT_PASS')
+    test.skip(!STUDENT_USER || !STUDENT_PASS, NEEDS_PASSWORD)
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')

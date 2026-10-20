@@ -16,14 +16,14 @@ import {
   pressedOptions,
   startPaper,
 } from './bijak-flow'
+import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 
-const USER = process.env.BIJAK_STUDENT_USER
-const PASS = process.env.BIJAK_STUDENT_PASS
+const { user: USER, pass: PASS } = demoCreds('student')
 
-test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE (integration stack)')
-test.skip(!USER || !PASS, 'needs BIJAK_STUDENT_USER and BIJAK_STUDENT_PASS')
+test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE or BASE_URL (integration stack)')
+test.skip(!USER || !PASS, NEEDS_PASSWORD)
 
-test.describe('Bijak SPM autosave over HTTP @bijak', () => {
+test.describe('Bijak SPM autosave over HTTP @bijak @api', () => {
   test('answer triggers PUT /api/bijak/attempts/:id/answers (2xx) and survives a reload from the server @bijak', async ({
     page,
   }) => {

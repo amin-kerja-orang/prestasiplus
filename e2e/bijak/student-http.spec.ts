@@ -29,13 +29,13 @@ import { expect, test } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
+import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 
-const USER = process.env.BIJAK_STUDENT_USER
-const PASS = process.env.BIJAK_STUDENT_PASS
+const { user: USER, pass: PASS } = demoCreds('student')
 const PAPER = process.env.BIJAK_PAPER_ID
 
-test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE (integration stack)')
-test.skip(!USER || !PASS, 'needs BIJAK_STUDENT_USER and BIJAK_STUDENT_PASS')
+test.skip(!HTTP_MODE, 'needs BIJAK_API_BASE or BASE_URL (integration stack)')
+test.skip(!USER || !PASS, NEEDS_PASSWORD)
 
 const attemptIdOf = (url: string): string => /percubaan\/([^/?#]+)/.exec(url)?.[1] ?? ''
 
@@ -74,7 +74,7 @@ async function questionNumber(page: Page): Promise<number> {
   return m ? Number(m[1]) : 0
 }
 
-test.describe('Bijak SPM Murid over HTTP @bijak', () => {
+test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('login, paper, answer, server-side resume, submit, result, history @bijak', async ({

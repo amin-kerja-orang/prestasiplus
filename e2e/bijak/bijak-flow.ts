@@ -18,7 +18,7 @@ import { expectNoHorizontalScroll, H_SCROLL_SAMPLE_GAP_MS, H_SCROLL_SAMPLES } fr
  * skip themselves when it is set; `http-autosave.spec.ts` runs only then.
  */
 export const API_BASE = process.env.BIJAK_API_BASE
-export const HTTP_MODE = !!API_BASE
+export const HTTP_MODE = !!(API_BASE || process.env.BASE_URL)
 
 /**
  * Http-mode twin of `expectNoHorizontalScroll` (e2e/support/assertions.ts): same sampling, but the
