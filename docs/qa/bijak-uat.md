@@ -80,7 +80,7 @@ Rows in Objective A: 27.
 
 Intended behaviour (US-33, AC-33.4): every submitted or marked sitting writes one attempt record and one aggregate that feeds student history and the existing Guru modules (Prestasi, Analitik Adaptif, Analisa Item, Monitoring) and school analytics. D43: the Guru has no Bijak SPM screen; a Bijak route returns 403.
 
-Known gap in the current build: no Guru module and no school view shows Bijak attempts, and no admin screen lists student attempts. The only place results show is the student's history (UAT-A-19), including inside Mod Pelajar. Rows below marked Blocked record the intended steps and pass criteria; they are not passes.
+Update (build at 521903df): the school dashboard and the Guru class / pupil Prestasi views now carry a "Keputusan Bijak SPM" label with figures or "Tiada data" in http mode (B-06, B-09). Still not built: Guru Analitik/Analisa Item/Monitoring views, per-attempt drill-down and Admin Pusat analytics. Original gap text: no Guru module and no school view shows Bijak attempts, and no admin screen lists student attempts. The only place results show is the student's history (UAT-A-19), including inside Mod Pelajar. Rows below marked Blocked record the intended steps and pass criteria; they are not passes.
 
 Precondition for every B row: Murid has submitted at least one attempt (UAT-A-16), and the tester knows which class/school that student belongs to. Needs confirmation: which class the demo student sits in.
 
@@ -91,10 +91,10 @@ Precondition for every B row: Murid has submitted at least one attempt (UAT-A-16
 | UAT-B-03 | Guru | Open `/spm/bijak/sejarah` directly. | Same 403 as B-01. | History renders. | [ ] | [ ] | [ ] | | Automated: yes. |
 | UAT-B-04 | Guru | Look through the Guru menu (the matrix row 13 "SPM" is Murid only). | No Bijak SPM entry for the Guru. | A Bijak SPM student entry is offered to the Guru. | [ ] | [ ] | [ ] | | role-access-matrix row 13. Not automated. Needs confirmation of the exact menu labels. |
 | UAT-B-05 | Admin Sekolah | Log in as Admin Sekolah; open `/spm/bijak` directly. | Refused with a 403 (no Bijak SPM screen for Admin Sekolah). | Hub renders. | [ ] | [ ] | [ ] | | AC-01.4. Code route roles are `student` and `admin`, so 403 is expected. Not automated. Needs confirmation. |
-| UAT-B-06 | Guru | Open Prestasi (and Headcount) for the class of the student who submitted; find the Bijak attempt. | The attempt (subject, score out of maximum, date) appears in the student's row; counts reflect the sitting. | Attempt absent or wrong score. | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-33). No Guru module reads Bijak attempts in this build. Automated: `test.fixme` in `teacher.spec.ts`. |
-| UAT-B-07 | Guru | Open Analitik Adaptif / Analisa Item / Monitoring for the same class. | Bijak attempt feeds the aggregates (units = marks, subject). | Aggregate unchanged after a submission. | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-33). |
+| UAT-B-06 | Guru | HTTP mode only: open the class performance view `/prestasi/kelas/228` (Needs confirmation of the class for the UAT data) and a pupil's Prestasi 360 `/prestasi/<userId>`. | A section titled "Keputusan Bijak SPM" is shown. It holds either figures or the empty state "Tiada data", never both. In mock mode the section is not shown (old layout). | Section absent in http mode, or figures and "Tiada data" together, or figures that disagree with the pupil's history. | [ ] | [ ] | [ ] | | Label and empty state built (commits 8a55c244, fe4313c0); automated in `us33-http.spec.ts` (class view). Per-attempt rows (subject, score, date) are not promised by the UI; Needs confirmation. Mock regression: `us33-results.spec.ts`. |
+| UAT-B-07 | Guru | Open Analitik Adaptif / Analisa Item / Monitoring for the same class. | Bijak attempt feeds the aggregates (units = marks, subject). | Aggregate unchanged after a submission. | [ ] | [ ] | [ ] | Blocked | Blocked (known, accepted): no Bijak view in Analitik Adaptif / Analisa Item / Monitoring was found in the code read (US-33 only covers the labelled sections of B-06 and B-09). Needs confirmation. |
 | UAT-B-08 | Guru | Open a student's Bijak result from a Guru module to read per-question detail (and confirm AI-proposed essay marks, later surface). | Detail view for the student's attempt. | n/a | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-33, US-31). Marked as out of the D43 prototype in the requirements. |
-| UAT-B-09 | Admin Sekolah | Open the school dashboard / analytics (L07 and the L51-L55 admin-sekolah analytics) for the student's school. | Bijak attempts are counted in school-level analytics. | Not counted. | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-33). |
+| UAT-B-09 | Admin Sekolah | HTTP mode only: open the school dashboard `/admin-sekolah` and read the panel "Ringkasan Prestasi". | The badge "Keputusan Bijak SPM" is shown, with either figures or the empty state "Tiada data", never both. | Badge absent in http mode, or figures together with "Tiada data". | [ ] | [ ] | [ ] | | Built (commits 8a55c244, fe4313c0); automated in `us33-http.spec.ts` (school dashboard). Figures match the submitted attempts: Needs confirmation. |
 | UAT-B-10 | Admin Pusat | Open Pentadbiran "Kertas & SPM" -> "Pembina Kertas" (`/admin/spm/kertas`) and look for per-paper attempts, scores, blank rate. | Per-paper analytics (US-30) and the marks-review queue (US-31) show the sitting. | No attempt data anywhere. | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-30, US-31, US-33). `/admin/spm/kertas` lists papers only (columns Kertas, Subjek, Soalan, Markah, Blueprint, Status, Dikemas kini, Tindakan). Automated: `test.fixme` in `admin-mod-pelajar.spec.ts`. |
 | UAT-B-11 | Admin Pusat | In the Pentadbiran account menu choose "Masuk Mod Pelajar". | A persistent bar reads "Mod Pelajar: anda melihat portal pelajar sebagai {name}" with a "Keluar Mod Pelajar" button; the learner portal opens as the demo student. | Banner missing, admin session lost. | [ ] | [ ] | [ ] | | D31(c), D33(b). At widths below 1024 the account menu sits inside the sidebar drawer. Automated: yes. |
 | UAT-B-12 | Admin Pusat (in Mod Pelajar) | Open `/spm/bijak`, start a paper, answer one question, check "Disimpan", Hantar and confirm. | The student flow works as for a Murid; the Mod Pelajar bar stays on every screen; result shows section scores. | Flow blocked for the admin, banner lost. | [ ] | [ ] | [ ] | | Automated: yes (use in-app navigation, a full reload would re-apply the login). |
@@ -103,7 +103,7 @@ Precondition for every B row: Murid has submitted at least one attempt (UAT-A-16
 | UAT-B-15 | Admin Sekolah | Repeat B-11 to B-14 as Admin Sekolah: "Masuk Mod Pelajar" -> attempt -> result -> "Keluar Mod Pelajar". | Same as B-11 to B-14. | n/a | [ ] | [ ] | [ ] | Blocked | Blocked: accepted as a known gap for UAT (lead, 2026-10-20). Not built yet: `enterModPelajar` in `src/shells/shared/mod-pelajar.ts` accepts only role `admin`, though the requirement (section 2, D31c/D33b) lists Admin Sekolah. The e2e test is a `fixme` (`e2e/bijak/admin-mod-pelajar.spec.ts`). |
 | UAT-B-16 | Admin Pusat / Admin Sekolah (in Mod Pelajar) | After B-12, check that this attempt is flagged as test data and is excluded from analytics, history ranking and rewards. | Test-data flag set; attempt not counted anywhere (AC-33.5). | Counted in analytics or rewards. | [ ] | [ ] | [ ] | Blocked | Blocked: UI not built yet (US-33, AC-33.5). No test-data flag or analytics consumer was found in the Bijak code read. Needs confirmation by the lead. |
 
-Rows in Objective B: 16 (B-06 to B-10, B-15 and B-16 pre-marked Blocked).
+Rows in Objective B: 16 (B-07, B-08, B-10, B-15 and B-16 pre-marked Blocked; B-06 and B-09 are built in http mode).
 
 ---
 
@@ -148,7 +148,7 @@ Run with `npm run test:e2e:bijak` (config `playwright.bijak.config.mjs`, script 
 | Guru gets 403 on `/spm/bijak` @bijak | `e2e/bijak/teacher.spec.ts` | B-01 |
 | Guru gets 403 on `/spm/bijak/kertas/mat-k1-2025-a` @bijak | `e2e/bijak/teacher.spec.ts` | B-02 |
 | Guru gets 403 on `/spm/bijak/sejarah` @bijak | `e2e/bijak/teacher.spec.ts` | B-03 |
-| Teacher sees a student's result in a Guru module (test.fixme) | `e2e/bijak/teacher.spec.ts` | B-06, B-07, B-08 (skipped by design: Blocked) |
+| Teacher sees a student's result in a Guru module (test.fixme) | `e2e/bijak/teacher.spec.ts` | B-07, B-08 (skipped by design: Blocked); B-06 is covered by `us33-results.spec.ts` / `us33-http.spec.ts` |
 | Admin Pusat in Mod Pelajar: list, start, answer, submit, result, leave @bijak | `e2e/bijak/admin-mod-pelajar.spec.ts` | B-11, B-12, B-14 |
 | Admin sees student results through an admin module (test.fixme) | `e2e/bijak/admin-mod-pelajar.spec.ts` | B-10 (skipped by design: Blocked) |
 | School admin in Mod Pelajar (test.fixme) | `e2e/bijak/admin-mod-pelajar.spec.ts` | B-15 (skipped by design: Blocked) |
@@ -177,7 +177,7 @@ Proposed criteria
 |---|---|---|
 | 1 | Objective A | Every row Pass at all three widths, except rows explicitly accepted by the lead as Not run (candidates: A-04, A-11, A-25, A-26 where the mock cannot trigger the condition). |
 | 2 | Objective C | Every row Pass at all three widths, except C-11 and C-16 (Blocked, see below) and C-17/C-18 if the lead confirms the refusal screens. |
-| 3 | Objective B | Every built row Pass (B-01 to B-05, B-11 to B-14). B-06 to B-10, B-15 and B-16 stay Blocked and are accepted as known US-33 gaps. |
+| 3 | Objective B | Every built row Pass (B-01 to B-06, B-09, B-11 to B-14). B-07, B-08, B-10, B-15 and B-16 stay Blocked and are accepted as known US-33 gaps. |
 | 4 | Defects | No open Critical or High bug (a layout break at any width is High). No answer lost, no secret mark scheme visible before Hantar in exam mode, no attempt missing from the student's history. |
 | 5 | Automation | `npm run test:e2e:bijak` shows 0 failed at 375/768/1280 on the UAT build. |
 
@@ -187,9 +187,9 @@ Decision
 - Conditional GO: only criterion 3's Blocked rows remain open, and the lead records the US-33 gap as a known issue with an owner and date.
 
 Known gaps accepted if the lead agrees (not defects in this UAT)
-1. US-33: no Guru module, school view or Admin Pusat screen shows Bijak attempts (B-06 to B-10).
+1. US-33: no Guru Analitik/Analisa Item/Monitoring view, per-attempt drill-down or Admin Pusat analytics (B-07, B-08, B-10).
 2. Test-data flag and exclusion from analytics for Mod Pelajar attempts (B-16, AC-33.5).
-3. Admin Sekolah in Mod Pelajar (B-15): Blocked, accepted by the lead as a known gap for UAT. `enterModPelajar` accepts role `admin` only; D31c/D33b list `admin_sekolah` but it is not built. The main path for objective B is the school dashboard (BE-21), whose US-33 UI is not built either (B-06 to B-10).
+3. Admin Sekolah in Mod Pelajar (B-15): Blocked, accepted by the lead as a known gap for UAT. `enterModPelajar` accepts role `admin` only; D31c/D33b list `admin_sekolah` but it is not built. The main path for objective B is the school dashboard (BE-21), whose "Keputusan Bijak SPM" label is built in http mode (B-09; B-07, B-08 and B-10 remain Blocked).
 4. Paper-level answer-key re-check at "Terbitkan" and the publish-override-with-reason flow (C-09, C-11); "Salin untuk sunting" (C-16).
 
 Sign-off
