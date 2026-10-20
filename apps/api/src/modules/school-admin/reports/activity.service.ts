@@ -12,8 +12,6 @@ import { accuracyOf, activityWindow } from './windows'
 
 /** Rows of one pupil pill (contract max). */
 const PILL_MAX = 200
-/** Wallet reads in flight at once: the wallet has no batch read, so keep the fan-out small. */
-const WALLET_PARALLEL = 8
 
 const stamp = (d: Date | null) => (d === null ? null : toMytTimestamp(d))
 
@@ -24,7 +22,7 @@ const stamp = (d: Date | null) => (d === null ? null : toMytTimestamp(d))
  *
  * Sources: pupils from the users owner, sessions and answers from BE-20's `AnalyticsRepository` (completed non-test sessions,
  * clean answer log), class names from `ClassesRepository` (own-school classes only), teacher question counts from the
- * `ClassesPorts` question provider, coins from BE-11's `WalletService.gamificationSummary` (the current balance; no SQL on wallet
+ * `ClassesPorts` question provider, coins from BE-11's `WalletService.balancesOf` (the current balance, as the mock; one batched read; no SQL on wallet
  * tables). Struktur, Battle and Permainan have no source in this build and stay 0 (as BE-20).
  *
  * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 when
@@ -207,15 +205,8 @@ export class ActivityService {
     return rows
   }
 
-  /** Current coin balance per user through BE-11's `WalletService` (no batch method exists; small parallel waves). */
+  /** Current coin balance per user (the mock's `currentSyiling` / wallet balance, not windowed): one batched wallet read. */
   private async coinsOf(userIds: readonly string[]): Promise<Map<string, number>> {
-    const out = new Map<string, number>()
-    const unique = [...new Set(userIds)]
-    for (let i = 0; i < unique.length; i += WALLET_PARALLEL) {
-      const wave = unique.slice(i, i + WALLET_PARALLEL)
-      const sums = await Promise.all(wave.map((id) => this.wallet.gamificationSummary(id)))
-      wave.forEach((id, j) => out.set(id, sums[j]?.coins ?? 0))
-    }
-    return out
+    return this.wallet.balancesOf(userIds)
   }
 }
