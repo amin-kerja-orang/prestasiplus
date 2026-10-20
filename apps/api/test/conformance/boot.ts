@@ -10,6 +10,7 @@ import { Test } from '@nestjs/testing'
 import { runSeeds, type SeedModule } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
+import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
@@ -23,7 +24,7 @@ export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
  * Seeds the conformance database is built from. HOOK FOR BE-07: add its demo-account seed here (and
  * update `accounts.ts`); the suite needs nothing else from the seed layer.
  */
-export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed]
+export const CONFORMANCE_SEEDS: SeedModule[] = [identitySeed, schoolsSeed, curriculumSeed]
 
 /**
  * Environment of the conformance app. Determinism, never weaker production code:
@@ -56,6 +57,9 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_ADMIN_READ_PER_MINUTE: '100000',
     THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000',
     THROTTLE_IMPORT_PER_HOUR: '100000',
+    THROTTLE_CLASSES_READ_PER_MINUTE: '100000',
+    THROTTLE_CLASSES_WRITE_PER_MINUTE: '100000',
+    THROTTLE_CLASS_JOIN_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,

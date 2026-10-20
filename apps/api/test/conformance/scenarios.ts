@@ -2,6 +2,7 @@ import { allScenarios, type ContractIndex, type Scenario } from '@pp/contract-te
 
 import { accountScenarios } from './account/account'
 import { authSessionScenarios } from './auth/session'
+import { classesScenarios } from './classes/classes'
 import { filesScenarios } from './files/files'
 import { notificationsScenarios } from './notifications/notifications'
 import { schoolsScenarios } from './schools/schools'
@@ -21,5 +22,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...filesScenarios,
     ...accountScenarios,
     ...notificationsScenarios,
+    ...classesScenarios,
   ]
 }
