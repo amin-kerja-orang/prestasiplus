@@ -1,0 +1,9 @@
+question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation
+"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,a,{S},{L},2,1,"Kuala Lumpur ialah ibu negara."
+"Soalan tidak lengkap",A,,C,D,A,{S},{L},1,1,
+"Jawapan salah",A,B,C,D,E,{S},{L},1,1,
+"Subjek tidak sah",A,B,C,D,A,999999,{L},1,1,
+"Tahap kesukaran salah",A,B,C,D,A,{S},{L},9,1,
+"Markah salah",A,B,C,D,A,{S},{L},1,0,
+"Soalan dua baris
+bersambung",A,B,C,,B,{S},{L},3,2,

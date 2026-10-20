@@ -1,0 +1,314 @@
+{
+  "papers": [
+    {
+      "id": "mat-k1-2025-a",
+      "title": "Percubaan SPM Matematik Kertas 1 Set A",
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 1,
+      "year": 2025,
+      "code": "1449/1",
+      "durationMin": 75,
+      "questionCount": 10,
+      "marks": 10,
+      "kind": "pilihan",
+      "status": "belum"
+    },
+    {
+      "id": "mat-k2-2025-a",
+      "title": "Percubaan SPM Matematik Kertas 2 Set A",
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 2,
+      "year": 2025,
+      "code": "1449/2",
+      "durationMin": 150,
+      "questionCount": 6,
+      "marks": 21,
+      "kind": "pilihan",
+      "status": "belum"
+    },
+    {
+      "id": "sn-k2-2025-a",
+      "title": "Percubaan SPM Sains Kertas 2 (Contoh Pendek)",
+      "subject": "SN",
+      "subjectName": "Sains",
+      "kertas": 2,
+      "year": 2025,
+      "code": "4541/2",
+      "durationMin": 60,
+      "questionCount": 5,
+      "marks": 13,
+      "kind": "pilihan",
+      "status": "belum"
+    },
+    {
+      "id": "sej-k2-2025-a",
+      "title": "Percubaan SPM Sejarah Kertas 2 (Contoh Pendek)",
+      "subject": "SEJ",
+      "subjectName": "Sejarah",
+      "kertas": 2,
+      "year": 2025,
+      "code": "1249/2",
+      "durationMin": 90,
+      "questionCount": 4,
+      "marks": 19,
+      "kind": "pilihan",
+      "status": "belum"
+    }
+  ],
+  "covers": [
+    {
+      "id": "mat-k1-2025-a",
+      "title": "Percubaan SPM Matematik Kertas 1 Set A",
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 1,
+      "year": 2025,
+      "code": "1449/1",
+      "durationMin": 75,
+      "questionCount": 10,
+      "marks": 10,
+      "kind": "pilihan",
+      "status": "belum",
+      "instructions": [
+        "Kertas ini mengandungi 40 soalan objektif.",
+        "Jawab semua soalan. Pilih satu jawapan sahaja bagi setiap soalan.",
+        "Rajah tidak dilukis mengikut skala kecuali dinyatakan."
+      ],
+      "reference": [
+        {
+          "title": "Rumus (ringkas)",
+          "items": [
+            "Teorem Pythagoras: $c^2 = a^2 + b^2$",
+            "Kecerunan: $m = \\frac{y_2 - y_1}{x_2 - x_1}$",
+            "Luas segi tiga: $\\frac{1}{2} \\times \\text{tapak} \\times \\text{tinggi}$",
+            "Luas bulatan: $\\pi j^2$, $\\pi = \\frac{22}{7}$",
+            "Min: $\\frac{\\text{jumlah nilai}}{\\text{bilangan nilai}}$"
+          ]
+        }
+      ],
+      "sections": [
+        {
+          "label": "Objektif",
+          "marks": 10,
+          "instruction": "Jawab semua soalan.",
+          "questionCount": 10,
+          "compulsory": false
+        }
+      ]
+    },
+    {
+      "id": "mat-k2-2025-a",
+      "title": "Percubaan SPM Matematik Kertas 2 Set A",
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 2,
+      "year": 2025,
+      "code": "1449/2",
+      "durationMin": 150,
+      "questionCount": 6,
+      "marks": 21,
+      "kind": "pilihan",
+      "status": "belum",
+      "instructions": [
+        "Kertas ini mengandungi tiga bahagian: Bahagian A, Bahagian B dan Bahagian C.",
+        "Jawab semua soalan dalam Bahagian A dan Bahagian B, dan satu soalan dalam Bahagian C.",
+        "Tunjukkan langkah kerja anda. Markah boleh diberi untuk kaedah yang betul."
+      ],
+      "reference": [
+        {
+          "title": "Rumus (ringkas)",
+          "items": [
+            "Teorem Pythagoras: $c^2 = a^2 + b^2$",
+            "Kecerunan: $m = \\frac{y_2 - y_1}{x_2 - x_1}$",
+            "Luas segi tiga: $\\frac{1}{2} \\times \\text{tapak} \\times \\text{tinggi}$",
+            "Luas bulatan: $\\pi j^2$, $\\pi = \\frac{22}{7}$",
+            "Min: $\\frac{\\text{jumlah nilai}}{\\text{bilangan nilai}}$"
+          ]
+        }
+      ],
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "marks": 9,
+          "instruction": "Jawab semua soalan.",
+          "questionCount": 3,
+          "compulsory": false
+        },
+        {
+          "label": "Bahagian B",
+          "marks": 6,
+          "instruction": "Jawab semua soalan.",
+          "questionCount": 1,
+          "compulsory": false
+        },
+        {
+          "label": "Bahagian C",
+          "marks": 6,
+          "instruction": "Jawab 1 daripada 2 soalan.",
+          "questionCount": 2,
+          "compulsory": false,
+          "chooseN": 1
+        }
+      ]
+    },
+    {
+      "id": "sn-k2-2025-a",
+      "title": "Percubaan SPM Sains Kertas 2 (Contoh Pendek)",
+      "subject": "SN",
+      "subjectName": "Sains",
+      "kertas": 2,
+      "year": 2025,
+      "code": "4541/2",
+      "durationMin": 60,
+      "questionCount": 5,
+      "marks": 13,
+      "kind": "pilihan",
+      "status": "belum",
+      "instructions": [
+        "Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.",
+        "Jawab semua soalan dalam Bahagian A dan satu soalan dalam Bahagian B."
+      ],
+      "reference": [],
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "marks": 9,
+          "instruction": "Jawab semua soalan.",
+          "questionCount": 3,
+          "compulsory": false
+        },
+        {
+          "label": "Bahagian B",
+          "marks": 4,
+          "instruction": "Jawab 1 daripada 2 soalan.",
+          "questionCount": 2,
+          "compulsory": false,
+          "chooseN": 1
+        }
+      ]
+    },
+    {
+      "id": "sej-k2-2025-a",
+      "title": "Percubaan SPM Sejarah Kertas 2 (Contoh Pendek)",
+      "subject": "SEJ",
+      "subjectName": "Sejarah",
+      "kertas": 2,
+      "year": 2025,
+      "code": "1249/2",
+      "durationMin": 90,
+      "questionCount": 4,
+      "marks": 19,
+      "kind": "pilihan",
+      "status": "belum",
+      "instructions": [
+        "Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.",
+        "Jawab semua soalan dalam Bahagian A dan satu soalan dalam Bahagian B.",
+        "Esei dinilai oleh guru mengikut band; markah tidak diberi secara automatik."
+      ],
+      "reference": [],
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "marks": 9,
+          "instruction": "Jawab semua soalan.",
+          "questionCount": 2,
+          "compulsory": false
+        },
+        {
+          "label": "Bahagian B",
+          "marks": 10,
+          "instruction": "Jawab 1 daripada 2 soalan.",
+          "questionCount": 2,
+          "compulsory": false,
+          "chooseN": 1
+        }
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 1,
+      "source": "Spec",
+      "code": "1449/1",
+      "durationMin": 75,
+      "sections": [
+        {
+          "label": "Objektif",
+          "take": 10
+        }
+      ]
+    },
+    {
+      "subject": "MAT",
+      "subjectName": "Matematik",
+      "kertas": 2,
+      "source": "Spec",
+      "code": "1449/2",
+      "durationMin": 150,
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "take": 3
+        },
+        {
+          "label": "Bahagian B",
+          "take": 1
+        },
+        {
+          "label": "Bahagian C",
+          "take": 2
+        }
+      ]
+    },
+    {
+      "subject": "SN",
+      "subjectName": "Sains",
+      "kertas": 2,
+      "source": "Spec",
+      "code": "4541/2",
+      "durationMin": 60,
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "take": 3
+        },
+        {
+          "label": "Bahagian B",
+          "take": 2
+        }
+      ]
+    },
+    {
+      "subject": "SN",
+      "subjectName": "Sains",
+      "kertas": 1,
+      "source": "Spec",
+      "code": "4541/1",
+      "durationMin": 60,
+      "sections": [
+        {
+          "label": "Bahagian A",
+          "take": 40
+        }
+      ]
+    }
+  ],
+  "subjects": [
+    {
+      "code": "MAT",
+      "name": "Matematik"
+    },
+    {
+      "code": "SN",
+      "name": "Sains"
+    },
+    {
+      "code": "SEJ",
+      "name": "Sejarah"
+    }
+  ]
+}
