@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { AI_MESSAGES } from '../ai/schema'
 import {
   IntakeConfidenceBandSchema,
   IntakeItemRowSchema,
@@ -42,19 +43,25 @@ import {
 /**
  * BM messages. `batchNotFound` and `extractionFailed` are verbatim from the prototype
  * (`store.ts` and `IntakeUploadPage.vue`). `alreadyImported` is the flag text of v2-question-bank
- * AC-06.4. `budgetExhausted` and `unavailable` repeat BE-36 `AI_MESSAGES` (unmerged; the LEAD
- * consolidates). Every other message is `[PROPOSED]` new copy for the LEAD to approve.
+ * AC-06.4. `extractionFailed`, `budgetExhausted` and `unavailable` are the merged BE-36 `AI_MESSAGES`
+ * (imported, one sentence for the AI service and the intake). Every other message is `[PROPOSED]` new
+ * copy for the LEAD to approve.
  */
 export const INTAKE_MESSAGES = {
   batchNotFound: 'Kumpulan ekstrak tidak ditemui',
-  extractionFailed: 'Pengekstrakan gagal.',
+  extractionFailed: AI_MESSAGES.extractionFailed,
   alreadyImported: 'Kertas sama sudah diimport',
-  budgetExhausted: 'Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.',
-  unavailable: 'Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.',
+  budgetExhausted: AI_MESSAGES.budgetExhausted,
+  unavailable: AI_MESSAGES.unavailable,
   itemNotFound: 'Item ekstrak tidak ditemui',
   stimulusNotFound: 'Rajah atau petikan tidak ditemui',
   itemLocked: 'Item ini sudah diterima atau ditolak dan tidak boleh disunting.',
   itemAlreadyAccepted: 'Item ini sudah diterima.',
+  itemIsDuplicate: 'Item ini ditandakan sebagai pendua. Pilih Bukan pendua dahulu untuk menerimanya.',
+  duplicateTargetNotFound: 'Padanan pendua tidak ditemui',
+  notExtractable: 'Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.',
+  stimulusInUse: 'Rajah atau petikan ini sudah digunakan oleh soalan yang diterima dan tidak boleh diubah.',
+  payloadTooLarge: 'Data terlalu besar.',
   gateFailed: 'Soalan belum memenuhi semakan kualiti. Baiki isu yang disenaraikan.',
   rejectReasonRequired: 'Sebab penolakan diperlukan.',
   duplicateTargetRequired: 'Pilih soalan atau item yang sama.',
@@ -126,8 +133,11 @@ const StimulusTable = z.strictObject({
  * `parts` array replaces all parts); `null` clears an optional field. The server decides what it
  * cannot take from a client: `id`, `lowFields` and the review state are not writable, and
  * `needsManual` can only be set to `false` ("Tandakan selesai disemak"). `confirmed` may only list
- * fields that are in `lowFields`. The edit moves a `generated` item to `needs_review` or back as the
- * server sees fit and is refused (409) on an accepted or rejected item.
+ * fields that are in `lowFields`. After the edit the server recomputes the state by the rule of
+ * `intakeOpenState` (needs_review while a low field is unconfirmed, needsManual, or an open exact or
+ * near duplicate entry; otherwise generated) and records the previous value of every changed field in
+ * the item history; the UI marks those fields "Disunting oleh manusia". The edit is refused (409) on an
+ * accepted or rejected item. The whole JSON body is capped (`INTAKE_MAX_BODY_BYTES`, 413 above it).
  */
 export const IntakeItemPatchSchema = z
   .strictObject({
@@ -174,8 +184,22 @@ export type IntakeItemPatchResult = z.infer<typeof IntakeItemPatchResultSchema>
 /**
  * "Tambah soalan" (prototype `blankQuestion(subject, nextLabel(questions), page)`): a blank item the
  * reviewer fills in, for a question the extractor missed (AC-04.6). The server picks the next number
- * label (highest numeric label plus one) and the batch subject. Source type is `manual`.
+ * label (highest numeric label plus one) and the batch subject. Source type is `manual`. Defaults, from
+ * the prototype `blankQuestion` and `emptyTag(subject)`: see `INTAKE_BLANK_ITEM_DEFAULTS`.
  */
+export const INTAKE_BLANK_ITEM_DEFAULTS = {
+  type: 'short',
+  stem: '',
+  options: [],
+  marks: 1,
+  mode: 'short_text',
+  parts: [],
+  page: 1,
+  lowFields: [],
+  confirmed: [],
+  tag: { level: 'T4+T5', unit: null, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' },
+} as const
+
 export const IntakeItemCreateRequestSchema = z
   .strictObject({ page: z.number().int().min(1).max(10_000).optional().meta({ description: 'Page the missing question is on; defaults to 1.' }) })
   .meta({ id: 'IntakeItemCreateRequest', description: '[PROPOSED] Body of POST /intake/batches/{id}/items.' })
@@ -199,29 +223,40 @@ export const IntakeRejectRequestSchema = z
 export type IntakeRejectRequest = z.infer<typeof IntakeRejectRequestSchema>
 
 /**
- * Duplicate decision (card: "duplicate links to the matching question"; AC-06.2/06.3/06.5).
- * `duplicate` links the item to a bank question (`matchedQuestionId`) or to another item of the batch
- * (`matchedItemId`), exactly one of the two; the item becomes `duplicate`. `not_duplicate` ("Bukan
- * pendua") dismisses the open flag for that pair only and returns the item to generated or
- * needs_review.
+ * Duplicate decision (card: "duplicate links to the matching question"; AC-06.2, AC-06.3, AC-06.5).
+ *  - `duplicate`: link the item to exactly one of `matchedQuestionId` (bank) or `matchedItemId` (an item
+ *    of the SAME batch). The matching entry becomes `linked` (a new one is created when the check did
+ *    not find it: kind `near`, similarity null) and the item becomes `duplicate`. This is also the
+ *    AC-06.3 "Gabung (keep one)" choice [PROPOSED mapping]; "Tolak" is the reject route.
+ *  - `variant` [PROPOSED]: AC-06.2 "link as a variant" (exam schema D11 family): the entry becomes
+ *    `linked` with kind `variant`; informational, the item state does not change. "Link as a new
+ *    version of the matched question" has no basis in the card or the prototype and is an open question.
+ *  - `not_duplicate` ("Bukan pendua", AC-06.5): dismisses the one entry named by `duplicateId`, for that
+ *    pair only; the state is recomputed (needs_review or generated).
+ * Target scope (IDOR): `matchedItemId` must belong to the item's own batch; `matchedQuestionId` must be a
+ * question the caller may read under BE-09 scope. An id that does not exist, is in another batch or is
+ * not readable gets the IDENTICAL 422 (`fields.matchedQuestionId` or `fields.matchedItemId`, message
+ * "Padanan pendua tidak ditemui"), so the route cannot be used to probe ids.
  */
 export const IntakeDuplicateRequestSchema = z
   .strictObject({
-    decision: z.enum(['duplicate', 'not_duplicate']),
+    decision: z.enum(['duplicate', 'variant', 'not_duplicate']),
     matchedQuestionId: IdSchema.optional(),
     matchedItemId: IdSchema.optional(),
+    duplicateId: IdSchema.optional().meta({ description: 'The IntakeDuplicateEntry to dismiss (not_duplicate only).' }),
     note: z.string().trim().max(500).optional(),
   })
   .refine(
     (v) =>
       v.decision === 'not_duplicate'
-        ? v.matchedQuestionId === undefined && v.matchedItemId === undefined
-        : (v.matchedQuestionId === undefined) !== (v.matchedItemId === undefined),
+        ? v.duplicateId !== undefined && v.matchedQuestionId === undefined && v.matchedItemId === undefined
+        : v.duplicateId === undefined && (v.matchedQuestionId === undefined) !== (v.matchedItemId === undefined),
     { message: INTAKE_MESSAGES.duplicateTargetRequired },
   )
   .meta({
     id: 'IntakeDuplicateRequest',
-    description: '[PROPOSED] decision duplicate needs exactly one of matchedQuestionId / matchedItemId; not_duplicate takes neither.',
+    description:
+      '[PROPOSED] duplicate and variant need exactly one of matchedQuestionId / matchedItemId; not_duplicate needs duplicateId and no target.',
   })
 export type IntakeDuplicateRequest = z.infer<typeof IntakeDuplicateRequestSchema>
 
@@ -253,7 +288,8 @@ export const INTAKE_BULK_ACTIONS = ['accept', 'reject'] as const
  * whose confidence band reaches the server threshold (`INTAKE_BULK_ACCEPT_MIN_BAND`, default `high`,
  * card open question 2); the threshold is server configuration, not a request field. `reject` needs a
  * reason. An item that fails is skipped and listed (AC-07.4, "No bypass": the same gate as a single
- * accept), never silently dropped.
+ * accept), never silently dropped. An id the caller cannot see (unknown or outside the Guru's own
+ * batches) is skipped as `NOT_FOUND`, the same as an unknown id; it is never a 404 for the whole call.
  */
 export const IntakeBulkRequestSchema = z
   .strictObject({
@@ -343,6 +379,16 @@ export type IntakeStimulusRemoved = z.infer<typeof IntakeStimulusRemovedSchema>
 /* Batch review summary: GET /intake/batches/{id}/review                                       */
 /* ------------------------------------------------------------------------------------------ */
 
+/**
+ * [PROPOSED] A gate issue in the batch summary. `blocksAccept` says whether it stops a single accept
+ * (item-level and stimulus-level rules) or only the later BE-10 submit (batch-level rules: empty batch,
+ * source and copyright, group contiguity). See `INTAKE_ACCEPT_BLOCKING_RULES` in question.ts.
+ */
+export const IntakeBatchIssueSchema = IntakeIssueSchema.extend({
+  blocksAccept: z.boolean(),
+}).meta({ id: 'IntakeBatchIssue', description: '[PROPOSED] IntakeIssue plus blocksAccept.' })
+export type IntakeBatchIssue = z.infer<typeof IntakeBatchIssueSchema>
+
 /** Prototype `GroupInfo` (grouping.ts): a stimulus group and whether its items are contiguous. */
 export const IntakeGroupSchema = z
   .strictObject({
@@ -377,7 +423,7 @@ export const IntakeBatchReviewSchema = z
       low: z.number().int().min(0).meta({ description: 'Low fields not yet confirmed (prototype lowCount).' }),
       states: IntakeItemStateCountsSchema,
     }),
-    issues: z.array(IntakeIssueSchema).meta({
+    issues: z.array(IntakeBatchIssueSchema).meta({
       description: 'Gate issues of the whole batch: every item issue (with itemId) plus the batch-level and stimulus-level ones (no itemId): "Kertas" source and copyright, empty batch, non-contiguous group, missing alt text.',
     }),
     extraction: IntakeExtractionRunSchema.nullable().meta({ description: 'The latest run; null before extraction was requested.' }),

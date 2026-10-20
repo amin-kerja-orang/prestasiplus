@@ -4,28 +4,37 @@ import { ErrorBodySchema } from '../../common/error'
 import { buildOpenApiDocument } from '../../openapi'
 import { INTAKE_COMPONENT_SCHEMAS } from '../paths'
 import {
+  INTAKE_ACCEPT_BLOCKING_RULES,
+  INTAKE_ACCEPT_NON_BLOCKING_RULES,
   INTAKE_AI_SETTABLE_STATES,
+  INTAKE_BLANK_ITEM_DEFAULTS,
   INTAKE_BULK_MAX_IDS,
   INTAKE_CONFIDENCE_BAND_LABELS,
   INTAKE_CONFIDENCE_BANDS,
   INTAKE_DUPLICATE_KIND_LABELS,
   INTAKE_DUPLICATE_NEAR_THRESHOLD,
+  INTAKE_DUPLICATE_STATUSES,
   INTAKE_GATE_MESSAGES,
+  INTAKE_HUMAN_EDITED_LABEL,
   INTAKE_ITEM_STATES,
   INTAKE_ITEM_STATE_LABELS,
+  INTAKE_MAX_BODY_BYTES,
+  INTAKE_MAX_MAPPING_KEYS,
   INTAKE_MESSAGES,
+  INTAKE_NEEDS_MANUAL_LABEL,
   INTAKE_OPEN_STATES,
-  INTAKE_PAPER_TYPES,
   IntakeAcceptedQuestionSchema,
+  IntakeBatchIssueSchema,
   IntakeBatchReviewSchema,
   IntakeBulkRequestSchema,
   IntakeBulkResultSchema,
-  IntakeDuplicateFlagSchema,
+  IntakeDuplicateEntrySchema,
   IntakeDuplicateRequestSchema,
   IntakeExtractRequestSchema,
   IntakeExtractionRunSchema,
   IntakeGateErrorBodySchema,
   IntakeIssueSchema,
+  IntakeItemEventSchema,
   IntakeItemListQuerySchema,
   IntakeItemListResponseSchema,
   IntakeItemPatchResultSchema,
@@ -44,6 +53,7 @@ import {
   intakeConfidenceBand,
   intakeFieldName,
   intakeItemConfidenceBand,
+  intakeOpenState,
 } from '../schema'
 
 const AT = '2026-10-20T09:30:00+08:00'
@@ -159,7 +169,7 @@ const common = {
   confidenceBand: 'low',
   uploader: actor,
   question: null,
-  duplicate: null,
+  duplicates: [],
   createdAt: AT,
   updatedAt: AT,
 } as const
@@ -254,14 +264,29 @@ describe('question content (prototype types.ts, field for field)', () => {
     expect(ok(IntakeStimulusUpdateRequestSchema, { figureId: '1' })).toBe(false)
   })
 
+  it('a mapping scheme is capped at 50 keys', () => {
+    const map = (n: number) => ({ kind: 'mapping', marks: 1, map: Object.fromEntries(Array.from({ length: n }, (_, i) => [`k${i}`, 'A'])) })
+    expect(INTAKE_MAX_MAPPING_KEYS).toBe(50)
+    expect(ok(IntakeSchemeSchema, map(50))).toBe(true)
+    expect(ok(IntakeSchemeSchema, map(51))).toBe(false)
+  })
+
+  it('a stimulus response keeps the figure crop and svg, and no write schema can carry svg or a figure id', () => {
+    expect(IntakeStimulusSchema.safeParse({ ...stimulus, svg: '<svg></svg>', figureId: null, region: null }).success).toBe(true)
+    for (const [schema, base] of [
+      [IntakeStimulusCreateRequestSchema, { kind: 'diagram', alt: 'x' }],
+      [IntakeStimulusUpdateRequestSchema, { alt: 'x' }],
+    ] as const) {
+      expect(ok(schema, base)).toBe(true)
+      expect(ok(schema, { ...base, svg: '<svg/>' })).toBe(false)
+      expect(ok(schema, { ...base, figureId: '1' })).toBe(false)
+    }
+  })
+
   it('region must lie inside the page', () => {
     expect(ok(IntakeRegionSchema, region)).toBe(true)
     expect(ok(IntakeRegionSchema, { ...region, x: 0.5, w: 0.6 })).toBe(false)
     expect(ok(IntakeRegionSchema, { ...region, page: 0 })).toBe(false)
-  })
-
-  it('copies the declaration option lists of the prototype', () => {
-    expect([...INTAKE_PAPER_TYPES]).toEqual(['Percubaan SPM', 'Soalan Umum', 'Peperiksaan Sebenar', 'Buku Latihan', 'Lain-lain'])
   })
 })
 
@@ -334,6 +359,31 @@ describe('item review states (D54a: a separate set from the question statuses)',
     expect(INTAKE_AI_SETTABLE_STATES).not.toContain('accepted')
   })
 
+  it('the state rule: duplicate if a person linked one, else needs_review on a low field, needsManual or an open entry, else generated', () => {
+    const base = { lowFields: [] as string[], confirmed: [] as string[], needsManual: false, duplicates: [] as { kind: 'exact' | 'near' | 'variant'; status: 'open' | 'linked' | 'dismissed' }[] }
+    expect(intakeOpenState(base)).toBe('generated')
+    expect(intakeOpenState({ ...base, lowFields: ['marks'] })).toBe('needs_review')
+    expect(intakeOpenState({ ...base, lowFields: ['marks'], confirmed: ['marks'] })).toBe('generated')
+    expect(intakeOpenState({ ...base, lowFields: ['marks', 'stem'], confirmed: ['marks'] })).toBe('needs_review')
+    expect(intakeOpenState({ ...base, needsManual: true })).toBe('needs_review')
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'exact', status: 'open' }] })).toBe('needs_review')
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'near', status: 'open' }] })).toBe('needs_review')
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'near', status: 'dismissed' }] })).toBe('generated')
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'exact', status: 'linked' }] })).toBe('duplicate')
+    // linked wins over every other reason
+    expect(intakeOpenState({ ...base, lowFields: ['stem'], needsManual: true, duplicates: [{ kind: 'near', status: 'linked' }, { kind: 'exact', status: 'open' }] })).toBe('duplicate')
+    // a variant is informational and never changes the state
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'variant', status: 'open' }] })).toBe('generated')
+    expect(intakeOpenState({ ...base, duplicates: [{ kind: 'variant', status: 'linked' }] })).toBe('generated')
+    // the rule only ever returns an open state
+    for (const st of ['generated', 'needs_review', 'duplicate']) expect(INTAKE_OPEN_STATES).toContain(st)
+  })
+
+  it('the review labels are the BM copy', () => {
+    expect(INTAKE_HUMAN_EDITED_LABEL).toBe('Disunting oleh manusia')
+    expect(INTAKE_NEEDS_MANUAL_LABEL).toBe('Perlu semak manual')
+  })
+
   it('rejects the mock batch and question statuses as an item state', () => {
     for (const v of ['draf', 'semakan', 'pending_review', 'approved', 'published', 'Dijana', '']) expect(ok(IntakeItemStateSchema, v)).toBe(false)
   })
@@ -360,15 +410,37 @@ describe('confidence and duplicates', () => {
     expect(intakeItemConfidenceBand({})).toBe('high')
   })
 
-  it('duplicate flag needs the matching id of its scope', () => {
-    const base = { kind: 'exact', similarity: 1, dismissed: false }
-    expect(ok(IntakeDuplicateFlagSchema, { ...base, scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(true)
-    expect(ok(IntakeDuplicateFlagSchema, { ...base, scope: 'batch', matchedQuestionId: null, matchedItemId: '9001' })).toBe(true)
-    expect(ok(IntakeDuplicateFlagSchema, { ...base, scope: 'bank', matchedQuestionId: null, matchedItemId: '9001' })).toBe(false)
-    expect(ok(IntakeDuplicateFlagSchema, { ...base, scope: 'batch', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
-    expect(ok(IntakeDuplicateFlagSchema, { ...base, kind: 'copy', scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
+  it('a duplicate entry needs the matching id of its scope and hides an unreadable bank question', () => {
+    const base = { id: '5', kind: 'exact', similarity: 1, restricted: false, status: 'open' }
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(true)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, scope: 'batch', matchedQuestionId: null, matchedItemId: '9001' })).toBe(true)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, scope: 'bank', matchedQuestionId: null, matchedItemId: '9001' })).toBe(false)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, scope: 'batch', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, kind: 'copy', scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, status: 'dismissed', scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(true)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, status: 'merged', scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
+    expect(ok(IntakeDuplicateEntrySchema, { ...base, dismissed: false, scope: 'bank', matchedQuestionId: '10', matchedItemId: null })).toBe(false)
+    expect([...INTAKE_DUPLICATE_STATUSES]).toEqual(['open', 'linked', 'dismissed'])
     expect(INTAKE_DUPLICATE_KIND_LABELS).toEqual({ exact: 'Pendua tepat', near: 'Mungkin pendua', variant: 'Varian' })
     expect(INTAKE_DUPLICATE_NEAR_THRESHOLD).toBe(0.85)
+  })
+
+  it('restricted: a bank question the caller may not read has no id, and only then', () => {
+    const hidden = { id: '5', kind: 'near', scope: 'bank', similarity: 0.9, matchedItemId: null, status: 'open' }
+    expect(ok(IntakeDuplicateEntrySchema, { ...hidden, matchedQuestionId: null, restricted: true })).toBe(true)
+    expect(ok(IntakeDuplicateEntrySchema, { ...hidden, matchedQuestionId: '10', restricted: true })).toBe(false)
+    expect(ok(IntakeDuplicateEntrySchema, { ...hidden, matchedQuestionId: null, restricted: false })).toBe(false)
+    // a batch entry is never restricted
+    expect(ok(IntakeDuplicateEntrySchema, { id: '6', kind: 'near', scope: 'batch', similarity: null, matchedQuestionId: null, matchedItemId: '9001', restricted: true, status: 'open' })).toBe(false)
+  })
+
+  it('an item carries a list of entries (at most 50) and no single duplicate flag', () => {
+    const entry = { id: '5', kind: 'exact', scope: 'batch', similarity: 1, matchedQuestionId: null, matchedItemId: '9001', restricted: false, status: 'open' }
+    expect(ok(IntakeItemSchema, { ...item, duplicates: [entry, { ...entry, id: '6', kind: 'variant' }] })).toBe(true)
+    expect(ok(IntakeItemSchema, { ...item, duplicates: Array.from({ length: 51 }, (_, i) => ({ ...entry, id: String(i) })) })).toBe(false)
+    expect(ok(IntakeItemSchema, { ...item, duplicate: null })).toBe(false)
+    expect(Object.keys(IntakeItemSchema.shape)).not.toContain('duplicate')
+    expect(Object.keys(IntakeItemRowSchema.shape)).toContain('duplicates')
   })
 })
 
@@ -392,6 +464,16 @@ describe('item and queue', () => {
   it('an accepted item stores the question id and version', () => {
     const accepted = { ...item, state: 'accepted', question: { id: '300', version: 1, status: 'draft' }, decidedBy: actor, decidedAt: AT, issues: [] }
     expect(IntakeItemSchema.parse(accepted).question).toEqual({ id: '300', version: 1, status: 'draft' })
+  })
+
+  it('an event keeps the previous value typed by its field (not truncated text)', () => {
+    const ev = { id: '3', at: AT, action: 'edited', actor, actorRole: 'teacher', from: 'needs_review', to: 'needs_review', field: 'parts', previous: structured.parts, reason: null }
+    expect(ok(IntakeItemEventSchema, ev)).toBe(true)
+    for (const previous of ['Teks lama', null, 3, { kind: 'option', marks: 1, correct: 'A', reason: '' }, [{ id: 'A', text: '5' }]])
+      expect(ok(IntakeItemEventSchema, { ...ev, previous })).toBe(true)
+    expect(IntakeItemEventSchema.parse({ ...ev, previous: structured.parts }).previous).toEqual(structured.parts)
+    expect(ok(IntakeItemEventSchema, { ...ev, action: 'linked_variant' })).toBe(true)
+    expect(ok(IntakeItemEventSchema, { ...ev, action: 'merged' })).toBe(false)
   })
 
   it('timestamps are +08:00 and ids are strings (no epoch ms, no numeric ids)', () => {
@@ -450,14 +532,26 @@ describe('accept, reject, duplicate, extract', () => {
     expect(ok(IntakeRejectRequestSchema, { reason: 'x'.repeat(501) })).toBe(false)
   })
 
-  it('duplicate decision: exactly one target, none for not_duplicate', () => {
+  it('duplicate decision: one target for duplicate and variant, duplicateId alone for not_duplicate', () => {
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'duplicate', matchedQuestionId: '10' })).toBe(true)
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'duplicate', matchedItemId: '9001', note: 'Sama dengan soalan 2' })).toBe(true)
-    expect(ok(IntakeDuplicateRequestSchema, { decision: 'not_duplicate' })).toBe(true)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'variant', matchedQuestionId: '10' })).toBe(true)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'variant', matchedItemId: '9001' })).toBe(true)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'not_duplicate', duplicateId: '5' })).toBe(true)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'not_duplicate' })).toBe(false)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'not_duplicate', duplicateId: '5', matchedQuestionId: '10' })).toBe(false)
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'duplicate' })).toBe(false)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'variant' })).toBe(false)
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'duplicate', matchedQuestionId: '10', matchedItemId: '9001' })).toBe(false)
+    expect(ok(IntakeDuplicateRequestSchema, { decision: 'duplicate', matchedQuestionId: '10', duplicateId: '5' })).toBe(false)
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'not_duplicate', matchedQuestionId: '10' })).toBe(false)
     expect(ok(IntakeDuplicateRequestSchema, { decision: 'merge', matchedQuestionId: '10' })).toBe(false)
+    expect(IntakeDuplicateRequestSchema.safeParse({ decision: 'duplicate' }).error?.issues[0]?.message).toBe(INTAKE_MESSAGES.duplicateTargetRequired)
+  })
+
+  it('the not-found copy for a duplicate target is one sentence, so ids cannot be probed', () => {
+    expect(INTAKE_MESSAGES.duplicateTargetNotFound).toBe('Padanan pendua tidak ditemui')
+    expect(INTAKE_MESSAGES.itemIsDuplicate).toContain('pendua')
   })
 
   it('an extraction run shows a visible reason while queued for the budget, and after a failure', () => {
@@ -474,6 +568,21 @@ describe('accept, reject, duplicate, extract', () => {
     expect(IntakeGateErrorBodySchema.safeParse(body).success).toBe(true)
     expect(ErrorBodySchema.safeParse(body).success).toBe(true)
     expect(ok(IntakeGateErrorBodySchema, { error: { ...body.error, details: { issues: [] } } })).toBe(false)
+  })
+
+  it('which gate rules block a single accept', () => {
+    expect([...INTAKE_ACCEPT_BLOCKING_RULES]).toEqual(['question', 'unitNotInTaxonomy', 'stimulusMissing', 'stimulusAltMissing', 'figureNotResolved'])
+    expect([...INTAKE_ACCEPT_NON_BLOCKING_RULES]).toEqual(['noQuestions', 'sourceRequired', 'copyrightRequired', 'groupNotContiguous'])
+    for (const r of [...INTAKE_ACCEPT_BLOCKING_RULES].filter((x) => x !== 'question')) expect(INTAKE_GATE_MESSAGES).toHaveProperty(r)
+    for (const r of INTAKE_ACCEPT_NON_BLOCKING_RULES) expect(INTAKE_GATE_MESSAGES).toHaveProperty(r)
+    expect(INTAKE_GATE_MESSAGES.unitNotInTaxonomy).toBe('Unit DSKP tiada dalam senarai kurikulum.')
+    expect(INTAKE_GATE_MESSAGES.figureNotResolved).toBe('Rajah belum mempunyai imej tersimpan.')
+  })
+
+  it('a blank item starts from the prototype defaults and the body cap is 1 MiB', () => {
+    expect(INTAKE_BLANK_ITEM_DEFAULTS).toMatchObject({ type: 'short', stem: '', marks: 1, mode: 'short_text', page: 1, parts: [], options: [] })
+    expect(INTAKE_BLANK_ITEM_DEFAULTS.tag).toEqual({ level: 'T4+T5', unit: null, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' })
+    expect(INTAKE_MAX_BODY_BYTES).toBe(1_048_576)
   })
 })
 
@@ -513,6 +622,15 @@ describe('bulk', () => {
   })
 })
 
+describe('batch issues say whether they block a single accept', () => {
+  it('IntakeBatchIssue is IntakeIssue plus blocksAccept', () => {
+    expect(ok(IntakeBatchIssueSchema, { itemId: '9002', where: 'Soalan 3', message: 'x', blocksAccept: true })).toBe(true)
+    expect(ok(IntakeBatchIssueSchema, { where: 'Kertas', message: INTAKE_GATE_MESSAGES.sourceRequired, blocksAccept: false })).toBe(true)
+    expect(ok(IntakeBatchIssueSchema, { where: 'Kertas', message: 'x' })).toBe(false)
+    expect(ok(IntakeIssueSchema, { where: 'Kertas', message: 'x', blocksAccept: true })).toBe(false)
+  })
+})
+
 describe('batch review summary', () => {
   it('carries what the prototype review page showed', () => {
     const summary = {
@@ -525,20 +643,28 @@ describe('batch review summary', () => {
       groups: [{ stimulusId: '31', itemIds: ['9002'], from: '3', to: '4', contiguous: true }],
       counts: { items: 5, marks: 12, groups: 1, low: 6, states: { generated: 0, needs_review: 5, accepted: 0, rejected: 0, duplicate: 0 } },
       issues: [
-        { itemId: '9002', where: 'Soalan 3', message: INTAKE_GATE_MESSAGES.spMissing },
-        { where: 'Kertas', message: INTAKE_GATE_MESSAGES.copyrightRequired },
+        { itemId: '9002', where: 'Soalan 3', message: INTAKE_GATE_MESSAGES.spMissing, blocksAccept: true },
+        { where: 'Kertas', message: INTAKE_GATE_MESSAGES.copyrightRequired, blocksAccept: false },
       ],
       extraction: null,
     }
     expect(IntakeBatchReviewSchema.safeParse(summary).success).toBe(true)
     expect(ok(IntakeBatchReviewSchema, { ...summary, status: 'semakan' })).toBe(false)
+    expect(ok(IntakeBatchReviewSchema, { ...summary, issues: [{ where: 'Kertas', message: 'x' }] })).toBe(false)
   })
 })
 
 describe('OpenAPI registration', () => {
+  type Op = {
+    description?: string
+    parameters?: { name: string; in: string; required?: boolean }[]
+    requestBody?: unknown
+    responses: Record<string, { headers?: Record<string, unknown>; content?: Record<string, { schema?: unknown }> }>
+    tags?: string[]
+  }
   const doc = buildOpenApiDocument() as unknown as {
-    paths: Record<string, Record<string, { description?: string; parameters?: { name: string }[]; responses: Record<string, unknown>; tags?: string[] }>>
-    components: { schemas: Record<string, unknown> }
+    paths: Record<string, Record<string, Op>>
+    components: { schemas: Record<string, { properties?: Record<string, unknown>; additionalProperties?: unknown }> }
   }
 
   const ROUTES: readonly [string, string][] = [
@@ -556,8 +682,13 @@ describe('OpenAPI registration', () => {
     ['post', '/intake/items/{id}/duplicate'],
     ['post', '/intake/items/bulk'],
   ]
+  const op = (m: string, p: string) => doc.paths[p]![m]!
+  const writes = ROUTES.filter(([m]) => m !== 'get')
+  const withId = ROUTES.filter(([, p]) => p.includes('{id}'))
+  const withBody = ROUTES.filter(([m, p]) => op(m, p).requestBody !== undefined)
 
   it('registers the 13 routes and no other /intake route', () => {
+    expect(ROUTES).toHaveLength(13)
     for (const [m, p] of ROUTES) expect(doc.paths[p]?.[m], `${m} ${p}`).toBeDefined()
     const registered = Object.entries(doc.paths)
       .filter(([p]) => p.startsWith('/intake'))
@@ -566,48 +697,95 @@ describe('OpenAPI registration', () => {
     expect(registered).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort())
   })
 
-  it('registers every component and each is prefixed Intake', () => {
+  it('registers every component, each prefixed Intake, and exports the new ones', () => {
     for (const name of Object.keys(INTAKE_COMPONENT_SCHEMAS)) {
       expect(name.startsWith('Intake')).toBe(true)
       expect(doc.components.schemas, name).toHaveProperty(name)
     }
+    for (const name of ['IntakeDuplicateEntry', 'IntakeDuplicateStatus', 'IntakeBatchIssue']) expect(doc.components.schemas, name).toHaveProperty(name)
+    expect(doc.components.schemas).not.toHaveProperty('IntakeDuplicateFlag')
   })
 
-  it('every route documents 401 and 403, names its roles, and every write documents CSRF, 429 and the Retry-After header', () => {
-    for (const [m, p] of ROUTES) {
-      const op = doc.paths[p]![m]!
-      expect(op.tags).toEqual(['intake'])
-      expect(Object.keys(op.responses), `${m} ${p}`).toEqual(expect.arrayContaining(['401', '403']))
-      expect(op.description ?? '', `${m} ${p}`).toContain('Admin Pusat')
-      if (m !== 'get') {
-        expect(Object.keys(op.responses)).toContain('429')
-        expect((op.parameters ?? []).map((x) => x.name)).toContain('X-CSRF-Token')
-        const r429 = op.responses['429'] as { headers: Record<string, unknown> }
-        expect(r429.headers).toHaveProperty('Retry-After')
-      }
-    }
+  it.each(ROUTES)('%s %s is tagged intake, names its roles and documents 401 and 403', (m, p) => {
+    const o = op(m, p)
+    expect(o.tags).toEqual(['intake'])
+    expect(Object.keys(o.responses)).toEqual(expect.arrayContaining(['401', '403']))
+    expect(o.description ?? '').toContain('Admin Pusat')
+    expect(o.description ?? '').toContain('Guru')
+  })
+
+  it.each(withId)('%s %s documents 404 for an id that is unknown or outside the scope', (m, p) => {
+    expect(Object.keys(op(m, p).responses)).toContain('404')
+  })
+
+  it.each(writes)('%s %s requires the X-CSRF-Token header and documents 429 with Retry-After', (m, p) => {
+    const o = op(m, p)
+    const csrf = (o.parameters ?? []).find((x) => x.name === 'X-CSRF-Token')
+    expect(csrf, 'X-CSRF-Token').toBeDefined()
+    expect(csrf?.in).toBe('header')
+    expect(csrf?.required).toBe(true)
+    expect(Object.keys(o.responses)).toContain('429')
+    expect(o.responses['429']!.headers).toHaveProperty('Retry-After')
+  })
+
+  it.each(withBody)('%s %s has a request body and documents 422', (m, p) => {
+    expect(Object.keys(op(m, p).responses)).toContain('422')
+  })
+
+  it('no read route asks for a CSRF token', () => {
+    for (const [m, p] of ROUTES.filter(([x]) => x === 'get')) expect((op(m, p).parameters ?? []).map((x) => x.name)).not.toContain('X-CSRF-Token')
+  })
+
+  it('the three large writes document 413 and the cap', () => {
+    const large = [
+      ['patch', '/intake/items/{id}'],
+      ['post', '/intake/batches/{id}/stimuli'],
+      ['patch', '/intake/stimuli/{id}'],
+    ] as const
+    for (const [m, p] of large) expect(Object.keys(op(m, p).responses), `${m} ${p}`).toContain('413')
+    expect(JSON.stringify(op('patch', '/intake/items/{id}').responses['413'])).toContain('Data terlalu besar.')
+    // and only those three
+    const all = ROUTES.filter(([m, p]) => '413' in op(m, p).responses).map(([m, p]) => `${m} ${p}`)
+    expect(all.sort()).toEqual(large.map(([m, p]) => `${m} ${p}`).sort())
   })
 
   it('declares the not-found, conflict and gate responses the card needs', () => {
-    expect(doc.paths['/intake/batches/{id}/extract']!.post!.responses).toHaveProperty('409')
-    expect(doc.paths['/intake/batches/{id}/extract']!.post!.responses).toHaveProperty('202')
-    expect(doc.paths['/intake/items/{id}/accept']!.post!.responses).toHaveProperty('422')
-    expect(doc.paths['/intake/items/{id}/accept']!.post!.responses).toHaveProperty('409')
-    expect(doc.paths['/intake/items/{id}']!.get!.responses).toHaveProperty('404')
-    expect(doc.paths['/intake/items/{id}']!.patch!.responses).toHaveProperty('409')
+    expect(op('post', '/intake/batches/{id}/extract').responses).toHaveProperty('409')
+    expect(op('post', '/intake/batches/{id}/extract').responses).toHaveProperty('202')
+    expect(op('post', '/intake/items/{id}/accept').responses).toHaveProperty('422')
+    expect(op('post', '/intake/items/{id}/accept').responses).toHaveProperty('409')
+    expect(op('get', '/intake/items/{id}').responses).toHaveProperty('404')
+    expect(op('patch', '/intake/items/{id}').responses).toHaveProperty('409')
+    expect(op('patch', '/intake/stimuli/{id}').responses).toHaveProperty('409')
+    expect(op('delete', '/intake/stimuli/{id}').responses).toHaveProperty('409')
   })
 
-  it('uses no mock question status, no credential or storage field and no svg on a write', () => {
+  it('the accept 422 is either the gate body or the ordinary error body', () => {
+    const schema = JSON.stringify(op('post', '/intake/items/{id}/accept').responses['422']!.content!['application/json']!.schema)
+    expect(schema).toContain('anyOf')
+    expect(schema).toContain('IntakeGateErrorBody')
+    expect(schema).toContain('ErrorBody')
+  })
+
+  it('uses no mock question status and no credential or storage field', () => {
     const intake = JSON.stringify(Object.fromEntries(Object.entries(doc.components.schemas).filter(([k]) => k.startsWith('Intake'))))
     expect(intake).not.toContain('pending_review')
     expect(intake).not.toMatch(/"(apiKey|secret|password|baseUrl|storagePath|storageKey|dataUrl)"/i)
-    const writes = ['IntakeStimulusCreateRequest', 'IntakeStimulusUpdateRequest', 'IntakeItemPatch'] as const
-    for (const name of writes) expect(JSON.stringify(doc.components.schemas[name])).not.toContain('"svg"')
+  })
+
+  it('no write schema can carry svg: the property is absent and extra keys are refused, while the response keeps it', () => {
+    for (const name of ['IntakeStimulusCreateRequest', 'IntakeStimulusUpdateRequest', 'IntakeItemPatch']) {
+      const c = doc.components.schemas[name]!
+      expect(c.properties, name).toBeDefined()
+      expect(c.properties, name).not.toHaveProperty('svg')
+      expect(c.additionalProperties, name).toBe(false)
+    }
+    expect(doc.components.schemas.IntakeStimulus!.properties).toHaveProperty('svg')
   })
 
   it('marks what the prototype does not cover as [PROPOSED]', () => {
     const proposed = (name: string) => JSON.stringify(doc.components.schemas[name])
-    for (const name of ['IntakeItemState', 'IntakeDuplicateFlag', 'IntakeExtractionRun', 'IntakeBulkRequest', 'IntakeBatchReview', 'IntakeItemEvent', 'IntakeProvenance'])
+    for (const name of ['IntakeItemState', 'IntakeDuplicateEntry', 'IntakeDuplicateStatus', 'IntakeBatchIssue', 'IntakeExtractionRun', 'IntakeBulkRequest', 'IntakeBatchReview', 'IntakeItemEvent', 'IntakeProvenance'])
       expect(proposed(name), name).toContain('[PROPOSED]')
   })
 })

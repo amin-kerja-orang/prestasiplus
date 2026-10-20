@@ -16,9 +16,14 @@ import { IdSchema } from '../common/ids'
  * prototype does not define is marked `[PROPOSED]` in the description of the schema or field.
  *
  * These shapes are the EDIT payload of an extracted question, not the stored `Question` of BE-09:
- * `accept` converts them (the prototype `intakeToDef`). They are repeated here, not imported, because
- * BE-36 (`AiQuestionDraft`) and BE-39 (`BijakBuilderCurriculumTag`) define overlapping shapes on
- * unmerged branches; the LEAD consolidates after merge (deviation row).
+ * `accept` converts them (the prototype `intakeToDef`).
+ *
+ * Parity with the merged BE-36 `ai/schema.ts` (McqOption, SchemeDef, CurriculumTag, WordRange, Region,
+ * Stimulus, Part) was verified field for field and by boundary values (`__tests__/ai-parity.test.ts`).
+ * They are still declared here, not imported from `../ai`, because importing would rename the emitted
+ * components (`AiMcqOption` instead of `IntakeMcqOption`, ...) and the intake shapes carry intentional
+ * extras (`lead`, `figureId`, nullable `region`, `confirmed` writable). BE-39
+ * (`BijakBuilderCurriculumTag`) is still unmerged. LEAD consolidation is pending (deviation row).
  *
  * Every object is strict (an unknown key is a 422, D58d). The caps (string and array lengths, `tp` 1..6,
  * `unit` 64, word range 0..5000) are the ones of BE-36 (`fa378ec3`, aligned to the same prototype), so an
@@ -36,6 +41,10 @@ export const INTAKE_MAX_OPTION_CHARS = 5_000
 export const INTAKE_MAX_OPTIONS = 10
 export const INTAKE_MAX_PARTS = 50
 export const INTAKE_MAX_POINTS = 50
+/** [PROPOSED] Cap of `scheme.mapping.map` keys (a lettered bank has at most a few dozen). */
+export const INTAKE_MAX_MAPPING_KEYS = 50
+/** [PROPOSED] Total JSON body cap of a large write (item edit, stimulus create and edit): larger is 413. */
+export const INTAKE_MAX_BODY_BYTES = 1_048_576
 
 /** Prototype `PAPER_TYPES` (declaration of the batch; owned by BE-37, listed here for the BM copy). */
 export const INTAKE_PAPER_TYPES = [
@@ -205,7 +214,13 @@ export const IntakeSchemeSchema = z
       correct: z.string().max(16).meta({ description: 'Key of the correct option (McqOption.id); empty while not chosen ("Kunci jawapan belum dipilih.").' }),
       reason: z.string().max(2000),
     }),
-    z.strictObject({ kind: z.literal('mapping'), marks: Marks, map: z.record(z.string().max(64), z.string().max(500)) }),
+    z.strictObject({
+      kind: z.literal('mapping'),
+      marks: Marks,
+      map: z
+        .record(z.string().max(64), z.string().max(500))
+        .refine((m) => Object.keys(m).length <= INTAKE_MAX_MAPPING_KEYS, { message: `At most ${INTAKE_MAX_MAPPING_KEYS} mapping entries.` }),
+    }),
     z.strictObject({
       kind: z.literal('accepted'),
       marks: Marks,
@@ -305,7 +320,7 @@ export type IntakeQuestion = z.infer<typeof IntakeQuestionSchema>
 /**
  * Source region of a question or figure as fractions of the page (0..1), so it survives re-rendering.
  * [PROPOSED] card BE-38 ("item with fields + confidence + region"); the prototype only has `page`.
- * Same shape as BE-36 `AiRegion` (unmerged); the LEAD consolidates after merge.
+ * Same shape as the merged BE-36 `AiRegion` (parity test); the LEAD consolidates.
  */
 export const IntakeRegionSchema = z
   .strictObject({
@@ -409,6 +424,10 @@ export const INTAKE_GATE_MESSAGES = {
   stimulusMissing: 'Rajah / petikan yang dirujuk tidak wujud.',
   groupNotContiguous: 'Soalan dalam satu kumpulan mesti berturutan.',
   stimulusAltMissing: 'Teks alternatif (alt) bagi rajah diperlukan.',
+  /** [PROPOSED] new copy (AC4: tags valid against the taxonomy). */
+  unitNotInTaxonomy: 'Unit DSKP tiada dalam senarai kurikulum.',
+  /** [PROPOSED] new copy (AC4: figure references resolve to a stored crop). */
+  figureNotResolved: 'Rajah belum mempunyai imej tersimpan.',
   /** `Jumlah markah skema (n) tidak sama dengan markah bahagian (m).` */
   schemeTotalPart: (scheme: number, marks: number) =>
     `Jumlah markah skema (${scheme}) tidak sama dengan markah bahagian (${marks}).`,
@@ -418,3 +437,41 @@ export const INTAKE_GATE_MESSAGES = {
   /** `Medan keyakinan rendah belum disahkan: <name>.` */
   lowFieldUnconfirmed: (field: string) => `Medan keyakinan rendah belum disahkan: ${intakeFieldName(field)}.`,
 } as const
+
+/**
+ * [PROPOSED] Which gate rules block a SINGLE accept (card AC4; the prototype blocks its whole batch
+ * submit on every rule, but accept is per item and only creates a Draf; BE-10 owns the Semakan gate).
+ *
+ * BLOCK accept (they are the entries of `item.issues`, `blocksAccept: true`):
+ *  - every per-question rule of the prototype `validateBatch` (stem, options, key, marks, parts, scheme
+ *    totals, tag, TP 1..6, `needsManual`, unconfirmed low fields);
+ *  - `unitNotInTaxonomy` (AC4): `tag.unit` is not a unit of the curriculum list (BE-08) for the subject,
+ *    unless `formOrigin` is `T1-T3` with a null unit;
+ *  - for the item's stimulus: `stimulusMissing` (unknown `stimulusId`), `stimulusAltMissing`, and
+ *    `figureNotResolved` (a `diagram` stimulus with neither a stored crop `figureId` nor an `svg`);
+ *    the issue carries the item id of the item being accepted and the stimulus label in `where`.
+ *
+ * Do NOT block accept (listed in `GET /intake/batches/{id}/review` `issues` with `blocksAccept: false`,
+ * enforced later by the BE-10 submit gate): `noQuestions`, `sourceRequired`, `copyrightRequired`
+ * (the declaration is BE-37) and `groupNotContiguous` (the server keeps a group contiguous on every
+ * attach, so it is a defensive check only). An open exact or near duplicate entry does not block accept
+ * either (accept creates a Draf); it blocks the BE-10 submit gate, "Duplicate flag resolved or marked
+ * Bukan pendua".
+ *
+ * Shared stimulus handed to QuestionsService: the first accepted item of a stimulus group creates one
+ * bank stimulus and group from a SNAPSHOT of the intake stimulus (text, caption, alt, the stored crop);
+ * each later accepted item of the same group is attached to that same bank group (one stimulus, many
+ * questions, D6). Items of the group that are not yet accepted keep using the intake stimulus. While any
+ * accepted item uses a stimulus it is read-only here (409 on edit and delete, `stimulusInUse`): from then
+ * on it is edited through the bank (BE-09).
+ */
+export const INTAKE_ACCEPT_BLOCKING_RULES = [
+  'question',
+  'unitNotInTaxonomy',
+  'stimulusMissing',
+  'stimulusAltMissing',
+  'figureNotResolved',
+] as const
+
+/** Rules listed but not blocking an accept. */
+export const INTAKE_ACCEPT_NON_BLOCKING_RULES = ['noQuestions', 'sourceRequired', 'copyrightRequired', 'groupNotContiguous'] as const

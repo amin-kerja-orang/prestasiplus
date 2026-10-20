@@ -59175,7 +59175,7 @@
           "rejected",
           "duplicate"
         ],
-        "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana, needs_review = Perlu semakan, accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua. NOT a question status (D54a)."
+        "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a)."
       },
       "IntakeConfidenceBand": {
         "type": "string",
@@ -59202,7 +59202,7 @@
           "near",
           "variant"
         ],
-        "description": "[PROPOSED] exact = Pendua tepat, near = Mungkin pendua, variant = Varian (allowed)."
+        "description": "[PROPOSED] exact = Pendua tepat, near = Mungkin pendua, variant = Varian (informational)."
       },
       "IntakeDuplicateScope": {
         "type": "string",
@@ -59210,11 +59210,27 @@
           "bank",
           "batch"
         ],
-        "description": "[PROPOSED] bank = a question already in the bank (Draf, Semakan, Lulus, Terbit); batch = another item of the same upload (AC-06.1)."
+        "description": "[PROPOSED] bank = a question already in the bank (Draf, Semakan, Lulus, Terbit); batch = another item of the SAME batch (AC-06.1)."
       },
-      "IntakeDuplicateFlag": {
+      "IntakeDuplicateStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "linked",
+          "dismissed"
+        ],
+        "description": "[PROPOSED] open = found by the check, linked = a person linked it, dismissed = \"Bukan pendua\" for this pair only (AC-06.5)."
+      },
+      "IntakeDuplicateEntry": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Entry id; `not_duplicate` names the entry it dismisses.",
+            "example": "1042"
+          },
           "kind": {
             "$ref": "#/components/schemas/IntakeDuplicateKind"
           },
@@ -59222,9 +59238,13 @@
             "$ref": "#/components/schemas/IntakeDuplicateScope"
           },
           "similarity": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "Null when a person linked it without a check result."
           },
           "matchedQuestionId": {
             "type": [
@@ -59233,7 +59253,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "Set when scope is bank.",
+            "description": "Scope bank, and only when the caller may read the question.",
             "example": "1042"
           },
           "matchedItemId": {
@@ -59243,24 +59263,29 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "Set when scope is batch.",
+            "description": "Scope batch: an item of the same batch.",
             "example": "1042"
           },
-          "dismissed": {
+          "restricted": {
             "type": "boolean",
-            "description": "A reviewer chose \"Bukan pendua\": the flag is suppressed for this pair only (AC-06.5)."
+            "description": "True when the matched bank question exists but the caller may not read it (id withheld)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntakeDuplicateStatus"
           }
         },
         "required": [
+          "id",
           "kind",
           "scope",
           "similarity",
           "matchedQuestionId",
           "matchedItemId",
-          "dismissed"
+          "restricted",
+          "status"
         ],
         "additionalProperties": false,
-        "description": "[PROPOSED] Result of the duplicate check, with the matching id (card AC5)."
+        "description": "[PROPOSED] One duplicate finding or decision, with the matching id (card AC5)."
       },
       "IntakeActorRef": {
         "type": "object",
@@ -59411,7 +59436,8 @@
           "accepted",
           "rejected",
           "marked_duplicate",
-          "cleared_duplicate"
+          "cleared_duplicate",
+          "linked_variant"
         ],
         "description": "[PROPOSED] What happened to an item."
       },
@@ -59485,12 +59511,7 @@
             "description": "Edited or confirmed field, e.g. stem, tag.unit."
           },
           "previous": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 20000,
-            "description": "Previous value of `field` as text (the AI text on the first human edit)."
+            "description": "Previous JSON value of `field`, typed by the field (string for stem, array for options and parts, object for scheme and tag; null when there was none). The AI value on the first human edit (AC-08.2). Not truncated, so edits of parts, scheme and options fit."
           },
           "reason": {
             "type": [
@@ -59509,7 +59530,6 @@
           "from",
           "to",
           "field",
-          "previous",
           "reason"
         ],
         "additionalProperties": false,
@@ -59627,18 +59647,13 @@
             "additionalProperties": false,
             "description": "Set once the item is accepted."
           },
-          "duplicate": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/IntakeDuplicateFlag"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
+          "duplicates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeDuplicateEntry"
+            },
+            "maxItems": 50,
+            "description": "Findings and decisions, oldest first. `variant` entries do not affect `state`."
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
@@ -59664,7 +59679,7 @@
           "confidenceBand",
           "uploader",
           "question",
-          "duplicate",
+          "duplicates",
           "createdAt",
           "updatedAt"
         ],
@@ -60053,18 +60068,13 @@
             "additionalProperties": false,
             "description": "Set once the item is accepted."
           },
-          "duplicate": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/IntakeDuplicateFlag"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
+          "duplicates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeDuplicateEntry"
+            },
+            "maxItems": 50,
+            "description": "Findings and decisions, oldest first. `variant` entries do not affect `state`."
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
@@ -60338,7 +60348,7 @@
           "confidenceBand",
           "uploader",
           "question",
-          "duplicate",
+          "duplicates",
           "createdAt",
           "updatedAt",
           "fieldConfidence",
@@ -60399,7 +60409,7 @@
               "variant",
               "none"
             ],
-            "description": "any = an open (not dismissed) flag of any kind; none = no open flag."
+            "description": "An entry with status `open` of that kind. any = an open exact or near entry (variants excluded); none = no open entry of any kind."
           }
         },
         "description": "[PROPOSED] Filters of GET /intake/items. Order: newest batch first, then paper order."
@@ -60794,6 +60804,7 @@
             "type": "string",
             "enum": [
               "duplicate",
+              "variant",
               "not_duplicate"
             ]
           },
@@ -60802,6 +60813,13 @@
           },
           "matchedItemId": {
             "$ref": "#/components/schemas/Id"
+          },
+          "duplicateId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The IntakeDuplicateEntry to dismiss (not_duplicate only).",
+            "example": "1042"
           },
           "note": {
             "type": "string",
@@ -60812,7 +60830,7 @@
           "decision"
         ],
         "additionalProperties": false,
-        "description": "[PROPOSED] decision duplicate needs exactly one of matchedQuestionId / matchedItemId; not_duplicate takes neither."
+        "description": "[PROPOSED] duplicate and variant need exactly one of matchedQuestionId / matchedItemId; not_duplicate needs duplicateId and no target."
       },
       "IntakeGateErrorBody": {
         "type": "object",
@@ -61054,18 +61072,13 @@
                 "additionalProperties": false,
                 "description": "Set once the item is accepted."
               },
-              "duplicate": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/IntakeDuplicateFlag"
-                  },
-                  {
-                    "type": [
-                      "object",
-                      "null"
-                    ]
-                  }
-                ]
+              "duplicates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntakeDuplicateEntry"
+                },
+                "maxItems": 50,
+                "description": "Findings and decisions, oldest first. `variant` entries do not affect `state`."
               },
               "createdAt": {
                 "$ref": "#/components/schemas/Timestamp"
@@ -61091,7 +61104,7 @@
               "confidenceBand",
               "uploader",
               "question",
-              "duplicate",
+              "duplicates",
               "createdAt",
               "updatedAt"
             ],
@@ -61340,6 +61353,38 @@
         "additionalProperties": false,
         "description": "Prototype GroupInfo with questionIds renamed itemIds."
       },
+      "IntakeBatchIssue": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Absent for a batch-level or stimulus-level issue.",
+            "example": "1042"
+          },
+          "where": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "blocksAccept": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "where",
+          "message",
+          "blocksAccept"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] IntakeIssue plus blocksAccept."
+      },
       "IntakeBatchReview": {
         "type": "object",
         "properties": {
@@ -61428,7 +61473,7 @@
           "issues": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IntakeIssue"
+              "$ref": "#/components/schemas/IntakeBatchIssue"
             },
             "description": "Gate issues of the whole batch: every item issue (with itemId) plus the batch-level and stimulus-level ones (no itemId): \"Kertas\" source and copyright, empty batch, non-contiguous group, missing alt text."
           },
@@ -102186,7 +102231,7 @@
           "intake"
         ],
         "summary": "Enqueue extraction of a batch (idempotent)",
-        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Idempotent per batch: a new request enqueues a run (202); a request while a run is queued or running returns that run (202); a request after a succeeded run returns it unchanged (200, no new items, no cost). After a failed run the same request retries and creates no duplicate items. When BE-36 reports the monthly budget exhausted the run stays `queued` with `reason.code` AI_BUDGET_EXHAUSTED and resumes when the cap is raised (202, not an error). A file whose hash was already imported by ANOTHER finished batch is refused before any provider call: 409 CONFLICT \"Kertas sama sudah diimport\" with `details.batchId` of the earlier batch. The request body is empty; the pages come from the stored batch.",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Idempotent per batch: a new request enqueues a run (202); a request while a run is queued or running returns that run (202); a request after a succeeded run returns it unchanged (200, no new items, no cost). After a failed run the same request retries and creates no duplicate items. When BE-36 reports the monthly budget exhausted the run stays `queued` with `reason.code` AI_BUDGET_EXHAUSTED and resumes when the cap is raised (202, not an error). A file whose hash was already imported by ANOTHER finished batch is refused before any provider call: 409 CONFLICT \"Kertas sama sudah diimport\"; `details.batchId` names the earlier batch ONLY when that batch is in the scope of the caller (a Guru is never told about another teacher batch), otherwise `details` is omitted and the message is the same. A batch that cannot be extracted yet (no stored file, a file still being processed, a manual batch) is 409 CONFLICT \"Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.\" [PROPOSED]. The request body is empty; the pages come from the stored batch.",
         "parameters": [
           {
             "schema": {
@@ -102271,7 +102316,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Kertas sama sudah diimport\": the file hash was imported by another batch (details.batchId). No provider call, no cost.",
+            "description": "CONFLICT, two cases told apart by `message`: \"Kertas sama sudah diimport\" (the file hash was imported by another batch; details.batchId only if that batch is in the caller scope; no provider call, no cost) or \"Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.\" (no file, still processing, or a manual batch).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102566,6 +102611,16 @@
               }
             }
           },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Data terlalu besar.\": the JSON body is over 1048576 bytes ([PROPOSED] cap; nginx may answer first). Same behaviour as the users and schools writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
@@ -102604,7 +102659,7 @@
           "intake"
         ],
         "summary": "Edit a stimulus (caption, alt text, passage text)",
-        "description": "[PROPOSED] Prototype patchStimulus. Group membership is edited on the item (PATCH /intake/items/{id} stimulusId). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "description": "[PROPOSED] Prototype patchStimulus. Group membership is edited on the item (PATCH /intake/items/{id} stimulusId). Once an accepted item uses the stimulus it is read-only here: 409 CONFLICT \"Rajah atau petikan ini sudah digunakan oleh soalan yang diterima dan tidak boleh diubah.\" (it was snapshotted into the bank; edit it there). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
         "parameters": [
           {
             "schema": {
@@ -102678,6 +102733,26 @@
               }
             }
           },
+          "409": {
+            "description": "CONFLICT \"Rajah atau petikan ini sudah digunakan oleh soalan yang diterima dan tidak boleh diubah.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Data terlalu besar.\": the JSON body is over 1048576 bytes ([PROPOSED] cap; nginx may answer first). Same behaviour as the users and schools writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
@@ -102714,7 +102789,7 @@
           "intake"
         ],
         "summary": "Remove a stimulus and detach its items",
-        "description": "[PROPOSED] Prototype removeStimulus (dropStimulus): every item that used it loses its stimulusId. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "description": "[PROPOSED] Prototype removeStimulus (dropStimulus): every item that used it loses its stimulusId. Refused with 409 CONFLICT \"Rajah atau petikan ini sudah digunakan oleh soalan yang diterima dan tidak boleh diubah.\" while an accepted item uses it. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
         "parameters": [
           {
             "schema": {
@@ -102770,6 +102845,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Rajah atau petikan tidak ditemui\": unknown stimulus, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Rajah atau petikan ini sudah digunakan oleh soalan yang diterima dan tidak boleh diubah.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -102834,7 +102919,7 @@
               "$ref": "#/components/schemas/IntakeItemState"
             },
             "required": false,
-            "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana, needs_review = Perlu semakan, accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua. NOT a question status (D54a).",
+            "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a).",
             "name": "state",
             "in": "query"
           },
@@ -102889,10 +102974,10 @@
                 "variant",
                 "none"
               ],
-              "description": "any = an open (not dismissed) flag of any kind; none = no open flag."
+              "description": "An entry with status `open` of that kind. any = an open exact or near entry (variants excluded); none = no open entry of any kind."
             },
             "required": false,
-            "description": "any = an open (not dismissed) flag of any kind; none = no open flag.",
+            "description": "An entry with status `open` of that kind. any = an open exact or near entry (variants excluded); none = no open entry of any kind.",
             "name": "duplicate",
             "in": "query"
           }
@@ -103091,6 +103176,16 @@
               }
             }
           },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Data terlalu besar.\": the JSON body is over 1048576 bytes ([PROPOSED] cap; nginx may answer first). Same behaviour as the users and schools writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
             "content": {
@@ -103129,7 +103224,7 @@
           "intake"
         ],
         "summary": "Accept an item: create a Draf question",
-        "description": "Card BE-38 (AC1, AC3, AC4, AC9). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only an authenticated human reviewer can call it; the AI service cannot. Runs the quality gate (every rule of the prototype validateBatch for this item: low fields confirmed, tags valid, marks equal the sum of the part marks, the stimulus resolves); on failure 422 VALIDATION_ERROR with `details.issues`. On success the server creates a question through QuestionsService with status `draft` (wire code, D54a) and provenance, and stores its id and version on the item (`question`). Submit, approve and publish are the BE-10 endpoints.",
+        "description": "Card BE-38 (AC1, AC3, AC4, AC9). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only an authenticated human reviewer can call it; the AI service cannot. Runs the quality gate for this item: every per-question rule of the prototype validateBatch (low fields confirmed, marks equal the sum of the part marks, ...), plus the unit being in the curriculum list and the item's stimulus having alt text and a stored figure (INTAKE_ACCEPT_BLOCKING_RULES). Batch-level rules (source, copyright, empty batch, group order) and an open exact or near duplicate entry do NOT block accept; BE-10 submit enforces them. On failure 422 VALIDATION_ERROR with `details.issues`. An item in state `duplicate` (a person linked it) is refused: 409 \"Item ini ditandakan sebagai pendua. Pilih Bukan pendua dahulu untuk menerimanya.\" [PROPOSED]; a rejected item: 409 \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"; an accepted item: 409 \"Item ini sudah diterima.\". Only the first accepted item of a stimulus group snapshots the stimulus into the bank; later ones join that group. On success the server creates a question through QuestionsService with status `draft` (wire code, D54a) and provenance, and stores its id and version on the item (`question`). Submit, approve and publish are the BE-10 endpoints.",
         "parameters": [
           {
             "schema": {
@@ -103204,7 +103299,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Item ini sudah diterima.\" (or the item was rejected).",
+            "description": "CONFLICT: \"Item ini sudah diterima.\" (already accepted), \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\" (rejected) or \"Item ini ditandakan sebagai pendua. Pilih Bukan pendua dahulu untuk menerimanya.\" (state duplicate).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103214,11 +103309,18 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Soalan belum memenuhi semakan kualiti. Baiki isu yang disenaraikan.\" with details.issues.",
+            "description": "Either the quality gate failed (IntakeGateErrorBody: VALIDATION_ERROR \"Soalan belum memenuhi semakan kualiti. Baiki isu yang disenaraikan.\" with details.issues), or the strict body was invalid (ordinary ErrorBody with fields).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IntakeGateErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/IntakeGateErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -103373,7 +103475,7 @@
           "intake"
         ],
         "summary": "Link an item to the question or item it duplicates, or dismiss the flag",
-        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. `decision: duplicate` links to exactly one of matchedQuestionId (bank) or matchedItemId (same batch) and sets the state `duplicate`; `not_duplicate` (\"Bukan pendua\") dismisses the flag for that pair only.",
+        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
         "parameters": [
           {
             "schema": {
@@ -103458,7 +103560,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "description": "VALIDATION_ERROR: strict body, or fields.matchedQuestionId / fields.matchedItemId \"Padanan pendua tidak ditemui\" (identical for unknown, other batch and not readable).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103495,7 +103597,7 @@
           "intake"
         ],
         "summary": "Bulk accept or reject",
-        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. `accept` is Admin Pusat only (a Guru gets 403) and only for items at or above the server confidence threshold (default band `high`, card open question 2; returned as `threshold`). `reject` needs a reason. Up to 100 ids. The same gate as a single accept applies; an item that fails is skipped and listed with its reason, never dropped, and the response is 200 with per-id outcomes.",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. `accept` is Admin Pusat only (a Guru gets 403) and only for items at or above the server confidence threshold (default band `high`, card open question 2; returned as `threshold`). `reject` needs a reason. Up to 100 ids. The same gate as a single accept applies; an item that fails is skipped and listed with its reason, never dropped, and the response is 200 with per-id outcomes. An id the caller cannot see (unknown, or outside a Guru's own batches) is skipped as NOT_FOUND, the two are not told apart.",
         "parameters": [
           {
             "schema": {

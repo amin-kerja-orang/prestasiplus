@@ -35,7 +35,7 @@ export const INTAKE_ITEM_STATES = ['generated', 'needs_review', 'accepted', 'rej
 export const IntakeItemStateSchema = z.enum(INTAKE_ITEM_STATES).meta({
   id: 'IntakeItemState',
   description:
-    '[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana, needs_review = Perlu semakan, accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua. NOT a question status (D54a).',
+    '[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a).',
 })
 export type IntakeItemState = z.infer<typeof IntakeItemStateSchema>
 
@@ -48,15 +48,45 @@ export const INTAKE_ITEM_STATE_LABELS = {
 } as const satisfies Record<IntakeItemState, string>
 
 /**
- * The only states the AI service and the extraction worker may write (card AC2, AC-05.6): it can never
- * accept, reject, mark a duplicate by decision or confirm a low field. Only an authenticated human
- * reviewer moves an item further. (An automatic duplicate flag from the check sets `duplicate`; that
- * is the check, not the AI adapter.)
+ * [PROPOSED] The state machine, exactly (the prototype has none; it only has the batch states `draf`
+ * and `semakan`):
+ *  - The extraction worker and the automatic duplicate check write ONLY `generated` or `needs_review`
+ *    (card AC2, AC-05.6). The automatic check adds `duplicates[]` entries with status `open`; it never
+ *    sets `duplicate`, `accepted` or `rejected` and never confirms a low field. Only a human decision
+ *    sets `duplicate`.
+ *  - An open item (not accepted, not rejected) is `duplicate` when a person linked at least one exact or
+ *    near entry (`status: linked`); otherwise `needs_review` when ANY of: an unconfirmed low field
+ *    (`lowFields` minus `confirmed`), `needsManual`, or an `open` exact or near entry; otherwise
+ *    `generated`. The server recomputes it after every edit and decision, so confirming the last low
+ *    field moves `needs_review` back to `generated`. `intakeOpenState` is that rule as a function.
+ *  - `variant` entries are informational and never change the state.
+ *  - `accepted` and `rejected` are final and are set only by a human call (accept, reject, bulk).
  */
 export const INTAKE_AI_SETTABLE_STATES = ['generated', 'needs_review'] as const satisfies readonly IntakeItemState[]
 
-/** States from which a person can still edit, accept, reject or mark the item. `accepted` and `rejected` are final here. */
+/** States from which a person can still edit, reject or decide a duplicate. `accepted` and `rejected` are final. A `duplicate` item cannot be accepted (409). */
 export const INTAKE_OPEN_STATES = ['generated', 'needs_review', 'duplicate'] as const satisfies readonly IntakeItemState[]
+
+/** The inputs of the state rule (a subset of an item). */
+export interface IntakeStateInput {
+  lowFields: readonly string[]
+  confirmed: readonly string[]
+  needsManual?: boolean | undefined
+  duplicates: readonly { kind: 'exact' | 'near' | 'variant'; status: 'open' | 'linked' | 'dismissed' }[]
+}
+
+/** State of an OPEN item by the rule above. */
+export function intakeOpenState(input: IntakeStateInput): 'generated' | 'needs_review' | 'duplicate' {
+  const counts = (d: { kind: string }) => d.kind === 'exact' || d.kind === 'near'
+  if (input.duplicates.some((d) => counts(d) && d.status === 'linked')) return 'duplicate'
+  const unconfirmed = input.lowFields.some((f) => !input.confirmed.includes(f))
+  if (unconfirmed || input.needsManual === true || input.duplicates.some((d) => counts(d) && d.status === 'open')) return 'needs_review'
+  return 'generated'
+}
+
+/** BM labels the prototype shows next to a field or question (AC-08.2, AC-04.5). */
+export const INTAKE_HUMAN_EDITED_LABEL = 'Disunting oleh manusia'
+export const INTAKE_NEEDS_MANUAL_LABEL = 'Perlu semak manual'
 
 /* ------------------------------------------------------------------------------------------ */
 /* Confidence                                                                                  */
@@ -111,13 +141,14 @@ export const IntakeFieldConfidenceSchema = z
 
 /**
  * [PROPOSED] Card BE-38 AC5 and v2-question-bank US-06 / exam schema D11: exact = "Pendua tepat"
- * (blocked until rejected or linked), near = "Mungkin pendua" (similarity >= 0.85, reviewer decides),
- * variant = same structure with different numbers or figure (allowed, not a duplicate; informational).
+ * (open flag: the BE-10 submit gate wants it resolved), near = "Mungkin pendua" (similarity >= 0.85,
+ * reviewer decides), variant = same structure with different numbers or figure (allowed, not a
+ * duplicate; informational, never changes the item state).
  */
 export const INTAKE_DUPLICATE_KINDS = ['exact', 'near', 'variant'] as const
 export const IntakeDuplicateKindSchema = z.enum(INTAKE_DUPLICATE_KINDS).meta({
   id: 'IntakeDuplicateKind',
-  description: '[PROPOSED] exact = Pendua tepat, near = Mungkin pendua, variant = Varian (allowed).',
+  description: '[PROPOSED] exact = Pendua tepat, near = Mungkin pendua, variant = Varian (informational).',
 })
 export type IntakeDuplicateKind = z.infer<typeof IntakeDuplicateKindSchema>
 
@@ -132,23 +163,44 @@ export const INTAKE_DUPLICATE_NEAR_THRESHOLD = 0.85
 
 export const IntakeDuplicateScopeSchema = z.enum(['bank', 'batch']).meta({
   id: 'IntakeDuplicateScope',
-  description: '[PROPOSED] bank = a question already in the bank (Draf, Semakan, Lulus, Terbit); batch = another item of the same upload (AC-06.1).',
+  description: '[PROPOSED] bank = a question already in the bank (Draf, Semakan, Lulus, Terbit); batch = another item of the SAME batch (AC-06.1).',
 })
 
-export const IntakeDuplicateFlagSchema = z
+/** open = found by the check, no decision yet; linked = a person linked it; dismissed = "Bukan pendua" (AC-06.5). */
+export const INTAKE_DUPLICATE_STATUSES = ['open', 'linked', 'dismissed'] as const
+export const IntakeDuplicateStatusSchema = z.enum(INTAKE_DUPLICATE_STATUSES).meta({
+  id: 'IntakeDuplicateStatus',
+  description: '[PROPOSED] open = found by the check, linked = a person linked it, dismissed = "Bukan pendua" for this pair only (AC-06.5).',
+})
+export type IntakeDuplicateStatus = z.infer<typeof IntakeDuplicateStatusSchema>
+
+/**
+ * One duplicate finding or decision of an item (`duplicate_links`). An item has a list of them.
+ * Visibility (IDOR): `batch` entries point at an item of the same batch, always visible to the owner.
+ * A `bank` entry carries `matchedQuestionId` only when the caller may read that question under BE-09
+ * scope; otherwise the id is withheld (`null`) and `restricted` is true, so a Guru cannot learn another
+ * teacher's question ids from a flag.
+ */
+export const IntakeDuplicateEntrySchema = z
   .strictObject({
+    id: IdSchema.meta({ description: 'Entry id; `not_duplicate` names the entry it dismisses.' }),
     kind: IntakeDuplicateKindSchema,
     scope: IntakeDuplicateScopeSchema,
-    similarity: z.number().min(0).max(1),
-    matchedQuestionId: IdSchema.nullable().meta({ description: 'Set when scope is bank.' }),
-    matchedItemId: IdSchema.nullable().meta({ description: 'Set when scope is batch.' }),
-    dismissed: z.boolean().meta({ description: 'A reviewer chose "Bukan pendua": the flag is suppressed for this pair only (AC-06.5).' }),
+    similarity: z.number().min(0).max(1).nullable().meta({ description: 'Null when a person linked it without a check result.' }),
+    matchedQuestionId: IdSchema.nullable().meta({ description: 'Scope bank, and only when the caller may read the question.' }),
+    matchedItemId: IdSchema.nullable().meta({ description: 'Scope batch: an item of the same batch.' }),
+    restricted: z.boolean().meta({ description: 'True when the matched bank question exists but the caller may not read it (id withheld).' }),
+    status: IntakeDuplicateStatusSchema,
   })
-  .refine((f) => (f.scope === 'bank' ? f.matchedQuestionId !== null : f.matchedItemId !== null), {
-    message: 'A bank flag needs matchedQuestionId and a batch flag needs matchedItemId.',
-  })
-  .meta({ id: 'IntakeDuplicateFlag', description: '[PROPOSED] Result of the duplicate check, with the matching id (card AC5).' })
-export type IntakeDuplicateFlag = z.infer<typeof IntakeDuplicateFlagSchema>
+  .refine(
+    (f) =>
+      f.scope === 'bank'
+        ? f.matchedItemId === null && (f.restricted ? f.matchedQuestionId === null : f.matchedQuestionId !== null)
+        : f.matchedQuestionId === null && !f.restricted && f.matchedItemId !== null,
+    { message: 'A bank entry has matchedQuestionId (null only when restricted); a batch entry has matchedItemId and no matchedQuestionId.' },
+  )
+  .meta({ id: 'IntakeDuplicateEntry', description: '[PROPOSED] One duplicate finding or decision, with the matching id (card AC5).' })
+export type IntakeDuplicateEntry = z.infer<typeof IntakeDuplicateEntrySchema>
 
 /* ------------------------------------------------------------------------------------------ */
 /* Actors, links, provenance, events                                                           */
@@ -210,6 +262,7 @@ export const INTAKE_EVENT_ACTIONS = [
   'rejected',
   'marked_duplicate',
   'cleared_duplicate',
+  'linked_variant',
 ] as const
 export const IntakeEventActionSchema = z.enum(INTAKE_EVENT_ACTIONS).meta({ id: 'IntakeEventAction', description: '[PROPOSED] What happened to an item.' })
 export type IntakeEventAction = z.infer<typeof IntakeEventActionSchema>
@@ -229,7 +282,10 @@ export const IntakeItemEventSchema = z
     from: IntakeItemStateSchema.nullable(),
     to: IntakeItemStateSchema.nullable(),
     field: z.string().min(1).max(64).nullable().meta({ description: 'Edited or confirmed field, e.g. stem, tag.unit.' }),
-    previous: z.string().max(20_000).nullable().meta({ description: 'Previous value of `field` as text (the AI text on the first human edit).' }),
+    previous: z.unknown().meta({
+      description:
+        'Previous JSON value of `field`, typed by the field (string for stem, array for options and parts, object for scheme and tag; null when there was none). The AI value on the first human edit (AC-08.2). Not truncated, so edits of parts, scheme and options fit.',
+    }),
     reason: z.string().max(500).nullable(),
   })
   .meta({ id: 'IntakeItemEvent', description: '[PROPOSED] Audit row of one change to an item.' })
@@ -250,7 +306,7 @@ const itemCommon = {
   confidenceBand: IntakeConfidenceBandSchema,
   uploader: IntakeActorRefSchema.meta({ description: 'Owner of the batch. A Guru only ever sees own items.' }),
   question: IntakeAcceptedQuestionSchema.nullable().meta({ description: 'Set once the item is accepted.' }),
-  duplicate: IntakeDuplicateFlagSchema.nullable(),
+  duplicates: z.array(IntakeDuplicateEntrySchema).max(50).meta({ description: 'Findings and decisions, oldest first. `variant` entries do not affect `state`.' }),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 } as const
@@ -320,7 +376,7 @@ export const IntakeItemListQuerySchema = z
     uploaderId: IdSchema.optional().meta({ description: 'Admin Pusat only; ignored for a Guru.' }),
     band: IntakeConfidenceBandSchema.optional(),
     duplicate: z.enum(['any', 'exact', 'near', 'variant', 'none']).optional().meta({
-      description: 'any = an open (not dismissed) flag of any kind; none = no open flag.',
+      description: 'An entry with status `open` of that kind. any = an open exact or near entry (variants excluded); none = no open entry of any kind.',
     }),
   })
   .meta({ id: 'IntakeItemListQuery', description: '[PROPOSED] Filters of GET /intake/items. Order: newest batch first, then paper order.' })
