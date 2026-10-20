@@ -63,10 +63,20 @@ async function parentClassroom(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-44: a battle needs a mode and a question type (checks). */
+async function parentBattle(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text as id`)
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
   banners: { banner_type: 'HERO' },
+  // battle_participants (BE-44): the battle and the player must exist; side has a check.
+  battle_participants: async (query) => ({ battle_id: await parentBattle(query), side: 'A', user_id: await parentUser(query) }),
+  // battles (BE-44): mode and question_type have checks.
+  battles: { mode: 'quick_match', question_type: 'biasa' },
   // coin_ledger (BE-11): type has a check and the sign of amount follows it.
   coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
