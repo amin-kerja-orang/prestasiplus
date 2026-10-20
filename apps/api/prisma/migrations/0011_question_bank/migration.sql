@@ -1,4 +1,4 @@
--- 0010_question_bank (BE-09): stimuli, stimulus_groups, stimulus_group_stimuli, stimulus_group_options,
+-- 0011_question_bank (BE-09): stimuli, stimulus_groups, stimulus_group_stimuli, stimulus_group_options,
 -- questions, question_versions, question_version_sp_nodes, question_version_stimuli, question_parts,
 -- part_options, answer_keys, question_tags. Data model 3.4, v2-exam-schema D1 to D12, OD-28.
 -- Base generated with `prisma migrate diff`, then identity columns, FKs to other owners, CHECK
