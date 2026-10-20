@@ -30,6 +30,7 @@ export interface AttemptRow {
   submittedAt: Date | null
   lateBySeconds: number | null
   idempotencyKey: string | null
+  resultViewedAt: Date | null
   isTest: boolean
 }
 
@@ -109,6 +110,7 @@ export class AttemptsRepository {
       submittedAt: r.submittedAt,
       lateBySeconds: r.lateBySeconds,
       idempotencyKey: r.idempotencyKey,
+      resultViewedAt: r.resultViewedAt,
       isTest: r.isTest,
     }
   }
@@ -187,6 +189,19 @@ export class AttemptsRepository {
       data: { status: data.status, submittedAt: data.submittedAt, lateBySeconds: data.lateBySeconds, idempotencyKey: data.idempotencyKey },
     })
     return res.count === 1
+  }
+
+  /** Stamps the first time the result was shown (never overwritten). */
+  async markResultViewed(id: string, at: Date): Promise<void> {
+    await this.prisma.client.examAttempt.updateMany({ where: { id, resultViewedAt: null }, data: { resultViewedAt: at } })
+  }
+
+  /** True when the user started another attempt on the same paper after `startedAt` (it may have shown the scheme). */
+  async hasLaterAttempt(userId: string, paperId: string, startedAt: Date, excludeId: string): Promise<boolean> {
+    const n = await this.prisma.client.examAttempt.count({
+      where: { userId: idFromString(userId), paperId: idFromString(paperId), startedAt: { gt: startedAt }, id: { not: excludeId } },
+    })
+    return n > 0
   }
 
   async answers(attemptId: string): Promise<Map<string, AnswerRow>> {

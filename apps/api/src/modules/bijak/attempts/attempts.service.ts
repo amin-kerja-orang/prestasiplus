@@ -25,6 +25,7 @@ import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
 import {
+  AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
   FRESH_SECONDS,
   GRACE_SECONDS,
@@ -110,6 +111,11 @@ export class BijakAttemptsService {
 
   private expired(row: AttemptRow): boolean {
     return row.status === 'in_progress' && row.deadlineAt !== null && this.now().getTime() > row.deadlineAt.getTime() + GRACE_SECONDS * 1000
+  }
+
+  /** `auto: true` is client-claimed: believed only when the server deadline is (nearly) reached. */
+  private autoHonoured(row: AttemptRow, auto: boolean | undefined): boolean {
+    return auto === true && row.deadlineAt !== null && this.now().getTime() >= row.deadlineAt.getTime() - AUTO_SUBMIT_TOLERANCE_SECONDS * 1000
   }
 
   /** 404 for an unknown (or malformed) id, 403 "Akses ditolak" for someone else's attempt (D54b). */
@@ -271,6 +277,7 @@ export class BijakAttemptsService {
     const result = await this.repo.result(row.id)
     if (!result) throw new ApiError({ code: 'NOT_SUBMITTED', status: 409, message: MSG.schemeAfterSubmit })
     const paper = await this.buildView(row, false)
+    if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
     return { attempt: paper.attempt, result, paper }
   }
 
@@ -365,6 +372,10 @@ export class BijakAttemptsService {
     if (row.status !== 'auto_submitted' || !row.deadlineAt) return false
     const now = this.now().getTime()
     if (now > row.deadlineAt.getTime() + LATE_SYNC_WINDOW_MS) return false
+    // The scheme may already be known: this result was shown, or a later attempt on the paper
+    // (e.g. a latihan with "Semak") could have shown it. Rewriting answers then would be copying.
+    if (row.resultViewedAt) return false
+    if (row.paperId !== null && (await this.repo.hasLaterAttempt(row.userId, row.paperId, row.startedAt, row.id))) return false
     const ok = changes.filter((c) => Math.min(new Date(c.savedAt).getTime(), now) <= (row.deadlineAt as Date).getTime())
     if (!ok.length) return false
     const index = await this.leafIndexOf(row, load)
@@ -490,7 +501,7 @@ export class BijakAttemptsService {
       const checks = await this.repo.checkCounts(id)
       await this.merge(row, answers, carried, index, lockedParts(row.mode, checks.counts, index))
       await this.applyMeta(row, payload)
-      const done = await this.finish(row, answers, payload.auto ? 'auto_submitted' : 'submitted', { key: payload.idempotencyKey, swept: false }, load, events)
+      const done = await this.finish(row, answers, this.autoHonoured(row, payload.auto) ? 'auto_submitted' : 'submitted', { key: payload.idempotencyKey, swept: false }, load, events)
       return { attemptId: done.id, late: done.lateBySeconds ?? 0 }
     }, TX)
     await this.emit(events, auth, who)
@@ -558,10 +569,13 @@ export class BijakAttemptsService {
   ): Promise<BijakAttemptPhoto> {
     const first = await this.owned(auth.userId, id)
     if (first.status !== 'in_progress') throw attemptClosed()
-    return this.prisma.transaction(async () => {
+    const events: ClosedEvent[] = []
+    const out = await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw notFoundAttempt()
-      const row = (await this.repo.find(id)) as AttemptRow
-      if (row.status !== 'in_progress') throw attemptClosed()
+      let row = (await this.repo.find(id)) as AttemptRow
+      // Same pattern as save/submit: past deadline + grace the attempt is closed first, and the upload is refused.
+      if (this.expired(row)) row = await this.finish(row, await this.repo.answers(id), 'auto_submitted', { key: null, swept: true }, this.lazyBundles(row), events)
+      if (row.status !== 'in_progress') return null
       const index = await this.leafIndexOf(row, this.lazyBundles(row))
       const leaf = index.parts.get(partId)
       if (!leaf || !PHOTO_KINDS.has(leaf.kind)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: PAYLOAD_MESSAGES.partPhotos } })
@@ -572,6 +586,9 @@ export class BijakAttemptsService {
       await this.repo.addPhoto({ attemptId: id, partId, filePublicId: ref.id, name, size: ref.size })
       return { key: ref.id, name, size: ref.size }
     }, TX)
+    await this.emit(events)
+    if (!out) throw attemptClosed()
+    return out
   }
 
   /* -------------------------------------------------------------------- after-commit effects */
@@ -607,20 +624,23 @@ export class BijakAttemptsService {
           swept: e.swept,
           isTestAttempt: a.isTest,
         })
-        try {
-          await this.ports.reward.award({
-            attemptId: a.id,
-            userId: a.userId,
-            isTest: a.isTest,
-            coins: e.result.coins,
-            points: e.result.points,
-            score: e.result.score,
-            max: e.result.max,
-            provisional: e.result.provisional,
-            description: BIJAK_REWARD_DESCRIPTION,
-          })
-        } catch (err) {
-          this.logger.warn(`Reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward.
+        if (a.mode === 'exam') {
+          try {
+            await this.ports.reward.award({
+              attemptId: a.id,
+              userId: a.userId,
+              isTest: a.isTest,
+              coins: e.result.coins,
+              points: e.result.points,
+              score: e.result.score,
+              max: e.result.max,
+              provisional: e.result.provisional,
+              description: BIJAK_REWARD_DESCRIPTION,
+            })
+          } catch (err) {
+            this.logger.warn(`Reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+          }
         }
       }
       try {

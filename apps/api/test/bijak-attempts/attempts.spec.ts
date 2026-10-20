@@ -330,6 +330,8 @@ describe('submit (AC6, idempotency)', () => {
 
   it('4. the client may submit with auto (zero time): status auto_submitted', async () => {
     const id = await startAttempt(me, PAPER.matK1)
+    const v = await view(me, id)
+    t.clock.set(iso(new Date(v.attempt.deadline!).getTime() - 5000)) // inside the 30 s tolerance
     await submit(me, id, { idempotencyKey: 'auto', changes: [], auto: true })
     expect((await result(me, id)).attempt.status).toBe('auto_submitted')
   })
@@ -451,7 +453,7 @@ describe('late sync (AC-05.4)', () => {
 
   it('2. accepts answers saved before the deadline when they sync later, and grades again', async () => {
     const { id, q, deadline } = await swept()
-    expect((await result(me, id)).result.score).toBe(0)
+    expect((await view(me, id)).attempt.status).toBe('auto_submitted') // closed, scheme not yet shown
     const res = await save(me, id, {
       changes: [change(q[0]!, { choice: correctChoice(q[0]!) }, 1, iso(deadline - 5000)), change(q[1]!, { choice: correctChoice(q[1]!) }, 1, iso(deadline - 1000))],
     })

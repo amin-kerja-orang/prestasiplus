@@ -94,8 +94,8 @@ export interface BijakRewardInput {
 
 export interface BijakRewardPort {
   /**
-   * Called ONCE, after the commit that closed the attempt (submitted or auto_submitted), never for a
-   * replay, a late-sync regrade or an abandoned attempt. Failures are logged and swallowed.
+   * Called ONCE, after the commit that closed an EXAM attempt (submitted or auto_submitted; never a
+   * latihan, whose "Semak" shows the scheme), never for a replay, a late-sync regrade or an abandoned attempt. Failures are logged and swallowed.
    * Real binding (BE-11): `WalletService.credit({ userId, amount: coins, isTest, sourceId: attemptId,
    * description })`; `sourceId` makes it idempotent. The mock credits nothing (open question 2).
    */

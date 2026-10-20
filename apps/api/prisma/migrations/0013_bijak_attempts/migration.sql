@@ -33,6 +33,7 @@ CREATE TABLE "exam_attempts" (
     "submitted_at" TIMESTAMPTZ(6),
     "late_by_seconds" INTEGER,
     "idempotency_key" TEXT,
+    "result_viewed_at" TIMESTAMPTZ(6),
     "is_test" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,

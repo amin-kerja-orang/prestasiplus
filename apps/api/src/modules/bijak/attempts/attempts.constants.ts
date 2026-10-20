@@ -7,6 +7,8 @@ export { BIJAK_ATTEMPTS_MESSAGES }
 /** Constants of the mock server, shared with the contract (one source). */
 export const GRACE_SECONDS = BIJAK_ATTEMPTS_LIMITS.graceSeconds
 export const LATE_SYNC_WINDOW_MS = BIJAK_ATTEMPTS_LIMITS.lateSyncWindowMs
+/** `auto: true` on a submit is believed only this close to (or past) the server deadline. */
+export const AUTO_SUBMIT_TOLERANCE_SECONDS = 30
 export const FRESH_SECONDS = BIJAK_ATTEMPTS_LIMITS.freshSeconds
 export const MAX_CHECKS_PER_QUESTION = BIJAK_ATTEMPTS_LIMITS.maxChecksPerQuestion
 export const MAX_PHOTO_BYTES = BIJAK_ATTEMPTS_LIMITS.maxPhotoBytes

@@ -34,6 +34,8 @@ model ExamAttempt {
   submittedAt    DateTime? @map("submitted_at") @db.Timestamptz(6)
   lateBySeconds  Int?      @map("late_by_seconds")
   idempotencyKey String?   @map("idempotency_key")
+  /// First time the result (mark scheme) was shown; a late sync is refused afterwards.
+  resultViewedAt DateTime? @map("result_viewed_at") @db.Timestamptz(6)
   /// Written while an admin or school admin is in Mod Pelajar.
   isTest         Boolean   @default(false) @map("is_test")
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
