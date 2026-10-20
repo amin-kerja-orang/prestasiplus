@@ -1,0 +1,129 @@
+// Bijak SPM attempts (BE-16, owner module M28 attempts). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2, data model 3.8. Hand-written in migration 0013_bijak_attempts: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), partial index for the sweeper.
+// No relations to `papers`, `questions` or `question_parts` (BE-15 / BE-09 own them and are not merged
+// yet): `paper_id` is a nullable bigint and question/part ids are opaque text. FK to papers = follow-up
+// migration. `user_id` has an FK in the migration only (no back-relation on `User`, which BE-16 may not edit).
+
+model ExamAttempt {
+  /// uuid, also the id on the wire.
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         BigInt    @map("user_id")
+  /// Null for migrated attempts (the paper is kept as a snapshot below). FK added once BE-15 lands.
+  paperId        BigInt?   @map("paper_id")
+  /// pilihan, jana (check constraint).
+  paperKind      String    @map("paper_kind")
+  title          String
+  subject        String
+  subjectName    String    @map("subject_name")
+  kertas         Int
+  paperCode      String    @map("paper_code")
+  /// exam, latihan (check constraint).
+  mode           String
+  /// in_progress, submitted, auto_submitted, abandoned (check constraint).
+  status         String    @default("in_progress")
+  startedAt      DateTime  @map("started_at") @db.Timestamptz(6)
+  /// SERVER deadline (started_at + duration), exam mode only.
+  deadlineAt     DateTime? @map("deadline_at") @db.Timestamptz(6)
+  durationMin    Int       @map("duration_min")
+  /// Frozen section composition: [{ id, label, compulsory?, instruction?, rule, questionIds }].
+  composition    Json      @default("[]")
+  flags          String[]  @default([])
+  picks          Json      @default("{}")
+  position       Int       @default(0)
+  submittedAt    DateTime? @map("submitted_at") @db.Timestamptz(6)
+  lateBySeconds  Int?      @map("late_by_seconds")
+  idempotencyKey String?   @map("idempotency_key")
+  /// Written while an admin or school admin is in Mod Pelajar.
+  isTest         Boolean   @default(false) @map("is_test")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource   String?   @map("legacy_source")
+  legacyId       String?   @map("legacy_id")
+
+  answers AttemptAnswer[]
+  photos  AttemptPhoto[]
+  result  AttemptResult?
+  checks  AttemptCheck[]
+
+  @@unique([legacySource, legacyId], map: "uq_exam_attempts_legacy")
+  @@index([userId, startedAt(sort: Desc)], map: "ix_exam_attempts_user_id_started_at")
+  @@index([userId, paperId, status], map: "ix_exam_attempts_user_id_paper_id_status")
+  @@map("exam_attempts")
+}
+
+model AttemptAnswer {
+  id        BigInt   @id @default(autoincrement())
+  attemptId String   @map("attempt_id") @db.Uuid
+  /// Opaque part id (an MCQ part id is its question id).
+  partId    String   @map("part_id")
+  /// PartAnswer: { choice, steps[], final, unit, text, photos[], plain }.
+  answer    Json
+  /// Per-part revision: a save with an older or equal rev never overwrites.
+  rev       Int      @default(0)
+  /// min(device time, server time of the write).
+  savedAt   DateTime @map("saved_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, map: "fk_attempt_answers_attempt_id")
+
+  @@unique([attemptId, partId], map: "uq_attempt_answers_attempt_id_part_id")
+  @@map("attempt_answers")
+}
+
+model AttemptPhoto {
+  id        BigInt   @id @default(autoincrement())
+  attemptId String   @map("attempt_id") @db.Uuid
+  partId    String   @map("part_id")
+  /// `files.id` (internal key; FK in the migration only, no back-relation on `File`). The key on the wire is `files.public_id`.
+  fileId    BigInt   @map("file_id")
+  /// Sanitised original file name (display only).
+  name      String
+  sizeBytes Int      @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, map: "fk_attempt_photos_attempt_id")
+
+  @@unique([fileId], map: "uq_attempt_photos_file_id")
+  @@index([attemptId, partId], map: "ix_attempt_photos_attempt_id_part_id")
+  @@map("attempt_photos")
+}
+
+model AttemptResult {
+  attemptId     String   @id @map("attempt_id") @db.Uuid
+  score         Decimal  @db.Decimal(7, 2)
+  maxScore      Decimal  @map("max_score") @db.Decimal(7, 2)
+  provisional   Boolean  @default(false)
+  pendingReview Int      @default(0) @map("pending_review")
+  /// Display value score * 2 (the mock does not credit the wallet).
+  coins         Int?
+  /// Display value score * 10.
+  points        Int?
+  /// { sections, questions } of the contract AttemptResult (scheme revealed: server side only).
+  graded        Json
+  sectionScores Json?    @map("section_scores")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, map: "fk_attempt_results_attempt_id")
+
+  @@map("attempt_results")
+}
+
+model AttemptCheck {
+  id         BigInt   @id @default(autoincrement())
+  attemptId  String   @map("attempt_id") @db.Uuid
+  questionId String   @map("question_id")
+  /// 1 to 3 (MAX_CHECKS_PER_QUESTION).
+  checkCount Int      @default(1) @map("check_count") @db.SmallInt
+  /// The revealed question result of the last check.
+  result     Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, map: "fk_attempt_checks_attempt_id")
+
+  @@unique([attemptId, questionId], map: "uq_attempt_checks_attempt_id_question_id")
+  @@map("attempt_checks")
+}
