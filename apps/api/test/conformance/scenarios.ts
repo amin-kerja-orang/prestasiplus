@@ -37,7 +37,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...supportTicketScenarios,
     ...videosScenarios,
     ...perutusanScenarios,
-    ...walletScenarios,
     ...bijakPapersScenarios,
     ...bijakAttemptsScenarios,
     ...practiceScenarios,
