@@ -59,24 +59,14 @@ import type {
   SubmitPayload,
 } from '../domain/types'
 
-export interface KeyValueStore {
-  getItem(key: string): string | null
-  setItem(key: string, value: string): void
-  removeItem(key: string): void
-}
+import { BijakError } from './errors'
+import { MemoryStorage, type KeyValueStore } from './storage'
+import type { BijakApi, SaveResult, SubmitResult } from './types'
 
-export class MemoryStorage implements KeyValueStore {
-  private readonly map = new Map<string, string>()
-  getItem(key: string): string | null {
-    return this.map.get(key) ?? null
-  }
-  setItem(key: string, value: string): void {
-    this.map.set(key, value)
-  }
-  removeItem(key: string): void {
-    this.map.delete(key)
-  }
-}
+// Re-exported so existing imports from './store' keep working (the HTTP client imports the small
+// modules directly and never this one, which pulls the seed registry).
+export { BijakError, MemoryStorage }
+export type { KeyValueStore, SaveResult, SubmitResult }
 
 /** Plain-data copy (structuredClone rejects Vue reactive proxies passed in by pages). */
 const jsonClone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
@@ -89,19 +79,6 @@ export const LATE_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000
 /** Latihan: at most this many "Semak" per question per attempt (NFR-05). */
 export const MAX_CHECKS_PER_QUESTION = 3
 
-export interface SaveResult {
-  savedAt: number
-  /** The attempt is already closed; the device keeps its local copy. */
-  closed?: boolean
-  /** Late-synced changes that were accepted and re-graded (AC-05.4). */
-  regraded?: boolean
-}
-export interface SubmitResult {
-  attemptId: string
-  late: number
-  closed?: boolean
-  regraded?: boolean
-}
 /** A sitting younger than this resumes silently (AC-12.5). */
 export const FRESH_SECONDS = 60
 
@@ -118,15 +95,6 @@ interface State extends AdminSlice {
   intake?: Record<string, IntakeBatch>
 }
 
-export class BijakError extends Error {
-  constructor(
-    readonly code: 'not_found' | 'forbidden' | 'not_submitted' | 'offline' | 'bad_request',
-    message: string,
-  ) {
-    super(message)
-  }
-}
-
 export interface ServerOptions {
   storage?: KeyValueStore
   now?: () => number
@@ -134,7 +102,7 @@ export interface ServerOptions {
   storageKey?: string
 }
 
-export class BijakServer {
+export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
   private readonly now: () => number
   private readonly latencyMs: number
