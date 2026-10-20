@@ -1,7 +1,7 @@
 import { PerformanceLevelDetailSchema, PerformanceSchoolSchema } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { ctxOf, sitting, world, type World } from '../fakes/fixtures'
+import { ctxOf, item, sitting, world, type World } from '../fakes/fixtures'
 
 let w: World
 const national = { level: 'national', label: 'x' } as const
@@ -73,7 +73,8 @@ describe('Prestasi sekolah', () => {
   it('privacy: a student sees no teacher cards, and a level backed by fewer than 5 pupils is zeroed', async () => {
     const r = await w.school.school(ctxOf('student', '1'))
     expect(r.teachers).toEqual([])
-    expect(r.levels[0]).toMatchObject({ code: 't4', accuracy: 67.5, sessions: 8 })
+    // t4 has a 2-pupil class (class 11), so it is hidden too: level minus shown classes would isolate it
+    expect(r.levels[0]).toMatchObject({ code: 't4', accuracy: 0, sessions: 0 })
     expect(r.levels[1]).toEqual({ code: 't5', accuracy: 0, classes: 1, students: 1, sessions: 0 })
     const staff = await w.school.school(ctxOf('teacher', 't1'))
     expect(staff.levels[1]).toMatchObject({ accuracy: 90, sessions: 1 })
@@ -120,7 +121,7 @@ describe('Cohort rules on the school totals (M1)', () => {
     w.bijak.addSitting(sitting({ userId: '8', score: 1 }))
     const r = await w.school.school(student)
     expect(r.stats).toMatchObject({ sessions: 0, answered: 0, accuracy: 0 })
-    expect(r.levels.every((l) => l.sessions > 0)).toBe(true)
+    expect(r.levels.every((l) => l.sessions === 0)).toBe(true)
   })
 
   it('totals are shown when every level and the remainder meet the cohort', async () => {
@@ -166,6 +167,52 @@ describe('Level detail: class remainder rule', () => {
     const staff = await x.school.level(ctxOf('school_admin', 'sa1'), 't4')
     expect(staff).toMatchObject({ sessions: 10, accuracy: 50 })
     expect(staff.classRows.map((row) => row.sessions)).toEqual([7, 3])
+  })
+})
+
+describe('Cross-endpoint differencing (school, levels, level)', () => {
+  // T4: class A 9 pupils (shown), class B 3 pupils (hidden); 12 pupils in the level
+  function build() {
+    const x = world()
+    x.directory.addSchool({ id: 's1' })
+    const a = Array.from({ length: 9 }, (_, i) => String(100 + i))
+    const b = ['201', '202', '203']
+    x.classes.add({ id: 'A', schoolId: 's1', name: 'Kelas A' }, a).add({ id: 'B', schoolId: 's1', name: 'Kelas B' }, b)
+    for (const id of [...a, ...b]) {
+      x.directory.addPupil({ id, schoolId: 's1' })
+      x.bijak.addSitting(sitting({ userId: id, score: b.includes(id) ? 2 : 8 }))
+    }
+    return x
+  }
+  const student = ctxOf('student', '100')
+
+  it('no combination of school and level isolates class B for a non-staff viewer', async () => {
+    const x = build()
+    const school = await x.school.school(student)
+    const level = await x.school.level(student, 't4')
+    expect(school.levels[0]).toMatchObject({ code: 't4', sessions: 0, accuracy: 0 })
+    expect(school.stats).toMatchObject({ sessions: 0, answered: 0, accuracy: 0 })
+    expect(level).toMatchObject({ sessions: 0, accuracy: 0 })
+    expect(level.classRows.map((r) => [r.classId, r.sessions])).toEqual([['A', 9], ['B', 0]])
+  })
+
+  it('staff still see everything, and the levels list and the level detail carry counts only', async () => {
+    const x = build()
+    const staff = ctxOf('school_admin', 'sa1')
+    expect((await x.school.school(staff)).levels[0]).toMatchObject({ sessions: 12 })
+    expect((await x.school.level(staff, 't4')).sessions).toBe(12)
+    const list = await x.school.levels(student)
+    expect(list[0]).toEqual({ code: 't4', name: 'Tingkatan 4', classes: 2, students: 12 })
+    expect(Object.keys(list[0] as object).sort()).toEqual(['classes', 'code', 'name', 'students'])
+  })
+
+  it('the school item analysis headline equals the shown questions, so it cannot be differenced against the school totals', async () => {
+    const x = build()
+    x.bijak.addItem(item({ attemptId: 'at-x', userId: '201', questionId: '9', awarded: 0, chosenLetter: 'B' }))
+    x.bijak.addSitting(sitting({ userId: '201', attemptId: 'at-x' }))
+    const r = await x.items.school(student, {})
+    expect(r.questions).toEqual([])
+    expect(r).toMatchObject({ answers: null, correct: null })
   })
 })
 

@@ -24,3 +24,14 @@ export function canSeeName(role: RoleCode, viewerId: string, pupilId: string, ow
 }
 
 export const nameFor = (name: string, visible: boolean): string => (visible ? name : REDACTED_NAME)
+
+/**
+ * One rule for every endpoint that shows a level's figures (school, levels, level detail): a non-staff
+ * viewer sees them only when the level has at least MIN_COHORT contributors AND no class of it has 1 to
+ * 4 contributors (else level minus the shown classes would isolate that class). Staff always see them.
+ */
+export function levelVisibleToNonStaff(role: RoleCode, levelContributors: number, classContributors: readonly number[]): boolean {
+  if (isStaff(role)) return true
+  if (levelContributors < MIN_COHORT) return false
+  return classContributors.every((n) => n === 0 || n >= MIN_COHORT)
+}

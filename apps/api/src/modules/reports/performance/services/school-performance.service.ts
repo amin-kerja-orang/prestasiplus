@@ -12,7 +12,7 @@ import {
   type LevelCode,
 } from '../domain/constants'
 import { NO_SUBJECT_LABEL, SCHOOL_CLASS_LABEL } from '../domain/labels'
-import { canSeeName, isStaff, meetsCohort, nameFor } from '../domain/privacy'
+import { canSeeName, isStaff, levelVisibleToNonStaff, meetsCohort, nameFor } from '../domain/privacy'
 import { GRADES, accuracyOf, compareIds } from '../domain/rules'
 import {
   DIRECTORY_PORT,
@@ -119,14 +119,16 @@ export class SchoolPerformanceService {
     const levelSums = LEVEL_CODES.map((code) => {
       const lc = fr.classes.filter((c) => c.levelSlug === code)
       const ids = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))]
-      return { code, classes: lc.length, ids, sums: sumOf(ids, fr.byUser) }
+      const sums = sumOf(ids, fr.byUser)
+      const classPupils = lc.map((c) => sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors)
+      return { code, classes: lc.length, ids, sums, visible: levelVisibleToNonStaff(ctx.role, sums.contributors, classPupils) }
     })
     const levels = levelSums.map((l) => ({
       code: l.code,
-      accuracy: shown(ctx, l.sums).accuracy,
+      accuracy: l.visible ? shown(ctx, l.sums).accuracy : 0,
       classes: l.classes,
       students: l.ids.length,
-      sessions: shown(ctx, l.sums).sessions,
+      sessions: l.visible ? shown(ctx, l.sums).sessions : 0,
     }))
     // Non-staff: a total that would let a suppressed level (or a small remainder) be recovered by
     // subtraction is suppressed too, as is a total backed by fewer than MIN_COHORT pupils.
@@ -137,7 +139,7 @@ export class SchoolPerformanceService {
       const remainder = totalPupils - inLevels.size
       hideTotals =
         !meetsCohort(ctx.role, totalPupils) ||
-        levelSums.some((l) => l.sums.contributors > 0 && !meetsCohort(ctx.role, l.sums.contributors)) ||
+        levelSums.some((l) => l.sums.contributors > 0 && !l.visible) ||
         (remainder > 0 && !meetsCohort(ctx.role, remainder))
       visibleSubjects = subjectRows.filter((r) => meetsCohort(ctx.role, r.pupils))
     }
@@ -216,11 +218,12 @@ export class SchoolPerformanceService {
     const lc = fr.classes.filter((c) => c.levelSlug === level)
     const students = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))].sort(compareIds)
     // Non-staff: a class row hidden for having 1 to 4 pupils would be recovered as total minus shown rows, so the total is hidden too.
-    const hiddenClass = !isStaff(ctx.role) && lc.some((c) => {
-      const n = sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors
-      return n > 0 && !meetsCohort(ctx.role, n)
-    })
-    const total = hiddenClass ? { sessions: 0, accuracy: 0 } : shown(ctx, sumOf(students, fr.byUser))
+    const visible = levelVisibleToNonStaff(
+      ctx.role,
+      sumOf(students, fr.byUser).contributors,
+      lc.map((c) => sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors),
+    )
+    const total = !visible ? { sessions: 0, accuracy: 0 } : shown(ctx, sumOf(students, fr.byUser))
 
     const groupKey = (c: ClassInfo): [number, string] =>
       c.kind === 'school_class' ? [2, ''] : c.subjectId === null ? [0, ''] : [1, c.subjectName ?? '']
