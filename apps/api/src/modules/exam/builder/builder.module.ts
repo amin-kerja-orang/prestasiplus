@@ -1,4 +1,5 @@
 import { Inject, Module, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
@@ -6,6 +7,8 @@ import { QuestionsModule } from '../../questions'
 import { BuilderController } from './builder.controller'
 import { BuilderRepository } from './builder.repository'
 import { BuilderService } from './builder.service'
+import { CompositeBuilderQuestionSource } from './composite.source'
+import { PocBuilderQuestionSource } from './poc-builder-source'
 import { BijakBuilderPorts } from './ports'
 import { QuestionBankBuilderSource } from './question-bank.source'
 
@@ -24,9 +27,14 @@ export class ExamBuilderModule implements OnModuleInit {
   constructor(
     @Inject(BijakBuilderPorts) private readonly ports: BijakBuilderPorts,
     @Inject(QuestionBankBuilderSource) private readonly bank: QuestionBankBuilderSource,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
   onModuleInit(): void {
-    this.ports.provideQuestionSource(this.bank)
+    // BIJAK_POC_QUESTIONS on (staging/demo): the builder sees the PoC questions plus the bank, like the
+    // papers/attempts ports (BijakIntegrationModule). Off: the bank alone.
+    const v: unknown = this.config.get('BIJAK_POC_QUESTIONS')
+    const poc = v === true || v === 'true' || v === '1'
+    this.ports.provideQuestionSource(poc ? new CompositeBuilderQuestionSource(new PocBuilderQuestionSource(), this.bank) : this.bank)
   }
 }
