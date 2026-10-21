@@ -78,7 +78,8 @@ export const EnvSchema = z.object({
    */
   CLIENT_IP_HEADER: z.preprocess((v) => (v === '' ? undefined : v), z.enum(CLIENT_IP_HEADERS).optional()),
   /** Shared secret the edge proxy sends in `X-PP-Edge-Secret` (min 32 chars). Empty = unset. */
-  EDGE_PROXY_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(MIN_EDGE_SECRET_LENGTH).optional()),
+  // Trimmed before validating (the edges trim the secret they send); a whitespace-only value counts as unset.
+  EDGE_PROXY_SECRET: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().trim().min(MIN_EDGE_SECRET_LENGTH).optional()),
   /** Lifetime of a "remember me" session in days (LEAD decision: 30). */
   SESSION_REMEMBER_DAYS: z.coerce.number().int().min(1).default(30),
   /** Remember lifetime in days for admin and school_admin; 0 turns remember off for them. */

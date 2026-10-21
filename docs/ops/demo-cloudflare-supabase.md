@@ -246,6 +246,8 @@ Exact names per platform:
 
 Generate once on the laptop: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
 
+Set both `EDGE_PROXY_SECRET` (same value on Pages and Render, at least 32 characters; surrounding whitespace is ignored) and `CLIENT_IP_HEADER=x-pp-client-ip` BEFORE deploying. With them unset `req.ip` comes from X-Forwarded-For and a direct call to the onrender.com origin can spoof it, and the API logs a `ClientIp` warning at boot in production.
+
 Rollout order (recommended: Pages first, then Render):
 1. Pages: set the secret (`npx wrangler pages secret put EDGE_PROXY_SECRET --project-name <project>`, or dashboard ->
    Settings -> Variables and Secrets), then re-upload the build with the new `_worker.js` (step 10; secrets apply to
@@ -259,6 +261,7 @@ the socket peer (the Cloudflare egress), and all users briefly share one throttl
 both steps within minutes.
 
 Verify:
+- After the first request through the edge, the Render log shows NO `ClientIp` warning (a mismatch warning means the secrets differ: every user would share one throttle bucket).
 - `BASE_URL=https://<project>.pages.dev DEMO_PASSWORD='<demo password>' bash scripts/demo-smoke.sh`. Step 1 asserts
   `cache-control: ...no-store` on `GET /api/health` ("/api answers are not cached (no-store)"). Step 5 sends six
   wrong-password logins with a different spoofed `X-Forwarded-For` each and expects 429 on the 6th (the real

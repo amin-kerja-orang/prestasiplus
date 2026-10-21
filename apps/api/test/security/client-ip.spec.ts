@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { loadEnv } from '../../src/common/config/env.schema'
-import { clientIpMiddleware, deriveClientIp, parseSingleIp } from '../../src/common/net/client-ip'
+import { clientIpBootWarning, clientIpMiddleware, deriveClientIp, parseSingleIp } from '../../src/common/net/client-ip'
 import { hasForwardingHeaders } from '../../src/common/metrics/internal-network'
 import { bootSecurityApp, type SecurityApp } from './helpers'
 
@@ -136,6 +136,53 @@ describe('client-ip unit', () => {
     clientIpMiddleware(cfg)(req as never, {} as never, () => undefined)
     expect(req.ip).toBe('203.0.113.5')
     expect(req.headers['x-pp-edge-secret']).toBeUndefined()
+  })
+
+  describe('secret trimming', () => {
+    const req = (headers: Record<string, unknown>) => ({ headers, socket: sock('192.0.2.1') }) as never
+    const hdr = (secret: unknown) => ({ 'x-pp-edge-secret': secret, 'x-pp-client-ip': '203.0.113.5' })
+
+    it('a configured secret with trailing space or newline matches the edge trimmed header', () => {
+      expect(deriveClientIp(req(hdr(SECRET)), { header: 'x-pp-client-ip', secret: `${SECRET} ` })).toBe('203.0.113.5')
+      expect(deriveClientIp(req(hdr(SECRET)), { header: 'x-pp-client-ip', secret: `${SECRET}\n` })).toBe('203.0.113.5')
+      const r = { headers: hdr(SECRET), socket: sock('192.0.2.1') } as never as { ip?: string }
+      clientIpMiddleware({ header: 'x-pp-client-ip', secret: `${SECRET}\n` })(r as never, {} as never, () => undefined)
+      expect(r.ip).toBe('203.0.113.5')
+    })
+    it('a header with surrounding whitespace matches', () => {
+      expect(deriveClientIp(req(hdr(`  ${SECRET}\r\n`)), cfg)).toBe('203.0.113.5')
+    })
+    it('a wrong secret still falls back to the socket peer', () => {
+      expect(deriveClientIp(req(hdr(`${'z'.repeat(40)} `)), { header: 'x-pp-client-ip', secret: `${SECRET}\n` })).toBe('192.0.2.1')
+      expect(deriveClientIp(req(hdr(SECRET.slice(1))), cfg)).toBe('192.0.2.1')
+    })
+    it('a whitespace-only env value is treated as unset by the schema', () => {
+      const base = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://u:p@localhost:5432/db' }
+      expect(loadEnv({ ...base, EDGE_PROXY_SECRET: '  \n' }).EDGE_PROXY_SECRET).toBeUndefined()
+      expect(() => loadEnv({ ...base, CLIENT_IP_HEADER: 'x-pp-client-ip', EDGE_PROXY_SECRET: '   ' })).toThrow(/EDGE_PROXY_SECRET/)
+      expect(loadEnv({ ...base, EDGE_PROXY_SECRET: `${SECRET}\n` }).EDGE_PROXY_SECRET).toBe(SECRET)
+    })
+  })
+
+  describe('clientIpBootWarning', () => {
+    const prod = { NODE_ENV: 'production', TRUST_PROXY_HOPS: 2 }
+    it('warns in production with hops > 0 when either key is unset, naming keys only', () => {
+      for (const env of [prod, { ...prod, CLIENT_IP_HEADER: 'x-pp-client-ip' }, { ...prod, EDGE_PROXY_SECRET: SECRET }, { ...prod, CLIENT_IP_HEADER: '', EDGE_PROXY_SECRET: SECRET }]) {
+        const w = clientIpBootWarning(env)
+        expect(w).toContain('CLIENT_IP_HEADER')
+        expect(w).toContain('EDGE_PROXY_SECRET')
+        expect(w).toContain('X-Forwarded-For')
+        expect(w).not.toContain(SECRET)
+        expect(w).not.toContain('x-pp-client-ip')
+      }
+    })
+    it('no warning outside production, with hops 0, or with both keys set', () => {
+      expect(clientIpBootWarning({ ...prod, NODE_ENV: 'development' })).toBeUndefined()
+      expect(clientIpBootWarning({ ...prod, NODE_ENV: 'test' })).toBeUndefined()
+      expect(clientIpBootWarning({ ...prod, TRUST_PROXY_HOPS: 0 })).toBeUndefined()
+      expect(clientIpBootWarning({ NODE_ENV: 'production' })).toBeUndefined()
+      expect(clientIpBootWarning({ ...prod, CLIENT_IP_HEADER: 'x-pp-client-ip', EDGE_PROXY_SECRET: SECRET })).toBeUndefined()
+    })
   })
 
   it('the edge headers count as forwarding headers for the metrics internal-network rule', () => {
