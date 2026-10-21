@@ -92,6 +92,8 @@ async function parentHeadcountConfig(query: FixtureQuery): Promise<string> {
 }
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // ai_usage_logs (BE-36): provider has a check.
+  ai_usage_logs: { provider: 'mock' },
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
   banners: { banner_type: 'HERO' },
