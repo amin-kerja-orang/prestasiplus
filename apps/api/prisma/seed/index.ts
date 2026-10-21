@@ -141,23 +141,35 @@ export function parseProfile(argv: readonly string[]): string {
 export const FORCE_DEMO_FLAG = '--force-demo'
 
 /**
- * `--force-demo` (BE-26, AC7): the explicit command-line opt-in to load demo data when NODE_ENV=production. It is an
- * alternative to ALLOW_DEMO_SEED=true (which keeps working unchanged): it sets that variable on `env` so the demo guard
- * in every module sees it. Without either, production loads the reference modules only. Returns whether it was passed.
+ * `--force-demo` (BE-26, AC7; two keys, LEAD decision 2026-10-21 in #67): the explicit command-line opt-in to load demo
+ * data. In an environment the demo guard counts as production, the flag alone is REFUSED: ALLOW_DEMO_SEED=true (or 1)
+ * must also be set, so a demo load in production needs two keys. ALLOW_DEMO_SEED alone keeps working unchanged, and
+ * outside production the flag behaves as before. Production is whatever `assertSeedAllowed` refuses, so this follows the
+ * guard's own definition. When accepted, the flag sets ALLOW_DEMO_SEED on `env` so the demo guard in every module sees
+ * it. Returns whether it was passed; throws (before any database work) when it is refused.
  */
 export function applyForceDemo(argv: readonly string[], env: Record<string, string | undefined> = process.env): boolean {
   const bad = argv.find((a) => a.startsWith(`${FORCE_DEMO_FLAG}=`))
   if (bad) throw new Error(`${FORCE_DEMO_FLAG} takes no value (got "${bad}"). Pass it alone.`)
   if (!argv.includes(FORCE_DEMO_FLAG)) return false
+  try {
+    assertSeedAllowed(env)
+  } catch {
+    throw new Error(
+      `Refusing ${FORCE_DEMO_FLAG} in production: ALLOW_DEMO_SEED=true must also be set (two keys). The database was not touched.`,
+    )
+  }
   env.ALLOW_DEMO_SEED = 'true'
   return true
 }
 
 async function main(): Promise<void> {
+  // Checked first, so a refused --force-demo never opens a database connection.
+  const forceDemo = applyForceDemo(process.argv.slice(2))
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is not set.')
-  if (applyForceDemo(process.argv.slice(2)) && process.env.NODE_ENV === 'production') {
-    console.warn('seed: --force-demo passed, demo data will be loaded although NODE_ENV=production.')
+  if (forceDemo && process.env.NODE_ENV === 'production') {
+    console.warn('seed: --force-demo with ALLOW_DEMO_SEED passed, demo data will be loaded although NODE_ENV=production.')
   }
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)

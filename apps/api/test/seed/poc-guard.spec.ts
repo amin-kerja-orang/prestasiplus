@@ -73,11 +73,24 @@ describe('AC7 production gating', () => {
   const count = async (sql: string): Promise<number> => Number((await db.query<{ n: string }>(sql))[0]?.n)
 
   it('applyForceDemo sets the opt-in only when the flag is passed', () => {
-    const env: Record<string, string | undefined> = { NODE_ENV: 'production' }
+    const env: Record<string, string | undefined> = { NODE_ENV: 'development' }
     expect(applyForceDemo(['--profile=poc'], env)).toBe(false)
     expect(env.ALLOW_DEMO_SEED).toBeUndefined()
     expect(applyForceDemo(['--profile=poc', FORCE_DEMO_FLAG], env)).toBe(true)
     expect(env.ALLOW_DEMO_SEED).toBe('true')
+  })
+
+  it('two keys: in production --force-demo alone is refused, with ALLOW_DEMO_SEED it is allowed', () => {
+    const flagOnly: Record<string, string | undefined> = { NODE_ENV: 'production' }
+    expect(() => applyForceDemo(['--profile=poc', FORCE_DEMO_FLAG], flagOnly)).toThrow(/Refusing --force-demo in production.*two keys/)
+    expect(flagOnly.ALLOW_DEMO_SEED).toBeUndefined()
+    for (const value of ['true', '1']) {
+      const both: Record<string, string | undefined> = { NODE_ENV: 'production', ALLOW_DEMO_SEED: value }
+      expect(applyForceDemo(['--profile=poc', FORCE_DEMO_FLAG], both)).toBe(true)
+    }
+    const envOnly: Record<string, string | undefined> = { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'true' }
+    expect(applyForceDemo(['--profile=poc'], envOnly)).toBe(false)
+    expect(envOnly.ALLOW_DEMO_SEED).toBe('true')
   })
 
   it('applyForceDemo rejects --force-demo=<value> instead of ignoring it', () => {
@@ -127,8 +140,17 @@ describe('AC7 production gating', () => {
       expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from users`))[0]?.n)).toBe(0)
     }, 150_000)
 
-    it('production with --force-demo loads the poc profile', async () => {
+    it('production with --force-demo but without ALLOW_DEMO_SEED is refused and writes nothing (two keys)', async () => {
       const r = run(['--profile=poc', FORCE_DEMO_FLAG])
+      expect(r.status).not.toBe(0)
+      expect(r.stderr).toMatch(/Refusing --force-demo in production: ALLOW_DEMO_SEED=true must also be set/)
+      expect(r.stdout).not.toContain('core-school-packages')
+      expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from users`))[0]?.n)).toBe(0)
+      expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from school_packages`))[0]?.n)).toBe(0)
+    }, 150_000)
+
+    it('production with --force-demo and ALLOW_DEMO_SEED=true loads the poc profile', async () => {
+      const r = run(['--profile=poc', FORCE_DEMO_FLAG], { ALLOW_DEMO_SEED: 'true' })
       expect(r.status, r.stderr).toBe(0)
       expect(r.stdout).toContain('poc-profile')
       expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from users where email like '%@demo.test'`))[0]?.n)).toBeGreaterThan(0)

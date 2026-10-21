@@ -23,7 +23,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 15. `poc-cikgu`
 16. `spm-subject-configs` (BE-41): REFERENCE module, the 19 SPM subject configuration rows
 17. `spm` (BE-41): Tracking A sets, Duta profiles
-18. `poc-performance` (BE-19): headcount and timeline demo rows
+18. `poc-performance` (BE-19): headcount configs and entries, timeline posts
 19. `practice`: practice sessions and answers
 20. `gamification`
 21. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
@@ -176,7 +176,7 @@ The e2e suite runs against the mock (`src/mock`, `VITE_DATA_PROFILE=full`), whos
 
 ## Production gating (AC7)
 
-`NODE_ENV=production` without an opt-in loads the reference module only and prints a warning (unchanged). The opt-in is either `ALLOW_DEMO_SEED=true` (used by the live demo, unchanged) or the flag `--force-demo` on the seed command (`npm run be:db:seed -- --profile=poc --force-demo`), which sets `ALLOW_DEMO_SEED=true` for the run. Calling the `poc-profile` module directly in production without either throws. Tests: `apps/api/test/seed/poc-guard.spec.ts`.
+`NODE_ENV=production` without an opt-in loads the reference module only and prints a warning (unchanged). The opt-in there is `ALLOW_DEMO_SEED=true` (used by the live demo, unchanged). The flag `--force-demo` on the seed command (`npm run be:db:seed -- --profile=poc --force-demo`) sets `ALLOW_DEMO_SEED=true` for the run; in production it needs both keys: the flag alone is refused (non-zero exit, nothing loaded, not even the reference module) unless `ALLOW_DEMO_SEED=true` is also set (LEAD decision 2026-10-21, #67). Outside production the flag behaves as before. Calling the `poc-profile` module directly in production without `ALLOW_DEMO_SEED` throws. Tests: `apps/api/test/seed/poc-guard.spec.ts`.
 
 ## Seed time (AC6)
 
