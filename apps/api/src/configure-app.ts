@@ -1,9 +1,9 @@
-import type { INestApplication } from '@nestjs/common'
+import { Logger as NestLogger, type INestApplication } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
-import { clientIpMiddleware } from './common/net/client-ip'
+import { clientIpBootWarning, clientIpMiddleware } from './common/net/client-ip'
 import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
 import { requestIdMiddleware } from './common/request/request-id'
@@ -57,6 +57,13 @@ export function configureApp(app: INestApplication): void {
   ;(app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set('trust proxy', hops)
   // The single place the client address is derived (CLIENT_IP_HEADER / EDGE_PROXY_SECRET); first, so guards, logs and throttles see it.
   const config = app.get(ConfigService)
+  const ipWarning = clientIpBootWarning({
+    NODE_ENV: config.get('NODE_ENV'),
+    TRUST_PROXY_HOPS: hops,
+    CLIENT_IP_HEADER: config.get('CLIENT_IP_HEADER'),
+    EDGE_PROXY_SECRET: config.get('EDGE_PROXY_SECRET'),
+  })
+  if (ipWarning) new NestLogger('ClientIp').warn(ipWarning)
   app.use(clientIpMiddleware({ header: config.get<string>('CLIENT_IP_HEADER'), secret: config.get<string>('EDGE_PROXY_SECRET') }))
   app.setGlobalPrefix('api')
   app.use(securityHeaders({ production: app.get(ConfigService).get('NODE_ENV') === 'production' }))
