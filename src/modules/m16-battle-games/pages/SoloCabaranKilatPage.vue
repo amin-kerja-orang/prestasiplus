@@ -21,6 +21,7 @@ import {
   ratio,
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
+import { createInflight, judgeCabaranKilat, settle } from '../components/solo/solo-check'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 
 const GAME_SECONDS = 60
@@ -30,6 +31,7 @@ const STEP_MS = 800
 const CHIP_COLOR = { green: 'success', amber: 'warning', red: 'error' } as const
 
 const timers = useGameTimers()
+const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('cabaran-kilat')
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
@@ -43,14 +45,18 @@ const correct = ref(0)
 const answered = ref(0)
 const timeLeft = ref(GAME_SECONDS)
 const picked = ref<number | null>(null)
+const pickedCorrect = ref(false)
+const checking = ref(false)
 const result = ref({ newRecord: false, credited: 0 })
 let coins = 0
+let run = 0 // incremented by reset(): a check result of an earlier run is dropped
 
 const questions = computed(() => payload.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
 const chip = computed(() => (current.value ? difficultyChip(current.value.difficulty) : null))
 
 function reset(): void {
+  run += 1
   timers.clearAll()
   phase.value = 'idle'
   count.value = 3
@@ -62,6 +68,8 @@ function reset(): void {
   answered.value = 0
   timeLeft.value = GAME_SECONDS
   picked.value = null
+  pickedCorrect.value = false
+  checking.value = false
   result.value = { newRecord: false, credited: 0 }
   coins = 0
 }
@@ -89,31 +97,39 @@ function beginPlaying(): void {
 
 function pick(optionId: number): void {
   const q = current.value
-  if (phase.value !== 'playing' || picked.value !== null || !q) return
-  const option = q.options.find((o) => o.id === optionId)
-  if (!option) return
-  picked.value = optionId
-  answered.value += 1
-  if (option.correct) {
-    correct.value += 1
-    combo.value += 1
-    maxCombo.value = Math.max(maxCombo.value, combo.value)
-    const gain = cabaranGain(combo.value)
-    score.value += gain.points
-    coins += gain.coins
-  } else {
-    combo.value = 0
-  }
-  timers.after(() => {
-    picked.value = null
-    index.value += 1
-    if (index.value >= questions.value.length) void finish()
-  }, NEXT_MS)
+  if (phase.value !== 'playing' || picked.value !== null || checking.value || !q) return
+  if (!q.options.some((o) => o.id === optionId)) return
+  const myRun = run
+  checking.value = true
+  settle(judgeCabaranKilat(payload.value?.sessionId ?? '', q, optionId, inflight), (verdict) => {
+    if (myRun !== run) return // restarted while the check was in flight
+    checking.value = false
+    const ok = verdict?.correct === true // a failed check counts as wrong
+    answered.value += 1
+    if (ok) {
+      correct.value += 1
+      combo.value += 1
+      maxCombo.value = Math.max(maxCombo.value, combo.value)
+      const gain = cabaranGain(combo.value)
+      score.value += gain.points
+      coins += gain.coins
+    } else {
+      combo.value = 0
+    }
+    if (phase.value !== 'playing') return // the clock ran out meanwhile: counted, but no feedback and no advance
+    pickedCorrect.value = ok
+    picked.value = optionId
+    timers.after(() => {
+      picked.value = null
+      index.value += 1
+      if (index.value >= questions.value.length) void finish()
+    }, NEXT_MS)
+  })
 }
 
-function optionState(id: number, isCorrect: boolean): QuizOptionState {
+function optionState(id: number): QuizOptionState {
   if (picked.value === null) return 'idle'
-  if (id === picked.value) return isCorrect ? 'correct' : 'wrong'
+  if (id === picked.value) return pickedCorrect.value ? 'correct' : 'wrong'
   return 'dimmed'
 }
 
@@ -128,7 +144,7 @@ async function finish(): Promise<void> {
     max_combo: maxCombo.value,
     score: score.value,
     syiling_earned: coins,
-  })
+  }, inflight)
   result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
   phase.value = 'done'
 }
@@ -188,7 +204,7 @@ watch(darjah, () => void start(), { immediate: true })
             v-for="(option, i) in current.options"
             :key="option.id"
             :letter="OPTION_LETTERS[i] ?? ''"
-            :state="optionState(option.id, option.correct)"
+            :state="optionState(option.id)"
             data-testid="solo-option"
             @select="pick(option.id)"
           >

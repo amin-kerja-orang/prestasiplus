@@ -13,6 +13,7 @@ import ResultCard from '../components/solo/ResultCard.vue'
 import GameHud from '../components/solo/GameHud.vue'
 import { betulSalahGain, betulSalahTitle, ratio } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
+import { createInflight, judgeBetulSalah, settle } from '../components/solo/solo-check'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 import { DsLoadError } from '@/ds'
 
@@ -21,6 +22,7 @@ const FEEDBACK_MS = 700
 const STEP_MS = 800
 
 const timers = useGameTimers()
+const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('betul-salah')
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
@@ -34,13 +36,16 @@ const correct = ref(0)
 const answered = ref(0)
 const timeLeft = ref(GAME_SECONDS)
 const feedback = ref<'' | '✅' | '❌'>('')
+const checking = ref(false)
 const result = ref({ newRecord: false, credited: 0 })
 let coins = 0
+let run = 0 // incremented by reset(): a check result of an earlier run is dropped
 
 const statements = computed(() => payload.value?.statements ?? [])
 const current = computed(() => statements.value[index.value])
 
 function reset(): void {
+  run += 1
   timers.clearAll()
   phase.value = 'idle'
   count.value = 3
@@ -52,6 +57,7 @@ function reset(): void {
   answered.value = 0
   timeLeft.value = GAME_SECONDS
   feedback.value = ''
+  checking.value = false
   result.value = { newRecord: false, credited: 0 }
   coins = 0
 }
@@ -79,25 +85,32 @@ function beginPlaying(): void {
 
 function answer(choice: boolean): void {
   const item = current.value
-  if (phase.value !== 'playing' || feedback.value !== '' || !item) return
-  const ok = choice === item.is_true
-  answered.value += 1
-  if (ok) {
-    correct.value += 1
-    streak.value += 1
-    maxStreak.value = Math.max(maxStreak.value, streak.value)
-    const gain = betulSalahGain(streak.value)
-    score.value += gain.points
-    coins += gain.coins
-  } else {
-    streak.value = 0
-  }
-  feedback.value = ok ? '✅' : '❌'
-  timers.after(() => {
-    feedback.value = ''
-    index.value += 1
-    if (index.value >= statements.value.length) void finish()
-  }, FEEDBACK_MS)
+  if (phase.value !== 'playing' || feedback.value !== '' || checking.value || !item) return
+  const myRun = run
+  checking.value = true
+  settle(judgeBetulSalah(payload.value?.sessionId ?? '', item, choice, inflight), (verdict) => {
+    if (myRun !== run) return // restarted while the check was in flight
+    checking.value = false
+    const ok = verdict?.correct === true // a failed check counts as wrong
+    answered.value += 1
+    if (ok) {
+      correct.value += 1
+      streak.value += 1
+      maxStreak.value = Math.max(maxStreak.value, streak.value)
+      const gain = betulSalahGain(streak.value)
+      score.value += gain.points
+      coins += gain.coins
+    } else {
+      streak.value = 0
+    }
+    if (phase.value !== 'playing') return // the clock ran out meanwhile: counted, but no feedback and no advance
+    feedback.value = ok ? '✅' : '❌'
+    timers.after(() => {
+      feedback.value = ''
+      index.value += 1
+      if (index.value >= statements.value.length) void finish()
+    }, FEEDBACK_MS)
+  })
 }
 
 async function finish(): Promise<void> {
@@ -111,7 +124,7 @@ async function finish(): Promise<void> {
     streak: maxStreak.value,
     score: score.value,
     syiling_earned: coins,
-  })
+  }, inflight)
   result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
   phase.value = 'done'
 }
@@ -171,7 +184,7 @@ watch(darjah, () => void start(), { immediate: true })
               variant="soft"
               class="size-20 justify-center"
               aria-label="Salah"
-              :disabled="feedback !== ''"
+              :disabled="feedback !== '' || checking"
               data-testid="solo-salah"
               @click="answer(false)"
             >
@@ -186,7 +199,7 @@ watch(darjah, () => void start(), { immediate: true })
               variant="soft"
               class="size-20 justify-center"
               aria-label="Betul"
-              :disabled="feedback !== ''"
+              :disabled="feedback !== '' || checking"
               data-testid="solo-betul"
               @click="answer(true)"
             >

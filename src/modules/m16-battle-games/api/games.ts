@@ -17,12 +17,15 @@ import type {
   JutawanLifelineResult,
   JutawanPage,
   JutawanStart,
+  KadMemoriFace,
   PbQuickMatchPoll,
   PbQuickMatchStart,
   RoomActionBody,
   RoomCreateBody,
   RoomGame,
   RoomView,
+  SoloCheckBodies,
+  SoloCheckResults,
   SoloGame,
   SoloPayloads,
   SoloSubmitBody,
@@ -122,6 +125,26 @@ export function submitSoloGame(
   body: SoloSubmitBody,
 ): Promise<RawResponse<SoloSubmitResponse>> {
   return api.raw<SoloSubmitResponse>('POST', `/api/games/solo/${game}/submit`, body)
+}
+
+/**
+ * D58a `POST /api/games/solo/{game}/check` (http mode only; the mock has no such route): one answer checked by
+ * the server, which returns correct/wrong plus the key of that item. One check per item (409 on a second one);
+ * Kad Memori: one check per flipped pair.
+ */
+export function checkSoloAnswer<G extends SoloGame>(
+  game: G,
+  body: SoloCheckBodies[G],
+): Promise<SoloCheckResults[G]> {
+  return api.post<SoloCheckResults[G]>(`/api/games/solo/${game}/check`, { body })
+}
+
+/** D58a `POST /api/games/solo/kad-memori/reveal` (http mode only): the face of the first card of a move. */
+export function revealKadMemoriCard(body: {
+  session_id: string
+  card_id: string
+}): Promise<KadMemoriFace> {
+  return api.post<KadMemoriFace>('/api/games/solo/kad-memori/reveal', { body })
 }
 
 // --- Roda Nasib (S18) ---------------------------------------------------------------------------------------------

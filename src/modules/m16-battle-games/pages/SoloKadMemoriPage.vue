@@ -9,7 +9,10 @@ import { computed, onMounted, ref } from 'vue'
 
 import { DsPage, DsLoadError } from '@/ds'
 
+import type { SoloItemId } from '../api'
 import ResultCard from '../components/solo/ResultCard.vue'
+import { createInflight, judgePair, revealCard, settle } from '../components/solo/solo-check'
+import type { Face } from '../components/solo/solo-check'
 import { formatClock } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
@@ -18,22 +21,27 @@ const PAIRS = 6
 const MISMATCH_MS = 800
 
 const timers = useGameTimers()
+const inflight = createInflight()
+let runId = 0 // bumped by reset(): a check that lands after a restart is dropped
 const { payload, loading, error, load } = useSoloGame('kad-memori', false)
 
 type Phase = 'idle' | 'playing' | 'submitting' | 'done'
 const phase = ref<Phase>('idle')
 const seconds = ref(0)
 const moves = ref(0)
-const flipped = ref<number[]>([])
-const matched = ref<number[]>([])
-const wrong = ref<number[]>([])
+const flipped = ref<SoloItemId[]>([])
+const matched = ref<SoloItemId[]>([])
+const wrong = ref<SoloItemId[]>([])
 const locked = ref(false)
+const faces = ref<Record<string, Face>>({}) // known faces (http: from the server)
 const result = ref({ accuracy: 0, coins: 0, time: 0 })
 
 const cards = computed(() => payload.value?.cards ?? [])
 const matchedPairs = computed(() => matched.value.length / 2)
 
 function reset(): void {
+  runId += 1
+  faces.value = {}
   timers.clearAll()
   phase.value = 'idle'
   seconds.value = 0
@@ -55,39 +63,74 @@ async function start(): Promise<void> {
   }, 1000)
 }
 
-function flip(cardId: number): void {
+function flip(cardId: SoloItemId): void {
   if (phase.value !== 'playing' || locked.value) return
   if (flipped.value.includes(cardId) || matched.value.includes(cardId)) return
-  flipped.value = [...flipped.value, cardId]
-  if (flipped.value.length < 2) return
-  moves.value += 1
-  const [a, b] = flipped.value.map((id) => cards.value.find((c) => c.id === id))
-  if (a && b && a.pair_id === b.pair_id && a.type !== b.type) {
-    matched.value = [...matched.value, a.id, b.id]
-    flipped.value = []
-    if (matchedPairs.value >= PAIRS) void finish()
+  const card = cards.value.find((c) => c.id === cardId)
+  if (!card) return
+  const run = runId
+  const sessionId = payload.value?.sessionId ?? ''
+  const stale = () => run !== runId || phase.value !== 'playing'
+
+  if (flipped.value.length === 0) {
+    // First card of a move: its face comes from the reveal route (http); the mock reads it at once.
+    flipped.value = [cardId]
+    locked.value = true
+    settle(revealCard(sessionId, card, inflight), (face) => {
+      if (stale()) return
+      if (face) faces.value = { ...faces.value, [String(cardId)]: face }
+      else flipped.value = [] // reveal failed: undo the tap
+      locked.value = false
+    })
     return
   }
+
+  const first = cards.value.find((c) => c.id === flipped.value[0])
+  if (!first) return
+  flipped.value = [first.id, cardId]
+  moves.value += 1
   locked.value = true
-  wrong.value = [...flipped.value]
-  timers.after(() => {
-    wrong.value = []
-    flipped.value = []
-    locked.value = false
-  }, MISMATCH_MS)
+  // Server rule (BE-45, not a client change): a move less than 1 s after the previous one earns 0 coins.
+  settle(judgePair(sessionId, first, card, inflight), (res) => {
+    if (stale()) return
+    if (res) {
+      const next = { ...faces.value }
+      if (res.faces[0]) next[String(first.id)] = res.faces[0]
+      if (res.faces[1]) next[String(cardId)] = res.faces[1]
+      faces.value = next
+    }
+    if (res?.correct) {
+      matched.value = [...matched.value, first.id, cardId]
+      flipped.value = []
+      locked.value = false
+      if (matchedPairs.value >= PAIRS) void finish()
+      return
+    }
+    // Mismatch (or a failed check): show `wrong`, flip back after 800 ms.
+    wrong.value = [...flipped.value]
+    timers.after(() => {
+      wrong.value = []
+      flipped.value = []
+      locked.value = false
+    }, MISMATCH_MS)
+  })
 }
 
 async function finish(): Promise<void> {
   phase.value = 'submitting'
   timers.clearAll()
   const time = seconds.value
-  const res = await submitResult('kad-memori', {
-    session_id: payload.value?.sessionId ?? '',
-    matches: PAIRS,
-    total_pairs: PAIRS,
-    moves: moves.value,
-    time_seconds: time,
-  })
+  const res = await submitResult(
+    'kad-memori',
+    {
+      session_id: payload.value?.sessionId ?? '',
+      matches: PAIRS,
+      total_pairs: PAIRS,
+      moves: moves.value,
+      time_seconds: time,
+    },
+    inflight,
+  )
   result.value = {
     accuracy: res?.results?.accuracy ?? Math.round((PAIRS / Math.max(moves.value, 1)) * 100),
     coins: res?.results?.syiling_earned ?? 0,
@@ -96,7 +139,7 @@ async function finish(): Promise<void> {
   phase.value = 'done'
 }
 
-function cardState(id: number): 'matched' | 'wrong' | 'flipped' | '' {
+function cardState(id: SoloItemId): 'matched' | 'wrong' | 'flipped' | '' {
   if (matched.value.includes(id)) return 'matched'
   if (wrong.value.includes(id)) return 'wrong'
   if (flipped.value.includes(id)) return 'flipped'
@@ -163,12 +206,12 @@ onMounted(() => void start())
         :variant="CARD_VARIANT[cardState(card.id)]"
         class="aspect-square h-auto min-w-0 justify-center overflow-hidden p-2 text-center text-wrap break-words"
         :data-state="cardState(card.id) || 'hidden'"
-        :data-type="cardState(card.id) !== '' ? card.type : undefined"
+        :data-type="cardState(card.id) !== '' ? faces[String(card.id)]?.type : undefined"
         data-testid="solo-card-item"
         @click="flip(card.id)"
       >
         <span v-if="cardState(card.id) === ''" class="text-title">❓</span>
-        <span v-else class="text-caption">{{ card.content }}</span>
+        <span v-else class="text-caption">{{ faces[String(card.id)]?.content ?? '' }}</span>
       </UButton>
     </div>
 

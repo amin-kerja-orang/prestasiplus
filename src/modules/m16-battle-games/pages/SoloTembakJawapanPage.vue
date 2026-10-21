@@ -8,6 +8,12 @@
  * BR-M16-26: a wrong tap costs 1 life and does NOT end the question (it continues until a correct tap or the
  * deadline miss, which costs a life and counts as answered). PROPOSED: the wrongly tapped tile is disabled and
  * shown red; a wrong tap itself adds nothing to "answered", so "Ketepatan" = correct / questions resolved.
+ *
+ * D58a (http mode only): the payload is keyless and the server allows ONE check per item. FORCED DEVIATION: the
+ * FIRST tap on a question goes to `POST /check`, which decides correct/wrong and the scoring. Later taps on the
+ * same question are judged locally against the key that first check revealed; they can resolve the question
+ * but score NOTHING and do not count as correct (the server stored the item as wrong). While the first check
+ * is pending taps are ignored and a deadline miss is held back until the result is in. Mock mode is unchanged.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -19,6 +25,7 @@ import {
   fallProgress,
   laneOf,
   missDeadlineSeconds,
+  numericId,
   ratio,
   TILE_GAP_MS,
   tembakGain,
@@ -26,8 +33,10 @@ import {
   tembakTitle,
   tileFallSeconds,
 } from '../components/solo/solo-lib'
+import { createInflight, judgeTembakJawapan, settle } from '../components/solo/solo-check'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
+import { isHttpMode } from '@/api/mode'
 import { DsLoadError } from '@/ds'
 
 /** The fall zone is a 4-lane grid of 14 rows; a tile's row follows its fall progress (no inline style). */
@@ -54,6 +63,7 @@ const BANNER_MS = 1200
 const LANES = 4
 
 const timers = useGameTimers()
+const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('tembak-jawapan')
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
@@ -72,6 +82,11 @@ const questionLevel = ref(1)
 const banner = ref('')
 const wrongTiles = ref<number[]>([])
 const result = ref({ newRecord: false, credited: 0 })
+/** http mode: the first tap's check is in flight / the correct tile the first check revealed / a miss was held back. */
+const checking = ref(false)
+const revealedIndex = ref<number | null>(null)
+const missDue = ref(false)
+let run = 0
 
 const questions = computed(() => payload.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
@@ -81,13 +96,13 @@ const tiles = computed(() => {
   if (!q) return []
   return q.options.map((option, i) => {
     const startMs = i * TILE_GAP_MS
-    const fall = tileFallSeconds(questionLevel.value, q.id, i)
+    const fall = tileFallSeconds(questionLevel.value, numericId(q.id), i)
     return {
       i,
       text: option.text,
-      lane: laneOf(q.id, i, LANES),
+      lane: laneOf(numericId(q.id), i, LANES),
       visible: elapsed.value >= startMs,
-      col: COL[Math.min(laneOf(q.id, i, LANES), LANES - 1)] ?? COL[0],
+      col: COL[Math.min(laneOf(numericId(q.id), i, LANES), LANES - 1)] ?? COL[0],
       row: ROW[Math.min(ROW.length - 1, Math.max(0, Math.round(fallProgress(elapsed.value, startMs, fall) * (ROW.length - 1))))] ?? ROW[0],
     }
   })
@@ -95,7 +110,15 @@ const tiles = computed(() => {
 
 const coinsShown = computed(() => playCoins(payload.value?.canEarnSyiling, coins.value))
 
+function resetQuestionState(): void {
+  checking.value = false
+  revealedIndex.value = null
+  missDue.value = false
+}
+
 function reset(): void {
+  run += 1
+  resetQuestionState()
   timers.clearAll()
   phase.value = 'idle'
   count.value = 3
@@ -138,7 +161,8 @@ function tick(): void {
   elapsed.value += TICK_MS
   const q = current.value
   if (q && elapsed.value >= missDeadlineSeconds(questionLevel.value, q.options.length) * 1000) {
-    missQuestion()
+    if (checking.value) missDue.value = true // held back until the pending check answers
+    else missQuestion()
   }
 }
 
@@ -147,6 +171,7 @@ function nextQuestion(): void {
   elapsed.value = 0
   questionLevel.value = level.value
   wrongTiles.value = []
+  resetQuestionState()
   if (index.value >= questions.value.length) void finish()
 }
 
@@ -158,19 +183,14 @@ function missQuestion(): void {
   else nextQuestion()
 }
 
-function tap(tileIndex: number): void {
-  const q = current.value
-  if (phase.value !== 'playing' || !q) return
-  const option = q.options[tileIndex]
-  if (!option || wrongTiles.value.includes(tileIndex)) return
-  if (!option.correct) {
-    // BR-M16-26: a wrong tap costs a life and does not end the question; it goes on until a correct tap or
-    // the deadline miss. PROPOSED: the wrong tile is disabled (red) so it cannot be tapped again.
-    wrongTiles.value = [...wrongTiles.value, tileIndex]
-    lives.value -= 1
-    if (lives.value <= 0) void finish()
-    return
-  }
+/** A wrong tile: −1 life, the tile turns red; the question goes on (BR-M16-26). */
+function wrongTap(tileIndex: number): void {
+  wrongTiles.value = [...wrongTiles.value, tileIndex]
+  lives.value -= 1
+  if (lives.value <= 0) void finish()
+}
+
+function correctTap(): void {
   answered.value += 1
   correct.value += 1
   const gain = tembakGain(level.value)
@@ -188,6 +208,40 @@ function tap(tileIndex: number): void {
   nextQuestion()
 }
 
+function tap(tileIndex: number): void {
+  const q = current.value
+  if (phase.value !== 'playing' || !q || checking.value) return
+  const option = q.options[tileIndex]
+  if (!option || wrongTiles.value.includes(tileIndex)) return
+  if (revealedIndex.value !== null) {
+    // http mode, a later attempt: judged against the revealed key, resolves the question, scores nothing.
+    if (tileIndex !== revealedIndex.value) {
+      wrongTap(tileIndex)
+      return
+    }
+    answered.value += 1
+    nextQuestion()
+    return
+  }
+  const qi = index.value
+  const myRun = run
+  checking.value = true
+  settle(judgeTembakJawapan(payload.value?.sessionId ?? '', q, tileIndex, inflight), (r) => {
+    if (myRun !== run || phase.value !== 'playing' || index.value !== qi) return // stale
+    checking.value = false
+    if (r?.correct === true) {
+      correctTap()
+      return
+    }
+    if (r !== null) {
+      if (isHttpMode()) revealedIndex.value = r.correctIndex
+      wrongTap(tileIndex)
+    }
+    // A miss held back while the check was pending; a null result costs nothing, but the deadline stands.
+    if (missDue.value && phase.value === 'playing') missQuestion()
+  })
+}
+
 async function finish(): Promise<void> {
   if (phase.value !== 'playing') return
   phase.value = 'submitting'
@@ -200,7 +254,7 @@ async function finish(): Promise<void> {
     max_level: maxLevel.value,
     score: score.value,
     syiling_earned: coins.value,
-  })
+  }, inflight)
   result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
   phase.value = 'done'
 }

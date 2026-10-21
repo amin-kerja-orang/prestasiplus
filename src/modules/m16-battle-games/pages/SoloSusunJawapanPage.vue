@@ -3,18 +3,27 @@
  * S16 `/permainan/susun-jawapan` Susun Jawapan (FR-M16-82..85, 91, 92; URS FT-M16-6.5; BR-M16-26).
  * 20 puzzles, no timer, no countdown: it plays as soon as a darjah is chosen. Clicking a source tile
  * places it, clicking a placed tile (or the drop area, which removes the last one) returns it.
+ *
+ * D58a (http mode only): the payload is keyless and the server allows ONE check per puzzle. FORCED DEVIATION:
+ * the FIRST "Semak" of a puzzle goes to `POST /check`, which decides correct/wrong and the scoring. After
+ * "Cuba lagi" a later "Semak" is judged locally against the answer that first check revealed; a match resolves
+ * the puzzle but scores NOTHING (shows "+0 mata", no solved count, the dot ends red as for a skip), because the
+ * server stored the puzzle as wrong. Mock mode is unchanged.
  */
 import { computed, ref, watch } from 'vue'
 
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
+import { createInflight, judgeSusunJawapan, settle } from '../components/solo/solo-check'
 import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
+import { isHttpMode } from '@/api/mode'
 import { DsLoadError } from '@/ds'
 
 const timers = useGameTimers()
+const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('susun-jawapan')
 
 type Phase = 'idle' | 'playing' | 'submitting' | 'done'
@@ -31,6 +40,11 @@ const solved = ref(0)
 const lastPoints = ref(0)
 const dots = ref<Dot[]>([])
 const result = ref({ newRecord: false, credited: 0 })
+/** http mode: a check is in flight / the answer the first check revealed / the puzzle was resolved locally. */
+const checking = ref(false)
+const revealed = ref<string | null>(null)
+const localSolved = ref(false)
+let run = 0
 
 const puzzles = computed(() => payload.value?.puzzles ?? [])
 const current = computed(() => puzzles.value[index.value])
@@ -44,7 +58,15 @@ const sourceTiles = computed(() =>
     .filter((t) => !placed.value.includes(t.i)),
 )
 
+function resetPuzzleState(): void {
+  checking.value = false
+  revealed.value = null
+  localSolved.value = false
+}
+
 function reset(): void {
+  run += 1
+  resetPuzzleState()
   timers.clearAll()
   phase.value = 'idle'
   index.value = 0
@@ -67,35 +89,54 @@ async function start(): Promise<void> {
 }
 
 function place(i: number): void {
-  if (check.value !== 'idle' || placed.value.includes(i)) return
+  if (check.value !== 'idle' || checking.value || placed.value.includes(i)) return
   placed.value = [...placed.value, i]
 }
 
 function remove(i: number): void {
-  if (check.value !== 'idle') return
+  if (check.value !== 'idle' || checking.value) return
   placed.value = placed.value.filter((x) => x !== i)
 }
 
 function removeLast(): void {
-  if (check.value !== 'idle') return
+  if (check.value !== 'idle' || checking.value) return
   placed.value = placed.value.slice(0, -1)
 }
 
 function verify(): void {
   const p = current.value
-  if (!p || placed.value.length === 0 || check.value !== 'idle') return
+  if (!p || placed.value.length === 0 || check.value !== 'idle' || checking.value) return
   const tiles = placed.value.map((i) => p.scrambled[i] ?? '')
-  if (susunMatches(tiles, p.type, p.answer)) {
-    const gain = susunGain(p.points)
-    score.value += gain.points
-    coins.value += gain.coins
-    solved.value += 1
-    lastPoints.value = p.points
-    dots.value[index.value] = 'done'
-    check.value = 'correct'
-  } else {
-    check.value = 'wrong'
+  if (revealed.value !== null) {
+    // http mode, a later attempt: judged against the revealed answer, scores nothing.
+    if (susunMatches(tiles, p.type, revealed.value)) {
+      lastPoints.value = 0
+      localSolved.value = true
+      check.value = 'correct'
+    } else {
+      check.value = 'wrong'
+    }
+    return
   }
+  const qi = index.value
+  const myRun = run
+  checking.value = true
+  settle(judgeSusunJawapan(payload.value?.sessionId ?? '', p, tiles, inflight), (r) => {
+    if (myRun !== run || phase.value !== 'playing' || index.value !== qi) return // stale
+    checking.value = false
+    if (r?.correct === true) {
+      const gain = susunGain(p.points)
+      score.value += gain.points
+      coins.value += gain.coins
+      solved.value += 1
+      lastPoints.value = p.points
+      dots.value[index.value] = 'done'
+      check.value = 'correct'
+    } else {
+      if (isHttpMode()) revealed.value = r?.answer ?? null
+      check.value = 'wrong'
+    }
+  })
 }
 
 function retry(): void {
@@ -105,16 +146,18 @@ function retry(): void {
 
 function next(): void {
   if (check.value !== 'correct') return
+  if (localSolved.value) dots.value[index.value] = 'wrong' // resolved without score, as a skip
   advance()
 }
 
 function skip(): void {
-  if (phase.value !== 'playing') return
+  if (phase.value !== 'playing' || checking.value) return
   if (dots.value[index.value] !== 'done') dots.value[index.value] = 'wrong'
   advance()
 }
 
 function advance(): void {
+  resetPuzzleState()
   placed.value = []
   check.value = 'idle'
   if (index.value + 1 >= puzzles.value.length) {
@@ -133,7 +176,7 @@ async function finish(): Promise<void> {
     total_puzzles: puzzles.value.length,
     score: score.value,
     syiling_earned: coins.value,
-  })
+  }, inflight)
   result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
   phase.value = 'done'
 }
@@ -264,7 +307,7 @@ watch(darjah, () => void start(), { immediate: true })
             color="primary"
             variant="solid"
             class="min-h-14 w-full justify-center"
-            :disabled="placed.length === 0"
+            :disabled="placed.length === 0 || checking"
             data-testid="solo-check"
             @click="verify"
           >
@@ -276,6 +319,7 @@ watch(darjah, () => void start(), { immediate: true })
             color="neutral"
             variant="soft"
             class="min-h-12 w-full justify-center"
+            :disabled="checking"
             data-testid="solo-skip-question"
             @click="skip"
           >
