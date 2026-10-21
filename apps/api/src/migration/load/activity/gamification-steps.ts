@@ -2,8 +2,7 @@
  * Gamification activity of `migrate:activity` (BE-29 Part B): challenge completions, achievement unlocks, referral
  * codes, referrals and SPM targets. Runs in the `activity` group after Part A's wallet-bound steps.
  *
- * A target table whose owning card is not merged yet (BE-23, BE-13) makes the step leave its rows out as `excluded`
- * (see `skipIfTargetMissing`). Every row is loaded, rejected with a reason code, or excluded by a documented rule.
+ * Every row is loaded, rejected with a reason code, or excluded by a documented rule.
  */
 import type pg from 'pg'
 
@@ -28,7 +27,7 @@ import {
 import { dropConflicts } from '../claim'
 import { rejectRow, upsertAndMap } from '../helpers'
 import { distinctValues, type StagedRow } from '../source'
-import { readExpanded, skipIfTargetMissing, type Expanded } from './catalogue-steps'
+import { readExpanded, type Expanded } from './catalogue-steps'
 import type { ActivityContext } from './context'
 
 // ---------------------------------------------------------------- keyed pair reader
@@ -147,8 +146,6 @@ export function completionsStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readCompletionRows(a.pool, after, a.pageSize),
     keyOf: keyOfPair,
     async load(rows: PairRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['challenge_completions'], rows.length)
-      if (skipped) return skipped
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows.map((r) => r.row), 'user_id'))
       const challenges = await ctx.idMap.resolveMany('challenges', distinctValues(rows.map((r) => r.row), 'challenge_id'))
       let excluded = 0
@@ -193,8 +190,6 @@ export function unlocksStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readUnlockRows(a.pool, after, a.pageSize),
     keyOf: keyOfPair,
     async load(rows: PairRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['user_achievements'], rows.length)
-      if (skipped) return skipped
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows.map((r) => r.row), 'user_id'))
       const achievements = await ctx.idMap.resolveMany('achievements', distinctValues(rows.map((r) => r.row), 'achievement_id'))
       const items: LegacyRow[] = []
@@ -245,8 +240,6 @@ export function referralCodesStep(a: ActivityContext): AnyEntityStep {
       ),
     keyOf: (e: Expanded<StagedRow>) => e.key,
     async load(rows: Expanded<StagedRow>[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['referral_codes'], rows.length)
-      if (skipped) return skipped
       const users = await ctx.idMap.resolveMany('users', rows.map((e) => idOfUser(e.row)))
       let items: { legacyId: string; code: string; values: Record<string, unknown> }[] = []
       for (const e of rows) {
@@ -296,8 +289,6 @@ export function referralsStep(a: ActivityContext): AnyEntityStep {
       ),
     keyOf: (e: Expanded<StagedRow>) => e.key,
     async load(rows: Expanded<StagedRow>[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['referrals', 'referral_codes'], rows.length)
-      if (skipped) return skipped
       const referees = await ctx.idMap.resolveMany('users', rows.map((e) => idOfUser(e.row)))
       const referrerIds = distinctValues(rows.map((e) => e.row), 'referred_by')
       const referrers = await ctx.idMap.resolveMany('users', referrerIds)
@@ -342,8 +333,6 @@ export function spmTargetsStep(a: ActivityContext): AnyEntityStep {
       ),
     keyOf: (e: Expanded<SpmEntry>) => e.key,
     async load(rows: Expanded<SpmEntry>[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['spm_targets'], rows.length)
-      if (skipped) return skipped
       const users = await ctx.idMap.resolveMany('users', rows.map((e) => idOfUser(e.row)))
       const subjects = await ctx.idMap.resolveMany('subjects', rows.flatMap((e) => (e.entry.subjectRef === null ? [] : [e.entry.subjectRef])))
       const items: LegacyRow[] = []

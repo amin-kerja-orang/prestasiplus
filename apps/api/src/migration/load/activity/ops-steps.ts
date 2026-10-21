@@ -3,8 +3,7 @@
  *
  * Free text (ticket subject and reply, timeline title and story, feedback comment) is moved from the staging table to
  * the v2 table inside the database and is never logged: rejects and notes carry reason codes, column names and
- * surrogate ids only. A target table whose owning card is not merged yet (BE-19 timeline, BE-20 feedback) makes the
- * step leave its rows out as `excluded` (see `skipIfTargetMissing`).
+ * surrogate ids only.
  */
 import type pg from 'pg'
 
@@ -16,7 +15,7 @@ import { klDateSql } from '../../transform/activity-common'
 import { transformFeedback, transformTicket, transformTimeline } from '../../transform/support'
 import { rejectRow, upsertAndMap } from '../helpers'
 import { distinctValues, readById, type StagedRow } from '../source'
-import { lookup, skipIfTargetMissing } from './catalogue-steps'
+import { lookup } from './catalogue-steps'
 import type { ActivityContext } from './context'
 
 const idOf = (row: StagedRow): string => {
@@ -70,8 +69,6 @@ export function timelineStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readById(a.pool, 'timeline_entries', after, a.pageSize),
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['timeline_posts'], rows.length)
-      if (skipped) return skipped
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows, 'user_id'))
       const items: LegacyRow[] = []
       for (const row of rows) {
@@ -141,8 +138,6 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readById(a.pool, 'feedback', after, a.pageSize),
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['feedback'], rows.length)
-      if (skipped) return skipped
       const userKeys = distinctValues(rows, 'user_id')
       const users = await ctx.idMap.resolveMany('users', userKeys)
       const info = await monthInfo(a.pool, rows)

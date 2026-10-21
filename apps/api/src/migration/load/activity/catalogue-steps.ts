@@ -2,7 +2,7 @@
  * Catalogue group of `migrate:activity` (BE-29 Part B): tiers, achievements, platform challenges and the
  * gamification settings. Runs first, so the ids exist when the wallets and the completions look them up.
  *
- * Also holds the small helpers Part B's other step files share: the "target table not merged yet" guard and the
+ * Also holds the small helpers Part B's other step files share: the lookup of a mapped foreign key and the
  * resumable reader for source rows that expand to several target rows.
  */
 import type pg from 'pg'
@@ -40,30 +40,6 @@ const toRow = <V extends object>(i: { legacyId: string; values: V }): LegacyRow 
 })
 
 // ---------------------------------------------------------------- shared helpers of Part B
-
-/** The listed v2 tables that do not exist in this database (their owning card is not merged yet). */
-export async function missingTargets(db: Pick<pg.PoolClient, 'query'>, tables: readonly string[]): Promise<string[]> {
-  const res = await db.query<{ t: string }>(`SELECT t FROM unnest($1::text[]) AS t WHERE to_regclass(t) IS NULL`, [[...tables]])
-  return res.rows.map((r) => r.t)
-}
-
-/**
- * When a target table is not in the database, the batch is left out by a documented rule: every row counts as
- * `excluded` (reconciliation stays balanced) and the report gets a `target_missing.<entity>` count.
- * Returns the result to hand back, or null when all targets exist.
- */
-export async function skipIfTargetMissing(
-  a: ActivityContext,
-  ctx: BatchContext,
-  entity: string,
-  tables: readonly string[],
-  rowCount: number,
-): Promise<BatchResult | null> {
-  const missing = await missingTargets(ctx.db, tables)
-  if (missing.length === 0) return null
-  a.notes.count(`target_missing.${entity}`, rowCount)
-  return excludedResult(rowCount)
-}
 
 /** The mapped id of a staged foreign key value (undefined when the value is blank or its parent was not loaded). */
 export function lookup(map: ReadonlyMap<string, string>, value: string | null | undefined): string | undefined {
@@ -173,8 +149,6 @@ export function achievementsStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readById(a.pool, 'achievements', after, a.pageSize),
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['achievements'], rows.length)
-      if (skipped) return skipped
       const items: { legacyId: string; values: AchievementValues }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
@@ -207,8 +181,6 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readById(a.pool, 'challenges', after, a.pageSize),
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['challenges'], rows.length)
-      if (skipped) return skipped
       let teacher = 0
       const items: LegacyRow[] = []
       for (const row of rows) {
@@ -244,8 +216,6 @@ export function settingsStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readExpanded<SettingEntry>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row)),
     keyOf: (e: Expanded<SettingEntry>) => e.key,
     async load(rows: Expanded<SettingEntry>[], ctx: BatchContext): Promise<BatchResult> {
-      const skipped = await skipIfTargetMissing(a, ctx, entity, ['gamification_settings'], rows.length)
-      if (skipped) return skipped
       let items: { legacyId: string; key: string; values: Record<string, unknown> }[] = []
       for (const e of rows) {
         const legacyId = `${e.row.id}:${e.entry.key}`

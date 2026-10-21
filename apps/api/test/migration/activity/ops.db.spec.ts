@@ -11,7 +11,6 @@ import type { AnyEntityStep } from '../../../src/migration/kit/runner'
 import { opsGroup } from '../../../src/migration/load/activity/part-b'
 import { ROLE_MAP } from '../../../src/migration/transform/enums'
 import { bootActivity, type ActivityHarness } from './helpers'
-import { ensureTargets, OPS_TARGETS } from './part-b-targets'
 
 let h: ActivityHarness
 let u: string[] = []
@@ -49,7 +48,6 @@ let r1Recon: Record<string, { source: number; eligible: number; loaded: number; 
 
 beforeAll(async () => {
   h = await bootActivity()
-  await ensureTargets(h.env.pool, OPS_TARGETS)
   const q = (sql: string, params: unknown[] = []) => h.env.pool.query(sql, params)
   u = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'users' order by legacy_id::bigint limit 2`)).map((r) => r.legacy_id)
   expect(u.length).toBe(2)
@@ -160,15 +158,4 @@ describe('feedback', () => {
     expect(n(r1, 'feedback', 'ORPHAN_PARENT', 'user_id')).toBe(1)
     expect(r1Recon.feedback).toEqual({ source: 8, eligible: 8, loaded: 3, rejected: 5 })
   })
-})
-
-describe('target table not merged yet', () => {
-  it('leaves the rows out as excluded and notes the count, so the run still reconciles', async () => {
-    await h.env.pool.query(`drop table timeline_posts`)
-    const again = await h.run('apply', { groups })
-    expect(again.report.status).toBe('succeeded')
-    const row = again.report.recon.find((r) => r.entity === 'timeline_posts')
-    expect(row).toMatchObject({ sourceCount: 6, eligibleCount: 0, loaded: 0, rejected: 0, status: 'ok' })
-    expect(again.activity.notes.counters.get('target_missing.timeline_posts')).toBe(6)
-  }, 120_000)
 })

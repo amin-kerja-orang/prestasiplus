@@ -10,7 +10,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { activityGroupB, catalogueGroup } from '../../../src/migration/load/activity/part-b'
 import { bootActivity, type ActivityHarness } from './helpers'
-import { ensureTargets, GAMIFICATION_TARGETS } from './part-b-targets'
 
 let h: ActivityHarness
 let u: string[] = []
@@ -74,7 +73,6 @@ async function plant(): Promise<void> {
 
 beforeAll(async () => {
   h = await bootActivity()
-  await ensureTargets(h.env.pool, GAMIFICATION_TARGETS)
   u = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'users' order by legacy_id::bigint limit 5`)).map((r) => r.legacy_id)
   s = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'subjects' order by legacy_id::bigint limit 2`)).map((r) => r.legacy_id)
   expect(u.length, 'five migrated users in the fixture').toBe(5)
