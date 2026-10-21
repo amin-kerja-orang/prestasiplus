@@ -87,6 +87,7 @@ describe('PKSK questions in the question bank', () => {
 
   it('status mapping, list order and filters, stats, learner reads and the PKSK-only delete', async () => {
     const a = await pksk.create(write({ questionText: 'Alfa PKSK', domainCode: 'PKSK_SCI' }), adminId)
+    t.clock.advance(1000) // distinct created_at so the newest-first list order is real, not an id tie-break
     const b = await pksk.create(write({ questionText: 'Beta PKSK', domainCode: 'PKSK_SCI', targetLevel: 'T4' }), adminId)
     expect((await pksk.update(a.id, write({ questionText: 'Alfa PKSK', domainCode: 'PKSK_SCI', status: 'pending' })))?.status).toBe('pending')
     expect((await t.db.query<{ status: string; live: number | null }>(`select v.status, q.live_version_no as live from questions q join question_versions v on v.question_id = q.id where q.id = $1`, [a.id]))[0]).toEqual({ status: 'review', live: null })
