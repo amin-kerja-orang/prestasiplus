@@ -76,6 +76,20 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-47 | Mohon Keluarga Angkat: student-side application (M21) | PC-1 | P2 | BE-03, BE-05 | S | done | s-vm-obgn | `be/BE-47-keluarga-angkat` | #83 | Contract merged 2026-10-19 (PR #15, be/BE-47-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19; handed to Group B by the LEAD (#67), migration 0034 2026-10-21: merged into feature/v2-backend via PR #83 (merge caeaa201, migration 0034). Card done. |
 | BE-48 | Heatmap Topik Lemah read model (M25) | PC-2 | P1 | BE-12, BE-13, BE-08 | S | done | s-vm-obgn | `be/BE-48-heatmap-topik-lemah` | - | Contract merged 2026-10-19 (PR #5, be/BE-48-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19. 2026-10-20: provisional Group B claim (LEAD to confirm); `GET /buku-nota/heatmap` built, no table, not stacked on BE-13 (answer counts through `HeatmapPorts`, default over BE-12 `PracticeRepository.answers`) 2026-10-21: merged via be/groupb-batch3-reint 7bdebea7 (#59). |
 
+## Half AZ cards (AZ-*, queue #113)
+
+Rows owned by half AZ (D60). Status `review` = READY on #113 with an open PR into `feature/v2-backend`; the LEAD sets `done` after the merge.
+
+| ID | Title | Lane | Priority | BE card | Status | Owner | Branch | PR | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| AZ-02 | PoC seed: D1–D4 question pool (768 rows) for practice random, games and solo games | PC-2 | P1 | BE-09 / BE-26 seed | review | AZ-Dev3 | `be/AZ-02-poc-pool-d1-d4` | #129 | No migration, no contract change. Closes UAT J-01. After merge the LEAD re-runs the poc seed on the demo DB. #130 closed as a duplicate. |
+| AZ-13 | `practice_answers` time-leading partial index for Command Center reads (#70) | PC-2 | P3 | BE-12 / BE-22 | review | AZ-Dev1 | `be/AZ-13-answers-answered-at-index` | #127 | Migration 0040. Closes #70 on merge. |
+| AZ-14 | `POST /questions/bulk-action` returns `failed[]` with the exact gate text (78-05) | PC-5 | P2 | BE-10 | review | AZ-Dev1 | `be/AZ-14-bulk-failed` | #121 | No migration; contract patch text in the PR body (LEAD decision). |
+| AZ-22 | Rename the truncated 0018 aggregate index in a new migration (#61 m4) | PC-2 | P3 | BE-12 | review | AZ-Dev3 | `be/AZ-22-index-name` | #132 | Migration 0041; adds a 63-byte identifier spec. #136 closed as a duplicate. |
+| AZ-25 | Root cause of the intermittent "Betul/Salah 40 keyless statements" solo spec | PC-7 | P2 | BE-45 | review | AZ-Dev3 | `be/AZ-25-betul-salah-flake` | #137 | Test-only fix; nothing skipped. 20/20 consecutive runs green. |
+| AZ-26 | Kad Memori `reveal` idempotent for the card already open | PC-7 | - | BE-45 | review | AZ-Dev1 | `be/AZ-26-reveal-idempotent` | #134 | Backend follow-up to the #105 Major. Contract text patch in the PR body. (The AZ-26 docs housekeeping PR reuses the same ID; see its PR body.) |
+| AZ-31 | `question_sets.classroom_id` nullable for migrated headers (MIG-03/06 Q4 A, D66) | PC-3 | - | BE-18 | review | AZ-Dev3 | `be/AZ-31-question-sets-nullable-classroom` | #135 | Migration 0042 with check `ck_question_sets_classroom_or_migrated`; no contract change. Half AM BE-29 must set `needs_rebuild` and `legacy_source` (note on #109). |
+
 ## Lead tasks (not BE cards)
 
 | ID | Task | Needed by | Status |

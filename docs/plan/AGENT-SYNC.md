@@ -136,6 +136,14 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-22 ~04:30 MYT **Summary of the LEAD decisions of 21–22 Oct (D66–D70 in `docs/TRACKER.md`).** Sources: the LEAD notices on #113 and #109 and the correction on #67. Those comments stay authoritative.
+  - **D66 MIG-03/06 = "all defaults"** (#109, 21 Oct 23:20 MYT): OD-10 Q1–Q7 and Q9–Q13 option A, OD-21 C, OD-22 A, OD-23 B, OD-18 A, DT-1 A; Q8 unchanged. Q4 A needs `question_sets.classroom_id` nullable: AZ-31 #135 (migration 0042).
+  - **D67 kill switch** (#109/#113, 22 Oct 00:11 MYT): any comment by `aminfaudzi` or `azarulhakim` containing `STOP half-AM` (#109) or `STOP half-AZ` (#113) stops that half, prefix or not. STOP always wins. `RESUME half-AM` / `RESUME half-AZ` counts only at the start of a later comment. Prefixes matter only for `ASSIGN`, `HANDOFF`, `OK` and other steering commands.
+  - **D68 migration ranges** (21 Oct 23:20 MYT): half AZ **0040–0069**; Lead-Amin1 **0070–0089**; Lead-Amin2 **0090–0099**. Claim before creating the folder with `MIGRATION 00NN (<dev>, <item>)` on your half's queue issue (half AM with its `[AmiN]` prefix). The first comment wins. Taken on #113: 0040, 0041, 0042.
+  - **D69 strict SEDIA MERGE gate 2** (#67, 22 Oct 01:16 MYT): an open Major from any reviewer blocks SEDIA MERGE. The #105 SEDIA MERGE was voided this way.
+  - **D70 AZ-21c CI exception:** the `.github/**` guard-rail has one exception. AZ-DevOps may change workflows only for AZ-21c (#140) and AZ-24 (#141) and their review fixes. `.gitleaks.toml`, branch protection and other `.github` changes stay LEAD-only.
+  - **CI note:** GitHub Actions has created no run since 2026-10-20 00:50 UTC (AZ-34 on #113: most likely the October Actions minutes are used up). Until the LEAD fixes it, a PR's evidence is its local verify output.
+
 - 2026-10-21 ~21:20 **LEAD HANDOVER to `azarulhakim`; two-half split and new team rules (D60-D65).**
   - **LEAD:** from 2026-10-21 21:18 MYT the LEAD is `azarulhakim`. `aminfaudzi` continues as a developer under the LEAD (half AM). The two groups are replaced by two halves (AZ and AM); lanes, ownership and the six rules are in "Halves" at the top of this page. Re-read it now.
   - **Merge gate:** only the LEAD merges, one PR at a time. Every PR goes through the "SEDIA MERGE" checker (every 2 hours); it never merges.
