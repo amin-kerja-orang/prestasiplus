@@ -24,6 +24,23 @@ export interface SponsorshipActor {
   isTest: boolean
 }
 
+/**
+ * RFC 5321 maximum length of an e-mail address. The contract's shape regex is quadratic on a long near-miss string
+ * (a 100 kB body blocks the event loop for seconds), so a longer value never reaches it: see `capEmail`.
+ * A security deviation from the mock, which has no cap (docs/architecture/v2-backend-deviations.md).
+ */
+export const EMAIL_MAX_LENGTH = 254
+
+/** Stands in for an over-long e-mail: it fails the shape check at once, so the field gets `invalidEmail`. */
+const OVER_LONG_EMAIL_PLACEHOLDER = 'x'
+
+/** A copy of the body whose `studentEmail`, if a string longer than 254 characters once trimmed, is the failing placeholder. */
+function capEmail(input: Record<string, unknown>): Record<string, unknown> {
+  const email = input.studentEmail
+  if (typeof email === 'string' && email.trim().length > EMAIL_MAX_LENGTH) return { ...input, studentEmail: OVER_LONG_EMAIL_PLACEHOLDER }
+  return input
+}
+
 type FieldErrors = Partial<Record<KeluargaAngkatField, string>>
 
 /**
@@ -44,7 +61,9 @@ export class SponsorshipService {
   ) {}
 
   async apply(actor: SponsorshipActor, body: unknown): Promise<FosterApplicationCreated> {
-    const input = typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+    const raw = typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+    // Before the contract schema (or any regex) sees the body: an over-long e-mail becomes a value that fails the shape fast.
+    const input = capEmail(raw)
     const parsed = FosterApplicationInputSchema.safeParse(input)
 
     // First message per field (the schema keeps the mock's message copy and the order is applied below).

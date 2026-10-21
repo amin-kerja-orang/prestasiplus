@@ -352,3 +352,63 @@ describe('AC6 no side effects', () => {
     expect(await count()).toBe(before)
   })
 })
+
+describe('e-mail length cap (ReDoS guard, security deviation: 254 characters, RFC 5321)', () => {
+  const attack = (): string => 'a@' + '.'.repeat(99_900) + ' x'
+
+  it('a ~100 kB near-miss e-mail is 422 "Format e-mel tidak sah." in under 200 ms, with no users lookup', async () => {
+    const spy = vi.spyOn(t.app.get(UsersRepository), 'findByEmail')
+    try {
+      const body = validBody({ studentEmail: attack() })
+      const started = performance.now()
+      const res = await student.post(body)
+      const elapsed = performance.now() - started
+      expect(res.status).toBe(422)
+      expect(fieldsOf(res)).toEqual({ studentEmail: MSG.invalidEmail })
+      expect(res.body.error.message).toBe('Format e-mel tidak sah.')
+      expect(elapsed).toBeLessThan(200)
+      expect(spy).not.toHaveBeenCalled()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('combined with other errors it keeps the field order and the summary message', async () => {
+    const res = await student.post({ studentEmail: attack(), studentCategory: 'VIP', familyIncomeRange: 'RM9', reason: ' ' })
+    expect(res.status).toBe(422)
+    expect(Object.keys(fieldsOf(res))).toEqual(['studentEmail', 'studentCategory', 'familyIncomeRange', 'reason'])
+    expect(fieldsOf(res).studentEmail).toBe(MSG.invalidEmail)
+    expect(res.body.error.message).toBe('Format e-mel tidak sah. (and 3 more errors)')
+  })
+
+  it('255 trimmed characters is refused; surrounding spaces do not count towards the length', async () => {
+    const local = (n: number): string => 'a'.repeat(n - '@b.my'.length) + '@b.my'
+    const spy = vi.spyOn(t.app.get(UsersRepository), 'findByEmail')
+    try {
+      const over = await student.post(validBody({ studentEmail: local(255) }))
+      expect(fieldsOf(over)).toEqual({ studentEmail: MSG.invalidEmail })
+      expect(spy).not.toHaveBeenCalled()
+      const ok = await student.post(validBody({ studentEmail: `   ${local(254)}  ` }))
+      expect(ok.status).toBe(422)
+      expect(fieldsOf(ok)).toEqual({ studentEmail: MSG.studentNotFound })
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy.mock.calls[0]?.[0]).toBe(local(254))
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})
+
+describe('U+0000 in the body (the global NulGuard answers before the controller)', () => {
+  it('a NUL in the reason or the e-mail is a 4xx 422 with the field named, never a 500, and nothing is stored or logged', async () => {
+    const before = await rowCount()
+    for (const over of [{ reason: 'abc\u0000def' }, { studentEmail: 'a\u0000@b.my' }]) {
+      const res = await student.post(validBody(over))
+      expect(res.status, JSON.stringify(Object.keys(over))).toBe(422)
+      expect(res.body.error.code).toBe('VALIDATION_ERROR')
+      expect(Object.keys(fieldsOf(res))).toEqual(Object.keys(over))
+      expect(JSON.stringify(res.body)).not.toContain('abc')
+    }
+    expect(await rowCount()).toBe(before)
+  })
+})
