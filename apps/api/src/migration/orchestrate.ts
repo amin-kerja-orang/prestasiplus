@@ -24,8 +24,13 @@
  *   many rows (streaks, wallets, JPN / PPD from distinct state / district pairs) and a filtered extract would corrupt
  *   them. `--since` is required and is used for the delta report only: per `staging_cloud` table that has an
  *   `updated_at` column, the rows with `updated_at > since`, and per entity the inserted / updated / unchanged counters
- *   of the run. Precondition: a succeeded core apply for the source exists (else exit 2). Pass the same `--as-of` as the
- *   first load (it is an input of the transform). Source deletes are not propagated (plan 14.5 item 4).
+ *   of the run. Precondition: a succeeded core apply for the source exists (else exit 2). `--as-of` is REQUIRED and must be
+ *   the first load's value (it is an input of the transform; another value would rewrite rows). Source deletes are not
+ *   propagated (plan 14.5 item 4).
+ *   A delta DRY-RUN skips the activity stage whenever a table that core reads (users, schools, classes, curriculum, ...)
+ *   changed in staging: the activity preflight needs a core apply on the staged data now in the database, and the
+ *   dry-run applies nothing. A change in an activity-only table (e.g. practice_sessions) does not skip it. The apply
+ *   path has no such limit: core dry-run, core apply, then activity dry-run and apply.
  *
  * `migrate:verify` runs the reconciliation (exit 0 on pass, 1 on fail). `migrate:rollback` deletes the rows loaded from
  * the source (dry-run by default, `--confirm` must equal the database name). `migrate:link-questions` is the optional
@@ -33,9 +38,11 @@
  *
  * Environment and guards are those of the kit: DATABASE_URL, `PP_ALLOW_MIGRATE_APPLY=1` for any `--apply`, and in
  * production `PP_MIGRATE_TARGET_DB` equal to the connected database. Exit codes: 0 ok, 1 failed / mismatch, 2 usage or
- * guard, 3 apply refused, 4 busy. Output is counts and surrogate ids only: never a row value.
+ * guard, 3 apply refused, 4 busy. Output is counts and surrogate ids only: never a row value. Each stage is printed as
+ * soon as it finishes, so when a later stage throws (preflight, busy, apply refused) the operator still sees which
+ * stages completed, e.g. that the core apply committed.
  */
-import { lstatSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -122,6 +129,8 @@ export interface PipelineOptions {
   /** Report directory (a `.migration-out` folder). Default `<repo>/.migration-out`. */
   outDir?: string
   gitSha?: string | null
+  /** Called with each stage as soon as it finishes (the CLI prints it), so completed stages survive a later throw. */
+  onStage?: (stage: StageResult) => void
   /** Test seam: the reconciliation. Default `runVerify` (Part B). */
   verify?: (options: VerifyOptions) => Promise<VerifyReport>
   /** Test seam: the report writer. Default `writeVerifyReport` (Part B). */
@@ -184,6 +193,10 @@ async function verifyStage(o: PipelineOptions, runIds: readonly string[]): Promi
 
 async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
   const stages: StageResult[] = []
+  const add = (s: StageResult): void => {
+    stages.push(s)
+    o.onStage?.(s)
+  }
   const done = (verify?: VerifyReport): PipelineResult => ({
     stages,
     verify,
@@ -192,10 +205,10 @@ async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
 
   if ((o.mode ?? 'dry-run') === 'dry-run') {
     const core = await runStage('core', 'dry-run', o)
-    stages.push(core)
+    add(core)
     if (core.status !== 'succeeded') return done()
     const reason = await activitySkipReason(o)
-    stages.push(
+    add(
       reason === undefined
         ? await runStage('activity', 'dry-run', o)
         : { name: 'activity', mode: 'dry-run', status: 'skipped', skippedReason: reason },
@@ -206,15 +219,15 @@ async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
   const applyRuns: string[] = []
   for (const name of ['core', 'activity'] as const) {
     const dry = await runStage(name, 'dry-run', o)
-    stages.push(dry)
+    add(dry)
     if (dry.status !== 'succeeded') return done()
     const applied = await runStage(name, 'apply', o)
-    stages.push(applied)
+    add(applied)
     if (applied.status !== 'succeeded') return done()
     if (applied.runId !== undefined) applyRuns.push(applied.runId)
   }
   const { stage, report } = await verifyStage(o, applyRuns)
-  stages.push(stage)
+  add(stage)
   return done(report)
 }
 
@@ -281,25 +294,45 @@ export async function runDelta(options: DeltaOptions): Promise<PipelineResult> {
   return result
 }
 
-const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(Z|[+-](\d{2}):(\d{2}))$/
 
-/** An ISO-8601 instant WITH a zone (a bare local time is ambiguous across the freeze); returns it as a UTC ISO string. */
+/**
+ * An ISO-8601 instant WITH a zone (a bare local time is ambiguous across the freeze); returns it as a UTC ISO string.
+ * Impossible values (30 February, hour 24, minute 60, offset beyond 23:59) are rejected: every field must round-trip.
+ */
 export function parseSince(value: string): string {
-  const ms = ISO_INSTANT.test(value) ? Date.parse(value) : Number.NaN
-  if (Number.isNaN(ms)) throw new ApplyGuardError('--since must be an ISO-8601 timestamp with a zone, e.g. 2026-06-02T00:00:00Z.')
+  const m = ISO_INSTANT.exec(value)
+  const bad = new ApplyGuardError('--since must be an ISO-8601 timestamp with a zone, e.g. 2026-06-02T00:00:00Z.')
+  if (!m) throw bad
+  const [y, mo, d, h, mi, sec] = [m[1], m[2], m[3], m[4], m[5], m[6] ?? '0'].map(Number) as [number, number, number, number, number, number]
+  const wall = new Date(Date.UTC(y, mo - 1, d, h, mi, sec))
+  const roundTrips =
+    wall.getUTCFullYear() === y && wall.getUTCMonth() === mo - 1 && wall.getUTCDate() === d &&
+    wall.getUTCHours() === h && wall.getUTCMinutes() === mi && wall.getUTCSeconds() === sec
+  const offsetOk = m[8] === undefined || (Number(m[8]) <= 23 && Number(m[9]) <= 59)
+  const ms = Date.parse(value)
+  if (!roundTrips || !offsetOk || Number.isNaN(ms)) throw bad
   return new Date(ms).toISOString()
+}
+
+function isLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
 }
 
 /** Writes `delta-<stamp>.json` (mode 0600) into a `.migration-out` folder; returns the path. */
 export function writeDeltaReport(delta: DeltaReport, outDir: string = DEFAULT_OUT_DIR): string {
   const dir = prepareOutputDir(outDir)
   const file = join(dir, `delta-${delta.generatedAt.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}.json`)
-  try {
+  // Like profile/render.ts: never write through a symbolic link; replace an existing file, then create with `wx`.
+  if (existsSync(file) || isLink(file)) {
     if (lstatSync(file).isSymbolicLink()) throw new RangeError('The delta report file is a symbolic link; refusing to write through it.')
-  } catch (e) {
-    if ((e as { code?: string }).code !== 'ENOENT') throw e
+    unlinkSync(file)
   }
-  writeFileSync(file, `${JSON.stringify(delta, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+  writeFileSync(file, `${JSON.stringify(delta, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
   return file
 }
 
@@ -341,8 +374,12 @@ function outDirOf(args: CommandArgs): string {
   }
 }
 
-function commonFlags(args: CommandArgs): CommonFlags {
-  const asOf = flagValue(args, 'as-of') ?? new Date().toISOString().slice(0, 10)
+function commonFlags(args: CommandArgs, requireAsOf = false): CommonFlags {
+  const given = flagValue(args, 'as-of')
+  if (given === undefined && requireAsOf) {
+    throw new ApplyGuardError('--as-of is required: reuse the --as-of of the first load (YYYY-MM-DD).')
+  }
+  const asOf = given ?? new Date().toISOString().slice(0, 10)
   if (!DATE.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))) throw new ApplyGuardError('--as-of must be YYYY-MM-DD.')
   const contentOwner = flagValue(args, 'content-owner')
   if (contentOwner !== undefined && !USER_ID.test(contentOwner)) throw new ApplyGuardError('--content-owner must be a v2 user id (digits).')
@@ -354,17 +391,19 @@ function printRecon(ctx: CliContext, recon: readonly ReconRow[]): void {
   for (const r of recon) ctx.out(`${r.entity} | ${r.sourceCount} | ${r.eligibleCount} | ${r.loaded} | ${r.rejected} | ${r.status}`)
 }
 
-function printStages(ctx: CliContext, label: string, result: PipelineResult): void {
-  for (const s of result.stages) {
-    if (s.status === 'skipped') {
-      ctx.out(`${label} ${s.name} ${s.mode}: skipped (${s.skippedReason ?? 'no reason'})`)
-    } else if (s.name === 'verify') {
-      ctx.out(`${label} verify: ${s.status}${s.error !== undefined ? ` (${s.error})` : ''}`)
-    } else {
-      ctx.out(`${label} ${s.name} ${s.mode}: run ${s.runId} ${s.status}`)
-      printRecon(ctx, s.recon ?? [])
-    }
+function printStage(ctx: CliContext, label: string, s: StageResult): void {
+  if (s.status === 'skipped') {
+    ctx.out(`${label} ${s.name} ${s.mode}: skipped (${s.skippedReason ?? 'no reason'})`)
+  } else if (s.name === 'verify') {
+    ctx.out(`${label} verify: ${s.status}${s.error !== undefined ? ` (${s.error})` : ''}`)
+  } else {
+    ctx.out(`${label} ${s.name} ${s.mode}: run ${s.runId} ${s.status}`)
+    printRecon(ctx, s.recon ?? [])
   }
+}
+
+/** After the stages (already printed one by one): the verify report and which stage stopped the run. */
+function printOutcome(ctx: CliContext, label: string, result: PipelineResult): void {
   if (result.verify) printVerify(ctx, result.verify)
   const failed = result.stages.find((s) => s.status === 'failed')
   if (failed) ctx.err(`${label} stopped: stage ${failed.name} (${failed.mode}) failed.`)
@@ -396,8 +435,8 @@ export const migrateAll: MigrateCommand = {
   summary: 'core then activity (dry-run first, then apply) and the reconciliation (dry-run by default)',
   async run(args, ctx) {
     const f = commonFlags(args)
-    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f })
-    printStages(ctx, 'migrate:all', result)
+    const result = await runAll({ pool: ctx.pool, env: ctx.env, mode: args.mode, ...f, onStage: (s) => printStage(ctx, 'migrate:all', s) })
+    printOutcome(ctx, 'migrate:all', result)
     return result.status === 'succeeded' ? 0 : 1
   },
 }
@@ -409,9 +448,9 @@ export const migrateDelta: MigrateCommand = {
     const since = flagValue(args, 'since')
     if (since === undefined) throw new ApplyGuardError('--since is required (ISO-8601 timestamp, e.g. 2026-06-02T00:00:00Z).')
     parseSince(since)
-    const f = commonFlags(args)
-    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f })
-    printStages(ctx, 'migrate:delta', result)
+    const f = commonFlags(args, true)
+    const result = await runDelta({ pool: ctx.pool, env: ctx.env, mode: args.mode, since, ...f, onStage: (s) => printStage(ctx, 'migrate:delta', s) })
+    printOutcome(ctx, 'migrate:delta', result)
     if (result.delta) {
       printDelta(ctx, result.delta)
       ctx.out(`delta report: ${writeDeltaReport(result.delta, f.outDir)}`)
