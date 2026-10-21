@@ -2,6 +2,7 @@
  * BE-30 Part C (card AC4): `linkQuestions` against a real PostgreSQL. A private migrated database with hand-inserted
  * rows; every test plants its own fictitious data with a fresh natural key, so the tests do not depend on each other.
  */
+import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { linkQuestions, type LinkQuestionsReport } from '../../../src/migration/backfill/link-questions'
@@ -219,7 +220,7 @@ describe('linkQuestions: safety', () => {
 
   it('pages by numeric id: every row is examined exactly once whatever the batch size', async () => {
     const total = (await h.q<{ n: number }>(`select count(*)::int as n from practice_answers where question_id is null and legacy_source = 'cloud'`))[0]?.n ?? 0
-    // Ids cross a digit boundary (9 -> 10 -> 100) so that a text ordering would repeat or skip rows.
+    // Ids pass 100 here: ordering them as text ("100" before "96") would repeat or skip rows between pages.
     await h.q(`select setval(pg_get_serial_sequence('practice_answers', 'id'), 95)`).catch(() => undefined)
     for (let i = 0; i < 12; i += 1) await h.addAnswer({ naturalKey: key(), numberLabel: String(i) })
     const small = await run('dry-run', { batchSize: 2, listCap: 1000 })
@@ -228,6 +229,42 @@ describe('linkQuestions: safety', () => {
     expect(small.examined).toBe(big.examined)
     expect(new Set(small.unmatchedIds).size).toBe(small.unmatchedIds.length)
     expect(small.unmatchedIds.length + small.ambiguousIds.length).toBe(small.examined)
+  })
+
+  it('a row linked by another process between examine and update is skipped, reported as raced and not overwritten', async () => {
+    const k = key()
+    const paper = await h.addPaper(k)
+    const target = await h.addQuestion({ paperId: paper, numberLabel: '1' })
+    const elsewhere = await h.addQuestion({ paperId: null })
+    const raced = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const normal = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const report = await run('apply', {
+      onBeforeUpdate: async (ids) => {
+        expect(ids).toContain(raced)
+        await h.q(`update practice_answers set question_id = $1 where id = $2`, [elsewhere, raced])
+      },
+    })
+    const links = await h.links()
+    expect(links[raced]).toBe(elsewhere)
+    expect(links[normal]).toBe(target)
+    expect(report.raced).toBe(1)
+    expect(report.linked).toBe(1)
+  })
+
+  it('works on a pool of one connection (the hash index uses the checked-out connection)', async () => {
+    const stem = 'Soalan kolam tunggal'
+    const target = await h.addQuestion({ stem, options: ['p', 'q'] })
+    const a = await h.addAnswer({ contentHash: contentHash(stem, ['p', 'q']) as string })
+    const one = new pg.Pool({ connectionString: h.env.db.url, max: 1 })
+    try {
+      const dry = await linkQuestions({ pool: one, env: {}, source: 'cloud' })
+      expect(dry.linkedByHash).toBeGreaterThanOrEqual(1)
+      expect((await h.links())[a]).toBeNull()
+      await linkQuestions({ pool: one, env: APPLY_ENV, source: 'cloud', mode: 'apply' })
+      expect((await h.links())[a]).toBe(target)
+    } finally {
+      await one.end()
+    }
   })
 
   it('caps the listed ids but keeps the counts', async () => {

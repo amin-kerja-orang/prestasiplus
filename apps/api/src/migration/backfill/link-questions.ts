@@ -24,6 +24,15 @@
  * approved-but-unpublished, archived (superseded, withdrawn, source_takedown) and deactivated questions are NOT
  * candidates: a historical answer must never be attached to a question learners cannot see.
  *
+ * Scale: the hash index holds one 64-character digest plus one or two ids per live published question, roughly 20 MB
+ * per 100,000 questions, and is built once per run (lazily, only if some answer needs the hash step). The text of a
+ * question is read page by page (1,000 at a time) and dropped at once.
+ *
+ * Modes and locking: `apply` runs one transaction per batch and writes with the guarded UPDATE. `dry-run` runs NO
+ * UPDATE at all: it is one READ ONLY, REPEATABLE READ transaction (a consistent snapshot, no row locks, rolled
+ * back at the end) and counts what the guarded UPDATE would do. The guard cannot differ because the examined rows
+ * were selected with `question_id IS NULL` in that same snapshot.
+ *
  * Rules: only `question_id` is ever written, only where it is still NULL (the UPDATE itself says
  * `WHERE question_id IS NULL`), only when exactly one candidate matches. Zero candidates -> unmatched, more than
  * one -> ambiguous; both stay NULL and are listed by surrogate id. Aggregates and ids only; no stems, names or
@@ -41,12 +50,17 @@ export interface LinkQuestionsOptions {
   pool: pg.Pool
   env: Readonly<Record<string, string | undefined>>
   source: LegacySource
-  /** Default `dry-run` (counts only, rolled back). */
+  /** Default `dry-run` (read-only snapshot, no write at all). */
   mode?: RunMode
   /** Answers per batch; each batch is its own transaction in `apply`. Default 1,000. */
   batchSize?: number
   /** Most surrogate ids listed per bucket in the report. Default 200. */
   listCap?: number
+  /**
+   * TEST SEAM, not for production use: called in `apply` after the candidates of a batch are decided and before its
+   * guarded UPDATE, with the ids about to be written. Lets a test simulate another process linking a row meanwhile.
+   */
+  onBeforeUpdate?: (ids: readonly string[]) => Promise<void> | void
 }
 
 export interface LinkQuestionsReport {
@@ -127,11 +141,11 @@ interface AnswerRow {
 /** digest -> up to two question ids (two is enough to call it ambiguous). */
 type HashIndex = Map<string, string[]>
 
-async function buildHashIndex(pool: pg.Pool): Promise<HashIndex> {
+async function buildHashIndex(db: Pick<pg.PoolClient, 'query'>): Promise<HashIndex> {
   const index: HashIndex = new Map()
   let after = '0'
   for (;;) {
-    const res = await pool.query<{ id: string; stem: string | null; options: (string | null)[] | null }>(HASH_PAGE_SQL, [
+    const res = await db.query<{ id: string; stem: string | null; options: (string | null)[] | null }>(HASH_PAGE_SQL, [
       after,
       HASH_PAGE,
     ])
@@ -185,8 +199,8 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
 
     const client = await pool.connect()
     try {
-      // dry-run: one transaction around everything, rolled back. apply: one transaction per batch.
-      if (mode === 'dry-run') await client.query('BEGIN')
+      // dry-run: one READ ONLY snapshot around everything, rolled back, no UPDATE. apply: one transaction per batch.
+      if (mode === 'dry-run') await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY')
       let after = '0'
       for (;;) {
         if (mode === 'apply') await client.query('BEGIN')
@@ -206,7 +220,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
             for (const r of res.rows) byKey.set(r.id, r.question_ids)
           }
           if (hashIndex === undefined && rows.some((r) => r.hash !== null && !byKey.has(r.id))) {
-            hashIndex = await buildHashIndex(pool)
+            hashIndex = await buildHashIndex(client)
           }
 
           const links: { id: string; questionId: string; by: 'key' | 'hash' }[] = []
@@ -223,7 +237,15 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
             }
           }
 
-          if (links.length > 0) {
+          if (mode === 'dry-run') {
+            // Simulation of the guarded UPDATE: these rows were read with `question_id IS NULL` in this snapshot.
+            for (const l of links) {
+              report.linked += 1
+              if (l.by === 'key') report.linkedByNaturalKey = (report.linkedByNaturalKey ?? 0) + 1
+              else report.linkedByHash = (report.linkedByHash ?? 0) + 1
+            }
+          } else if (links.length > 0) {
+            await options.onBeforeUpdate?.(links.map((l) => l.id))
             // The only write of this module. `question_id IS NULL` keeps a concurrently linked row untouched.
             const upd = await client.query<{ id: string }>(
               `UPDATE practice_answers pa SET question_id = m.qid
