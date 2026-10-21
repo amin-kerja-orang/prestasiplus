@@ -51,6 +51,7 @@ import {
   type SchoolUserListMeta,
 } from '../../api/school-admin'
 import ImpersonateButton from './ImpersonateButton.vue'
+import PendingTeacherCallout from './PendingTeacherCallout.vue'
 import UserRowActions from './UserRowActions.vue'
 import {
   DASHBOARD_PATH,
@@ -391,6 +392,8 @@ function openRow(row: Item): void {
         >
       </div>
     </div>
+
+    <PendingTeacherCallout v-if="!isPupil" />
 
     <!-- FR-M27-89: Status, Cari, submit "Cari"; no role, school or class control. -->
     <DsFilterBar

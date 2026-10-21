@@ -23,6 +23,21 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin-sekolah/guru/menunggu',
+    name: 'm27.guru.pending',
+    component: () => import('../pages/GuruMenungguPage.vue'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      roles: ['school_admin'],
+      onForbidden: '403',
+      title: 'Guru Menunggu Pengesahan - PRESTASIPLUS',
+      header: { title: 'Guru Menunggu Pengesahan' },
+      module: 'M27',
+      v2: true,
+    },
+  },
+  {
     path: '/admin-sekolah/guru/baru',
     name: 'm27.guru.create',
     component: () => import('../pages/CiptaGuruPage.vue'),
