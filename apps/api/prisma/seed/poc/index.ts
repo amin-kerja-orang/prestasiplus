@@ -20,9 +20,10 @@
  *  11. poc-classes            classes and rosters over the population
  *  12. poc-bijak-sittings     submitted Bijak SPM sittings, results and aggregates
  *  13. poc-cikgu              Cikgu Alesa demo rows
- *  14. practice               practice sessions and answers of the demo accounts
- *  15. gamification           achievements, challenges, rewards, draws
- *  16. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
+ *  14. poc-performance        headcount configs and entries, timeline posts (BE-19)
+ *  15. practice               practice sessions and answers of the demo accounts
+ *  16. gamification           achievements, challenges, rewards, draws
+ *  17. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in (ALLOW_DEMO_SEED=true or the `--force-demo` flag of the seed
  * command, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
@@ -47,6 +48,7 @@ export const POC_PROFILE_ORDER = [
   'poc-classes',
   'poc-bijak-sittings',
   'poc-cikgu',
+  'poc-performance',
   'practice',
   'gamification',
   'poc-profile',

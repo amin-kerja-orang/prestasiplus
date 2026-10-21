@@ -14,6 +14,8 @@ import {
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
+import { InMemoryGamification } from './in-memory-gamification'
+import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
 
 /** The clock of every unit test: Friday 2026-09-25 15:40 MYT. */
 export const NOW = '2026-09-25T15:40:00+08:00'
@@ -76,6 +78,8 @@ export interface World {
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
   directory: InMemoryDirectory
+  gamification: InMemoryGamification
+  facts: InMemoryHeadcountFacts
   ports: PerformancePorts
   clock: FixedClock
   analytics: AnalyticsService
@@ -90,18 +94,22 @@ export function world(): World {
   const directory = new InMemoryDirectory()
   const bijak = new InMemoryBijakAggregate()
   const classes = new InMemoryClasses()
-  const ports = new PerformancePorts(bijak, classes)
+  const gamification = new InMemoryGamification()
+  const facts = new InMemoryHeadcountFacts()
+  const ports = new PerformancePorts(bijak, classes, undefined, gamification)
   const clock = new FixedClock(NOW)
   return {
     bijak,
     classes,
     directory,
+    gamification,
+    facts,
     ports,
     clock,
     analytics: new AnalyticsService(ports, directory, clock),
-    student: new StudentPerformanceService(ports, directory, clock),
-    school: new SchoolPerformanceService(ports, directory, clock),
-    klass: new ClassPerformanceService(ports, directory, clock),
+    student: new StudentPerformanceService(ports, directory, clock, facts),
+    school: new SchoolPerformanceService(ports, directory, clock, facts),
+    klass: new ClassPerformanceService(ports, directory, clock, facts),
     items: new ItemAnalysisService(ports, directory, clock),
   }
 }

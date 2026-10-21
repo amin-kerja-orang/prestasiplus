@@ -19,9 +19,10 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 11. `poc-classes`: classes and rosters
 12. `poc-bijak-sittings`: submitted Bijak SPM sittings, results, aggregates
 13. `poc-cikgu`
-14. `practice`: practice sessions and answers
-15. `gamification`
-16. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
+14. `poc-performance` (BE-19): headcount configs and entries, timeline posts
+15. `practice`: practice sessions and answers
+16. `gamification`
+17. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
 
 BE-26 adds no data of its own: every row comes from its owner module (one owner per store, ADR-0014). `apps/api/prisma/seed/poc/fixtures/` is not created because no cross-domain fixture was needed.
 
@@ -54,6 +55,9 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | essay_markings | 1 |
 | exam_attempts | 15 |
 | gamification_settings | 10 |
+| headcount_configs | 2 |
+| headcount_entries | 13 |
+| headcount_entry_marks | 36 |
 | jpns | 2 |
 | learner_badges | 3 |
 | legacy_subtopics | 335 |
@@ -91,6 +95,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | support_tickets | 1 |
 | syiling_rewards | 11 |
 | tiers | 4 |
+| timeline_posts | 3 |
 | topics | 2423 |
 | user_roles | 52 |
 | user_scopes | 14 |
@@ -98,7 +103,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 65 of 141. Total rows: 9876.
+Tables with rows: 69 of 146. Total rows: 9930.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

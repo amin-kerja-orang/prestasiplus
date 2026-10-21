@@ -83,6 +83,7 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
   const fake = new FakePerformance(
     emptyView({
       stats: { students: 12, sessions: 40, answered: 500, accuracy: 68.4 },
+      gps: { value: 2.6, band: 'Baik', entries: 12 },
       levels: [
         { code: 't4', accuracy: 71.2, students: 9 },
         { code: 't5', accuracy: 64.9, students: 3 },
@@ -122,7 +123,7 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
       { grade: 'C', count: 0, pct: 0 },
     ])
     expect(d.performance.total).toBe(6)
-    expect(d.performance.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
+    expect(d.performance.gps).toEqual({ value: 2.6, grade: 'B+', band: 'Baik', entries: 12 })
 
     const ctx = fake.calls.at(-1)
     expect(ctx?.role).toBe('school_admin')
