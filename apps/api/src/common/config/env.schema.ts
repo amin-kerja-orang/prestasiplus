@@ -171,6 +171,15 @@ export const EnvSchema = z.object({
   INTAKE_DAILY_PAGE_QUOTA: z.coerce.number().int().min(1).max(100_000).optional(),
   INTAKE_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
   INTAKE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).optional(),
+  // BE-38 intake workflow
+  INTAKE_BULK_ACCEPT_MIN_BAND: z.enum(['high', 'medium', 'low']).optional(),
+  INTAKE_EXTRACT_BUDGET_RECHECK_SECONDS: z.coerce.number().int().min(1).max(86_400).optional(),
+  INTAKE_DUPLICATE_SCAN_LIMIT: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_MAX_ITEMS_PER_BATCH: z.coerce.number().int().min(1).max(5000).optional(),
+  INTAKE_REVIEW_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_REVIEW_READS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_EXTRACTS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_BULK_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
   // BE-20 (Kirkpatrick, feedback). Throttles per user; the code applies the defaults when unset.
   THROTTLE_KIRKPATRICK_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),

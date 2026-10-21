@@ -34,6 +34,7 @@ import { analyticsScenarios } from './analytics/analytics'
 import { heatmapScenarios } from './heatmap/heatmap'
 import { aiScenarios } from './ai/ai'
 import { intakeDashboardScenarios } from './intake/dashboard'
+import { intakeWorkflowScenarios } from './intake/workflow'
 import { cikguScenarios } from './cikgu/cikgu'
 import { commandCenterScenarios } from './command-center/command-center'
 import { spmScenarios } from './spm/spm'
@@ -82,6 +83,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...heatmapScenarios,
     ...aiScenarios,
     ...intakeDashboardScenarios,
+    ...intakeWorkflowScenarios,
     ...cikguScenarios,
     ...commandCenterScenarios,
     ...battleScenarios,
