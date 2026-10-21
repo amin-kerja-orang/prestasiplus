@@ -353,7 +353,7 @@ function pmD1(): PoolItem[] {
   const meanings: [string, string][] = [
     ['baik hati', 'suka menolong'], ['jujur', 'bercakap benar'], ['rajin', 'tekun berusaha'], ['hormat', 'menghargai orang lain'],
     ['berterima kasih', 'menghargai pemberian'], ['bertanggungjawab', 'menjalankan tugas'], ['bekerjasama', 'membantu dalam kumpulan'],
-    ['sederhana', 'tidak berlebihan'], ['berani', 'berani bercakap benar'], ['kasih sayang', 'menyayangi keluarga'], ['adil', 'tidak berat sebelah'],
+    ['sederhana', 'tidak berlebihan'], ['berani', 'sanggup menghadapi cabaran'], ['kasih sayang', 'menyayangi keluarga'], ['adil', 'tidak berat sebelah'],
     ['bersih', 'menjaga kebersihan'],
   ]
   return table(meanings, (a) => `Apakah maksud nilai '${a}'?`, (b) => `Nilai yang bermaksud '${b}' ialah`)
