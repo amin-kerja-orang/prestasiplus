@@ -1,21 +1,36 @@
-# Render blueprint for the staging API (free plan). No secrets: every sync:false value is set in the Render dashboard.
-# Runbook: docs/ops/deploy-staging.md. Image = docker/api/Dockerfile (runtime stage); the Prisma CLI is not in it,
-# so migrations are a one-off from a laptop (see the runbook), not a pre-deploy command.
+# Render blueprint for the demo/staging API (free plan). No secrets: every `sync: false` value is typed into the
+# Render dashboard when the blueprint is applied. Runbooks: docs/ops/demo-cloudflare-supabase.md (demo, step by
+# step) and docs/ops/deploy-staging.md. Image = docker/api/Dockerfile (runtime stage); the Prisma CLI is not in it
+# and the free plan has no pre-deploy command or shell, so migrations and the demo seed are a one-off from a
+# laptop checkout (runbook step 2), not part of this service.
 services:
   - type: web
     name: pretasiplus-api
     runtime: docker
     plan: free
+    region: singapore
     dockerfilePath: ./docker/api/Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: false
     envVars:
       - { key: NODE_ENV, value: production }
+      # Render injects PORT (10000 by default) and the API listens on it: do not set PORT.
       - { key: COOKIE_SECURE, value: 'true' }
+      # Client -> Cloudflare Pages Function (overwrites X-Forwarded-For with CF-Connecting-IP) -> Render proxy
+      # (appends the address it saw) -> API. 2 = the client address. Smoke test step 5 checks it.
       - { key: TRUST_PROXY_HOPS, value: '2' }
-      - { key: DATABASE_URL, sync: false }
-      - { key: SESSION_SECRET, sync: false }
-      - { key: IC_HASH_KEY, sync: false }
-      - { key: PUBLIC_BASE_URL, sync: false }
-      - { key: PUBLIC_ORIGINS, sync: false }
+      # Uploads (BE-04) land here (the Dockerfile sets the same path). Render free disks are EPHEMERAL: files
+      # vanish on every redeploy, restart and spin-down. Accepted for the temporary demo.
+      - { key: FILE_STORAGE_DIR, value: /var/lib/pretasiplus/files }
+      # PoC Bijak questions: the demo papers place them. Ignored by the API until #51 merges, required after.
+      - { key: BIJAK_POC_QUESTIONS, value: 'true' }
+      # The running API never seeds; the demo seed is the explicit laptop one-off (runbook step 2).
+      - { key: ALLOW_DEMO_SEED, value: 'false' }
+      - { key: LOG_LEVEL, value: info }
+      # Secrets and per-deploy values (dashboard only, never in the repo):
+      - { key: DATABASE_URL, sync: false }     # Supabase SESSION pooler URL (port 5432), see the runbook
+      - { key: SESSION_SECRET, sync: false }   # random, 32+ characters
+      - { key: IC_HASH_KEY, sync: false }      # random, 32+ characters, different from SESSION_SECRET
+      - { key: PUBLIC_ORIGINS, sync: false }   # the Pages origin, https://<project>.pages.dev
+      - { key: PUBLIC_BASE_URL, sync: false }  # the same Pages origin (class QR join links). Must be a valid URL: an empty value fails the boot
