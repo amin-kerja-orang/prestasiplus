@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
+import { clientIpMiddleware } from './common/net/client-ip'
 import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
 import { requestIdMiddleware } from './common/request/request-id'
@@ -54,6 +55,9 @@ export function configureApp(app: INestApplication): void {
   // choose the address the login throttle and the audit log see.
   const hops = trustProxyHops(app.get(ConfigService).get('TRUST_PROXY_HOPS'))
   ;(app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set('trust proxy', hops)
+  // The single place the client address is derived (CLIENT_IP_HEADER / EDGE_PROXY_SECRET); first, so guards, logs and throttles see it.
+  const config = app.get(ConfigService)
+  app.use(clientIpMiddleware({ header: config.get<string>('CLIENT_IP_HEADER'), secret: config.get<string>('EDGE_PROXY_SECRET') }))
   app.setGlobalPrefix('api')
   app.use(securityHeaders({ production: app.get(ConfigService).get('NODE_ENV') === 'production' }))
   // Before everything else that can answer, so 4xx from guards and 404s are counted too.
