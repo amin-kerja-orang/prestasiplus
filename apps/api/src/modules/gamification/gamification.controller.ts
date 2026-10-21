@@ -4,12 +4,14 @@ import type { Request } from 'express'
 import { ApiError } from '../../common/errors/api-error'
 import { NoStoreInterceptor, ok } from '../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-context'
+import { ScopeContext } from '../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { isOverloadError } from '../auth/auth.errors'
 import { isTestActor } from '../wallet'
 import { MOD_PELAJAR_REFUSAL } from './gamification.constants'
 import { GAMIFICATION_LIMITS, IDEMPOTENCY_HEADER, IDEMPOTENCY_KEY_PATTERN } from './gamification.constants'
 import { GamificationService, type Viewer } from './gamification.service'
+import type { RankingViewer } from './name-privacy'
 import { bodyOf, intOf, queryText, validationFailure } from './validation'
 import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
@@ -20,6 +22,14 @@ function viewerOf(req: Req): Viewer {
   const auth = req[AUTH_CONTEXT_KEY]
   if (!auth) throw ApiError.of('UNAUTHORIZED')
   return { userId: auth.userId, isTest: isTestActor(auth) }
+}
+
+/** The leaderboard viewer (#76): own id, active role and the school of the active scope, all from the session. */
+function rankingViewerOf(req: Req): RankingViewer {
+  viewerOf(req)
+  const scope = ScopeContext.fromRequest(req)
+  const s = scope.scope
+  return { userId: scope.userId, role: scope.role, schoolId: (s.level === 'school' || s.level === 'class') && s.schoolId ? s.schoolId : null }
 }
 
 /** An overloaded database is a retryable 429, never a 500. */
@@ -55,11 +65,11 @@ export class GamificationController {
     return guard(() => this.gamification.challengesToday(viewerOf(req).userId))
   }
 
-  /** The period and every other query are ignored (FR-M14-08, FR-M14-42). */
+  /** The period and every other query are ignored (FR-M14-08, FR-M14-42). Names only within the viewer's scope (#76). */
   @Get('leaderboard')
   async leaderboard(@Req() req: Req) {
-    viewerOf(req)
-    return ok(await guard(() => this.gamification.leaderboard()))
+    const viewer = rankingViewerOf(req)
+    return ok(await guard(() => this.gamification.leaderboard(viewer)))
   }
 
   @Get('achievements')

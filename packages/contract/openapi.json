@@ -5037,17 +5037,14 @@
             "maximum": 3
           },
           "userId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "null when the viewer may not see this pupil by name (children's names rule, issue #76).",
+            "example": "1042"
           },
           "name": {
             "type": "string"
@@ -5097,17 +5094,14 @@
             "maximum": 50
           },
           "userId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "null when the viewer may not see this pupil by name (children's names rule, issue #76).",
+            "example": "1042"
           },
           "name": {
             "type": "string"
@@ -18326,7 +18320,8 @@
         "properties": {
           "q": {
             "type": "string",
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+            "maxLength": 100,
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
           }
         }
       },
@@ -18963,7 +18958,14 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+            "example": "1042"
           },
           "name": {
             "type": "string"
@@ -19171,7 +19173,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19199,7 +19208,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19362,7 +19378,14 @@
               "type": "object",
               "properties": {
                 "userId": {
-                  "$ref": "#/components/schemas/Id"
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                  "example": "1042"
                 },
                 "name": {
                   "type": "string"
@@ -19561,7 +19584,8 @@
             "maxLength": 255
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "education_level_id": {
             "type": "string",
@@ -67689,7 +67713,7 @@
           "gamification"
         ],
         "summary": "Papan Pendahulu: top 50 by lifetime syiling",
-        "description": "Global, not scoped. No query parameter is read (period and others are ignored).",
+        "description": "Global ranking, not scoped. No query parameter is read (period and others are ignored). Children's names rule (LEAD 2026-10-21, issue #76): `userId` and the full `name` only for pupils in the viewer's name scope (own row; teacher: pupils of the own active classes; school_admin: pupils of the own school; admin: all); every other row has `userId: null` and first name + initial.",
         "responses": {
           "200": {
             "description": "Podium (ranks 1 to 3) and rows (ranks 4 to 50).",
@@ -81202,10 +81226,11 @@
           {
             "schema": {
               "type": "string",
-              "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+              "maxLength": 100,
+              "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
             },
             "required": false,
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters.",
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject).",
             "name": "q",
             "in": "query"
           }

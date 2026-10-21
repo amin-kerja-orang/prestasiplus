@@ -148,7 +148,8 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       await t.wallet.credit({ userId: real, amount: 40, source: 'quiz_practice', sourceId: 'lb-real', description: 'Latih Tubi: 40 betul', isTest: false })
       await t.wallet.credit({ userId: real, amount: 7000, source: 'admin_award', sourceId: 'lb-test', description: 'Ujian', isTest: true })
       await t.wallet.credit({ userId: testOnly, amount: 9000, source: 'admin_award', sourceId: 'lb-only', description: 'Ujian', isTest: true })
-      const d = GamificationLeaderboardSchema.parse(dataOf(await student.get('/gamification/leaderboard')))
+      // The admin sees every id (#76: other viewers get redacted ids outside their scope).
+      const d = GamificationLeaderboardSchema.parse(dataOf(await admin.get('/gamification/leaderboard')))
       const all = [...d.podium, ...d.rows]
       expect(all.find((x) => x.userId === testOnly)).toBeUndefined()
       expect(all.find((x) => x.userId === real)?.totalSyilingEarned).toBe(40)
