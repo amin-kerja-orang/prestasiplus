@@ -15,6 +15,7 @@ import { filesScenarios } from './files/files'
 import { intakeScenarios } from './intake/intake'
 import { missionsScenarios } from './missions/missions'
 import { questionSetsScenarios } from './missions/question-sets'
+import { marketplaceScenarios } from './marketplace/marketplace'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
@@ -87,5 +88,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...gamesScenarios,
     ...fosterApplicationScenarios,
     ...securityScenarios,
+    ...marketplaceScenarios,
   ]
 }
