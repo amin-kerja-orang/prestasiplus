@@ -26,7 +26,7 @@ Why a staging DB and a target DB: `migrate:core` reads `staging_cloud` from the 
 - Node 22 and `npm ci` in the repo root (for `staging:load` and `migrate:*`).
 - Docker mode only: Docker with Compose v2.
 - Host mode only: a PostgreSQL 16 server and a role with `CREATEDB` and `CREATEROLE`.
-- The anonymised dump from the lead (never from a PR, chat or CI), with its `.sha256` sidecar: `pg_dump -Fc` file (`x.dump` + `x.dump.sha256`), a `pg_dump -Fd` directory (+ `SHA256SUMS` inside), or a `pp-staging-dump/1` directory.
+- The anonymised dump from the lead (never from a PR, chat or CI), with its checksum (mandatory; `load-dump` fails without it): the `.sha256` sidecar, a `pg_dump -Fc` file (`x.dump` + `x.dump.sha256`), a `pg_dump -Fd` directory (+ `SHA256SUMS` inside), or a `pp-staging-dump/1` directory.
 
 ## 3. Configuration (names only)
 
@@ -41,11 +41,12 @@ Docker mode (default): `cp deploy/rehearsal/.env.rehearsal.example deploy/rehear
 | `PP_REHEARSAL_ENV_FILE` | `deploy/rehearsal/.env.rehearsal` | Docker mode settings file. |
 | `PP_REHEARSAL_STATE_DIR` | `~/.local/state/pp-rehearsal` | Must be outside the repo. |
 | `PP_REHEARSAL_MIGRATE` | `prisma` (docker), `psql` (host) | How `up` applies migrations (section 8). |
+| `PP_REHEARSAL_READER_ROLE` | `pp_staging_reader` | Name of the read-only role for the source restore (`CLOUD_SOURCE_URL`). |
 | `PP_REHEARSAL_SOURCE_SCHEMA` | `public` | Schema of the restored dump that holds the .cloud tables. |
 | `PP_REHEARSAL_RESTORE_JOBS` | `2` | `pg_restore -j`. |
 | `PP_PG_*` | see `.env.rehearsal.example` | Postgres tuning. Set to the real production VPS values. |
 
-Flags (before any `--`): `--dry-run` prints the plan and changes nothing; `--yes` confirms a destructive step (`restore-snapshot`, `reset`, `down`); `--dump` makes a snapshot a dump file; `--keep-volume` (docker `down`).
+Flags (before any `--`): `--dry-run` prints the plan and changes nothing; `--yes` confirms a destructive step (`restore-snapshot`, `reset`, `down`); `--dump` makes a snapshot a dump file; `--keep-volume` (docker `down`); `--sha256 <hex>` (the expected hash, when there is no sidecar) or `--no-sha-check` (skip the integrity check on purpose; prints a warning) for `load-dump`.
 
 ## 4. Full run (copy-paste)
 
@@ -59,7 +60,7 @@ RDB=deploy/rehearsal/rehearsal-db.sh
 $RDB up
 $RDB status
 
-# 2. Accept the anonymised dump (outside the repo; sha256 sidecar is checked when present)
+# 2. Accept the anonymised dump (outside the repo; the sha256 sidecar is REQUIRED: no sidecar -> pass --sha256 <hex>)
 $RDB load-dump /secure/path/anon-YYYYMMDD.dump
 
 # 3. staging:load from the read-only restore, then copy staging_cloud + archive_cloud into the target
@@ -80,7 +81,8 @@ Rules the commands above rely on (from the migration runbook, enforced by the to
 - `staging:load` needs a `*_staging` database, `PP_ALLOW_STAGING_RESET=1` and `NODE_ENV` not production. `stage` and `load-dump` set these for `<db>_staging` only. Exit codes: 3 the source role can write, 4 reset guard refused.
 - `--apply` needs `PP_ALLOW_MIGRATE_APPLY=1` and a passing `--dry-run` on the same input first. After any rollback the dry-run must be repeated.
 - `PP_MIGRATE_TARGET_DB` (must equal the connected database) is demanded only when `NODE_ENV=production`. The rehearsal cannot run in production mode, because the ETL refuses anonymised or synthetic data there. Rehearse that guard once with a synthetic fixture: `NODE_ENV=production PP_MIGRATE_TARGET_DB=<db> PP_ALLOW_MIGRATE_APPLY=1 ... --apply`, or at least check the refusal without `PP_MIGRATE_TARGET_DB`.
-- `exec` adds `DATABASE_URL`, `CLOUD_SOURCE_URL` (with `--with-source`) and a stable `IC_HASH_KEY` (from the state dir, unless you set one) to the child process only. Put flags before the `--`.
+- Script flags such as `--dry-run` and `--with-source` go BEFORE the `--`; everything after the `--` belongs to the command, so the `--dry-run` / `--apply` at the end of the lines above are the ETL's own flags. To preview what the script would run: `$RDB exec target --dry-run -- npm run migrate:core -w @pp/api -- --dry-run` (a `--dry-run` after the first `--` is NOT seen by the script).
+- `exec` adds `DATABASE_URL`, `CLOUD_SOURCE_URL` (with `--with-source`) and a stable `IC_HASH_KEY` (from the state dir, unless you set one) to the child process environment only (never its command line). A symlinked dump path is resolved first, so a link into the repo is refused.
 - A `pp-staging-dump/1` directory goes in at step 2 straight into the staging database, and `stage` then only does the copy. The latest `load-dump` decides the route `stage` takes.
 
 ## 5. Verify

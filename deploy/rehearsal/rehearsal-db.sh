@@ -24,7 +24,7 @@ info() { printf '%s\n' "$*"; }
 plan() { printf '[dry-run] %s\n' "$*"; }
 
 # ---------------------------------------------------------------- arguments
-DRY=0 YES=0 DUMPMODE=0 KEEP_VOLUME=0 WITH_SOURCE=0
+DRY=0 YES=0 DUMPMODE=0 KEEP_VOLUME=0 WITH_SOURCE=0 NO_SHA=0 SHA_HEX=''
 POS=() CMD=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -33,6 +33,8 @@ while [ $# -gt 0 ]; do
     --dump) DUMPMODE=1 ;;
     --keep-volume) KEEP_VOLUME=1 ;;
     --with-source) WITH_SOURCE=1 ;;
+    --no-sha-check) NO_SHA=1 ;;
+    --sha256) [ $# -ge 2 ] || DIE_CODE=2 die "--sha256 needs a 64-character hex value"; SHA_HEX=$2; shift ;;
     -h | --help) POS=(help) ; break ;;
     --) shift; CMD=("$@"); break ;;
     -*) DIE_CODE=2 die "unknown option: $1 (try: help)" ;;
@@ -49,9 +51,10 @@ Usage: rehearsal-db.sh <command> [args] [--dry-run] [--yes]
 
   up                     start the database (docker mode), create the databases and the read-only role,
                          apply ALL migrations, verify applied == folder count
-  load-dump <path>       accept the anonymised dump (outside the repo): pg_restore -Fc file or directory
+  load-dump <path> [--sha256 <hex> | --no-sha-check]
+                         accept the anonymised dump (outside the repo): pg_restore -Fc file or directory
                          into <db>_source with the read-only role, or a pp-staging-dump/1 directory
-                         into <db>_staging; checks the .sha256 sidecar when present
+                         into <db>_staging; the .sha256 sidecar (or --sha256 <hex>) is REQUIRED
   stage                  staging:load from <db>_source (pg route), then copy staging_cloud + archive_cloud
                          into the target database (where migrate:* reads them)
   snapshot <name>        freeze the target (template database copy; --dump for a pg_dump -Fc file)
@@ -66,7 +69,8 @@ Usage: rehearsal-db.sh <command> [args] [--dry-run] [--yes]
   help
 
 Options: --dry-run (print the plan, change nothing), --yes (confirm a destructive step),
-         --dump (snapshot as a dump file), --keep-volume (down).
+         --dump (snapshot as a dump file), --keep-volume (down),
+         --sha256 <hex> / --no-sha-check (load-dump without a sidecar; the second skips the integrity check).
 Env (see docs/ops/rehearsal-db.md): PP_REHEARSAL_MODE=docker|host, PP_REHEARSAL_ADMIN_URL (host mode),
   PP_REHEARSAL_DB, PP_REHEARSAL_PORT, PP_REHEARSAL_ENV_FILE, PP_REHEARSAL_STATE_DIR,
   PP_REHEARSAL_MIGRATE=prisma|psql, PP_REHEARSAL_SOURCE_SCHEMA, PP_REHEARSAL_RESTORE_JOBS.
@@ -360,33 +364,41 @@ SQL
   info "read-only role check: $READER has no write privilege on any relation of $SOURCE_DB"
 }
 
-sha_check() { # sha_check <file|dir>
-  local p=$1
-  if [ -f "$p" ] && [ -f "$p.sha256" ]; then
-    local want got
-    want=$(awk '{print $1; exit}' "$p.sha256") got=$(sha256sum "$p" | cut -d' ' -f1)
-    [ "$want" = "$got" ] || die "SHA256 MISMATCH for $(basename "$p"): do not load it, ask the lead for a new copy"
-    info "sha256 sidecar: OK"
+sha_check() { # sha_check <file|dir>: a missing checksum is an error unless --sha256 <hex> or --no-sha-check
+  local p=$1 want='' got='' how=''
+  if [ "$NO_SHA" = 1 ]; then
+    info "WARNING: --no-sha-check: the dump's integrity is NOT verified"
+    return 0
+  fi
+  if [ -n "$SHA_HEX" ]; then
+    [[ $SHA_HEX =~ ^[0-9a-fA-F]{64}$ ]] || DIE_CODE=2 die "--sha256 must be 64 hex characters"
+    want=${SHA_HEX,,} how='--sha256'
+  elif [ -f "$p" ] && [ -f "$p.sha256" ]; then
+    want=$(awk '{print $1; exit}' "$p.sha256") how='sidecar'
   elif [ -d "$p" ] && [ -f "$p/SHA256SUMS" ]; then
     (cd "$p" && sha256sum --quiet -c SHA256SUMS) || die "SHA256SUMS check failed in $p"
     info "SHA256SUMS: OK"
+    return 0
   elif [ -d "$p" ] && [ -f "$p.sha256" ]; then
-    local want got
-    want=$(awk '{print $1; exit}' "$p.sha256")
-    got=$( (cd "$p" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) | sha256sum | cut -d' ' -f1)
-    [ "$want" = "$got" ] || die "SHA256 MISMATCH for directory $(basename "$p")"
-    info "directory sha256 sidecar: OK"
+    want=$(awk '{print $1; exit}' "$p.sha256") how='directory sidecar'
   else
-    info "warning: no sha256 sidecar for $(basename "$p"); ask the lead for the expected hash and compare by hand"
+    die "no checksum for $(basename "$p"): expected $(basename "$p").sha256 next to it (or SHA256SUMS inside a directory). Ask the lead for the hash and pass --sha256 <hex>, or --no-sha-check to skip the check on purpose."
   fi
+  if [ -f "$p" ]; then
+    got=$(sha256sum "$p" | cut -d' ' -f1)
+  else
+    got=$( (cd "$p" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) | sha256sum | cut -d' ' -f1)
+  fi
+  [ "$want" = "$got" ] || die "SHA256 MISMATCH for $(basename "$p"): do not load it, ask the lead for a new copy"
+  info "sha256 ($how): OK"
 }
 
 cmd_load_dump() {
   local path=$ARG1 kind
   [ -n "$path" ] || DIE_CODE=2 die "usage: load-dump <path to the anonymised dump>"
   [ -e "$path" ] || die "no such path: $path"
-  inside_repo "$path" && die "refusing a dump inside the repository ($path). Personal data of minors stays outside the repo; move it first."
-  path=$(cd "$(dirname "$path")" && pwd -P)/$(basename "$path")
+  path=$(realpath -e -- "$path") || die "cannot resolve $path"     # symlinks resolved: a link into the repo is caught below
+  if inside_repo "$path"; then die "refusing a dump inside the repository ($path). Personal data of minors stays outside the repo; move it first."; fi
   if [ -d "$path" ] && [ -f "$path/manifest.json" ]; then
     grep -q '"format"[[:space:]]*:[[:space:]]*"pp-staging-dump/1"' "$path/manifest.json" || die "manifest.json is not format pp-staging-dump/1"
     kind=ndjson
@@ -398,6 +410,7 @@ cmd_load_dump() {
     die "not a recognised dump: expected a pg_dump -Fc file, a pg_dump -Fd directory, or a pp-staging-dump/1 directory (plain .sql is not supported; ask the lead for -Fc)"
   fi
   info "dump kind: $kind"
+  sha_check "$path"
   if ((DRY)); then
     plan "check sha256 sidecar; $([ "$kind" = ndjson ] && echo "staging:load --from <dir> into $STAGING_DB (PP_ALLOW_STAGING_RESET=1)" || echo "recreate $SOURCE_DB, pg_restore --no-owner --no-acl -j $JOBS, grant SELECT only to $READER, check it cannot write")"
     return 0
@@ -406,7 +419,6 @@ cmd_load_dump() {
   require_server
   assert_ours "$DB"
   db_exists "$DB" || die "run 'up' first"
-  sha_check "$path"
   local t0=$SECONDS
   if [ "$kind" = ndjson ]; then
     need_tools npm
@@ -544,14 +556,18 @@ cmd_exec() {
   assert_ours "$url_db"
   db_exists "$url_db" || die "database $url_db does not exist (run up)"
   url=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$url_db")
-  local envs=("DATABASE_URL=$url")
-  if ((WITH_SOURCE)); then
-    envs+=("CLOUD_SOURCE_URL=$(make_url "$READER" "$(state_get secrets.env READER_PASSWORD)" "$SOURCE_DB")")
-  fi
-  # The same key for the full run and every delta run (hash columns must stay comparable).
-  [ -n "${IC_HASH_KEY:-}" ] || envs+=("IC_HASH_KEY=$(state_get secrets.env IC_HASH_KEY)")
-  cd "$REPO_ROOT"
-  exec env "${envs[@]}" "${CMD[@]}"
+  # Secrets go into the child's environment only (never argv, so not visible in ps).
+  (
+    export DATABASE_URL=$url
+    if ((WITH_SOURCE)); then
+      CLOUD_SOURCE_URL=$(make_url "$READER" "$(state_get secrets.env READER_PASSWORD)" "$SOURCE_DB")
+      export CLOUD_SOURCE_URL
+    fi
+    # The same key for the full run and every delta run (hash columns must stay comparable).
+    if [ -z "${IC_HASH_KEY:-}" ]; then IC_HASH_KEY=$(state_get secrets.env IC_HASH_KEY); export IC_HASH_KEY; fi
+    cd "$REPO_ROOT"
+    exec "${CMD[@]}"
+  )
 }
 
 cmd_status() {

@@ -12,9 +12,12 @@ name: pp-rehearsal
 services:
   db:
     image: postgres:16-alpine
-    env_file:
-      - path: .env.rehearsal            # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB; git-ignored
-        required: false                 # optional so `docker compose config -q` passes in CI
+    # Values come from the env file the script passes with --env-file (PP_REHEARSAL_ENV_FILE, default
+    # deploy/rehearsal/.env.rehearsal, git-ignored). An empty password makes the postgres image refuse to start.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pp_rehearsal_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     # Production-like settings (docs/ops/rehearsal-db.md section 7). fsync stays ON: the rehearsal
     # must show the real write cost, unlike the throwaway test server (fsync=off). Sizes assume
     # a 4 GB / 2 vCPU VPS; override PP_PG_* in .env.rehearsal to mirror the real production box.
@@ -110,7 +113,7 @@ services:
       npm_config_cache: /tmp/.npm
       npm_config_update_notifier: 'false'
       # The password never appears in this file; it is interpolated from .env.rehearsal by the script (--env-file).
-      DATABASE_URL: postgresql://${POSTGRES_USER:-pp}:${POSTGRES_PASSWORD:-}@db:5432/${PP_REHEARSAL_DB:-pp_rehearsal}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pp_rehearsal_admin}:${POSTGRES_PASSWORD:-}@db:5432/${PP_REHEARSAL_DB:-pp_rehearsal}
     depends_on:
       db:
         condition: service_healthy
