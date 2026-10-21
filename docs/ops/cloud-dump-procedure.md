@@ -13,16 +13,17 @@
 | Role | Who | Does what |
 |---|---|---|
 | Operator | Amin (`aminfaudzi`), the human who holds read-only .cloud access (issue #109, AM-10) | Runs every command in this document, on the operator PC |
-| Approver | the LEAD (`azarulhakim`) | Approves the sitting, reviews the kept free text (step 4), receives incident reports, signs the deletion |
+| Approver | the LEAD (`azarulhakim`) | Approves the sitting, does or accepts the kept free-text review (step 4), receives incident reports, signs the deletion |
 | Data owner | whoever administers the .cloud database | Creates and later drops the read-only MySQL account |
 | Receiver | the owner of the rehearsal host (the VPS prepared for MIG-07) | Receives the encrypted file, loads it, confirms deletion |
 
-Note on the owner: OD-18 names "the lead" as the person who runs the anonymiser. This procedure names Amin as the operator because Amin holds the read-only .cloud access, and the LEAD as the approver. **Perlu pengesahan:** the LEAD confirms this split (and who is "the lead" in OD-18 and in the runbook, where the lead is also the custodian of the copies).
+Note on the owner: OD-18 names "the lead" as the person who runs the anonymiser. **LEAD decision 21 Oct, OD-18 A:** Amin is the operator (holds the read-only .cloud access) and the LEAD approves. This replaces the OD-18 default and the runbook wording where "the lead" runs the anonymiser.
 
 **Hard rules.**
 
 - Nobody else runs this procedure. **Never a Claude or other agent session**: agents never see credentials, the key, the option file, the raw data or the dump. Do not paste any command output from the sitting into an agent session, except what step 9 allows.
 - The operator PC is the one machine allowed to connect to .cloud. This is not a "development machine" in the sense of runbook section 0, rule 6: no agent, no shared account, no cloud-synced folder, no screen sharing on it. **Perlu pengesahan:** the LEAD confirms that the operator PC meets this description (the runbook text speaks of "the lead's PC").
+- The raw dump, the anonymised dump and the key **never** enter GitHub, an issue or PR, any chat, or any Claude/AI session or transcript, cloud or local. The scripts read the operator's connection settings from the option file (a 600 file outside the repo) and never embed or log them.
 - Everything in runbook section 0 applies (dumps are never committed, attached, or sent through chat; encrypted disks only; 7 days at most).
 - Placeholders in angle brackets (`<...>`) are filled in by the operator on the day. Never write a real host, user name, password, IP address or person's name into the repository, an issue, a chat or this file.
 
@@ -60,7 +61,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    GRANT SELECT (<col1>, <col2>, ...) ON <db>.<table> TO 'pp_dump_ro'@'<operator IP or %>';
    ```
    - **Column-level grants are preferred** (data minimisation: the account cannot even read a column that is not in the spec). The spec columns are in `apps/api/src/migration/ddl/spec.ts`, and the `dump:check` report lists the selected columns per table, so the data owner can check the grants against it. The statements are generated, without any connection, by `npm run dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<operator IP>'"` (spec columns minus the redacted ones; the password stays a placeholder for the data owner). With column-level grants the account cannot see columns outside the spec, so the `dump:check` report lists them as "missing or not granted" and cannot answer column-name questions; for those, the data owner runs the metadata-only `information_schema.columns` query printed at the end of the `dump:grants` output with their own access and posts only the names.
-   - Fallback: `GRANT SELECT, SHOW VIEW ON <db>.* TO 'pp_dump_ro'@'<operator IP or %>';` (table-level on the whole database). It is accepted by the tools but gives access to columns that are not needed. **Perlu pengesahan:** the LEAD and the data owner agree to the fallback if column-level grants are not practical.
+   - Fallback: `GRANT SELECT, SHOW VIEW ON <db>.* TO 'pp_dump_ro'@'<operator IP or %>';` (table-level on the whole database). It is accepted by the tools but gives access to columns that are not needed. **Open LEAD item (not decided here):** whether the table-level fallback is allowed at all; the LEAD decides with the data owner.
    - Prefer the operator's fixed IP over `%`; if `%` is unavoidable, the data owner restricts access by firewall.
    - **Keep the account locked between sittings.** The data owner runs `ALTER USER 'pp_dump_ro'@'<operator IP or %>' ACCOUNT UNLOCK;` for the sitting and `ALTER USER 'pp_dump_ro'@'<operator IP or %>' ACCOUNT LOCK;` straight after (or creates a new account for each sitting and drops it afterwards).
    - **Load on the source.** One long consistent snapshot can strain a production database. Run the sitting off-peak, or against a read replica if the data owner has one (**Perlu pengesahan:** whether a replica exists and is current enough).
@@ -128,7 +129,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
   - **Caveat for a column-level account** (one made with `dump:grants`): the database shows such an account only the columns it was granted, so "Source columns not in spec" is **empty by construction** and says nothing about columns the spec does not know. A spec column the account cannot see is reported as "missing or not granted". To answer the open-columns question, the data owner runs the metadata-only `information_schema.columns` query printed (as a comment) at the end of the `dump:grants` output, with their own access, and sends you the result (names and types only, no rows); post that on #109 instead.
    - Paste the contents of the `.md` file as a comment on issue #109. **Perlu pengesahan:** this assumes the repository and its issues are private; if not, send the report to the developers privately instead. A developer reads it and adds any missing anonymiser rules, so the sitting does not stop on exit 4.
    - **Wait for a developer to reply "rules OK" on #109.** Do not schedule the sitting before that.
-9. **Time zone.** `--datetime-offset` is the offset of the .cloud DATETIME columns (default `+08:00`). **Perlu pengesahan:** confirm the application time zone with the LEAD or the data owner, using the time zones in the `dump:check` report, and write the agreed offset on #109 before the sitting.
+9. **Time zone (LEAD decision 21 Oct, DT-1 A).** .cloud DATETIME values are `+08:00`, which is the default of `--datetime-offset`; **do not change the default**. Rule: the export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. The `dump:check` report still lists the server time zones; if they look inconsistent with this, tell the LEAD instead of changing the offset.
 10. **Book the sitting** with the LEAD (about 30 minutes, uninterrupted) and with the receiver of the rehearsal host (so the file can be accepted and confirmed the same day).
 
 ## 3. The sitting (target under 30 minutes)
@@ -141,7 +142,7 @@ Run every command from the repository root, in one terminal for the whole sittin
 | 1 | Create a fresh key | 2 min |
 | 2 | `dump:produce` | 8 min (depends on the row counts in the check report; **Perlu pengesahan**, not yet measured on real data) |
 | 3 | Check the output | 2 min |
-| 4 | Free-text review (LEAD) | 5 min |
+| 4 | Free-text check (operator), LEAD review or acceptance | 5 min |
 | 5 | Destroy the key | 1 min |
 | 6 | Encrypt the `anon` directory | 2 min |
 | 7 | Hand over to the rehearsal host | 3 min |
@@ -215,9 +216,9 @@ If the exit code is not 0, go to section 6 now.
 - The table count and row counts are plausible against the `dump:check` report (same tables, row counts the same or slightly higher if the live system moved since the check; a table with 0 rows that had rows is a failure).
 - Write down for step 9: exit code, table count, total rows.
 
-### Step 4. Free-text review by the LEAD (5 min)
+### Step 4. Free-text check by the operator, then the LEAD review (5 min)
 
-Runbook section 11 requires this before the dump is shared. The LEAD sits at the operator PC (no screen sharing, no photos). **Perlu pengesahan:** if the LEAD cannot be present, the LEAD may delegate the review to the operator in writing on #109. The rule is: **no real person's name may appear in a shared dump.**
+**LEAD notice 21 Oct (delta to runbook section 11):** the operator verifies the anonymisation on the operator PC **before anything leaves it**. This check is mandatory and is the operator's own (parts 1 and 2 below). The LEAD's review required by runbook section 11 then happens in one of two ways: the LEAD is present in person at the operator PC (no screen sharing, no photos), or the LEAD accepts the operator's written result on #109, which holds aggregates only (the columns checked, the number of values looked at per column, and "no real name found"; never a value). The rule is: **no real person's name may appear in a shared dump.**
 
 1. Run the pattern scan on the output (patterns only):
    ```
@@ -233,7 +234,7 @@ Runbook section 11 requires this before the dump is shared. The LEAD sits at the
    ```
    Change the file (`<table>.ndjson`), the column (`body`) and the stride (50: choose about row count divided by 40). For a json column the whole value is printed. Look for a teacher, parent or pupil named in a note, title, comment or class label. The values stay in the terminal scrollback: close the terminal window after the sitting (`clear` does not remove scrollback).
 3. A sample is not proof. If any real name is seen in any column, **stop**: the LEAD decides the new rule (`scrub-text` or `null`) for that column in `anon.config.json`, a developer applies it, and the whole sitting is repeated with a new key on another day (section 6, "Review failed"). Do not hand over this dump.
-4. If nothing is found, the LEAD writes "free-text review passed" for the record (step 9). **Perlu pengesahan:** the sample size (40 values per column at a stride) is a proposal; the LEAD may set a larger one.
+4. If nothing is found, the operator writes the aggregate result for the LEAD (step 9), and the LEAD is present or accepts it on #109. **Open LEAD item (not decided here):** the sample size (40 values per column at a stride) is a proposal; the LEAD sets the size.
 
 ### Step 5. Destroy the key (1 min)
 
@@ -291,11 +292,11 @@ sha256sum "$out"
 
 - On Windows PowerShell the pipe must run inside `cmd /c`: the PowerShell pipeline would corrupt binary data. The exit code of a `cmd /c` pipeline is the one of its last command, so the listing check (a readable archive with the right number of entries) is what proves the encryption worked.
 - **The listing check is mandatory.** Do not hand over a file whose exit code is not 0 or whose listing fails or has the wrong count. In that case wipe and start again as in section 6.
-- Send the passphrase to the receiver through a **different channel from the file** (for example, the file by `scp`, the passphrase by a call or a private message). Never in the same message, never on #109 or in e-mail with the file.
+- Send the passphrase to the receiver through a **different channel from the file** (for example, the file by `scp`, the passphrase by a call or a private message). Never in the same message, never on #109, in e-mail with the file, or in any Claude/AI session or transcript.
 
 ### Step 7. Hand over to the rehearsal host (3 min)
 
-Only to the rehearsal host (the MIG-07 VPS), into a directory that only the receiver's account can read. Never GitHub, a PR, an issue, chat, CI, an e-mail attachment or a cloud drive.
+Only to the rehearsal host (the MIG-07 VPS), into a directory that only the receiver's account can read. Never GitHub, a PR, an issue, chat, CI, an e-mail attachment, a cloud drive, or any Claude/AI session or transcript.
 
 ```powershell
 scp "$out" <user>@<rehearsal host>:<restricted dir>/
@@ -334,7 +335,7 @@ Post one comment with **only**:
 - number of tables and total number of rows;
 - sha256 of the `.gpg` file;
 - the offset used for `--datetime-offset`;
-- "free-text review passed (LEAD)";
+- "free-text check passed (operator)" and "LEAD review: present in person" or "LEAD accepted on #109" (aggregates only);
 - "raw wiped, key destroyed", and "local copies deleted" once step 8 is done.
 
 Never post data, file paths that contain personal information, the passphrase, the key, the option file or any host name.
@@ -366,7 +367,7 @@ The confirmation comments contain the date, "deleted" and what was deleted, and 
   1. **Stop.** Do not retry, do not copy the file elsewhere, do not "tidy up first".
   2. **Tell the LEAD immediately** by phone or private message, not on a public issue. Write down the time you noticed it and what was involved (which files, which channel, to whom).
   3. Do what the LEAD says: usually wipe local copies, ask the receiver to delete host copies, and have the data owner drop the account and change its password.
-  4. The LEAD decides whether the data owner, the affected schools or the authority must be informed. **Perlu pengesahan:** a statutory notification period may apply; the LEAD checks with the data owner or a legal adviser. Record the incident with date, time and outcome.
+  4. The LEAD decides whether the data owner, the affected schools or the authority must be informed. **Open LEAD item:** a statutory notification period may apply; the LEAD checks with the data owner or a legal adviser. Record the incident with date, time and outcome.
 
 ## 6. Abort and troubleshooting
 
@@ -405,4 +406,4 @@ Every run follows this document from the start of section 3:
 - the same deletion rules, the same #109 report, the same confirmation of deletion;
 - a new `dump:check` when the schema may have changed or after any exit 4, with "rules OK" before the sitting.
 
-Because the key differs, the fakes differ between two dumps: each run is a complete standalone dump, and rehearsals cannot compare pseudonyms across dumps. The `--datetime-offset` stays the agreed value unless the LEAD changes it.
+Because the key differs, the fakes differ between two dumps: each run is a complete standalone dump, and rehearsals cannot compare pseudonyms across dumps. The `--datetime-offset` stays `+08:00` (LEAD decision 21 Oct, DT-1 A).
