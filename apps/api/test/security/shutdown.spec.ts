@@ -1,11 +1,13 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { Agent, request as httpRequest } from 'node:http'
+import { createRequire } from 'node:module'
 import { connect } from 'node:net'
 import { fileURLToPath } from 'node:url'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-const TSX = fileURLToPath(new URL('../../../../node_modules/.bin/tsx', import.meta.url))
+// Run tsx through the current Node binary: `node_modules/.bin/tsx` is a shell script, which spawn cannot start on Windows.
+const TSX_CLI = createRequire(import.meta.url).resolve('tsx/cli')
 const CHILD = fileURLToPath(new URL('./fixtures/shutdown-child.ts', import.meta.url))
 const API_DIR = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -22,7 +24,7 @@ afterEach(() => {
 })
 
 async function startChild(env: Record<string, string> = {}): Promise<Child> {
-  const proc = spawn(TSX, [CHILD], { cwd: API_DIR, env: { ...process.env, NODE_ENV: 'test', ...env }, stdio: ['ignore', 'pipe', 'pipe'] })
+  const proc = spawn(process.execPath, [TSX_CLI, CHILD], { cwd: API_DIR, env: { ...process.env, NODE_ENV: 'test', ...env }, stdio: ['ignore', 'pipe', 'pipe'] })
   running.push(proc)
   const output: string[] = []
   const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => proc.once('exit', (code, signal) => resolve({ code, signal })))
@@ -66,7 +68,9 @@ function canConnect(port: number): Promise<boolean> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-describe('graceful shutdown (BE-33 AC5)', () => {
+// POSIX only: on Windows `kill('SIGTERM')` terminates the child at once (TerminateProcess), so no handler can drain.
+// CI (Linux) runs these.
+describe.skipIf(process.platform === 'win32')('graceful shutdown (BE-33 AC5)', () => {
   it('SIGTERM lets the in-flight request finish with 200 and the full body, runs the module destroy hooks and exits 0', async () => {
     const child = await startChild({ SLOW_MS: '800' })
     const inFlight = get(child.port, '/slow')
