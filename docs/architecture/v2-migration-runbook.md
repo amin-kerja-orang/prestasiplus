@@ -395,7 +395,7 @@ Any "no" is a no-go. The lead may waive a criterion only in writing in the issue
 | T-0 | Freeze of .cloud writes starts. Record the time. | `<MIG-08 owner>` with the .cloud owner | Timestamp. |
 | T+1 | Final dump (raw, then anonymised for a rehearsal; for the real cutover per OD-2 and `<MIG-08 owner>`). Record the dump time `T-dump-final`. | lead | Timestamp. |
 | T+2 | `staging:load` of the final dump on the target database. | devops | Exit 0, counts against the manifest. |
-| T+3 | Precondition: an earlier `migrate:all --apply` succeeded. Delta dry-run: `npm run migrate:delta -w @pp/api -- --since=<time of the previous dump> --as-of=<same date as the full run>`. | be / devops | Exit 0, delta report. |
+| T+3 | Precondition: an earlier `migrate:all --apply` succeeded. Delta dry-run: `npm run migrate:delta -w @pp/api -- --since=<time of the previous dump> --as-of=<the first load's date>`. | be / devops | Exit 0, delta report. The activity stage may show "skipped" (see the notes). |
 | T+4 | Delta apply: `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:delta -w @pp/api -- --since=<same> --as-of=<same> --apply`. | devops | Exit 0, duration. |
 | T+5 | `migrate:verify` (also run by the delta). Go/no-go of section 14. | lead | `pass`, sign-off line. |
 | T+6 | Switch (the v2 system serves users). If no-go, section 16. | `<MIG-08 owner>` | Timestamp. |
@@ -403,7 +403,9 @@ Any "no" is a no-go. The lead may waive a criterion only in writing in the issue
 Notes.
 
 - `--since` is the time of the **previous** dump (the one already loaded), in ISO 8601. It feeds the delta report only: rows with `updated_at > since` per staged table against inserted and updated per entity. A large gap between the two numbers needs an explanation (for example rows changed by aggregation steps).
-- Use the same `--as-of`, `--batch-size`, `--content-owner` and `IC_HASH_KEY` as the full run; a different value changes hashes and rewrites rows.
+- **`--as-of` is required for `migrate:delta` and must equal the `--as-of` of the first load**, because it feeds the transform; do not rely on the default (today's date), which would differ on another day. Use the same `--batch-size`, `--content-owner` and `IC_HASH_KEY` as well; a different value changes hashes and rewrites rows.
+- **A delta dry-run can skip the activity stage.** When a core input table changed in the new dump, the activity preflight needs the new core apply, so the dry-run reports activity as "skipped". This is expected. The `--apply` path runs core dry-run, core apply, activity dry-run, activity apply, in that order, so the activity stage still runs in full.
+- **Deviation from plan 14.5, item 4** (`--since` loads only newer rows). The delta here is a hash-diff re-run of core and activity on the re-staged freeze dump, not a filtered extract. Reason: the streak, wallet and JPN/PPD steps aggregate across many rows, and an extract filtered by `updated_at` would corrupt them. `legacy_hash` already makes unchanged rows a no-op, so only changed and new rows are written. `--since` feeds the delta report only. The plan text and BE-30 AC2 wording ("incremental by `updated_at`") should be read in this sense.
 - A source delete made before the freeze but after the previous dump is not removed in v2. Record such rows if the .cloud owner knows of any.
 - The detailed cutover timeline (30 Oct) is MIG-08 and will live in a later section or document.
 
@@ -419,7 +421,15 @@ Notes.
 2. Dry-run: `npm run migrate:rollback -w @pp/api -- --confirm=<database name>`. It counts the rows per table and deletes nothing. Read the counts.
 3. Apply: `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:rollback -w @pp/api -- --confirm=<database name> --apply`. In production also set `PP_MIGRATE_TARGET_DB=<database name>`. `--confirm` must equal `current_database()`, otherwise it is refused (exit 2).
 
-What it does: in one transaction it deletes every row with `legacy_source = 'cloud'` from every migratable table, children first, and the `etl_id_map` rows of the source. Rows born in v2 are never deleted. If a v2-born row references a migrated row, the rollback **aborts** and changes nothing; the lead decides how to handle those rows (nothing is forced). `etl_runs`, `etl_recon` and `etl_rejects` are kept as the audit trail.
+What it does: in one transaction it deletes every row with `legacy_source = 'cloud'` from every migratable table, children first, and the `etl_id_map` rows of the source. Rows born in v2 are never deleted. `etl_runs`, `etl_recon`, `etl_rejects` and `etl_checkpoints` are kept as the audit trail.
+
+Migrated rows that other data depends on:
+
+- **Refusal (no change).** If a v2-born row references a migrated row in a non-reference table (users, practice rows and similar), the rollback **refuses**, names the table and the referencing column, and changes nothing. The lead decides how to handle those rows; nothing is forced.
+- **Released seed rows.** In reference tables whose loader adopts seed rows (levels, subjects, chapters, topics, geography, tiers, achievements, settings), an adopted row that something references is **released**: its legacy pair (`legacy_source`, `legacy_id`) is set to NULL and the row stays. The report prints these as `released`, per table. An adopted row that nothing references cannot be told from an inserted one and is deleted. The values the ETL wrote into released rows are not restored.
+- **After a rollback on a shared database, re-run the idempotent seeds** (`npm run be:db:seed`) to restore the seed rows, and only then compare the counts (below).
+- **`coin_ledger`** is append-only (trigger). Its rows are not deleted one by one; they go with their user through the user cascade, and the rollback checks that no migrated ledger row is left.
+- **Warnings.** The report prints `warnings`. If an apply run did not finish, its checkpoints are kept, and the next load must **not** resume that run: start a fresh dry-run and apply.
 
 **Prove the result.** Do not re-run `migrate:verify`; it reads the loaded data and would report mismatches by design. Instead:
 
@@ -432,7 +442,7 @@ What it does: in one transaction it deletes every row with `legacy_source = 'clo
 
 ## 17. Post-cutover verification (BE-30)
 
-1. **Archive the verify report.** The final `.migration-out/recon-<runs>-<stamp>.json/.md` holds aggregates and surrogate ids only, and `.migration-out/` is git-ignored. Keep it in the lead's encrypted storage. Never attach it to a PR or an issue; put the counts in text. If a report holds anything other than aggregates, treat it as a PDPA incident (section 0, rule 8).
+1. **Archive the verify report.** The final `.migration-out/recon-<runs>-<stamp>.json/.md` holds aggregates and surrogate ids only, and `.migration-out/` is git-ignored. Keep it in the lead's encrypted storage only until both the rehearsal sign-off and the cutover sign-off are done, 30 days at most, then delete it (same rule as section 18). Never attach it to a PR, an issue or a CI artifact; put the counts in text. If a report holds anything other than aggregates, treat it as a PDPA incident (section 0, rule 8).
 2. **Smoke checks** on the production system after the switch: health endpoint green; a student, a teacher, a parent and an admin each log in with their own account; the dashboards show non-empty history for a sample of accounts; the wallet balance of a sample matches the reported ledger rows; JPN/PPD pickers list the derived rows. Record pass or fail only.
 3. **First login.** Roster accounts (those with a `username`) are forced to reset the password on first login. Accounts whose legacy hash is not bcrypt, or equals a shared default hash, are forced to reset too (data-migration section 5, "Passwords and hashes"). Everyone logs in again; no legacy token was migrated. Expect a spike in password-reset requests and tell support.
 4. **Accepted drift.** Streak, mastery and rankings differ from .cloud by design. Tell support which figures can change.
@@ -447,8 +457,8 @@ Extends sections 5 and 10. Timing follows section 0, rule 4: delete as soon as t
 |---|---|---|
 | Raw dump or restore, anonymised dump directory, the encrypted archive and every copy that was handed out, the `pp_staging_reader` role | lead (custodian) | After the final verify is `pass` and signed off. |
 | The key file `ANON_HMAC_KEY_FILE` and any history that held a key | lead | With the dump. |
-| `staging_cloud` schema (`drop schema staging_cloud cascade;`) | devops | After the sign-off and after the rollback window has closed. Until then it is the input for a re-run, so keep it. |
-| `.migration-out/` reports and profiles that contain surrogate ids; the restricted `CLOUD_SOURCE_URL` file | lead, devops | After the numbers were copied into the issue as text. |
+| `staging_cloud` schema (`drop schema staging_cloud cascade;`) | devops | **Hard deadline: at most 7 days after the cutover** (section 0, rule 4; section 14, item 10). Until then it is the input for a re-run or a rollback retry, so keep it, but no longer. The lead records the drop date as a dated line in the issue (no data). |
+| `.migration-out/` profiles and the recon report (aggregates and surrogate ids only); the restricted `CLOUD_SOURCE_URL` file | lead, devops | **Report rule (one rule, also in section 17, item 1):** the aggregate-only recon report stays in the lead's encrypted storage until both the rehearsal sign-off and the cutover sign-off are done, 30 days at most, then it is deleted. Never in GitHub (PR, issue, artifact). The numbers go into the issue as text. The `CLOUD_SOURCE_URL` file goes with the dump. |
 | Write-ahead log, base backups, snapshots and replicas of the server that held the dump; temporary and spill files (section 5, items 3 and 4) | devops | With the dump. |
 
 **Kept:**
