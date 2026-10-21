@@ -219,10 +219,17 @@ if login student "$STUDENT_ID" STUDENT_PASSWORD; then
   if [[ "$WRITES" == 1 ]]; then
     # Start a session on the subject with the most approved questions (idempotent per clientUuid), answer the first
     # question with its first option (both ids come from the start answer), submit.
+    # Mode: `random` serves only the levels offered to random sessions (BR-11: Darjah 1-4, `OFFERED_LEVEL_CODES`).
+    # The API has no modes endpoint; the subject config (`GET /api/practice/subjects/:code`) reports in `.total` the
+    # questions at those offered levels. With at least 5 the script starts `random` (count 5); otherwise, as for the
+    # PoC seed's SPM pupil (Tingkatan 4/5 questions only), it starts `past_year` (SPM pool, count 10, BR-M06-13).
     SUBJ="$(jqv s-subjects '[.data[] | select((.approvedCount // 0) > 0)] | max_by(.approvedCount) | .code')"
     if [[ -z "$SUBJ" ]]; then row FAIL practice "POST /api/practice/sessions" "no subject with approvedCount > 0 in GET /api/practice/subjects"
     else
-      START="$(jq -nc --arg s "$SUBJ" --arg u "$(uuid)" '{mode:"random", subjectCode:$s, count:5, clientUuid:$u}')"
+      check practice GET "/api/practice/subjects/$SUBJ" 200 '.data.total != null' "" s-subj-config
+      if jqt s-subj-config '(.data.total // 0) >= 5'; then PMODE=random PCOUNT=5; else PMODE=past_year PCOUNT=10; fi
+      printf '        (practice start: subject %s, mode %s, count %s)\n' "$SUBJ" "$PMODE" "$PCOUNT"
+      START="$(jq -nc --arg s "$SUBJ" --arg m "$PMODE" --argjson n "$PCOUNT" --arg u "$(uuid)" '{mode:$m, subjectCode:$s, count:$n, clientUuid:$u}')"
       if check practice POST /api/practice/sessions '200|201' '(.data.sessionId | length) > 0 and (.data.questions | length) > 0' "$START" s-start; then
         SID="$(jqv s-start '.data.sessionId')"
         CHECK="$(jq -c '.data.questions[0] | {questionId: (.id | tostring), selectedOptionId: (.options[0].id // 0)}' "$TMP/s-start.body" 2>/dev/null)"
