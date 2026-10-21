@@ -1,4 +1,6 @@
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteComponent, RouteRecordRaw } from 'vue-router'
+
+import { isHttpMode } from '@/api/mode'
 
 /**
  * M16 route fragment: S13–S19 single-player games, Roda Nasib, Jutawan Ilmu and the provisional Jutawan
@@ -8,11 +10,20 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 const SUBTITLE = 'Selamat datang kembali'
 
+/**
+ * Interim (D58, issue #78): in http mode the 5 single-player engines cannot work (the real API sends no
+ * answer key), so they show a notice until they call `POST /games/solo/{game}/check` and
+ * `/games/solo/kad-memori/reveal`. Mock mode is unchanged.
+ */
+type LazyPage = () => Promise<{ default: RouteComponent }>
+const soloPage = (load: LazyPage): LazyPage =>
+  isHttpMode() ? () => import('../components/solo/SoloUnavailable.vue') : load
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/permainan/betul-salah',
     name: 'permainan-betul-salah',
-    component: () => import('../pages/SoloBetulSalahPage.vue'),
+    component: soloPage(() => import('../pages/SoloBetulSalahPage.vue')),
     meta: {
       layout: 'user',
       access: 'auth',
@@ -25,7 +36,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/permainan/cabaran-kilat',
     name: 'permainan-cabaran-kilat',
-    component: () => import('../pages/SoloCabaranKilatPage.vue'),
+    component: soloPage(() => import('../pages/SoloCabaranKilatPage.vue')),
     meta: {
       layout: 'user',
       access: 'auth',
@@ -38,7 +49,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/permainan/tembak-jawapan',
     name: 'permainan-tembak-jawapan',
-    component: () => import('../pages/SoloTembakJawapanPage.vue'),
+    component: soloPage(() => import('../pages/SoloTembakJawapanPage.vue')),
     meta: {
       layout: 'user',
       access: 'auth',
@@ -51,7 +62,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/permainan/susun-jawapan',
     name: 'permainan-susun-jawapan',
-    component: () => import('../pages/SoloSusunJawapanPage.vue'),
+    component: soloPage(() => import('../pages/SoloSusunJawapanPage.vue')),
     meta: {
       layout: 'user',
       access: 'auth',
@@ -64,7 +75,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/permainan/kad-memori',
     name: 'permainan-kad-memori',
-    component: () => import('../pages/SoloKadMemoriPage.vue'),
+    component: soloPage(() => import('../pages/SoloKadMemoriPage.vue')),
     meta: {
       ownsH1: true,
       layout: 'user',
