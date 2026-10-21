@@ -28,7 +28,7 @@ import { CurriculumFactsService } from './curriculum-facts'
 import { DuplicateDetector, type Finding } from './duplicate-detector'
 import { signatureOf, textOfQuestion, type Signature } from './duplicates'
 import { PayloadSchema, stateDuplicates, type StoredPayload } from './item-model'
-import { maskSpans, maskedCount, redactText, scrubIdentifiers } from './redact'
+import { maskSpans, redactText, scrubIdentifiers } from './redact'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_JOB_ENTITY, WORKFLOW_JOB_TYPE } from './workflow.constants'
 import { IntakeWorkflowConfig } from './workflow.config'
 
@@ -280,7 +280,7 @@ export class IntakeExtractionService implements OnModuleInit {
       const prepared = await this.prepare(batch.id, batch.subject)
       pageMap = prepared.pageMap
       spans = prepared.spans
-      paper = prepared.request.pages.length === 0 && (prepared.request.images?.length ?? 0) === 0 ? null : await this.call(prepared.request, signal)
+      paper = prepared.request.pages.length === 0 ? null : await this.call(prepared.request, signal)
     } catch (err) {
       await this.onAttemptFailed(run.id, batch.id, job, wait, err)
       return
@@ -295,17 +295,14 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /**
-   * Builds the redacted request (AC-8) and the page map. A page image goes to the provider only when it is safe to:
-   * the page text was read (so redaction could look at it), redaction masked nothing on it, and it is not the first page of
-   * its file (the cover). Anything else is dropped (fail closed): pixels cannot be redacted here.
+   * Builds the redacted request (AC-8) and the page map. The provider receives redacted OCR text only: page images are
+   * never sent (LEAD decision 2026-10-21, v2-threat-model rows 46 and 50), because pixels cannot be redacted.
    */
   private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[]; spans: string[] }> {
     const built = await this.input.build(idToString(batchId))
-    const maskedPages = new Set<number>()
     const spans: string[] = []
     const pages = built.pages.map((p) => {
       const r = redactText(p.text)
-      if (maskedCount(r) > 0) maskedPages.add(p.page)
       spans.push(...r.spans)
       return { ...p, text: r.text }
     })
@@ -315,22 +312,15 @@ export class IntakeExtractionService implements OnModuleInit {
       select: { id: true, pages: { orderBy: { pageNo: 'asc' }, select: { id: true, pageNo: true } } },
     })
     const pageMap: PageRef[] = []
-    const covers = new Set<number>()
     for (const f of files) {
-      let first = true
       for (const p of f.pages) {
         if (pageMap.length >= AI_MAX_PAGES) break
         pageMap.push({ fileId: f.id, pageId: p.id, pageNo: p.pageNo })
-        if (first) covers.add(pageMap.length)
-        first = false
       }
     }
-    const withText = new Set(built.pages.map((p) => p.page))
-    const images = built.images?.filter((im) => withText.has(im.page) && !maskedPages.has(im.page) && !covers.has(im.page))
     const taxonomy = await this.curriculum.taxonomy(subject)
     const request: AiExtractRequest = {
       pages,
-      ...(images && images.length > 0 ? { images } : {}),
       subject: built.subject,
       kertas: built.kertas,
       ...(taxonomy.length > 0 ? { taxonomy } : {}),
