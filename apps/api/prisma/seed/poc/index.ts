@@ -24,8 +24,7 @@
  *  15. poc-cikgu              Cikgu Alesa demo rows
  *  16. poc-performance        headcount configs and entries, timeline posts (BE-19)
  *  17. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
- *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path);
- *                             before `spm`, whose Latih Tubi sets are built from the published SPM-pool MCQs
+ *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path)
  *  19. spm                    SPM hub demo rows (BE-41)
  *  20. practice               practice sessions and answers of the demo accounts
  *  21. gamification           achievements, challenges, rewards, draws

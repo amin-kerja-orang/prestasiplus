@@ -23,7 +23,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 15. `poc-cikgu`
 16. `poc-performance` (BE-19): headcount configs and entries, timeline posts
 17. `spm-subject-configs` (BE-41): REFERENCE module (also runs in production)
-18. `questions-pool` (BE-09 seed path, PoC only): the question pool for battle, games and practice, see below. It runs before `spm`, which builds its Latih Tubi sets from the published SPM-pool MCQs (otherwise a second run adds sets and the seed is not idempotent)
+18. `questions-pool` (BE-09 seed path, PoC only): the question pool for battle, games and practice, see below
 19. `spm` (BE-41): SPM hub demo rows
 20. `practice`: practice sessions and answers
 21. `gamification`
@@ -140,7 +140,7 @@ The base bank (`questions`, 19 rows, plus 4 Bijak PoC MCQs) has at most 4 publis
 - Sizes: the largest one-level draw is a practice session of 20 (battle 10, Jutawan 15 with TP ladder 4/4/4/3); 24 per level is the margin. Every pool row is in the SPM pool, so each subject has 48 (SPM mock paper 1 needs 30, the default Latih Tubi / Tracking A set is 40).
 - Difficulty TP cycles 1 to 4, the key cycles over A to D. The stem holds the full question text (the arena and the games show the stem).
 - Content is generic and written for this seed: computed exercises (key computed) and small fact tables asked both ways (unit SI, element symbols, antonyms and synonyms, irregular verbs, events and years, Hijri months, rukun iman, values of Pendidikan Moral, art elements and design principles, colour theory). No exam text, no person names.
-- Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs just before `poc-profile`, so no earlier id moves. Profile `poc` only; refused in production like every demo module.
+- Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs just before `spm` (BE-41), so the SPM hub demo sets include the pool from the first run and a second run is a no-op; no existing entry moves. Profile `poc` only; refused in production like every demo module.
 
 Not covered (no DSKP unit at Tingkatan 4 or 5, so a published row would break the publish gate): the other 21 active subjects (TI has DSKP units but no fact set was written for it). The battle lobby still lists them; quick-match for them answers 422 "Soalan tidak mencukupi.". Questions carry no `chapter_id` / `topic_id`, so practice chapter mode still finds no chapter questions. Practice sessions also need the BE-12 question source wiring (`PracticePorts.provideQuestions`) before they can draw from the bank.
 
