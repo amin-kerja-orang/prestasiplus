@@ -1,6 +1,7 @@
-import { Controller, Get, Inject, Req, UseGuards } from '@nestjs/common'
+import { Controller, Get, Inject, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import type { Request } from 'express'
 
+import { NoStoreInterceptor } from '../../../../common/http/no-store.interceptor'
 import { ok } from '../../../../common/http/respond'
 import type { RequestWithAuth } from '../../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
@@ -14,7 +15,9 @@ import { WeeklyService } from './weekly.service'
 export class WeeklyController {
   constructor(@Inject(WeeklyService) private readonly weekly: WeeklyService) {}
 
+  /** Rows are viewer-dependent (children's names rule), so the board is no-store. */
   @Get('pertandingan')
+  @UseInterceptors(NoStoreInterceptor)
   @RateLimit(GAMES_LIMITS.read)
   async board(@Req() req: Request & RequestWithAuth) {
     return ok(await this.weekly.board(callerOf(req)))

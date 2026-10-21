@@ -20,8 +20,9 @@ type AuthedRequest = Request & RequestWithAuth
 export class SoloController {
   constructor(@Inject(SoloService) private readonly solo: SoloService) {}
 
-  /** M16-32: creates a session row (so it is rate limited) and returns the keyless payload. */
+  /** M16-32: creates a session row (so it is rate limited and no-store) and returns the keyless payload. */
   @Get('solo/:game')
+  @UseInterceptors(NoStoreInterceptor)
   @RateLimit(GAMES_LIMITS.soloStart)
   async start(@Param('game') game: string, @Query('darjah') darjah: unknown, @Req() req: AuthedRequest) {
     return ok(await this.solo.start(callerOf(req), game, darjah))

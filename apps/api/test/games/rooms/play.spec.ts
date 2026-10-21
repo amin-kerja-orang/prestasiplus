@@ -581,7 +581,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       ).toBe(before)
     })
 
-    it('Papan Bijak: wins for the winner, jumlah/betul/skor for every human, none for bots; coins from the tier rates', async () => {
+    it('Papan Bijak: wins/jumlah/betul/skor for the acting host only, none for a joined human or bots; coins from the tier rates', async () => {
       accuracy.p = 1
       const code = await createRoom(student, 'papan-bijak', {
         ...PB_FORM,
@@ -603,9 +603,15 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(v.status).toBe('finished')
       const humans = v.players.filter((p) => !p.isBot)
       const winnerId = v.result?.winnerId as string
+      expect(humans.map((h) => h.id)).toContain(student2.userId)
       for (const h of humans) {
         const row = await standing('papan-bijak', h.id)
         const score = v.result?.scores.find((s) => s.userId === h.id)
+        if (h.id !== student.userId) {
+          // The joined human never acts (the engine simulates them): no standing from a game they did not play.
+          expect(row).toBeUndefined()
+          continue
+        }
         expect(row).toMatchObject({
           jumlah: 1,
           wins: h.id === winnerId ? 1 : 0,
@@ -692,9 +698,8 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(rewards.calls).toHaveLength(1)
       expect(rewards.calls[0]?.input).toMatchObject({ game: 'kuiz_relay', coins: 0 })
       const mvp = v.result?.mvpId as string
-      const isBot = v.players.find((p) => p.id === mvp)?.isBot
       expect(await standing('kuiz-relay', mvp)).toEqual(
-        isBot ? undefined : expect.objectContaining({ wins: 1 }),
+        mvp === student.userId ? expect.objectContaining({ wins: 1 }) : undefined,
       )
     })
 
