@@ -233,6 +233,8 @@ Everything the anonymiser touches is deleted after the rehearsal. In addition to
 
 The lead confirms the deletion in writing (section 6).
 
+For the deletion after the real cutover (including `staging_cloud`, `archive_cloud` and the `etl_*` tables) see section 18.
+
 ## 11. Anonymiser: decisions and open points (BE-35)
 
 **Confirmed by the lead (2026-10-20):**
@@ -261,3 +263,200 @@ Decisions and assumptions:
 8. The column lists come from `ddl/spec.ts`, which will be completed against the first real schema export (section 7, item 4): re-check the config then (the tool refuses until every new column has a rule).
 
 **Follow-up (recorded, LEAD approved keeping both for now):** BE-27's `test/migration/fixtures/generate-tiny.ts` and `cloud-tiny/` duplicate the BE-35 generator's `tiny` size. Retire them once the BE-27 tests are moved to `tiny/`. The extraction of `prepareOutputDir` in `profile/render.ts` stays.
+
+## 12. Full run and verification (BE-30)
+
+The commands below run on a rehearsal or staging database that holds an imported dump. Run them from the repository root as `npm run <script> -w @pp/api -- <flags>`. The source is always `cloud`. `--dry-run` is the default of every command; nothing is written until `--apply` is given.
+
+**Environment (names only; values come from a restricted file or the platform secret store, section 0 rule 7):**
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `DATABASE_URL` | all | The rehearsal database. Its name ends in `_staging`. It holds `staging_cloud`, `archive_cloud` and the v2 tables. |
+| `CLOUD_SOURCE_URL` | `staging:load` | Only when loading from a read-only restore instead of `--from <dump dir>`. Read-only role (section 3). |
+| `PP_ALLOW_STAGING_RESET=1` | `staging:load` | Allows the drop and re-create of the staging schemas (section 1). |
+| `PP_STAGING_DB_ALLOWLIST` | `staging:load` | Only if the database name does not end in `_staging`. |
+| `PP_ALLOW_MIGRATE_APPLY=1` | `--apply`, `migrate:rollback` | Without it every apply is refused. |
+| `PP_MIGRATE_TARGET_DB` | `--apply`, `migrate:rollback` | Required when `NODE_ENV` is `production` or `prod`; must equal `current_database()`. |
+| `IC_HASH_KEY` | `migrate:core` | Else `SESSION_SECRET` outside production. Keep the key stable across the full run and the delta run, otherwise IC hashes differ. |
+| `PP_MIGRATE_ROSTER_DEFAULT_HASHES` | `migrate:core` | Optional. The lead's list of shared roster default hashes. Never logged. |
+| `NODE_ENV` | all | `production` on a production host, so the anonymised-data and wrong-database guards apply. |
+
+**Sequence.**
+
+| Step | Command | Expected result |
+|---|---|---|
+| 1. Load | `npm run staging:load -w @pp/api -- --from <dump dir>` | Exit 0. 83 tables in `staging_cloud`, 35 in `archive_cloud` (section 2). |
+| 2. Profile | `npm run staging:profile -w @pp/api` | `profile-<date>.md/.json` in `.migration-out/`. Read the orphan, duplicate and enum counts. |
+| 3. Dry-run | `npm run migrate:all -w @pp/api -- --as-of=<YYYY-MM-DD>` | Core dry-run, then the activity dry-run only if a core apply on the same staged data exists, otherwise "skipped". Nothing is written. |
+| 4. Apply | `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:all -w @pp/api -- --apply --as-of=<same date>` | Per stage, core then activity: a dry-run, then the apply with identical options only if the dry-run succeeded. Stops at the first failed stage. |
+| 5. Verify | runs at the end of `migrate:all --apply`; to repeat: `npm run migrate:verify -w @pp/api` | Writes `.migration-out/recon-<runs>-<stamp>.json` and `.md`. Exit 1 unless the status is `pass`. |
+| 6. Link (optional) | `npm run migrate:link-questions -w @pp/api` then, after reading it, `-- --apply` | See below. Cutover never waits for it. |
+
+Optional flags of `migrate:all` (and of `migrate:delta`): `--as-of=YYYY-MM-DD` (the day used for date-dependent rules; give the same value in every run of one rehearsal), `--batch-size=N`, `--content-owner=<v2 user id>`, `--out-dir=<.migration-out path>`.
+
+Exit codes (all commands): 0 ok, 1 failed or reconciliation mismatch, 2 usage or guard (for example a missing `PP_ALLOW_MIGRATE_APPLY=1`), 3 apply refused, 4 another run is active.
+
+**Reading the recon report.** One row per entity: `source`, `eligible`, `loaded`, `rejected`, `expected_delta`, `target count`, `status`. Then the checks:
+
+| Check | What to read |
+|---|---|
+| Users per role per school | Counts equal the eligible users. |
+| Answers per subject | The distribution of the migrated answers per subject. |
+| Ledger sums | `coin_transactions` sums against wallet balances. **Reported, never corrected** (data-migration section 5, "Ledger integrity"). The lead reads and accepts each difference. |
+| Practice correct-sum | `practice_sessions.correct` against the count of correct answer rows. Reported. |
+| JPN/PPD distinct pairs | Distinct (state, district) pairs against the derived JPN/PPD rows. |
+| Orphan scan | A v2-side foreign key scan. The expected value is 0. |
+| Accepted drift | Streak, mastery and rankings are recomputed in v2 and differ from .cloud by design (data-migration section 5, "Derived data drift"). Listed, not failed. |
+
+`pass` means every entity row is `ok` and no check is `mismatch`. Ledger, correct-sum and drift rows are `reported` and never fail the run, so the lead must read them (section 14).
+
+**Optional: `migrate:link-questions` (MIG-09).** Run it only after the new question bank is loaded. It sets `practice_answers.question_id` when exactly one new-bank question matches (source paper natural key plus number label, else content hash). It never overwrites a non-null `question_id`, never changes correctness or dimensions, and lists ambiguous and unmatched surrogate ids. Unmatched rows stay `NULL` and still count in every statistic (data-migration section 3.3). Dry-run first. Flags: `--apply`, `--batch-size=N`.
+
+## 13. Rehearsal checklist (BE-30, AC5)
+
+Tick each box and record the evidence in the PR or the issue as text (counts, exit codes, timings), never as an attached file (section 0). Owner roles: **lead** (the lead), **devops** (devops-engineer), **be** (backend-developer).
+
+**A. Preconditions**
+
+- [ ] 1. Rehearsal database name ends in `_staging`; `NODE_ENV` is not production. Owner: devops. Evidence: the database name and the `staging:load` guard output.
+- [ ] 2. Disk encryption confirmed on every machine and volume that holds the dump (section 0, rule 5). Owner: lead. Evidence: a confirmation line.
+- [ ] 3. Source role proven read-only by privileges, not trust (section 3): `staging:load` from the restore passes the role check (not exit 3). Owner: devops. Evidence: exit code 0 and the role-check line.
+- [ ] 4. Git sha of the code under test, and the `etl_runs.git_sha` that will record it. Owner: be. Evidence: the sha.
+- [ ] 5. Fresh anonymisation key for this rehearsal (section 8); it is never reused. Owner: lead. Evidence: a confirmation line (no key).
+- [ ] 6. Pre-migration snapshot of per-table counts of every migratable table (`SELECT count(*)` per table), kept as text. Owner: be. Evidence: the counts (used by section 16).
+
+**B. Freeze (simulated)**
+
+- [ ] 7. Record the dump time `T-dump1` (ISO 8601) and pretend the .cloud freeze starts. No change is made to .cloud (section 15). Owner: lead. Evidence: the timestamp.
+
+**C. Dump import**
+
+- [ ] 8. `staging:load` of the anonymised dump. Owner: devops. Evidence: exit 0, row counts against the manifest, duration.
+- [ ] 9. `staging:profile`; reject and orphan expectations noted before the ETL runs. Owner: be. Evidence: orphan and duplicate counts, enum lists reviewed.
+
+**D. Dry-run**
+
+- [ ] 10. `migrate:all` (dry-run). Owner: be. Evidence: exit 0, the per-entity table, reject counts by reason.
+- [ ] 11. Reject reasons reviewed: every reason count has an explanation (section 14, item 2). Owner: lead. Evidence: the list.
+
+**E. Apply and verify**
+
+- [ ] 12. `migrate:all --apply` with `PP_ALLOW_MIGRATE_APPLY=1`. Owner: devops. Evidence: exit 0, duration of the full run.
+- [ ] 13. `migrate:verify` status `pass`; the report is stored under `.migration-out/` only. Owner: be. Evidence: the status, the entity count and the check counts (aggregates).
+- [ ] 14. Ledger, correct-sum and drift rows read and accepted. Owner: lead. Evidence: a line per check.
+- [ ] 15. Smoke on the migrated database: conformance suite and e2e smoke (section 14, item 8). Owner: be. Evidence: the real tail of the test output.
+- [ ] 16. Idempotency: `migrate:all --apply` a second time changes no row (all `unchanged`). Owner: be. Evidence: the recon counts.
+- [ ] 17. Optional: `migrate:link-questions` dry-run and, if wanted, apply. Owner: be. Evidence: linked, ambiguous and unmatched counts.
+
+**F. Timed delta run (section 15)**
+
+- [ ] 18. Change or add a few rows in the staged data (or take a second dump), record `T-dump2`, run `staging:load`, then `migrate:delta --since=<T-dump1>` (dry-run), then `--apply`, then `migrate:verify`. Owner: be. Evidence: duration, the delta report (rows with `updated_at` after `--since` against inserted and updated), verify `pass`.
+
+**G. Timed rollback (section 16)**
+
+- [ ] 19. `migrate:rollback --confirm=<database name>` (dry-run), then `--apply`. Owner: devops. Evidence: duration, rows deleted per table.
+- [ ] 20. Per-table counts equal the snapshot of item 6 and `legacy_source = 'cloud'` counts are 0. Owner: be. Evidence: the comparison.
+- [ ] 21. Run the apply again from the rolled-back state, to prove the way forward after a rollback (or recreate the database). Owner: devops. Evidence: verify `pass`.
+
+**H. Go/no-go and sign-off**
+
+- [ ] 22. Every criterion of section 14 is met, with the evidence above. Owner: lead.
+- [ ] 23. Dump and report deletion done (section 18, which extends section 10) and confirmed in writing. Owner: lead.
+- [ ] 24. Sign-off line (the lead fills it in the PR): `Rehearsal <date>, git sha <sha>, go / no-go: <decision>, signed: <lead>`.
+
+## 14. Go/no-go criteria
+
+All of these must hold. A criterion with no evidence counts as not met.
+
+| # | Criterion | Measure | Evidence |
+|---|---|---|---|
+| 1 | Verification passes | `migrate:verify` status is `pass`: every entity `ok`, no check `mismatch`. | Status line and the count of entities and checks. |
+| 2 | Rejects explained | Every `etl_rejects` reason count (`UNKNOWN_ENUM`, `ORPHAN_PARENT`, `DUPLICATE_KEY`, `INVALID_VALUE`, `UNSUPPORTED`) per entity is listed and reviewed by the lead. No unexplained reason. | The list of reason and count, in the issue as text. |
+| 3 | No lost users or schools | `ORPHAN_PARENT` rejects on `users` and `schools` are 0. | The count. |
+| 4 | Ledger and drift accepted | Each ledger-sum, correct-sum and accepted-drift row is read and accepted by the lead; nothing was corrected to make totals agree. | One accepted line per row. |
+| 5 | Orphan scan | The v2-side foreign key scan reports 0. | The count. |
+| 6 | Timings in the window | Full run, delta run and rollback each finish within the cutover window of `<to be set in MIG-08>`. | Three durations. |
+| 7 | Idempotent | A second apply and a repeated delta change no row. | Recon counts. |
+| 8 | Smoke on the migrated database | The conformance suite (`npm run be:test -- apps/api/test/conformance`) and the e2e smoke pass against the migrated database. A roster account and a self-registered account can both reach the first-login flow. | The real tail of the test output. |
+| 9 | Rollback proven | Section 16 was run once and the counts equal the snapshot. | The comparison. |
+| 10 | Housekeeping | Dumps and reports of this rehearsal are deleted (section 18) or have a dated deletion plan within 7 days (section 0, rule 4). | The deletion line. |
+
+Any "no" is a no-go. The lead may waive a criterion only in writing in the issue, with the reason.
+
+## 15. Freeze window and delta run (BE-30)
+
+**Why a freeze.** The delta run re-reads the whole fresh dump. It does not propagate deletes (there is no soft delete in .cloud), so a row removed in .cloud after the first load would stay in v2. The freeze keeps .cloud from changing between the final dump and the switch, so the final state is complete and nothing is deleted behind our back. The upsert skips unchanged rows by `legacy_hash`, so only changed and new rows are written. The extract has no `updated_at` filter because the streak, wallet and JPN/PPD steps aggregate across rows.
+
+**Who.** `.cloud` is never modified by us. The freeze is an operational decision (maintenance mode or a stop of writes) of the .cloud owner. We only ask for it and are told when it starts and ends.
+
+| Step | Action | Owner | Evidence |
+|---|---|---|---|
+| T-0 | Freeze of .cloud writes starts. Record the time. | `<MIG-08 owner>` with the .cloud owner | Timestamp. |
+| T+1 | Final dump (raw, then anonymised for a rehearsal; for the real cutover per OD-2 and `<MIG-08 owner>`). Record the dump time `T-dump-final`. | lead | Timestamp. |
+| T+2 | `staging:load` of the final dump on the target database. | devops | Exit 0, counts against the manifest. |
+| T+3 | Precondition: an earlier `migrate:all --apply` succeeded. Delta dry-run: `npm run migrate:delta -w @pp/api -- --since=<time of the previous dump> --as-of=<same date as the full run>`. | be / devops | Exit 0, delta report. |
+| T+4 | Delta apply: `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:delta -w @pp/api -- --since=<same> --as-of=<same> --apply`. | devops | Exit 0, duration. |
+| T+5 | `migrate:verify` (also run by the delta). Go/no-go of section 14. | lead | `pass`, sign-off line. |
+| T+6 | Switch (the v2 system serves users). If no-go, section 16. | `<MIG-08 owner>` | Timestamp. |
+
+Notes.
+
+- `--since` is the time of the **previous** dump (the one already loaded), in ISO 8601. It feeds the delta report only: rows with `updated_at > since` per staged table against inserted and updated per entity. A large gap between the two numbers needs an explanation (for example rows changed by aggregation steps).
+- Use the same `--as-of`, `--batch-size`, `--content-owner` and `IC_HASH_KEY` as the full run; a different value changes hashes and rewrites rows.
+- A source delete made before the freeze but after the previous dump is not removed in v2. Record such rows if the .cloud owner knows of any.
+- The detailed cutover timeline (30 Oct) is MIG-08 and will live in a later section or document.
+
+## 16. Rollback (BE-30)
+
+**When.** Any no-go in section 14 after the apply, or after the switch, for example: `migrate:verify` fails; the orphan scan is above 0; users report that logins or their data are wrong; the timings would not fit the window; a PDPA incident (section 0, rule 8) touches the loaded data. The lead decides.
+
+**Procedure A: rehearsal database.** Drop the database, or the target schema, and re-create it from the migrations (`DATABASE_URL` points at the scratch `_staging` database). This is the simplest and is the default for a rehearsal.
+
+**Procedure B: shared database** (a database with other data, or with v2-born rows).
+
+1. Stop writes to the migrated data if the switch already happened (`<MIG-08 owner>`).
+2. Dry-run: `npm run migrate:rollback -w @pp/api -- --confirm=<database name>`. It counts the rows per table and deletes nothing. Read the counts.
+3. Apply: `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:rollback -w @pp/api -- --confirm=<database name> --apply`. In production also set `PP_MIGRATE_TARGET_DB=<database name>`. `--confirm` must equal `current_database()`, otherwise it is refused (exit 2).
+
+What it does: in one transaction it deletes every row with `legacy_source = 'cloud'` from every migratable table, children first, and the `etl_id_map` rows of the source. Rows born in v2 are never deleted. If a v2-born row references a migrated row, the rollback **aborts** and changes nothing; the lead decides how to handle those rows (nothing is forced). `etl_runs`, `etl_recon` and `etl_rejects` are kept as the audit trail.
+
+**Prove the result.** Do not re-run `migrate:verify`; it reads the loaded data and would report mismatches by design. Instead:
+
+1. Compare the per-table counts with the pre-migration snapshot (checklist item 6). They must be equal.
+2. For every migratable table: `SELECT count(*) FROM <table> WHERE legacy_source = 'cloud';` must return 0.
+3. `SELECT count(*) FROM etl_id_map WHERE legacy_source = 'cloud';` must return 0.
+4. Record the counts and the duration as text in the issue.
+
+**The source stays untouched.** The migration reads `staging_cloud`, which is a copy, and the dump or restore is read only through a role that is proven read-only by its privileges (section 3: the load aborts with exit 3 if the role could write). Nothing in rollback touches .cloud or `.my`. After a rollback the cutover can be tried again from `staging:load`.
+
+## 17. Post-cutover verification (BE-30)
+
+1. **Archive the verify report.** The final `.migration-out/recon-<runs>-<stamp>.json/.md` holds aggregates and surrogate ids only, and `.migration-out/` is git-ignored. Keep it in the lead's encrypted storage. Never attach it to a PR or an issue; put the counts in text. If a report holds anything other than aggregates, treat it as a PDPA incident (section 0, rule 8).
+2. **Smoke checks** on the production system after the switch: health endpoint green; a student, a teacher, a parent and an admin each log in with their own account; the dashboards show non-empty history for a sample of accounts; the wallet balance of a sample matches the reported ledger rows; JPN/PPD pickers list the derived rows. Record pass or fail only.
+3. **First login.** Roster accounts (those with a `username`) are forced to reset the password on first login. Accounts whose legacy hash is not bcrypt, or equals a shared default hash, are forced to reset too (data-migration section 5, "Passwords and hashes"). Everyone logs in again; no legacy token was migrated. Expect a spike in password-reset requests and tell support.
+4. **Accepted drift.** Streak, mastery and rankings differ from .cloud by design. Tell support which figures can change.
+5. **Backfill.** `migrate:link-questions` (section 12) can be run any time after the cutover. Cutover does not wait for it.
+6. **.cloud stays read-only** after the cutover and is not modified by us (D28a).
+
+## 18. Deletion of dumps after cutover (BE-30)
+
+Extends sections 5 and 10. Timing follows section 0, rule 4: delete as soon as the load and reconciliation succeed, and within 7 days at most.
+
+| Delete | Who | When |
+|---|---|---|
+| Raw dump or restore, anonymised dump directory, the encrypted archive and every copy that was handed out, the `pp_staging_reader` role | lead (custodian) | After the final verify is `pass` and signed off. |
+| The key file `ANON_HMAC_KEY_FILE` and any history that held a key | lead | With the dump. |
+| `staging_cloud` schema (`drop schema staging_cloud cascade;`) | devops | After the sign-off and after the rollback window has closed. Until then it is the input for a re-run, so keep it. |
+| `.migration-out/` reports and profiles that contain surrogate ids; the restricted `CLOUD_SOURCE_URL` file | lead, devops | After the numbers were copied into the issue as text. |
+| Write-ahead log, base backups, snapshots and replicas of the server that held the dump; temporary and spill files (section 5, items 3 and 4) | devops | With the dump. |
+
+**Kept:**
+
+| Keep | Why | For how long |
+|---|---|---|
+| `archive_cloud` (legacy and canonical question tables) | Read-only archive that supports the backfill and disputes (data-migration section 3.3, item 5). Not served by the API. | The retention period in data-migration 3.3 item 5 (default 12 months), then delete. |
+| `etl_runs`, `etl_recon`, `etl_rejects` (and `etl_checkpoints`) | Audit trail of the migration. Holds counts, reason codes and surrogate ids, no personal values. | With the database. |
+| `etl_id_map` | Needed by the backfill and by any later delta. Do not delete it after a successful cutover. | With the database. |
+
+**Record the deletion.** The lead writes a dated line in the issue with no data in it, for example: `<date>: raw dump, anonymised dump, key file, staging_cloud, reports deleted; WAL and backups of <machine label> checked; archive_cloud kept until <date>; signed <lead>`. Each machine on the lead's list of copies (section 0, rule 4) gets a tick.
