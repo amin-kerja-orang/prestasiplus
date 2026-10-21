@@ -8,7 +8,8 @@ import { GAMES_MESSAGES, gamesCount } from './common'
  *
  * League standings and Sekolah Bersaing rows are stored job output in the mock and are never recomputed
  * (BE-45 Open question 7); league `status` is stored and not moved by dates.
- * D54(d): only the creator's display name and school names are shown; an `anonymous` Sekolah Bersaing row
+ * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
+ * names rule, issue #76: first name + initial unless the viewer may see it); an `anonymous` Sekolah Bersaing row
  * shows "Sekolah anonim".
  */
 

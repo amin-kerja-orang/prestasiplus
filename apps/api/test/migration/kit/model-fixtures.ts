@@ -97,6 +97,17 @@ async function parentBattle(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-45: a room needs a host and a six-character A-Z0-9 code (ck_game_rooms_code). */
+async function parentRoom(query: FixtureQuery): Promise<string> {
+  const code = `FX${String((seq += 1)).padStart(4, '0')}`
+  await query(
+    `insert into game_rooms (code, game, subject, grade_level, match_mode, max_players, host_id)
+     values ($1, 'papan-bijak', 'MATEMATIK', 'DARJAH_4', 'same_grade', 4, $2)`,
+    [code, await parentUser(query)],
+  )
+  return code
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
@@ -144,6 +155,18 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     alert_description: 'Huraian contoh',
     action_taken: 'Tindakan contoh',
   }),
+  // game_rooms, game_room_players, game_sessions (BE-45): host / owner must exist; code, game, subject, level, mode have checks.
+  game_room_players: async (query) => ({ room_code: await parentRoom(query), user_id: await parentUser(query) }),
+  game_rooms: async (query) => ({
+    code: `FY${String((seq += 1)).padStart(4, '0')}`,
+    game: 'papan-bijak',
+    subject: 'MATEMATIK',
+    grade_level: 'DARJAH_4',
+    match_mode: 'same_grade',
+    max_players: 4,
+    host_id: await parentUser(query),
+  }),
+  game_sessions: async (query) => ({ user_id: await parentUser(query), game: 'betul-salah' }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
