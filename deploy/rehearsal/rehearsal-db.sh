@@ -4,12 +4,13 @@
 #
 # Two modes (PP_REHEARSAL_MODE):
 #   docker (default)  Postgres 16 container from deploy/rehearsal/compose.rehearsal.yaml (project pp-rehearsal,
-#                     own volume, loopback port PP_REHEARSAL_PORT) and the real migrate image.
+#                     own volume, loopback port PP_REHEARSAL_PORT) and the migrate image (own tag).
 #   host              Any Postgres 16 you already have, reached with PP_REHEARSAL_ADMIN_URL.
 # Either way the client tools (psql, pg_dump, pg_restore, version 16) run on this host.
 #
 # No secret is ever written to the repo, printed, or put on a command line: passwords travel in PG* environment
 # variables and in a 0600 state file outside the repo. The anonymised dump must live outside the repo too.
+# shellcheck disable=SC2030,SC2031  # variables are exported inside subshells on purpose (child-only environment)
 set -euo pipefail
 umask 077
 
@@ -24,7 +25,7 @@ info() { printf '%s\n' "$*"; }
 plan() { printf '[dry-run] %s\n' "$*"; }
 
 # ---------------------------------------------------------------- arguments
-DRY=0 YES=0 DUMPMODE=0 KEEP_VOLUME=0 WITH_SOURCE=0 NO_SHA=0 SHA_HEX=''
+DRY=0 YES=0 DUMPMODE=0 KEEP_VOLUME=0 WITH_SOURCE=0 NO_SHA=0 SHA_HEX='' ATTEST=0
 POS=() CMD=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -34,6 +35,7 @@ while [ $# -gt 0 ]; do
     --keep-volume) KEEP_VOLUME=1 ;;
     --with-source) WITH_SOURCE=1 ;;
     --no-sha-check) NO_SHA=1 ;;
+    --attest-anonymised) ATTEST=1 ;;
     --sha256) [ $# -ge 2 ] || DIE_CODE=2 die "--sha256 needs a 64-character hex value"; SHA_HEX=$2; shift ;;
     -h | --help) POS=(help) ; break ;;
     --) shift; CMD=("$@"); break ;;
@@ -51,10 +53,12 @@ Usage: rehearsal-db.sh <command> [args] [--dry-run] [--yes]
 
   up                     start the database (docker mode), create the databases and the read-only role,
                          apply ALL migrations, verify applied == folder count
-  load-dump <path> [--sha256 <hex> | --no-sha-check]
+  load-dump <path> [--sha256 <hex> | --no-sha-check] [--attest-anonymised]
                          accept the anonymised dump (outside the repo): pg_restore -Fc file or directory
                          into <db>_source with the read-only role, or a pp-staging-dump/1 directory
-                         into <db>_staging; the .sha256 sidecar (or --sha256 <hex>) is REQUIRED
+                         into <db>_staging; REQUIRED: the .sha256 sidecar (or --sha256 <hex>) and an anonymisation
+                         attestation (manifest "anonymised": true, a <dump>.anonymised file, or --attest-anonymised);
+                         a PII scan (IC numbers, non-example e-mail) must pass
   stage                  staging:load from <db>_source (pg route), then copy staging_cloud + archive_cloud
                          into the target database (where migrate:* reads them)
   snapshot <name>        freeze the target (template database copy; --dump for a pg_dump -Fc file)
@@ -70,10 +74,13 @@ Usage: rehearsal-db.sh <command> [args] [--dry-run] [--yes]
 
 Options: --dry-run (print the plan, change nothing), --yes (confirm a destructive step),
          --dump (snapshot as a dump file), --keep-volume (down),
-         --sha256 <hex> / --no-sha-check (load-dump without a sidecar; the second skips the integrity check).
+         --sha256 <hex> / --no-sha-check (load-dump without a sidecar; the second skips the integrity check),
+         --attest-anonymised (load-dump: you confirm the dump was made by the anonymiser).
 Env (see docs/ops/rehearsal-db.md): PP_REHEARSAL_MODE=docker|host, PP_REHEARSAL_ADMIN_URL (host mode),
   PP_REHEARSAL_DB, PP_REHEARSAL_PORT, PP_REHEARSAL_ENV_FILE, PP_REHEARSAL_STATE_DIR,
-  PP_REHEARSAL_MIGRATE=prisma|psql, PP_REHEARSAL_SOURCE_SCHEMA, PP_REHEARSAL_RESTORE_JOBS.
+  PP_REHEARSAL_MIGRATE=prisma|psql, PP_REHEARSAL_SOURCE_SCHEMA, PP_REHEARSAL_RESTORE_JOBS,
+  PP_REHEARSAL_ALLOW_EMAIL_DOMAINS (extra e-mail domains the PII scan accepts, e.g. for a synthetic fixture),
+  PP_REHEARSAL_ALLOW_SUPERUSER=1 (host mode: acknowledge a throwaway server).
 EOF
 }
 
@@ -116,7 +123,15 @@ case "$MODE" in docker | host) ;; *) DIE_CODE=2 die "PP_REHEARSAL_MODE must be d
 MIGRATE_VIA=${PP_REHEARSAL_MIGRATE:-$([ "$MODE" = docker ] && echo prisma || echo psql)}
 case "$MIGRATE_VIA" in prisma | psql) ;; *) DIE_CODE=2 die "PP_REHEARSAL_MIGRATE must be prisma or psql" ;; esac
 
-urldecode() { local s=$1; printf '%b' "${s//%/\\x}"; }
+urldecode() { # percent-decoding only: backslashes and other characters stay literal
+  local s=$1 out='' ch
+  while [[ $s =~ ^([^%]*)%([0-9A-Fa-f]{2})(.*)$ ]]; do
+    printf -v ch '%b' "\\x${BASH_REMATCH[2]}"
+    out+="${BASH_REMATCH[1]}${ch}"
+    s=${BASH_REMATCH[3]}
+  done
+  printf '%s' "$out$s"
+}
 urlenc() {
   local s=$1 out='' c i
   for ((i = 0; i < ${#s}; i++)); do
@@ -147,8 +162,14 @@ setup_connection() {
   if [[ $rest == *@* ]]; then userinfo=${rest%@*}; hostport=${rest##*@}; fi
   user=${userinfo%%:*} pass=''
   if [[ $userinfo == *:* ]]; then pass=${userinfo#*:}; fi
-  host=${hostport%%:*} port=5432
-  if [[ $hostport == *:* ]]; then port=${hostport##*:}; fi
+  port=5432
+  if [[ $hostport == \[* ]]; then          # IPv6 literal: [::1]:5432
+    host=${hostport#\[} host=${host%%\]*}
+    [[ $hostport == *\]:* ]] && port=${hostport##*\]:}
+  else
+    host=${hostport%%:*}
+    if [[ $hostport == *:* ]]; then port=${hostport##*:}; fi
+  fi
   if [ -z "$host" ] || [ -z "$user" ]; then die "PP_REHEARSAL_ADMIN_URL needs a host and a role"; fi
   [[ $host == /* ]] && die "socket hosts are not supported; use a TCP host"
   export PGHOST=$host PGPORT=$port PGUSER
@@ -170,7 +191,7 @@ make_url() {
   local user=$1 pass=$2 db=$3 u
   u="postgresql://$(urlenc "$user")"
   [ -n "$pass" ] && u+=":$(urlenc "$pass")"
-  u+="@${PGHOST}:${PGPORT}/${db}"
+  if [[ $PGHOST == *:* ]]; then u+="@[${PGHOST}]:${PGPORT}/${db}"; else u+="@${PGHOST}:${PGPORT}/${db}"; fi
   [ -n "${PGSSLMODE:-}" ] && u+="?sslmode=${PGSSLMODE}"
   printf '%s' "$u"
 }
@@ -199,6 +220,7 @@ ensure_secrets() {
   printf 'READER_PASSWORD=%s\nIC_HASH_KEY=%s\n' "$(rand_hex 24)" "$(rand_hex 32)" >"$STATE/secrets.env"
   chmod 600 "$STATE/secrets.env"
 }
+need_secrets() { [ -f "$STATE/secrets.env" ] || die "no $STATE/secrets.env: run 'up' first (it creates the reader password and the IC hash key)"; }
 timing() { # timing <step> <seconds>
   info "[time] $1: ${2}s"
   ((DRY)) || printf '%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$1" "$2" >>"$STATE/timings.log"
@@ -234,7 +256,7 @@ table_counts() { # exact row count of every public base table, "schema.table<TAB
   psql_db "$1" -At -F $'\t' -c "select table_schema||'.'||table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by 1"
 }
 dc() {
-  local args=(compose)
+  local args=(compose -p pp-rehearsal)     # always explicit: COMPOSE_PROJECT_NAME can never point this at the base stack
   [ -f "$ENV_FILE" ] && args+=(--env-file "$ENV_FILE")
   PP_REHEARSAL_DB=$DB PP_REHEARSAL_PORT=$PORT docker "${args[@]}" -f "$COMPOSE_FILE" "$@"
 }
@@ -303,7 +325,10 @@ cmd_up() {
   require_server
   local priv
   priv=$(dbq "$ADMIN_DB" "select rolsuper or (rolcreatedb and rolcreaterole) from pg_roles where rolname = current_user")
-  [ "$priv" = t ] || die "role $PGUSER needs CREATEDB and CREATEROLE (or superuser)"
+  [ "$priv" = t ] || die "role $PGUSER needs CREATEDB and CREATEROLE"
+  if [ "$MODE" = host ] && [ "$(dbq "$ADMIN_DB" "select rolsuper from pg_roles where rolname = current_user")" = t ] && [ "${PP_REHEARSAL_ALLOW_SUPERUSER:-}" != 1 ]; then
+    die "host mode must not use a superuser role (it can read files and run programs on the server, and the restored dump holds personal data). Use a dedicated server and a role with only CREATEDB and CREATEROLE; set PP_REHEARSAL_ALLOW_SUPERUSER=1 only for a throwaway local server."
+  fi
   ensure_secrets
   local pw
   pw=$(state_get secrets.env READER_PASSWORD)
@@ -393,6 +418,40 @@ sha_check() { # sha_check <file|dir>: a missing checksum is an error unless --sh
   info "sha256 ($how): OK"
 }
 
+# The dump must be declared anonymised: a manifest with "anonymised": true (what the anonymiser writes) or
+# "synthetic": true, a sidecar <dump>.anonymised, or --attest-anonymised.
+attest_check() { # attest_check <path> <kind>
+  local p=$1 kind=$2
+  if [ "$kind" = ndjson ] && grep -Eq '"(anonymised|synthetic)"[[:space:]]*:[[:space:]]*true' "$p/manifest.json"; then
+    info "attestation: manifest is marked anonymised/synthetic"
+  elif [ -s "$p.anonymised" ]; then
+    info "attestation: sidecar $(basename "$p").anonymised"
+  elif ((ATTEST)); then
+    info "attestation: --attest-anonymised given (you confirm the dump came out of the anonymiser)"
+  else
+    die "no anonymisation attestation for $(basename "$p"). A pp-staging-dump/1 directory made by the anonymiser carries \"anonymised\": true. For a pg_dump the lead creates a non-empty $(basename "$p").anonymised file, or you pass --attest-anonymised to confirm it. Never load raw data."
+  fi
+}
+
+# Fail-closed pattern scan of the restored source (the anonymiser's ndjson scan cannot read a pg restore):
+# 12-digit IC numbers with a valid date, and e-mail outside example.test (+ PP_REHEARSAL_ALLOW_EMAIL_DOMAINS).
+# Prints counts only. On a hit the source database is dropped.
+pii_scan_source() {
+  local extra=${PP_REHEARSAL_ALLOW_EMAIL_DOMAINS:-} bad_ic bad_mail
+  [[ -z $extra || $extra =~ ^[a-z0-9.,-]+$ ]] || DIE_CODE=2 die "PP_REHEARSAL_ALLOW_EMAIL_DOMAINS: lowercase domains separated by commas"
+  if [ "$(dbq "$SOURCE_DB" "select to_regclass('\"$SOURCE_SCHEMA\".users') is not null")" != t ]; then
+    drop_db "$SOURCE_DB"
+    die "PII SCAN FAILED: no $SOURCE_SCHEMA.users table in the restore, so it cannot be checked (source dropped)"
+  fi
+  bad_ic=$(dbq "$SOURCE_DB" "select count(*) from \"$SOURCE_SCHEMA\".users where regexp_replace(coalesce(ic,''), '[ -]', '', 'g') ~ '^[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])[0-9]{6}\$'")
+  bad_mail=$(dbq "$SOURCE_DB" "select count(*) from \"$SOURCE_SCHEMA\".users where coalesce(email,'') <> '' and split_part(lower(email), '@', 2) <> all (string_to_array('example.test${extra:+,$extra}', ','))")
+  if [ "$bad_ic" != 0 ] || [ "$bad_mail" != 0 ]; then
+    drop_db "$SOURCE_DB"
+    die "PII SCAN FAILED in users: ${bad_ic} real-looking IC number(s), ${bad_mail} e-mail(s) outside the allowed domains. The source database was dropped. Tell the lead; do not retry with the same dump."
+  fi
+  info "PII scan (users.ic, users.email): clean"
+}
+
 cmd_load_dump() {
   local path=$ARG1 kind
   [ -n "$path" ] || DIE_CODE=2 die "usage: load-dump <path to the anonymised dump>"
@@ -411,6 +470,7 @@ cmd_load_dump() {
   fi
   info "dump kind: $kind"
   sha_check "$path"
+  attest_check "$path" "$kind"
   if ((DRY)); then
     plan "check sha256 sidecar; $([ "$kind" = ndjson ] && echo "staging:load --from <dir> into $STAGING_DB (PP_ALLOW_STAGING_RESET=1)" || echo "recreate $SOURCE_DB, pg_restore --no-owner --no-acl -j $JOBS, grant SELECT only to $READER, check it cannot write")"
     return 0
@@ -419,12 +479,23 @@ cmd_load_dump() {
   require_server
   assert_ours "$DB"
   db_exists "$DB" || die "run 'up' first"
+  need_secrets
   local t0=$SECONDS
   if [ "$kind" = ndjson ]; then
     need_tools npm
     [ -d "$REPO_ROOT/node_modules" ] || die "run npm ci in $REPO_ROOT first (staging:load needs it)"
-    (cd "$REPO_ROOT" && DATABASE_URL=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$STAGING_DB") PP_ALLOW_STAGING_RESET=1 NODE_ENV=development \
-      npm run staging:load -w @pp/api -- --from "$path")
+    # Reuse the anonymiser's own pattern scan (e-mail, phone, 12-digit IC) before anything is loaded.
+    local extra='' d
+    d=${PP_REHEARSAL_ALLOW_EMAIL_DOMAINS:-}
+    if grep -q '"synthetic"[[:space:]]*:[[:space:]]*true' "$path/manifest.json"; then extra=contoh.invalid; fi
+    [ -n "$d" ] && extra=${extra:+$extra,}$d
+    (unset CLOUD_SOURCE_URL PP_STAGING_DB_ALLOWLIST; export NODE_ENV=development; cd "$REPO_ROOT" \
+      && npm run anonymise:scan -w @pp/api -- --dir "$path" ${extra:+--allow-email-domains "$extra"}) || die "PII SCAN FAILED: the dump holds personal-looking data. Nothing was loaded; tell the lead."
+    # Secrets stay in the child's environment (exported in a subshell), never in argv.
+    (unset CLOUD_SOURCE_URL PP_STAGING_DB_ALLOWLIST
+      DATABASE_URL=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$STAGING_DB"); export DATABASE_URL
+      export PP_ALLOW_STAGING_RESET=1 NODE_ENV=development
+      cd "$REPO_ROOT" && npm run staging:load -w @pp/api -- --from "$path")
     echo ndjson >"$STATE/route"
   else
     need_tools pg_restore
@@ -433,6 +504,7 @@ cmd_load_dump() {
     # --no-owner/--no-acl: the dump's roles do not exist here; everything is owned by the admin role.
     pg_restore --no-owner --no-acl --exit-on-error -j "$JOBS" -d "$SOURCE_DB" "$path"
     harden_source
+    pii_scan_source
     info "tables in $SOURCE_DB.$SOURCE_SCHEMA: $(dbq "$SOURCE_DB" "select count(*) from information_schema.tables where table_schema = '$SOURCE_SCHEMA' and table_type = 'BASE TABLE'")"
     echo pg >"$STATE/route"
   fi
@@ -449,16 +521,18 @@ cmd_stage() {
   need_tools psql pg_dump pg_restore
   require_server
   assert_ours "$DB"
+  need_secrets
   route=$(cat "$STATE/route" 2>/dev/null || true)
   [ -n "$route" ] || die "no dump loaded yet: run load-dump first"
   local t0=$SECONDS
   if [ "$route" = pg ]; then
     need_tools npm
     [ -d "$REPO_ROOT/node_modules" ] || die "run npm ci in $REPO_ROOT first"
-    (cd "$REPO_ROOT" && DATABASE_URL=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$STAGING_DB") \
-      CLOUD_SOURCE_URL=$(make_url "$READER" "$(state_get secrets.env READER_PASSWORD)" "$SOURCE_DB") \
-      PP_ALLOW_STAGING_RESET=1 NODE_ENV=development \
-      npm run staging:load -w @pp/api -- --source cloud --source-schema "$SOURCE_SCHEMA")
+    (unset PP_STAGING_DB_ALLOWLIST
+      DATABASE_URL=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$STAGING_DB"); export DATABASE_URL
+      CLOUD_SOURCE_URL=$(make_url "$READER" "$(state_get secrets.env READER_PASSWORD)" "$SOURCE_DB"); export CLOUD_SOURCE_URL
+      export PP_ALLOW_STAGING_RESET=1 NODE_ENV=development
+      cd "$REPO_ROOT" && npm run staging:load -w @pp/api -- --source cloud --source-schema "$SOURCE_SCHEMA")
     timing "staging:load (pg route)" $((SECONDS - t0))
   fi
   local t1=$SECONDS
@@ -488,10 +562,13 @@ cmd_snapshot() {
   require_server
   assert_ours "$DB"
   db_exists "$DB" || die "run 'up' first"
+  # One name, one snapshot: the template and the dump forms share the counts file, so they must not collide.
+  if [ -e "$STATE/snapshots/$name.counts" ] || [ -e "$STATE/snapshots/$name.dump" ] || db_exists "$snapdb"; then
+    die "a snapshot named '$name' already exists (template or dump form); use another name"
+  fi
   local t0=$SECONDS
-  table_counts "$DB" >"$STATE/snapshots/$name.counts"
+  table_counts "$DB" >"$STATE/snapshots/$name.counts.tmp"
   if ((DUMPMODE)); then
-    [ -e "$STATE/snapshots/$name.dump" ] && die "snapshot '$name' exists (use another name or remove it)"
     pg_dump -Fc -Z 1 -d "$DB" -f "$STATE/snapshots/$name.dump"
     (cd "$STATE/snapshots" && sha256sum "$name.dump" >"$name.dump.sha256")
     info "snapshot '$name' written as a dump ($(du -h "$STATE/snapshots/$name.dump" | cut -f1))"
@@ -503,6 +580,7 @@ cmd_snapshot() {
     psql_db "$ADMIN_DB" -c "create database \"$snapdb\" template \"$DB\"" -c "comment on database \"$snapdb\" is '$MARK'"
     info "snapshot '$name' created as database $snapdb"
   fi
+  mv "$STATE/snapshots/$name.counts.tmp" "$STATE/snapshots/$name.counts"
   info "recorded row counts of $(wc -l <"$STATE/snapshots/$name.counts" | tr -d ' ') tables"
   timing "snapshot $name" $((SECONDS - t0))
 }
@@ -555,10 +633,15 @@ cmd_exec() {
   require_server
   assert_ours "$url_db"
   db_exists "$url_db" || die "database $url_db does not exist (run up)"
+  if ((WITH_SOURCE)) || [ -z "${IC_HASH_KEY:-}" ]; then need_secrets; fi
   url=$(make_url "$PGUSER" "${PGPASSWORD:-}" "$url_db")
   # Secrets go into the child's environment only (never argv, so not visible in ps).
   (
     export DATABASE_URL=$url
+    # Nothing leaks in from the caller's shell: no stray source URL, no staging allow-list. The ETL only needs
+    # NODE_ENV to be something other than production (it refuses anonymised data there), so force development.
+    unset CLOUD_SOURCE_URL PP_STAGING_DB_ALLOWLIST
+    export NODE_ENV=development
     if ((WITH_SOURCE)); then
       CLOUD_SOURCE_URL=$(make_url "$READER" "$(state_get secrets.env READER_PASSWORD)" "$SOURCE_DB")
       export CLOUD_SOURCE_URL
@@ -622,7 +705,13 @@ cmd_reset() {
 
 cmd_down() {
   if ((DRY)); then
-    plan "(needs --yes) $([ "$MODE" = docker ] && echo "docker compose -p pp-rehearsal down $( ((KEEP_VOLUME)) || echo '--volumes ')--remove-orphans" || echo "drop $DB, $STAGING_DB, $SOURCE_DB, snapshots and role $READER"); delete the state dir"
+    if [ "$MODE" = docker ] && ((KEEP_VOLUME)); then
+      plan "(needs --yes) docker compose -p pp-rehearsal down --remove-orphans: stop the container; the data volume AND the state dir are kept"
+    elif [ "$MODE" = docker ]; then
+      plan "(needs --yes) docker compose -p pp-rehearsal down --volumes --remove-orphans; delete the state dir"
+    else
+      plan "(needs --yes) drop $DB, $STAGING_DB, $SOURCE_DB, snapshots and role $READER; delete the state dir"
+    fi
     return 0
   fi
   ((YES)) || die "down removes the rehearsal data: add --yes"

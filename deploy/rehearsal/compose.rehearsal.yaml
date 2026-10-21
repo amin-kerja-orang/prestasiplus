@@ -103,7 +103,7 @@ services:
       context: ../..
       dockerfile: docker/api/Dockerfile
       target: build
-    image: pretasiplus-api-migrate:local
+    image: pretasiplus-api-migrate:rehearsal   # own tag: never overwrites or depends on the base stack's image
     working_dir: /app
     command: ['npm', 'run', 'be:db:migrate']
     user: node

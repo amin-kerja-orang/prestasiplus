@@ -24,8 +24,9 @@ Why a staging DB and a target DB: `migrate:core` reads `staging_cloud` from the 
 - A machine with full-disk encryption, at least 4 GB RAM and free disk of about 5 times the dump size.
 - PostgreSQL client tools 16 on the host: `psql`, `pg_dump`, `pg_restore` (`postgresql-client-16`).
 - Node 22 and `npm ci` in the repo root (for `staging:load` and `migrate:*`).
-- Docker mode only: Docker with Compose v2.
-- Host mode only: a PostgreSQL 16 server and a role with `CREATEDB` and `CREATEROLE`.
+- Docker mode only: Docker with Compose v2. The migrate image has its own tag (`pretasiplus-api-migrate:rehearsal`); the script always uses project `pp-rehearsal`, whatever `COMPOSE_PROJECT_NAME` says.
+- Host mode only: a **dedicated** PostgreSQL 16 server (not one that serves anything else) and a role with only `CREATEDB` and `CREATEROLE`. **Never a superuser**: a superuser can read server files and run programs, and the server holds a restore of personal data. `up` refuses a superuser unless `PP_REHEARSAL_ALLOW_SUPERUSER=1` (for a throwaway local server only). IPv6 hosts are written `[::1]`.
+- An **anonymisation attestation**: a `pp-staging-dump/1` directory from the anonymiser carries `"anonymised": true` in `manifest.json` (that is the attestation). For a `pg_dump` the lead creates a non-empty `<dump>.anonymised` file next to it, or you confirm with `--attest-anonymised`. `load-dump` refuses a dump without one.
 - The anonymised dump from the lead (never from a PR, chat or CI), with its checksum (mandatory; `load-dump` fails without it): the `.sha256` sidecar, a `pg_dump -Fc` file (`x.dump` + `x.dump.sha256`), a `pg_dump -Fd` directory (+ `SHA256SUMS` inside), or a `pp-staging-dump/1` directory.
 
 ## 3. Configuration (names only)
@@ -42,11 +43,13 @@ Docker mode (default): `cp deploy/rehearsal/.env.rehearsal.example deploy/rehear
 | `PP_REHEARSAL_STATE_DIR` | `~/.local/state/pp-rehearsal` | Must be outside the repo. |
 | `PP_REHEARSAL_MIGRATE` | `prisma` (docker), `psql` (host) | How `up` applies migrations (section 8). |
 | `PP_REHEARSAL_READER_ROLE` | `pp_staging_reader` | Name of the read-only role for the source restore (`CLOUD_SOURCE_URL`). |
+| `PP_REHEARSAL_ALLOW_EMAIL_DOMAINS` | - | Extra e-mail domains the PII scan accepts besides `example.test` (comma separated; a synthetic fixture needs `contoh.invalid`, set automatically for the ndjson route). |
+| `PP_REHEARSAL_ALLOW_SUPERUSER` | - | `1` acknowledges a superuser admin role in host mode (throwaway local server only). |
 | `PP_REHEARSAL_SOURCE_SCHEMA` | `public` | Schema of the restored dump that holds the .cloud tables. |
 | `PP_REHEARSAL_RESTORE_JOBS` | `2` | `pg_restore -j`. |
 | `PP_PG_*` | see `.env.rehearsal.example` | Postgres tuning. Set to the real production VPS values. |
 
-Flags (before any `--`): `--dry-run` prints the plan and changes nothing; `--yes` confirms a destructive step (`restore-snapshot`, `reset`, `down`); `--dump` makes a snapshot a dump file; `--keep-volume` (docker `down`); `--sha256 <hex>` (the expected hash, when there is no sidecar) or `--no-sha-check` (skip the integrity check on purpose; prints a warning) for `load-dump`.
+Flags (before any `--`): `--dry-run` prints the plan and changes nothing; `--yes` confirms a destructive step (`restore-snapshot`, `reset`, `down`); `--dump` makes a snapshot a dump file; `--keep-volume` (docker `down`: only stops the container; keeps the volume and the state dir); `--sha256 <hex>` (the expected hash, when there is no sidecar) or `--no-sha-check` (skip the integrity check on purpose; prints a warning) and `--attest-anonymised` for `load-dump`.
 
 ## 4. Full run (copy-paste)
 
@@ -60,7 +63,8 @@ RDB=deploy/rehearsal/rehearsal-db.sh
 $RDB up
 $RDB status
 
-# 2. Accept the anonymised dump (outside the repo; the sha256 sidecar is REQUIRED: no sidecar -> pass --sha256 <hex>)
+# 2. Accept the anonymised dump (outside the repo). REQUIRED: the sha256 sidecar (else --sha256 <hex>) and the attestation
+#    (manifest "anonymised": true, or <dump>.anonymised, or --attest-anonymised). A PII scan then runs and drops the source on a hit.
 $RDB load-dump /secure/path/anon-YYYYMMDD.dump
 
 # 3. staging:load from the read-only restore, then copy staging_cloud + archive_cloud into the target
@@ -81,6 +85,9 @@ Rules the commands above rely on (from the migration runbook, enforced by the to
 - `staging:load` needs a `*_staging` database, `PP_ALLOW_STAGING_RESET=1` and `NODE_ENV` not production. `stage` and `load-dump` set these for `<db>_staging` only. Exit codes: 3 the source role can write, 4 reset guard refused.
 - `--apply` needs `PP_ALLOW_MIGRATE_APPLY=1` and a passing `--dry-run` on the same input first. After any rollback the dry-run must be repeated.
 - `PP_MIGRATE_TARGET_DB` (must equal the connected database) is demanded only when `NODE_ENV=production`. The rehearsal cannot run in production mode, because the ETL refuses anonymised or synthetic data there. Rehearse that guard once with a synthetic fixture: `NODE_ENV=production PP_MIGRATE_TARGET_DB=<db> PP_ALLOW_MIGRATE_APPLY=1 ... --apply`, or at least check the refusal without `PP_MIGRATE_TARGET_DB`.
+- `load-dump` scans for personal-looking data before it trusts the dump: for a `pp-staging-dump/1` directory it runs `anonymise:scan` (e-mail, phone, 12-digit IC) before loading; for a `pg_dump` it checks `users.ic` (real-looking 12-digit IC with a valid date) and `users.email` (any domain other than `example.test`) in the restore, prints counts only, and on a hit drops the source database. A restore without a `users` table fails the scan (it cannot be checked). This is a pattern check, not proof; the lead's review of kept free text (runbook section 11) still applies.
+- `exec` and the load steps always set `NODE_ENV=development` (the ETL only needs it to differ from production) and clear `CLOUD_SOURCE_URL` and `PP_STAGING_DB_ALLOWLIST` from your shell, except that `exec --with-source` sets its own `CLOUD_SOURCE_URL`. `stage` and `exec --with-source` need `up` to have run (they need the generated secrets).
+- Snapshot names are unique across the template and the dump forms.
 - Script flags such as `--dry-run` and `--with-source` go BEFORE the `--`; everything after the `--` belongs to the command, so the `--dry-run` / `--apply` at the end of the lines above are the ETL's own flags. To preview what the script would run: `$RDB exec target --dry-run -- npm run migrate:core -w @pp/api -- --dry-run` (a `--dry-run` after the first `--` is NOT seen by the script).
 - `exec` adds `DATABASE_URL`, `CLOUD_SOURCE_URL` (with `--with-source`) and a stable `IC_HASH_KEY` (from the state dir, unless you set one) to the child process environment only (never its command line). A symlinked dump path is resolved first, so a link into the repo is refused.
 - A `pp-staging-dump/1` directory goes in at step 2 straight into the staging database, and `stage` then only does the copy. The latest `load-dump` decides the route `stage` takes.
