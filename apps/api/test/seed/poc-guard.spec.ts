@@ -96,7 +96,7 @@ describe('AC7 production gating', () => {
       if (allow !== undefined) process.env.ALLOW_DEMO_SEED = allow
     }
     const ran = await runSeeds(seedModules, { prisma: db.prisma, profile: 'poc', env: { NODE_ENV: 'production' } })
-    expect(ran).toEqual(['core-school-packages'])
+    expect(ran).toEqual(['core-school-packages', 'spm-subject-configs'])
     expect(ran).not.toContain('poc-profile')
     expect(await count(`select count(*)::text n from users`)).toBe(0)
   }, 60_000)
