@@ -33,6 +33,11 @@
  * back at the end) and counts what the guarded UPDATE would do. The guard cannot differ because the examined rows
  * were selected with `question_id IS NULL` in that same snapshot.
  *
+ * Concurrency (apply only): the run takes the session advisory lock `etl:link-questions:<source>` (a second
+ * backfill is refused) and is refused while `etl_runs` has a `running` apply run for that source (`migrate:core`,
+ * `migrate:activity`, delta), because a loader may still be writing the answers. The lock is released in `finally`.
+ * The guarded UPDATE stays the last line of defence.
+ *
  * Rules: only `question_id` is ever written, only where it is still NULL (the UPDATE itself says
  * `WHERE question_id IS NULL`), only when exactly one candidate matches. Zero candidates -> unmatched, more than
  * one -> ambiguous; both stay NULL and are listed by surrogate id. Aggregates and ids only; no stems, names or
@@ -84,6 +89,14 @@ export interface LinkQuestionsReport {
   linkedByHash?: number
   /** Matched, but another process had set `question_id` first, so the guarded UPDATE skipped it. */
   raced?: number
+}
+
+/** An apply of the backfill was refused because another writer is active (advisory lock or a running apply). */
+export class LinkQuestionsBusyError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'LinkQuestionsBusyError'
+  }
 }
 
 export const DEFAULT_BATCH_SIZE = 1_000
@@ -198,7 +211,21 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
     report.alreadyLinked = already.rows[0]?.n ?? 0
 
     const client = await pool.connect()
+    let locked = false
+    const lockKey = `etl:link-questions:${source}`
     try {
+      if (mode === 'apply') {
+        const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [lockKey])
+        if (!got.rows[0]?.ok) throw new LinkQuestionsBusyError(`Refusing --apply: another link-questions run holds the lock for source "${source}".`)
+        locked = true
+        const running = await client.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM etl_runs WHERE status = 'running' AND mode = 'apply' AND $1 = ANY(sources)`,
+          [source],
+        )
+        if ((running.rows[0]?.n ?? 0) > 0) {
+          throw new LinkQuestionsBusyError(`Refusing --apply: a migration apply run for source "${source}" is still running (etl_runs).`)
+        }
+      }
       // dry-run: one READ ONLY snapshot around everything, rolled back, no UPDATE. apply: one transaction per batch.
       if (mode === 'dry-run') await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY')
       let after = '0'
@@ -273,6 +300,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
       }
     } finally {
       if (mode === 'dry-run') await client.query('ROLLBACK').catch(() => undefined)
+      if (locked) await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [lockKey]).catch(() => undefined)
       client.release()
     }
   } catch (err) {
