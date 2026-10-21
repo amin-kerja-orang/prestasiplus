@@ -19,7 +19,7 @@ defineProps<{ rows: NonNullable<GameLobby['top10']> }>()
     <ol class="mt-3 flex flex-col gap-2" data-testid="top10-table">
       <RankedRow
         v-for="row in rows"
-        :key="row.userId"
+        :key="row.userId ?? `r${row.rank}`"
         :rank="row.rank"
         :rank-label="MEDALS[row.rank - 1]"
         :title="row.name"

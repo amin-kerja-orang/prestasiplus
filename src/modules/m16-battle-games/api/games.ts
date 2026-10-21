@@ -9,6 +9,7 @@
 
 import { api, type RawResponse } from '@/api'
 
+import { wireIds } from './wire'
 import type {
   AdminGames,
   GameLobby,
@@ -74,7 +75,9 @@ export function startRoom(game: RoomGame, code: string): Promise<RoomView> {
 
 /** #28 `POST /api/games/{game}/rooms/{code}/action` (a roll or an answer). */
 export function roomAction(game: RoomGame, code: string, body: RoomActionBody): Promise<RoomView> {
-  return api.post<RoomView>(`/api/games/${game}/rooms/${code}/action`, { body })
+  return api.post<RoomView>(`/api/games/${game}/rooms/${code}/action`, {
+    body: 'questionId' in body ? wireIds(body, ['questionId']) : body,
+  })
 }
 
 // --- Papan Bijak quick match (live bodies) ----------------------------------------------------------------
@@ -148,7 +151,9 @@ export function fetchJutawanPage(darjah?: number, options: Signal = {}): Promise
 
 /** #37 `POST /api/games/jutawan/start` (PROVISIONAL). */
 export function startJutawan(body: { subject: number; darjah: number }): Promise<JutawanStart> {
-  return api.post<JutawanStart>('/api/games/jutawan/start', { body })
+  return api.post<JutawanStart>('/api/games/jutawan/start', {
+    body: wireIds(body, ['subject']),
+  })
 }
 
 /** #38 `POST /api/games/jutawan/{sessionId}/answer` (PROVISIONAL). */
@@ -156,7 +161,9 @@ export function answerJutawan(
   sessionId: string,
   body: { questionId: number; optionId: number },
 ): Promise<JutawanAnswerResult> {
-  return api.post<JutawanAnswerResult>(`/api/games/jutawan/${sessionId}/answer`, { body })
+  return api.post<JutawanAnswerResult>(`/api/games/jutawan/${sessionId}/answer`, {
+    body: wireIds(body, ['questionId']),
+  })
 }
 
 /** #39 `POST /api/games/jutawan/{sessionId}/lifeline` (PROVISIONAL; 409 when none is left). */

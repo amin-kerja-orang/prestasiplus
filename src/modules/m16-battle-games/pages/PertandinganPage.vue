@@ -133,7 +133,7 @@ function medalOf(rank: number): string | null {
         <ol class="flex flex-col gap-2">
           <li
             v-for="row in data.rows"
-            :key="row.userId"
+            :key="row.userId ?? `r${row.rank}`"
             class="flex items-center gap-3 bg-elevated p-3"
             data-testid="pertandingan-row"
           >

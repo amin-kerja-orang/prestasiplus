@@ -62,7 +62,7 @@ const PILLS = [
     <ul v-else class="flex flex-col gap-2" data-testid="battle-leaderboard-scroll">
       <RankedRow
         v-for="r in rows"
-        :key="r.userId"
+        :key="r.userId ?? `r${r.rank}`"
         :rank="r.rank"
         :title="r.name"
         :subtitle="r.school"

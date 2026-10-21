@@ -189,7 +189,7 @@ const boxes = computed(() => {
         <ul v-if="data.fighters.length > 0" class="mt-3 flex flex-col gap-2" data-testid="battle-fighters">
           <DsLeaderRow
             v-for="(f, i) in data.fighters"
-            :key="f.userId"
+            :key="f.userId ?? `f${i}`"
             :rank="i + 1"
             :name="f.name"
             :points="f.skor"

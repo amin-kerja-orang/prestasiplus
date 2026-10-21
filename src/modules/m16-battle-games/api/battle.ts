@@ -11,6 +11,7 @@
 
 import { api, type RawResponse } from '@/api'
 
+import { wireIds } from './wire'
 import type {
   ArenaAnswerBody,
   ArenaAnswerResult,
@@ -52,7 +53,12 @@ export function startBattle(
   body: BattleStartBody,
   options: Signal = {},
 ): Promise<RawResponse<BattleStartResponse>> {
-  return api.raw<BattleStartResponse>('POST', `/api/battle/${mode}`, body, withSignal(options))
+  return api.raw<BattleStartResponse>(
+    'POST',
+    `/api/battle/${mode}`,
+    wireIds(body, ['subject_id', 'pksk_domain_id']),
+    withSignal(options),
+  )
 }
 
 /** #4 `GET /api/battle/poll-match/{queueId}` (every 3 s). */
@@ -109,7 +115,11 @@ export function searchOpponent(
 export function sendInvite(
   body: BattleInviteBody,
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
-  return api.raw('POST', '/api/battle/invite', body)
+  return api.raw(
+    'POST',
+    '/api/battle/invite',
+    wireIds(body, ['subject_id', 'pksk_domain_id', 'receiver_id']),
+  )
 }
 
 /** #9 `GET /api/battle/invitations`. */
@@ -178,7 +188,7 @@ export function fetchArena(uuid: string, options: Signal = {}): Promise<ArenaVie
 
 /** #17 `POST /api/battle/arena/{uuid}/answer` (PROVISIONAL). */
 export function answerArena(uuid: string, body: ArenaAnswerBody): Promise<ArenaAnswerResult> {
-  return api.post<ArenaAnswerResult>(`/api/battle/arena/${uuid}/answer`, { body })
+  return api.post<ArenaAnswerResult>(`/api/battle/arena/${uuid}/answer`, { body: wireIds(body, ['questionId']) })
 }
 
 /** #18 `GET /api/battle/standings/students` (`weekly` default or `monthly`). */
@@ -243,7 +253,9 @@ export function fetchTournamentFormOptions(options: Signal = {}): Promise<Tourna
 
 /** #44 `POST /api/tournaments` (admin; 422 with `fields`). */
 export function createTournament(body: TournamentBody): Promise<{ uuid: string; status: string }> {
-  return api.post<{ uuid: string; status: string }>('/api/tournaments', { body })
+  return api.post<{ uuid: string; status: string }>('/api/tournaments', {
+    body: wireIds(body, ['subject_id', 'exam_paper_id', 'mixed_subject_ids']),
+  })
 }
 
 /** #45 `GET /api/tournaments/{uuid}` (PROVISIONAL; 404 for an unknown uuid or a draft of another user). */
@@ -262,7 +274,7 @@ export function fetchLeagues(
 
 /** #47 `POST /api/leagues` (422 with `fields`). */
 export function createLeague(body: LeagueBody): Promise<{ id: number }> {
-  return api.post<{ id: number }>('/api/leagues', { body })
+  return api.post<{ id: number }>('/api/leagues', { body: wireIds(body, ['subject_id']) })
 }
 
 /** #48 `POST /api/leagues/join` (422 with the message under `invite_code`). */

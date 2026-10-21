@@ -20,7 +20,7 @@ defineProps<{
     <ul class="mt-3 flex flex-col gap-2" data-testid="leaders-list">
       <DsLeaderRow
         v-for="row in leaders"
-        :key="row.userId"
+        :key="row.userId ?? `r${row.rank}`"
         :rank="row.rank"
         :name="row.name"
         :points="row.value"

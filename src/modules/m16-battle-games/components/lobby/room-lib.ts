@@ -4,6 +4,7 @@
  */
 
 import type { RoomActionBody, RoomView } from '../../api'
+import { sameId } from '../../api/wire'
 import { teamLabel } from './lobby-lib'
 
 type Player = RoomView['players'][number]
@@ -12,11 +13,11 @@ type Player = RoomView['players'][number]
 export const MAX_ANSWER_SECONDS = 15
 
 export const isHost = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.host.id === userId
+  sameId(room.host.id, userId)
 
 /** The acting player of the room (the host who started it); others watch (BR-M16-19). */
 export const canAct = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.state !== null && room.state.humanId === userId
+  room.state !== null && sameId(room.state.humanId, userId)
 
 /** Whether the host may start (BR-M16-19: the game's minimum players are in). */
 export const canStart = (room: RoomView): boolean =>

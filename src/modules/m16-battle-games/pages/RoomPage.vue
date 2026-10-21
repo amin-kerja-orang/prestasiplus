@@ -423,7 +423,7 @@ const meters = computed(() => {
             <ul v-if="room.result" class="flex flex-col gap-2" data-testid="room-scores">
               <DsLeaderRow
                 v-for="(s, i) in room.result.scores"
-                :key="s.userId"
+                :key="s.userId ?? `s${i}`"
                 :rank="i + 1"
                 :name="s.name"
                 :points="s.points"

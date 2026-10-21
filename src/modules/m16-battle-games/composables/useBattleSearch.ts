@@ -31,6 +31,7 @@ import {
   type PollChallengerResponse,
   type PollMatchResponse,
 } from '../api'
+import { queueIdOf } from '../api/wire'
 import { BATTLE_MSG, formatMss, rejectedMessage } from '../components/battle/battle-lib'
 
 export type SearchPhase = 'idle' | 'searching' | 'incoming' | 'waiting'
@@ -171,7 +172,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     const mine = new AbortController()
     controller = mine
     let res: RawResponse<{
-      queue_id?: number
+      queue_id?: number | string
       matched?: boolean
       battle_uuid?: string
       error?: string
@@ -200,11 +201,12 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
       options.onMatched(body.battle_uuid)
       return
     }
-    if (typeof body.queue_id !== 'number' || body.queue_id <= 0) {
+    const startedQueue = queueIdOf(body.queue_id)
+    if (startedQueue === null) {
       errorMsg.value = BATTLE_MSG.noQueueId
       return
     }
-    queueId = body.queue_id
+    queueId = startedQueue
     startedAt = clock.now()
     tickNo = 0
     failures = 0
