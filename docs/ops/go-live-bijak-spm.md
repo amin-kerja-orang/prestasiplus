@@ -1,8 +1,9 @@
 # Go-live readiness checklist: Bijak SPM
 
-Status read on 2026-10-21 (~10:10Z) from the repo at **`feature/v2-backend` @ `84438c70`**, and from the GitHub PRs
-and issues named below. `84438c70` is `559265d1` plus #89 and #91 (edge client IP, no migration), so every
-migration claim made at `3d0b1271` still holds.
+Status read on 2026-10-21 (~12:40Z) from the repo at **`feature/v2-backend` @ `2be3b5f6`**, and from the GitHub PRs
+and issues named below. `2be3b5f6` is `lead/merge-final` @ `4b4e2ea7` (fast-forward) plus a tracker commit. It brings
+#86 BE-36 (`0037`), #85 BE-38 (`0038`), #90 + #93 (PoC question pool), #92 BE-12, #88, BE-28, BE-42 (`0028`, `0031`),
+BE-46 (`0032`), the BE-33 log PII redaction and the BE-33 audit-gap docs/tests (#67 LEAD comment 12:24Z).
 
 ## Needs a decision
 
@@ -33,7 +34,8 @@ No secret values appear here. Env vars are named only.
 **Sources**
 - Repo: `docs/ops/**`, `render.yaml`, `functions/`, `docker/**`, `compose*.yaml`, `scripts/**`, `.github/workflows/**`.
 - Plans and docs: `docs/plan/AGENT-SYNC.md` (HANDOFF 2026-10-21 ~09:30), `docs/plan/backend-tracker.md`, `docs/plan/backend-tasks/**`, `docs/TRACKER.md`, `docs/requirements/v2-bijak-spm.md`.
-- GitHub: PRs #81, #85, #86, #88, #89, #90 and #91, the merge queue #67 (including the Group B update of 2026-10-21 08:30Z), and the reviews on #87.
+- GitHub: PRs #81, #85, #86, #88, #89, #90, #91, #92, #93, #102 and #103; gap issues #94–#100; backlog #78; the merge queue #67 (including the Group B update of 2026-10-21 08:30Z, the gap summary of 11:03Z, the demo rehearsal of 11:50Z and the LEAD close-out of 12:24Z); and the reviews on #87.
+- **Demo rehearsal and deploy checklist:** [#67 comment 6315200981](https://github.com/amin-kerja-orang/prestasiplus/issues/67#issuecomment-6315200981) (11:50Z), section "Deploy checklist for the user (after G6; names only, no values)". That checklist is for the 23 Oct demo deploy (Render + Pages, PoC seed), not for production (§4).
 - The deploy files are `render.yaml`, `functions/` and `docker/`. `deploy/pages-direct/` is on the tip (#89).
 
 ---
@@ -71,32 +73,33 @@ and Mod Pelajar come from M01/M02.
 
 ### Modules and cards
 
-Merged means merged into `feature/v2-backend` @ `84438c70`.
+Merged means merged into `feature/v2-backend` @ `2be3b5f6`.
 
 | Area | Module | Card(s) | State |
 |---|---|---|---|
 | Identity, sessions, roles, CSRF | M01/M02 | BE-01..BE-07, BE-24, BE-25 | **merged** |
 | Curriculum | M03 | BE-08 | **merged** |
 | Question bank | M04 | BE-09, BE-10 | **merged** |
-| Practice write/read, US-33 aggregate | M05 | BE-11, BE-12, BE-13 | **merged**, but practice cannot start yet: the question source is not wired (§2.1 #14) |
+| Practice write/read, US-33 aggregate | M05 | BE-11, BE-12, BE-13 | **merged**. The practice question source is wired (#92, BE-12). Random mode serves levels D1–D4 only, and the PoC pool has T4/T5 rows only, so a `random` start on the PoC seed still returns 422 (§2.1 #14, #16a). |
 | Bijak papers, attempts, Kontrak Blueprint, paper builder | M28 | BE-14, BE-15, BE-16, BE-39 | **merged** |
 | Teacher views, reports | M10/M19 | BE-17, BE-18, BE-19, BE-20 | **merged** |
-| School admin (results visibility) | M27 | BE-21 | **merged**. Tracker row `done`, full card merged @ `12117a2f`. AC#13 doc fix `docs/BE-21-ac13-contract` @ `0ca65e73` is **not merged** (§2.1). |
+| School admin (results visibility) | M27 | BE-21 | **merged**. Tracker row `done`, full card merged @ `12117a2f`. AC#13 doc fix `docs/BE-21-ac13-contract` @ `0ca65e73` is also on the tip (§2.1 #13). |
 | Command Center / admin dashboard | M17 | BE-22 | **merged** (#69) |
 | AI intake: files, OCR, job runner; dashboard and budget | Admin Pusat | BE-37, BE-40 | **merged** |
-| AI extraction service | Admin Pusat | BE-36 | **not merged**: PR #86, G4 Approve with minors (07:54Z), minors being fixed; migration 0037 (LEAD to confirm the number) |
-| Intake workflow (batches, review, accept to Draf) | Admin Pusat | BE-38 | **not merged**: PR #85, G4 Changes requested, fixes pushed (`ce554103`), waiting for re-review, migration 0038 (LEAD to confirm the number) |
+| AI extraction service | Admin Pusat | BE-36 | **merged** (#86 @ `c4793dfc`, via `lead/merge-final`; migration `0037_ai_extraction`) |
+| Intake workflow (batches, review, accept to Draf) | Admin Pusat | BE-38 | **merged** (#85 @ `621b5a61`, via `lead/merge-final`; migration `0038_intake_workflow`). Sends redacted OCR text only, never page images (LEAD decision (c), 2026-10-21). Open Group B follow-up (#85, #78, not blocking): use BE-36's redactor and remove `intake/workflow/redact.ts`. |
 | Security hardening, `/api/ready`, `/api/metrics`, runbook | cross-cutting | BE-33 rest | **merged** (#81). `docs/ops/api-runbook.md` §15 is the release gate. |
-| Log PII redaction | cross-cutting | BE-33 part | **not merged**: branch `be/BE-33-log-pii-redaction` @ `521a6756`, merged into `lead/merge-groupa` @ `ed45bb0c` (static checks green, waiting for be:verify) |
+| Log PII redaction | cross-cutting | BE-33 part | **merged** (`521a6756`, via `lead/merge-final`, no PR) |
 | Seed guard fail-closed, PoC seed profile | seed | #80, BE-26 (#74) | **merged** |
 | Edge client IP + worker no-store | ops | #89, #91 | **merged** (#89 @ `29c9cf67`; #91 trims the secret and logs a production boot warning). `deploy/pages-direct/_worker.js` is on the tip. (§2.1 #6) |
 | HTTP switch, e2e against the real API | frontend | BE-32 | **partly merged**. PC-1 part merged 2026-10-20. Still open: AC3 `@api` e2e, the `/login` mobile re-measure, the 413 envelope and frontend AC7 (LEAD). |
-| Frontend in http mode | frontend | `be/integration-frontend` @ `23656b63` | **not merged** into `feature/v2-backend`. The demo Pages build is made from it. How it reaches production is **unverified**. Check the FE/API SHA pair per `docs/ops/staging-refresh-2.md` §0. |
-| Old-system data migration | PC-4 | BE-27, BE-34, BE-35 merged; BE-28, BE-29, BE-30 **not merged / not built** | see §2.3 |
+| Frontend in http mode | frontend | `be/integration-frontend` @ `d909e1e0` | **not merged** into `feature/v2-backend`. The demo Pages build is made from it. How it reaches production is **unverified**. Check the FE/API SHA pair per `docs/ops/staging-refresh-2.md` §0. |
+| Old-system data migration | PC-4 | BE-27, BE-28, BE-34, BE-35 merged; BE-29 (draft #82) and BE-30 **not merged / not built** | see §2.3 |
 
 **Adjacent cards.** These are not needed for Bijak SPM unless the LEAD says so (D-1).
 - **Merged:** #73 BE-41 SPM hub M06 (0025), #77 BE-23 leaderboard privacy, #71 BE-44 battle (0027), #72 BE-45 games (0033), #83 BE-47 Keluarga Angkat (0034).
-- **Not merged:** Group A branches BE-42 PKSK and BE-46 marketplace (both in `lead/merge-groupa` @ `ed45bb0c`, waiting for be:verify), and frontend `fe/m18-amaran-summary` (see §2.1).
+- **Merged via `lead/merge-final` (no PR):** BE-42 PKSK (`ec74b76d`, 0028 + 0031), BE-46 marketplace (`97766959`, 0032).
+- **Not merged:** frontend `fe/m18-amaran-summary` (see §2.1).
 
 ---
 
@@ -114,27 +117,29 @@ Owner lanes:
 |---|---|---|---|---|
 | 1 | Fast-forward `feature/v2-backend` past `lead/merge-b5` (#77 + #69 + #71) | LEAD | #67 | **done** (in `3d0b1271`) |
 | 2 | Merge the approved Group B queue: #81, #80, #74, #73, #72, #83 | LEAD | #67 | **done** (in `3d0b1271`) |
-| 3 | G4 verdict and merge of BE-38 and BE-36; confirm migrations 0037 and 0038 | B (review), LEAD (merge, numbers) | #85, #86 | #85: Changes requested (07:37Z), fixes pushed (`ce554103`), waiting for re-review. #86: Approve with minors (07:54Z), minors being fixed. |
-| 4 | Group A test failures (BE-42, BE-28), all test-side | A | #67 Group A verify comment | Group A test-side fixes pushed (BE-42 `ec74b76d`, BE-28 `06538cba`) and merged with BE-33-log-pii + BE-46 on `lead/merge-groupa @ ed45bb0c` (on `84438c70`). Static checks green; waiting for be:verify; not merged. |
-| 5 | Merge the log PII redaction branch (`be/BE-33-log-pii-redaction` @ `521a6756`) | A / LEAD | #67 | in `lead/merge-groupa @ ed45bb0c`; static checks green; waiting for be:verify; not merged |
+| 3 | G4 verdict and merge of BE-38 and BE-36; confirm migrations 0037 and 0038 | B (review), LEAD (merge, numbers) | #85, #86 | **done**: #85 (G4 re-review Approve 09:42Z; head `621b5a61`) and #86 (re-review Approve with minors 11:01Z; head `c4793dfc`) merged via `lead/merge-final` @ `4b4e2ea7`, with `0037` and `0038`. Follow-up: BE-38 uses BE-36's redactor (#85, #78; Group B, not blocking). |
+| 4 | Group A test failures (BE-42, BE-28), all test-side | A | #67 LEAD comment 12:24Z | **done**: fixes `ec74b76d` (BE-42) and `06538cba` (BE-28) merged via `lead/merge-final`; full be:verify green on `3d94e291`, targeted run green on `4b4e2ea7` (LEAD). |
+| 5 | Merge the log PII redaction branch (`be/BE-33-log-pii-redaction` @ `521a6756`) | A / LEAD | #67 | **done** (via `lead/merge-final`) |
 | 6 | **Login throttle behind Cloudflare and worker `cache-control: no-store`.** The demo smoke saw 6 spoofed attempts, all 401, none 429, and no `no-store` on proxied `/api`. Fixed by #89 (merged). Remaining (user): set both vars on Render and the secret on Pages, then check there is no ClientIp boot warning after the first request through the edge (#91). | user (Render and Pages secrets); B (DevOps) re-runs smoke step 5 | #89, #91, #81 | code merged; platform settings pending (**unverified**) |
 | 7 | **BE-32 `/login` mobile re-measure on real API data.** Pass needs all of these: horizontal overflow 0, the stat chip's right edge ≤ the viewport, `isMobile: true` at 320 and 375, and a sample taken for 3 s after the chip is visible. Then remove `TODO(d4)` in `e2e/api/helpers.ts` (on `be/integration-frontend`) and re-run the 6 mobile `@api` specs. That closes BE-32. | LEAD | `docs/plan/AGENT-SYNC.md` HANDOFF, `docs/ops/staging-refresh-2.md` §5 (iv) | open |
 | 8 | Decide how `be/integration-frontend` reaches the go-live build | LEAD | `docs/plan/AGENT-SYNC.md` | open (**unverified** plan) |
 | 9 | Refresh the test environment to the merged tip (`docs/ops/staging-refresh-2.md`, never executed) | B (DevOps) | — | **blockers cleared** at `3d0b1271` (#76 fixed via #77; BE-19 full and BE-21 full merged); **waiting for the user's go (G6)** |
-| 10 | 5 permainan solo rosak dalam mod http — keputusan skop go-live menunggu pemilik (Amin); bukan blocker Bijak SPM jika di luar skop. | LEAD (D-1) | LEAD review on #87, #78 (**unverified** in the repo) | open |
+| 10 | 5 permainan solo rosak dalam mod http — keputusan skop go-live menunggu pemilik (Amin); bukan blocker Bijak SPM jika di luar skop. | LEAD (D-1) | LEAD review on #87, #78, #102 | open. The LEAD pushed a D58 stopgap to `be/integration-frontend` @ `d909e1e0` (solo games show "belum tersedia dalam demo" in http mode). **#102** (draft, head `70ad8f53`, same purpose) is still open and is not in that branch; LEAD to close or merge one. |
 | 11 | M18 S23/S21 `fe/m18-amaran-summary` @ `f20e6c80` | A (FE) | `docs/plan/AGENT-SYNC.md` HANDOFF | review APPROVE; not merged; e2e WIP |
-| 12 | BE-46 marketplace `be/BE-46-marketplace` @ `97766959` (migration 0032) | A | `docs/plan/AGENT-SYNC.md` HANDOFF | in `lead/merge-groupa @ ed45bb0c`; static checks green; waiting for be:verify; not merged. Out of Bijak scope unless D-1 says otherwise. |
-| 13 | BE-21 AC#13 doc fix `docs/BE-21-ac13-contract` @ `0ca65e73` | A | — | not merged |
-| 14 | **Demo blocker (23 Oct): practice cannot start.** `POST /api/practice/sessions` always returns 422 `NOT_ENOUGH_QUESTIONS`, because `PracticePorts.provideQuestions` is still the `NoPracticeQuestions` placeholder and is not wired to the BE-09 bank. | B (Developer 3, BE-12 / PC-2) | #67 Group B update 08:30Z, #88 | in progress on `be/BE-12-practice-question-source`. No PR yet, and the branch was not on GitHub at ~10:00Z (**unverified**). |
-| 15 | **Demo blocker (23 Oct): PoC question pool.** Battle quick-match answers 422 on the PoC seed (at most 3 published MCQs per subject at Tingkatan 4; battle needs 10). #90 adds 480 PoC-only MCQs (24 per subject per level, 10 subjects). Seed data only; production stays guarded by `ALLOW_DEMO_SEED`. | B (DevOps) | #90 | PR open, G4 pending. Its base is `be/BE-26-seed-poc-profile` (#74, now merged), so it must be retargeted to `feature/v2-backend` before merge. |
-| 16 | **Full-demo walkthrough script** (`scripts/demo-walkthrough.sh`). It found #14 and #15. | B (DevOps) | #88 | Group A review: Changes needed, 3 Majors (writes on by default, SKIP exits 0, overclaims coverage). **Under fix.** |
+| 12 | BE-46 marketplace `be/BE-46-marketplace` @ `97766959` (migration 0032) | A | `docs/plan/AGENT-SYNC.md` HANDOFF | **merged** (via `lead/merge-final`). Out of Bijak scope unless D-1 says otherwise. |
+| 13 | BE-21 AC#13 doc fix `docs/BE-21-ac13-contract` @ `0ca65e73` | A | — | **done**: `0ca65e73` is an ancestor of the tip (merged with BE-21 full, before `54ae851d`) |
+| 14 | **Demo blocker (23 Oct): practice cannot start.** `POST /api/practice/sessions` always returns 422 `NOT_ENOUGH_QUESTIONS`, because `PracticePorts.provideQuestions` is still the `NoPracticeQuestions` placeholder and is not wired to the BE-09 bank. | B (Developer 3, BE-12 / PC-2) | #92, #103, #88 | **merged**: #92 (`c02f7274`) via `lead/merge-final`. Follow-up **#103** (#92 nits, head `0c234cf0`) is open, ready for G4, but its base is the merged `be/BE-12-practice-question-source`, so it needs a retarget. Remaining demo gap: see #16a. |
+| 15 | **Demo blocker (23 Oct): PoC question pool.** Battle quick-match answers 422 on the PoC seed (at most 3 published MCQs per subject at Tingkatan 4; battle needs 10). #90 adds 480 PoC-only MCQs (24 per subject per level, 10 subjects). Seed data only; production stays guarded by `ALLOW_DEMO_SEED`. | B (DevOps) | #90, #93 | **merged** via `lead/merge-final` (#90 `e684c054` and follow-up #93 `172f05a2`, both closed by hand by the LEAD). |
+| 16 | **Full-demo walkthrough script** (`scripts/demo-walkthrough.sh`). It found #14 and #15. | B (DevOps) | #88 | **merged** (`3b1a2796`: writes off by default, `CONFIRM_WRITES=1` to write, STRICT on). |
+| 16a | **Demo rehearsal (23 Oct).** `be/demo-rehearsal-23oct` @ `917a152b` (rehearsal only, not for merge): `demo-walkthrough.sh` **112 PASS / 1 FAIL / 0 SKIP**; `demo-smoke.sh` 25/3 (the 3 need the Pages layer); `edge-worker` test 15/15; be:verify green apart from the 5 known local failures and 1 intermittent `test/games/solo/solo.spec.ts`. The 1 FAIL: the walkthrough starts practice in `random` mode, which serves D1–D4 only, and the PoC pool has T4/T5 rows only, so 422 `NOT_ENOUGH_QUESTIONS`. With `past_year` it is 115/0/0. | B (DevOps, #88: use `past_year` or `latih_tubi`); #90 owner if the demo must show random/chapter (needs D1–D4 pool rows) | [#67 comment 6315200981](https://github.com/amin-kerja-orang/prestasiplus/issues/67#issuecomment-6315200981) | open (one-line script change) |
+| 16b | **Demo deploy checklist** (user, after G6): Render commit, Render env names, DB reset or delta (0030 → 0038), Pages edge secret + `_worker.js` re-upload, then smoke + read-only walkthrough. | user; B (DevOps) | [#67 comment 6315200981](https://github.com/amin-kerja-orang/prestasiplus/issues/67#issuecomment-6315200981), section "Deploy checklist for the user" | waiting for the user's go (G6). Its commit (`917a152b`) predates the merge; the matching tip commit is `2be3b5f6`, which also has BE-28/42/46 (0028, 0031, 0032), so the delta is longer than listed there (**unverified** against a deploy). |
 
 Item 4 failures in detail:
 - **BE-42 (2 failures), fixed in `ec74b76d`:**
   - `pksk-db.spec.ts`: list order (the spec now advances the fixed clock).
   - `migratable-double-upsert`: `pksk_packages` check constraint (fixture added).
 - **BE-28 (1 failure), fixed in `06538cba`:** `core.db.spec.ts` duplicate rejects (the query is now scoped to the apply run).
-- Both fixes still need the full be:verify on `lead/merge-groupa`.
+- Both fixes are merged; the full be:verify on `lead/merge-final` @ `3d94e291` is green (LEAD, #67 12:24Z).
 
 Item 10, the five games broken in http mode: betul-salah, cabaran-kilat, tembak-jawapan, susun-jawapan, kad-memori.
 - If games are in the go-live scope, this is a blocker.
@@ -144,7 +149,7 @@ Item 10, the five games broken in http mode: betul-salah, cabaran-kilat, tembak-
 
 | # | Item | Owner | Link | State |
 |---|---|---|---|---|
-| 17 | **The 7 cross-lane gaps from #81.** The release gate is blocked until they close. Each gap is an `it.fails` test on the tip that goes red once it is fixed. | LEAD files them; owners below | #81 | not filed (**unverified**: no issue found) |
+| 17 | **The 7 cross-lane gaps from #81.** The release gate is blocked until they close. Each gap is an `it.fails` test on the tip that goes red once it is fixed. | owners below | #81, #94–#100, [#67 gap summary](https://github.com/amin-kerja-orang/prestasiplus/issues/67#issuecomment-6314364599) | **filed as #94–#100**, all open; `it.fails` markers still on the tip. **Blockers: #94, #95, #96** (Major). #97–#100 are Minor (a non-strict body: the extra field has no effect). Patch hunks for gaps 1–3: `docs/qa/BE-33-audit-gaps.patch` (not applied); close-out: `docs/qa/BE-33-audit-coverage.md`. LEAD to decide whether #97–#100 are go-live exceptions (#78); if yes, the release gate waits only on #94–#96. |
 | 18 | Confirm BE-33 OQ1 (rate-limit numbers) and OQ2 (metrics access rule) | LEAD | #81 | open |
 | 19 | **Rotate the demo DB password and Render `DATABASE_URL` together.** Do it in one change window: set a new Supabase password, then the Render secret, then redeploy, then check `/api/ready` and run the smoke. Rotation steps in general: `docs/ops/api-runbook.md` §13. Why and when this was decided is **unverified**. | user (dashboards), B (DevOps) | — | open |
 | 20 | **Choose and provision the production environment.** See the note below the table. | user + LEAD (D-2) | `docs/ops/deploy-execution.md` §8, `docs/ops/deploy-staging.md` | open |
@@ -158,15 +163,15 @@ Item 10, the five games broken in http mode: betul-salah, cabaran-kilat, tembak-
 
 Item 17, the 7 gaps and their owners:
 
-| Gap | Card | Lane |
-|---|---|---|
-| 1. Role-switch and mode audit rows have null `target_type`/`target_id` | BE-03 | A (PC-1) |
-| 2. Password-reset audit rows have null actor fields | BE-06 | A (PC-1) |
-| 3. Bulk action writes no status events and has a null `scope_level` | BE-10 | B (PC-5) |
-| 4. `POST /admin-sekolah/guru` is non-strict | BE-21 | A (PC-6) |
-| 5. `POST /admin/articles` and `POST /tiket` are non-strict | BE-24 | A (PC-1) |
-| 6. `POST /me/notifications/bulk-read` and `POST /auth/register` are non-strict | BE-06 | A (PC-1) |
-| 7. `POST /practice/sessions` is non-strict | BE-12 | B (PC-2) |
+| Gap | Issue | Card | Lane | Go-live |
+|---|---|---|---|---|
+| 1. Role-switch and mode audit rows have null `target_type`/`target_id` | #94 | BE-03 | A (PC-1) | **blocker** (Major) |
+| 2. Password-reset audit rows have null actor fields | #95 | BE-06 | A (PC-1) | **blocker** (Major) |
+| 3. Bulk action writes no status events and has a null `scope_level`. The fix also touches BE-09's `questions.service.ts`. | #96 | BE-10 + BE-09 | B (PC-5 + PC-2) | **blocker** (Major) |
+| 4. `POST /admin-sekolah/guru` is non-strict | #97 | BE-21 | A (PC-6) | Minor |
+| 5. `POST /admin/articles` and `POST /tiket` are non-strict | #98 | BE-24 | A (PC-1) | Minor |
+| 6. `POST /me/notifications/bulk-read` and `POST /auth/register` are non-strict | #99 | BE-06 | A (PC-1) | Minor |
+| 7. `POST /practice/sessions` is non-strict | #100 | BE-12 | B (PC-2) | Minor |
 
 Item 20, why the current environments are not enough: the repo documents only the free-tier demo and a VPS
 compose path.
@@ -179,6 +184,8 @@ Item 21, what exists and what is missing:
 - Uploaded files (`apifiles` volume) are not in the dump.
 - For Supabase, only a manual `pg_dump -Fc` is documented.
 - The AC7 drill ran locally only (141 tables, 0 mismatches, #81). No compose or production drill has run.
+- Since `d6cd5d11`, `scripts/db-restore-check.mjs` compares the exact row count of every table. This is untested until the cloud run.
+- `docs/ops/api-runbook.md` §10 now has the AC7 rehearsal steps ("AC7 rehearsal (run once in the cloud session)").
 
 Item 24, the checks still open:
 - Run the image read-only and do a boot smoke.
@@ -199,9 +206,9 @@ Verified state:
 | Card | State |
 |---|---|
 | BE-27, BE-34, BE-35 (staging, kit, anonymiser) | merged |
-| BE-28 | test fix pushed (`06538cba`), in `lead/merge-groupa @ ed45bb0c`, waiting for be:verify (§2.1 #4) |
-| BE-29 | WIP, draft PR #82 |
-| BE-30 | **not started** |
+| BE-28 | **merged** via `lead/merge-final` (`06538cba`, no PR; tracker `done`) |
+| BE-29 | WIP, draft PR #82 (not in `lead/merge-final`; migration `0035` reserved) |
+| BE-30 | **not started** (migration `0036` reserved) |
 | OD-10 (migration questions) | unanswered |
 
 Before a go-live with migration, `docs/qa/v2-test-strategy.md` requires all of these:
@@ -246,7 +253,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 | `REQUEST_TIMEOUT_MS`, `HEADERS_TIMEOUT_MS`, `KEEP_ALIVE_TIMEOUT_MS`, `SHUTDOWN_GRACE_MS` | Defaults per `docs/ops/api-runbook.md` |
 | `METRICS_ENABLED`, `METRICS_INTERNAL_CIDRS` | In production, `/api/metrics` is admin-only or open to the listed CIDRs (#81) |
 | `THROTTLE_*`, `LOGIN_*`, `INTAKE_*`, `OCR_*`, `JOBS_*`, `BIJAK_SWEEP_INTERVAL_SECONDS` | Defaults, unless OQ1 changes them (§2.2 #18). Throttle counters are per process, so either run **one** API instance or accept limits that are not coordinated across instances. |
-| AI provider vars (BE-36) | Arrive with #86, with names per that PR. The provider choice is OD-14 (D-5). |
+| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL`, `AI_BASE_URL_ALLOWLIST`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON`, `AI_TIMEOUT_MS`, `AI_MAX_CONCURRENCY`, `AI_RATE_LIMIT_*`, `AI_MAX_RETRIES`, `AI_RETRY_BASE_MS`, `THROTTLE_AI_*` | BE-36 (#86, merged; `env.schema.ts`, `.env.api.example`). `AI_PROVIDER` defaults to `mock`. `AI_API_KEY` is a secret. A paid provider needs a price entry in `AI_PRICE_TABLE_JSON` and a monthly cap, or it counts as not configured (fail closed). Concurrency and rate limits are per process. The provider receives redacted text only (LEAD decision (c)). The provider choice is OD-14 (D-5). |
 
 **SPA build** (Pages or `docker/frontend`):
 - `VITE_API_MODE=http`. If it is unset, the build silently falls back to the mock.
@@ -282,15 +289,8 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
   - Compose: the one-shot `migrate` service runs it.
   - Render: run `npm run be:db:migrate` from a laptop checkout of the release SHA. The free Render image has no Prisma CLI and no pre-deploy hook.
 - [ ] **0024 is never used**, because it would sort below the applied migrations. 0016 is also unused. Gaps are normal; do not "fix" them.
-- [ ] Present on the tip `84438c70` (same set as `3d0b1271`): `0001`–`0015`, `0017`–`0023`, `0025`, `0026`, `0027`, `0030`, `0033`, `0034` (28 folders).
-- [ ] Added only if the matching PR or branch merges:
-
-  | Migration | Arrives with |
-  |---|---|
-  | `0037` | #86 |
-  | `0038` | #85 |
-  | `0028` + `0031` | BE-42 |
-  | `0032` | BE-46 |
+- [ ] Present on the tip `2be3b5f6`: `0001`–`0015`, `0017`–`0023`, `0025`–`0028`, `0030`–`0034`, `0037`, `0038` (33 folders). New since `84438c70`: `0028` + `0031` (BE-42), `0032` (BE-46), `0037` (#86), `0038` (#85).
+- [ ] Reserved, not on the tip: `0035` BE-29, `0036` BE-30 (#67 LEAD allocation). `0029` is not used.
 
 - [ ] The expected `_prisma_migrations` count is the number of folders at the release SHA, not the highest number.
 - [ ] Migrations are forward-only, so take a `pg_dump -Fc` immediately before the migrating deploy.
@@ -370,8 +370,8 @@ accounts are **unverified / to be created**.
 4. Admin Pusat: Pembina Kertas and publish (the student then sees the paper); Mod Pelajar.
 5. Client-address check: the 6th failed login from one client gets 429, and a second network is not locked out.
 
-The #88 walkthrough (once merged) is an API-only companion to the smoke. It does not cover the SPA, the solo games
-or the `/login` mobile measure, and it writes rows, so run it only on the demo project, never in production.
+The #88 walkthrough (`scripts/demo-walkthrough.sh`, merged) is an API-only companion to the smoke. It does not cover the SPA, the solo games
+or the `/login` mobile measure, and with `CONFIRM_WRITES=1` it writes rows, so run writes only on the demo project, never in production.
 
 Manual extras (`docs/ops/deploy-execution.md` §5):
 - An upload under the limit works.
@@ -421,5 +421,5 @@ D-1, D-2 and D-3 are the ones that need a decision now (see "Needs a decision" a
 | D-8 | BE-33 OQ1 rate-limit numbers and OQ2 metrics access rule | LEAD |
 | D-9 | One API instance (per-process throttles), or a shared throttle store before scaling | LEAD |
 | D-10 | Backup cadence, retention and storage location, and who owns the monthly restore drill | user + LEAD |
-| D-11 | Migration numbers 0037 (BE-36) and 0038 (BE-38) | LEAD |
+| D-11 | ~~Migration numbers 0037 (BE-36) and 0038 (BE-38)~~ **Settled:** both merged with those numbers (`lead/merge-final`). | LEAD |
 | D-12 | Password reset by e-mail is out of B1; reset links are only logged, and only in dev. Is that acceptable for launch, and what is the support path for a forgotten password? | user |
