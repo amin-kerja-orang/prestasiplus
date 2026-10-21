@@ -40,6 +40,9 @@ const EMPTY_WALLET = { currentSyiling: 0, totalSyilingEarned: 0, tokenBalance: 0
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0
 const isPositive = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0
 
+/** User ids per `balancesOf` query. */
+const BALANCE_CHUNK = 1000
+
 function assertUser(userId: string): void {
   if (!isIdString(userId)) throw new RangeError('WalletService: invalid user id')
 }
@@ -382,6 +385,21 @@ export class WalletService {
     const db = this.repo.handle(options.tx)
     const [wallet, streak] = await Promise.all([this.repo.wallet(db, userId), this.repo.streak(db, userId)])
     return { coins: wallet?.currentSyiling ?? 0, points: wallet?.xp ?? 0, streakDays: streak?.current ?? 0 }
+  }
+
+  /**
+   * Current syiling balance of many users in set-based reads (ids chunked at 1000). A user without a wallet is absent
+   * from the map (read it as 0). Read-only; used by the BE-21 school activity report.
+   */
+  async balancesOf(userIds: readonly string[], options: { tx?: TxClient } = {}): Promise<Map<string, number>> {
+    const unique = [...new Set(userIds)]
+    unique.forEach(assertUser)
+    const db = this.repo.handle(options.tx)
+    const out = new Map<string, number>()
+    for (let i = 0; i < unique.length; i += BALANCE_CHUNK) {
+      for (const [id, n] of await this.repo.balancesOf(db, unique.slice(i, i + BALANCE_CHUNK))) out.set(id, n)
+    }
+    return out
   }
 
   // --- internals -----------------------------------------------------------------------------------

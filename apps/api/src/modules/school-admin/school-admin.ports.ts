@@ -33,7 +33,9 @@ export interface SchoolPerformanceView {
     /** 0..100, one decimal, `gradedScore / gradedMax` (BE-19). */
     accuracy: number
   }
-  /** Grade rows with pupil counts (BE-19: zero rows until its GPS slice lands). */
+  /** Headcount GPS (BE-19 Part D); value and band are null without graded entries. */
+  gps: { value: number | null; band: string | null; entries: number }
+  /** Grade rows with pupil counts (BE-19 headcount). */
   distribution: { grade: string; count: number; pct: number }[]
   /** `students` is the number of pupils behind the level (the cohort size). */
   levels: { code: string; accuracy: number; students: number }[]
@@ -50,6 +52,7 @@ export class NoSchoolPerformance implements SchoolPerformancePort {
   async school(): Promise<SchoolPerformanceView> {
     return {
       stats: { students: 0, sessions: 0, answered: 0, accuracy: 0 },
+      gps: { value: null, band: null, entries: 0 },
       distribution: [],
       levels: [],
     }
@@ -74,8 +77,8 @@ export class NoSchoolClasses implements SchoolClassCountPort {
  * BE-19 is wired: `SchoolAdminModule` binds `{ provide: SCHOOL_PERFORMANCE_PORT, useExisting: SchoolPerformanceService }`
  * (reports/performance/services/school-performance.service.ts). `SchoolPerformanceService.school(ctx: Ctx): Promise<PerformanceSchool>`
  * is structurally a `SchoolPerformancePort` (the view is a subset of `PerformanceSchool`), so there is no mapping code. The ctx is
- * `{ userId, role, scope: auth.active.scope, isTest }`. BE-19 gives no non-zero `distribution` rows (the GPS is not Bijak: it stays
- * null until an SPM card wires a future SpmGradesPort) and its `levels` come from the BE-17 classes (grade 10/11 classes with pupils who sat); report, do not derive.
+ * `{ userId, role, scope: auth.active.scope, isTest }`. BE-19 Part D fills `gps` and `distribution` from headcount (deviation 412 is
+ * superseded) and its `levels` come from the BE-17 classes (grade 10/11 classes with pupils who sat); report, do not derive.
  *
  * BE-17 is wired: `SchoolClassesAdapter` (school-classes.adapter.ts) counts the active classes of the school over `ClassesRepository`.
  */

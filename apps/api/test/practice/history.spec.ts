@@ -206,6 +206,27 @@ describe('AC8 / AC-18.3 repository reads leave out Mod Pelajar rows by default',
     expect(own.body.meta.stats.sessions).toBe(2)
   })
 
+  it('statsOf, lastActivityOf and masteryOf equal the per-user reads, leave out is_test, and skip users without rows', async () => {
+    const repo = t.app.get(PracticeRepository)
+    await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 10, correct: 7, coins: 7, completedAt: '2026-10-14T10:00:00+08:00' })
+    await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 10, correct: 5, coins: 5, completedAt: '2026-10-16T10:00:00+08:00' })
+    await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 10, correct: 0, coins: 0, completedAt: '2026-10-18T10:00:00+08:00', isTest: true })
+    await t.db.query(`insert into mastery (user_id, subject_id, correct, answered) values ($1, $2, 3, 4) on conflict do nothing`, [ids.pelajar, w.subject.math])
+    const opts = { modes: ['random'] as const }
+    const list = [ids.pelajar, ids.maju]
+    const stats = await repo.statsOf(list, opts)
+    const one = await repo.historyStats(ids.pelajar, opts)
+    expect(stats.get(ids.pelajar)).toEqual({ sessions: one.sessions, avgAccuracyPct: one.avgAccuracyPct })
+    expect(stats.get(ids.pelajar)?.sessions).toBe(2)
+    const last = await repo.lastActivityOf(list, opts)
+    expect(last.get(ids.pelajar)?.toISOString()).toBe((await repo.history(ids.pelajar, { ...opts, take: 1 }))[0]?.completedAt?.toISOString())
+    expect(last.get(ids.pelajar)?.toISOString()).toBe(new Date('2026-10-16T10:00:00+08:00').toISOString())
+    expect(await repo.statsOf([], opts)).toEqual(new Map())
+    const many = await repo.masteryOf(list)
+    expect(many.get(ids.pelajar)).toEqual(await repo.mastery(ids.pelajar))
+    if (!stats.has(ids.maju)) expect(last.has(ids.maju)).toBe(false)
+  })
+
   it('queue and mastery reads return the stored rows in BR-14 order and by subject', async () => {
     const repo = t.app.get(PracticeRepository)
     await t.db.query(

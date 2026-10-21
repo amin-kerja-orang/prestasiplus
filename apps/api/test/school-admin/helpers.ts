@@ -139,6 +139,7 @@ export async function insertPendingTeacher(db: TestDatabase, email: string, pend
 
 export const emptyView = (over: Partial<SchoolPerformanceView> = {}): SchoolPerformanceView => ({
   stats: { students: 0, sessions: 0, answered: 0, accuracy: 0 },
+  gps: { value: null, band: null, entries: 0 },
   distribution: [],
   levels: [],
   ...over,
