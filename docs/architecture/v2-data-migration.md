@@ -19,7 +19,7 @@
 
 | Fact | Source | Consequence |
 |---|---|---|
-| Production DB is MySQL; app timezone is `UTC`; ids are `bigint` auto-increment | `docs/DEPLOY-RUNBOOK.md`, `config/app.php`, migrations | Convert to PostgreSQL `timestamptz`; the API keeps serialising `+08:00` (overview). Date-only columns need a day-boundary decision (section 5). |
+| Production DB is MySQL; `DATETIME` values are Malaysia time (`+08:00`, decision DT-1 A) and `TIMESTAMP` columns are UTC; ids are `bigint` auto-increment | `docs/DEPLOY-RUNBOOK.md`, `config/app.php`, migrations | Convert to PostgreSQL `timestamptz`; the export adds `+08:00` to `DATETIME` values and `Z` to `TIMESTAMP` values; the API keeps serialising `+08:00` (overview). Date-only columns need a day-boundary decision (section 5). |
 | .cloud data is **separate** from the .my data ("not replicas") | `docs/DEPLOY-RUNBOOK.md` | Only the .cloud database is a source. No merge of .my users is planned. |
 | No `deleted_at` anywhere; hard deletes | migrations | No soft-delete history to migrate. Orphans are possible where FKs were not enforced (section 5). |
 | Roles are one string column `users.role`; no roles table, no permissions table | `create_users_table`, `User::canAccessPanel` | Role mapping is a value mapping (section 4.1). Officer scope has no column. |
@@ -100,7 +100,7 @@ Prototype store names are the `defineTable` or dataset names in `src/modules/*/m
 | Practice | `broadcasts` | none | **Missing in prototype** | Teacher class announcements (`type`, `body`). |
 | Practice | `timeline_entries` | M08 `timelinePostsTable` | **Reshape** | .cloud: `title`, `body`, `happened_on`; prototype: `category`, `eventDate`, `story`, `photos[]`. |
 | Practice | `headcounts` | M08 `headcountConfigsTable` / `headcountEntriesTable` | **Reshape** | .cloud: one row per teacher/class/subject/year with `tov`, `rs`; prototype: per-student entries with targets/actuals/etr. |
-| Wellbeing & career | `mood_checkins` | M26 provisional `moodCheckinsTable` (hosted in M17) | **Rename** | `checked_in_on` date (UTC-derived) vs prototype local date. |
+| Wellbeing & career | `mood_checkins` | M26 provisional `moodCheckinsTable` (hosted in M17) | **Rename** | `checked_in_on` date (app-clock date, Malaysia day under DT-1 A) vs prototype local date. |
 | Wellbeing & career | `interventions` | M12 `interventionsTable` | **Reshape** | .cloud has before/after accuracy and mood columns; prototype row is shaped differently. |
 | Wellbeing & career | `wellbeing_alerts`, `psychometric_results` | none | **Missing in prototype** | Alerts (`type`, `severity`, `resolved`) and psychometric results (JSON `details`). Sensitive. |
 | Wellbeing & career | `aspirations`, `career_paths`, `universities`, `scholarships` | none | **Missing in prototype** | Career/aspiration module absent from the prototype. |
@@ -252,7 +252,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 |---|---|---|
 | X1 | **Ids.** .cloud uses `bigint`. The prototype uses numbers for users and schools, but strings for sessions (`A2`, `g1`, `s_...`), classes (`sc-{n}`) and battles (`jut_...`), plus reserved ranges (`ID_RANGES`: users 1 to 11 canonical, 1 to 6,000 generated, runtime floor 9,000,001; schools 900001 to 900099; questions floor 9,000,001). Real .cloud ids will collide with the mock anchors. | Backend generates its own primary keys (`bigint` identity, or UUID for session-like records) and every migratable table gets `legacy_source` + `legacy_id` (unique pair; plan section 14.2). Frontend treats ids as opaque; drop `ID_RANGES` from backend code. |
 | X2 | **Enum language.** .cloud stores Malay status codes (`menunggu`, `aktif`, `dibuka`, `diluluskan`, `ditolak`, `diarkib`, `draf`, `baru`); the prototype stores English codes (`pending_review`, `approved`, `archived`, `in_progress`). | Store English codes in v2 (the prototype contract); the ETL carries an explicit mapping table per column, built after profiling real distinct values. UI labels stay BM. |
-| X3 | **Timestamps.** .cloud is UTC `created_at/updated_at` plus date-only columns; the prototype uses ISO strings with `+08:00` and epoch-ms twins (`createdAtMs`, `answeredAtMs`). | PostgreSQL `timestamptz`; the API serialises `+08:00`; epoch twins are computed, not stored. Date-only columns: see Q8. |
+| X3 | **Timestamps.** .cloud `DATETIME` values are Malaysia time (`+08:00`; the export adds the offset, DT-1 A) and `TIMESTAMP` columns are UTC, plus date-only columns; the prototype uses ISO strings with `+08:00` and epoch-ms twins (`createdAtMs`, `answeredAtMs`). | PostgreSQL `timestamptz`; the API serialises `+08:00`; epoch twins are computed, not stored. Date-only columns: see Q8. |
 | X4 | **Money.** .cloud mixes `decimal(10,2)` RM (`price`, `amount`, `price_rm`) and integer sen (`cost_value_sen`, `cost_sen`, `reward_budget_sen_month`); the prototype uses strings for prices. | `numeric(10,2)` for RM, integer sen where .cloud has sen; serialise as in the prototype contract. |
 | X5 | **Counts.** The prototype's virtual datasets (users, schools, questions, answers, sessions, wallets, ledger, videos) generate rows to match observed .my totals (ADR-0013). | They do not migrate. Real tables replace them; the D11 fit tests and display constants no longer apply to v2 data. |
 | X6 | **Authorisation scope.** D30 requires PPD/JPN scoped to district/state and school admin scoped to own school. .cloud has `role:admin,admin_sekolah,pegawai_ppd` and `StaffScope` (school admin by `school_id`; `pegawai_ppd` read-only, no scope column). | New `user_scopes` (user, level `national|state|district|school`, value). Needs the answer to Q3. |
@@ -364,7 +364,7 @@ Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replace
 | **Passwords and hashes** | Laravel hashes (assumed bcrypt `$2y$`; to verify per prefix). Sanctum tokens, `remember_token` exist. | Migrate hashes only; accept `$2y$` as `$2b$` in the Node verifier, rehash to the v2 algorithm on first successful login; flag accounts whose hash is not bcrypt; never migrate tokens (everyone re-logs in); accounts with the shared default hash are forced to reset. No plaintext in any file. |
 | **IC numbers** | Plain text in `users.ic`. | Hash + mask at extract; drop the column; do not log. |
 | **Id collisions and remapping** | Reserved mock ranges and string ids (X1). Foreign keys inside JSON (`served_composition`, `section_selections`, `game_rooms.state`). | New keys plus `legacy_source` + `legacy_id`; two-pass load (parents then children); rewrite JSON ids or drop the JSON. |
-| **Timestamps and timezones** | UTC in MySQL; the product shows Malaysia time. `date` columns (`checked_in_on`, `claimed_on`, `happened_on`, `action_date`, `starts_at`, `ends_at`, `expires_at`) were created by the app clock (UTC), so a day boundary falls at 08:00 MYT. | Convert datetimes to `timestamptz`; for date-only columns keep the stored date as is, and recompute streaks and daily limits from the migrated datetimes in `Asia/Kuala_Lumpur` (Q8). |
+| **Timestamps and timezones** | `DATETIME` in MySQL is Malaysia time and `TIMESTAMP` is UTC (DT-1 A); the product shows Malaysia time. `date` columns (`checked_in_on`, `claimed_on`, `happened_on`, `action_date`, `starts_at`, `ends_at`, `expires_at`) were created by the app clock, so under DT-1 A the stored date is the Malaysia day (confirm in the `dump:check` report). | Convert datetimes to `timestamptz`; for date-only columns keep the stored date as is, and recompute streaks and daily limits from the migrated datetimes in `Asia/Kuala_Lumpur` (Q8). |
 | **Orphans** | FKs may not be enforced in production MySQL (e.g. rows pointing at deleted users, schools, questions); `legacy_canonical_map` and `unify_quarantine` show known skipped items. | Run an orphan report before load; quarantine table in staging; load only rows whose users exist; log every rejected row count. |
 | **Duplicates** | `users.email` unique only when present; `username` unique per school only; duplicate people across roster and self-registration. | Dedupe report; keep both rows unless the user decides otherwise (Q2). |
 | **Ledger integrity** | `coin_transactions.balance_after` and `student_wallets.syiling_balance` are independent counters and may disagree. | Migrate both as is; add a reconciliation report; do not silently correct (the repo rule: never tune values to agree). |
@@ -399,20 +399,22 @@ Aligned with `v2-backend-plan.md` section 14.7 (2026-10-19): in B1 the ETL does 
 | MIG-08 | Staging database, encrypted dump handling, object-storage file copy, rehearsal pipeline | devops-engineer | MIG-01 |
 | MIG-09 | Post-reload backfill job (natural key + hash) | backend-developer | new intake live |
 
-## 7. Open questions for the user
+## 7. Questions for the user (decided 21 Oct 2026)
 
-| # | Question | Recommended default |
-|---|---|---|
-| Q1 | Is the role set exactly the seven codes above in production? Does any other value exist (profile needed)? | Map the seven; reject unknown roles into a review list. |
-| Q2 | Duplicate people (roster account plus self-registered account): merge or keep both? | Keep both; report duplicates for manual merge. |
-| Q3 | How is a `pegawai_ppd` scoped today (district, state, or all)? Is there a JPN role in production? | Add `user_scopes`; ask each PPD officer's scope from the data owner. |
-| Q4 | Teacher question sets and the revision queue are question-bound. Drop items (keep an empty set header), or ask teachers to rebuild? | Drop items, keep headers, show "perlu dibina semula". |
-| Q5 | Keep students' structured and exam answers (free text, AI grade, feedback) as history, even though the questions are gone? | No; keep scores only. |
-| Q6 | How should user subscription status be derived (payments, `packages`, `school_subscriptions`, `pksk_accesses`, `is_complimentary`)? | Derive from the latest paid, unexpired `payments` row + school subscription + PKSK access; confirm. |
-| Q7 | Migrate sensitive records (mood, psychometric, wellbeing alerts, interventions, foster applications, faith)? | Do not migrate `faith`, psychometric and wellbeing alerts; migrate others only if their v2 feature exists. |
-| Q8 | Day boundary for streaks and daily challenges: UTC or Malaysia time? | Malaysia time; recompute from datetimes. |
-| Q9 | Keep `question_reports` and `question_submissions` history? | Export open reports to a file; drop the rest. |
-| Q10 | Do teachers have `student_wallets` and `coin_transactions` rows (M14 teacher wallets)? Is a cash-out or "contributor reward" feature present in .cloud? | Check in profiling; if absent, drop teacher wallets from v2 (D28c). |
-| Q11 | Can we get a read-only, access-controlled dump (or only a schema-plus-counts export) for profiling? | Schema plus counts first, then a masked dump. |
-| Q12 | Retention period for the `archive_cloud` question data, and are the roster JSON files in the reference repo real data to be purged? | 12 months; purge the files from any shared copy. |
-| Q13 | Keep user-created leagues (.cloud) or only school leagues (prototype)? | Keep both if both exist in production; otherwise follow .cloud. |
+Q1 to Q7 and Q9 to Q13 were decided by the LEAD on 21 Oct 2026: the recommended default of each row. See [v2-migration-decisions.md](v2-migration-decisions.md) for options, evidence and follow-through. Q8 was not answered and stays as implemented in BE-11.
+
+| # | Question | Recommended default | Decision |
+|---|---|---|---|
+| Q1 | Is the role set exactly the seven codes above in production? Does any other value exist (profile needed)? | Map the seven; reject unknown roles into a review list. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q2 | Duplicate people (roster account plus self-registered account): merge or keep both? | Keep both; report duplicates for manual merge. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q3 | How is a `pegawai_ppd` scoped today (district, state, or all)? Is there a JPN role in production? | Add `user_scopes`; ask each PPD officer's scope from the data owner. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q4 | Teacher question sets and the revision queue are question-bound. Drop items (keep an empty set header), or ask teachers to rebuild? | Drop items, keep headers, show "perlu dibina semula". | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q5 | Keep students' structured and exam answers (free text, AI grade, feedback) as history, even though the questions are gone? | No; keep scores only. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q6 | How should user subscription status be derived (payments, `packages`, `school_subscriptions`, `pksk_accesses`, `is_complimentary`)? | Derive from the latest paid, unexpired `payments` row + school subscription + PKSK access; confirm. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q7 | Migrate sensitive records (mood, psychometric, wellbeing alerts, interventions, foster applications, faith)? | Do not migrate `faith`, psychometric and wellbeing alerts; migrate others only if their v2 feature exists. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q8 | Day boundary for streaks and daily challenges: UTC or Malaysia time? | Malaysia time; recompute from datetimes. | Not answered; stays as BE-11 (Malaysia time) |
+| Q9 | Keep `question_reports` and `question_submissions` history? | Export open reports to a file; drop the rest. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q10 | Do teachers have `student_wallets` and `coin_transactions` rows (M14 teacher wallets)? Is a cash-out or "contributor reward" feature present in .cloud? | Check in profiling; if absent, drop teacher wallets from v2 (D28c). | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q11 | Can we get a read-only, access-controlled dump (or only a schema-plus-counts export) for profiling? | Schema plus counts first, then a masked dump. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q12 | Retention period for the `archive_cloud` question data, and are the roster JSON files in the reference repo real data to be purged? | 12 months; purge the files from any shared copy. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
+| Q13 | Keep user-created leagues (.cloud) or only school leagues (prototype)? | Keep both if both exist in production; otherwise follow .cloud. | Decided (LEAD, 21 Oct): default ([decisions](v2-migration-decisions.md)) |
