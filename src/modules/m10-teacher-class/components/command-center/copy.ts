@@ -197,3 +197,14 @@ export interface DrillRequest {
   filter?: string
   label: string
 }
+
+/** BE-22 emits curriculum grade codes (DARJAH_1, TINGKATAN_4); the page shows the mock's slug text. Slugs pass through. */
+export const levelText = (level: string): string =>
+  /^DARJAH_\d$/.test(level)
+    ? `tahun-${level.slice(-1)}`
+    : /^TINGKATAN_\d$/.test(level)
+      ? `tingkatan-${level.slice(-1)}`
+      : level
+
+/** http mode only: a route BE-22 does not provide (Smart Remedial) answers 404. */
+export const REMEDIAL_UNAVAILABLE = 'Fungsi ini belum tersedia dalam demo'
