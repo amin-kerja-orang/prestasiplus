@@ -23,7 +23,8 @@
  *  14. poc-performance        headcount configs and entries, timeline posts (BE-19)
  *  15. practice               practice sessions and answers of the demo accounts
  *  16. gamification           achievements, challenges, rewards, draws
- *  17. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
+ *  17. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path)
+ *  18. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
  * command is accepted there only together with it (two keys, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
@@ -51,6 +52,7 @@ export const POC_PROFILE_ORDER = [
   'poc-performance',
   'practice',
   'gamification',
+  'questions-pool',
   'poc-profile',
 ] as const
 
