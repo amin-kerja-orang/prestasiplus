@@ -42,7 +42,7 @@ Optional keys (defaults in brackets):
 
 | Group | Keys |
 |---|---|
-| Core | `PORT` [3000], `LOG_LEVEL` [info; fatal, error, warn, info, debug, trace, silent], `TRUST_PROXY_HOPS` [0; compose sets 1 = the frontend nginx], `PUBLIC_BASE_URL` (URL), `PUBLIC_ORIGINS` (comma-separated extra image origins) |
+| Core | `PORT` [3000], `LOG_LEVEL` [info; fatal, error, warn, info, debug, trace, silent], `TRUST_PROXY_HOPS` [0; compose sets 1 = the frontend nginx], `CLIENT_IP_HEADER` [unset; one of `x-pp-client-ip`, `cf-connecting-ip`, `x-real-ip`, `true-client-ip`], `EDGE_PROXY_SECRET` [unset; secret, 32+ chars, required when `CLIENT_IP_HEADER` is set], `PUBLIC_BASE_URL` (URL), `PUBLIC_ORIGINS` (comma-separated extra image origins) |
 | Session and cookies | `SESSION_COOKIE_NAME`, `COOKIE_DOMAIN`, `COOKIE_SECURE` [true unless set to `false`; the dev overlay compose.http.yaml sets false], `SESSION_REMEMBER_DAYS` [30], `SESSION_REMEMBER_DAYS_STAFF` [1; 0 = off] |
 | Login hardening | `THROTTLE_LOGIN_PER_MINUTE` [5], `LOGIN_IDENTIFIER_FAIL_LIMIT` [100 per 15 min], `LOGIN_FAILURE_FLOOR_MS` [1500], `LEGACY_BCRYPT_DUMMY_COST` [12] |
 | Seeds | `ALLOW_DEMO_SEED` [false], `BIJAK_POC_QUESTIONS` [false; staging only] |
@@ -115,6 +115,8 @@ Global security headers (helmet-style, HSTS in production), `x-powered-by` off, 
 
 Counters are per process, in memory (a shared store is a follow-up), except the login and reset counters, which are rows in `login_attempts` (keyed hashes only: neither an address nor an identifier is stored). All refusals are `429 RATE_LIMITED` with `retryAfter` seconds in the body and the `Retry-After` header. Behind nginx the client address is the last `X-Forwarded-For` entry; `TRUST_PROXY_HOPS` must match the number of proxies (1 for compose).
 
+Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_HEADER` is set, the throttle key is the address in that request header, but only if the request also carries `X-PP-Edge-Secret` equal to `EDGE_PROXY_SECRET` (compared in constant time). Allowed header names: `x-pp-client-ip`, `cf-connecting-ip`, `x-real-ip`, `true-client-ip`; any other value, or a secret shorter than 32 characters, fails the boot with the key named (never the value). Fail-safe: a missing or wrong secret, or a missing or invalid address, falls back to the socket peer (strict, never the header). Unset `CLIENT_IP_HEADER` = the `TRUST_PROXY_HOPS` behaviour above; compose/nginx keeps `TRUST_PROXY_HOPS=1` and does not set either key. `TRUST_PROXY_HOPS` still governs `req.secure`. Rollout and rollback: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md), "Edge client IP + no-store (go-live fix)" (**user action, needs G6 confirmation**).
+
 | Limit | Default | Window | Key | Env key |
 |---|---|---|---|---|
 | Global ceiling, every `/api` route except `/api/health` and `/api/ready` (`/api/metrics` is counted, G4 M1) | 300 | 1 min | address | `THROTTLE_GLOBAL_PER_MINUTE` |
@@ -151,6 +153,73 @@ Drill executed for BE-33 (acceptance criterion 7), 2026-10-20, with the same too
 5. Both scratch databases and the dump file were deleted.
 
 The full output is attached to the PR. The same drill with `npm run db:backup` and `npm run db:restore-check` on the real `db` container, and the first production backup, still need the lead or the operator (see section 15).
+
+### AC7 rehearsal (run once in the cloud session)
+
+Purpose: prove `npm run db:backup` and `npm run db:restore-check` on a real Postgres 16 container, with the source-against-restored row-count comparison of every public table (including `_prisma_migrations`). Needs Docker and Node; no production, no shared environment. It uses its own Compose project name, so it never touches the `pretasiplus` stack or its volumes. Docker cap rule: run it as the only heavy database job (no `be:verify`, no API test run, no other Postgres container at the same time).
+
+Run from the repo root, in one shell session (the exports must stay set). The dump goes to a temporary folder outside the repo; the throwaway password is made up on the spot and never printed.
+
+```
+cd <repo root> && pwd && git status --short                  # clean tree, expected branch
+export COMPOSE_PROJECT_NAME=pp-ac7                           # wins over `name:` in compose.yaml, for compose and for the npm scripts
+export BACKUP_DIR="$(mktemp -d)/pp-ac7-backups"              # outside the repo
+PW="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
+printf 'POSTGRES_DB=prestasiplus\nPOSTGRES_USER=pp\nPOSTGRES_PASSWORD=%s\n' "$PW" > .env.db
+printf 'DATABASE_URL=postgresql://pp:%s@db:5432/prestasiplus\nSESSION_SECRET=%s\n' "$PW" "$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')" > .env.api
+unset PW
+```
+
+`.env.db` and `.env.api` are git-ignored; check `git status --short` shows neither. Compare `.env.api.example` and add any other required key it lists (do not print the file).
+
+```
+# 1. Start only the throwaway database (waits for the healthcheck)
+docker compose -f compose.yaml up -d --wait db
+
+# 2. Migrate and seed the non-production `poc` profile (compose.http.yaml adds the seed with ALLOW_DEMO_SEED=true)
+docker compose -f compose.yaml -f compose.http.yaml run --rm --build migrate
+docker compose -f compose.yaml exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "select count(*) from users"'    # must be > 0
+
+# 3. Backup (pg_dump -Fc inside the container; prints file, size, sha256)
+npm run db:backup -- --dir "$BACKUP_DIR"
+
+# 4. Restore into a fresh empty database <db>_restorecheck, compare, drop it
+npm run db:restore-check -- --dir "$BACKUP_DIR"
+echo "exit code: $?"
+```
+
+Do not write to the source database between steps 3 and 4: any write shows up as a mismatch. The restore target is always a new database named `<db>_restorecheck` on the same container; the script refuses any other name and drops it at the end (add `--keep-db` only to inspect it).
+
+Expected success output shape (numbers differ; the `poc` seed gave 141 tables and 9876 rows in the local drill above):
+
+```
+Checksum matches the .sha256 sidecar.
+Backup: pp-backup-<UTC timestamp>.dump  <size>  sha256 <64 hex>
+Restoring into throwaway database "prestasiplus_restorecheck" via compose service db (main database "prestasiplus" is not touched)
+public tables: <N>
+_prisma_migrations rows: <M>
+rows in users: <n>   (also schools, sessions, audit_events, questions where present)
+row-count comparison: <N> source tables, <N> restored tables, <R> rows restored, 0 mismatches
+ROW-COUNT COMPARISON PASSED
+Dropped prestasiplus_restorecheck.
+RESTORE CHECK PASSED
+exit code: 0
+```
+
+A failure prints `ROW-COUNT COMPARISON FAILED` with one `table: source X, restored Y` line per difference and exits non-zero. That is a real finding: keep the dump, do not clean up, and report it to the lead.
+
+Paste into the PR: the output of steps 3 and 4 and the `exit code` line. Both scripts print only file name, size, sha256, database names and counts. Do not paste `.env.db`, `.env.api`, any `DATABASE_URL` or the folder path of the dump if it contains a user name. Then tick AC7 in section 15 (change the status to "done on compose `db`").
+
+Cleanup (only what this rehearsal started; never kill node or docker processes by name):
+
+```
+docker compose -f compose.yaml down -v                       # removes only project pp-ac7: its db container, network and pgdata volume
+rm -rf "$BACKUP_DIR" .env.db .env.api                        # only if they did not exist before the rehearsal
+unset COMPOSE_PROJECT_NAME BACKUP_DIR
+docker compose ls                                            # pp-ac7 must be gone
+```
+
+If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting. The `ROW-COUNT COMPARISON` lines need the comparison added to `scripts/db-restore-check.mjs` (BE-33 close-out); without it the script prints only the core-table counts and `RESTORE CHECK PASSED`, which is not enough for AC7.
 
 ## 11. Logs
 

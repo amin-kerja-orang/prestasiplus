@@ -33,4 +33,8 @@ services:
       - { key: SESSION_SECRET, sync: false }   # random, 32+ characters
       - { key: IC_HASH_KEY, sync: false }      # random, 32+ characters, different from SESSION_SECRET
       - { key: PUBLIC_ORIGINS, sync: false }   # the Pages origin, https://<project>.pages.dev
+      # Edge client IP (runbook "Edge client IP + no-store"): CLIENT_IP_HEADER=x-pp-client-ip and EDGE_PROXY_SECRET =
+      # the same random 32+ character value as the Pages secret. Leave both empty for the old behaviour.
+      - { key: CLIENT_IP_HEADER, sync: false }
+      - { key: EDGE_PROXY_SECRET, sync: false }
       - { key: PUBLIC_BASE_URL, sync: false }  # the same Pages origin (class QR join links). Must be a valid URL: an empty value fails the boot

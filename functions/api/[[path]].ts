@@ -6,6 +6,8 @@
  */
 interface Env {
   API_ORIGIN?: string
+  /** Shared secret that proves to the API that X-PP-Client-IP came from this proxy (Pages encrypted secret). */
+  EDGE_PROXY_SECRET?: string
 }
 interface Ctx {
   request: Request
@@ -55,16 +57,20 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
   for (const name of HOP_BY_HOP) headers.delete(name)
   headers.delete('host')
   headers.delete('forwarded')
-  headers.delete('x-real-ip')
-  for (const name of ['x-forwarded-port', 'x-forwarded-ssl', 'true-client-ip']) headers.delete(name)
+  // Never trust client-supplied address or edge-auth headers; rebuild them from Cloudflare's own CF-Connecting-IP.
+  for (const name of [
+    'x-forwarded-for', 'x-real-ip', 'cf-connecting-ip', 'true-client-ip', 'x-pp-client-ip', 'x-pp-edge-secret',
+    'x-forwarded-port', 'x-forwarded-ssl',
+  ]) headers.delete(name)
   // OVERWRITE (never append) so a client cannot prepend a spoofed address to the rate-limit key.
-  const client = request.headers.get('cf-connecting-ip')
+  const client = (request.headers.get('cf-connecting-ip') ?? '').trim()
   if (client) {
     headers.set('x-forwarded-for', client)
     headers.set('x-real-ip', client)
-  } else {
-    headers.delete('x-forwarded-for')
+    headers.set('x-pp-client-ip', client)
   }
+  const secret = env.EDGE_PROXY_SECRET?.trim()
+  if (secret) headers.set('x-pp-edge-secret', secret) // never logged, never echoed in a response
   headers.set('x-forwarded-proto', 'https')
   headers.set('x-forwarded-host', incoming.host)
   // Cookie, Origin, Referer, x-csrf-token and X-Request-Id are forwarded untouched (copied from the request above);
