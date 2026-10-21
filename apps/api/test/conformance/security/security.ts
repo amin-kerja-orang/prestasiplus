@@ -1,6 +1,6 @@
 import type { Scenario } from '@pp/contract-tests'
 
-import { API_ONLY, errorOf, expectError } from '../helpers'
+import { API_ONLY, expectError } from '../helpers'
 
 /**
  * Security hardening (BE-33) conformance scenarios: the cross-cutting rules every route group relies on.
@@ -34,34 +34,5 @@ export const securityScenarios: Scenario[] = [
   },
 ]
 
-/**
- * NOT registered in `scenarios.ts`: the runner checks every response against `openapi.json`, and the two
- * facts below are outside it (a 413 is declared on no operation; `GET /health` is a NON_CONTRACT_ROUTE), so
- * they would fail as `undocumented_status` / `unknown_operation` unless the lead adds two
- * `API_KNOWN_MISMATCHES` entries with deviation rows. The same facts are asserted outside the runner in
- * `test/security/sampled-domains.spec.ts` (413) and `test/api.spec.ts` (health).
- */
-export const securityInfraScenarios: Scenario[] = [
-  {
-    id: 'security-api/an oversized JSON body is 413 PAYLOAD_TOO_LARGE, never a 500',
-    domain: 'security',
-    targets: API_ONLY,
-    async run(ctx) {
-      const anon = ctx.anonymous()
-      const res = await anon.request('POST', '/auth/login', { body: { identifier: 'x'.repeat(150_000), password: 'x' } })
-      expectError(ctx, res, 413, 'PAYLOAD_TOO_LARGE')
-      ctx.check(typeof errorOf(res).requestId === 'string', 'the 413 carries no requestId')
-      const student = await ctx.as('student')
-      expectError(ctx, await student.request('POST', '/tiket', { body: { subject: 'a', body: 'y'.repeat(150_000) } }), 413, 'PAYLOAD_TOO_LARGE')
-    },
-  },
-  {
-    id: 'security-api/GET /health is public and answers 200',
-    domain: 'security',
-    targets: API_ONLY,
-    async run(ctx) {
-      const res = await ctx.anonymous().request('GET', '/health')
-      ctx.expectStatus(res, 200)
-    },
-  },
-]
+// 413 and `GET /health` stay outside the runner (a 413 is declared on no operation; `/health` is a
+// NON_CONTRACT_ROUTE): asserted in `test/security/sampled-domains.spec.ts` (413) and `test/api.spec.ts` (health).

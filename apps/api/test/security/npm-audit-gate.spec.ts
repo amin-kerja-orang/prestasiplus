@@ -85,6 +85,22 @@ describe('npm-audit-gate', () => {
     expect(r.out).toContain(`missing ${key}`)
   })
 
+  it('fails on an entry that expires more than 30 days ahead (31 fails, 30 passes) (G4 minor 5)', () => {
+    const r = gate(HIGH, { entries: [entry({ expires: '2099-01-01' })] })
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('more than 30 days ahead')
+    expect(gate(HIGH, { entries: [entry({ expires: '2026-11-20' })] }).code).toBe(1)
+    expect(gate(HIGH, { entries: [entry({ expires: '2026-11-19' })] }).code).toBe(0)
+  })
+
+  it('an entry covers the advisory only on the package it names (G4 minor 5)', () => {
+    const r = gate(HIGH, { entries: [entry({ package: 'other-pkg' })] })
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('BLOCKED  GHSA-aaaa-bbbb-cccc leftpad (high)')
+    expect(r.out).toContain('names package "other-pkg"')
+    expect(gate(HIGH, { entries: [entry({ package: 'LeftPad' })] }).code).toBe(0)
+  })
+
   it('fails on a malformed expires date', () => {
     expect(gate(HIGH, { entries: [entry({ expires: '19/11/2026' })] }).code).toBe(1)
   })

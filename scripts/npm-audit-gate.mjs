@@ -7,8 +7,9 @@
 // Allow-list (default .github/security/npm-audit-allowlist.json):
 //   { "entries": [ { "id": "GHSA-xxxx-xxxx-xxxx", "package": "name", "reason": "why not exploitable here",
 //                    "expires": "YYYY-MM-DD" } ] }
-// Every entry needs id, package, reason and an ISO expires date. An expired entry fails the gate (even when no
-// advisory uses it), so an exception can never go stale silently. Process: docs/ops/api-runbook.md section 14.
+// Every entry needs id, package, reason and an ISO expires date at most MAX_ALLOW_DAYS (30) days ahead. An expired
+// entry fails the gate (even when no advisory uses it), so an exception can never go stale silently. An entry only
+// covers the advisory on the package it names. Process: docs/ops/api-runbook.md section 14.
 //
 // Exit codes: 0 pass, 1 gate failed (unlisted advisory or bad/expired allow-list), 2 unusable input.
 import { readFileSync } from 'node:fs';
@@ -17,6 +18,9 @@ import { fileURLToPath } from 'node:url';
 export const GATED = new Set(['high', 'critical']);
 const GHSA = /GHSA(?:-[0-9a-z]{4}){3}/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** Longest life of one allow-list entry, counted from the gate's "today". */
+export const MAX_ALLOW_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Canonical id: GHSA-xxxx-xxxx-xxxx (prefix upper case, rest lower case); other ids unchanged. */
 export function normId(id) {
@@ -60,6 +64,8 @@ export function checkAllowlist(list, today) {
       return problems.push(`${label}: expires must be an ISO date (YYYY-MM-DD)`);
     }
     if (e.expires < today) return problems.push(`${label}: expired on ${e.expires}; renew with a new reason or fix the dependency`);
+    const ahead = (Date.parse(`${e.expires}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS;
+    if (ahead > MAX_ALLOW_DAYS) return problems.push(`${label}: expires ${e.expires} is more than ${MAX_ALLOW_DAYS} days ahead`);
     valid.set(normId(e.id), e);
   });
   return { valid, problems };
@@ -69,8 +75,12 @@ export function checkAllowlist(list, today) {
 export function runGate(report, allowlist, today) {
   const lines = [];
   const { valid, problems } = checkAllowlist(allowlist, today);
-  const blocked = gatedAdvisories(report).filter((a) => !valid.has(a.id));
-  const allowed = gatedAdvisories(report).filter((a) => valid.has(a.id));
+  // An entry covers its advisory only on the package it names (case-insensitive).
+  const covered = (a) => valid.has(a.id) && String(valid.get(a.id).package).trim().toLowerCase() === String(a.package).toLowerCase();
+  const advisories = gatedAdvisories(report);
+  const blocked = advisories.filter((a) => !covered(a));
+  const allowed = advisories.filter(covered);
+  for (const a of blocked) if (valid.has(a.id)) problems.push(`entry ${a.id}: names package "${valid.get(a.id).package}", the advisory is on "${a.package}"`);
   const meta = report.metadata?.vulnerabilities;
   if (meta) lines.push(`npm audit: ${['critical', 'high', 'moderate', 'low'].map((s) => `${s} ${meta[s] ?? 0}`).join(', ')}`);
   for (const a of allowed) lines.push(`allowed  ${a.id} ${a.package} (${a.severity}) until ${valid.get(a.id).expires}`);

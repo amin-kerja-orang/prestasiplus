@@ -13,6 +13,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
+      - 'scripts/**'
+      - '.github/security/**'
+      - '.trivyignore'
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
@@ -25,6 +28,12 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
+      - 'scripts/**'
+      - '.github/security/**'
+      - '.trivyignore'
+  # BE-33 (G4 minor 4): new advisories are caught weekly even when no PR touches the API (Monday 02:17 UTC).
+  schedule:
+    - cron: '17 2 * * 1'
 
 permissions:
   contents: read

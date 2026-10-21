@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { Injectable, Logger } from '@nestjs/common'
 
 import { PrismaService } from '../../db/prisma.service'
+import { shutdownState } from './graceful-shutdown'
 
 export const READY_DB_TIMEOUT_MS = 3_000
 /** A result (ok or not) is reused for this long, so an anonymous caller cannot turn the route into a DB load. */
@@ -67,6 +68,8 @@ export class ReadyService {
 
   /** Concurrent callers share one in-flight check; the result is cached for `ttlMs`. */
   check(): Promise<ReadyResult> {
+    // Draining after SIGTERM: tell the orchestrator to stop routing here (G4 minor 8). Not cached.
+    if (shutdownState.draining) return Promise.resolve({ ok: false, reason: 'shutting down' })
     const t = this.now()
     if (this.cached && t < this.cached.expiresAt) return this.cached.result
     const result = this.run()
@@ -86,7 +89,10 @@ export class ReadyService {
       return this.evaluate(rows)
     } catch (err) {
       // The reason goes to the log only; never into the response body.
-      return { ok: false, reason: `database or migration table check failed: ${err instanceof Error ? err.message : 'unknown'}` }
+      // Name and driver code only: a driver message can carry the host name (G4 minor 6).
+      const code = (err as { code?: unknown } | null)?.code
+      const kind = `${err instanceof Error ? err.name : 'unknown'}${typeof code === 'string' || typeof code === 'number' ? ` ${String(code)}` : ''}`
+      return { ok: false, reason: `database or migration table check failed: ${kind}` }
     } finally {
       clearTimeout(timer)
     }

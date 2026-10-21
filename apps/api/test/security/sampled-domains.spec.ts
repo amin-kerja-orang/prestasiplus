@@ -211,6 +211,30 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
     })
   })
 
+  // --- c'. KNOWN GAP (AC1c, cross-lane): these routes should refuse an unknown field with 422 --------------------
+  // `it.fails` while the owner schema is not strict; it turns red the day the owner makes it strict, so this list is
+  // then shrunk on purpose. Deviation row "BE-33 rest: AC1c non-strict body schemas"; owners in the PR #81 body.
+  describe("c'. KNOWN GAP: non-strict body schemas (should be 422 VALIDATION_ERROR naming the unknown field)", () => {
+    const strictGap: [string, () => Promise<Response>, string][] = [
+      ['school admin people (BE-21): POST /admin-sekolah/guru', () => call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Jurang', email: 'guru.jurang@ujian.test', isAdmin: true }), 'isAdmin'],
+      ['articles (BE-24): POST /admin/articles', () => call(admin, 'post', '/admin/articles', { title: 'Artikel jurang', content: '<p>Isi</p>', category: 'UMUM', isPublished: false, views: 5 }), 'views'],
+      ['notifications (BE-06): POST /me/notifications/bulk-read', () => call(student, 'post', '/me/notifications/bulk-read', { ids: ['999999999'], userId: '1' }), 'userId'],
+      ['practice (BE-12): POST /practice/sessions', () => call(student, 'post', '/practice/sessions', { mode: 'random', ownerId: '1' }), 'ownerId'],
+      ['support tickets (BE-24): POST /tiket', () => call(student, 'post', '/tiket', { subject: 'Jurang', body: 'Ujian medan lebih.', status: 'closed' }), 'status'],
+      [
+        'registration (BE-06): POST /auth/register',
+        // Empty otherwise: a strict schema reports the unknown key next to the missing fields.
+        () => t.http().post('/api/auth/register').set('X-Forwarded-For', ip(90)).send({ isAdmin: true }),
+        'isAdmin',
+      ],
+    ]
+    it.fails.each(strictGap)('%s', async (_name, send, field) => {
+      const res = await send()
+      expect(res.status).toBe(422)
+      expect(JSON.stringify(res.body?.error?.fields ?? {})).toContain(field)
+    })
+  })
+
   // --- d. oversized bodies are 413 -------------------------------------------------------------
 
   describe('d. an oversized body is 413 PAYLOAD_TOO_LARGE', () => {

@@ -19,6 +19,25 @@ describe('api.yml security gates', () => {
     for (const j of ['verify', 'openapi-diff', 'docker', 'secret-scan']) expect(wf.jobs[j], j).toBeDefined()
   })
 
+  it('runs on edits to the gate script, the allow-lists and .trivyignore, and weekly on a schedule (G4 minor 4)', () => {
+    const on = (wf as unknown as { on: Record<string, unknown> }).on
+    for (const ev of ['push', 'pull_request'] as const) {
+      const paths = (on[ev] as { paths: string[] }).paths
+      for (const p of ['scripts/**', '.github/security/**', '.trivyignore']) expect(paths, `${ev} ${p}`).toContain(p)
+    }
+    const schedule = on.schedule as { cron: string }[]
+    expect(schedule.length).toBeGreaterThan(0)
+    expect(schedule[0]!.cron).toMatch(/^\S+ \S+ \* \* \S+$/)
+  })
+
+  it('never lets deps-audit, Trivy or dependency-review pass on error (no continue-on-error) (G4 minor 4)', () => {
+    for (const j of ['deps-audit', 'dependency-review', 'docker']) {
+      const job = wf.jobs[j] as unknown as { 'continue-on-error'?: unknown; steps?: { 'continue-on-error'?: unknown; uses?: string; name?: string }[] }
+      expect(job['continue-on-error'], j).toBeUndefined()
+      for (const step of job.steps ?? []) expect(step['continue-on-error'], `${j} ${step.name ?? step.uses ?? ''}`).toBeUndefined()
+    }
+  })
+
   it('has read-only default token permissions', () => {
     expect(wf.permissions).toEqual({ contents: 'read' })
   })

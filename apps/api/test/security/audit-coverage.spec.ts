@@ -307,6 +307,38 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
     expect(JSON.stringify(await t.db.query('select * from audit_events'))).not.toContain(`${COOKIE_NAME}=${cookie}`)
   })
 
+  // --- KNOWN GAPS (AC4, cross-lane). `it.fails` while the owner lane has not fixed them; each turns red the day it is
+  // fixed, so the marker is then removed on purpose. Owners and issues: PR #81 body "Cross-lane gaps". The rows read
+  // here were written by the tests above (same file, sequential).
+  describe('KNOWN GAP (owner lanes): fields AC4 requires that are still empty', () => {
+    it.fails('BE-03: session audit rows name the session in target_type/target_id (today only detail.sessionRowId)', async () => {
+      const rows = await t.db.query<AuditRow>(`select ${COLUMNS} from audit_events where action like 'session.%'`)
+      expect(rows.length).toBeGreaterThan(0)
+      for (const r of rows) {
+        expect(r.target_type).toBeTruthy()
+        expect(r.target_id).toBeTruthy()
+      }
+    })
+
+    it.fails('BE-06: password-reset rows carry actor role and scope level (completion) and an actor (request)', async () => {
+      const rows = await t.db.query<AuditRow>(`select ${COLUMNS} from audit_events where action like 'account.%' and request_id like '%reset-%'`)
+      expect(rows.length).toBeGreaterThanOrEqual(2)
+      for (const r of rows) {
+        expect(r.actor_user_id).toBeTruthy()
+        expect(r.actor_role).toBeTruthy()
+        expect(r.scope_level).toBeTruthy()
+      }
+    })
+
+    it.fails('BE-10: POST /questions/bulk-action writes question_status_events and a scope level on question.bulk_action', async () => {
+      const bulk = await t.db.query<AuditRow>(`select ${COLUMNS} from audit_events where action = 'question.bulk_action' and request_id like '%bulk-%'`)
+      expect(bulk.length).toBeGreaterThan(0)
+      for (const b of bulk) expect(b.scope_level).toBeTruthy()
+      const events = await t.db.query<{ n: string }>('select count(*)::text as n from question_status_events where request_id = any($1)', [bulk.map((b) => b.request_id)])
+      expect(Number(events[0]!.n)).toBe(bulk.length)
+    })
+  })
+
   it('no audit row anywhere holds an e-mail, a 12-digit IC number, a password or a session value (whole table)', async () => {
     const all = JSON.stringify(await t.db.query('select * from audit_events'))
     expect(all).not.toMatch(EMAIL)

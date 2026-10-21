@@ -10,6 +10,7 @@ import type { Env } from './common/config/env.schema'
 import { installGracefulShutdown } from './common/health/graceful-shutdown'
 import { applyServerTimeouts, resolveServerTimeouts } from './common/health/server-timeouts'
 import { configureApp } from './configure-app'
+import { JobsWorker } from './modules/jobs/jobs.worker'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true })
@@ -24,7 +25,12 @@ async function bootstrap(): Promise<void> {
   })
   const logger = app.get(Logger)
   // Not app.enableShutdownHooks(): Nest would close the modules (and the DB pool) before in-flight requests finish.
-  installGracefulShutdown(app, { graceMs: timeouts.shutdownGraceMs, log: (m) => logger.log(m) })
+  // The job poller stops claiming before the HTTP drain; running jobs finish within the same grace period.
+  installGracefulShutdown(app, {
+    graceMs: timeouts.shutdownGraceMs,
+    log: (m) => logger.log(m),
+    beforeDrain: () => app.get(JobsWorker, { strict: false }).stop(),
+  })
   const port = config.get('PORT', { infer: true })
   await app.listen(port, '0.0.0.0')
   applyServerTimeouts(app.getHttpServer(), timeouts)

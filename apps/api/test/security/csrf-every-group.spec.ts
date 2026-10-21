@@ -125,6 +125,33 @@ describe('BE-33 AC1a: CSRF_INVALID on every mutating route group', () => {
     expect([...groups.values()].every((l) => l.length > 0)).toBe(true)
   })
 
+  it('the @Public mutating routes are exactly the pre-session auth routes (a new one needs a deliberate edit here)', () => {
+    expect([...publicRoutes].sort()).toEqual(
+      [
+        'POST /auth/login',
+        'POST /auth/logout',
+        'POST /auth/password/email',
+        'POST /auth/password/reset',
+        'POST /auth/password/reset-ic',
+        'POST /auth/register',
+      ].sort(),
+    )
+  })
+
+  it('logout with a valid session but a missing or wrong X-CSRF-Token: 403 CSRF_INVALID, and the session survives (G4 minor 2)', async () => {
+    const user = await loginAs(t, 'guru@demo.test')
+    const missing = await user.agent.post('/api/auth/logout').send({})
+    expect(missing.status).toBe(403)
+    expect(missing.body?.error?.code).toBe('CSRF_INVALID')
+    const wrong = await user.agent.post('/api/auth/logout').set('X-CSRF-Token', `${user.csrf.slice(0, -2)}xx`).send({})
+    expect(wrong.status).toBe(403)
+    expect(wrong.body?.error?.code).toBe('CSRF_INVALID')
+    expect((await user.agent.get('/api/session')).status).toBe(200)
+    const ok = await user.agent.post('/api/auth/logout').set('X-CSRF-Token', user.csrf).send({})
+    expect(ok.body?.error?.code).not.toBe('CSRF_INVALID')
+    expect((await user.agent.get('/api/session')).status).toBe(401)
+  })
+
   it('without the X-CSRF-Token header: 403 CSRF_INVALID on every mutating route of every module', async () => {
     const failures: string[] = []
     for (const [name, routes] of groups) {
