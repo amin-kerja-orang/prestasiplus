@@ -36,6 +36,7 @@ import { battleSeed } from './battle'
 import { spmSeed } from './spm'
 import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
+import { pkskSeed } from './pksk'
 
 export { assertSeedAllowed }
 
@@ -77,7 +78,7 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: the marketplace seeds sit BEFORE `gamification`, which must stay last (test/gamification/seed.spec.ts); marketplace imports nothing from wallet or gamification.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
