@@ -42,7 +42,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | Table | Rows |
 |---|---:|
 | achievements | 25 |
-| answer_keys | 507 |
+| answer_keys | 1275 |
 | articles | 3 |
 | attempt_answers | 122 |
 | attempt_results | 15 |
@@ -91,7 +91,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | paper_placements | 31 |
 | paper_sections | 9 |
 | papers | 5 |
-| part_options | 1980 |
+| part_options | 5052 |
 | pbd_tags | 2 |
 | personal_bests | 40 |
 | pksk_accesses | 2 |
@@ -104,12 +104,12 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | practice_attempt_aggregate_items | 126 |
 | practice_attempt_aggregates | 15 |
 | practice_sessions | 4 |
-| question_parts | 509 |
+| question_parts | 1277 |
 | question_tags | 483 |
 | question_version_sp_nodes | 501 |
 | question_version_stimuli | 7 |
-| question_versions | 503 |
-| questions | 503 |
+| question_versions | 1271 |
+| questions | 1271 |
 | rewards | 59 |
 | rph_plans | 2 |
 | school_packages | 4 |
@@ -139,7 +139,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 97 of 196. Total rows: 15701.
+Tables with rows: 97 of 196. Total rows: 21845.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
@@ -153,6 +153,7 @@ The base bank (`questions`, 19 rows, plus 4 Bijak PoC MCQs) has at most 4 publis
 - Difficulty TP cycles 1 to 4, the key cycles over A to D. The stem holds the full question text (the arena and the games show the stem).
 - Content is generic and written for this seed: computed exercises (key computed) and small fact tables asked both ways (unit SI, element symbols, antonyms and synonyms, irregular verbs, events and years, Hijri months, rukun iman, values of Pendidikan Moral, art elements and design principles, colour theory). No exam text, no person names.
 - Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs after `poc-performance` and before `spm-subject-configs` / `spm`: the SPM seed builds one Tracking A set per subject from the SPM pool and skips a subject whose set exists, so the pool must exist on the first run (otherwise a second run adds sets and the AC1 fingerprint differs). No module that runs after it creates questions, so no question id moves; the seeded Tracking A sets now draw from the pool. Profile `poc` only; refused in production like every demo module.
+- Darjah 1 to 4 (AZ-02, demo 23 Oct; content in `pool-content-primary.ts`): 24 more per subject and level for BM, BI, MATH, SCI, SEJ, PI, PM and PSV at D1, D2, D3 and D4 (768 rows, 192 per level). Practice `random` offers D1 to D4 only (BR-11), Jutawan Ilmu and the four question games draw at the pupil's level and Kad Memori over D1 to D4, so before AZ-02 they found no question (UAT J-01). Same shape as the Tingkatan rows (TP 1 to 4, cognitive level, key over A to D) but untagged (the curriculum has no DSKP node below Tingkatan 4, like the base seed's untagged rows; practice and the games do not read the tag) and not in the SPM pool. Most keys are at most 20 characters (Susun Jawapan). They are inserted after every Tingkatan row, so no Tingkatan pool id moves; on a database seeded before AZ-02 a re-run inserts only these rows.
 
 Not covered (no DSKP unit at Tingkatan 4 or 5, so a published row would break the publish gate): the other 21 active subjects (TI has DSKP units but no fact set was written for it). The battle lobby still lists them; quick-match for them answers 422 "Soalan tidak mencukupi.". Questions carry no `chapter_id` / `topic_id`, so practice chapter mode still finds no chapter questions. Practice sessions also need the BE-12 question source wiring (`PracticePorts.provideQuestions`) before they can draw from the bank.
 

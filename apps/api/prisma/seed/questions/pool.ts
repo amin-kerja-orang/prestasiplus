@@ -10,6 +10,14 @@
  *   That is why the pool covers only subjects with DSKP units at both levels; the others stay empty.
  * - Difficulty TP cycles 1, 2, 3, 4 (6 of each per subject and level), so Jutawan finds its 4/4/4/3 ladder.
  * - Every row is in the SPM pool (`question_tags` kind `pool`, code `spm`): 48 per subject.
+ * - AZ-02 (demo 23 Oct): PRIMARY_PER_LEVEL (24) more for each subject of PRIMARY_SUBJECTS at Darjah 1 to 4 (8 x 4 x 24 =
+ *   768), for practice `random` (BR-11 offers D1 to D4 only), Jutawan Ilmu and the solo games (pupil's level; Kad Memori
+ *   over D1 to D4). Published, active, single-part MCQ, difficulty TP 1 to 4 and cognitive level like the Tingkatan rows,
+ *   but NOT in the SPM pool and WITHOUT a DSKP unit or SP: the curriculum has no DSKP nodes below Tingkatan 4, so these
+ *   rows are untagged like the base seed's untagged rows (practice and the games do not read the tag; the publish gate
+ *   applies to API writes, not to this seed). `form_origin` keeps its column default.
+ *   They are inserted AFTER every Tingkatan row, so no Tingkatan pool id moves, and a re-run on a database seeded
+ *   before AZ-02 inserts only the Darjah rows.
  * - Stem = the full question text (the battle arena and the games show the stem), same text as the part prompt.
  * - Owner: the first admin account (by role). Natural key `question_versions.number_label` = `SEED-POOL-<S>-<L>-<NN>`;
  *   an existing row is never updated, so a re-run inserts nothing. No randomness; time from ctx.clock.
@@ -23,24 +31,31 @@ import { QuestionPartSchema, type QuestionPart } from '@pp/contract'
 
 import { assertSeedAllowed } from '../guard'
 import type { SeedContext, SeedModule } from '../index'
-import { loadTags, writePart } from './index'
+import type { Prisma } from '../../../src/db/generated/client'
+import { loadTags } from './index'
 import { POOL_LEVELS, POOL_SUBJECTS, poolItems, poolRef, type PoolItem, type PoolLevel, type PoolSubject } from './pool-content'
+import { PRIMARY_LEVELS, PRIMARY_SUBJECTS, primaryItems, type PrimaryLevel, type PrimarySubject } from './pool-content-primary'
 
 export interface PoolSpec {
   ref: string
-  subject: PoolSubject
-  level: PoolLevel
+  subject: PoolSubject | PrimarySubject
+  level: PoolLevel | PrimaryLevel
+  /** Tingkatan rows: DSKP unit + SP tag and the SPM pool tag. Darjah rows: neither (no DSKP nodes below Tingkatan 4). */
+  tingkatan: boolean
   /** 0-based position within the subject and level. */
   index: number
   text: string
-  part: QuestionPart
+  part: McqPart
   difficultyTp: number
   cognitiveLevel: number
 }
 
 const LABELS = ['A', 'B', 'C', 'D'] as const
 
-function toPart(it: PoolItem): QuestionPart {
+/** A single-part MCQ leaf: what `writePart` (./index) writes for one, here in batches. */
+type McqPart = Extract<QuestionPart, { mode: 'mcq' }>
+
+function toPart(it: PoolItem): McqPart {
   return {
     label: '1',
     prompt: { ms: it.text },
@@ -51,25 +66,28 @@ function toPart(it: PoolItem): QuestionPart {
   }
 }
 
-/** Every question of the pool in seed order (subject, then level, then index). Pure. */
+function specsOf(subject: PoolSubject | PrimarySubject, level: PoolLevel | PrimaryLevel, items: PoolItem[], tingkatan: boolean): PoolSpec[] {
+  return items.map((it, index) => ({
+    ref: poolRef(subject, level, index),
+    subject,
+    level,
+    tingkatan,
+    index,
+    text: it.text,
+    part: toPart(it),
+    difficultyTp: (index % 4) + 1,
+    cognitiveLevel: (index % 3) + 1,
+  }))
+}
+
+/**
+ * Every question of the pool in seed order: the Tingkatan part (subject, then level, then index), then the Darjah part
+ * (AZ-02, same order). Pure.
+ */
 export function poolSpecs(): PoolSpec[] {
   const out: PoolSpec[] = []
-  for (const subject of POOL_SUBJECTS) {
-    for (const level of POOL_LEVELS) {
-      poolItems(subject, level).forEach((it, index) => {
-        out.push({
-          ref: poolRef(subject, level, index),
-          subject,
-          level,
-          index,
-          text: it.text,
-          part: toPart(it),
-          difficultyTp: (index % 4) + 1,
-          cognitiveLevel: (index % 3) + 1,
-        })
-      })
-    }
-  }
+  for (const subject of POOL_SUBJECTS) for (const level of POOL_LEVELS) out.push(...specsOf(subject, level, poolItems(subject, level), true))
+  for (const subject of PRIMARY_SUBJECTS) for (const level of PRIMARY_LEVELS) out.push(...specsOf(subject, level, primaryItems(subject, level), false))
   return out
 }
 
@@ -98,36 +116,73 @@ export const questionPoolSeed: SeedModule = {
         const admin = (await tx.userRole.findFirst({ where: { role: 'admin' }, orderBy: { userId: 'asc' } }))?.userId
         if (admin === undefined) throw new Error('questions-pool seed: the identity seed must run first (needs an admin account).')
 
-        for (const subject of POOL_SUBJECTS) {
-          for (const level of POOL_LEVELS) {
-            const subjectId = subjects.get(subject)
-            const levelId = levels.get(level)
-            if (subjectId === undefined || levelId === undefined) throw new Error(`questions-pool seed: ${subject} or ${level} missing; run the curriculum seed first.`)
-            const tags = await loadTags(tx, subjectId, levelId)
-            if (tags.length === 0) throw new Error(`questions-pool seed: no DSKP unit/SP for ${subject}|${level}.`)
+        // Grouped by subject and level in seed order (Tingkatan groups first, then Darjah).
+        const groups = new Map<string, PoolSpec[]>()
+        for (const s of specs) {
+          const k = `${s.subject}|${s.level}`
+          groups.set(k, [...(groups.get(k) ?? []), s])
+        }
+        for (const group of groups.values()) {
+          const { subject, level, tingkatan } = group[0] as PoolSpec
+          if (group.every((s) => existing.has(s.ref))) continue
+          const subjectId = subjects.get(subject)
+          const levelId = levels.get(level)
+          if (subjectId === undefined || levelId === undefined) throw new Error(`questions-pool seed: ${subject} or ${level} missing; run the curriculum seed first.`)
+          const tags = tingkatan ? await loadTags(tx, subjectId, levelId) : []
+          if (tingkatan && tags.length === 0) throw new Error(`questions-pool seed: no DSKP unit/SP for ${subject}|${level}.`)
 
-            for (const s of specs.filter((x) => x.subject === subject && x.level === level)) {
-              if (existing.has(s.ref)) continue
-              const tag = tags[s.index % tags.length] as (typeof tags)[number]
-              const question = await tx.question.create({
-                data: {
-                  sourceType: 'manual', createdById: admin, latestVersionNo: 1, liveVersionNo: 1,
-                  isActive: true, createdAt: now, updatedAt: now,
-                },
-              })
-              const version = await tx.questionVersion.create({
-                data: {
-                  questionId: question.id, versionNo: 1, status: 'published', publishedAt: now,
-                  type: 'mcq', stemMs: s.text, numberLabel: s.ref, language: 'ms',
-                  subjectId, educationLevelId: levelId, unitNodeId: tag.unitNodeId, formOrigin: level === 'T5' ? 't5' : 't4',
-                  cognitiveLevel: s.cognitiveLevel, difficultyTp: s.difficultyTp,
-                  sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
-                },
-              })
-              await tx.questionVersionSpNode.create({ data: { questionVersionId: version.id, nodeId: tag.spNodeId, createdAt: now } })
-              await writePart(tx, version.id, s.part, 1, null, 1)
-              await tx.questionTag.create({ data: { questionId: question.id, kind: 'pool', code: 'spm', createdAt: now } })
-            }
+          // One query per table for the group (AZ-02: 1,248 rows one by one made the full seed slow). Rows are written
+          // exactly as `writePart` (./index) writes a single-part MCQ; identity ids follow the input order, as before.
+          const todo = group.filter((s) => !existing.has(s.ref))
+          const questionIds = (
+            await tx.question.createManyAndReturn({
+              data: todo.map(() => ({
+                sourceType: 'manual', createdById: admin, latestVersionNo: 1, liveVersionNo: 1, isActive: true, createdAt: now, updatedAt: now,
+              })),
+              select: { id: true },
+            })
+          )
+            .map((q) => q.id)
+            .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+          const pick = (s: PoolSpec) => (tingkatan ? (tags[s.index % tags.length] as (typeof tags)[number]) : null)
+          const versions = await tx.questionVersion.createManyAndReturn({
+            data: todo.map((s, i) => ({
+              questionId: questionIds[i] as bigint, versionNo: 1, status: 'published', publishedAt: now,
+              type: 'mcq', stemMs: s.text, numberLabel: s.ref, language: 'ms',
+              subjectId, educationLevelId: levelId, unitNodeId: pick(s)?.unitNodeId ?? null,
+              ...(tingkatan ? { formOrigin: level === 'T5' ? 't5' : 't4' } : {}),
+              cognitiveLevel: s.cognitiveLevel, difficultyTp: s.difficultyTp,
+              sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
+            })),
+            select: { id: true, numberLabel: true, questionId: true },
+          })
+          const versionOf = new Map(versions.map((v) => [v.numberLabel, v]))
+          const ver = (s: PoolSpec) => versionOf.get(s.ref) as (typeof versions)[number]
+          if (tingkatan) {
+            await tx.questionVersionSpNode.createMany({
+              data: todo.map((s) => ({ questionVersionId: ver(s).id, nodeId: (pick(s) as (typeof tags)[number]).spNodeId, createdAt: now })),
+            })
+          }
+          const parts = await tx.questionPart.createManyAndReturn({
+            data: todo.map((s) => ({
+              questionVersionId: ver(s).id, parentPartId: null, position: 1, depth: 1, label: s.part.label,
+              promptMs: s.part.prompt.ms, promptEn: s.part.prompt.en ?? null, marks: s.part.marks, mode: s.part.mode,
+              blankCount: null, wordMin: null, wordMax: null, reveal: s.part.reveal ?? 'after_submit',
+            })),
+            select: { id: true, questionVersionId: true },
+          })
+          const partOf = new Map(parts.map((p) => [p.questionVersionId, p.id]))
+          const part = (s: PoolSpec) => partOf.get(ver(s).id) as bigint
+          await tx.partOption.createMany({
+            data: todo.flatMap((s) =>
+              s.part.options.map((o, i) => ({ partId: part(s), label: o.label, bodyMs: o.body.ms, bodyEn: o.body.en ?? null, position: i + 1 })),
+            ),
+          })
+          await tx.answerKey.createMany({
+            data: todo.map((s) => ({ partId: part(s), kind: s.part.key.kind, content: s.part.key as Prisma.InputJsonValue })),
+          })
+          if (tingkatan) {
+            await tx.questionTag.createMany({ data: todo.map((s) => ({ questionId: ver(s).questionId, kind: 'pool', code: 'spm', createdAt: now })) })
           }
         }
       },
