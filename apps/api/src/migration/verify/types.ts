@@ -80,4 +80,8 @@ export interface RollbackReport {
   tables: { table: string; deleted: number }[]
   idMapDeleted: number
   status: 'succeeded' | 'failed'
+  /** Optional (added by Part B): adopted seed rows that other tables use; kept and unmarked instead of deleted. */
+  released?: { table: string; rows: number }[]
+  /** Optional (added by Part B): things the operator must know (e.g. unfinished runs keep their checkpoints). */
+  warnings?: string[]
 }
