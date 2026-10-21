@@ -104,7 +104,7 @@ beforeAll(async () => {
       articles: { '1': { content: '<p>Isi</p>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
       notes: { '1': { subject: 'matematik', grade: 'Tingkatan 4' }, '2': { subject: 'matematik', grade: 'Tingkatan 4' } },
       videos: { '1': { category: 'tutorial' }, '2': { category: 'tutorial' }, '3': { category: 'tutorial' } },
-      audio_kbat: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
+      audio_kbat_sets: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
     }),
   })
 }, 600_000)
