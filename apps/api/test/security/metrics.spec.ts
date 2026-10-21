@@ -164,11 +164,21 @@ describe('GET /api/metrics (BE-33)', () => {
     })
   })
 
-  it('is not rate limited by the global ceiling', async () => {
+  it('is under the global ceiling: an external flood with a junk session cookie gets 429 (G4 M1)', async () => {
     let tight: INestApplication | undefined
     try {
-      tight = await boot(db, { THROTTLE_GLOBAL_PER_MINUTE: '2' })
-      for (let i = 0; i < 6; i++) expect((await request(tight.getHttpServer()).get('/api/metrics')).status).toBe(200)
+      tight = await boot(db, { THROTTLE_GLOBAL_PER_MINUTE: '3' })
+      const hit = () =>
+        request(tight!.getHttpServer()).get('/api/metrics').set('X-Forwarded-For', '203.0.113.50').set('Cookie', `${COOKIE_NAME}=junk-session`)
+      const statuses: number[] = []
+      for (let i = 0; i < 8; i++) statuses.push((await hit()).status)
+      expect(statuses.slice(0, 3)).toEqual([403, 403, 403])
+      expect(statuses.slice(3).every((s) => s === 429)).toBe(true)
+      const last = await hit()
+      expect(last.status).toBe(429)
+      expect(JSON.stringify(last.body)).toContain('retryAfter')
+      // Probes stay exempt under the same exhausted ceiling.
+      expect((await request(tight.getHttpServer()).get('/api/health')).status).toBe(200)
     } finally {
       await tight?.close()
       process.env.THROTTLE_GLOBAL_PER_MINUTE = '100000'

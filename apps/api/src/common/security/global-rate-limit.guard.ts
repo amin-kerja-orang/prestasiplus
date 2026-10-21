@@ -3,10 +3,14 @@ import type { Request } from 'express'
 
 import { RateLimiter, type RateLimitSpec } from '../throttle/rate-limit'
 
-/** Probe and scrape routes: never throttled (orchestrator and Prometheus poll them). */
-const EXEMPT_PATHS = new Set(['/api/health', '/api/ready', '/api/metrics'])
+/**
+ * Orchestrator probes: never throttled. Both answer without a session lookup. `/api/metrics` is NOT exempt: an
+ * external call resolves the session cookie (a DB read), so it stays under the per-address ceiling; an internal
+ * scrape every 15 s is far below it (G4 M1, PR #81).
+ */
+const EXEMPT_PATHS = new Set(['/api/health', '/api/ready'])
 
-/** Default ceiling per client address per minute on every `/api` route except health, ready and metrics. */
+/** Default ceiling per client address per minute on every `/api` route except health and ready. */
 export const GLOBAL_RATE_SPEC: RateLimitSpec = {
   bucket: 'global',
   env: 'THROTTLE_GLOBAL_PER_MINUTE',

@@ -53,7 +53,7 @@ Optional keys (defaults in brackets):
 | Misc | `BIJAK_SWEEP_INTERVAL_SECONDS`, `MAIL_LOG_RESET_LINKS` (development only) |
 | Rate limits | every `THROTTLE_*` key; see section 9 and `.env.api.example` (each line states the unit and the key: user or address). All optional. |
 
-Every value is an integer unless stated. Timeout notes: `REQUEST_TIMEOUT_MS` and `HEADERS_TIMEOUT_MS` must be at least 1000 (0 is refused, it would disable slowloris protection). nginx `proxy_read_timeout` is 120 s on `/api/` and 300 s on `/api/files`; keep `REQUEST_TIMEOUT_MS` at or below the matching nginx value, and `HEADERS_TIMEOUT_MS` at or below `REQUEST_TIMEOUT_MS`.
+Every value is an integer unless stated. Timeout notes: `REQUEST_TIMEOUT_MS` and `HEADERS_TIMEOUT_MS` must be at least 1000 (0 is refused, it would disable slowloris protection). nginx `proxy_read_timeout` is 120 s on `/api/` and 300 s on `/api/files`; keep `REQUEST_TIMEOUT_MS` at or below the matching nginx value, and `HEADERS_TIMEOUT_MS` at or below `REQUEST_TIMEOUT_MS`. Tuning point: one process timeout covers every route, so the 120 s default also caps uploads on `/api/files` (a 22 MB body needs about 1.5 Mbit/s to arrive in time); where users upload over slow links, raise `REQUEST_TIMEOUT_MS` up to 300000 (the `/api/files` nginx value) (nginx still ends other `/api/` requests at 120 s, so the process value above it only matters for direct callers).
 
 ## 3. Start and stop
 
@@ -117,7 +117,7 @@ Counters are per process, in memory (a shared store is a follow-up), except the 
 
 | Limit | Default | Window | Key | Env key |
 |---|---|---|---|---|
-| Global ceiling, every `/api` route except `/api/health`, `/api/ready`, `/api/metrics` | 300 | 1 min | address | `THROTTLE_GLOBAL_PER_MINUTE` |
+| Global ceiling, every `/api` route except `/api/health` and `/api/ready` (`/api/metrics` is counted, G4 M1) | 300 | 1 min | address | `THROTTLE_GLOBAL_PER_MINUTE` |
 | Login, attempts per identifier and address (counted before the password check) | 5 | 60 s | identifier + address | `THROTTLE_LOGIN_PER_MINUTE` |
 | Login, failed attempts per address across identifiers | 20 | 60 s | address | fixed |
 | Login, failed attempts per identifier across addresses | 100 | 15 min | identifier | `LOGIN_IDENTIFIER_FAIL_LIMIT` |
