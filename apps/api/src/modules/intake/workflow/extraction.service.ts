@@ -21,6 +21,7 @@ import type { TxClient } from '../../../db/client'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { maskEchoes, redactExtractRequest, scrubContactDetails, type MaskedSpan } from '../../ai-extraction'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
 import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFiguresService, type AiExtractor } from '../files'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
@@ -28,7 +29,6 @@ import { CurriculumFactsService } from './curriculum-facts'
 import { DuplicateDetector, type Finding } from './duplicate-detector'
 import { signatureOf, textOfQuestion, type Signature } from './duplicates'
 import { PayloadSchema, stateDuplicates, type StoredPayload } from './item-model'
-import { maskSpans, redactText, scrubIdentifiers } from './redact'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_JOB_ENTITY, WORKFLOW_JOB_TYPE } from './workflow.constants'
 import { IntakeWorkflowConfig } from './workflow.config'
 
@@ -275,7 +275,7 @@ export class IntakeExtractionService implements OnModuleInit {
 
     let paper: AiExtractedPaper | null
     let pageMap: PageRef[]
-    let spans: string[]
+    let spans: MaskedSpan[]
     try {
       const prepared = await this.prepare(batch.id, batch.subject)
       pageMap = prepared.pageMap
@@ -286,7 +286,7 @@ export class IntakeExtractionService implements OnModuleInit {
       return
     }
     try {
-      await this.persist(run.id, batch.id, batch.subject, paper === null ? null : maskSpans(paper, spans), pageMap, signal)
+      await this.persist(run.id, batch.id, batch.subject, paper === null ? null : maskEchoes(paper, spans), pageMap, signal)
     } catch (err) {
       if (err instanceof JobError) throw err
       await this.prisma.client.intakeExtractionRun.update({ where: { id: run.id }, data: { state: 'queued' } })
@@ -295,17 +295,13 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /**
-   * Builds the redacted request (AC-8) and the page map. The provider receives redacted OCR text only: page images are
-   * never sent (LEAD decision 2026-10-21, v2-threat-model rows 46 and 50), because pixels cannot be redacted.
+   * Builds the redacted request (AC-8) and the page map. The request goes through BE-36's request builder and redactor
+   * (`redactExtractRequest`), the one redactor of the system (LEAD decision (c), 2026-10-21): page text and taxonomy
+   * labels are masked and page images are dropped, so the provider receives redacted OCR text only (v2-threat-model rows
+   * 46 and 50). The masked values come back in memory only, to mask a provider that echoes one of them.
    */
-  private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[]; spans: string[] }> {
+  private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[]; spans: MaskedSpan[] }> {
     const built = await this.input.build(idToString(batchId))
-    const spans: string[] = []
-    const pages = built.pages.map((p) => {
-      const r = redactText(p.text)
-      spans.push(...r.spans)
-      return { ...p, text: r.text }
-    })
     const files = await this.prisma.client.intakeFile.findMany({
       where: { batchId, status: 'done' },
       orderBy: { id: 'asc' },
@@ -319,13 +315,13 @@ export class IntakeExtractionService implements OnModuleInit {
       }
     }
     const taxonomy = await this.curriculum.taxonomy(subject)
-    const request: AiExtractRequest = {
-      pages,
+    const { request, spans } = redactExtractRequest({
+      pages: built.pages,
       subject: built.subject,
       kertas: built.kertas,
       ...(taxonomy.length > 0 ? { taxonomy } : {}),
-    }
-    return { request, pageMap, spans: [...new Set(spans)] }
+    })
+    return { request, pageMap, spans }
   }
 
   /** Calls the port and validates the answer. Anything that is not a valid result is a failure of the run. */
@@ -433,11 +429,11 @@ export class IntakeExtractionService implements OnModuleInit {
             batchId,
             ref: s.id,
             kind: s.kind,
-            label: scrubIdentifiers(s.label).slice(0, 100),
-            caption: s.caption === undefined ? null : scrubIdentifiers(s.caption).slice(0, 300),
-            altText: scrubIdentifiers(s.alt).slice(0, 1000),
-            body: s.text === undefined ? null : scrubIdentifiers(s.text),
-            ...(s.table === undefined ? {} : { tableData: scrubIdentifiers(s.table) as Prisma.InputJsonValue }),
+            label: scrubContactDetails(s.label).slice(0, 100),
+            caption: s.caption === undefined ? null : scrubContactDetails(s.caption).slice(0, 300),
+            altText: scrubContactDetails(s.alt).slice(0, 1000),
+            body: s.text === undefined ? null : scrubContactDetails(s.text),
+            ...(s.table === undefined ? {} : { tableData: scrubContactDetails(s.table) as Prisma.InputJsonValue }),
             pageNo: page?.pageNo ?? null,
             ...(s.region && page ? { region: { page: page.pageNo, x: s.region.x, y: s.region.y, w: s.region.w, h: s.region.h } } : {}),
           },
@@ -497,8 +493,8 @@ export class IntakeExtractionService implements OnModuleInit {
           itemCount: created.length,
           provider: paper?.provider ?? null,
           model: paper?.model ?? null,
-          warnings: scrubIdentifiers(paper === null ? [AI_MESSAGES.noQuestions] : paper.warnings) as Prisma.InputJsonValue,
-          unmatched: scrubIdentifiers(paper?.unmatched ?? []) as Prisma.InputJsonValue,
+          warnings: scrubContactDetails(paper === null ? [AI_MESSAGES.noQuestions] : paper.warnings) as Prisma.InputJsonValue,
+          unmatched: scrubContactDetails(paper?.unmatched ?? []) as Prisma.InputJsonValue,
           finishedAt: new Date(),
         },
       })
@@ -549,12 +545,12 @@ export class IntakeExtractionService implements OnModuleInit {
       ...(d.scheme === undefined ? {} : { scheme: d.scheme }),
       tag: d.tag,
     }
-    const parsed = PayloadSchema.safeParse(scrubIdentifiers(candidate))
+    const parsed = PayloadSchema.safeParse(scrubContactDetails(candidate))
     // A draft the item schema cannot hold is kept as a placeholder with its text, so no question is silently lost (AC-04.5).
     const payload = parsed.success
       ? parsed.data
       : PayloadSchema.parse({
-          stem: scrubIdentifiers(d.stem).slice(0, 100_000),
+          stem: scrubContactDetails(d.stem).slice(0, 100_000),
           options: [],
           marks: 0,
           mode: 'short_text',
@@ -562,7 +558,7 @@ export class IntakeExtractionService implements OnModuleInit {
           tag: { subject, level: 'T4+T5', unit: DEFAULT_TAG_UNIT, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' },
         })
     return {
-      label: scrubIdentifiers(d.label).slice(0, 32),
+      label: scrubContactDetails(d.label).slice(0, 32),
       type: d.type,
       payload,
       page,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { redactExtractRequest, redactGenerateTextRequest, redactSuggestTagsRequest } from '../../src/modules/ai-extraction/redaction/redact-request'
-import { MASK, Redactor } from '../../src/modules/ai-extraction/redaction/redactor'
+import { MASK, maskEchoes, Redactor, scrubContactDetails } from '../../src/modules/ai-extraction/redaction/redactor'
 
 /** Fictitious cover page: every detail below is invented. The test strings are the canaries. */
 const COVER = `SEKOLAH MENENGAH KEBANGSAAN TAMAN CONTOH
@@ -289,5 +289,34 @@ describe('mid-line labels and numbers split by a line break (G4 M1)', () => {
       expect(out).toBe(text)
       expect(summary.masked).toEqual([])
     }
+  })
+})
+
+describe('masked values and the provider answer (BE-38 intake)', () => {
+  it('extract: lists the masked values in memory, with the words of a masked name', () => {
+    const { spans } = redactExtractRequest({ pages: [{ page: 1, text: COVER, source: 'text-layer' }], subject: 'MAT', kertas: 2 })
+    const texts = spans.map((s) => s.text)
+    expect(texts).toContain('Ahmad bin Ali')
+    expect(texts).toContain('Ahmad')
+    expect(texts).not.toContain('bin')
+    expect(spans.find((s) => s.text === '080515-14-1234')?.flag).toBe('ic_number')
+    expect(texts.every((x) => x.length >= 4 && !/\[[A-Z_-]+\]/.test(x))).toBe(true)
+  })
+
+  it('maskEchoes masks a repeated value in every string of an answer, case-insensitive, with the token of its kind', () => {
+    const r = new Redactor()
+    r.redact('Nama: Zulkarnain bin Contohan\nSekolah: SMK TAMAN CONTOHAN')
+    const out = maskEchoes({ q: ['Untuk zulkarnain dari smk taman contohan.'], n: 3, w: 'Contohan' }, r.maskedSpans())
+    expect(JSON.stringify(out)).not.toMatch(/zulkarnain|contohan/i)
+    expect(out.q[0]).toContain(MASK.person_name)
+    expect(out.n).toBe(3)
+  })
+
+  it('scrubContactDetails removes e-mail, MyKad and phone from every string and keeps the rest of the text', () => {
+    const out = scrubContactDetails({ a: ['hubungi x.y@sekolah.test atau 013-9876543'], b: { c: 'IC 080808-10-1234' }, s: 'Hitung 2 + 3.', n: 3 })
+    expect(JSON.stringify(out)).not.toMatch(/x\.y@|9876543|080808/)
+    expect(out.a[0]).toBe(`hubungi ${MASK.email} atau ${MASK.phone}`)
+    expect(out.s).toBe('Hitung 2 + 3.')
+    expect(out.n).toBe(3)
   })
 })

@@ -1,6 +1,7 @@
 import { INTAKE_MESSAGES, IntakeBatchReviewEnvelopeSchema, IntakeExtractionRunEnvelopeSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { MASK, Redactor } from '../../src/modules/ai-extraction/redaction/redactor'
 import { JobError } from '../../src/modules/jobs'
 import { addAccount, bootWorkflowApp, draft, extract, extractAndRun, itemsOf, loginAs, paper, post, readyBatch, type LoggedIn, type WorkflowTestApp } from './helpers'
 
@@ -195,6 +196,37 @@ describe('redaction before the provider (AC-8)', () => {
     const text = JSON.stringify(stored)
     expect(text).not.toContain('guru.rahsia')
     expect(text).not.toContain('9876543')
+  })
+})
+
+describe("BE-36's redactor (LEAD decision (c): one redactor)", () => {
+  it('every page text of the outbound request passed through BE-36\'s redactor, and only its output is sent', async () => {
+    const { batchId } = await readyBatch(t, teacher)
+    const cover = 'Nama: Contoh Penuh Pelajar\nSekolah: SMK TAMAN CONTOH\nNo. KP: 080808-10-1234\nSoalan 1. Hitung 2 + 3.'
+    await t.db.query(
+      `update intake_pages set text = $1 where intake_file_id in (select id from intake_files where batch_id = $2) and page_no = 1`,
+      [cover, batchId],
+    )
+    t.ai.paper = () => paper([draft(t.codes, '1')])
+    const calls = t.ai.calls.length
+    const spy = vi.spyOn(Redactor.prototype, 'redact')
+    try {
+      await extractAndRun(t, teacher, batchId)
+      const req = t.ai.calls[calls]!
+      const outputs = spy.mock.results.map((r) => r.value as string)
+      expect(req.pages.length).toBeGreaterThan(0)
+      // Each page text the extractor received is an output of BE-36's Redactor, and the cover page was one of its inputs.
+      for (const p of req.pages) expect(outputs, `page ${p.page}`).toContain(p.text)
+      expect(spy.mock.calls.map((c) => c[0])).toContain(cover)
+      // BE-36's mask tokens are on the wire; the removed workflow redactor's token is not.
+      const sent = JSON.stringify(req)
+      for (const token of [MASK.person_name, MASK.school_name, MASK.ic_number]) expect(sent).toContain(token)
+      expect(sent).not.toContain('[DIRAHSIAKAN]')
+      expect(sent).toContain('Hitung 2 + 3')
+      expect(req.images).toBeUndefined()
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
 

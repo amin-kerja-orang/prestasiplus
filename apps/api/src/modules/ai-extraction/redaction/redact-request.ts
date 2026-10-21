@@ -1,6 +1,6 @@
 import type { AiExtractRequest, AiGenerateTextRequest, AiRedactionSummary, AiSuggestTagsRequest } from '@pp/contract'
 
-import { Redactor } from './redactor'
+import { type MaskedSpan, Redactor } from './redactor'
 
 export interface Redacted<T> {
   request: T
@@ -10,9 +10,10 @@ export interface Redacted<T> {
 /**
  * Page text, taxonomy labels and structure labels go through the redactor. Page images are dropped: a masked name on a
  * text layer is still a name in the pixels of the cover page, and there is no redacting image source in this card
- * (open question in the card report), so the service sends text only.
+ * (open question in the card report), so the service sends text only. `spans` are the masked values, in memory only, for
+ * `maskEchoes` on the answer (BE-38's intake workflow); they are never stored, logged or returned.
  */
-export function redactExtractRequest(req: AiExtractRequest): Redacted<AiExtractRequest> {
+export function redactExtractRequest(req: AiExtractRequest): Redacted<AiExtractRequest> & { spans: MaskedSpan[] } {
   const r = new Redactor()
   const request: AiExtractRequest = {
     pages: req.pages.map((p) => ({ ...p, text: r.redact(p.text) })),
@@ -21,7 +22,7 @@ export function redactExtractRequest(req: AiExtractRequest): Redacted<AiExtractR
     ...(req.taxonomy ? { taxonomy: req.taxonomy.map((u) => ({ ...u, label: r.redact(u.label) })) } : {}),
     ...(req.structure ? { structure: req.structure.map((s) => ({ ...s, label: r.redact(s.label) })) } : {}),
   }
-  return { request, summary: r.summary() }
+  return { request, summary: r.summary(), spans: r.maskedSpans() }
 }
 
 /**
