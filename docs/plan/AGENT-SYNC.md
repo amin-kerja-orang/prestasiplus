@@ -127,6 +127,17 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-21 ~09:30 **HANDOFF — the team moves to Claude Cloud (Amin, Azarul, +1). Start here.** Everything below is on GitHub; nothing lives only on the old PC.
+  - **Tips:** backend `feature/v2-backend @ e724b498` (BE-19 + BE-21 full merged; tracker 33/48 + 2 slices ≈ 71%). Frontend `be/integration-frontend @ 23656b63` (in sync with backend e724b498).
+  - **1st job — finish the Group B merge:** `lead/merge-b5 @ 39d9e962` = #77 + #69 + #71 merged onto e724b498, conflicts resolved (registry unions; seed order `…bijakSittingsSeed, battleSeed, cikguSeed, performanceSeed, practiceSeed, gamificationSeed`; GamificationModule imports PerformanceModule + ClassesModule). Static checks green (contract:emit/check, tsc 0, be:lint, lint:migration). **Full be:verify was NOT finished** → run it, then fast-forward `feature/v2-backend` to it and close #77/#69/#71.
+  - **Held, Group B fixing:** #74 BE-26 (two-key `--force-demo`), #73 BE-41 (mig 0034 → 0025), #72 BE-45 (G4 first; LEAD approved `userId` null rule for game tables). #80 small fixes: drop the PoC-log part (already in 05fb835f).
+  - **Group A branches waiting for DB specs + be:verify:** `be/BE-42-pksk @ 976fd057` (mig 0028 + 0031 + LEAD contract commit `pksk_choice`), `be/BE-28-etl-reference-identity @ b14f3005` (no mig), `be/BE-46-marketplace @ 97766959` (mig 0032), `be/BE-33-log-pii-redaction @ 521a6756`, `be/BE-29-etl-activity @ 3f9f07d3` (WIP, draft PR #82; plan in the PR body). Group B's cross-verify: `be/groupa-verify-reint` — read its results on #67 first.
+  - **Frontend to merge/finish:** `fe/m18-amaran-summary @ f20e6c80` (S23 + S21, review APPROVE; its e2e is WIP); Sesi 1 sweep branches (m17 / m16 / m06) — see the latest push. `PartInput.vue` needs a `pksk_choice` branch after BE-42 merges.
+  - **Runtime checks still open:** m27 + m08 sweep on a real stack; `/login` mobile re-measure with real API data (criteria: overflow 0 AND chip right ≤ viewport, `isMobile:true` 320/375, sample 3 s after the stat chip is visible; then remove `TODO(d4)` in `e2e/api/helpers.ts` and re-run the 6 mobile specs → BE-32 done).
+  - **Staging:** paired refresh per `docs/ops/staging-refresh-2.md` once #77 is merged; demo password is held by Amin (not in the repo).
+  - **Migrations:** 0025 BE-41 · 0027 BE-44 · 0028 + 0031 BE-42 · 0030 BE-19 (merged) · 0032 BE-46 · 0033 BE-45 · 0034 BE-47 · 0035/0036 BE-29/BE-30 only if needed · next free **0037** · never 0024.
+  - **Rules that carry over:** contract (`packages/contract`) edits by the LEAD only — checklist: emit+check, `packages/contract` unit tests, apps/api tsc on the base; children's names rule (`canSeeName`); post GitHub comments with `--body-file`. Backlog: #78.
+
 - 2026-10-21 ~07:xx **Migrations, staging-refresh blockers, cross-lane issues (tip `e6f52c6d`).**
   - **Migration allocation update:** 0029 **released** (BE-28 needs no migration) · **0031 BE-42 `pksk_question_kind`** (Group A; lands with BE-42 together with the LEAD contract commit `pksk_choice` leaf) · **0032 BE-46 marketplace** (Group A, reusing the pre-sprint work). Next free: **0033**. 0024 still never to be used.
   - **Merged since batch3:** LEAD contract `timeline_photo` (c41f8443, read rule = avatar), BE-32 DSKP files in the API build stage (e6f52c6d).
