@@ -22,6 +22,8 @@ export const REDACT_PATHS = [
   'req.headers.cookie',
   'req.headers.authorization',
   'req.headers["x-csrf-token"]',
+  // Shared secret of the edge proxy; the client-ip middleware already deletes it, this is belt and braces.
+  'req.headers["x-pp-edge-secret"]',
   // The SPA invite URL (and so the parent invite token) can arrive as the Referer.
   'req.headers.referer',
   'req.params.token',

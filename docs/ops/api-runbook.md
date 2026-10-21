@@ -42,7 +42,7 @@ Optional keys (defaults in brackets):
 
 | Group | Keys |
 |---|---|
-| Core | `PORT` [3000], `LOG_LEVEL` [info; fatal, error, warn, info, debug, trace, silent], `TRUST_PROXY_HOPS` [0; compose sets 1 = the frontend nginx], `PUBLIC_BASE_URL` (URL), `PUBLIC_ORIGINS` (comma-separated extra image origins) |
+| Core | `PORT` [3000], `LOG_LEVEL` [info; fatal, error, warn, info, debug, trace, silent], `TRUST_PROXY_HOPS` [0; compose sets 1 = the frontend nginx], `CLIENT_IP_HEADER` [unset; one of `x-pp-client-ip`, `cf-connecting-ip`, `x-real-ip`, `true-client-ip`], `EDGE_PROXY_SECRET` [unset; secret, 32+ chars, required when `CLIENT_IP_HEADER` is set], `PUBLIC_BASE_URL` (URL), `PUBLIC_ORIGINS` (comma-separated extra image origins) |
 | Session and cookies | `SESSION_COOKIE_NAME`, `COOKIE_DOMAIN`, `COOKIE_SECURE` [true unless set to `false`; the dev overlay compose.http.yaml sets false], `SESSION_REMEMBER_DAYS` [30], `SESSION_REMEMBER_DAYS_STAFF` [1; 0 = off] |
 | Login hardening | `THROTTLE_LOGIN_PER_MINUTE` [5], `LOGIN_IDENTIFIER_FAIL_LIMIT` [100 per 15 min], `LOGIN_FAILURE_FLOOR_MS` [1500], `LEGACY_BCRYPT_DUMMY_COST` [12] |
 | Seeds | `ALLOW_DEMO_SEED` [false], `BIJAK_POC_QUESTIONS` [false; staging only] |
@@ -114,6 +114,8 @@ Global security headers (helmet-style, HSTS in production), `x-powered-by` off, 
 ## 9. Rate limits
 
 Counters are per process, in memory (a shared store is a follow-up), except the login and reset counters, which are rows in `login_attempts` (keyed hashes only: neither an address nor an identifier is stored). All refusals are `429 RATE_LIMITED` with `retryAfter` seconds in the body and the `Retry-After` header. Behind nginx the client address is the last `X-Forwarded-For` entry; `TRUST_PROXY_HOPS` must match the number of proxies (1 for compose).
+
+Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_HEADER` is set, the throttle key is the address in that request header, but only if the request also carries `X-PP-Edge-Secret` equal to `EDGE_PROXY_SECRET` (compared in constant time). Allowed header names: `x-pp-client-ip`, `cf-connecting-ip`, `x-real-ip`, `true-client-ip`; any other value, or a secret shorter than 32 characters, fails the boot with the key named (never the value). Fail-safe: a missing or wrong secret, or a missing or invalid address, falls back to the socket peer (strict, never the header). Unset `CLIENT_IP_HEADER` = the `TRUST_PROXY_HOPS` behaviour above; compose/nginx keeps `TRUST_PROXY_HOPS=1` and does not set either key. `TRUST_PROXY_HOPS` still governs `req.secure`. Rollout and rollback: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md), "Edge client IP + no-store (go-live fix)" (**user action, needs G6 confirmation**).
 
 | Limit | Default | Window | Key | Env key |
 |---|---|---|---|---|

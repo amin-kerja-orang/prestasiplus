@@ -6,8 +6,9 @@ import { addressInCidrs } from './cidr'
 import type { BlockList } from 'node:net'
 
 /** Headers a reverse proxy / CDN adds; their presence means the request did not come straight from the internal network. */
+const FORWARDING_HEADERS = new Set(['x-real-ip', 'forwarded', 'x-pp-client-ip', 'cf-connecting-ip', 'true-client-ip'])
 export function hasForwardingHeaders(headers: Request['headers']): boolean {
-  return Object.keys(headers).some((h) => h === 'x-real-ip' || h === 'forwarded' || h.startsWith('x-forwarded-'))
+  return Object.keys(headers).some((h) => FORWARDING_HEADERS.has(h) || h.startsWith('x-forwarded-'))
 }
 
 /** Loopback or private (RFC 1918, ULA fc00::/7, link-local) address. IPv4-mapped IPv6 is unwrapped first. */

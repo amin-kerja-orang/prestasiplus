@@ -3,6 +3,7 @@ import { isAbsolute } from 'node:path'
 import { z } from 'zod'
 
 import { parseCidrList } from '../metrics/cidr'
+import { CLIENT_IP_HEADERS, MIN_EDGE_SECRET_LENGTH } from '../net/client-ip'
 
 /**
  * Environment of the API (plan section 11). Every key here must also be in `.env.api.example`
@@ -71,6 +72,13 @@ export const EnvSchema = z.object({
   PUBLIC_ORIGINS: z.string().optional(),
   /** Reverse-proxy hops to trust for the client address (0 = none). */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
+  /**
+   * Header (lowercase, allow-list) in which a trusted edge proxy passes the client address. Empty = unset: the address is
+   * `req.ip` from TRUST_PROXY_HOPS. When set, EDGE_PROXY_SECRET is required. See common/net/client-ip.ts.
+   */
+  CLIENT_IP_HEADER: z.preprocess((v) => (v === '' ? undefined : v), z.enum(CLIENT_IP_HEADERS).optional()),
+  /** Shared secret the edge proxy sends in `X-PP-Edge-Secret` (min 32 chars). Empty = unset. */
+  EDGE_PROXY_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(MIN_EDGE_SECRET_LENGTH).optional()),
   /** Lifetime of a "remember me" session in days (LEAD decision: 30). */
   SESSION_REMEMBER_DAYS: z.coerce.number().int().min(1).default(30),
   /** Remember lifetime in days for admin and school_admin; 0 turns remember off for them. */
@@ -202,6 +210,10 @@ export const EnvSchema = z.object({
   MARKETPLACE_PLATFORM_WHATSAPP: z.string().trim().regex(/^\d{8,15}$/, 'must be 8 to 15 digits').default('60000000000'),
   THROTTLE_MARKETPLACE_VIEW_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_MARKETPLACE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+}).superRefine((env, ctx) => {
+  if (env.CLIENT_IP_HEADER && !env.EDGE_PROXY_SECRET) {
+    ctx.addIssue({ code: 'custom', path: ['EDGE_PROXY_SECRET'], message: 'required when CLIENT_IP_HEADER is set' })
+  }
 })
 export type Env = z.infer<typeof EnvSchema>
 
