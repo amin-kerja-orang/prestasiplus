@@ -121,6 +121,8 @@ describe('R1: no content owner', () => {
   })
 
   it('an owner id that is not a v2 user is the same as no owner', async () => {
+    // The owner is part of the input hash, so this apply needs its own dry-run.
+    await h.run('dry-run', { groups, contentOwnerUserId: '987654321' })
     const bad = await h.run('apply', { groups, contentOwnerUserId: '987654321' })
     const rows = await h.q<{ n: number }>(`select count(*)::int n from etl_rejects where run_id = $1 and entity = 'notes' and reason = 'ORPHAN_PARENT'`, [bad.report.runId])
     expect(rows[0]?.n).toBe(2)

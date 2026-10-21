@@ -46,14 +46,20 @@ export function hashValue(value: unknown, key: Uint8Array): string {
 
 const PERSONAL_ID = /@|\d{10,}/
 
+/** True when one segment of a legacy id looks like an e-mail address, an IC number or a phone number. */
+function segmentLooksPersonal(segment: string): boolean {
+  // Digits split by spaces or dashes (900101-14-5678, 012-345 6789) are an IC or phone number too.
+  return PERSONAL_ID.test(segment) || segment.replace(/[\s-]/g, '').replace(/\D/g, '').length >= 10
+}
+
 /**
  * A `legacyId` must be a surrogate primary key of the source row. An e-mail address, or a run of 10
- * or more digits (IC number, phone number), is personal data and is refused. The message never
- * repeats the value.
+ * or more digits (IC number, phone number), is personal data and is refused. A composite id joins
+ * surrogate keys with `:` (`challenge:user:day`); each segment is checked on its own, so several short
+ * keys never add up to a false positive. The message never repeats the value.
  */
 export function assertSurrogateLegacyId(legacyId: string, where: string): void {
-  // Digits split by spaces or dashes (900101-14-5678, 012-345 6789) are an IC or phone number too.
-  if (PERSONAL_ID.test(legacyId) || legacyId.replace(/[\s-]/g, '').replace(/\D/g, '').length >= 10) {
+  if (legacyId.split(':').some(segmentLooksPersonal)) {
     throw new RangeError(
       `${where}: legacyId looks like personal data (contains "@" or 10 or more digits); use the surrogate primary key of the source row.`,
     )

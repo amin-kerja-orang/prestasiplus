@@ -10,6 +10,7 @@ import { ApplyGuardError, ApplyRefusedError } from '../../../src/migration/kit'
 import { SyntheticDataRefusedError } from '../../../src/migration/load'
 import '../../../src/migration/load/activity/command'
 import { PreflightError } from '../../../src/migration/load/activity'
+import { activityInputHash, tableFingerprints } from '../../../src/migration/load/activity/preflight'
 import { capture } from '../staging/helpers'
 import { bootActivity, PROBE_TABLE, type ActivityHarness } from './helpers'
 
@@ -93,6 +94,40 @@ describe('apply guards', () => {
       pool: h.env.pool, env: h.runEnv, out: out.out, err: out.err,
     })
     expect(noDry).toBe(3)
+  })
+})
+
+describe('input hash', () => {
+  const hashOf = (contentOwnerUserId?: string) =>
+    activityInputHash({ pool: h.env.pool, source: 'cloud', asOf: '2026-06-01', stepNames: ['tiers'], contentOwnerUserId })
+
+  it('depends on --content-owner: a dry-run without an owner does not authorise an apply with one', async () => {
+    const none = await hashOf()
+    expect(await hashOf()).toBe(none)
+    expect(await hashOf('  ')).toBe(none)
+    const a = await hashOf('7')
+    expect(a).not.toBe(none)
+    expect(await hashOf('8')).not.toBe(a)
+    expect(await hashOf(' 7 ')).toBe(a)
+  })
+
+  it('fingerprints a table in constant memory: count plus a digest that is deterministic and order independent', async () => {
+    const first = await tableFingerprints(h.env.pool, ['users', 'archive_cloud.questions'])
+    expect(await tableFingerprints(h.env.pool, ['archive_cloud.questions', 'users', 'users'])).toEqual(first)
+    const users = first.find((p) => p.startsWith('users='))
+    expect(users).toMatch(/^users=\d+:\d+$/)
+    // The digest is the sum of the per-row digests: it is the same whatever order the rows are read in, and it changes with the rows.
+    const sumOfRows = (await h.q<{ h: string }>(
+      `select sum(('x' || substr(md5(coalesce("_row_hash", '')), 1, 15))::bit(60)::bigint::numeric)::text as h from staging_cloud.users`,
+    ))[0]?.h
+    expect(users?.split(':')[1]).toBe(sumOfRows)
+    await h.q(`update staging_cloud.users set "_row_hash" = "_row_hash" || 'x' where id = (select min(id) from staging_cloud.users)`)
+    try {
+      expect(await tableFingerprints(h.env.pool, ['users'])).not.toEqual([users])
+    } finally {
+      await h.q(`update staging_cloud.users set "_row_hash" = left("_row_hash", length("_row_hash") - 1) where id = (select min(id) from staging_cloud.users)`)
+    }
+    expect(await tableFingerprints(h.env.pool, ['users'])).toEqual([users])
   })
 })
 

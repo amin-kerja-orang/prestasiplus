@@ -122,6 +122,7 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
     asOf: options.asOf,
     stepNames: steps.map((s) => s.entity),
     extraTables,
+    contentOwnerUserId: options.contentOwnerUserId,
   })
   return { activity, steps, inputHash, notMigrated: notMigratedOf(chosen) }
 }

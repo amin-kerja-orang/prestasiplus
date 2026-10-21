@@ -14,6 +14,7 @@ import { excludedResult, klDateSql, sumBatch } from '../../transform/activity-co
 import { pairId, stamps } from '../../transform/common'
 import {
   completionLegacyId,
+  isPlatformChallenge,
   parseSpmTargets,
   transformCompletion,
   transformReferral,
@@ -67,10 +68,13 @@ export async function* readPairKeyed(pool: pg.Pool, spec: PairReaderSpec, afterK
     const [ka, kb, rk, rn] = afterKey.split('|')
     after = { ka: ka ?? '-2', kb: kb ?? '-2', rk: rk ?? '0', rn: rn ?? '0' }
   }
+  // The first page may resume inside a pair (`>=`); every later page starts after the last pair of the previous one (`>`),
+  // otherwise a page size of 1 would read the same last pair forever.
+  let pairOp = '>='
   for (;;) {
     const pairs = await pool.query<{ ka: string; kb: string }>(
       `SELECT DISTINCT coalesce(${a}, -1) AS ka, coalesce(${b}, -1) AS kb FROM ${from} t
-       WHERE ${pairKey} >= ($1::bigint, $2::bigint) ORDER BY 1, 2 LIMIT $3`,
+       WHERE ${pairKey} ${pairOp} ($1::bigint, $2::bigint) ORDER BY 1, 2 LIMIT $3`,
       [after.ka, after.kb, pageSize],
     )
     const lo = pairs.rows[0]
@@ -89,6 +93,7 @@ export async function* readPairKeyed(pool: pg.Pool, spec: PairReaderSpec, afterK
     for (const row of res.rows) yield { key: `${row.k_a}|${row.k_b}|${row.k_rk}|${row.k_rn}`, row }
     if (pairs.rows.length < pageSize) return
     after = { ka: hi.ka, kb: hi.kb, rk: HIGH, rn: HIGH }
+    pairOp = '>'
   }
 }
 
@@ -133,6 +138,19 @@ const keyOfPair = (r: PairRow): string => r.key
 
 // ---------------------------------------------------------------- challenge completions
 
+/** Which of these staged challenge ids are teacher challenges (not platform ones, see `isPlatformChallenge`). */
+async function teacherChallengeIds(pool: pg.Pool, ids: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (ids.length === 0) return out
+  const res = await pool.query<StagedRow>(
+    `SELECT id::text AS id, created_by::text AS created_by, classroom_id::text AS classroom_id
+     FROM ${quoteIdent(STAGING_SCHEMA)}.${quoteIdent('challenges')} WHERE id = ANY($1::bigint[])`,
+    [[...new Set(ids)]],
+  )
+  for (const row of res.rows) if (row.id && !isPlatformChallenge(row)) out.add(row.id)
+  return out
+}
+
 /**
  * `challenge_user` -> `challenge_completions`. The completion day is `claimed_on`, else the Malaysia date of `completed_at`;
  * a row with neither is excluded. The pivot holds one row per claimed day, so the legacy id is `challenge:user:day-ordinal`
@@ -148,7 +166,11 @@ export function completionsStep(a: ActivityContext): AnyEntityStep {
     async load(rows: PairRow[], ctx: BatchContext): Promise<BatchResult> {
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows.map((r) => r.row), 'user_id'))
       const challenges = await ctx.idMap.resolveMany('challenges', distinctValues(rows.map((r) => r.row), 'challenge_id'))
+      const teacherChallenges = await teacherChallengeIds(
+        a.pool, rows.map((r) => r.row.challenge_id).filter((id): id is string => id !== null && id !== undefined && !challenges.has(id)),
+      )
       let excluded = 0
+      let teacher = 0
       const items: LegacyRow[] = []
       for (const r of rows) {
         const row: CompletionRow = {
@@ -161,6 +183,11 @@ export function completionsStep(a: ActivityContext): AnyEntityStep {
         }
         const legacyId = completionLegacyId(row)
         assertSurrogateLegacyId(legacyId, 'migrate:activity')
+        // A teacher challenge is excluded by `challengesStep` (no v2 target), so its completions are excluded too, not rejected.
+        if (row.challenge_id !== null && teacherChallenges.has(row.challenge_id)) {
+          teacher++
+          continue
+        }
         const out = transformCompletion(row, {
           userId: row.user_id === null ? undefined : users.get(row.user_id),
           challengeId: row.challenge_id === null ? undefined : challenges.get(row.challenge_id),
@@ -170,12 +197,13 @@ export function completionsStep(a: ActivityContext): AnyEntityStep {
         else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
       }
       a.notes.count('challenge_completions.no_day', excluded)
+      a.notes.count('challenge_completions.excluded_teacher_challenge', teacher)
       const res = await upsertAndMap(
         ctx, entity, 'challenge_completions',
         ['user_id', 'challenge_id', 'completion_date', 'completed_at', 'is_test', 'created_at', 'updated_at'],
         items, { register: false },
       )
-      return sumBatch(res, excludedResult(excluded))
+      return sumBatch(res, excludedResult(excluded + teacher))
     },
   }
 }
