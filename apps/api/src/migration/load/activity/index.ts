@@ -17,6 +17,7 @@ import { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type Activit
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 import { activityInputHash, assertCorePreflight } from './preflight'
+import { rebuildAfterResume } from './resume-report'
 
 export { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
 export { DriftCollector, writeReportFile } from './drift'
@@ -144,5 +145,9 @@ export async function runActivity(options: ActivityRunOptions): Promise<Activity
     gitSha: options.gitSha,
     batchSize: options.batchSize,
   })
+  // A resumed apply skipped the checkpointed batches, so the in-memory drift and notes cover only the resumed part.
+  if (report.mode === 'apply' && report.resumedBatches > 0) {
+    await rebuildAfterResume(plan.activity, options.pool, report.runId, plan.steps.map((s) => s.entity))
+  }
   return { report, activity: plan.activity, notMigrated: plan.notMigrated }
 }

@@ -37,6 +37,13 @@ export class DriftCollector {
     this.counts.set(kind, (this.counts.get(kind) ?? 0) + 1)
   }
 
+  /** Forgets every count and id of `kind` (used when a resumed run recomputes a figure over the full set). */
+  clear(kind: string): void {
+    this.assertKind(kind)
+    this.counts.delete(kind)
+    this.ids.delete(kind)
+  }
+
   get size(): number {
     return this.counts.size
   }

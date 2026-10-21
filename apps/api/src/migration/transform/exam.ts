@@ -92,13 +92,39 @@ export function parseScore(raw: string | null | undefined): string | null | 'inv
   return n > SCORE_MAX ? 'invalid' : n.toFixed(2)
 }
 
-/** The JSON of `section_scores`: an object or array kept as is; blank or unparsable is null. */
+/**
+ * Keeps the numeric leaves of a parsed JSON value (keys kept; text, booleans and nulls are dropped, an array
+ * element that is dropped becomes null). Returns undefined when nothing numeric is left.
+ */
+function numericLeaves(value: unknown): unknown {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined
+  if (Array.isArray(value)) {
+    // An array keeps its positions: a dropped element becomes null so the scores do not shift.
+    const kept = value.map((v) => numericLeaves(v) ?? null)
+    return kept.some((v) => v !== null) ? kept : undefined
+  }
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+      const leaf = numericLeaves(v)
+      if (leaf !== undefined) out[k] = leaf
+    }
+    return Object.keys(out).length > 0 ? out : undefined
+  }
+  return undefined
+}
+
+/**
+ * The JSON of `section_scores`: scores only (AC2). An object or array keeps its numeric leaves under their keys; any
+ * text leaf is dropped (it is free text, not a score) and so is a numeric string. Blank, unparsable or without a
+ * numeric leaf is null.
+ */
 export function parseSectionScores(raw: string | null | undefined): unknown {
   const t = text(raw)
   if (t === null) return null
   try {
     const v: unknown = JSON.parse(t)
-    return v !== null && typeof v === 'object' ? v : null
+    return v !== null && typeof v === 'object' ? (numericLeaves(v) ?? null) : null
   } catch {
     return null
   }

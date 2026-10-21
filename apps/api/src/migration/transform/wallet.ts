@@ -36,7 +36,10 @@ export interface WalletRefs {
   userId: string | undefined
   /** The v2 user holds the student role. */
   isStudent: boolean
-  /** The v2 tier id; null = the wallet has no tier; undefined = a tier is set but was not loaded. */
+  /**
+   * The v2 tier id; null = the wallet has no tier; undefined = a tier is set but was not adopted (no seeded match).
+   * Both load the wallet with a null tier (`wallets.tier_id` is nullable; credits work without a tier).
+   */
   tierId: string | null | undefined
 }
 
@@ -59,18 +62,18 @@ export const WALLET_COLUMNS = [
 /**
  * `student_wallets` -> `wallets`. Token balance, xp and level have no .cloud column: 0, 0 and 1 (the column defaults).
  * A blank lifetime total is 0; a blank balance is INVALID_VALUE (the column is the money itself).
+ * A tier that is set but unresolved never drops the wallet: it loads with `tier_id = null` (the caller counts it).
  */
 export function transformWallet(row: Staged, refs: WalletRefs): Outcome<WalletValues> {
   if (refs.userId === undefined) return orphan('user_id')
   if (!refs.isStudent) return unsupported('user_id')
-  if (refs.tierId === undefined) return orphan('gamification_tier_id')
   const balance = boundedCount(row.syiling_balance)
   if (balance === null || balance === 'invalid') return invalid('syiling_balance')
   const lifetime = boundedCount(row.syiling_lifetime)
   if (lifetime === 'invalid') return invalid('syiling_lifetime')
   return ok({
     user_id: refs.userId,
-    tier_id: refs.tierId,
+    tier_id: refs.tierId ?? null,
     current_syiling: balance,
     total_syiling_earned: lifetime ?? 0,
     token_balance: 0,
