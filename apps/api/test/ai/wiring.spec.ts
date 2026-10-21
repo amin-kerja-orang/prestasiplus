@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { runWithAiContext } from '../../src/modules/ai-extraction/ai-context'
 import { AiExtractorAdapter, toJobError } from '../../src/modules/ai-extraction/ai-extractor.adapter'
 import { AiCancelledError, AiError } from '../../src/modules/ai-extraction/ai.errors'
-import { bootAiApp, insertAdmin, type AiTestApp } from './helpers'
+import { bootAiApp, insertAdmin, vendorEnv, type AiTestApp } from './helpers'
 
 describe('toJobError (what the intake job runner sees)', () => {
   it('maps budget and rate limit to retryable codes, not-configured to a terminal one, cancel to CANCELLED', () => {
@@ -62,7 +62,7 @@ describe('AiExtractorAdapter (the BE-37 AI_EXTRACTOR port)', () => {
   })
 
   it('a budget stop reaches the job runner as a retryable AI_BUDGET_EXHAUSTED', async () => {
-    t = await bootAiApp({ env: { AI_MONTHLY_BUDGET_SEN: '0' } })
+    t = await bootAiApp({ env: { ...vendorEnv('anthropic'), AI_MONTHLY_BUDGET_SEN: '0' } })
     await expect(t.app.get(AiExtractorAdapter).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_BUDGET_EXHAUSTED', retryable: true })
   })
 })

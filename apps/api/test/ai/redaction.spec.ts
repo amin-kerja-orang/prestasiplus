@@ -243,3 +243,51 @@ describe('redaction is linear on hostile text (no event-loop stall)', () => {
     expect(ms).toBeLessThan(1000)
   })
 })
+
+describe('mid-line labels and numbers split by a line break (G4 M1)', () => {
+  const run = (text: string) => {
+    const r = new Redactor()
+    return { out: r.redact(text), summary: r.summary() }
+  }
+
+  it.each([
+    ['Nama', 'Soalan 1. Nama: Ali bin Abu Contoh, kelas lima'],
+    ['Name', 'Cover sheet - Name: Ali bin Abu Contoh | Class below'],
+    ['Nama Murid', 'Kertas Percubaan Nama Murid: Ali bin Abu Contoh'],
+  ])('masks the value of a %s label in the middle of a line', (_n, text) => {
+    const { out, summary } = run(text)
+    expect(out).not.toContain('Ali')
+    expect(out).not.toContain('Abu')
+    expect(out).toMatch(/Nama( Murid)?: \[NAMA\]|Name: \[NAMA\]/)
+    expect(summary.masked.find((m) => m.flag === 'person_name')?.count).toBeGreaterThanOrEqual(1)
+  })
+
+  it('does not treat a label that is the tail of a longer word as a label', () => {
+    expect(run('Soalan kenama: 12 orang').out).toBe('Soalan kenama: 12 orang')
+  })
+
+  it('masks an IC number split by a line break', () => {
+    const { out, summary } = run('No. rujukan\n080515\n14\n1234\nseterusnya')
+    expect(out).not.toMatch(/080515|1234/)
+    expect(summary.masked).toContainEqual({ flag: 'ic_number', count: 1 })
+  })
+
+  it('masks a Malaysian phone number split by a line break', () => {
+    const { out, summary } = run('Hubungi 012-345\n6789 sekarang')
+    expect(out).not.toMatch(/345|6789/)
+    expect(summary.masked).toContainEqual({ flag: 'phone', count: 1 })
+  })
+
+  it('masks an international phone number split by a line break', () => {
+    const { out } = run('Call +44 7700\n900123 today')
+    expect(out).not.toMatch(/7700|900123/)
+  })
+
+  it('leaves ordinary numbers of a maths stem intact', () => {
+    for (const text of ['2 + 3 = 5', 'Tahun 2025', '1. Hitung 2 + 3 = 5.\n2. Pada tahun 2025, harga ialah RM12.50.\n3. 120\n45\n6', 'Nilai 12\n34\n56 dan 7 8 9']) {
+      const { out, summary } = run(text)
+      expect(out).toBe(text)
+      expect(summary.masked).toEqual([])
+    }
+  })
+})
