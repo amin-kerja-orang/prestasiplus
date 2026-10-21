@@ -27,7 +27,8 @@
  *  18. spm                    SPM hub demo rows (BE-41)
  *  19. practice               practice sessions and answers of the demo accounts
  *  20. gamification           achievements, challenges, rewards, draws
- *  21. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
+ *  21. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path)
+ *  22. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
  * command is accepted there only together with it (two keys, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
@@ -59,6 +60,7 @@ export const POC_PROFILE_ORDER = [
   'spm',
   'practice',
   'gamification',
+  'questions-pool',
   'poc-profile',
 ] as const
 
