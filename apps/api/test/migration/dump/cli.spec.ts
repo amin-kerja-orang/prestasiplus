@@ -87,13 +87,13 @@ describe('dump:check', () => {
     expect(sent).not.toContain('START TRANSACTION')
   })
 
-  it('invokes the client with --defaults-extra-file first, the SQL on stdin and no secret in the arguments', async () => {
+  it('invokes the client with --defaults-file first, the SQL on stdin and no secret in the arguments', async () => {
     fx.setScenario(scenario())
     await cli(['dump:check', '--out', work.out('check-args')])
     const calls = fx.calls()
     expect(calls.length).toBe(2)
     for (const c of calls) {
-      expect(c.args[0]).toBe(`--defaults-extra-file=${fx.optionFile}`)
+      expect(c.args[0]).toBe(`--defaults-file=${fx.optionFile}`)
       expect(c.args).toEqual(expect.arrayContaining(['--batch', '--raw', '--skip-column-names', '--quick', '--default-character-set=utf8mb4', '--no-auto-rehash']))
       expect(c.args.join(' ')).not.toContain(PASSWORD)
       expect(c.sql.length).toBeGreaterThan(20)
@@ -262,10 +262,10 @@ describe('dump:cloud', () => {
     expect(r.code, r.text).toBe(DUMP_EXIT.ok)
     const names = fx.calls().flatMap((c) => c.env)
     expect(names.length).toBeGreaterThan(0)
-    for (const forbidden of ['ANON_HMAC_KEY', 'ANON_HMAC_KEY_FILE', 'MYSQL_PWD', 'SECRET_TOKEN', 'CLOUD_MYSQL_DEFAULTS_FILE', 'CLOUD_MYSQL_CLIENT']) {
+    for (const forbidden of ['HOME', 'ANON_HMAC_KEY', 'ANON_HMAC_KEY_FILE', 'MYSQL_PWD', 'SECRET_TOKEN', 'CLOUD_MYSQL_DEFAULTS_FILE', 'CLOUD_MYSQL_CLIENT']) {
       expect(names, forbidden).not.toContain(forbidden)
     }
-    expect(names).toEqual(expect.arrayContaining(['PATH', 'HOME', 'LANG']))
+    expect(names).toEqual(expect.arrayContaining(['PATH', 'LANG', 'MYSQL_TEST_LOGIN_FILE']))
   })
 
   it('exits 2 when the client binary is missing', async () => {
@@ -546,7 +546,7 @@ describe('dump:wipe', () => {
     await cli(['dump:cloud', '--out', out, '--tables', 'schools'])
     const r = await cli(['dump:wipe', '--dir', out])
     expect(r.code, r.text).toBe(DUMP_EXIT.ok)
-    expect(r.text).toMatch(/Wiped 4 file\(s\)/)
+    expect(r.text).toMatch(/4 file\(s\) overwritten with zeros and removed .*0 file\(s\) unlinked only/)
     expect(r.text).toMatch(/full-disk encryption is the real guard/)
     expect(existsSync(out)).toBe(false)
   })

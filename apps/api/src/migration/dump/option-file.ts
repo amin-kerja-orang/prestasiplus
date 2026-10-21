@@ -1,6 +1,6 @@
 /**
  * The MySQL option file (AM-10). All connection details (host, port, user, password, database, ssl-mode) live in ONE
- * file named by `CLOUD_MYSQL_DEFAULTS_FILE`; the spawned client gets `--defaults-extra-file=<file>`, so nothing secret is
+ * file named by `CLOUD_MYSQL_DEFAULTS_FILE`; the spawned client gets `--defaults-file=<file>`, so nothing secret is
  * ever on a command line, in the environment of the child, or in shell history.
  *
  * The file must exist, be a regular file, sit OUTSIDE the repository and the working directory (real paths), and on
@@ -39,7 +39,7 @@ export const isInside = (child: string, parent: string): boolean => {
 }
 
 export interface OptionFile {
-  /** Absolute path (not real path) of the file, for `--defaults-extra-file`. */
+  /** Absolute path (not real path) of the file, for `--defaults-file`. */
   path: string
   /** Strings to scrub from every message: password (any length), user and host (3+ characters). */
   secrets: string[]
@@ -53,10 +53,12 @@ function unquote(value: string): string {
 }
 
 /** Reads `key=value` pairs of the `[client]` and `[mysql]` groups. Pure; exported for tests. */
-export function parseOptionText(text: string): { values: Map<string, string>; raw: Map<string, string>; hasInclude: boolean } {
+export function parseOptionText(text: string): { values: Map<string, string>; raw: Map<string, string>; hasInclude: boolean; groups: string[]; outsideGroup: boolean } {
   const values = new Map<string, string>()
   const raw = new Map<string, string>()
   let hasInclude = false
+  let outsideGroup = false
+  const groups = new Set<string>()
   let group = ''
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim()
@@ -68,8 +70,10 @@ export function parseOptionText(text: string): { values: Map<string, string>; ra
     const g = /^\[([^\]]*)\]$/.exec(line)
     if (g) {
       group = (g[1] as string).trim().toLowerCase()
+      groups.add(group)
       continue
     }
+    if (group === '') outsideGroup = true
     if (group !== 'client' && group !== 'mysql') continue
     const eq = line.indexOf('=')
     const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
@@ -81,7 +85,7 @@ export function parseOptionText(text: string): { values: Map<string, string>; ra
     raw.set(key, unquote(line.slice(eq + 1)))
     values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
   }
-  return { values, raw, hasInclude }
+  return { values, raw, hasInclude, groups: [...groups], outsideGroup }
 }
 
 const OFF = new Set(['0', 'false', 'off', 'no'])
@@ -127,8 +131,17 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
   else if ((statSync(path).mode & 0o077) !== 0) {
     throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE must not be readable by group or others (chmod 600).')
   }
-  const { values, raw, hasInclude } = parseOptionText(readFileSync(path, 'utf8'))
-  if (hasInclude) throw new DumpUsageError('The option file uses !include; put all settings in the one file.')
+  const { values, raw, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
+  if (hasInclude) throw new DumpUsageError('The option file uses !include or !includedir; put all settings in the one file.')
+  if (outsideGroup) throw new DumpUsageError('The option file has settings outside any [group]; put them under [client].')
+  for (const g of groups) {
+    // Only [client] (and [mysql]) are read. Other groups ([client-server], [client-mariadb], [mariadb], [mysqldump], ...) are refused:
+    // they are not what the export uses and could carry settings the client would pick up. The message names the group only.
+    if (g !== 'client' && g !== 'mysql') {
+      const shown = /^[a-z0-9_.-]{1,40}$/.test(g) ? g : '(unprintable name)'
+      throw new DumpUsageError(`The option file has a [${shown}] group. Only [client] is accepted; remove the other groups.`)
+    }
+  }
 
   const secrets: string[] = []
   // Both readings of the value (with and without an inline comment): whichever the client used gets scrubbed.

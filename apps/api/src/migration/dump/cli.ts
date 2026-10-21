@@ -33,8 +33,8 @@
  *                              Windows) found by walking PATH (never the working directory). A client inside the repository
  *                              or the working directory is refused.
  *   ANON_HMAC_KEY_FILE / ANON_HMAC_KEY   the pseudonymisation key, dump:produce only (use a FRESH key per run).
- * The client gets `--defaults-extra-file=<file>` as its first argument; SQL goes in on stdin. Its environment is an
- * allow-list (PATH, HOME, LANG, LC_ALL, TZ, MYSQL_UNIX_PORT; on Windows also SystemRoot, TEMP, TMP, USERPROFILE, APPDATA,
+ * The client gets `--defaults-file=<file>` as its first argument (no other option file is read); SQL goes in on stdin. Its
+ * environment is an allow-list (PATH, LANG, LC_ALL, TZ, MYSQL_UNIX_PORT, MYSQL_TEST_LOGIN_FILE pointing nowhere; no HOME; on Windows also SystemRoot, TEMP, TMP, USERPROFILE, APPDATA,
  * PATHEXT, ComSpec): the key and every other variable stay out of the child.
  *
  * TLS: a remote host in the option file is refused (exit 2) unless it sets ssl-mode=VERIFY_IDENTITY or VERIFY_CA (MariaDB
@@ -67,7 +67,7 @@ import { ProfileOutputError } from '../profile'
 import { scrub, scrubbingLogger } from '../staging/log'
 import { DumpFormatError } from '../staging/readers'
 import { dumpCloud, refusalMessage, runCheck } from './cloud'
-import { installSignalHandlers } from './cleanup'
+import { installSignalHandlers, installStdioGuards } from './cleanup'
 import { makeClientConfig, type SpawnFn } from './client'
 import { ClientError, DumpAbortedError, DumpError, DumpUsageError, ExportStreamError, ReadOnlyRequiredError, WipeRefusedError } from './errors'
 import { buildGrantScript } from './grants-sql'
@@ -163,8 +163,8 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
       const dir = flags.get('dir')
       if (!dir) throw new DumpUsageError('Give --dir <directory inside a .migration-out folder>.')
       const r = await wipeDir(dir)
-      log.info(`Wiped ${r.files} file(s), ${fmt(r.bytes)} bytes, ${r.dirs} director${r.dirs === 1 ? 'y' : 'ies'}.`)
-      if (r.hardLinked > 0) log.warn(`${r.hardLinked} file(s) had more than one hard link: removed but NOT overwritten (the other links still hold the data).`)
+      log.info(`${r.files} file(s) overwritten with zeros and removed (${fmt(r.bytes)} bytes); ${r.hardLinked} file(s) unlinked only; ${r.dirs} director${r.dirs === 1 ? 'y' : 'ies'} removed.`)
+      if (r.hardLinked > 0) log.warn(`${r.hardLinked} file(s) had more than one hard link: unlinked but NOT overwritten (the other links still hold the data).`)
       log.info(WIPE_NOTE)
       return DUMP_EXIT.ok
     }
@@ -257,6 +257,7 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const abort = new AbortController()
+  installStdioGuards(process)
   installSignalHandlers({
     target: process,
     abort,

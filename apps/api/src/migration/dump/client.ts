@@ -1,7 +1,7 @@
 /**
  * The MySQL command-line client as a child process (AM-10). No driver is used.
  *
- *   - `--defaults-extra-file=<option file>` is ALWAYS the first argument; host, user and password never appear on
+ *   - `--defaults-file=<option file>` is ALWAYS the first argument (the client reads that one file and no other option file); host, user and password never appear on
  *     the command line (no flag for them exists in this tool);
  *   - SQL goes to stdin, never into an argument;
  *   - stdout is yielded line by line as it arrives (a table is never buffered whole);
@@ -9,6 +9,8 @@
  */
 import { spawn as nodeSpawn, type ChildProcess, type SpawnOptions } from 'node:child_process'
 import { accessSync, constants as fsConstants, statSync } from 'node:fs'
+import { randomBytes } from 'node:crypto'
+import { tmpdir } from 'node:os'
 import { delimiter, isAbsolute, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 
@@ -39,17 +41,19 @@ export const CLIENT_FLAGS: readonly string[] = [
 ]
 
 export function clientArgs(optionFile: string): string[] {
-  return [`--defaults-extra-file=${optionFile}`, ...CLIENT_FLAGS]
+  return [`--defaults-file=${optionFile}`, ...CLIENT_FLAGS]
 }
 
 type Env = Readonly<Record<string, string | undefined>>
 
-const POSIX_ENV = ['PATH', 'HOME', 'LANG', 'LC_ALL', 'TZ', 'MYSQL_UNIX_PORT']
-const WIN_ENV = [...POSIX_ENV, 'SystemRoot', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA', 'PATHEXT', 'ComSpec']
+// No HOME (POSIX) and no APPDATA (Windows): the client has no home-directory option file to find.
+const POSIX_ENV = ['PATH', 'LANG', 'LC_ALL', 'TZ', 'MYSQL_UNIX_PORT']
+const WIN_ENV = [...POSIX_ENV, 'SystemRoot', 'TEMP', 'TMP', 'USERPROFILE', 'PATHEXT', 'ComSpec']
 
 /**
  * The environment of the client: an allow-list. Nothing else (no ANON_* key, no MYSQL_PWD, no CLOUD_* variable)
- * reaches the child. On Windows names are matched without regard to case.
+ * reaches the child. On Windows names are matched without regard to case. `MYSQL_TEST_LOGIN_FILE` points to a file that does not
+ * exist (random name under the temp directory), so a `.mylogin.cnf` is never read.
  */
 export function childEnvironment(env: Env, platform: string): Record<string, string> {
   const allowed = platform === 'win32' ? WIN_ENV : POSIX_ENV
@@ -59,6 +63,7 @@ export function childEnvironment(env: Env, platform: string): Record<string, str
     if (value === undefined) continue
     if (wanted.has(platform === 'win32' ? name.toUpperCase() : name)) out[name] = value
   }
+  out.MYSQL_TEST_LOGIN_FILE = join(tmpdir(), `pp-no-login-${randomBytes(8).toString('hex')}`, 'mylogin.cnf')
   return out
 }
 

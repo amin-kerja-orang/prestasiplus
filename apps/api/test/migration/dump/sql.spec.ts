@@ -1,4 +1,6 @@
 import { chmodSync, closeSync, existsSync, linkSync, mkdirSync, openSync, readFileSync, readSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { EventEmitter } from 'node:events'
+import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 
 import { afterAll, describe, expect, it } from 'vitest'
@@ -18,7 +20,7 @@ import {
   type SourceColumn,
 } from '../../../src/migration/dump/export-sql'
 import { childEnvironment, findOnPath, resolveClientBinary } from '../../../src/migration/dump/client'
-import { emergencyWipeSync, installSignalHandlers, registerSensitive, sensitivePaths } from '../../../src/migration/dump/cleanup'
+import { emergencyWipeSync, installSignalHandlers, installStdioGuards, registerSensitive, sensitivePaths } from '../../../src/migration/dump/cleanup'
 import { evaluateGrants } from '../../../src/migration/dump/grants'
 import { buildGrantScript } from '../../../src/migration/dump/grants-sql'
 import { loadOptionFile, parseOptionText } from '../../../src/migration/dump/option-file'
@@ -242,6 +244,25 @@ describe('option file', () => {
     expect(o.warnings.join('\n')).toMatch(/not enforced on Windows/)
   })
 
+  it.each(['client-server', 'client-mariadb', 'mariadb-client', 'mariadb', 'mysqldump', 'mysqld', 'Client-Server'])('refuses a [%s] group and names only the group', (group) => {
+    const f = write(work.outside(`grp-${group}.cnf`), `${GOOD}[${group}]\nport=1\nuser=other_secret_user\n`)
+    let message = ''
+    try {
+      loadOptionFile(env(f), 'linux')
+    } catch (e) {
+      message = (e as Error).message
+    }
+    expect(message).toContain(`[${group.toLowerCase()}] group`)
+    expect(message).not.toContain('other_secret_user')
+    expect(message).not.toContain(PASSWORD)
+  })
+
+  it('refuses !includedir and settings outside any group; accepts [client] alone', () => {
+    expect(() => loadOptionFile(env(write(work.outside('incdir.cnf'), `${GOOD}!includedir /etc/mysql/conf.d\n`)), 'linux')).toThrow(/!include or !includedir/)
+    expect(() => loadOptionFile(env(write(work.outside('nogroup.cnf'), `user=x\n${GOOD}`)), 'linux')).toThrow(/outside any \[group\]/)
+    expect(() => loadOptionFile(env(write(work.outside('only-client.cnf'), GOOD)), 'linux')).not.toThrow()
+  })
+
   describe('TLS rule', () => {
     const tls = (body: string) => loadOptionFile(env(write(work.outside(`tls-${Math.random().toString(16).slice(2)}.cnf`), `[client]\n${body}\npassword=abc\n`)), 'linux')
     it.each([
@@ -438,10 +459,18 @@ describe('client binary and child environment', () => {
   })
 
   it('hands the child an allow-listed environment only', () => {
-    const env = { PATH: '/usr/bin', HOME: '/home/x', LANG: 'C', LC_ALL: 'C', TZ: 'UTC', MYSQL_UNIX_PORT: '/s', ANON_HMAC_KEY: 'k'.repeat(40), ANON_HMAC_KEY_FILE: '/k', MYSQL_PWD: 'p', CLOUD_MYSQL_DEFAULTS_FILE: '/o', SystemRoot: 'C:\\Windows', TEMP: '/t', NODE_OPTIONS: '--x' }
-    expect(Object.keys(childEnvironment(env, 'linux')).sort()).toEqual(['HOME', 'LANG', 'LC_ALL', 'MYSQL_UNIX_PORT', 'PATH', 'TZ'])
-    expect(Object.keys(childEnvironment(env, 'win32')).sort()).toEqual(['HOME', 'LANG', 'LC_ALL', 'MYSQL_UNIX_PORT', 'PATH', 'SystemRoot', 'TEMP', 'TZ'])
-    expect(Object.keys(childEnvironment({ SYSTEMROOT: 'C:\\Windows', Path: 'x', ANON_HMAC_KEY: 'k' }, 'win32')).sort()).toEqual(['Path', 'SYSTEMROOT'])
+    const env = { PATH: '/usr/bin', HOME: '/home/x', LANG: 'C', LC_ALL: 'C', TZ: 'UTC', MYSQL_UNIX_PORT: '/s', ANON_HMAC_KEY: 'k'.repeat(40), ANON_HMAC_KEY_FILE: '/k', MYSQL_PWD: 'p', CLOUD_MYSQL_DEFAULTS_FILE: '/o', SystemRoot: 'C:\\Windows', TEMP: '/t', APPDATA: 'C:\\Users\\x\\AppData', MYSQL_TEST_LOGIN_FILE: '/home/x/.mylogin.cnf', NODE_OPTIONS: '--x' }
+    expect(Object.keys(childEnvironment(env, 'linux')).sort()).toEqual(['LANG', 'LC_ALL', 'MYSQL_TEST_LOGIN_FILE', 'MYSQL_UNIX_PORT', 'PATH', 'TZ'])
+    expect(Object.keys(childEnvironment(env, 'win32')).sort()).toEqual(['LANG', 'LC_ALL', 'MYSQL_TEST_LOGIN_FILE', 'MYSQL_UNIX_PORT', 'PATH', 'SystemRoot', 'TEMP', 'TZ'])
+    expect(Object.keys(childEnvironment({ SYSTEMROOT: 'C:\\Windows', Path: 'x', ANON_HMAC_KEY: 'k' }, 'win32')).sort()).toEqual(['MYSQL_TEST_LOGIN_FILE', 'Path', 'SYSTEMROOT'])
+  })
+
+  it('points MYSQL_TEST_LOGIN_FILE at a file that does not exist, a different one each time (so .mylogin.cnf is never read)', () => {
+    const a = childEnvironment({ PATH: '/usr/bin', MYSQL_TEST_LOGIN_FILE: '/home/x/.mylogin.cnf' }, 'linux').MYSQL_TEST_LOGIN_FILE as string
+    const b = childEnvironment({}, 'linux').MYSQL_TEST_LOGIN_FILE as string
+    expect(a).not.toBe(b)
+    expect(a.startsWith(tmpdir())).toBe(true)
+    expect(existsSync(a)).toBe(false)
   })
 })
 
@@ -469,8 +498,37 @@ describe('interrupt handling', () => {
       target.handlers.get('SIGHUP')?.()
       expect(wiped).toBe(1)
       expect(exits).toEqual([130])
-      expect(lines.length).toBe(1)
+      expect(lines.length).toBe(2) // one message per signal
     }
+  })
+
+  it('a throwing err (closed terminal, EIO/EPIPE) never skips the abort, the wipe or the exit', () => {
+    const target = new FakeProcess()
+    const abort = new AbortController()
+    const exits: number[] = []
+    let wiped = 0
+    installSignalHandlers({ target, abort, platform: 'linux', exit: (c) => void exits.push(c), err: () => { throw new Error('EIO') }, wipe: () => void wiped++ })
+    expect(() => target.handlers.get('SIGHUP')?.()).not.toThrow()
+    expect(abort.signal.aborted).toBe(true)
+    expect(() => target.handlers.get('SIGHUP')?.()).not.toThrow()
+    expect(wiped).toBe(1)
+    expect(exits).toEqual([130])
+    // and a wipe that throws still exits
+    const t2 = new FakeProcess()
+    const exits2: number[] = []
+    installSignalHandlers({ target: t2, abort: new AbortController(), platform: 'linux', exit: (c) => void exits2.push(c), err: () => undefined, wipe: () => { throw new Error('boom') } })
+    t2.handlers.get('SIGINT')?.()
+    t2.handlers.get('SIGINT')?.()
+    expect(exits2).toEqual([130])
+  })
+
+  it('stdio guards swallow stream errors (EPIPE from | head), which would otherwise be unhandled', () => {
+    const stdout = new EventEmitter()
+    const stderr = new EventEmitter()
+    expect(() => stdout.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }))).toThrow() // unguarded: crashes
+    installStdioGuards({ stdout, stderr })
+    expect(() => stdout.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }))).not.toThrow()
+    expect(() => stderr.emit('error', Object.assign(new Error('write EIO'), { code: 'EIO' }))).not.toThrow()
   })
 
   it('emergencyWipeSync zeroes and removes the registered directories, never following a symlink', () => {

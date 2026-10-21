@@ -69,7 +69,7 @@ export async function produceDump(options: ProduceOptions): Promise<ProduceResul
     if (signal?.aborted) throw new DumpAbortedError('Interrupted.')
   }
   const wipe = options.wipe ?? wipeDir
-  const unregister = [registerSensitive(raw), registerSensitive(`${raw}.partial`)]
+  const unregister = [registerSensitive(raw), registerSensitive(`${raw}.partial`), registerSensitive(`${anon}.partial`)]
 
   let failure: unknown
   let result: AnonymiseResult | undefined
@@ -96,7 +96,8 @@ export async function produceDump(options: ProduceOptions): Promise<ProduceResul
   try {
     const a = await wipe(raw, { missingOk: true })
     const b = await wipe(`${raw}.partial`, { missingOk: true })
-    log.info(`Raw dump deleted (${a.files + b.files} files overwritten with zeros and removed).`)
+    const linked = a.hardLinked + b.hardLinked
+    log.info(`Raw dump deleted: ${a.files + b.files} file(s) overwritten with zeros and removed, ${linked} file(s) unlinked only (hard-linked).`)
   } catch (e) {
     wipeError = e
     for (const path of [raw, `${raw}.partial`]) {
