@@ -14,8 +14,9 @@
  * - Owner: the first admin account (by role). Natural key `question_versions.number_label` = `SEED-POOL-<S>-<L>-<NN>`;
  *   an existing row is never updated, so a re-run inserts nothing. No randomness; time from ctx.clock.
  *
- * Runs after every other data module (just before `poc-profile`), so the ids of the rows the earlier modules create
- * do not move. Production: refused like every demo module (the runner skips it without ALLOW_DEMO_SEED, and a direct
+ * Inserted just before `spm` (BE-41), whose demo Tracking sets read the SPM pool: they see the pool on the first run,
+ * so a second run stays a no-op. No existing entry moves and no row of another module changes id.
+ * Production: refused like every demo module (the runner skips it without ALLOW_DEMO_SEED, and a direct
  * call throws).
  */
 import { QuestionPartSchema, type QuestionPart } from '@pp/contract'

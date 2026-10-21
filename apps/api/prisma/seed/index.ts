@@ -29,7 +29,11 @@ import { walletSeed } from './wallet'
 import { contentSeed } from './content'
 import { gamificationSeed } from './gamification'
 import { cikguSeed } from './cikgu'
+import { gamesSeed } from './games'
 import { performanceSeed } from './poc/performance'
+import { battleSeed } from './battle'
+import { spmSeed } from './spm'
+import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
 
 export { assertSeedAllowed }
@@ -62,14 +66,15 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue only
- * (`core-school-packages`), pinned by test/subscriptions/seed-production.spec.ts.
+ * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`) and the
+ * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
+ * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, cikguSeed, performanceSeed, practiceSeed, gamificationSeed, questionPoolSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, spmSubjectConfigsSeed, questionPoolSeed, spmSeed, practiceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
@@ -121,7 +126,7 @@ export async function runSeeds(
   // Say so loudly: an operator must see that demo data was refused, not silently absent (BE-03 H2).
   if (skipped.length > 0) {
     console.warn(
-      `seed: demo modules skipped in production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
+      `seed: demo modules skipped: NODE_ENV is not development or test, so this run counts as production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
     )
   }
   return done

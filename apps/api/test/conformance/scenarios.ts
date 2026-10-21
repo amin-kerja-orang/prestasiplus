@@ -24,6 +24,7 @@ import { schoolsScenarios } from './schools/schools'
 import { supportTicketScenarios } from './support/tickets'
 import { usersScenarios } from './users/users'
 import { walletScenarios } from './wallet/wallet'
+import { battleScenarios } from './battle/battle'
 import { questionsWorkflowScenarios } from './questions-workflow/questions-workflow'
 import { gamificationScenarios } from './gamification/gamification'
 import { shopScenarios } from './gamification/shop'
@@ -34,6 +35,10 @@ import { heatmapScenarios } from './heatmap/heatmap'
 import { intakeDashboardScenarios } from './intake/dashboard'
 import { cikguScenarios } from './cikgu/cikgu'
 import { commandCenterScenarios } from './command-center/command-center'
+import { spmScenarios } from './spm/spm'
+import { gamesScenarios } from './games/games'
+import { fosterApplicationScenarios } from './sponsorship/foster-application'
+import { securityScenarios } from './security/security'
 
 /**
  * Every scenario the API run executes: the shared scenarios of `@pp/contract-tests` (the same ones
@@ -77,5 +82,10 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...intakeDashboardScenarios,
     ...cikguScenarios,
     ...commandCenterScenarios,
+    ...battleScenarios,
+    ...spmScenarios,
+    ...gamesScenarios,
+    ...fosterApplicationScenarios,
+    ...securityScenarios,
   ]
 }
