@@ -54,13 +54,20 @@ function others(values: readonly string[], i: number): [string, string, string] 
  * Both directions of a one-to-one table: `forward(a)` asks for b, `backward(b)` asks for a. Wrong options come from
  * the other rows of the same column, so every question has exactly one correct option.
  */
-function table(rows: readonly (readonly [string, string])[], forward: (a: string) => string, backward: (b: string) => string, slot0 = 0): PoolItem[] {
-  const as = rows.map((r) => r[0])
+function table(
+  rows: readonly (readonly [string, string])[],
+  forward: (a: string) => string,
+  backward: (b: string) => string,
+  slot0 = 0,
+  /** How a first-column value reads as an OPTION of a backward question (e.g. capitalised); questions use it raw. */
+  asOption: (a: string) => string = (a) => a,
+): PoolItem[] {
+  const as = rows.map((r) => asOption(r[0]))
   const bs = rows.map((r) => r[1])
   if (new Set(as).size !== rows.length || new Set(bs).size !== rows.length) throw new Error('question pool: table is not one-to-one')
   const out: PoolItem[] = []
   rows.forEach(([a, b], i) => out.push(item(forward(a), b, others(bs, i), slot0 + i)))
-  rows.forEach(([a, b], i) => out.push(item(backward(b), a, others(as, i), slot0 + i + 2)))
+  rows.forEach(([, b], i) => out.push(item(backward(b), as[i] as string, others(as, i), slot0 + i + 2)))
   return out
 }
 
@@ -72,15 +79,19 @@ function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) =
   })
 }
 
+/** Rounded to 2 decimal places, so a computed distractor never renders as a long binary fraction. */
+const round2 = (n: number): number => Math.round(n * 100) / 100
 const num = (n: number): string => String(n).replace('-', '−')
 /** A numeric question: the answer and three distinct wrong values (computed slips), formatted with `fmt`. */
 function numeric(text: string, right: number, wrong: readonly number[], slot: number, fmt: (n: number) => string = num): PoolItem {
+  // Every value is rounded to 2 decimal places BEFORE the distinctness check and the formatter.
+  const key = round2(right)
   const picked: number[] = []
-  for (const w of [...wrong, right + 1, right - 1, right + 2, right * 2, right + 10]) {
-    if (w !== right && !picked.includes(w)) picked.push(w)
+  for (const w of [...wrong, right + 1, right - 1, right + 2, right * 2, right + 10].map(round2)) {
+    if (w !== key && !picked.includes(w)) picked.push(w)
     if (picked.length === 3) break
   }
-  return item(text, fmt(right), picked.map(fmt) as [string, string, string], slot)
+  return item(text, fmt(key), picked.map(fmt) as [string, string, string], slot)
 }
 
 const gcd = (a: number, b: number): number => (b === 0 ? Math.abs(a) : gcd(b, a % b))
@@ -259,7 +270,7 @@ function phyT4(): PoolItem[] {
   for (const [i, [s, t]] of ([[100, 20], [240, 30], [150, 25], [360, 40]] as const).entries()) {
     out.push(numeric(`Sebuah troli bergerak sejauh ${s} m dalam masa ${t} s. Hitung laju purata troli itu.`, s / t, [s - t, s / t + 1, s / t + 2], i, (n) => `${n} m s⁻¹`))
   }
-  for (const [i, [u, v, t]] of ([[0, 20, 4], [5, 25, 5], [10, 40, 6], [2, 18, 8]] as const).entries()) {
+  for (const [i, [u, v, t]] of ([[0, 20, 4], [5, 25, 5], [10, 40, 5], [2, 18, 8]] as const).entries()) {
     const a = (v - u) / t
     out.push(numeric(`Halaju sebuah kereta bertambah daripada ${u} m s⁻¹ kepada ${v} m s⁻¹ dalam masa ${t} s. Hitung pecutan kereta itu.`, a, [v / t, (v + u) / t, a * 2], i + 1, (n) => `${n} m s⁻²`))
   }
@@ -293,7 +304,7 @@ function phyT5(): PoolItem[] {
     out.push(numeric(`Hitung tekanan cecair pada kedalaman ${h} m dalam cecair berketumpatan ${rho} kg m⁻³. (Ambil g = 10 m s⁻²)`, h * rho * 10, [h * rho, h * 10, h * rho * 100], i + 3, (n) => `${n} Pa`))
   }
   for (const [i, [r1, r2]] of ([[4, 6], [10, 5], [3, 9], [8, 12]] as const).entries()) {
-    out.push(numeric(`Dua perintang ${r1} Ω dan ${r2} Ω disambungkan secara bersiri. Hitung rintangan berkesan.`, r1 + r2, [(r1 * r2) / (r1 + r2), r1 * r2, Math.abs(r2 - r1)], i, (n) => `${Math.round(n * 100) / 100} Ω`))
+    out.push(numeric(`Dua perintang ${r1} Ω dan ${r2} Ω disambungkan secara bersiri. Hitung rintangan berkesan.`, r1 + r2, [(r1 * r2) / (r1 + r2), r1 * r2, Math.abs(r2 - r1)], i, (n) => `${n} Ω`))
   }
   for (const [i, [p, t]] of ([[100, 60], [60, 120], [1000, 30], [500, 10]] as const).entries()) {
     out.push(numeric(`Sebuah alat berkuasa ${p} W digunakan selama ${t} s. Hitung tenaga elektrik yang digunakan.`, p * t, [p + t, p * t * 2, (p * t) / 10], i + 1, (n) => `${n} J`))
@@ -333,7 +344,7 @@ function sciT5(): PoolItem[] {
 
 function bmT4(): PoolItem[] {
   const antonyms: [string, string][] = [
-    ['tinggi', 'rendah'], ['panjang', 'pendek'], ['besar', 'kecil'], ['cepat', 'lambat'], ['kaya', 'miskin'], ['rajin', 'malas'],
+    ['tinggi', 'rendah'], ['tua', 'muda'], ['besar', 'kecil'], ['cepat', 'lambat'], ['kaya', 'miskin'], ['rajin', 'malas'],
     ['terang', 'gelap'], ['panas', 'sejuk'], ['mudah', 'sukar'], ['luas', 'sempit'], ['tebal', 'nipis'], ['berat', 'ringan'],
   ]
   return table(antonyms, (a) => `Apakah antonim bagi perkataan '${a}'?`, (b) => `Perkataan '${b}' ialah antonim bagi perkataan`)
@@ -370,6 +381,7 @@ function biT5(): PoolItem[] {
 
 const sejYear = (clause: string) => `Pada tahun berapakah ${clause}?`
 const sejEvent = (year: string) => `Peristiwa manakah yang berlaku pada tahun ${year}?`
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 function sejT4(): PoolItem[] {
   const events: [string, string][] = [
@@ -386,7 +398,7 @@ function sejT4(): PoolItem[] {
     ['Malayan Union diperkenalkan', '1946'],
     ['Persekutuan Tanah Melayu ditubuhkan', '1948'],
   ]
-  return table(events, sejYear, sejEvent)
+  return table(events, sejYear, sejEvent, 0, capitalise)
 }
 
 function sejT5(): PoolItem[] {
@@ -404,7 +416,7 @@ function sejT5(): PoolItem[] {
     ['Dasar Ekonomi Baru diperkenalkan', '1971'],
     ['Kuala Lumpur diisytiharkan sebagai Wilayah Persekutuan', '1974'],
   ]
-  return table(events, sejYear, sejEvent)
+  return table(events, sejYear, sejEvent, 0, capitalise)
 }
 
 // --------------------------------------------------------------------------------------------------------------------

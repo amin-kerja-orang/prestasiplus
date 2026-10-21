@@ -74,7 +74,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed, questionPoolSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
