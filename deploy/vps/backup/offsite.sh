@@ -24,6 +24,13 @@ export PP_SCRIPT=offsite
 [ $# -gt 0 ] || pp_die "no files given" 2
 kind="$(pp_cfg PP_OFFSITE_KIND none)"
 gpg_rcpt="$(pp_cfg PP_BACKUP_GPG_RECIPIENT '')"
+# PP_BACKUP_GPG_FPR (recommended): the 40-hex fingerprint of that key. With it the copy is encrypted to exactly that
+# key ("FPR!"), so a second key whose user id merely matches PP_BACKUP_GPG_RECIPIENT can never be picked.
+gpg_fpr="$(pp_cfg PP_BACKUP_GPG_FPR '' | tr -d ' ' | tr 'a-f' 'A-F')"
+if [ -n "$gpg_fpr" ]; then
+  [[ "$gpg_fpr" =~ ^[0-9A-F]{40}$ ]] || pp_die "PP_BACKUP_GPG_FPR must be the 40-hex fingerprint of the backup key (gpg --fingerprint)"
+  gpg_rcpt="${gpg_fpr}!"
+fi
 
 if [ "$kind" = none ]; then
   pp_warn "PP_OFFSITE_KIND=none: NO OFF-SITE COPY was made. A disk loss on this VPS loses every backup."
@@ -34,10 +41,11 @@ fi
 # writing (PP_OFFSITE_ALLOW_PLAINTEXT=true, a recorded LEAD decision) that the target is trusted with plaintext.
 # The PRIVATE key stays off this server (only the public key is imported here), so a break-in cannot read old copies.
 if [ -n "$gpg_rcpt" ]; then
-  command -v gpg >/dev/null || pp_die "PP_BACKUP_GPG_RECIPIENT is set but gpg is not installed"
-  gpg --list-keys -- "$gpg_rcpt" >/dev/null 2>&1 || pp_die "no public key for PP_BACKUP_GPG_RECIPIENT in this user's keyring (gpg --import the public key)"
+  command -v gpg >/dev/null || pp_die "PP_BACKUP_GPG_FPR / PP_BACKUP_GPG_RECIPIENT is set but gpg is not installed"
+  gpg --list-keys -- "${gpg_rcpt%!}" >/dev/null 2>&1 || pp_die "no public key for PP_BACKUP_GPG_FPR / PP_BACKUP_GPG_RECIPIENT in this user's keyring (gpg --import the public key)"
+  [ -n "$gpg_fpr" ] || pp_warn "PP_BACKUP_GPG_FPR is not set: the key is chosen by user id; pin it with its 40-hex fingerprint"
 elif [ "$(pp_cfg PP_OFFSITE_ALLOW_PLAINTEXT false)" != true ]; then
-  pp_die "PP_OFFSITE_KIND=$kind but PP_BACKUP_GPG_RECIPIENT is empty: refusing to send plaintext backups off the server (set the key, or PP_OFFSITE_ALLOW_PLAINTEXT=true with the LEAD's recorded decision)"
+  pp_die "PP_OFFSITE_KIND=$kind but PP_BACKUP_GPG_FPR and PP_BACKUP_GPG_RECIPIENT are empty: refusing to send plaintext backups off the server (set the key, or PP_OFFSITE_ALLOW_PLAINTEXT=true with the LEAD's recorded decision)"
 fi
 
 tmpdir=""

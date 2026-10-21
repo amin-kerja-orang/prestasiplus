@@ -2,7 +2,8 @@
 # Behaviour test of the edge nginx config with stub upstreams (no Docker): runs the host's nginx on high ports with
 # the real template, two tiny Python servers as api and frontend, and curl. Proves: /api/metrics is 404 in every
 # spelling, http redirects to the fixed host, X-Forwarded-For cannot be spoofed, body limits per route tier, the SPA
-# gets HSTS and the CSP while /api gets none from the edge, unknown hosts get no certificate.
+# gets HSTS and the CSP, /api gets exactly one HSTS (the edge's PP_HSTS replaces the API's own) and no edge CSP,
+# unknown hosts get no certificate.
 #   deploy/vps/nginx/test-routing.sh
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +16,7 @@ mkdir -p "$w/conf.d" "$w/tmp" "$w/le/live/t.example.my" "$w/snip" "$w/web"
 # nginx workers drop to an unprivileged user when this runs as root: let them write the temp dir
 chmod 755 "$w"
 chmod 777 "$w/tmp"
-export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5
+export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5 PP_HSTS="max-age=300"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" -keyout "$w/le/live/$PP_DOMAIN/privkey.pem" -out "$w/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 cp "$here"/snippets/*.conf "$w/snip/"
 for t in "$here"/templates/snippets/*.template; do
@@ -36,7 +37,10 @@ name, port = sys.argv[1], int(sys.argv[2])
 class H(BaseHTTPRequestHandler):
     def reply(self):
         n = int(self.headers.get('Content-Length', 0)); self.rfile.read(n)
-        self.send_response(200); self.send_header('X-Stub', name); self.send_header('X-Seen-XFF', self.headers.get('X-Forwarded-For', '-')); self.end_headers(); self.wfile.write(b'ok')
+        self.send_response(200); self.send_header('X-Stub', name)
+        # like the real API in production: its own 6-month HSTS, which the edge must replace with PP_HSTS
+        if name == 'api': self.send_header('Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
+        self.send_header('X-Seen-XFF', self.headers.get('X-Forwarded-For', '-')); self.end_headers(); self.wfile.write(b'ok')
     do_GET = do_POST = do_PUT = reply
     def log_message(self, *a): pass
 HTTPServer(('127.0.0.1', port), H).serve_forever()
@@ -64,7 +68,13 @@ expect "SPA has the CSP (report-only)" 1 "$(curlx -D- -o /dev/null "$B/deep/link
 expect "metrics 404 carries HSTS (nginx-answered)" 1 "$(curlx -D- -o /dev/null "$B/api/metrics" | grep -ci '^strict-transport-security')"
 expect "CSP img-src has no bare https:" 0 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci "img-src[^;]* https:;")"
 expect "CSP img-src carries PP_CSP_IMG_HOSTS" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci "img-src[^;]*https://img.youtube.com")"
-expect "edge adds no HSTS/CSP on /api" 0 "$(curlx -D- -o /dev/null "$B/api/health" | grep -ciE '^(strict-transport|content-security)')"
+hsts_of() { curlx -D- -o /dev/null "$1" | tr -d '\r' | sed -n 's/^strict-transport-security: //Ip' | paste -sd'|' -; }
+expect "SPA HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/deep/link")"
+expect "/api has exactly one HSTS, PP_HSTS (the API's own is replaced)" "max-age=300" "$(hsts_of "$B/api/health")"
+expect "/api/auth HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/api/auth/session")"
+expect "upload route HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/api/files")"
+expect "metrics 404 HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/api/metrics")"
+expect "edge adds no CSP on /api" 0 "$(curlx -D- -o /dev/null "$B/api/health" | grep -ciE '^content-security')"
 expect "unknown host gets no certificate" "handshake-refused" "$(curl --noproxy '*' -sk -o /dev/null --resolve other.test:18443:127.0.0.1 https://other.test:18443/ && echo served || echo handshake-refused)"
 head -c 4000000 /dev/zero >"$w/4m"; head -c 30000000 /dev/zero >"$w/30m"; head -c 100000000 /dev/zero >"$w/100m"
 expect "4 MB JSON route is refused" 413 "$(code -X POST --data-binary @"$w/4m" "$B/api/foo")"

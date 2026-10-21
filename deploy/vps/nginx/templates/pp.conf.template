@@ -1,5 +1,6 @@
 # Rendered by the nginx image entrypoint (envsubst, only PP_* variables) into /etc/nginx/conf.d/pp.conf.
-# Variables: PP_DOMAIN, PP_UPLOAD_FILES_MB, PP_UPLOAD_BIG_MB, PP_CSP_MODE, PP_CSP_IMG_HOSTS, PP_EDGE_AUTH_RATE, PP_EDGE_AUTH_BURST.
+# Variables: PP_DOMAIN, PP_UPLOAD_FILES_MB, PP_UPLOAD_BIG_MB, PP_CSP_MODE, PP_CSP_IMG_HOSTS, PP_EDGE_AUTH_RATE, PP_EDGE_AUTH_BURST,
+# PP_HSTS (in snippets/hsts.conf.template).
 #
 # Request path:  browser -> edge (this file) -> /api/* -> api:3000     everything else -> frontend:8080 (SPA)
 # The frontend nginx is NOT in the API path (its /api/ block is unreachable from here), so the body limits below
@@ -67,12 +68,12 @@ server {
   # Regex locations are checked before the /api/ prefix below. nginx matches on the decoded, normalised URI,
   # so //api//metrics, /api/./metrics and %6d-style encodings are covered.
   location ~* ^/api/metrics(/.*)?$ {
-    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;   # nginx answers here, not the API
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # nginx answers here, not the API
     default_type application/json;
     return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
   }
   location = /api/metrics {
-    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+    include /etc/nginx/conf.d/snippets/hsts.conf;
     default_type application/json;
     return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
   }
@@ -87,6 +88,7 @@ server {
     limit_conn pp_big_global 4;          # whole server: bounds the disk and worker use of unauthenticated big bodies
     proxy_request_buffering on;          # the API only sees a complete body (and a half upload costs it nothing)
     include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
     set $api_upstream http://api:3000;
     proxy_pass $api_upstream;
     proxy_connect_timeout 5s;
@@ -101,6 +103,7 @@ server {
     client_body_timeout 120s;
     proxy_request_buffering on;
     include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
     set $api_upstream http://api:3000;
     proxy_pass $api_upstream;
     proxy_connect_timeout 5s;
@@ -109,10 +112,11 @@ server {
   }
 
   # --- authentication endpoints: same proxying as /api/, plus the per-IP flood guard (PP_EDGE_AUTH_RATE / _BURST).
-  #     ^~ so the regex locations above never take these paths. No add_header, same as /api/.
+  #     ^~ so the regex locations above never take these paths. Only the edge HSTS is added, same as /api/.
   location ^~ /api/auth/ {
     limit_req zone=pp_auth burst=${PP_EDGE_AUTH_BURST} nodelay;
     include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
     set $api_upstream http://api:3000;
     proxy_pass $api_upstream;
     proxy_connect_timeout 5s;
@@ -121,11 +125,13 @@ server {
   }
 
   # --- everything else under /api ---
-  # No add_header here on purpose: the API's own headers (nosniff, DENY, no-referrer, COOP/CORP, CSP
-  # default-src 'none', HSTS, Cache-Control: no-store on session responses) must reach the browser unchanged.
+  # The only edge header here is HSTS (hsts.conf: the API's own HSTS is hidden and replaced by PP_HSTS, so the
+  # host has one policy). Every other API header (nosniff, DENY, no-referrer, COOP/CORP, CSP default-src 'none',
+  # Cache-Control: no-store on session responses) reaches the browser unchanged: add_header never touches them.
   # read timeout 125 s sits just above REQUEST_TIMEOUT_MS (120000): the API answers its own timeout first.
   location /api/ {
     include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
     set $api_upstream http://api:3000;
     proxy_pass $api_upstream;
     proxy_connect_timeout 5s;
@@ -135,7 +141,7 @@ server {
 
   # An exact "/api" has no meaning; do not hand it to the SPA either.
   location = /api {
-    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+    include /etc/nginx/conf.d/snippets/hsts.conf;
     return 404;
   }
 
@@ -143,6 +149,7 @@ server {
   #     index.html and deep links no-cache. Headers added here: HSTS and the CSP (see spa-headers.conf).
   location / {
     include /etc/nginx/pp-snippets/spa-headers.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;
     include /etc/nginx/conf.d/snippets/csp-${PP_CSP_MODE}.conf;
     include /etc/nginx/pp-snippets/proxy-common.conf;
     set $spa_upstream http://frontend:8080;

@@ -113,7 +113,14 @@ pp_lock() {
   [ "${PP_LOCK_HELD:-}" != 1 ] || return 0
   f="$(pp_cfg PP_LOCK_FILE /var/lock/pretasiplus.lock)"
   command -v flock >/dev/null || pp_die "flock is required (util-linux)" 3
-  exec 9>>"$f" || pp_die "cannot open the lock file $f (set PP_LOCK_FILE to a path the deploy user can write)" 3
+  exec 9>>"$f" || pp_die "cannot open the lock file $f (set PP_LOCK_FILE to a path the deploy user can write; run the scripts as the deploy user, not root)" 3
+  # Run as root (sudo init-cert.sh, a manual sudo backup) under umask 077, the file would be root:root 0600 and the
+  # deploy user's timers would die on it until the next reboot: hand it to the deploy group (PP_DEPLOY_GROUP).
+  if [ "$(id -u)" = 0 ]; then
+    if ! { chgrp "$(pp_cfg PP_DEPLOY_GROUP ppdeploy)" "$f" 2>/dev/null && chmod 0660 "$f" 2>/dev/null; }; then
+      pp_warn "could not hand $f to group $(pp_cfg PP_DEPLOY_GROUP ppdeploy); the deploy user may be locked out of it"
+    fi
+  fi
   flock -w "$wait" 9 || pp_die "another PrestasiPlus operation (backup, deploy, rollback, restore drill or certificate job) holds $f; wait for it to finish" 75
   export PP_LOCK_HELD=1
 }

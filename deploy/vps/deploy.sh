@@ -227,12 +227,19 @@ if [ "$seed_reference" = 1 ]; then
 fi
 
 fail_deploy() { # fail_deploy EXIT_CODE WHAT: alert and print the way back. Called by the ERR trap and by the health-check gate.
-  local rc="$1" what="$2" running
+  local rc="$1" what="$2" running api_tag
   trap - ERR
   running="$(cat "$state_dir/deploying.tag" 2>/dev/null || true)"
+  api_tag="$(pp_running_tag)"
   pp_log "DEPLOY FAILED at: ${what} (exit $rc)" >&2
   pp_log "Nothing is rolled back automatically. If the failure happened before 'migrate', the old release is still running." >&2
-  if [ -n "$running" ]; then
+  if [ -n "$running" ] && [ "$running" != "$prev" ] && [ "$api_tag" != "$running" ]; then
+    # deploying.tag is written before migrate, but the api never switched (migrate itself failed, or api did not start):
+    # rollback.sh would refuse ("already running"), so say so and clear the stale marker.
+    rm -f "$state_dir/deploying.tag"
+    pp_log "The api is on ${api_tag:-no running container} (the previous release is ${prev:-none, first install}); the new release $running never replaced it. Nothing to roll back; deploying.tag removed." >&2
+    pp_log "If 'migrate' got as far as applying migrations, the schema is ahead of the running code: check 'docker compose logs api' and runbook section 8." >&2
+  elif [ -n "$running" ]; then
     pp_log "The new release $running was started (deploying.tag). Images back to ${prev:-none}: deploy/vps/rollback.sh ${prev:---previous}   (rollback.sh compares with the image that is actually running)" >&2
   else
     pp_log "No container was switched to the new release yet; the old release is still running." >&2

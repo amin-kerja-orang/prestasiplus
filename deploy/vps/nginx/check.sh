@@ -18,6 +18,8 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/conf.d" "$work/tmp" "$work/le/live/test.example.my" "$work/snippets" "$work/webroot"
 
 export PP_DOMAIN=test.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE="$mode" PP_EDGE_AUTH_RATE=60r/m PP_EDGE_AUTH_BURST=60
+# PP_HSTS: same default as compose.prod.yaml; `PP_HSTS= deploy/vps/nginx/check.sh` checks the "no header" value.
+export PP_HSTS="${PP_HSTS-max-age=300}"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" \
   -keyout "$work/le/live/$PP_DOMAIN/privkey.pem" -out "$work/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 

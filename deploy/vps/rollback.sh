@@ -96,7 +96,10 @@ run pp_compose up -d --wait --no-deps --force-recreate edge
 if [ "$dry" = 1 ]; then
   pp_log "DRY-RUN would run the edge health checks (/api/health, /api/ready, /, /api/metrics 404, http redirect)"
 else
-  pp_health_checks || pp_die "health checks failed after the rollback; read: docker compose logs --since 10m api edge"
+  if ! pp_health_checks; then
+    pp_alert "ROLLBACK to $tag: health checks FAILED after the rollback. Read: docker compose logs --since 10m api edge"
+    pp_die "health checks failed after the rollback; read: docker compose logs --since 10m api edge"
+  fi
   mkdir -p "$state_dir"
   # previous.tag keeps pointing at the release before the live one; after a failed deploy the failed release is not
   # worth keeping as "previous" (the last good previous.tag stays).

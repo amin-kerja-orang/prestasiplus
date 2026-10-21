@@ -63,7 +63,11 @@ finished=0
 on_exit() {
   local rc=$?
   rm -f "$partial" "$dir/$files_name.partial"
-  if [ "$finished" != 1 ]; then
+  if [ "$finished" != 1 ] && [ "$rc" = 75 ]; then
+    # pp_lock gave up: another operation (deploy, rollback, drill, certificate job) held the lock all along.
+    pp_alert "BACKUP SKIPPED (tag $tag): the lock was busy for PP_LOCK_WAIT seconds (another operation running). No dump was taken this time."
+    pp_ping "$ping_url" fail
+  elif [ "$finished" != 1 ]; then
     pp_alert "BACKUP FAILED (tag $tag, exit $rc). See the journal / backup log. No new dump was kept."
     pp_ping "$ping_url" fail
   fi

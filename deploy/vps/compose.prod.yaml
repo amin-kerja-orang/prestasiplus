@@ -179,6 +179,9 @@ services:
       PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-60r/m}
       PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-60}
       PP_CSP_MODE: ${PP_CSP_MODE:-report-only}   # report-only | enforce | off: picks nginx/snippets/csp-<mode>.conf
+      # HSTS of the whole host (edge-owned, replaces the API's own): ramp from max-age=300 (platform-settings.md 4.3).
+      # `-` not `:-`, so an explicitly empty PP_HSTS stays empty (= no header) while an unset one gets the safe start.
+      PP_HSTS: ${PP_HSTS-max-age=300}
     volumes:
       - ./deploy/vps/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./deploy/vps/nginx/templates:/etc/nginx/templates:ro
