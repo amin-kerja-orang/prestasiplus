@@ -298,10 +298,9 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       summary,
       schema,
       {
-        403: E403(
-          `${STAFF}${request.params ? ', or a config/student outside the viewer scope' : ''}`,
-        ),
-        ...(request.params ? { 404: E404('unknown id (checked before 403)') } : {}),
+        403: E403(STAFF),
+        // OQ-3 (LEAD 2026-10-21): out of scope answers the same 404 as an unknown id, so existence does not leak.
+        ...(request.params ? { 404: E404('unknown id, or a config/student outside the viewer scope (uniform 404)') } : {}),
       },
       request,
       undefined,
@@ -345,7 +344,7 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       200: { description: 'CSV file.', content: { 'text/csv': { schema: z.string() } } },
       401: E401,
       403: E403(STAFF),
-      404: E404('unknown id'),
+      404: E404('unknown id, or a config outside the viewer scope (uniform 404)'),
     },
   })
 
@@ -372,7 +371,7 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       },
       responses: { [status]: json(envelopeOf(data), summary), 401: E401, 403: E403CSRF, ...errors },
     })
-  const own = { 404: E404('unknown id') }
+  const own = { 404: E404('unknown id, or a config outside the viewer scope (uniform 404)') }
 
   post(
     'post',

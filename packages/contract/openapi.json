@@ -5037,7 +5037,17 @@
             "maximum": 3
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           },
           "name": {
             "type": "string"
@@ -5087,7 +5097,17 @@
             "maximum": 50
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           },
           "name": {
             "type": "string"
@@ -94998,7 +95018,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -95008,7 +95028,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95067,7 +95087,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -95077,7 +95097,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95146,7 +95166,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -95156,7 +95176,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95245,7 +95265,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95317,7 +95337,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95506,7 +95526,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -95607,7 +95627,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {

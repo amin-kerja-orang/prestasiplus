@@ -53,9 +53,16 @@ export const EnvSchema = z.object({
   THROTTLE_AUDIO_KBAT_ADMIN_WRITE_PER_HOUR: z.coerce.number().int().min(1).default(20),
   // BE-19 (performance reports): read throttle per user, counted per process.
   THROTTLE_PERFORMANCE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  // BE-19 headcount writes (create, auto-setup, drop, reset, delete): per user, counted per process.
+  THROTTLE_PERFORMANCE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  // BE-19 timeline posts (POST /timeline, multipart with photos): per user, counted per process.
+  THROTTLE_TIMELINE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   // BE-21 (school admin): throttles per user, counted per process.
   THROTTLE_SCHOOL_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_SCHOOL_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  THROTTLE_SCHOOL_ADMIN_CREATE_PER_MINUTE: z.coerce.number().int().min(1).default(10),
+  THROTTLE_SCHOOL_ADMIN_RESET_PER_MINUTE: z.coerce.number().int().min(1).default(10),
+  THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).default(5),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */

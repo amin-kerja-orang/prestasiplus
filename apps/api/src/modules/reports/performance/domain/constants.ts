@@ -45,3 +45,10 @@ export const DISCRIMINATION_GROUP_SHARE = 0.27
 export const LEVEL_CODES = ['t4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]
 export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = { t4: 'Tingkatan 4', t5: 'Tingkatan 5' }
+
+/** A pupil is ranked once this many non-test practice answers exist (LEAD, BE-19). */
+export const RANKING_MIN_ANSWERS = 3
+/** Rows of the ranking table (the uncapped count is `total`). */
+export const RANKING_ROW_CAP = 100
+/** Rows of the practice leaderboard. */
+export const LEADERBOARD_ROW_CAP = 50

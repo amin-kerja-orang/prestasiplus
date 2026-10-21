@@ -1,4 +1,13 @@
 export { UsersModule } from './users.module'
-export { UsersRepository, uniqueField } from './users.repository'
-export type { PendingTeacherRow, UserCredentials, UserRecord, UserSearchInput } from './users.repository'
+export { generatePassword } from './credentials'
+export { MANAGED_EXPORT_MAX, UsersRepository, uniqueField } from './users.repository'
+export type {
+  ManagedCounts,
+  ManagedListFilter,
+  ManagedRole,
+  PendingTeacherRow,
+  UserCredentials,
+  UserRecord,
+  UserSearchInput,
+} from './users.repository'
 export { ImportJobsRepository } from './import'

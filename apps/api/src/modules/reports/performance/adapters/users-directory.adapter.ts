@@ -40,13 +40,13 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     const unique = [...new Set(ids)]
     const records = []
     for (let i = 0; i < unique.length; i += this.chunk) records.push(...(await this.userRepo.getMany(unique.slice(i, i + this.chunk))))
-    const levels = new Map<number, { id: string; slug: string } | null>()
+    const levels = new Map<number, { id: string; slug: string; name: string } | null>()
     for (const u of records) {
-      let level: { id: string; slug: string } | null = null
+      let level: { id: string; slug: string; name: string } | null = null
       if (u.grade !== null) {
         if (!levels.has(u.grade)) {
           const l = await this.curriculum.levelForGrade(u.grade)
-          levels.set(u.grade, l ? { id: l.id.toString(), slug: l.code.toLowerCase() } : null)
+          levels.set(u.grade, l ? { id: l.id.toString(), slug: l.code.toLowerCase(), name: l.name } : null)
         }
         level = levels.get(u.grade) ?? null
       }
@@ -59,6 +59,9 @@ export class UsersDirectoryAdapter implements DirectoryPort {
         schoolId: u.schoolId,
         isActive: u.isActive,
         isStudent: u.roles.includes('student'),
+        createdAt: u.createdAt,
+        levelName: level?.name ?? null,
+        isSuspended: u.isSuspended,
       })
     }
     return out

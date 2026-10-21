@@ -17,19 +17,8 @@ import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
 import { NotificationsService } from '../notifications'
 import { UsersRepository } from '../users'
+import type { SchoolAdminActor } from './school-admin.actor'
 import { SCHOOL_ADMIN_AUDIT, WRITE_TX } from './school-admin.constants'
-
-/** The signed-in school admin and the request facts the audit row needs. `schoolId` comes from the session, never the request. */
-export interface SchoolAdminActor {
-  userId: string
-  role: string
-  schoolId: string
-  sessionRowId: string
-  scopeLevel: string
-  isTest: boolean
-  requestId: string | null
-  ip: string | null
-}
 
 /** First letters of the first two words. */
 const initialsOf = (name: string): string =>
