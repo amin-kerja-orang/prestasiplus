@@ -234,6 +234,31 @@ Admin Pusat note: the student Bijak API is student-only; Admin Pusat sees studen
 The paper builder API (BE-39, #47) is on the base, but the admin Bijak pages of the SPA have no http client yet
 (they throw "Bijak admin API is not available in http mode"). Do not show them in the demo.
 
+### 7.1 Full-demo walkthrough (about 2 min)
+
+After the smoke test passes, walk every demo flow once, persona by persona (bash, curl and jq; Git Bash is fine):
+```
+read -rsp 'Demo password (docs/AKAUN-DEMO.md): ' DEMO_PASSWORD && export DEMO_PASSWORD; echo
+BASE_URL=https://<project>.pages.dev bash scripts/demo-walkthrough.sh
+unset DEMO_PASSWORD
+```
+It logs in as the student (`pelajar@demo.test`), teacher (`guru@demo.test`), parent (`ibubapa@demo.test`), school
+admin (`adminsekolah@demo.test`), the teacher + school admin account (`guruadmin@demo.test`, role switch both ways)
+and Admin Pusat (`admin@demo.test`), and checks the main reads of the dashboard, practice, SPM hub (BE-41),
+leaderboard with the children's-names rule (a student, teacher and parent see other pupils masked; Admin Pusat sees
+all), gamification and shop, games hub / Papan Bijak / battle (BE-44/45), Keluarga Angkat (BE-47), Command Center
+(BE-22) and the intake dashboard (BE-40). AI status (BE-36) and the intake workflow (BE-38) are reported as
+`SKIP ... not deployed` while they answer 404; so is any other module whose first route answers 404 (set
+`STRICT=1` to make those FAIL once everything is merged).
+
+The writes are the ones the demo shows: one practice session (start, one answer, submit), a battle quick match against
+the bot then forfeit, a Papan Bijak quick match then cancel, one Keluarga Angkat application as the parent (one new
+pending row per run) and the role switch. `WRITES=0` runs the reads only. Ids and per-persona passwords can be
+overridden (`STUDENT_ID`, `STUDENT_PASSWORD`, ...; see the script header). Passwords are read from the environment
+only and never printed. Output: one line per check, then a PASS/FAIL/SKIP markdown table and
+`Result: N passed, M failed, K skipped`; the exit code is non-zero on any FAIL. The API allows 300 requests a minute
+per address: the script waits out a 429 once, but leave a minute between back-to-back runs.
+
 ## 8. Rollback and teardown
 
 - SPA: Pages -> Deployments -> a previous deployment -> Rollback (instant).
