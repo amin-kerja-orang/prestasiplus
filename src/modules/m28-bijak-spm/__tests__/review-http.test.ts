@@ -363,6 +363,20 @@ describe('review client', () => {
     expect((await server.listReviewQueue({ kertas: 1 })).items).toEqual([])
   })
 
+  it('reads one page only for terbit (no rows are used), no batch lookups', async () => {
+    const { server, requests } = setup({
+      'GET /api/admin/blueprints': blueprints,
+      'GET /api/intake/items': ok([row()], {
+        meta: { totalPages: 3, counts: { generated: 0, needs_review: 1, accepted: 0, rejected: 0, duplicate: 0 } },
+      }),
+    })
+    const q = await server.listReviewQueue({ status: 'terbit' })
+    expect(q.items).toEqual([])
+    expect(q.counts.semakan).toBe(1)
+    expect(requests.filter((r) => r.url.startsWith('/api/intake/items'))).toHaveLength(1)
+    expect(requests.some((r) => r.url.startsWith('/api/intake/batches'))).toBe(false)
+  })
+
   it('opens an item and maps 404 to not_found', async () => {
     const { server } = setup({
       'GET /api/admin/blueprints': blueprints,
@@ -507,15 +521,36 @@ describe('extraction and the editor client', () => {
     expect(requests.some((r) => r.method === 'DELETE' && r.url === '/api/intake/stimuli/s9')).toBe(true)
   })
 
-  it('surfaces a locked item (409) from a save', async () => {
+  it('skips an item decided meanwhile (409) and still saves the rest', async () => {
+    const lock = fail(409, 'CONFLICT', 'Item ini sudah diterima atau ditolak dan tidak boleh disunting.')
+    const { server, requests } = setup({
+      ...batchRoutes,
+      'GET /api/intake/items': ok([row(), row({ id: '14' })], { meta: { totalPages: 1 } }),
+      'GET /api/intake/items/14': ok(item({ id: '14', label: '2', position: 2 })),
+      'PATCH /api/intake/items/11': lock,
+      'PATCH /api/intake/items/14': ok(item({ id: '14', label: '2', position: 2, stem: 'x' }), { reordered: false }),
+    })
+    const b = await server.getIntakeBatch('7')
+    const edited = b.questions.map((q) => ({ ...q, stem: 'x' }))
+    const saved = await server.saveExtracted('7', { questions: edited, stimuli: [] })
+    const writes = requests.filter((r) => r.method !== 'GET').map((r) => `${r.method} ${r.url}`)
+    expect(writes).toEqual(['PATCH /api/intake/items/11', 'PATCH /api/intake/items/14'])
+    expect(saved.questions.map((q) => q.id)).toEqual(['14'])
+    // the locked item is not retried or rejected by a later save
+    await server.saveExtracted('7', { questions: saved.questions, stimuli: [] })
+    expect(requests.filter((r) => r.method === 'PATCH' && r.url === '/api/intake/items/11')).toHaveLength(1)
+    expect(requests.some((r) => r.url.endsWith('/reject'))).toBe(false)
+  })
+
+  it('still fails a save on any other error', async () => {
     const { server } = setup({
       ...batchRoutes,
-      'PATCH /api/intake/items/11': fail(409, 'CONFLICT', 'Item ini sudah diterima atau ditolak dan tidak boleh disunting.'),
+      'PATCH /api/intake/items/11': fail(422, 'VALIDATION_ERROR', 'Tidak sah.'),
     })
     const b = await server.getIntakeBatch('7')
     await expect(
       server.saveExtracted('7', { questions: [{ ...b.questions[0]!, stem: 'x' }], stimuli: [] }),
-    ).rejects.toMatchObject({ code: 'bad_request', message: expect.stringContaining('tidak boleh disunting') })
+    ).rejects.toMatchObject({ code: 'bad_request' })
   })
 
   it('submit runs the batch gate: issues come back, none gives Semakan', async () => {

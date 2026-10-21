@@ -74,17 +74,15 @@ test.describe('bijak attempt ownership @api', () => {
 
       // UI: the attempt page shows the app's refusal and none of A's data.
       await pageB.goto(`/spm/bijak/percubaan/${attemptId}`)
-      await expect(pageB.locator('[data-ds=load-error]')).toBeVisible({ timeout: 20_000 })
-      await expect(pageB.getByText('Percubaan tidak dapat dimuatkan.')).toBeVisible()
-      // The load-error sits inside the attempt shell, whose chrome (footer nav, save status) still
-      // renders. Assert on A's data instead: no question count, no answer options, no way to submit.
-      for (const id of ['position', 'open-map']) {
-        for (const el of await pageB.getByTestId(id).all()) {
-          await expect(el).toHaveText(/\b0\s*\/\s*0\b/)
-        }
-      }
+      await expect(pageB.getByTestId('attempt-not-found')).toBeVisible({ timeout: 20_000 })
+      await expect(pageB.getByText('Percubaan ini tidak dijumpai.')).toBeVisible()
+      // The refused state renders no exam shell content. Assert none of A's data is shown: no
+      // question position/map, no answer options, no way to submit.
+      await expect(pageB.getByTestId('position')).toHaveCount(0)
+      await expect(pageB.getByTestId('open-map')).toHaveCount(0)
       await expect(pageB.locator('[data-testid^=option-]')).toHaveCount(0)
-      // The shell's Hantar stays enabled on the error (Low UX finding for d4); the server must refuse it.
+      await expect(pageB.getByTestId('submit')).toHaveCount(0)
+      // The server must refuse a direct submit regardless of the UI.
       const submitB = await pageB.request.post(`/api/bijak/attempts/${attemptId}/submit`, {
         headers: { 'x-csrf-token': await csrfOf(pageB) },
         data: { idempotencyKey: `s3-foreign-${Date.now()}`, changes: [] },

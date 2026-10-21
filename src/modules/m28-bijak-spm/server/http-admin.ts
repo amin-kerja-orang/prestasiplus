@@ -445,11 +445,12 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   /** Every page of a paged list (page size 100) with the `meta` of the first page. */
   private async pagedAll<T, M = Record<string, unknown>>(
     url: string,
+    maxPages = MAX_PAGES,
   ): Promise<{ rows: T[]; meta: M | undefined }> {
     const rows: T[] = []
     let first: M | undefined
     try {
-      for (let page = 1; page <= MAX_PAGES; page += 1) {
+      for (let page = 1; page <= maxPages; page += 1) {
         const sep = url.includes('?') ? '&' : '?'
         const body = await this.client.request<{
           data: T[]
@@ -573,6 +574,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
     // 2. items
     const keepItems = new Set<string>()
+    const lockedIds = new Set<string>()
     for (const q of payload.questions) {
       let qid = snap.alias.get(q.id) ?? q.id
       let prev = snap.questions.get(qid)
@@ -594,8 +596,16 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       if (!q.stimulusId) delete next.stimulusId
       const patch = itemPatch(prev, next)
       if (patch) {
-        const updated = await this.send<WireItem>('PATCH', `/api/intake/items/${enc(qid)}`, patch)
-        snap.questions.set(qid, questionFromItem(updated))
+        try {
+          const updated = await this.exec<WireItem>('PATCH', `/api/intake/items/${enc(qid)}`, patch)
+          snap.questions.set(qid, questionFromItem(updated))
+        } catch (e) {
+          // Decided from the queue while the editor was open (409): leave it out of this and later saves.
+          if (!(e instanceof ApiError && e.status === 409)) throw toBijakError(e)
+          keepItems.delete(qid)
+          snap.questions.delete(qid)
+          lockedIds.add(qid)
+        }
       }
     }
     for (const [qid] of [...snap.questions]) {
@@ -621,7 +631,9 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     }
     return {
       ...clone(snap.base),
-      questions: payload.questions.map((q) => clone(snap.questions.get(snap.alias.get(q.id) ?? q.id) ?? q)),
+      questions: payload.questions
+        .filter((q) => !lockedIds.has(snap.alias.get(q.id) ?? q.id))
+        .map((q) => clone(snap.questions.get(snap.alias.get(q.id) ?? q.id) ?? q)),
       stimuli: payload.stimuli.map((x) => clone(snap.stimuli.get(snap.alias.get(x.id) ?? x.id) ?? x)),
       idMap,
     }
@@ -680,6 +692,8 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     if (states && states.length === 1) params.set('state', states[0]!)
     const { rows, meta } = await this.pagedAll<IntakeItemRow, { counts?: IntakeItemStateCounts }>(
       `/api/intake/items${params.size ? `?${params}` : ''}`,
+      // Terbit rows are never queue rows: read only the first page, for the counts in its meta.
+      states !== null && states.length === 0 ? 1 : MAX_PAGES,
     )
     const counts = countsFromWire(
       meta?.counts ?? { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 },

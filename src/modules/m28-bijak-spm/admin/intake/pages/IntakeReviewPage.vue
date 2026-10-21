@@ -85,11 +85,16 @@ onMounted(load)
 const extraction = computed(() => batch.value?.extraction)
 const extracting = ref(false)
 const extractError = ref('')
-const showExtract = computed(
-  () => !!extraction.value && !isManual.value && !readonly.value && batch.value?.questions.length === 0,
-)
 const allDecided = computed(
   () => extraction.value?.state === 'succeeded' && (extraction.value.itemCount ?? 0) > 0,
+)
+const showExtract = computed(
+  () =>
+    !!extraction.value &&
+    !isManual.value &&
+    !readonly.value &&
+    batch.value?.questions.length === 0 &&
+    !allDecided.value,
 )
 const extractWaiting = computed(() => {
   const e = extraction.value
@@ -110,12 +115,19 @@ async function startExtract(): Promise<void> {
   }
 }
 
+/** Never replace what the user is editing: questions, rajah, or an unsaved/running save. */
+function canRefresh(): boolean {
+  const b = batch.value
+  if (b && (b.questions.length > 0 || b.stimuli.length > 0)) return false
+  return saveState.value !== 'belum' && saveState.value !== 'menyimpan'
+}
+
 /** Reads the batch again without the loading state; only while the editor holds no questions yet. */
 async function refresh(): Promise<void> {
-  if ((batch.value?.questions.length ?? 0) > 0) return
+  if (!canRefresh()) return
   try {
     const fresh = await server.getIntakeBatch(props.batchId)
-    if ((batch.value?.questions.length ?? 0) > 0) return // the user added one meanwhile
+    if (!canRefresh()) return // the user added a question or rajah, or a save started, meanwhile
     loaded = false // this replacement is not an edit: the autosave watcher skips it
     batch.value = fresh
     const first = fresh.questions[0]
