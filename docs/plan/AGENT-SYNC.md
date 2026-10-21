@@ -127,6 +127,21 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-21 ~20:30 **HANDOVER KE CLAUDE CLOUD — tip baharu dan langkah pertama (menggantikan angka SHA dalam notis HANDOFF 09:30 di bawah).**
+  - **Tip:** `feature/v2-backend @ 4b4e2ea7` (Group B stack, BE-33 rest, `lead/merge-final @ 4b4e2ea7` sudah masuk). be:verify penuh hijau pada `3d94e291` (7009 lulus; 2 kegagalan ujian/seed Group A dibaiki dalam `989d0462` + `4b4e2ea7`) + larian sasaran hijau pada tip. Notis HANDOFF di bawah menyebut `e724b498` dan `lead/merge-b5`; kedua-duanya sudah lapuk.
+  - **Baru masuk:** #86 BE-36, #85 BE-38, #90 + #93 kolam soalan PoC, #92 BE-12 sumber soalan latihan, #88 skrip demo, BE-28, BE-42, BE-46, BE-33 (log PII + audit gaps), `be/test-spawn-crossplatform`. BE-28, BE-42 dan BE-46 disahkan oleh be:verify penuh yang sama.
+  - **Cawangan aktif (belum masuk tip):**
+    - Group A / LEAD: `be/BE-29-etl-activity` (PR #82, draf, WIP) — pemilik **Perlu pengesahan** (tracker: BE-29 `todo`); `ops/cloud-setup` (PR #101, draf, menunggu kelulusan Amin); `be/BE-33-close` / BE-33 baki (AC4 dan AC7 belum dijalankan; S1 s-aminfaudzi-e3m2); `be/integration-frontend`, `fe/m18-amaran-summary @ f20e6c80`, `fe/wip-sweeps` (frontend) — pemilik semasa **Perlu pengesahan**.
+    - Group B: `be/go-live-checklist` (PR #87, dokumen sahaja); selebihnya ikut #67 dan #78. Sebarang cawangan `be/*` lain yang tidak disenaraikan: **Perlu pengesahan** pemilik sebelum disentuh.
+  - **Langkah pertama sesi cloud** (`docs/ops/cloud-migration.md` §5 dan §2.5; skrip dalam #101):
+    1. Log masuk https://claude.ai/code, sambung GitHub, pilih `amin-kerja-orang/prestasiplus`; persekitaran tahap rangkaian Trusted.
+    2. Mulakan sesi pada `feature/v2-backend`; `git log -1 --oneline` mesti menunjukkan tip di atas.
+    3. `npm ci`, kemudian `service postgresql start` dan tetapkan `TEST_DATABASE_URL` (skrip `scripts/cloud-install.sh` dalam #101 buat ini apabila `CLAUDE_CODE_REMOTE=true`; hook SessionStart ditambah oleh Amin sendiri, belum di-commit). Semak: `psql "$TEST_DATABASE_URL" -c 'select 1'`.
+    4. `npm run be:typecheck`, `npm run contract:check`, satu ujian bersasar `npm run be:test -- <path>` (rekod masa). Be:verify penuh sekali sahaja sebelum push, dan beritahu LEAD dahulu.
+    5. Baca notis ini, #67 dan #78; tuntut kad (`be/<kad>-<slug>` dari tip) dan hantar komen `--body-file` kepada LEAD. `pg_hba` pada VM (kata laluan 127.0.0.1) dan cara `gh` disahkan dalam VM: **Perlu pengesahan**.
+  - **Keputusan (c) disemak semula (LEAD, 2026-10-21):** pembekal AI menerima **teks sahaja** (OCR tempatan BE-37 dahulu); imej halaman tidak dihantar. **Satu redactor sahaja = BE-36** (`ai-extraction/redaction`). BE-38 masih ada `intake/workflow/redact.ts` sendiri → susulan Group B (#85, #78), tidak menyekat. Direkodkan dalam `docs/architecture/v2-threat-model.md`.
+  - **Susulan terbuka (#78):** BE-38 guna redactor BE-36; ClamAV sebelum go-live produksi; stor had kadar Redis kongsi sebelum lebih satu instans API. #87 (senarai semak go-live) perlu dikemas kini selepas merge ini.
+
 - 2026-10-21 ~09:30 **HANDOFF — the team moves to Claude Cloud (Amin, Azarul, +1). Start here.** Everything below is on GitHub; nothing lives only on the old PC.
   - **Tips:** backend `feature/v2-backend @ e724b498` (BE-19 + BE-21 full merged; tracker 33/48 + 2 slices ≈ 71%). Frontend `be/integration-frontend @ 23656b63` (in sync with backend e724b498).
   - **1st job — finish the Group B merge:** `lead/merge-b5 @ 39d9e962` = #77 + #69 + #71 merged onto e724b498, conflicts resolved (registry unions; seed order `…bijakSittingsSeed, battleSeed, cikguSeed, performanceSeed, practiceSeed, gamificationSeed`; GamificationModule imports PerformanceModule + ClassesModule). Static checks green (contract:emit/check, tsc 0, be:lint, lint:migration). **Full be:verify was NOT finished** → run it, then fast-forward `feature/v2-backend` to it and close #77/#69/#71.
