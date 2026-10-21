@@ -15,7 +15,9 @@ try {
   const mod = await import(new URL('functions/api/%5B%5Bpath%5D%5D.ts', root).href)
   tsFunction = mod.onRequest
 } catch (error) {
-  console.warn(`# TS Pages Function tests skipped (needs Node with type stripping): ${error.code ?? error.message}`)
+  throw new Error(
+    `TS Pages Function tests need Node >= 22.6 with --experimental-strip-types (use "npm run test:edge"): ${error.code ?? error.message}`,
+  )
 }
 
 /** Runs `call` with fetch stubbed; returns the outbound request seen by the "origin" and the proxy response. */

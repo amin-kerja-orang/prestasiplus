@@ -34,8 +34,9 @@ export function resetEdgeSecretWarning(): void {
 
 function secretMatches(given: unknown, expected: string): boolean {
   if (typeof given !== 'string') return false
-  const a = Buffer.from(given)
-  const b = Buffer.from(expected)
+  // Both sides trimmed: the edges trim the secret they send, so stray whitespace/newlines in either value must not break the match.
+  const a = Buffer.from(given.trim())
+  const b = Buffer.from(expected.trim())
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
@@ -64,9 +65,23 @@ export function deriveClientIp(req: Pick<Request, 'headers' | 'socket'>, config:
   return parseSingleIp(req.headers[config.header.toLowerCase()]) ?? peer
 }
 
+/**
+ * One boot-time warning (or undefined) for a production deploy behind proxies without the edge-secret setup: `req.ip` then comes
+ * from X-Forwarded-For and a direct call to the origin can spoof it. Names the keys only, never a value.
+ */
+export function clientIpBootWarning(env: { NODE_ENV?: unknown; TRUST_PROXY_HOPS?: unknown; CLIENT_IP_HEADER?: unknown; EDGE_PROXY_SECRET?: unknown }): string | undefined {
+  if (env.NODE_ENV !== 'production') return undefined
+  const hops = Number.parseInt(String(env.TRUST_PROXY_HOPS ?? ''), 10)
+  if (!Number.isInteger(hops) || hops <= 0) return undefined
+  const set = (v: unknown) => typeof v === 'string' && v.trim() !== ''
+  if (set(env.CLIENT_IP_HEADER) && set(env.EDGE_PROXY_SECRET)) return undefined
+  return 'TRUST_PROXY_HOPS is greater than 0 but CLIENT_IP_HEADER and/or EDGE_PROXY_SECRET is not set, so req.ip comes from X-Forwarded-For and can be spoofed by a direct call to the origin (throttles and the audit log would use the spoofed address). Set both CLIENT_IP_HEADER and EDGE_PROXY_SECRET.'
+}
+
 /** Express middleware; a no-op (the request is not touched) when `header` or `secret` is unset. */
 export function clientIpMiddleware(config: ClientIpConfig): (req: Request, res: Response, next: NextFunction) => void {
-  const { header, secret } = config
+  const { header } = config
+  const secret = config.secret?.trim() // trimmed once; whitespace-only counts as unset
   if (!header || !secret) return (_req, _res, next) => next()
   return (req, _res, next) => {
     if (!warnedSecretMismatch && req.headers[header.toLowerCase()] !== undefined && !secretMatches(req.headers[EDGE_SECRET_HEADER], secret)) {
