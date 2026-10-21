@@ -1,0 +1,9 @@
+# Trivy allow-list for the API image scan (.github/workflows/api.yml, job docker, step "Trivy image scan").
+# Process: docs/ops/api-runbook.md section 14. Owner: the devops-engineer; entries need the lead's approval in the PR.
+# Format: one vulnerability id per line, then `exp:YYYY-MM-DD` (Trivy stops ignoring the id after that date, so the
+# scan fails again and forces a review). Put the reason on the comment line directly above the id, with the
+# date added and the owner. Maximum lifetime 30 days; HIGH and CRITICAL with no fix are already skipped (ignore-unfixed).
+#
+# Example (do not uncomment without a real finding):
+# 2026-10-20 owner: ops. libfoo CVE-2026-0001 is only reachable through a code path the API does not use. See PR 123.
+# CVE-2026-0001 exp:2026-11-19

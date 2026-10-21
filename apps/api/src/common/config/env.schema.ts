@@ -2,6 +2,8 @@ import { isAbsolute } from 'node:path'
 
 import { z } from 'zod'
 
+import { parseCidrList } from '../metrics/cidr'
+
 /**
  * Environment of the API (plan section 11). Every key here must also be in `.env.api.example`
  * (and vice versa); a test enforces it. Later cards add their keys here in their own block.
@@ -174,6 +176,25 @@ export const EnvSchema = z.object({
   THROTTLE_GAMES_SOLO_CHECK_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-47 (Mohon Keluarga Angkat). Throttle per user; the code applies the default when unset (5 per minute).
   THROTTLE_FOSTER_APPLICATION_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-33 (runtime): HTTP server timeouts, graceful shutdown, metrics switch. Optional; the code applies the defaults
+  // (REQUEST_TIMEOUT_MS 120000, HEADERS_TIMEOUT_MS 60000, KEEP_ALIVE_TIMEOUT_MS 65000, SHUTDOWN_GRACE_MS 25000, METRICS_ENABLED true).
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).max(3_600_000).optional(),
+  HEADERS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(3_600_000).optional(),
+  KEEP_ALIVE_TIMEOUT_MS: z.coerce.number().int().min(0).max(3_600_000).optional(),
+  SHUTDOWN_GRACE_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  METRICS_ENABLED: z.enum(['true', 'false']).optional(),
+  // Comma list of CIDRs allowed to scrape /api/metrics without a session (direct peer only). Unset: production = admin session only.
+  METRICS_INTERNAL_CIDRS: z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined || v === '') return
+      try {
+        parseCidrList(v)
+      } catch (e) {
+        ctx.addIssue({ code: 'custom', message: e instanceof Error ? e.message : 'invalid CIDR list' })
+      }
+    }),
 })
 export type Env = z.infer<typeof EnvSchema>
 
