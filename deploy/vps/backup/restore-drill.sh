@@ -127,7 +127,7 @@ pp_log "restoring $dump_name into the throw-away database"
 check_rc=0
 node "$PP_REPO/scripts/db-restore-check.mjs" --file "$dump_path" --container "$db_container" >"$log" 2>&1 || check_rc=$?
 # Never echo row data: pg_restore errors can carry DETAIL / CONTEXT / "Key (...)" lines with values.
-grep -vE 'DETAIL|CONTEXT|Key \(' "$log"
+grep -vE 'DETAIL|CONTEXT|Key \(' "$log" || true
 
 tables="$(sed -n 's/^public tables: //p' "$log" | head -n1)"
 migrations="$(sed -n 's/^_prisma_migrations rows: //p' "$log" | head -n1)"
@@ -140,6 +140,6 @@ if [ "$check_rc" = 0 ] && grep -q '^ROW-COUNT COMPARISON PASSED' "$log" && grep 
   reason=""
 else
   if [ -n "$line" ]; then cmp="FAIL ($line)"; fi
-  reason="restore check failed (exit $check_rc): $(grep -E '^(ERROR|  )' "$log" | grep -vE 'DETAIL|CONTEXT|Key \(' | head -n 5 | tr '\n' ' ' | cut -c1-300)"
+  reason="restore check failed (exit $check_rc): $({ grep -E '^(ERROR|  )' "$log" || true; } | { grep -vE 'DETAIL|CONTEXT|Key \(' || true; } | head -n 5 | tr '\n' ' ' | cut -c1-300)"
   exit 1
 fi
