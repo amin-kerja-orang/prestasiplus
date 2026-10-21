@@ -22,6 +22,7 @@ import { examSeed } from './exam'
 import { examDemoBlueprintsSeed } from './exam-demo-blueprints'
 import { practiceSeed } from './practice'
 import { questionsSeed } from './questions'
+import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
 import { marketplaceSeed } from './marketplace'
@@ -76,9 +77,9 @@ export interface SeedModule {
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
- * ORDER NOTE: the marketplace seeds sit BEFORE `gamification`, which must stay last (test/gamification/seed.spec.ts); marketplace imports nothing from wallet or gamification.
+ * ORDER NOTE: the marketplace seeds and `questions-pool` sit BEFORE `gamification`, and `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts); marketplace imports nothing from wallet or gamification.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, questionPoolSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
