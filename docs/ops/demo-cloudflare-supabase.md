@@ -356,14 +356,20 @@ is right only when the deployed API was built from the same commit). Quote the r
 - The 5 solo games in http mode (#78, D58): the script never calls `/api/games/solo/*`.
 - `/login` on mobile (#78, not yet validated).
 
-**Known FAILs** (21 Oct, local API at `feature/v2-backend` 84438c70):
-- Practice, `POST /api/practice/sessions`: 422 `NOT_ENOUGH_QUESTIONS` until the BE-12 practice question source is
-  wired (PR by Developer 3, not open yet).
+**Practice mode.** The practice start picks a mode the pupil's level supports. `random` serves only the levels
+offered to random sessions (BR-11: Darjah 1–4). The API has no modes endpoint, so the script reads the subject config
+`GET /api/practice/subjects/:code`: `.total` counts the questions at those offered levels. With 5 or more it starts
+`random` (count 5); otherwise it starts `past_year` (SPM pool, count 10). The PoC seed's pupil is an SPM pupil and its
+pool has Tingkatan 4/5 questions only, so on the PoC seed the start is `past_year`.
+
+**Known FAILs** (21 Oct):
+- Practice, `POST /api/practice/sessions`: 422 `NOT_ENOUGH_QUESTIONS` on a build without the BE-12 practice question
+  source (#92).
 - Battle, `POST /api/battle/quick-match`: 422 for every lobby subject on the base PoC seed; fixed by #90 (PoC question
   pool).
 
-Local reference run (tip `2565b71d` + #90 `e684c054`, PoC seed, `CONFIRM_WRITES=1`): 109 passed, 1 failed (practice),
-3 skipped (the exempt AI and intake-workflow routes), exit 1, about 15 s including the 5 s pause.
+Local reference run (`be/demo-rehearsal-23oct` `917a152b`: tip + #86, #85, #90, #92; PoC seed, `CONFIRM_WRITES=1`,
+`STRICT=1`, `STRICT_EXEMPT=""`): 116 passed, 0 failed, 0 skipped, exit 0 (GO).
 
 ## 8. Rollback and teardown
 
