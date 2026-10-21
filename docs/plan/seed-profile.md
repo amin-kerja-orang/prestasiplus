@@ -8,7 +8,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 
 1. `core-identity`: demo schools and the canonical demo accounts
 2. `core-schools`: extra fictitious schools
-3. `core-school-packages`: REFERENCE module (the only one that runs in production)
+3. `core-school-packages`: REFERENCE module (runs in production, like `spm-subject-configs`)
 4. `core-population`: generated pupils, teachers, officers and the out-of-scope demo accounts
 5. `curriculum`: levels, subjects, chapters, topics, DSKP nodes
 6. `questions`: the question bank
@@ -18,11 +18,15 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 10. `exam-demo-blueprints`
 11. `poc-classes`: classes and rosters
 12. `poc-bijak-sittings`: submitted Bijak SPM sittings, results, aggregates
-13. `poc-cikgu`
-14. `poc-performance` (BE-19): headcount configs and entries, timeline posts
-15. `practice`: practice sessions and answers
-16. `gamification`
-17. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
+13. `battle` (BE-44): battle arena demo rows
+14. `games` (BE-45): Permainan rooms, solo sessions, leagues, Sekolah Bersaing
+15. `poc-cikgu`
+16. `poc-performance` (BE-19): headcount configs and entries, timeline posts
+17. `spm-subject-configs` (BE-41): REFERENCE module (also runs in production)
+18. `spm` (BE-41): SPM hub demo rows
+19. `practice`: practice sessions and answers
+20. `gamification`
+21. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
 
 BE-26 adds no data of its own: every row comes from its owner module (one owner per store, ADR-0014). `apps/api/prisma/seed/poc/fixtures/` is not created because no cross-domain fixture was needed.
 
@@ -39,6 +43,8 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | attempt_answers | 122 |
 | attempt_results | 15 |
 | banners | 3 |
+| battle_participants | 142 |
+| battles | 71 |
 | blueprint_sections | 9 |
 | blueprints | 5 |
 | challenges | 10 |
@@ -50,15 +56,26 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | curriculum_tp_descriptors | 1394 |
 | draw_prizes | 2 |
 | draws | 1 |
+| duta_profiles | 5 |
 | education_levels | 11 |
 | enrolments | 34 |
 | essay_markings | 1 |
 | exam_attempts | 15 |
+| game_room_players | 8 |
+| game_rooms | 4 |
+| game_sessions | 3 |
+| game_settings | 1 |
+| game_standings | 48 |
 | gamification_settings | 10 |
 | headcount_configs | 2 |
 | headcount_entries | 13 |
 | headcount_entry_marks | 36 |
 | jpns | 2 |
+| jutawan_stats | 8 |
+| league_class_levels | 3 |
+| league_schools | 5 |
+| league_standings | 4 |
+| leagues | 2 |
 | learner_badges | 3 |
 | legacy_subtopics | 335 |
 | legacy_topics | 125 |
@@ -68,6 +85,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | papers | 5 |
 | part_options | 60 |
 | pbd_tags | 2 |
+| personal_bests | 40 |
 | ppds | 3 |
 | practice_answers | 30 |
 | practice_attempt_aggregate_items | 126 |
@@ -83,6 +101,11 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | rph_plans | 2 |
 | school_packages | 4 |
 | schools | 4 |
+| sekolah_bersaing_weeks | 16 |
+| spin_stats | 8 |
+| spm_subject_configs | 19 |
+| spm_tracking_set_questions | 3 |
+| spm_tracking_sets | 3 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
 | stimulus_group_stimuli | 2 |
@@ -103,7 +126,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 69 of 146. Total rows: 9930.
+Tables with rows: 88 of 177. Total rows: 10323.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
@@ -147,7 +170,7 @@ The e2e suite runs against the mock (`src/mock`, `VITE_DATA_PROFILE=full`), whos
 - No seed at all for: missions and remedial tests, question sets, SPM targets, notifications, perutusan, parent links/invites, school subscriptions and user packages, user achievements and referrals, reward claims/redemptions, teacher profiles, feedback and interventions (Kirkpatrick), intake batches/files, question reports and quality scores, uploaded files. Screens fed by these tables show empty states.
 - Wallets exist for 3 users only (`admin`, `pelajar`, `pelajarmaju`); the Bijak demo pupils (`murid4`..`murid8`) have sittings but no wallet or ledger rows.
 - Monitoring/admin aggregates: 12 pupils counted in `/api/monitoring/overview` (`engaged`: 2, `answers`: 30), against the mock's much larger totals.
-- No backend domain exists yet for the e2e modules M16 (battle games), M20 (marketplace), M21 (sponsorship) and M25 (AI centre).
+- M16 (battle, games) is seeded by `battle` and `games`. M21 (sponsorship) has only the BE-47 foster applications, with no seed rows. No backend domain exists yet for the e2e modules M20 (marketplace) and M25 (AI centre).
 - `core-population` accounts for parent, sponsor, PPD and JPN exist and log in; their screens are out of prototype scope (D43, D48).
 - `exam` logs "PoC questions not loaded (BE-09 wire-up TODO)": the PoC paper questions live in code (reserved ids), not in `questions`.
 

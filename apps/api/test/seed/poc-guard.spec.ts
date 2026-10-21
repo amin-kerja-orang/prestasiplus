@@ -46,6 +46,8 @@ describe('AC5 no real personal data in the seed', () => {
       if (/\b\d{6}-\d{2}-\d{4}\b/.test(text)) bad.push(`${f.slice(SEED_DIR.length)}: IC-like`)
       for (const m of text.matchAll(/(?<![\d.])(?:\+?60|0)1\d[- ]?\d{7,8}(?!\d)/g)) {
         // The support config's placeholder 60100000000 is all zeros after the prefix: not a real number.
+        // The digit run of a code alphabet ('...0123456789', games.ts room codes) is not a number either.
+        if (m[0] === '0123456789') continue
         if (!/^(?:\+?60|0)10+$/.test(m[0].replace(/[- ]/g, ''))) bad.push(`${f.slice(SEED_DIR.length)}: phone-like`)
       }
     }
@@ -130,7 +132,7 @@ describe('AC7 production gating', () => {
       if (allow !== undefined) process.env.ALLOW_DEMO_SEED = allow
     }
     const ran = await runSeeds(seedModules, { prisma: db.prisma, profile: 'poc', env: { NODE_ENV: 'production' } })
-    expect(ran).toEqual(['core-school-packages'])
+    expect(ran).toEqual(['core-school-packages', 'spm-subject-configs'])
     expect(ran).not.toContain('poc-profile')
     expect(await count(`select count(*)::text n from users`)).toBe(0)
   }, 60_000)

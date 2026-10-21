@@ -9,7 +9,7 @@
  *
  *   1. core-identity          demo schools and the canonical demo accounts (docs/AKAUN-DEMO.md)
  *   2. core-schools           extra fictitious schools
- *   3. core-school-packages   REFERENCE: the 4 package catalogue rows (the only module that runs in production)
+ *   3. core-school-packages   REFERENCE: the 4 package catalogue rows (runs in production, like spm-subject-configs)
  *   4. core-population        generated pupils, teachers and officers (example.test) and the out-of-scope demo accounts
  *   5. curriculum             levels, subjects, chapters, topics, DSKP nodes
  *   6. questions              the question bank (versions, parts, keys, stimuli)
@@ -19,11 +19,15 @@
  *  10. exam-demo-blueprints   extra demo blueprints
  *  11. poc-classes            classes and rosters over the population
  *  12. poc-bijak-sittings     submitted Bijak SPM sittings, results and aggregates
- *  13. poc-cikgu              Cikgu Alesa demo rows
- *  14. poc-performance        headcount configs and entries, timeline posts (BE-19)
- *  15. practice               practice sessions and answers of the demo accounts
- *  16. gamification           achievements, challenges, rewards, draws
- *  17. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
+ *  13. battle                 battle arena demo rows (BE-44)
+ *  14. games                  Permainan rooms, solo sessions, leagues, Sekolah Bersaing (BE-45)
+ *  15. poc-cikgu              Cikgu Alesa demo rows
+ *  16. poc-performance        headcount configs and entries, timeline posts (BE-19)
+ *  17. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
+ *  18. spm                    SPM hub demo rows (BE-41)
+ *  19. practice               practice sessions and answers of the demo accounts
+ *  20. gamification           achievements, challenges, rewards, draws
+ *  21. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
  * command is accepted there only together with it (two keys, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
@@ -47,8 +51,12 @@ export const POC_PROFILE_ORDER = [
   'exam-demo-blueprints',
   'poc-classes',
   'poc-bijak-sittings',
+  'battle',
+  'games',
   'poc-cikgu',
   'poc-performance',
+  'spm-subject-configs',
+  'spm',
   'practice',
   'gamification',
   'poc-profile',
