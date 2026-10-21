@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { applyForceDemo, FORCE_DEMO_FLAG, runSeeds, seedModules } from '../../prisma/seed'
+import { applyForceDemo, assertSeedAllowed, countsAsProduction, FORCE_DEMO_FLAG, forceDemoProductionWarning, runSeeds, seedModules } from '../../prisma/seed'
 import { pocProfileSeed } from '../../prisma/seed/poc'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -80,7 +80,7 @@ describe('AC7 production gating', () => {
 
   it('two keys: in production --force-demo alone is refused, with ALLOW_DEMO_SEED it is allowed', () => {
     const flagOnly: Record<string, string | undefined> = { NODE_ENV: 'production' }
-    expect(() => applyForceDemo(['--profile=poc', FORCE_DEMO_FLAG], flagOnly)).toThrow(/Refusing --force-demo in production.*two keys/)
+    expect(() => applyForceDemo(['--profile=poc', FORCE_DEMO_FLAG], flagOnly)).toThrow(/Refusing --force-demo: NODE_ENV is not development or test, so this run counts as production.*two keys/)
     expect(flagOnly.ALLOW_DEMO_SEED).toBeUndefined()
     for (const value of ['true', '1']) {
       const both: Record<string, string | undefined> = { NODE_ENV: 'production', ALLOW_DEMO_SEED: value }
@@ -89,6 +89,27 @@ describe('AC7 production gating', () => {
     const envOnly: Record<string, string | undefined> = { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'true' }
     expect(applyForceDemo(['--profile=poc'], envOnly)).toBe(false)
     expect(envOnly.ALLOW_DEMO_SEED).toBe('true')
+  })
+
+  it('warns on an accepted --force-demo whenever the guard counts the run as production, by the guard\'s own definition', () => {
+    expect(forceDemoProductionWarning(true, { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'true' })).toMatch(/counts as production \(NODE_ENV=production\)/)
+    expect(forceDemoProductionWarning(false, { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'true' })).toBeUndefined()
+    for (const nodeEnv of ['development', 'test']) {
+      expect(countsAsProduction({ NODE_ENV: nodeEnv })).toBe(false)
+      expect(forceDemoProductionWarning(true, { NODE_ENV: nodeEnv, ALLOW_DEMO_SEED: 'true' })).toBeUndefined()
+    }
+    // Whatever the guard refuses without the keys (unset, other spellings) warns; whatever it allows does not.
+    for (const nodeEnv of [undefined, '', 'Production', 'prod', 'staging', 'production']) {
+      let refused = false
+      try {
+        assertSeedAllowed({ NODE_ENV: nodeEnv })
+      } catch {
+        refused = true
+      }
+      expect(countsAsProduction({ NODE_ENV: nodeEnv, ALLOW_DEMO_SEED: 'true' }), String(nodeEnv)).toBe(refused)
+      const warning = forceDemoProductionWarning(true, { NODE_ENV: nodeEnv, ALLOW_DEMO_SEED: 'true' })
+      expect(warning !== undefined, String(nodeEnv)).toBe(refused)
+    }
   })
 
   it('applyForceDemo rejects --force-demo=<value> instead of ignoring it', () => {
@@ -141,7 +162,7 @@ describe('AC7 production gating', () => {
     it('production with --force-demo but without ALLOW_DEMO_SEED is refused and writes nothing (two keys)', async () => {
       const r = run(['--profile=poc', FORCE_DEMO_FLAG])
       expect(r.status).not.toBe(0)
-      expect(r.stderr).toMatch(/Refusing --force-demo in production: ALLOW_DEMO_SEED=true must also be set/)
+      expect(r.stderr).toMatch(/Refusing --force-demo: NODE_ENV is not development or test, so this run counts as production\. ALLOW_DEMO_SEED=true must also be set/)
       expect(r.stdout).not.toContain('core-school-packages')
       expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from users`))[0]?.n)).toBe(0)
       expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from school_packages`))[0]?.n)).toBe(0)
@@ -151,6 +172,7 @@ describe('AC7 production gating', () => {
       const r = run(['--profile=poc', FORCE_DEMO_FLAG], { ALLOW_DEMO_SEED: 'true' })
       expect(r.status, r.stderr).toBe(0)
       expect(r.stdout).toContain('poc-profile')
+      expect(r.stderr).toMatch(/demo data will be loaded although this run counts as production/)
       expect(Number((await fresh.query<{ n: string }>(`select count(*)::text n from users where email like '%@demo.test'`))[0]?.n)).toBeGreaterThan(0)
     }, 150_000)
 

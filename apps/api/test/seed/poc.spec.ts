@@ -13,6 +13,7 @@ import {
   pocStudentCounts,
   pocTableCounts,
   pocTestRowCounts,
+  quoteIdent,
   renderCountsTable,
 } from '../../prisma/seed/poc/profile'
 import { VERIFY_RULES, verifyPocProfile, type Queryable } from '../../prisma/seed/poc/verify'
@@ -32,7 +33,7 @@ describe('PoC profile seed (BE-26)', () => {
     a = await createTestDatabase()
     b = await createTestDatabase()
     const t0 = performance.now()
-    await runSeeds(seedModules, { prisma: a.prisma, profile: 'poc', env: {} })
+    await runSeeds(seedModules, { prisma: a.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
     seedMs = performance.now() - t0
     firstRun = await pocFingerprint(asQueryable(a))
     firstRunSalted = await pocFingerprint(asQueryable(a), { withSalted: true })
@@ -51,7 +52,7 @@ describe('PoC profile seed (BE-26)', () => {
 
   describe('AC1 deterministic and idempotent', () => {
     it('a second run on the seeded database is a no-op (hash and counts unchanged, password hashes included)', async () => {
-      await runSeeds(seedModules, { prisma: a.prisma, profile: 'poc', env: {} })
+      await runSeeds(seedModules, { prisma: a.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
       const again = await pocFingerprint(asQueryable(a), { withSalted: true })
       expect(again.counts).toEqual(firstRunSalted.counts)
       expect(again.tables).toEqual(firstRunSalted.tables)
@@ -59,7 +60,7 @@ describe('PoC profile seed (BE-26)', () => {
     }, 120_000)
 
     it('seeding a second empty database gives identical content', async () => {
-      await runSeeds(seedModules, { prisma: b.prisma, profile: 'poc', env: {} })
+      await runSeeds(seedModules, { prisma: b.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
       const other = await pocFingerprint(asQueryable(b))
       expect(other.counts).toEqual(firstRun.counts)
       expect(other.tables).toEqual(firstRun.tables)
@@ -182,5 +183,23 @@ describe('PoC profile seed (BE-26)', () => {
     const reverse = await hashOf(`(2, null, null), (1, 'a', '{"x":2}'), (1, 'b', '{"x":1}')`)
     expect(forward).toBeDefined()
     expect(reverse).toBe(forward)
+  })
+  it('quotes catalogue identifiers safely: embedded double and single quotes in table and column names', async () => {
+    expect(quoteIdent('plain')).toBe('"plain"')
+    expect(quoteIdent('a"b')).toBe('"a""b"')
+    const odd = `zz_poc_"odd'`
+    const created = [`create table ${quoteIdent(odd)} ("k""ey" int primary key, "it's" text)`, `create table ${quoteIdent(`${odd}_nopk`)} ("k""ey" int, "it's" text)`]
+    for (const sql of created) await a.query(sql)
+    try {
+      await a.query(`insert into ${quoteIdent(odd)} values (2, 'b'), (1, 'a')`)
+      await a.query(`insert into ${quoteIdent(`${odd}_nopk`)} values (2, 'b'), (1, 'a')`)
+      const fp = await pocFingerprint(asQueryable(a))
+      expect(fp.counts[odd]).toBe(2)
+      expect(fp.counts[`${odd}_nopk`]).toBe(2)
+      expect((await pocTableCounts(asQueryable(a)))[odd]).toBe(2)
+    } finally {
+      await a.query(`drop table ${quoteIdent(odd)}`)
+      await a.query(`drop table ${quoteIdent(`${odd}_nopk`)}`)
+    }
   })
 })

@@ -47,6 +47,16 @@ export async function listTables(db: Queryable): Promise<string[]> {
   return rows.map((r) => r.table_name).filter((t) => !EXCLUDED_TABLES.has(t))
 }
 
+/** A safely quoted SQL identifier: wrapped in double quotes, embedded double quotes doubled (as `quote_ident`). */
+export function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`
+}
+
+/** A `regclass` literal for a public table, with the identifier quoted and embedded single quotes doubled. */
+function regclass(table: string): string {
+  return `'${`"public".${quoteIdent(table)}`.replace(/'/g, "''")}'::regclass`
+}
+
 /**
  * Primary key columns of a table in key order. A table with no primary key is ordered by every column in column
  * order, each compared as text (json and other types without a btree order still sort), so the order never
@@ -56,23 +66,23 @@ async function orderBy(db: Queryable, table: string): Promise<string> {
   const rows = await db.query<{ col: string }>(
     `select a.attname as col from pg_index i
        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
-      where i.indrelid = '"public"."${table}"'::regclass and i.indisprimary
+      where i.indrelid = ${regclass(table)} and i.indisprimary
       order by array_position(i.indkey::int2[], a.attnum)`,
   )
-  if (rows.length > 0) return rows.map((r) => `t."${r.col}"`).join(', ')
+  if (rows.length > 0) return rows.map((r) => `t.${quoteIdent(r.col)}`).join(', ')
   const cols = await db.query<{ col: string }>(
     `select a.attname as col from pg_attribute a
-      where a.attrelid = '"public"."${table}"'::regclass and a.attnum > 0 and not a.attisdropped
+      where a.attrelid = ${regclass(table)} and a.attnum > 0 and not a.attisdropped
       order by a.attnum`,
   )
-  return cols.map((c) => `t."${c.col}"::text`).join(', ')
+  return cols.map((c) => `t.${quoteIdent(c.col)}::text`).join(', ')
 }
 
 /** Row count per table, tables with no rows included (value 0). */
 export async function pocTableCounts(db: Queryable): Promise<Record<string, number>> {
   const counts: Record<string, number> = {}
   for (const t of await listTables(db)) {
-    const [row] = await db.query<{ n: string }>(`select count(*)::text as n from "${t}"`)
+    const [row] = await db.query<{ n: string }>(`select count(*)::text as n from ${quoteIdent(t)}`)
     counts[t] = Number(row?.n ?? 0)
   }
   return counts
@@ -85,7 +95,7 @@ export async function pocTestRowCounts(db: Queryable): Promise<Record<string, nu
     `select table_name from information_schema.columns where table_schema = 'public' and column_name = 'is_test' order by table_name`,
   )
   for (const { table_name: t } of tables) {
-    const [row] = await db.query<{ n: string }>(`select count(*)::text as n from "${t}" where is_test`)
+    const [row] = await db.query<{ n: string }>(`select count(*)::text as n from ${quoteIdent(t)} where is_test`)
     out[t] = Number(row?.n ?? 0)
   }
   return out
@@ -121,7 +131,7 @@ export async function pocFingerprint(db: Queryable, options: { withSalted?: bool
       ? SALTED_COLUMNS.map((c) => `, md5(coalesce(to_jsonb(t) ->> '${c}', '')) as salted_${c}`).join('')
       : ''
     const select = `(${row})::text as row${salted}`
-    const rows = await db.query<Record<string, string>>(`select ${select} from "${t}" t order by ${order}`)
+    const rows = await db.query<Record<string, string>>(`select ${select} from ${quoteIdent(t)} t order by ${order}`)
     counts[t] = rows.length
     const th = createHash('sha256')
     for (const r of rows) th.update(`${JSON.stringify(r)}\n`)

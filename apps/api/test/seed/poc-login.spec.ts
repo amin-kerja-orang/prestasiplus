@@ -14,7 +14,7 @@ describe('PoC profile: every demo account of docs/AKAUN-DEMO.md', () => {
   let t: SchoolAdminTestApp
   beforeAll(async () => {
     t = await bootSchoolAdminApp({ modules: featureModules })
-    await runSeeds(seedModules, { prisma: t.db.prisma, profile: 'poc', env: {} })
+    await runSeeds(seedModules, { prisma: t.db.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
   }, 240_000)
   afterAll(async () => {
     await t.close()

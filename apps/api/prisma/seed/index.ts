@@ -151,11 +151,36 @@ export function applyForceDemo(argv: readonly string[], env: Record<string, stri
     assertSeedAllowed(env)
   } catch {
     throw new Error(
-      `Refusing ${FORCE_DEMO_FLAG} in production: ALLOW_DEMO_SEED=true must also be set (two keys). The database was not touched.`,
+      `Refusing ${FORCE_DEMO_FLAG}: NODE_ENV is not development or test, so this run counts as production. ALLOW_DEMO_SEED=true must also be set (two keys). The database was not touched.`,
     )
   }
   env.ALLOW_DEMO_SEED = 'true'
   return true
+}
+
+/**
+ * True when the demo guard counts `env` as production, i.e. `assertSeedAllowed` would refuse it with no
+ * ALLOW_DEMO_SEED key. Uses the guard itself, so it follows the guard's own definition of production.
+ */
+export function countsAsProduction(env: Record<string, string | undefined> = process.env): boolean {
+  try {
+    assertSeedAllowed({ ...env, ALLOW_DEMO_SEED: undefined })
+    return false
+  } catch {
+    return true
+  }
+}
+
+/**
+ * The warning printed when an accepted --force-demo loads demo data into a run the guard counts as production
+ * (both keys given). Returns undefined when there is nothing to warn about.
+ */
+export function forceDemoProductionWarning(
+  forceDemo: boolean,
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
+  if (!forceDemo || !countsAsProduction(env)) return undefined
+  return `seed: --force-demo with ALLOW_DEMO_SEED passed, demo data will be loaded although this run counts as production (NODE_ENV=${env.NODE_ENV ?? '(unset)'}).`
 }
 
 async function main(): Promise<void> {
@@ -163,9 +188,8 @@ async function main(): Promise<void> {
   const forceDemo = applyForceDemo(process.argv.slice(2))
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is not set.')
-  if (forceDemo && process.env.NODE_ENV === 'production') {
-    console.warn('seed: --force-demo with ALLOW_DEMO_SEED passed, demo data will be loaded although NODE_ENV=production.')
-  }
+  const warning = forceDemoProductionWarning(forceDemo)
+  if (warning) console.warn(warning)
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)
   try {
