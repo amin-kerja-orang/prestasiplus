@@ -152,6 +152,22 @@ export class QuestionsRepository {
     })
   }
 
+  /**
+   * Exact versions, whatever their status or the question's `is_active` (a pinned read: practice grades a
+   * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
+   * absent. Returned in ascending id, then version order.
+   */
+  async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
+    const wanted = new Map<string, { id: bigint; versionNo: number }>()
+    for (const r of refs) {
+      const id = bi(r.questionId)
+      if (id === null || !Number.isSafeInteger(r.versionNo) || r.versionNo < 1) continue
+      wanted.set(`${id}:${r.versionNo}`, { id, versionNo: r.versionNo })
+    }
+    if (wanted.size === 0) return []
+    return this.hydrateVersions([...wanted.values()])
+  }
+
   async count(filter: QuestionFilter = {}): Promise<number> {
     const { from, where } = this.scope(filter)
     const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`
@@ -661,6 +677,19 @@ export class QuestionsRepository {
     eq(filter.subjectId, Prisma.sql`v.subject_id`)
     eq(filter.educationLevelId, Prisma.sql`v.education_level_id`)
     eq(filter.unitId, Prisma.sql`v.unit_node_id`)
+    eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    if (filter.educationLevelIds !== undefined) {
+      const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
+      conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
+    }
+    if (filter.difficultyTps !== undefined) {
+      const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
+      conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
+    }
+    if (filter.spmPool !== undefined) {
+      const pool = Prisma.sql`EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool')`
+      conds.push(filter.spmPool ? pool : Prisma.sql`NOT ${pool}`)
+    }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
       conds.push(
@@ -689,6 +718,27 @@ export class QuestionsRepository {
       const versionNo = view === 'live' ? q.liveVersionNo : q.latestVersionNo
       return versionNo === null ? [] : [{ q, versionNo }]
     })
+    return this.hydratePicks(picks)
+  }
+
+  /** `hydrate` for explicit (question, version) pairs (`getVersions`). */
+  private async hydrateVersions(wanted: readonly { id: bigint; versionNo: number }[]): Promise<QuestionRecord[]> {
+    const questions = await this.db.question.findMany({
+      where: { id: { in: [...new Set(wanted.map((w) => w.id))] } },
+      include: { tags: { where: { kind: 'pool' } } },
+    })
+    const byId = new Map(questions.map((q) => [q.id, q]))
+    const picks = wanted.flatMap((w) => {
+      const q = byId.get(w.id)
+      return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
+    })
+    const out = await this.hydratePicks(picks)
+    return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
+  }
+
+  private async hydratePicks(
+    picks: readonly { q: PrismaTypes.QuestionGetPayload<{ include: { tags: true } }>; versionNo: number }[],
+  ): Promise<QuestionRecord[]> {
     if (picks.length === 0) return []
     const versions: VersionRow[] = await this.db.questionVersion.findMany({
       where: { OR: picks.map(({ q, versionNo }) => ({ questionId: q.id, versionNo })) },

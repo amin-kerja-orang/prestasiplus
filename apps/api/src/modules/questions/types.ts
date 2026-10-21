@@ -192,16 +192,24 @@ export interface QuestionSummaryView {
 export interface QuestionFilter {
   subjectId?: string
   educationLevelId?: string
+  /** Any of these levels (ANDed with `educationLevelId` when both are set); `[]` matches nothing. */
+  educationLevelIds?: readonly string[]
   unitId?: string
+  /** Curriculum chapter of the version (`question_versions.chapter_id`). */
+  chapterId?: string
   spId?: string
   tp?: number
   difficultyTp?: number
+  /** Any of these TPs (ANDed with `tp` / `difficultyTp` when both are set); `[]` matches nothing. */
+  difficultyTps?: readonly number[]
   /** Status of the LIVE version when set; counts of `published` use the live version. */
   status?: QuestionStatus
   /** `true` keeps only questions with `is_active`; `eligibleIds` / `sample` always force it. */
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
+  /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
+  spmPool?: boolean
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit'
