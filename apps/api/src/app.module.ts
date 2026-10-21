@@ -7,6 +7,7 @@ import { type Env, loadEnv } from './common/config/env.schema'
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter'
 import { SecurityModule } from './common/security/security.module'
 import { HealthModule } from './common/health/health.module'
+import { MetricsModule } from './common/metrics/metrics.module'
 import { DbModule } from './db/db.module'
 import { pinoHttpOptions } from './common/logging/logging'
 import { featureModules } from './modules'
@@ -42,6 +43,7 @@ export function defineAppModule(
       logger,
       DbModule,
       HealthModule,
+      MetricsModule,
       SecurityModule,
       ...modules,
     ],
