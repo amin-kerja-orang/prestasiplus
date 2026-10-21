@@ -51,15 +51,31 @@ export interface VersionDraft {
   parts: PartDraft[]
 }
 
+/**
+ * Provenance columns of the first version (BE-38 accept-to-Draf; `source_type` goes on the question, the rest on
+ * `question_versions`). Every field is optional; ids are bigint.
+ */
+export interface VersionProvenance {
+  sourceRegion?: unknown
+  sourcePaperId?: bigint | null
+  intakeItemId?: bigint | null
+  sourceFileId?: bigint | null
+  aiRunId?: bigint | null
+  aiModel?: string | null
+}
+
 export interface NewQuestion {
   sourceType: StoreSourceType | null
   createdById: bigint | null
   groupId: bigint | null
   groupPosition: number | null
   spmPool: boolean
+  /** BE-42: tags a PKSK question (the only way a `pksk_choice` part may be stored). */
+  pksk?: { domainCode: string; level: 'T1' | 'T4' }
   /** Clock time: stamps created_at / updated_at (and published_at when created published). */
   now: Date
   version: VersionDraft
+  provenance?: VersionProvenance
 }
 
 export interface NewStimulus {
@@ -88,6 +104,14 @@ type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
   include: { parts: { include: { options: true; key: true } }; spNodes: true; stimuli: true }
 }>
 
+/**
+ * BE-42: PKSK questions (tag `pksk_domain`) belong to M07. The M04 lists, counts, sources and writes below never see them;
+ * only the `pksk*` methods and `scope: 'only'` reads do.
+ */
+const PKSK_TAG = 'pksk_domain'
+const NOT_PKSK = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
@@ -97,6 +121,13 @@ function bi(text: string): bigint | null {
   } catch {
     return null
   }
+}
+
+/** The PKSK tags of a question (`pksk_domain` code and `pksk_level`), or null when it carries no domain tag. */
+function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: string; level: 'T1' | 'T4' } | null {
+  const domain = tags.find((t) => t.kind === 'pksk_domain')
+  const level = tags.find((t) => t.kind === 'pksk_level')
+  return domain && (level?.code === 'T1' || level?.code === 'T4') ? { domainCode: domain.code, level: level.code } : null
 }
 
 const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
@@ -127,15 +158,35 @@ export class QuestionsRepository {
     return row ?? null
   }
 
-  async getMany(ids: readonly string[], view: ViewMode = 'live'): Promise<QuestionRecord[]> {
+  /** `scope`: M04 reads never return a PKSK question (default `exclude`); the PKSK service reads them with `only`. */
+  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
     const wanted = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
     if (wanted.length === 0) return []
-    const records = await this.hydrate(wanted, view)
+    const records = await this.hydrate(wanted, view, scope)
     const byId = new Map(records.map((r) => [r.id, r]))
     return [...new Set(ids)].flatMap((id) => {
       const r = byId.get(id)
       return r ? [r] : []
     })
+  }
+
+  /**
+   * Exact versions, whatever their status or the question's `is_active` (a pinned read: practice grades a
+   * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
+   * absent. Returned in ascending id, then version order.
+   *
+   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
+   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   */
+  async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
+    const wanted = new Map<string, { id: bigint; versionNo: number }>()
+    for (const r of refs) {
+      const id = bi(r.questionId)
+      if (id === null || !Number.isSafeInteger(r.versionNo) || r.versionNo < 1) continue
+      wanted.set(`${id}:${r.versionNo}`, { id, versionNo: r.versionNo })
+    }
+    if (wanted.size === 0) return []
+    return this.hydrateVersions([...wanted.values()])
   }
 
   async count(filter: QuestionFilter = {}): Promise<number> {
@@ -160,7 +211,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`
       SELECT true AS ok FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ${key} AND q.is_active AND v.status = 'published'`
+      WHERE q.id = ${key} AND q.is_active AND v.status = 'published' AND ${NOT_PKSK}`
     return rows.length > 0
   }
 
@@ -193,7 +244,7 @@ export class QuestionsRepository {
   private async setActive(id: string, isActive: boolean): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const res = await this.db.question.updateMany({ where: { id: key }, data: { isActive } })
+    const res = await this.db.question.updateMany({ where: { id: key, tags: { none: { kind: PKSK_TAG } } }, data: { isActive } })
     return res.count > 0
   }
 
@@ -233,7 +284,7 @@ export class QuestionsRepository {
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
     const owner = bi(filter.ownerId)
     if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
-    const where = { createdById: owner }
+    const where = { createdById: owner, tags: { none: { kind: PKSK_TAG } } }
     const [total, ids] = await Promise.all([
       this.db.question.count({ where }),
       this.db.question.findMany({ where, orderBy: { id: 'asc' }, skip: (filter.page - 1) * filter.pageSize, take: filter.pageSize, select: { id: true } }),
@@ -251,9 +302,11 @@ export class QuestionsRepository {
     const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const whereAll = Prisma.join(withStatus, ' AND ')
     const whereBase = Prisma.join(base, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
+    const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
+    const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
     const [rows, totals, counted] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${whereAll} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
@@ -263,7 +316,7 @@ export class QuestionsRepository {
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
-    const conds: Prisma.Sql[] = [Prisma.sql`TRUE`]
+    const conds: Prisma.Sql[] = [NOT_PKSK]
     const id = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
       const key = bi(text)
@@ -308,7 +361,7 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`]
+    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK]
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
       [filter.educationLevelId, Prisma.sql`v.education_level_id`],
@@ -343,7 +396,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE v.type = 'structured' GROUP BY 1`
+      WHERE v.type = 'structured' AND ${NOT_PKSK} GROUP BY 1`
     const bySubject = new Map<string, number>()
     let total = 0
     let published = 0
@@ -359,7 +412,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no GROUP BY 1`
+      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -377,7 +430,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
       SELECT v.status AS status, count(*)::int AS n
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} GROUP BY 1`
+      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} GROUP BY 1`
     for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
     return counts
   }
@@ -386,7 +439,7 @@ export class QuestionsRepository {
   async ownerOf(id: string): Promise<string | null | undefined> {
     const key = bi(id)
     if (key === null) return undefined
-    const row = await this.db.question.findUnique({ where: { id: key }, select: { createdById: true } })
+    const row = await this.db.question.findFirst({ where: { id: key, tags: { none: { kind: PKSK_TAG } } }, select: { createdById: true } })
     if (!row) return undefined
     return row.createdById === null ? null : idToString(row.createdById)
   }
@@ -424,10 +477,19 @@ export class QuestionsRepository {
         liveVersionNo: input.version.status === 'published' ? 1 : null,
         createdAt: input.now,
         updatedAt: input.now,
-        ...(input.spmPool ? { tags: { create: [{ kind: 'pool', code: 'spm' }] } } : {}),
+        ...(input.spmPool || input.pksk
+          ? {
+              tags: {
+                create: [
+                  ...(input.spmPool ? [{ kind: 'pool', code: 'spm' }] : []),
+                  ...(input.pksk ? [{ kind: 'pksk_domain', code: input.pksk.domainCode }, { kind: 'pksk_level', code: input.pksk.level }] : []),
+                ],
+              },
+            }
+          : {}),
       },
     })
-    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null)
+    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null, input.provenance)
     return idToString(q.id)
   }
 
@@ -491,7 +553,7 @@ export class QuestionsRepository {
   async remove(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const res = await this.db.question.deleteMany({ where: { id: key } })
+    const res = await this.db.question.deleteMany({ where: { id: key, tags: { none: { kind: PKSK_TAG } } } })
     return res.count > 0
   }
 
@@ -522,6 +584,107 @@ export class QuestionsRepository {
     return (agg._max.groupPosition ?? 0) + 1
   }
 
+  // --- PKSK (BE-42, M07): questions tagged `pksk_domain` + `pksk_level` -------------------------------
+
+  /** Which of these ids are PKSK questions (subset, same strings). */
+  async pkskIds(ids: readonly string[]): Promise<string[]> {
+    const keys = [...new Set(ids)].map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return []
+    const rows = await this.db.questionTag.findMany({ where: { questionId: { in: keys }, kind: PKSK_TAG }, select: { questionId: true } })
+    return rows.map((r) => idToString(r.questionId))
+  }
+
+  /** One page of PKSK question ids over the LATEST version: `created_at` descending, then id ascending. */
+  async pkskPage(f: {
+    domainCodes?: readonly string[]
+    level?: 'T1' | 'T4'
+    versionStatuses?: readonly QuestionStatus[]
+    search?: string
+    page: number
+    pageSize: number
+  }): Promise<{ ids: string[]; total: number }> {
+    const conds: Prisma.Sql[] = [IS_PKSK]
+    if (f.domainCodes) {
+      conds.push(
+        f.domainCodes.length === 0
+          ? Prisma.sql`FALSE`
+          : Prisma.sql`EXISTS (SELECT 1 FROM question_tags d WHERE d.question_id = q.id AND d.kind = 'pksk_domain' AND d.code IN (${Prisma.join(f.domainCodes)}))`,
+      )
+    }
+    if (f.level) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${f.level})`)
+    if (f.versionStatuses) conds.push(f.versionStatuses.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.status IN (${Prisma.join(f.versionStatuses)})`)
+    if (f.search !== undefined && f.search.trim() !== '') {
+      conds.push(Prisma.sql`v.stem_ms ILIKE ${likePattern(f.search.trim())} ESCAPE '\\'`)
+    }
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const where = Prisma.join(conds, ' AND ')
+    const offset = (f.page - 1) * f.pageSize
+    const [rows, totals] = await Promise.all([
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.created_at DESC, q.id ASC LIMIT ${f.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
+    ])
+    return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
+  }
+
+  /** Counts over all PKSK questions by latest-version status and level. */
+  async pkskStats(): Promise<{ total: number; published: number; archived: number; t1: number; t4: number }> {
+    const rows = await this.db.$queryRaw<{ total: number; published: number; archived: number; t1: number; t4: number }[]>`
+      SELECT count(*)::int AS total,
+             count(*) FILTER (WHERE v.status = 'published')::int AS published,
+             count(*) FILTER (WHERE v.status = 'archived')::int AS archived,
+             count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T1'))::int AS t1,
+             count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T4'))::int AS t4
+      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+      WHERE ${IS_PKSK}`
+    return rows[0] ?? { total: 0, published: 0, archived: 0, t1: 0, t4: 0 }
+  }
+
+  /** Served PKSK questions (live version published, question active) per domain code at one level. */
+  async pkskServedCounts(level: 'T1' | 'T4'): Promise<Record<string, number>> {
+    const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
+      SELECT d.code AS code, count(*)::int AS n
+      FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
+      JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
+      WHERE q.is_active GROUP BY 1`
+    return Object.fromEntries(rows.map((r) => [r.code, r.n]))
+  }
+
+  /** Ids of the served PKSK questions of the given domains at one level, ascending. */
+  async pkskServedIds(level: 'T1' | 'T4', domainCodes: readonly string[]): Promise<string[]> {
+    if (domainCodes.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id
+      FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain' AND d.code IN (${Prisma.join(domainCodes)})
+      JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
+      WHERE q.is_active ORDER BY q.id ASC`
+    return rows.map((r) => idToString(r.id))
+  }
+
+  /** Replaces the two PKSK tags of a PKSK question. False when the id is not a PKSK question. */
+  async setPkskTags(id: string, domainCode: string, level: 'T1' | 'T4'): Promise<boolean> {
+    const key = bi(id)
+    if (key === null || (await this.pkskIds([id])).length === 0) return false
+    await this.db.questionTag.deleteMany({ where: { questionId: key, kind: { in: ['pksk_domain', 'pksk_level'] } } })
+    await this.db.questionTag.createMany({
+      data: [
+        { questionId: key, kind: 'pksk_domain', code: domainCode },
+        { questionId: key, kind: 'pksk_level', code: level },
+      ],
+    })
+    return true
+  }
+
+  /** Hard delete of PKSK questions only (cascades to versions, parts, options, keys and tags); returns the number deleted. */
+  async removePksk(ids: readonly string[]): Promise<number> {
+    const keys = (await this.pkskIds(ids)).map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return 0
+    return (await this.db.question.deleteMany({ where: { id: { in: keys } } })).count
+  }
+
   // --- internals ------------------------------------------------------------------------------------
 
   private versionColumns(c: Omit<VersionDraft, 'parts' | 'spNodeIds' | 'stimulusIds'>) {
@@ -547,10 +710,34 @@ export class QuestionsRepository {
     }
   }
 
-  private async insertVersion(questionId: bigint, versionNo: number, draft: VersionDraft, now: Date, publishedAt: Date | null): Promise<void> {
+  private async insertVersion(
+    questionId: bigint,
+    versionNo: number,
+    draft: VersionDraft,
+    now: Date,
+    publishedAt: Date | null,
+    provenance?: VersionProvenance,
+  ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
     const version = await this.db.questionVersion.create({
-      data: { questionId, versionNo, publishedAt, createdAt: now, updatedAt: now, ...this.versionColumns(columns) },
+      data: {
+        questionId,
+        versionNo,
+        publishedAt,
+        createdAt: now,
+        updatedAt: now,
+        ...this.versionColumns(columns),
+        ...(provenance === undefined
+          ? {}
+          : {
+              ...(provenance.sourceRegion === undefined || provenance.sourceRegion === null ? {} : { sourceRegion: provenance.sourceRegion as object }),
+              sourcePaperId: provenance.sourcePaperId ?? null,
+              intakeItemId: provenance.intakeItemId ?? null,
+              sourceFileId: provenance.sourceFileId ?? null,
+              aiRunId: provenance.aiRunId ?? null,
+              aiModel: provenance.aiModel ?? null,
+            }),
+      },
     })
     await this.insertChildren(version.id, spNodeIds, stimulusIds, parts)
   }
@@ -610,7 +797,7 @@ export class QuestionsRepository {
     const from = live
       ? Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
-    const conds: Prisma.Sql[] = [Prisma.sql`TRUE`]
+    const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
@@ -621,6 +808,19 @@ export class QuestionsRepository {
     eq(filter.subjectId, Prisma.sql`v.subject_id`)
     eq(filter.educationLevelId, Prisma.sql`v.education_level_id`)
     eq(filter.unitId, Prisma.sql`v.unit_node_id`)
+    eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    if (filter.educationLevelIds !== undefined) {
+      const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
+      conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
+    }
+    if (filter.difficultyTps !== undefined) {
+      const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
+      conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
+    }
+    if (filter.spmPool !== undefined) {
+      const pool = Prisma.sql`EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool')`
+      conds.push(filter.spmPool ? pool : Prisma.sql`NOT ${pool}`)
+    }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
       conds.push(
@@ -640,15 +840,39 @@ export class QuestionsRepository {
   }
 
   /** Reads questions and the selected version of each; a bad stored key fails closed (500, id logged). */
-  private async hydrate(ids: readonly bigint[], view: ViewMode): Promise<QuestionRecord[]> {
+  private async hydrate(ids: readonly bigint[], view: ViewMode, scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
     const questions = await this.db.question.findMany({
-      where: { id: { in: [...ids] } },
-      include: { tags: { where: { kind: 'pool' } } },
+      where: { id: { in: [...ids] }, tags: scope === 'only' ? { some: { kind: PKSK_TAG } } : { none: { kind: PKSK_TAG } } },
+      include: { tags: { where: { kind: { in: ['pool', 'pksk_domain', 'pksk_level'] } } } },
     })
     const picks = questions.flatMap((q) => {
       const versionNo = view === 'live' ? q.liveVersionNo : q.latestVersionNo
       return versionNo === null ? [] : [{ q, versionNo }]
     })
+    return this.hydratePicks(picks)
+  }
+
+  /**
+   * `hydrate` for explicit (question, version) pairs (`getVersions`). Pinned grading only, never a serving
+   * path: it applies no active, status or PKSK scope.
+   */
+  private async hydrateVersions(wanted: readonly { id: bigint; versionNo: number }[]): Promise<QuestionRecord[]> {
+    const questions = await this.db.question.findMany({
+      where: { id: { in: [...new Set(wanted.map((w) => w.id))] } },
+      include: { tags: { where: { kind: 'pool' } } },
+    })
+    const byId = new Map(questions.map((q) => [q.id, q]))
+    const picks = wanted.flatMap((w) => {
+      const q = byId.get(w.id)
+      return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
+    })
+    const out = await this.hydratePicks(picks)
+    return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
+  }
+
+  private async hydratePicks(
+    picks: readonly { q: PrismaTypes.QuestionGetPayload<{ include: { tags: true } }>; versionNo: number }[],
+  ): Promise<QuestionRecord[]> {
     if (picks.length === 0) return []
     const versions: VersionRow[] = await this.db.questionVersion.findMany({
       where: { OR: picks.map(({ q, versionNo }) => ({ questionId: q.id, versionNo })) },
@@ -682,7 +906,8 @@ export class QuestionsRepository {
         liveVersionNo: q.liveVersionNo,
         groupId: q.groupId === null ? null : idToString(q.groupId),
         groupPosition: q.groupPosition,
-        spmPool: q.tags.length > 0,
+        spmPool: q.tags.some((t) => t.kind === 'pool'),
+        pksk: pkskOf(q.tags),
         createdAt: q.createdAt,
         updatedAt: q.updatedAt,
         version,

@@ -42,8 +42,8 @@ export const MAX_KEYS = 50_000
 
 /**
  * Fixed-window counter, one per process: it is NOT shared between API instances and resets on a
- * restart. Time comes from the injected clock. The per-address subject is `req.ip`, so
- * `TRUST_PROXY_HOPS` must match the deployment (behind a proxy, 0 would put every client in one bucket).
+ * restart. Time comes from the injected clock. The per-address subject is `req.ip`, which
+ * common/net/client-ip.ts derives (TRUST_PROXY_HOPS, or the edge header when CLIENT_IP_HEADER is set); a wrong setup puts every client in one bucket.
  */
 @Injectable()
 export class RateLimiter {
