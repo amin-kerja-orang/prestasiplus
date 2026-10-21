@@ -140,6 +140,8 @@ Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_H
 
 Differences from the card's working assumptions (registration 10 per hour per address, uploads 30 per hour per user, tickets 5 per hour per user): the code uses the numbers above, which are configurable. Registration is per minute because a school shares one address. The lead confirms or changes the numbers (card open question 1).
 
+Single instance: the API must run as ONE instance (Render free plan) because the rate-limit buckets live in process memory (only the login throttle is in the database). Before running more than one instance, move the buckets to a shared store (Redis). Accepted by the lead on 2026-10-21 (threat model row 18).
+
 ## 10. Backup and restore of pgdata
 
 Procedure, retention, encryption and the monthly drill are in [db-backup.md](db-backup.md): `npm run db:backup`, `npm run db:restore-check`, and the disaster-recovery steps (stop writers, safety backup, restore, `migrate`, check `/api/ready`). Uploads are in the separate `apifiles` volume and need their own backup.
@@ -153,6 +155,73 @@ Drill executed for BE-33 (acceptance criterion 7), 2026-10-20, with the same too
 5. Both scratch databases and the dump file were deleted.
 
 The full output is attached to the PR. The same drill with `npm run db:backup` and `npm run db:restore-check` on the real `db` container, and the first production backup, still need the lead or the operator (see section 15).
+
+### AC7 rehearsal (run once in the cloud session)
+
+Purpose: prove `npm run db:backup` and `npm run db:restore-check` on a real Postgres 16 container, with the source-against-restored row-count comparison of every public table (including `_prisma_migrations`). Needs Docker and Node; no production, no shared environment. It uses its own Compose project name, so it never touches the `pretasiplus` stack or its volumes. Docker cap rule: run it as the only heavy database job (no `be:verify`, no API test run, no other Postgres container at the same time).
+
+Run from the repo root, in one shell session (the exports must stay set). The dump goes to a temporary folder outside the repo; the throwaway password is made up on the spot and never printed.
+
+```
+cd <repo root> && pwd && git status --short                  # clean tree, expected branch
+export COMPOSE_PROJECT_NAME=pp-ac7                           # wins over `name:` in compose.yaml, for compose and for the npm scripts
+export BACKUP_DIR="$(mktemp -d)/pp-ac7-backups"              # outside the repo
+PW="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
+printf 'POSTGRES_DB=prestasiplus\nPOSTGRES_USER=pp\nPOSTGRES_PASSWORD=%s\n' "$PW" > .env.db
+printf 'DATABASE_URL=postgresql://pp:%s@db:5432/prestasiplus\nSESSION_SECRET=%s\n' "$PW" "$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')" > .env.api
+unset PW
+```
+
+`.env.db` and `.env.api` are git-ignored; check `git status --short` shows neither. Compare `.env.api.example` and add any other required key it lists (do not print the file).
+
+```
+# 1. Start only the throwaway database (waits for the healthcheck)
+docker compose -f compose.yaml up -d --wait db
+
+# 2. Migrate and seed the non-production `poc` profile (compose.http.yaml adds the seed with ALLOW_DEMO_SEED=true)
+docker compose -f compose.yaml -f compose.http.yaml run --rm --build migrate
+docker compose -f compose.yaml exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "select count(*) from users"'    # must be > 0
+
+# 3. Backup (pg_dump -Fc inside the container; prints file, size, sha256)
+npm run db:backup -- --dir "$BACKUP_DIR"
+
+# 4. Restore into a fresh empty database <db>_restorecheck, compare, drop it
+npm run db:restore-check -- --dir "$BACKUP_DIR"
+echo "exit code: $?"
+```
+
+Do not write to the source database between steps 3 and 4: any write shows up as a mismatch. The restore target is always a new database named `<db>_restorecheck` on the same container; the script refuses any other name and drops it at the end (add `--keep-db` only to inspect it).
+
+Expected success output shape (numbers differ; the `poc` seed gave 141 tables and 9876 rows in the local drill above):
+
+```
+Checksum matches the .sha256 sidecar.
+Backup: pp-backup-<UTC timestamp>.dump  <size>  sha256 <64 hex>
+Restoring into throwaway database "prestasiplus_restorecheck" via compose service db (main database "prestasiplus" is not touched)
+public tables: <N>
+_prisma_migrations rows: <M>
+rows in users: <n>   (also schools, sessions, audit_events, questions where present)
+row-count comparison: <N> source tables, <N> restored tables, <R> rows restored, 0 mismatches
+ROW-COUNT COMPARISON PASSED
+Dropped prestasiplus_restorecheck.
+RESTORE CHECK PASSED
+exit code: 0
+```
+
+A failure prints `ROW-COUNT COMPARISON FAILED` with one `table: source X, restored Y` line per difference and exits non-zero. That is a real finding: keep the dump, do not clean up, and report it to the lead.
+
+Paste into the PR: the output of steps 3 and 4 and the `exit code` line. Both scripts print only file name, size, sha256, database names and counts. Do not paste `.env.db`, `.env.api`, any `DATABASE_URL` or the folder path of the dump if it contains a user name. Then tick AC7 in section 15 (change the status to "done on compose `db`").
+
+Cleanup (only what this rehearsal started; never kill node or docker processes by name):
+
+```
+docker compose -f compose.yaml down -v                       # removes only project pp-ac7: its db container, network and pgdata volume
+rm -rf "$BACKUP_DIR" .env.db .env.api                        # only if they did not exist before the rehearsal
+unset COMPOSE_PROJECT_NAME BACKUP_DIR
+docker compose ls                                            # pp-ac7 must be gone
+```
+
+If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting. The `ROW-COUNT COMPARISON` lines need the comparison added to `scripts/db-restore-check.mjs` (BE-33 close-out); without it the script prints only the core-table counts and `RESTORE CHECK PASSED`, which is not enough for AC7.
 
 ## 11. Logs
 
@@ -246,4 +315,5 @@ Test files are under `apps/api/test/security/` unless a full path is given; scen
 | P10-9 | PR description from the template | `.github/pull_request_template.md` | lead |
 | P10-10 | Lead approval, `security-review` label | | lead |
 | Ops | Production backup scheduled, restore drill monthly, uptime check on `/api/ready`, alert contact | db-backup.md, section 11 | needs LEAD/ops (accounts, schedule, encrypted volume) |
+| Ops | No malware scan on stored uploads: accepted for demo/staging (admin-only uploads, magic-byte checks); ClamAV or equivalent required before production go-live (backlog #78) | threat model row 43 | needs LEAD/ops before go-live |
 | Ops | nginx does not proxy `/api/metrics`; `stop_grace_period: 30s` on `api` | sections 3 and 5 | needs lead (files outside this card) |

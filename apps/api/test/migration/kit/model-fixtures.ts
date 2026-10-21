@@ -109,6 +109,8 @@ async function parentBattle(query: FixtureQuery): Promise<string> {
 }
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // ai_usage_logs (BE-36): provider has a check.
+  ai_usage_logs: { provider: 'mock' },
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
   banners: { banner_type: 'HERO' },
@@ -169,6 +171,12 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     host_id: await parentUser(query),
   }),
   game_sessions: async (query) => ({ user_id: await parentUser(query), game: 'betul-salah' }),
+  // marketplace_* (BE-46): the category and the owner must exist; the text columns have check constraints.
+  marketplace_products: async (query) => {
+    const category = await query<{ id: string }>(`insert into marketplace_categories (slug, name, icon) values ($1, 'Kategori Contoh', 'fa-book') returning id::text as id`, [next('fx-cat-')])
+    return { category_id: (category[0] as { id: string }).id, slug: next('fx-produk-'), condition: 'new', stock_status: 'available', status: 'draft', shipping_method: 'pickup', price: 1 }
+  },
+  marketplace_sellers: async (query) => ({ user_id: await parentUser(query), status: 'pending' }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
@@ -239,4 +247,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   missions: async (query) => ({ teacher_id: await parentUser(query), title: 'Misi Contoh', mission_type: 'latih_tubi', mission_date: '2026-10-20', subject_id: await parentSubject(query), question_count: 10 }),
   // question_sets (BE-18): teacher and class must exist.
   question_sets: async (query) => ({ teacher_id: await parentUser(query), classroom_id: await parentClassroom(query), title: 'Set Contoh' }),
+  // pksk_packages / pksk_accesses (BE-42): level is checked (T1/T4/ALL); an access needs a user and a package.
+  pksk_packages: { level: 'T1' },
+  pksk_accesses: async (query) => ({
+    user_id: await parentUser(query),
+    package_id: (await query<{ id: string }>(`insert into pksk_packages (name, level) values ('Pakej PKSK Contoh', 'T1') returning id::text as id`))[0]!.id,
+  }),
 }

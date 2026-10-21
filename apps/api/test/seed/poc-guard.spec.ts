@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,7 +12,8 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const API_DIR = fileURLToPath(new URL('../../', import.meta.url))
 const SEED_DIR = join(API_DIR, 'prisma/seed')
-const TSX = join(API_DIR, '../../node_modules/.bin/tsx')
+// Run tsx through the current Node binary: `node_modules/.bin/tsx` is a shell script, which spawn cannot start on Windows.
+const TSX_CLI = createRequire(import.meta.url).resolve('tsx/cli')
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -132,7 +134,7 @@ describe('AC7 production gating', () => {
       if (allow !== undefined) process.env.ALLOW_DEMO_SEED = allow
     }
     const ran = await runSeeds(seedModules, { prisma: db.prisma, profile: 'poc', env: { NODE_ENV: 'production' } })
-    expect(ran).toEqual(['core-school-packages', 'spm-subject-configs'])
+    expect(ran).toEqual(['core-school-packages', 'spm-subject-configs', 'core-marketplace-categories'])
     expect(ran).not.toContain('poc-profile')
     expect(await count(`select count(*)::text n from users`)).toBe(0)
   }, 60_000)
@@ -146,7 +148,7 @@ describe('AC7 production gating', () => {
       await fresh.drop()
     })
     const run = (cli: string[], extra: Record<string, string> = {}) =>
-      spawnSync(TSX, ['prisma/seed/index.ts', ...cli], {
+      spawnSync(process.execPath, [TSX_CLI, 'prisma/seed/index.ts', ...cli], {
         cwd: API_DIR,
         encoding: 'utf8',
         timeout: 120_000,

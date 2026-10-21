@@ -7,6 +7,7 @@ import { FilesModule } from '../files'
 import { UsersModule } from '../users'
 import { QuestionCountsAdapter } from './curriculum-bridge'
 import { AdminQuestionsController, GuruQuestionsController, StructuredQuestionsController } from './http'
+import { PkskQuestionsService } from './pksk.service'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
 
@@ -20,8 +21,8 @@ import { QuestionsService } from './questions.service'
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController],
-  providers: [QuestionsRepository, QuestionsService, QuestionCountsAdapter],
-  exports: [QuestionsRepository, QuestionsService],
+  providers: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionCountsAdapter],
+  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(
