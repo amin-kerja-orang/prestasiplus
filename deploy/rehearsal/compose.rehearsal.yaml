@@ -1,0 +1,127 @@
+# Production-like rehearsal database for the .cloud -> v2 migration (MIG-07, AZ-30).
+# Guide: docs/ops/rehearsal-db.md. Driven by deploy/rehearsal/rehearsal-db.sh (do not run by hand).
+#
+# Isolated from the normal stack: own project name (pp-rehearsal), own volume, own loopback port,
+# no link to compose.yaml. `docker compose -f compose.yaml down -v` never touches it, and vice versa.
+# Not for production and not for the staging VPS: it holds a restored copy of anonymised personal data.
+#
+#   cp deploy/rehearsal/.env.rehearsal.example deploy/rehearsal/.env.rehearsal   (then set the password)
+#   deploy/rehearsal/rehearsal-db.sh up
+name: pp-rehearsal
+
+services:
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - path: .env.rehearsal            # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB; git-ignored
+        required: false                 # optional so `docker compose config -q` passes in CI
+    # Production-like settings (docs/ops/rehearsal-db.md section 7). fsync stays ON: the rehearsal
+    # must show the real write cost, unlike the throwaway test server (fsync=off). Sizes assume
+    # a 4 GB / 2 vCPU VPS; override PP_PG_* in .env.rehearsal to mirror the real production box.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PP_PG_SHARED_BUFFERS:-1GB}
+      - -c
+      - effective_cache_size=${PP_PG_EFFECTIVE_CACHE_SIZE:-3GB}
+      - -c
+      - work_mem=${PP_PG_WORK_MEM:-16MB}
+      - -c
+      - maintenance_work_mem=${PP_PG_MAINTENANCE_WORK_MEM:-256MB}
+      - -c
+      - max_connections=${PP_PG_MAX_CONNECTIONS:-100}
+      - -c
+      - timezone=UTC
+      - -c
+      - log_timezone=UTC
+      - -c
+      - fsync=on
+      - -c
+      - synchronous_commit=on
+      - -c
+      - full_page_writes=on
+      - -c
+      - wal_level=replica
+      - -c
+      - wal_compression=on
+      - -c
+      - max_wal_size=${PP_PG_MAX_WAL_SIZE:-2GB}
+      - -c
+      - min_wal_size=${PP_PG_MIN_WAL_SIZE:-256MB}
+      - -c
+      - checkpoint_timeout=${PP_PG_CHECKPOINT_TIMEOUT:-15min}
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - random_page_cost=${PP_PG_RANDOM_PAGE_COST:-1.1}
+      - -c
+      - effective_io_concurrency=${PP_PG_EFFECTIVE_IO_CONCURRENCY:-200}
+      - -c
+      - log_min_duration_statement=${PP_PG_LOG_MIN_DURATION_STATEMENT:-500ms}
+      - -c
+      - log_checkpoints=on
+      - -c
+      - log_lock_waits=on
+      - -c
+      - log_temp_files=0
+    shm_size: ${PP_PG_SHM_SIZE:-512mb}
+    ports:
+      # Loopback only. Never publish on 0.0.0.0: the database holds a copy of personal data.
+      - '127.0.0.1:${PP_REHEARSAL_PORT:-55433}:5432'
+    volumes:
+      - pp_rehearsal_pgdata:/var/lib/postgresql/data
+    tmpfs:
+      - /tmp
+      - /run/postgresql:uid=70,gid=70,mode=0755
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    stop_grace_period: 60s              # let a checkpoint finish on stop; a big load leaves a lot to flush
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    restart: 'no'
+
+  # One-shot `prisma migrate deploy` (same image, same command as the real stack). The script runs it with
+  # `docker compose run --rm migrate`; it applies every folder of apps/api/prisma/migrations in order.
+  migrate:
+    build:
+      context: ../..
+      dockerfile: docker/api/Dockerfile
+      target: build
+    image: pretasiplus-api-migrate:local
+    working_dir: /app
+    command: ['npm', 'run', 'be:db:migrate']
+    user: node
+    environment:
+      NODE_ENV: production
+      HOME: /tmp
+      npm_config_cache: /tmp/.npm
+      npm_config_update_notifier: 'false'
+      # The password never appears in this file; it is interpolated from .env.rehearsal by the script (--env-file).
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pp}:${POSTGRES_PASSWORD:-}@db:5432/${PP_REHEARSAL_DB:-pp_rehearsal}
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+
+volumes:
+  pp_rehearsal_pgdata:
