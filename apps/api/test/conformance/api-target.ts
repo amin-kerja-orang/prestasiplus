@@ -61,6 +61,8 @@ const NEST_FALLBACK = /^\/api(\{\/?\*[A-Za-z_]*\}|\/\*[A-Za-z_]*)$/
 /** Routes outside the contract on purpose, each with its reason. Nothing else may be unknown. */
 export const NON_CONTRACT_ROUTES: Record<string, string> = {
   'GET /health': 'liveness / readiness probe (BE-01); infrastructure, not part of the product contract',
+  'GET /ready': 'readiness probe (BE-33): database reachable and migrations applied; infrastructure, not part of the product contract',
+  'GET /metrics': 'Prometheus exposition (BE-33), internal network or admin only; infrastructure, not part of the product contract',
   'POST /me/parent-invite/generate':
     'mock-compat alias of POST /me/parent-invite (BE-25 deviation); removed when the frontend moves to the canonical route (V2-T31)',
 }

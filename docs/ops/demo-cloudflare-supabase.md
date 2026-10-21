@@ -147,6 +147,8 @@ anywhere; it is not needed.
    | `IC_HASH_KEY` | `<IC_HASH_KEY>` |
    | `PUBLIC_ORIGINS` | `https://<project>.pages.dev` (fill after step 5 if you do not know the name yet; then redeploy) |
    | `PUBLIC_BASE_URL` | the same `https://<project>.pages.dev` (class QR join links). Must be a valid URL: an empty value fails the boot. If the Pages name is not known yet, enter `https://<project>.pages.dev` with your planned project name |
+   | `CLIENT_IP_HEADER` | `x-pp-client-ip` (not secret; see "Edge client IP + no-store (go-live fix)" below) |
+   | `EDGE_PROXY_SECRET` | secret, at least 32 characters, the SAME value as the Pages secret of the same name. Generate it on the laptop with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` and paste it straight into the dashboard; never write it in the repo, a ticket or a chat |
 
    Fixed by the blueprint (check, do not change): `NODE_ENV=production`, `COOKIE_SECURE=true`,
    `TRUST_PROXY_HOPS=2`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `BIJAK_POC_QUESTIONS=true`,
@@ -163,12 +165,18 @@ Why these values:
 - `COOKIE_SECURE=true` works behind the proxy: the browser talks HTTPS to Pages, so it accepts and returns a
   `Secure` cookie; the Function then calls Render over HTTPS. The API does not need to see HTTPS itself to *set*
   a Secure cookie. Rehearsed over plain http with `COOKIE_SECURE=false` only.
-- `TRUST_PROXY_HOPS=2`: the Function overwrites `X-Forwarded-For` with `CF-Connecting-IP` (the real client) and
-  Render's proxy appends the Function's egress address. Express then skips the Render peer and the last entry and
-  sees the client, which keys the login and public throttles per client. With 1, all users share one address
-  (the Cloudflare egress): 20 failed logins a minute across the whole class would lock everyone out. Too high
-  would let a client pick its own address. Smoke test step 5 proves "not too high"; for "not too low", log in with
-  a wrong password 6 times from your phone (mobile data) and confirm the laptop can still log in.
+- `TRUST_PROXY_HOPS=2`: still governs `req.secure`/protocol handling (the Function sends `X-Forwarded-Proto: https`
+  and Render's proxy adds its own hop). It no longer decides the throttle key once `CLIENT_IP_HEADER` and
+  `EDGE_PROXY_SECRET` are set: the API then keys the login and public throttles on `X-PP-Client-IP`, which the edge
+  fills from `CF-Connecting-IP` and which the API accepts only together with the matching `X-PP-Edge-Secret`. A
+  caller that hits `onrender.com` directly has no secret, so the API ignores its headers and uses the socket peer:
+  it can no longer pick its own throttle bucket. If the variables are unset (or the secret is wrong) the API falls
+  back to the socket peer, never to a client-supplied value. Without the two variables the old behaviour applies:
+  the Function overwrites `X-Forwarded-For` with `CF-Connecting-IP`, Render appends the Function's egress address,
+  and with 2 hops Express reads the client. With 1 hop all users share one address (the Cloudflare egress: 20 failed
+  logins a minute across the class would lock everyone out); too high lets a client pick its address. Smoke test
+  step 5 proves "not too high"; for "not too low", log in with a wrong password 6 times from your phone (mobile data)
+  and confirm the laptop can still log in.
 
 **Alternative host: Koyeb free.** If Render is unavailable: Koyeb -> Create Web Service -> GitHub -> the repo,
 builder **Dockerfile**, path `docker/api/Dockerfile`, instance **Free**, region Singapore if offered (else
@@ -196,8 +204,9 @@ smoke step 5 (start with 2). Then use the Koyeb URL as `API_ORIGIN` in step 5.
    | `VITE_API_BASE_URL` | empty (same origin) | build |
    | `VITE_TEST_HOOKS` | `false` | build |
    | `API_ORIGIN` | `https://<service>.onrender.com` (no trailing path) | the Function at runtime. Unset = every `/api` call answers 500 (fails closed). Set it for **Production only** unless you need preview URLs to work: preview URLs are public too. |
+   | `EDGE_PROXY_SECRET` | **Encrypted secret**, the SAME value as on Render (Settings -> Variables and Secrets -> type Secret). With it the Function/worker sends `X-PP-Edge-Secret` to the API. Unset = the header is not sent. For a direct-upload project: `npx wrangler pages secret put EDGE_PROXY_SECRET --project-name <project>` (prompts for the value), then redeploy. |
 
-   `VITE_*` values are public in the bundle: never put a secret in one. `API_ORIGIN` is not secret either.
+   `VITE_*` values are public in the bundle: never put a secret in one. `API_ORIGIN` is not secret either; `EDGE_PROXY_SECRET` is, and is never baked into the bundle (runtime only).
 4. Save and Deploy. When it is live, note `https://<project>.pages.dev`, then put exactly that origin into
    Render `PUBLIC_ORIGINS` and `PUBLIC_BASE_URL` and redeploy Render (step 4.4) if it was not set yet.
 5. What is in place: `public/_routes.json` limits the Function to `/api/*` (static files never invoke it, which
@@ -210,6 +219,69 @@ smoke step 5 (start with 2). Then use the Koyeb URL as `API_ORIGIN` in step 5.
    unless the API set one, never proxies to another host, answers 502 in the API error envelope when the API is
    unreachable, and for `POST /api/files` answers 413 over 22 MB and 411 without a valid `Content-Length`
    (browsers always send one for FormData).
+
+## Edge client IP + no-store (go-live fix)
+
+> **User action - deploy needs G6 confirmation.** Nothing here is applied by the agent. Do it yourself (or tell the
+> Delivery Lead to proceed) after confirming; the agent never touches Render, Cloudflare or Supabase.
+
+What it fixes: (a) the API throttles per real client even if someone calls `onrender.com` directly, and (b) every
+proxied `/api/*` answer carries `cache-control: no-store` unless the API set its own (file downloads do).
+
+Code: [deploy/pages-direct/_worker.js](../../deploy/pages-direct/_worker.js) (direct upload) and
+`functions/api/[[path]].ts` (Git-connected Pages). Both delete client-supplied `x-forwarded-for`, `x-real-ip`,
+`cf-connecting-ip`, `true-client-ip`, `x-pp-client-ip`, `x-pp-edge-secret`, `forwarded`, `x-forwarded-port`,
+`x-forwarded-ssl`, then set `x-forwarded-for`, `x-real-ip` and `x-pp-client-ip` from Cloudflare's `CF-Connecting-IP`
+(none when it is absent) and `x-pp-edge-secret` from `EDGE_PROXY_SECRET` (only when set).
+
+Exact names per platform:
+
+| Platform | Key | Type | Value |
+|---|---|---|---|
+| Render (API) | `CLIENT_IP_HEADER` | plain env | `x-pp-client-ip` |
+| Render (API) | `EDGE_PROXY_SECRET` | secret env (`sync: false`) | generated value, at least 32 characters |
+| Cloudflare Pages | `EDGE_PROXY_SECRET` | encrypted secret | the SAME value |
+| Render (API) | `TRUST_PROXY_HOPS` | plain env | stays `2` (still drives `req.secure`/HSTS and the fallback when `CLIENT_IP_HEADER` is unset) |
+| Cloudflare Pages | `API_ORIGIN` | plain env | unchanged (the Render URL) |
+
+Generate once on the laptop: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+
+Set both `EDGE_PROXY_SECRET` (same value on Pages and Render, at least 32 characters; surrounding whitespace is ignored) and `CLIENT_IP_HEADER=x-pp-client-ip` BEFORE deploying. With them unset `req.ip` comes from X-Forwarded-For and a direct call to the onrender.com origin can spoof it, and the API logs a `ClientIp` warning at boot in production.
+
+Rollout order (recommended: Pages first, then Render):
+1. Pages: set the secret (`npx wrangler pages secret put EDGE_PROXY_SECRET --project-name <project>`, or dashboard ->
+   Settings -> Variables and Secrets), then re-upload the build with the new `_worker.js` (step 10; secrets apply to
+   new deployments). A worker that sends the secret header to an API that does not use it is harmless.
+2. Render: add `CLIENT_IP_HEADER=x-pp-client-ip` and `EDGE_PROXY_SECRET=<same value>`, then redeploy (wait for
+   "Live" and `API listening on port 10000`; a secret shorter than 32 characters fails the boot and names the key).
+3. Verify (below).
+
+Doing Render first is safe but has a gap: until the new worker is uploaded the API sees no valid secret, falls back to
+the socket peer (the Cloudflare egress), and all users briefly share one throttle bucket. If you do it that way, do
+both steps within minutes.
+
+Verify:
+- After the first request through the edge, the Render log shows NO `ClientIp` warning (a mismatch warning means the secrets differ: every user would share one throttle bucket).
+- `BASE_URL=https://<project>.pages.dev DEMO_PASSWORD='<demo password>' bash scripts/demo-smoke.sh`. Step 1 asserts
+  `cache-control: ...no-store` on `GET /api/health` ("/api answers are not cached (no-store)"). Step 5 sends six
+  wrong-password logins with a different spoofed `X-Forwarded-For` each and expects 429 on the 6th (the real
+  client address, from the edge, is the same each time). Both must PASS.
+- The two-network check (REQUIRED, step 5 alone cannot tell "spoof ignored" from "everyone in one bucket"): 6
+  wrong-password logins from your phone on mobile data, then confirm the laptop on another network can still log in.
+  If the laptop also gets 429, the secrets differ (the API logs one `ClientIp` warning that the edge secret is missing
+  or does not match): fix `EDGE_PROXY_SECRET` on both sides, or roll back below.
+- Optional direct-caller check: 6 wrong-password logins straight against `https://<service>.onrender.com/api/auth/login`
+  with a changing `X-Forwarded-For` and `X-PP-Client-IP`: the 6th must be 429 (the bucket is the socket peer).
+
+Rollback:
+- API side: remove `CLIENT_IP_HEADER` on Render and redeploy: back to today's behaviour (`TRUST_PROXY_HOPS=2`).
+  `EDGE_PROXY_SECRET` may stay.
+- Edge side: Pages -> Deployments -> the previous deployment -> Rollback, or re-upload the previous `_worker.js`.
+  The secret on Pages can stay or be deleted.
+
+Rotate the secret: generate a new value and set it on Pages (then redeploy/re-upload) and on Render (then redeploy)
+together. While the two differ the API treats every request as untrusted and uses the socket peer: strict, never open
+(all users share one bucket for that gap, so keep it to a few minutes). Never print or log the value.
 
 ## 6. Wake it up before the demo
 
@@ -451,7 +523,7 @@ Rehearsed 2026-10-20 (be/demo-pages ad230a6 + base 01c47e75): merge clean, build
 | Supabase free: no daily backups, 500 MB | demo data only | `pg_dump` if needed |
 | Session pooler pool size (free ~15 per role) | the API's pg pool (10) fits; do not run several API instances | - |
 | Cloudflare Pages Functions free: 100,000 requests/day | ample | `_routes.json` keeps static files out |
-| The Render URL is public | a client that calls `onrender.com` directly (bypassing Pages) can spoof `X-Forwarded-For` (because of `TRUST_PROXY_HOPS=2`) and so dodge the per-address login throttle; the per-identifier limit (100 failures per 15 min) still applies, cookies and CSRF still apply | accepted for a temporary demo with fictitious data; a production setup needs a private origin or a proxy secret header |
+| The Render URL is public | with `CLIENT_IP_HEADER` + `EDGE_PROXY_SECRET` set, a client that calls `onrender.com` directly has no secret, so the API ignores its address headers and throttles it by its socket peer: it cannot pick its bucket. Without the two variables it can spoof `X-Forwarded-For` (because of `TRUST_PROXY_HOPS=2`) and dodge the per-address login throttle. The per-identifier limit (100 failures per 15 min), cookies and CSRF apply either way. A direct caller can still reach the API (CORS/CSRF/cookies decide the rest) | set both variables before go-live; a production setup should still use a private origin |
 | Frontend modules without an API route yet | those pages show their error state in the http build | demo only the flows listed in step 7 |
 
 ## Migration compatibility (Supabase Postgres 15/17)

@@ -28,7 +28,12 @@ import { walletSeed } from './wallet'
 import { contentSeed } from './content'
 import { gamificationSeed } from './gamification'
 import { cikguSeed } from './cikgu'
+import { gamesSeed } from './games'
 import { performanceSeed } from './poc/performance'
+import { battleSeed } from './battle'
+import { spmSeed } from './spm'
+import { spmSubjectConfigsSeed } from './spm-subject-configs'
+import { pocProfileSeed } from './poc'
 
 export { assertSeedAllowed }
 
@@ -60,14 +65,15 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue only
- * (`core-school-packages`), pinned by test/subscriptions/seed-production.spec.ts.
+ * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`) and the
+ * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
+ * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, cikguSeed, performanceSeed, practiceSeed, gamificationSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
@@ -119,7 +125,7 @@ export async function runSeeds(
   // Say so loudly: an operator must see that demo data was refused, not silently absent (BE-03 H2).
   if (skipped.length > 0) {
     console.warn(
-      `seed: demo modules skipped in production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
+      `seed: demo modules skipped: NODE_ENV is not development or test, so this run counts as production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
     )
   }
   return done
@@ -132,9 +138,63 @@ export function parseProfile(argv: readonly string[]): string {
   return value
 }
 
+export const FORCE_DEMO_FLAG = '--force-demo'
+
+/**
+ * `--force-demo` (BE-26, AC7; two keys, LEAD decision 2026-10-21 in #67): the explicit command-line opt-in to load demo
+ * data. In an environment the demo guard counts as production, the flag alone is REFUSED: ALLOW_DEMO_SEED=true (or 1)
+ * must also be set, so a demo load in production needs two keys. ALLOW_DEMO_SEED alone keeps working unchanged, and
+ * outside production the flag behaves as before. Production is whatever `assertSeedAllowed` refuses, so this follows the
+ * guard's own definition. When accepted, the flag sets ALLOW_DEMO_SEED on `env` so the demo guard in every module sees
+ * it. Returns whether it was passed; throws (before any database work) when it is refused.
+ */
+export function applyForceDemo(argv: readonly string[], env: Record<string, string | undefined> = process.env): boolean {
+  const bad = argv.find((a) => a.startsWith(`${FORCE_DEMO_FLAG}=`))
+  if (bad) throw new Error(`${FORCE_DEMO_FLAG} takes no value (got "${bad}"). Pass it alone.`)
+  if (!argv.includes(FORCE_DEMO_FLAG)) return false
+  try {
+    assertSeedAllowed(env)
+  } catch {
+    throw new Error(
+      `Refusing ${FORCE_DEMO_FLAG}: NODE_ENV is not development or test, so this run counts as production. ALLOW_DEMO_SEED=true must also be set (two keys). The database was not touched.`,
+    )
+  }
+  env.ALLOW_DEMO_SEED = 'true'
+  return true
+}
+
+/**
+ * True when the demo guard counts `env` as production, i.e. `assertSeedAllowed` would refuse it with no
+ * ALLOW_DEMO_SEED key. Uses the guard itself, so it follows the guard's own definition of production.
+ */
+export function countsAsProduction(env: Record<string, string | undefined> = process.env): boolean {
+  try {
+    assertSeedAllowed({ ...env, ALLOW_DEMO_SEED: undefined })
+    return false
+  } catch {
+    return true
+  }
+}
+
+/**
+ * The warning printed when an accepted --force-demo loads demo data into a run the guard counts as production
+ * (both keys given). Returns undefined when there is nothing to warn about.
+ */
+export function forceDemoProductionWarning(
+  forceDemo: boolean,
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
+  if (!forceDemo || !countsAsProduction(env)) return undefined
+  return `seed: --force-demo with ALLOW_DEMO_SEED passed, demo data will be loaded although this run counts as production (NODE_ENV=${env.NODE_ENV ?? '(unset)'}).`
+}
+
 async function main(): Promise<void> {
+  // Checked first, so a refused --force-demo never opens a database connection.
+  const forceDemo = applyForceDemo(process.argv.slice(2))
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is not set.')
+  const warning = forceDemoProductionWarning(forceDemo)
+  if (warning) console.warn(warning)
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)
   try {
