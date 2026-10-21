@@ -48,7 +48,7 @@ import { fileURLToPath } from 'node:url'
 
 import type pg from 'pg'
 
-import { runCli } from './cli'
+import { EXIT, runCli } from './cli'
 import { STAGING_SCHEMA } from './ddl/spec'
 import {
   ApplyGuardError,
@@ -66,7 +66,7 @@ import { quoteIdent } from './kit/sql'
 import { runCore } from './load'
 import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
 import { prepareOutputDir, ProfileOutputError } from './profile'
-import { linkQuestions } from './backfill/link-questions'
+import { linkQuestions, LinkQuestionsBusyError } from './backfill/link-questions'
 import { rollbackLegacy, runVerify, writeVerifyReport, type VerifyOptions, type VerifyReport } from './verify'
 
 type Env = Readonly<Record<string, string | undefined>>
@@ -494,7 +494,17 @@ export const migrateLinkQuestions: MigrateCommand = {
   summary: 'optional backfill: link migrated answers to bank questions by natural key + content hash (dry-run by default)',
   async run(args, ctx) {
     const batchSize = batchSizeOf(args)
-    const r = await linkQuestions({ pool: ctx.pool, env: ctx.env, source: 'cloud', mode: args.mode, batchSize })
+    let r: Awaited<ReturnType<typeof linkQuestions>>
+    try {
+      r = await linkQuestions({ pool: ctx.pool, env: ctx.env, source: 'cloud', mode: args.mode, batchSize })
+    } catch (e) {
+      // Another backfill holds the lock, or an ETL apply is running: the kit's "busy" exit code.
+      if (e instanceof LinkQuestionsBusyError) {
+        ctx.err(e.message)
+        return EXIT.busy
+      }
+      throw e
+    }
     ctx.out(`migrate:link-questions ${r.mode}`)
     ctx.out('examined | linked | ambiguous | unmatched | already linked')
     ctx.out(`${r.examined} | ${r.linked} | ${r.ambiguous} | ${r.unmatched} | ${r.alreadyLinked}`)

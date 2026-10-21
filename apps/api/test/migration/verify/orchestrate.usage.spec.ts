@@ -23,7 +23,10 @@ vi.mock('../../../src/migration/verify', () => ({
   writeVerifyReport: mocks.writeVerifyReport,
   rollbackLegacy: mocks.rollbackLegacy,
 }))
-vi.mock('../../../src/migration/backfill/link-questions', () => ({ linkQuestions: mocks.linkQuestions }))
+vi.mock('../../../src/migration/backfill/link-questions', async (importOriginal) => ({
+  LinkQuestionsBusyError: (await importOriginal<typeof import('../../../src/migration/backfill/link-questions')>()).LinkQuestionsBusyError,
+  linkQuestions: mocks.linkQuestions,
+}))
 
 /** A pool that must not be used for work: `current_database()` is all the apply guard asks. */
 const fakePool = {
@@ -185,6 +188,12 @@ describe('migrate:link-questions', () => {
     })
     expect((await run(['migrate:link-questions', '--apply'])).code).toBe(0)
     expect(mocks.linkQuestions).toHaveBeenCalledWith(expect.objectContaining({ mode: 'apply' }))
+  })
+
+  it('maps a busy refusal (lock held or an ETL apply running) to exit 4', async () => {
+    const { LinkQuestionsBusyError } = await import('../../../src/migration/backfill/link-questions')
+    mocks.linkQuestions.mockRejectedValue(new LinkQuestionsBusyError('Refusing --apply: another link-questions run holds the lock.'))
+    expect((await run(['migrate:link-questions', '--apply'])).code).toBe(4)
   })
 })
 
