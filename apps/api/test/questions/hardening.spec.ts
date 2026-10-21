@@ -206,7 +206,7 @@ describe('BE-09 hardening (real database)', () => {
   it('bulk publish skips the invalid-key row and counts only the valid one', async () => {
     const bad = await approvedWith(badTree)
     const good = await approvedWith(goodTree)
-    expect(await svc.bulkAction('published', [bad, good], admin)).toEqual({ affected: 1, ids: [good] })
+    expect(await svc.bulkAction('published', [bad, good], admin)).toEqual({ affected: 1, ids: [good], failed: [expect.objectContaining({ id: bad, code: 'VALIDATION_ERROR' })] })
     expect((await svc.getStatus(bad)).status).toBe('approved')
     expect((await svc.getStatus(good)).status).toBe('published')
   })
@@ -219,6 +219,6 @@ describe('BE-09 hardening (real database)', () => {
 
   it('bulkAction reports the ids it changed', async () => {
     const a = (await svc.create(mcqInput(tag), admin)).id
-    expect(await svc.bulkAction('review', [a, a, '999999999'], admin)).toEqual({ affected: 1, ids: [a] })
+    expect(await svc.bulkAction('review', [a, a, '999999999'], admin)).toEqual({ affected: 1, ids: [a], failed: [expect.objectContaining({ id: '999999999', code: 'NOT_FOUND' })] })
   })
 })
