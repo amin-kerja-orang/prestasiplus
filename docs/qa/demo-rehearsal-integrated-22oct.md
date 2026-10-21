@@ -57,12 +57,24 @@ A pairwise check on the tip showed that **#127, #134 and #135 conflict with each
 | Order | PR | Head | Result |
 |---|---|---|---|
 | 1 | #120 sync `feature/v2-backend` 2b0a9445 | `3726820d` | clean |
-| 2 | #105 m16 solo games over http | `862324b5` | **conflict** with #120 in `docs/architecture/v2-backend-deviations.md`: both append at the end of the file. I deferred #105 and merged it after #131, resolving it locally as a union. |
+| 2 | #105 m16 solo games over http | `862324b5`, then the delta to `063eca04` (round 2, pushed 21:11 UTC) merged on top | **conflict** with #120 in `docs/architecture/v2-backend-deviations.md`: both append at the end of the file. I deferred #105 and merged it after #131, resolving it locally as a union. |
 | 3 | #126 AZ-20a m06 SPM hub (stacked on #120) | `39949d55` | clean |
 | 4 | #128 AZ-17 PartInput and `pksk_choice` (stacked on #120) | `7c65a1dc` | clean |
 | 5 | #131 m28 intake review over http | `f4602e85` | clean |
 
 Not in the batch, so not rehearsed: #140 and #141 (AZ-21c and AZ-24, CI), and #142 (AZ-18, stacked on #131).
+
+### 3.3 Delta: #105 at `063eca04`
+
+The full UAT ran with #105 at `862324b5`. AZ-Dev1's round-2 head `063eca04` (14 files, solo-game retry and recovery) was then merged on top, giving local frontend head `3690bb41`, and these were re-run:
+
+| Check | Result |
+|---|---|
+| vue-tsc | 0 errors |
+| http build and bundle check | OK |
+| m16 unit tests | 40/40 files, 576 tests |
+| The five solo games at 375, 768 and 1280 on a fresh seed | **5/5 PASS at each width**, no horizontal scroll |
+| Kad Memori | 12 cards; full plays reach the result card at 1280 |
 
 ## 4. Gates on the merged trees (real output)
 
@@ -336,7 +348,7 @@ The batch merges with no code conflicts and stays green (sections 3 and 4). Ther
 1. #120.
 2. #126 and #128. Their base is `fe/sync-backend-2b0a9445` (#120's head). Retarget them to `be/integration-frontend` once #120 is in.
 3. #131.
-4. #105 last. Its author merges the new base first (append conflict with #120 in the deviations doc). AZ-Dev1 is also pushing the re-review fix (load-error retry), so re-pin the head.
+4. #105 last, at `063eca04` or newer (rehearsed in section 3.3). Its author merges the new base first (append conflict with #120 in the deviations doc).
 
 **Before the demo, separately from this batch:** fix D-01, D-02 and D-03 (one small frontend PR: string ids per the contract), or keep "Cipta Kelas", specific-Darjah practice and Battle Arena out of the demo script. D-05 and D-06 have workarounds (press "Jana Link Baru" first; use "kertas contoh").
 
