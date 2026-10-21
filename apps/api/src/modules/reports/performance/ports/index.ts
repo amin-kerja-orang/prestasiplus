@@ -1,4 +1,7 @@
 export * from './bijak-aggregate.port'
 export * from './classes-read.port'
 export * from './directory.port'
+export * from './gamification-read.port'
 export * from './performance-ports'
+export * from './practice-read.port'
+export * from './timeline-read.port'

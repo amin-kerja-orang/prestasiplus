@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import type { INestApplication } from '@nestjs/common'
+import type { INestApplication, Type } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { SessionSchema } from '@pp/contract'
 import request from 'supertest'
@@ -39,7 +39,7 @@ export interface IntegrationApp {
  * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
  * (PoC papers on the reserved ids AND bank questions in `question_versions`).
  */
-export async function bootIntegrationApp(opts: { pocQuestions?: boolean } = {}): Promise<IntegrationApp> {
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[] } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
   await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
@@ -70,7 +70,7 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean } = {}):
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, BijakIntegrationModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, BijakIntegrationModule, ...(opts.extraModules ?? [])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()

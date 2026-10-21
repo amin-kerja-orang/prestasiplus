@@ -65,5 +65,8 @@ export const AUDIT_ACTIONS = {
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
   KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
+  // BE-19 headcount (M08): no pupil data in the detail.
+  HEADCOUNT_CONFIG_RESET: 'headcount.config.reset',
+  HEADCOUNT_CONFIG_DELETED: 'headcount.config.deleted',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

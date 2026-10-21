@@ -11,6 +11,10 @@ export interface PupilRef {
   isActive: boolean
   /** Holds the student role. Only students have a Prestasi 360. */
   isStudent: boolean
+  /** Optional (public profile, BE-19): account creation time, tingkatan name and suspension. Absent = unknown. */
+  createdAt?: Date
+  levelName?: string | null
+  isSuspended?: boolean
 }
 
 export interface SchoolRef {

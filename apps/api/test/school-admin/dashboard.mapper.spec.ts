@@ -25,6 +25,7 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
     const p = performanceBlock(
       emptyView({
         stats: { students: 30, sessions: 41, answered: 600, accuracy: 72.5 },
+        gps: { value: 3.4, band: 'Baik', entries: 25 },
         levels: [
           { code: 't4', accuracy: 70.1, students: 15 },
           { code: 't5', accuracy: 75, students: 15 },
@@ -38,7 +39,8 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
     expect(p.practice).toEqual({ accuracy: 72.5, sessions: 41, questions: 600 })
     expect(p.levels.map((l) => l.accuracy)).toEqual([70.1, 75])
     expect(p.total).toBe(25)
-    expect(p.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
+    // BE-19's headcount GPS; the grade is the nearest grade point (3.4 is point 3, B+).
+    expect(p.gps).toEqual({ value: 3.4, grade: 'B+', band: 'Baik', entries: 25 })
   })
 
   it('k = 5: a level, a grade cell, the GPS and the whole practice block under 5 pupils are suppressed', () => {
@@ -62,6 +64,7 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
       { grade: 'B', count: 5, pct: 50 },
     ])
     expect(p.total).toBe(5)
+    // BE-19 already empties the GPS below 5 graded pupils: the neutral block comes through as null / 0.
     expect(p.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
   })
 

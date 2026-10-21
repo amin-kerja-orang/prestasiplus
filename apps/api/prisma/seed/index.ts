@@ -31,6 +31,7 @@ import { cikguSeed } from './cikgu'
 import { battleSeed } from './battle'
 import { spmSeed } from './spm'
 import { spmSubjectConfigsSeed } from './spm-subject-configs'
+import { performanceSeed } from './poc/performance'
 
 export { assertSeedAllowed }
 
@@ -70,7 +71,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, spmSubjectConfigsSeed, spmSeed, performanceSeed, practiceSeed, gamificationSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */

@@ -149,7 +149,7 @@ export function createExamSeed(options: ExamSeedOptions = {}): SeedModule {
       // M04 owns the questions (D12): load them only when its tables exist and a loader is wired.
       if (await questionTableExists(prisma)) {
         if (options.questionLoader) await options.questionLoader(ctx, POC_BANK, pocQuestionId)
-        else console.warn('seed exam: the questions table exists but no PocQuestionLoader is wired; PoC questions not loaded (BE-09 wire-up TODO)')
+        else console.warn('seed exam: PoC questions are not written to the questions table (no PocQuestionLoader wired); with BIJAK_POC_QUESTIONS=true the API serves them at runtime from the PoC bank')
       }
     },
   }

@@ -63,6 +63,34 @@ async function parentClassroom(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-19: the columns a headcount config needs: its teacher, class, subject and level (the class has its own level row). */
+async function headcountConfigColumns(query: FixtureQuery): Promise<Record<string, unknown>> {
+  const level = await parentLevel(query)
+  const classroom = await query<{ id: string }>(
+    `insert into classrooms (name, education_level_id, academic_year) values ('Kelas Contoh', $1, 2026) returning id::text as id`,
+    [level],
+  )
+  return {
+    teacher_id: await parentUser(query),
+    classroom_id: (classroom[0] as { id: string }).id,
+    subject_id: await parentSubject(query),
+    education_level_id: level,
+    academic_year: 2026,
+    active_otrs: 3,
+    mode: 'auto',
+  }
+}
+
+async function parentHeadcountConfig(query: FixtureQuery): Promise<string> {
+  const c = await headcountConfigColumns(query)
+  const rows = await query<{ id: string }>(
+    `insert into headcount_configs (teacher_id, classroom_id, subject_id, education_level_id, academic_year, active_otrs, mode)
+     values ($1, $2, $3, $4, $5, $6, $7) returning id::text as id`,
+    [c.teacher_id, c.classroom_id, c.subject_id, c.education_level_id, c.academic_year, c.active_otrs, c.mode],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 /** BE-44: a battle needs a mode and a question type (checks). */
 async function parentBattle(query: FixtureQuery): Promise<string> {
   const rows = await query<{ id: string }>(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text as id`)
@@ -103,6 +131,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // feedback (BE-20): the user must exist; role and satisfaction have checks.
   feedback: async (query) => ({ user_id: await parentUser(query), role: 'student', month: '2026-10-01', satisfaction: 4 }),
+  // headcount_configs (BE-19): teacher, class, subject and level must exist; mode, OTR count and year have checks.
+  headcount_configs: headcountConfigColumns,
+  // headcount_entries (BE-19): the config and the pupil must exist.
+  headcount_entries: async (query) => ({ config_id: await parentHeadcountConfig(query), student_id: await parentUser(query) }),
   // interventions (BE-20): pupil and author must exist; alert type and the free text are required.
   interventions: async (query) => ({
     student_id: await parentUser(query),
@@ -150,6 +182,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   // streaks and wallets (BE-11): one row per user, so a parent user is all they need.
   streaks: async (query) => ({ user_id: await parentUser(query) }),
+  // timeline_posts (BE-19): the owner must exist; category has a check and the title is required.
+  timeline_posts: async (query) => ({ user_id: await parentUser(query), title: 'Tajuk Contoh', category: 'lain' }),
   // teacher_profiles (BE-17): the user must exist.
   teacher_profiles: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),

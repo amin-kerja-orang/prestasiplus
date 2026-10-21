@@ -120,6 +120,25 @@ type ReadRule = (c: ReadContext) => boolean | Promise<boolean>
 
 const isRole = (c: ReadContext, ...roles: RoleCode[]): boolean => c.auth !== null && roles.includes(c.auth.active.role)
 
+// Personal data of a minor: the owner, admin, and staff whose scope covers the owner.
+// Classmates and other users in the same school are NOT entitled here (leaderboards and class lists are the
+// user cards' job). A teacher of the owner's class is entitled once class membership exists.
+async function ownerOrScopedStaff(c: ReadContext): Promise<boolean> {
+  if (c.owns || isRole(c, 'admin')) return true
+  if (c.auth && isRole(c, 'school_admin', 'ppd_officer')) {
+    const owner = await c.ownerSchool()
+    if (!owner) return false
+    try {
+      return new ScopeFilter(c.auth).isInScope(owner, { schoolColumn: 'schoolId', schoolRelation: 'school' })
+    } catch {
+      return false // a scope shape this check cannot express fails closed
+    }
+  }
+  // TODO(BE-17): allow a teacher whose class contains the owner. Until class membership exists a teacher
+  // gets 404 for other users' avatars (fail closed). Dependency: BE-17.
+  return false
+}
+
 const READ_RULES: Readonly<Record<string, ReadRule>> = {
   // Working photos of a pupil: the owner only.
   bijak_photo: (c) => c.owns,
@@ -132,24 +151,10 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   audio_kbat: (c) => isRole(c, 'admin'),
   // BE-24: private admin screenshots.
   cms_screenshot: (c) => isRole(c, 'admin'),
-  // Personal data of a minor: the owner, admin, and staff whose scope covers the owner.
-  // Classmates and other users in the same school are NOT entitled here (leaderboards and class lists are the
-  // user cards' job). A teacher of the owner's class is entitled once class membership exists.
-  avatar: async (c) => {
-    if (c.owns || isRole(c, 'admin')) return true
-    if (c.auth && isRole(c, 'school_admin', 'ppd_officer')) {
-      const owner = await c.ownerSchool()
-      if (!owner) return false
-      try {
-        return new ScopeFilter(c.auth).isInScope(owner, { schoolColumn: 'schoolId', schoolRelation: 'school' })
-      } catch {
-        return false // a scope shape this check cannot express fails closed
-      }
-    }
-    // TODO(BE-17): allow a teacher whose class contains the owner. Until class membership exists a teacher
-    // gets 404 for other users' avatars (fail closed). Dependency: BE-17.
-    return false
-  },
+  // BE-19: photo of a pupil timeline post: the same rule as avatar (LEAD). A file written under Mod Pelajar (is_test) is for
+  // its owner and admin only. Everyone else, another pupil and a teacher included, gets 404.
+  timeline_photo: (c) => (c.row.isTest ? c.owns || isRole(c, 'admin') : ownerOrScopedStaff(c)),
+  avatar: ownerOrScopedStaff,
 }
 
 /** Everything else (derived intake files, unknown purposes): the owner or an admin. */
