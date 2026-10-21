@@ -8,6 +8,7 @@
  */
 import type pg from 'pg'
 
+import { STAGING_SCHEMA } from '../ddl/spec'
 import { sanitizeDbError } from '../kit/errors'
 import { quoteIdent } from '../kit/sql'
 import { assertLegacySource, type LegacySource } from '../kit/types'
@@ -70,6 +71,15 @@ async function idMapCount(pool: pg.Pool, entity: string, source: LegacySource): 
   return Number(res.rows[0]?.n ?? 0)
 }
 
+/** Rows of a `staging_cloud` table now; null when the schema or table is not there (nothing to compare). */
+async function stagingCount(pool: pg.Pool, table: string): Promise<number | null> {
+  const name = `${quoteIdent(STAGING_SCHEMA)}.${quoteIdent(table)}`
+  const has = await pool.query<{ ok: boolean }>(`SELECT to_regclass($1) IS NOT NULL AS ok`, [name])
+  if (has.rows[0]?.ok !== true) return null
+  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${name}`)
+  return Number(res.rows[0]?.n ?? 0)
+}
+
 async function entityCheck(pool: pg.Pool, source: LegacySource, entry: MatrixEntry, recon: ReconRow | undefined): Promise<EntityCheck> {
   const base = {
     entity: entry.entity,
@@ -91,6 +101,12 @@ async function entityCheck(pool: pg.Pool, source: LegacySource, entry: MatrixEnt
     }
   }
   const problems: string[] = []
+  if (entry.plainRead && entry.stagingTable !== null) {
+    const live = await stagingCount(pool, entry.stagingTable)
+    if (live !== null && live !== recon.source_count) {
+      problems.push(`staging changed since the run (the run read ${recon.source_count} rows, ${entry.stagingTable} holds ${live} now)`)
+    }
+  }
   if (recon.status !== 'ok') problems.push('reconciliation row is not ok (eligible - loaded - rejected differs from expected_delta)')
 
   let targetCount: number | null = null

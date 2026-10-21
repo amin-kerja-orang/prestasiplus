@@ -15,6 +15,8 @@ const out = tempOutDir()
 
 beforeAll(async () => {
   h = await bootActivity({ core: false })
+  // Give every teacher profile data, so the profile rule has rows to lose (synthetic text).
+  await h.q(`update staging_cloud.users set teaching_subject = 'Subjek Ujian' where role = 'guru'`)
   runIds = await migrateAll(h)
 }, 300_000)
 afterAll(async () => {
@@ -89,7 +91,7 @@ describe('detects a mismatch', () => {
 
   it('a ledger amount changed after the load fails the sum check but not the entity table', async () => {
     const rows = await h.count('coin_ledger', `legacy_source = 'cloud'`)
-    if (rows === 0) return
+    expect(rows, 'the fixture must give migrated ledger rows').toBeGreaterThan(0)
     await h.q(`update coin_ledger set amount = amount + 1 where id = (select min(id) from coin_ledger where legacy_source = 'cloud')`)
     const report = await verify()
     const sum = report.checks.find((c) => c.name === 'ledger amount sum, staging versus v2')
@@ -110,4 +112,34 @@ describe('detects a mismatch', () => {
     const report = await verify()
     expect(report.entities.find((x) => x.entity === 'zz_unknown')?.status).toBe('mismatch')
   })
+
+  it('a staging table that changed since the run is a mismatch', async () => {
+    await h.q(`delete from staging_cloud.support_tickets where id = (select min(id) from staging_cloud.support_tickets)`)
+    const report = await verify()
+    const e = report.entities.find((x) => x.entity === 'support_tickets')
+    expect(e?.status).toBe('mismatch')
+    expect(e?.note).toContain('staging changed since the run')
+    expect(report.status).toBe('fail')
+  })
+
+  // The derived rows must have a lower bound too: deleting every one of them may not pass.
+  for (const [table, check, entity] of [
+    ['user_scopes', 'user_scopes rows versus admins and scoped officers', 'users'],
+    ['teacher_profiles', 'teacher_profiles rows versus teachers with profile data', 'users'],
+    ['attempt_results', 'attempt_results rows versus scored exam attempts', 'exam_attempts'],
+  ] as const) {
+    it(`all ${table} rows deleted after the load fail the derived count (entity ${entity} stays ok)`, async () => {
+      const where = table === 'attempt_results' ? 'true' : `legacy_source = 'cloud'`
+      const n = await h.count(table, where)
+      expect(n, `the fixture must give ${table} rows`).toBeGreaterThan(0)
+      await h.q(`delete from ${table} where ${where}`)
+      const report = await verify()
+      const c = report.checks.find((x) => x.name === check)
+      expect(c?.status).toBe('mismatch')
+      expect(c?.actual).toBe(0)
+      expect(c?.expected).toBe(n)
+      expect(report.status).toBe('fail')
+      expect(report.entities.find((x) => x.entity === entity)?.status).toBe('ok')
+    })
+  }
 })

@@ -36,7 +36,18 @@ export interface MatrixEntry {
   required: boolean
   /** One line for the report: the choice made for this row, when it is not the plain 1:1 copy. */
   note?: string
+  /**
+   * The step reads every row of `stagingTable` once (so `etl_recon.source_count` must equal the table's row count now).
+   * False for derived and filtered reads (distinct pairs, pivots, users with a referral code, ...).
+   */
+  plainRead: boolean
 }
+
+/** Entities whose read is NOT "every row of the staging table once". */
+const NOT_PLAIN_READ: ReadonlySet<string> = new Set([
+  'subject_levels', 'jpns', 'ppds', 'gamification_settings', 'challenge_completions', 'user_achievements',
+  'referral_codes', 'referrals', 'spm_targets',
+])
 
 const e = (
   entity: string,
@@ -44,7 +55,7 @@ const e = (
   targetTable: string,
   note?: string,
   count: MatrixEntry['count'] = 'legacy',
-): MatrixEntry => ({ entity, stagingTable, targetTable, count, required: true, ...(note ? { note } : {}) })
+): MatrixEntry => ({ entity, stagingTable, targetTable, count, required: true, plainRead: !NOT_PLAIN_READ.has(entity), ...(note ? { note } : {}) })
 
 /** In load order: BE-28 (`migrate:core`), then BE-29 (`migrate:activity`, groups catalogue, wallet, activity, content, ops). */
 export const ENTITY_MATRIX: readonly MatrixEntry[] = [
