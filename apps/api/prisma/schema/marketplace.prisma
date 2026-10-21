@@ -1,0 +1,110 @@
+// Marketplace tables (BE-46, owner module M20, buyer slice). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2. Hand-written in migration 0032_marketplace: identity columns, CHECK constraints (enums are
+// text + check), foreign keys to users (no Prisma relation, so identity.prisma stays untouched).
+
+model MarketplaceCategory {
+  id   BigInt @id @default(autoincrement())
+  slug String
+  name String
+  /// Font Awesome class kept verbatim, for example `fa-pencil-ruler`.
+  icon String
+
+  products MarketplaceProduct[]
+
+  @@unique([slug], map: "uq_marketplace_categories_slug")
+  @@map("marketplace_categories")
+}
+
+model MarketplaceSeller {
+  id             BigInt    @id @default(autoincrement())
+  /// FK users.id (SQL only), one shop per user.
+  userId         BigInt    @map("user_id")
+  shopName       String    @map("shop_name")
+  description    String?
+  phone          String
+  /// Digits only in practice; the URL builder strips anything else.
+  whatsapp       String
+  /// pending, active, suspended, banned (check constraint).
+  status         String
+  verifiedAt     DateTime? @map("verified_at") @db.Timestamptz(6)
+  whatsappClicks Int       @default(0) @map("whatsapp_clicks")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource   String?   @map("legacy_source")
+  legacyId       String?   @map("legacy_id")
+
+  products MarketplaceProduct[]
+
+  @@unique([userId], map: "uq_marketplace_sellers_user_id")
+  @@unique([legacySource, legacyId], map: "uq_marketplace_sellers_legacy")
+  @@index([status], map: "ix_marketplace_sellers_status")
+  @@map("marketplace_sellers")
+}
+
+model MarketplaceProduct {
+  id             BigInt   @id @default(autoincrement())
+  /// Null: a platform product ("PRESTASIPLUS Official").
+  sellerId       BigInt?  @map("seller_id")
+  name           String
+  slug           String
+  categoryId     BigInt   @map("category_id")
+  price          Decimal  @db.Decimal(10, 2)
+  originalPrice  Decimal? @map("original_price") @db.Decimal(10, 2)
+  description    String?
+  /// new, used (check).
+  condition      String
+  /// available, out_of_stock (check).
+  stockStatus    String   @map("stock_status")
+  /// active, draft, rejected (check).
+  status         String
+  /// pickup, postage, cod, free (check).
+  shippingMethod String   @map("shipping_method")
+  shippingFee    Decimal? @map("shipping_fee") @db.Decimal(10, 2)
+  location       String   @default("")
+  views          Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource   String?  @map("legacy_source")
+  legacyId       String?  @map("legacy_id")
+
+  seller   MarketplaceSeller?        @relation(fields: [sellerId], references: [id], onDelete: Restrict, map: "fk_marketplace_products_seller_id")
+  category MarketplaceCategory       @relation(fields: [categoryId], references: [id], onDelete: Restrict, map: "fk_marketplace_products_category_id")
+  images   MarketplaceProductImage[]
+  reviews  MarketplaceReview[]
+
+  @@unique([slug], map: "uq_marketplace_products_slug")
+  @@unique([legacySource, legacyId], map: "uq_marketplace_products_legacy")
+  @@index([status, categoryId], map: "ix_marketplace_products_status_category_id")
+  @@index([sellerId], map: "ix_marketplace_products_seller_id")
+  @@index([createdAt(sort: Desc), id], map: "ix_marketplace_products_created_at_id")
+  @@map("marketplace_products")
+}
+
+model MarketplaceProductImage {
+  id        BigInt @id @default(autoincrement())
+  productId BigInt @map("product_id")
+  /// 1 = "Utama".
+  position  Int    @db.SmallInt
+  /// Relative path kept as a frontend asset (BE-46 open question 2).
+  url       String
+
+  product MarketplaceProduct @relation(fields: [productId], references: [id], onDelete: Cascade, map: "fk_marketplace_product_images_product_id")
+
+  @@unique([productId, position], map: "uq_marketplace_product_images_product_position")
+  @@map("marketplace_product_images")
+}
+
+/// Read only in B1: there is no submission route.
+model MarketplaceReview {
+  id        BigInt   @id @default(autoincrement())
+  productId BigInt   @map("product_id")
+  /// FK users.id (SQL only).
+  userId    BigInt   @map("user_id")
+  rating    Int      @db.SmallInt
+  text      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  product MarketplaceProduct @relation(fields: [productId], references: [id], onDelete: Cascade, map: "fk_marketplace_reviews_product_id")
+
+  @@index([productId, createdAt(sort: Desc)], map: "ix_marketplace_reviews_product_id_created_at")
+  @@map("marketplace_reviews")
+}

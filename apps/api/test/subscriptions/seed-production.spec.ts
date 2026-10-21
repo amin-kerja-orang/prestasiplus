@@ -5,6 +5,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const counts = async (db: TestDatabase) => ({
   packages: Number((await db.query<{ n: string }>(`select count(*)::text n from school_packages`))[0]?.n),
+  categories: Number((await db.query<{ n: string }>(`select count(*)::text n from marketplace_categories`))[0]?.n),
   demoUsers: Number((await db.query<{ n: string }>(`select count(*)::text n from users where email like '%@demo.test'`))[0]?.n),
   demoSchools: Number((await db.query<{ n: string }>(`select count(*)::text n from schools where code like 'DEMO%'`))[0]?.n),
 })
@@ -21,14 +22,14 @@ describe('reference seeds in production', () => {
     await b.drop()
   })
 
-  it('only school-packages is a reference module', () => {
-    expect(seedModules.filter((m) => m.kind === 'reference').map((m) => m.name)).toEqual(['core-school-packages'])
+  it('only school-packages, the SPM subject configs and marketplace categories are reference modules', () => {
+    expect(seedModules.filter((m) => m.kind === 'reference').map((m) => m.name)).toEqual(['core-school-packages', 'spm-subject-configs', 'core-marketplace-categories'])
   })
 
-  it('production without the flag loads the 4 catalogue rows and no demo rows', async () => {
+  it('production without the flag loads the 4 catalogue rows, the 6 marketplace categories and no demo rows', async () => {
     const ran = await runSeeds(seedModules, { prisma: a.prisma, env: { NODE_ENV: 'production' } })
-    expect(ran).toEqual(['core-school-packages'])
-    expect(await counts(a)).toEqual({ packages: 4, demoUsers: 0, demoSchools: 0 })
+    expect(ran).toEqual(['core-school-packages', 'spm-subject-configs', 'core-marketplace-categories'])
+    expect(await counts(a)).toEqual({ packages: 4, categories: 6, demoUsers: 0, demoSchools: 0 })
     await runSeeds(seedModules, { prisma: a.prisma, env: { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'false' } })
     expect((await counts(a)).packages).toBe(4)
   })
@@ -39,6 +40,7 @@ describe('reference seeds in production', () => {
     expect(ran).toContain('core-identity')
     const c = await counts(b)
     expect(c.packages).toBe(4)
+    expect(c.categories).toBe(6)
     expect(c.demoUsers).toBeGreaterThan(0)
     expect(c.demoSchools).toBeGreaterThan(0)
   })

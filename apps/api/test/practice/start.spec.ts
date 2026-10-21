@@ -99,6 +99,26 @@ describe('AC3 start: every module error with its exact status, code and BM messa
     expect((await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.d1, difficulty: 3 })).status).toBe(201)
   })
 
+  it('the body is strict (BE-33 AC1c, #100): an unknown field is 422 naming it, and no session is written', async () => {
+    const before = await countRows(t.db, 'practice_sessions')
+    for (const extra of [{ ownerId: ids.maju }, { userId: ids.maju }, { isTest: true, score: 100 }]) {
+      const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, ...extra })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Nilai tidak sah.' })
+      for (const key of Object.keys(extra)) expect(res.body.error.fields[key]).toBe('Nilai tidak sah.')
+    }
+    // A prototype key is refused and named like any other (sent as raw JSON so it is an own key).
+    const proto = await pelajar.post('/api/practice/sessions', '{"mode":"random","subjectCode":"MATH","count":5,"__proto__":{"x":1}}').set('Content-Type', 'application/json')
+    expect(proto.status, JSON.stringify(proto.body)).toBe(422)
+    expect(Object.keys(proto.body.error.fields)).toContain('__proto__')
+    // An unknown key next to a bad known field reports both.
+    const both = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, difficulty: 9, ownerId: '1' })
+    expect(both.body.error.fields).toMatchObject({ difficulty: 'Nilai tidak sah.', ownerId: 'Nilai tidak sah.' })
+    expect(await countRows(t.db, 'practice_sessions')).toBe(before)
+    // The same body without the extra field still starts.
+    expect((await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })).status).toBe(201)
+  })
+
   it('402 TRIAL_EXHAUSTED when no subscription and no trial left; a subscribed user is never limited (AC2)', async () => {
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.pelajar])
     const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })

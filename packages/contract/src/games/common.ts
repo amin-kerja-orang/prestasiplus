@@ -12,10 +12,16 @@ import { IdSchema } from '../common/ids'
  *   indexes, not entities, and stay integers.
  * - The solo game session id is a uuid string in v2 (the mock's `tf_`, `speed_`... prefixes are gone);
  *   clients treat it as opaque.
- * - D54(d): leaderboards, room players and the weekly board show classmates' display names only;
+ * - D54(d), amended by the children's names rule (LEAD 2026-10-21, issue #76): leaderboards, room players and the
+ *   weekly board show another pupil's first name + initial and a null `userId`, unless the viewer is the pupil,
+ *   an admin, the school admin of the pupil's school or the teacher of the pupil's class (full name + id);
  *   every response object below is strict, so no other personal field (IC, e-mail, phone, birth date)
  *   can ride along.
  */
+
+/** Shared description of a ranking row's `userId` (children's names rule, LEAD 2026-10-21, issue #76). */
+export const GAMES_NAME_RULE =
+  "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null."
 
 /** The six room games (mock `RoomGame`). */
 export const GAMES_ROOM_GAMES = [

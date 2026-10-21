@@ -6,6 +6,8 @@
  */
 interface Env {
   API_ORIGIN?: string
+  /** Shared secret that proves to the API that X-PP-Client-IP came from this proxy (Pages encrypted secret). */
+  EDGE_PROXY_SECRET?: string
 }
 interface Ctx {
   request: Request
@@ -35,13 +37,17 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
   try {
     const url = new URL(request.url)
     upstream = new URL(url.pathname + url.search, base) // method-independent: path and query kept as-is
+    if (upstream.origin !== new URL(base).origin) throw new Error('origin') // never proxy to another host
   } catch {
     return errorResponse(500, 'SERVER_ERROR', 'Konfigurasi pelayan tidak lengkap.')
   }
 
   const incoming = new URL(request.url)
   if (incoming.pathname === '/api/files' && request.method === 'POST') {
-    const length = Number(request.headers.get('content-length') ?? '0')
+    // Browsers always send a length for FormData; a missing or invalid one (chunked) cannot be checked here.
+    const raw = request.headers.get('content-length')
+    const length = raw === null ? Number.NaN : Number(raw)
+    if (!Number.isFinite(length)) return errorResponse(411, 'VALIDATION_ERROR', 'Panjang kandungan diperlukan.')
     if (length > MAX_FILE_BODY_BYTES) {
       return errorResponse(413, 'VALIDATION_ERROR', 'Fail terlalu besar.')
     }
@@ -51,18 +57,24 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
   for (const name of HOP_BY_HOP) headers.delete(name)
   headers.delete('host')
   headers.delete('forwarded')
-  headers.delete('x-real-ip')
+  // Never trust client-supplied address or edge-auth headers; rebuild them from Cloudflare's own CF-Connecting-IP.
+  for (const name of [
+    'x-forwarded-for', 'x-real-ip', 'cf-connecting-ip', 'true-client-ip', 'x-pp-client-ip', 'x-pp-edge-secret',
+    'x-forwarded-port', 'x-forwarded-ssl',
+  ]) headers.delete(name)
   // OVERWRITE (never append) so a client cannot prepend a spoofed address to the rate-limit key.
-  const client = request.headers.get('cf-connecting-ip')
+  const client = (request.headers.get('cf-connecting-ip') ?? '').trim()
   if (client) {
     headers.set('x-forwarded-for', client)
     headers.set('x-real-ip', client)
-  } else {
-    headers.delete('x-forwarded-for')
+    headers.set('x-pp-client-ip', client)
   }
+  const secret = env.EDGE_PROXY_SECRET?.trim()
+  if (secret) headers.set('x-pp-edge-secret', secret) // never logged, never echoed in a response
   headers.set('x-forwarded-proto', 'https')
   headers.set('x-forwarded-host', incoming.host)
-  // Origin, Referer and x-csrf-token are forwarded untouched (copied from the request above).
+  // Cookie, Origin, Referer, x-csrf-token and X-Request-Id are forwarded untouched (copied from the request above);
+  // the API keeps a safe X-Request-Id or makes its own and returns it on the response.
 
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD'
   let res: Response
@@ -86,5 +98,7 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
     out.append(name, value)
   })
   for (const cookie of res.headers.getSetCookie()) out.append('set-cookie', cookie) // each one, unchanged
+  // No caching of /api at the edge or in the browser unless the API itself says otherwise (file downloads do).
+  if (!out.has('cache-control')) out.set('cache-control', 'no-store')
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out })
 }

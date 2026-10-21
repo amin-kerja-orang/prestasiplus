@@ -34,6 +34,16 @@ function sha256(path) {
   });
 }
 
+const COUNT_ALL_SQL =
+  "select table_name || '|' || (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text " +
+  "from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by table_name";
+
+/** Exact row count of every public base table (including _prisma_migrations): Map(table -> count). */
+function countAll(target, db) {
+  const out = sql(target, db, COUNT_ALL_SQL);
+  return new Map(out ? out.split('\n').map((l) => l.split('|')) : []);
+}
+
 /** Run one SQL statement via stdin (no shell quoting). `db` null = the main database (read-only use). */
 function sql(target, db, statement) {
   const dbArg = db === null ? '"$POSTGRES_DB"' : `'${db}'`;
@@ -106,6 +116,20 @@ async function main() {
         console.log(`rows in ${t}: ${sql(target, dbName, `select count(*) from ${t}`)}`);
       }
     }
+
+    // Compare every table of the source (main) database with the restored copy. The source must be
+    // idle (no writes since the backup), otherwise a legitimate difference shows up as a mismatch.
+    const src = countAll(target, null);
+    const dst = countAll(target, dbName);
+    const bad = [];
+    let total = 0;
+    for (const t of new Set([...src.keys(), ...dst.keys()])) {
+      total += Number(dst.get(t) ?? 0);
+      if (src.get(t) !== dst.get(t)) bad.push(`${t}: source ${src.get(t) ?? 'missing'}, restored ${dst.get(t) ?? 'missing'}`);
+    }
+    console.log(`row-count comparison: ${src.size} source tables, ${dst.size} restored tables, ${total} rows restored, ${bad.length} mismatches`);
+    if (bad.length) throw new OpsError(`ROW-COUNT COMPARISON FAILED\n  ${bad.join('\n  ')}`);
+    console.log('ROW-COUNT COMPARISON PASSED');
   } catch (e) {
     failed = e;
   } finally {

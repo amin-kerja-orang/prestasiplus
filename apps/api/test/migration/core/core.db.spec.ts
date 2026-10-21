@@ -88,10 +88,12 @@ describe('dry-run (AC6)', () => {
 
 describe('apply', () => {
   let rejectsByReason: Record<string, number>
+  let applyRunId: string
 
   it('loads the fixture, reconciles source = loaded + rejected per table', async () => {
     const { report } = await run('apply')
     expect(report.status).toBe('succeeded')
+    applyRunId = report.runId
     const by = Object.fromEntries(report.recon.map((r) => [r.entity, r]))
     for (const r of report.recon) expect(r.eligibleCount - r.loaded - r.rejected, r.entity).toBe(0)
     expect(by.users).toMatchObject({ sourceCount: 13, loaded: 11, rejected: 2 })
@@ -109,7 +111,8 @@ describe('apply', () => {
 
   it('quarantines the planted unknown role and the orphan user, and migrates no default role (AC1, AC5)', async () => {
     const rejects = await q<{ legacy_id: string; reason: string; column_name: string; offending: string | null }>(
-      `select legacy_id, reason, column_name, offending from etl_rejects where entity = 'users' order by legacy_id::int`,
+      `select legacy_id, reason, column_name, offending from etl_rejects where run_id = $1 and entity = 'users' order by legacy_id::int`,
+      [applyRunId],
     )
     expect(rejects).toEqual([
       { legacy_id: '4', reason: 'ORPHAN_PARENT', column_name: 'school_id', offending: null },
