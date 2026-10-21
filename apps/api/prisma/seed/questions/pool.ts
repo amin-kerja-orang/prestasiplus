@@ -15,7 +15,7 @@
  *   over D1 to D4). Published, active, single-part MCQ, difficulty TP 1 to 4 and cognitive level like the Tingkatan rows,
  *   but NOT in the SPM pool and WITHOUT a DSKP unit or SP: the curriculum has no DSKP nodes below Tingkatan 4, so these
  *   rows are untagged like the base seed's untagged rows (practice and the games do not read the tag; the publish gate
- *   applies to API writes, not to this seed). `form_origin` keeps its column default.
+ *   applies to API writes, not to this seed). `form_origin` is `t1_t3`, as the questions module sets it below T4.
  *   They are inserted AFTER every Tingkatan row, so no Tingkatan pool id moves, and a re-run on a database seeded
  *   before AZ-02 inserts only the Darjah rows.
  * - Stem = the full question text (the battle arena and the games show the stem), same text as the part prompt.
@@ -150,7 +150,8 @@ export const questionPoolSeed: SeedModule = {
               questionId: questionIds[i] as bigint, versionNo: 1, status: 'published', publishedAt: now,
               type: 'mcq', stemMs: s.text, numberLabel: s.ref, language: 'ms',
               subjectId, educationLevelId: levelId, unitNodeId: pick(s)?.unitNodeId ?? null,
-              ...(tingkatan ? { formOrigin: level === 'T5' ? 't5' : 't4' } : {}),
+              // As `QuestionsService.formOriginOf`: T4, T5, else t1_t3 (Darjah rows included).
+              formOrigin: level === 'T5' ? 't5' : level === 'T4' ? 't4' : 't1_t3',
               cognitiveLevel: s.cognitiveLevel, difficultyTp: s.difficultyTp,
               sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
             })),

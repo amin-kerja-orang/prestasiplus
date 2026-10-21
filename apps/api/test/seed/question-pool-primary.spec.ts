@@ -123,13 +123,14 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
   })
 
   const poolRows = () =>
-    t.db.query<{ subject: string; level: string; n: number; live: number; tp: number; untagged: number; spm: number }>(
+    t.db.query<{ subject: string; level: string; n: number; live: number; tp: number; untagged: number; spm: number; origin: number }>(
       `select s.code as subject, l.code as level, count(*)::int as n,
               count(*) filter (where q.live_version_no = 1 and v.status = 'published' and q.is_active and v.type = 'mcq')::int as live,
               count(*) filter (where v.difficulty_tp between 1 and 4 and v.cognitive_level is not null)::int as tp,
               count(*) filter (where v.unit_node_id is null
                 and not exists (select 1 from question_version_sp_nodes sp where sp.question_version_id = v.id))::int as untagged,
-              count(*) filter (where exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool' and g.code = 'spm'))::int as spm
+              count(*) filter (where exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool' and g.code = 'spm'))::int as spm,
+              count(*) filter (where v.form_origin = case l.code when 'T5' then 't5' when 'T4' then 't4' else 't1_t3' end)::int as origin
          from question_versions v
          join questions q on q.id = v.question_id
          join subjects s on s.id = v.subject_id
@@ -138,18 +139,18 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
         group by s.code, l.code`,
     )
 
-  it(`writes ${PRIMARY_PER_LEVEL} published, live MCQs per subject at each of D1 to D4, untagged and outside the SPM pool`, async () => {
+  it(`writes ${PRIMARY_PER_LEVEL} published, live MCQs per subject at each of D1 to D4, untagged, outside the SPM pool, form origin t1_t3`, async () => {
     const rows = (await poolRows()).filter((r) => r.level.startsWith('D'))
     expect(rows).toHaveLength(PRIMARY_SUBJECTS.length * PRIMARY_LEVELS.length)
     for (const r of rows) {
       expect(PRIMARY_SUBJECTS as readonly string[]).toContain(r.subject)
-      expect(r, `${r.subject} ${r.level}`).toMatchObject({ n: PRIMARY_PER_LEVEL, live: PRIMARY_PER_LEVEL, tp: PRIMARY_PER_LEVEL, untagged: PRIMARY_PER_LEVEL, spm: 0 })
+      expect(r, `${r.subject} ${r.level}`).toMatchObject({ n: PRIMARY_PER_LEVEL, live: PRIMARY_PER_LEVEL, tp: PRIMARY_PER_LEVEL, untagged: PRIMARY_PER_LEVEL, spm: 0, origin: PRIMARY_PER_LEVEL })
     }
   })
 
   it('leaves the Tingkatan pool as it was (24 per subject and level, all in the SPM pool) and inserts it first', async () => {
     const rows = (await poolRows()).filter((r) => r.level.startsWith('T'))
-    for (const r of rows) expect(r, `${r.subject} ${r.level}`).toMatchObject({ n: POOL_PER_LEVEL, spm: POOL_PER_LEVEL })
+    for (const r of rows) expect(r, `${r.subject} ${r.level}`).toMatchObject({ n: POOL_PER_LEVEL, spm: POOL_PER_LEVEL, origin: POOL_PER_LEVEL })
     const [order] = await t.db.query<{ t_max: string; d_min: string }>(
       `select max(q.id) filter (where l.code like 'T%')::text as t_max, min(q.id) filter (where l.code like 'D%')::text as d_min
          from questions q join question_versions v on v.question_id = q.id join education_levels l on l.id = v.education_level_id
