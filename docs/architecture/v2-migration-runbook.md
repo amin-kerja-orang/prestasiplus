@@ -429,7 +429,8 @@ Migrated rows that other data depends on:
 - **Released seed rows.** In reference tables whose loader adopts seed rows (levels, subjects, chapters, topics, geography, tiers, achievements, settings), an adopted row that something references is **released**: its legacy pair (`legacy_source`, `legacy_id`) is set to NULL and the row stays. The report prints these as `released`, per table. An adopted row that nothing references cannot be told from an inserted one and is deleted. The values the ETL wrote into released rows are not restored.
 - **After a rollback on a shared database, re-run the idempotent seeds** (`npm run be:db:seed`) to restore the seed rows, and only then compare the counts (below).
 - **`coin_ledger`** is append-only (trigger). Its rows are not deleted one by one; they go with their user through the user cascade, and the rollback checks that no migrated ledger row is left.
-- **Warnings.** The report prints `warnings`. If an apply run did not finish, its checkpoints are kept, and the next load must **not** resume that run: start a fresh dry-run and apply.
+- **Concurrency.** The rollback takes a lock per source and **refuses** (no change) while another rollback holds it or while an apply run of the source is `running` in `etl_runs`. A crashed run stays `running`: confirm no load is active, mark that run `failed`, then retry. The same refusal applies to `migrate:link-questions --apply` (exit 4).
+- **Warnings.** The report prints `warnings`, including one for every reference table with deleted rows (they may be adopted seed rows: re-run the seeds, above). If an apply run did not finish, its checkpoints are kept, and the next load must **not** resume that run: start a fresh dry-run and apply.
 
 **Prove the result.** Do not re-run `migrate:verify`; it reads the loaded data and would report mismatches by design. Instead:
 
