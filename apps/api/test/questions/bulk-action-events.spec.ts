@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
-import { mcqBody, refsOf, type Refs } from './http-helpers'
+import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
 interface EventRow {
   question_id: string
@@ -117,6 +117,42 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const after = await eventsOf([bare])
     expect(after.length).toBe(before.length)
     expect(after.filter((e) => e.request_id === requestId)).toEqual([])
+  })
+
+  it('a publish that passes the tag gate writes one approved to published event; a gate-failing sibling in the same request writes none', async () => {
+    // Fixture mirrors publish-endpoint.spec.ts "bulk publish" (line 58): create with status `approved`, with and without the full tag.
+    const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
+    const make = async (over: Record<string, unknown>): Promise<string> => {
+      const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', ...over }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return (res.body as { data: { id: string } }).data.id
+    }
+    const bare = await make({})
+    const tagged = await make({ tag })
+    const beforeBare = (await eventsOf([bare])).length
+    const beforeTagged = (await eventsOf([tagged])).length
+
+    const requestId = 'be33-bulk-publish-ok-1'
+    const res = await bulk({ action: 'published', ids: [bare, tagged] }, requestId)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body.data).toEqual({ affected: 1 })
+
+    expect(await statusOf(tagged)).toBe('published')
+    expect(await statusOf(bare)).toBe('approved')
+    const mine = (await eventsOf([bare, tagged])).filter((e) => e.request_id === requestId)
+    expect(mine.length).toBe(1)
+    expect(mine[0]).toEqual({
+      question_id: tagged,
+      version_no: await latestVersionOf(tagged),
+      from_status: 'approved',
+      to_status: 'published',
+      actor_user_id: admin.userId,
+      actor_role: 'admin',
+      reason: null,
+      request_id: requestId,
+    })
+    expect((await eventsOf([bare])).length).toBe(beforeBare)
+    expect((await eventsOf([tagged])).length).toBe(beforeTagged + 1)
   })
 
   it('delete writes no status event', async () => {
