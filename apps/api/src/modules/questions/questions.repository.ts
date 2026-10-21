@@ -51,6 +51,19 @@ export interface VersionDraft {
   parts: PartDraft[]
 }
 
+/**
+ * Provenance columns of the first version (BE-38 accept-to-Draf; `source_type` goes on the question, the rest on
+ * `question_versions`). Every field is optional; ids are bigint.
+ */
+export interface VersionProvenance {
+  sourceRegion?: unknown
+  sourcePaperId?: bigint | null
+  intakeItemId?: bigint | null
+  sourceFileId?: bigint | null
+  aiRunId?: bigint | null
+  aiModel?: string | null
+}
+
 export interface NewQuestion {
   sourceType: StoreSourceType | null
   createdById: bigint | null
@@ -60,6 +73,7 @@ export interface NewQuestion {
   /** Clock time: stamps created_at / updated_at (and published_at when created published). */
   now: Date
   version: VersionDraft
+  provenance?: VersionProvenance
 }
 
 export interface NewStimulus {
@@ -427,7 +441,7 @@ export class QuestionsRepository {
         ...(input.spmPool ? { tags: { create: [{ kind: 'pool', code: 'spm' }] } } : {}),
       },
     })
-    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null)
+    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null, input.provenance)
     return idToString(q.id)
   }
 
@@ -547,10 +561,34 @@ export class QuestionsRepository {
     }
   }
 
-  private async insertVersion(questionId: bigint, versionNo: number, draft: VersionDraft, now: Date, publishedAt: Date | null): Promise<void> {
+  private async insertVersion(
+    questionId: bigint,
+    versionNo: number,
+    draft: VersionDraft,
+    now: Date,
+    publishedAt: Date | null,
+    provenance?: VersionProvenance,
+  ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
     const version = await this.db.questionVersion.create({
-      data: { questionId, versionNo, publishedAt, createdAt: now, updatedAt: now, ...this.versionColumns(columns) },
+      data: {
+        questionId,
+        versionNo,
+        publishedAt,
+        createdAt: now,
+        updatedAt: now,
+        ...this.versionColumns(columns),
+        ...(provenance === undefined
+          ? {}
+          : {
+              ...(provenance.sourceRegion === undefined || provenance.sourceRegion === null ? {} : { sourceRegion: provenance.sourceRegion as object }),
+              sourcePaperId: provenance.sourcePaperId ?? null,
+              intakeItemId: provenance.intakeItemId ?? null,
+              sourceFileId: provenance.sourceFileId ?? null,
+              aiRunId: provenance.aiRunId ?? null,
+              aiModel: provenance.aiModel ?? null,
+            }),
+      },
     })
     await this.insertChildren(version.id, spNodeIds, stimulusIds, parts)
   }

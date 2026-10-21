@@ -39,6 +39,23 @@ export type StoreQuestionType = (typeof STORE_QUESTION_TYPES)[number]
 
 export type ViewMode = 'live' | 'latest'
 
+/**
+ * Where a question came from, handed to `QuestionsService.createFromIntake` (BE-38 accept-to-Draf; US-16). Ids are decimal
+ * strings. `sourceType` goes on the question; the others on its first version.
+ */
+export interface QuestionProvenance {
+  sourceType: StoreSourceType
+  numberLabel: string | null
+  sourcePage: number | null
+  /** `{ page, x, y, w, h }` of the question on the source page. */
+  sourceRegion: unknown
+  sourcePaperId: string | null
+  intakeItemId: string | null
+  sourceFileId: string | null
+  aiRunId: string | null
+  aiModel: string | null
+}
+
 /** Who performs a write. `role` is the ACTIVE role of the session. */
 export interface QuestionActor {
   userId: string
