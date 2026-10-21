@@ -358,11 +358,13 @@ describe('public profile and timeline', () => {
     posts: [],
   } as unknown as PublicProfile
 
-  it('posts: [] renders the profile without a Timeline section or an error', async () => {
+  it('posts: [] renders the profile with the Timeline empty state and no error', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
     perf.fetchPublicProfile.mockResolvedValue(profile)
     const w = await render(PublicProfilePage, '/pelajar/1042', '/pelajar/:id')
+    vi.unstubAllEnvs()
     expect(w.find('[data-testid=profile-card]').exists()).toBe(true)
-    expect(w.find('[data-testid=profile-posts]').exists()).toBe(false)
+    expect(w.get('[data-testid=profile-posts]').text()).toContain('Tiada catatan lagi.')
     expect(w.find('[data-testid=page-error]').exists()).toBe(false)
   })
 

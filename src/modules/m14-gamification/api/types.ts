@@ -153,7 +153,8 @@ export interface ChallengesMeta {
 /** #8 `data.podium[]` (ranks 1–3). */
 export interface PodiumEntry {
   rank: number
-  userId: number
+  /** `null` for a masked (child-privacy) name: no link, never "me". */
+  userId: number | null
   name: string
   initials: string
   totalSyilingEarned: number
@@ -163,7 +164,8 @@ export interface PodiumEntry {
 /** #8 `data.rows[]` (ranks 4–50). */
 export interface LeaderboardRow {
   rank: number
-  userId: number
+  /** `null` for a masked (child-privacy) name: no link, never "me". */
+  userId: number | null
   name: string
   initials: string
   title: string

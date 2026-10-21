@@ -97,6 +97,29 @@ describe('S14 LeaderboardPage', () => {
     expect(rows[0]?.text()).toContain('65,129')
   })
 
+  it('renders masked rows with userId null and a duplicate-rank tie without links or key clashes', async () => {
+    const b = board()
+    b.podium = b.podium.map((e) => ({ ...e, userId: null, name: 'Aisyah M.' }))
+    b.rows = [4, 4, 5].map((rank) => ({
+      rank,
+      userId: null,
+      name: 'Hana R.',
+      initials: 'HR',
+      title: 'Mitos',
+      level: 3,
+      totalSyilingEarned: 100,
+      tierIcon: '💎',
+    }))
+    api.fetchGamificationLeaderboard.mockResolvedValue(b)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const w = await render(LeaderboardPage, '/gamification/leaderboard')
+    expect(tid(w, 'lb-podium-card')).toHaveLength(3)
+    expect(tid(w, 'lb-row')).toHaveLength(3)
+    expect(w.find('[data-testid=lb-podium] a, [data-testid=lb-rows] a').exists()).toBe(false)
+    expect(w.find('[aria-current]').exists()).toBe(false)
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('Duplicate key'))).toHaveLength(0)
+  })
+
   it('ignores ?period= (the same call, no query)', async () => {
     api.fetchGamificationLeaderboard.mockResolvedValue(board())
     await render(

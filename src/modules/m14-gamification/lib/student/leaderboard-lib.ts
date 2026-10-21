@@ -36,3 +36,8 @@ export const PODIUM_CARD_CLASS: Record<number, string> = {
   2: 'bg-linear-to-b from-slate-100 to-slate-200',
   3: 'bg-linear-to-b from-orange-100 to-amber-200',
 }
+
+/** v-for key: rank plus index, so a duplicate rank (tie) or a `userId: null` masked row never collides. */
+export function leaderboardKey(entry: { rank: number }, index: number): string {
+  return `${String(entry.rank)}-${String(index)}`
+}
