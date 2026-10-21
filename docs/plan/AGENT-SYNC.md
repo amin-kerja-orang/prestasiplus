@@ -2,18 +2,27 @@
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.
 
-## Groups: who takes which lanes (user decision D56, 2026-10-19)
+## Halves: who takes which lanes (user decision D60, 2026-10-21; replaces D56)
 
-Two groups of people work in parallel. Each session belongs to exactly one group, which is named in its first prompt ("Group A" or "Group B"). A session takes cards **only from its own group's lanes** (the tracker `Lane` column), so the two groups never edit the same folders.
+Two halves of the team work in parallel. Each session belongs to exactly one half, named in its first prompt ("Half AZ" or "Half AM"). A session takes cards **only from its own half's lanes** (the tracker `Lane` column), so the two halves never edit the same folders. Older cards and notices that say "Group A" mean half AM; "Group B" means half AZ (same lanes as before for the backend cards).
 
-| Group | Who | Lanes |
+| Half | Who | Lanes and other ownership |
 |---|---|---|
-| **A** | The project owner's PC (the LEAD's machine) | PC-1 Identity, PC-4 Migration, PC-6 Teacher/Reports/Seed |
-| **B** | The external collaborator's PCs | PC-2 Learning/Question bank, PC-3 Bijak/Paper builder, PC-5 AI intake, PC-7 Games |
+| **AZ** | `azarulhakim` (the LEAD), plus Claude developer sessions | PC-2 Learning/Question bank, PC-3 Bijak SPM/Paper builder, PC-5 AI intake, PC-7 Games. Also the 23 Oct demo, deploys, the production environment (VPS), full testing (G5), and the frontend shared files (router, menu, `prototype-scope.ts`). |
+| **AM** | `aminfaudzi` | PC-1 Identity/Users/Subscriptions, PC-4 data migration from the old system (BE-27..30, 34, 35), PC-6 Teacher/Reports/Seed. Issues #94, #95 and #97-#99, BE-42 PKSK, BE-46 marketplace. |
 
-- No group named in your prompt? Ask the user which group before taking a card.
-- Cards claimed before D56 stay with their current holder until merged, even if they are in the other group's lane. Do not take over another group's claimed card.
-- Nothing left in your group? Report `idle`. Never take the other group's cards unless a Lead notice says so.
+- No half named in your prompt? Ask the user which half before taking a card.
+- Cards claimed before D60 stay with their current holder until merged, even if they are in the other half's lane. Do not take over another half's claimed card.
+- Nothing left in your half? Report `idle`. Never take the other half's cards unless a Lead notice says so.
+
+### Rules for the two halves
+
+1. **One merge gate.** Only the LEAD (`azarulhakim`) merges into `feature/v2-backend`, one PR at a time, with normal merge commits. Every PR, from either half, goes through the "SEDIA MERGE" checker: a scheduled task every 2 hours that checks for an independent G4 Approve, no open findings, no conflicts, unique migrations, and a trial merge onto the current tip with the full `be:verify` (5 allowed failures), build, conformance, `contract:check` and gitleaks. It posts "SEDIA MERGE" plus a head-pinned command `gh pr merge N --merge --match-head-commit <sha>`. The checker never merges; a human does.
+2. **Migration ranges.** New migrations from half AZ use **0040-0069**; new migrations from half AM use **0070-0099**. **0024**, 0016 and 0029 are never used. 0035, 0036 and 0039 are **retired** (they would apply below 0038). Folders already on the tip are unchanged.
+3. **Contract.** `packages/contract/**` and `openapi.json` change only by the LEAD's decision, in a small contract-only PR.
+4. **Shared files are append-only:** `apps/api/src/modules/index.ts`, `apps/api/src/seed/index.ts`, `seed/poc/index.ts`, registries, the deviations doc, `docs/plan/seed-profile.md`. Never edit another half's lines. In `docs/plan/backend-tracker.md`, edit only your own card rows.
+5. **Cross-half work.** The owner of a module changes that module, at the other half's request (issue or comment). No edits in the other half's folders.
+6. **Frontend.** Each half builds its own module screens in separate PRs. The shared frontend files (router, menu, `prototype-scope.ts`, transport) are changed only by half AZ.
 
 ## Quick start: many sessions in parallel (read this first)
 
@@ -30,7 +39,7 @@ Many sessions work at the same time, on one PC or on many. Each session is an in
    ```
    - A branch exists for a card: that card is **taken**, whatever `backend-tracker.md` on `feature/v2-backend` says. Tracker rows change on the claim branch and only reach `feature/v2-backend` when the LEAD merges.
    - Do not ask other sessions what they are doing. GitHub is the only source.
-3. **Take the first free card of your group's lanes** (see Groups above) from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
+3. **Take the first free card of your half's lanes** (see Halves above) from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
 4. **Work in your own folder.** Several sessions must never share one checkout:
    ```
    git worktree add ../pp-<card-id> -b <branch> origin/feature/v2-backend
@@ -57,7 +66,7 @@ Many sessions work at the same time, on one PC or on many. Each session is an in
 
 ## 0. The LEAD is the central guide
 
-- The **LEAD** is the project owner's own PC and Claude Code session. It is the single central source of instructions for every PC and session. Other PCs never decide programme matters themselves.
+- From **2026-10-21 21:18 MYT the LEAD is `azarulhakim`** (D60); `aminfaudzi` continues as a developer under the LEAD. The LEAD (a person with a Claude Code session) is the single central source of instructions for every PC and session, and the only one who merges into `feature/v2-backend`. Other PCs never decide programme matters themselves.
 - Order of authority: **(1) Lead notices below and open GitHub issues labelled `lead`**, then (2) this page, then (3) the lane prompt of your card (`agent-kickoff/PC-n.md`), then (4) the card file. On any conflict the higher one wins. In particular, a lane prompt's "YOUR LANE" does **not** bind a PC to that lane: section 1 decides which card you take.
 - Only the LEAD edits this page, [sessions.md](sessions.md), [agent-kickoff/](agent-kickoff/README.md), the card files and the tracker's Summary and Change log. PCs edit only the tracker rows of cards they hold.
 - Questions, blockers and change requests go to the LEAD as a GitHub issue (label `question`, `blocked`, `contract` or `cross-lane`). Do not wait idle: take the next card.
@@ -126,6 +135,13 @@ Rules for `contract-only`:
   5. `npm run contract:emit`, commit the changed `packages/contract/openapi.json` (never hand-edit it), then `npm run contract:check` and `npm test -- packages/contract` (about 10 seconds).
 
 ### Lead notices (current instructions; newest first)
+
+- 2026-10-21 ~21:20 **LEAD HANDOVER to `azarulhakim`; two-half split and new team rules (D60-D65).**
+  - **LEAD:** from 2026-10-21 21:18 MYT the LEAD is `azarulhakim`. `aminfaudzi` continues as a developer under the LEAD (half AM). The two groups are replaced by two halves (AZ and AM); lanes, ownership and the six rules are in "Halves" at the top of this page. Re-read it now.
+  - **Merge gate:** only the LEAD merges, one PR at a time. Every PR goes through the "SEDIA MERGE" checker (every 2 hours); it never merges.
+  - **Migrations:** half AZ 0040-0069, half AM 0070-0099; 0024, 0016, 0029 never used; 0035, 0036, 0039 retired.
+  - **Decisions:** D61 data migration from the old system is required for the 30 Oct Bijak SPM go-live (half AM; BE-29/BE-30 critical path). D62 M16 solo games: no interim notice, wait for the full fix (PR #105); PR #102 closed. D63 BE-33 gaps #97-#100 (non-strict request bodies) are accepted go-live exceptions, fixed after go-live; #94-#96 stay release-gate items. D64 merge process = SEDIA MERGE checker plus human merge by the LEAD. D65 go-live scope (D-1) and production hosting (D-2, VPS sufficiency check) are pending.
+  - **Action:** `aminfaudzi`, please acknowledge in a comment on the handover PR.
 
 - 2026-10-21 ~20:30 **HANDOVER KE CLAUDE CLOUD — tip baharu dan langkah pertama (menggantikan angka SHA dalam notis HANDOFF 09:30 di bawah).**
   - **Tip:** `feature/v2-backend @ 4b4e2ea7` (Group B stack, BE-33 rest, `lead/merge-final @ 4b4e2ea7` sudah masuk). be:verify penuh hijau pada `3d94e291` (7009 lulus; 2 kegagalan ujian/seed Group A dibaiki dalam `989d0462` + `4b4e2ea7`) + larian sasaran hijau pada tip. Notis HANDOFF di bawah menyebut `e724b498` dan `lead/merge-b5`; kedua-duanya sudah lapuk.
