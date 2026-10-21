@@ -136,6 +136,17 @@ else
   prune "$dir" "pp-files-*-$tag.tar.gz" "$keep_aux"
 fi
 
+# Erasure rule: nothing older than PP_BACKUP_MAX_AGE_DAYS (default 35) stays on this server. Runs only after a
+# successful new backup, so a failing job can never age out the last good copy.
+max_age="$(pp_cfg PP_BACKUP_MAX_AGE_DAYS 35)"
+case "$max_age" in ''|*[!0-9]*) pp_die "PP_BACKUP_MAX_AGE_DAYS must be an integer" 2 ;; esac
+if [ "$max_age" -gt 0 ]; then
+  while IFS= read -r old; do
+    rm -f -- "$old" "$old.sha256"
+    pp_log "retention (max age ${max_age} d): removed $(basename "$old")"
+  done < <(find "$dir" "$dir/weekly" -maxdepth 1 -type f \( -name 'pp-backup-*.dump' -o -name 'pp-files-*.tar.gz' \) -mtime "+$max_age")
+fi
+
 # ---- 5. off-site ----
 if [ "$offsite" = 1 ]; then
   "$PP_VPS_DIR/backup/offsite.sh" "${produced[@]}"

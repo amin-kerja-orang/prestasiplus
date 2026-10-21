@@ -15,15 +15,19 @@ mkdir -p "$w/conf.d" "$w/tmp" "$w/le/live/t.example.my" "$w/snip" "$w/web"
 # nginx workers drop to an unprivileged user when this runs as root: let them write the temp dir
 chmod 755 "$w"
 chmod 777 "$w/tmp"
-export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_MODE=report-only
+export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" -keyout "$w/le/live/$PP_DOMAIN/privkey.pem" -out "$w/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 cp "$here"/snippets/*.conf "$w/snip/"
+for t in "$here"/templates/snippets/*.template; do
+  out="$(basename "$t" .template)"
+  perl -pe 's/\$\{(PP_[A-Z_]+)\}/$ENV{$1}/g' <"$t" >"$w/snip/$out"
+done
 perl -pe 's/\$\{(PP_[A-Z_]+)\}/$ENV{$1}/g' "$here/templates/pp.conf.template" \
-  | sed -e "s#/etc/letsencrypt#$w/le#g" -e "s#/etc/nginx/pp-snippets#$w/snip#g" -e "s#/var/www/certbot#$w/web#g" -e '/http2 on;/d' \
+  | sed -e "s#/etc/letsencrypt#$w/le#g" -e "s#/etc/nginx/pp-snippets#$w/snip#g" -e "s#/etc/nginx/conf.d/snippets#$w/snip#g" -e "s#/var/www/certbot#$w/web#g" -e '/http2 on;/d' \
         -e 's#listen 80 default_server#listen 18080 default_server#' -e 's#listen 443 ssl#listen 18443 ssl#' \
         -e 's#http://api:3000#http://127.0.0.1:13000#' -e 's#http://frontend:8080#http://127.0.0.1:18081#' \
         -e 's#resolver 127.0.0.11.*#resolver 127.0.0.1;#' -e 's#return 301 https://t.example.my#return 301 https://t.example.my:18443#' >"$w/conf.d/pp.conf"
-sed -e "s#/tmp/#$w/tmp/#g" -e "s#/etc/nginx/conf.d#$w/conf.d#" -e "s#^pid .*#pid $w/n.pid;#" -e "s#^error_log .*#error_log $w/err.log warn;#" \
+sed -e "s#/var/cache/nginx/#@@CACHE@@/#g" -e "s#/tmp/#$w/tmp/#g" -e "s#@@CACHE@@/#$w/tmp/#g" -e '/^user /d' -e "s#/etc/nginx/conf.d#$w/conf.d#" -e "s#^pid .*#pid $w/n.pid;#" -e "s#^error_log .*#error_log $w/err.log warn;#" \
     -e "s#access_log /dev/stdout#access_log $w/acc.log#" "$here/nginx.conf" >"$w/nginx.conf"
 cat >"$w/stub.py" <<'PY'
 import sys
@@ -57,6 +61,9 @@ expect "XFF is overwritten by the peer address" "127.0.0.1" "$(curlx -D- -o /dev
 expect "http redirects to the fixed host" "301 https://$PP_DOMAIN:18443/x" "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Host: evil.test' http://127.0.0.1:18080/x)"
 expect "SPA has HSTS" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci '^strict-transport-security')"
 expect "SPA has the CSP (report-only)" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci '^content-security-policy-report-only')"
+expect "metrics 404 carries HSTS (nginx-answered)" 1 "$(curlx -D- -o /dev/null "$B/api/metrics" | grep -ci '^strict-transport-security')"
+expect "CSP img-src has no bare https:" 0 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci "img-src[^;]* https:;")"
+expect "CSP img-src carries PP_CSP_IMG_HOSTS" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci "img-src[^;]*https://img.youtube.com")"
 expect "edge adds no HSTS/CSP on /api" 0 "$(curlx -D- -o /dev/null "$B/api/health" | grep -ciE '^(strict-transport|content-security)')"
 expect "unknown host gets no certificate" "handshake-refused" "$(curl --noproxy '*' -sk -o /dev/null --resolve other.test:18443:127.0.0.1 https://other.test:18443/ && echo served || echo handshake-refused)"
 head -c 4000000 /dev/zero >"$w/4m"; head -c 30000000 /dev/zero >"$w/30m"; head -c 100000000 /dev/zero >"$w/100m"

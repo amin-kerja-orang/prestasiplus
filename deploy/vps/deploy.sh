@@ -3,6 +3,8 @@
 #
 #   deploy/vps/deploy.sh [--dry-run] [--yes] [--skip-backup] [--allow-dirty] [--tag IMAGE_TAG]
 #
+# NOTE: the deploy user is in the docker group, which is root-equivalent on this host: treat its SSH key like root's.
+#
 # Run it on the VPS from the checkout of the RELEASE commit (the LEAD tags it; no merges after the tag), as the
 # deploy user. It needs the explicit confirmation of the user (type the domain) unless --yes is given; the LEAD
 # gives that confirmation, not this script. --dry-run changes nothing: it runs every read-only check for real
@@ -78,7 +80,7 @@ preflight() {
 
   for f in "$PP_PROD_ENV" "$api_env" "$db_env"; do
     if [ ! -r "$f" ]; then err "env file missing or unreadable: $f"; continue; fi
-    case "$(stat -c %a "$f")" in *[1-7]) warn "$f is readable by everyone (mode $(stat -c %a "$f")); use 600 or 640 root:deploy" ;; esac
+    case "$(stat -c %a "$f")" in *[1-7]) err "$f is readable by everyone (mode $(stat -c %a "$f")); chmod 640 and chgrp to the deploy group, or 600" ;; esac
   done
   [ ${#errors[@]} -eq 0 ] || return 0   # nothing below makes sense without the files
 
@@ -148,7 +150,10 @@ preflight() {
       || err "no certificate for $domain under PP_LE_DIR: run deploy/vps/tls/init-cert.sh first"
   fi
   case "$(pp_cfg PP_CSP_MODE report-only)" in report-only|enforce|off) ;; *) err "PP_CSP_MODE must be report-only, enforce or off" ;; esac
-  [ "$(pp_cfg PP_OFFSITE_KIND none)" != none ] || warn "PP_OFFSITE_KIND=none: backups stay on this server only"
+  if [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ]; then warn "PP_OFFSITE_KIND=none: backups stay on this server only"
+  elif [ -z "$(pp_cfg PP_BACKUP_GPG_RECIPIENT '')" ] && [ "$(pp_cfg PP_OFFSITE_ALLOW_PLAINTEXT false)" != true ]; then
+    err "off-site copies are enabled but PP_BACKUP_GPG_RECIPIENT is empty: set the public key (private key stays off the server), or PP_OFFSITE_ALLOW_PLAINTEXT=true as a recorded LEAD decision"
+  fi
   [ -n "$(pp_cfg PP_HEALTHCHECK_PING_URL '')" ] || warn "PP_HEALTHCHECK_PING_URL is empty: a silent backup failure would not be noticed"
 
   # Compose renders with the production overlay.

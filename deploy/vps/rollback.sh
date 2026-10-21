@@ -19,6 +19,9 @@ export PP_SCRIPT=rollback
 # shellcheck source=lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
+# Everything runs inside main() and the file ends with `main "$@"; exit $?`: bash reads a script as it executes,
+# and --checkout runs `git checkout`, which can rewrite this very file. The whole function is parsed before it runs.
+main() {
 dry=0; yes=0; checkout=0; tag=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -84,3 +87,6 @@ else
   pp_alert "ROLLBACK done: production now runs $tag (was ${cur:-unknown})."
 fi
 pp_log "rollback finished. Check the database state: is a migration of the rolled-back release applied? (runbook section 8)"
+}
+main "$@"
+exit $?

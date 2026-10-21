@@ -61,10 +61,12 @@ server {
   # Regex locations are checked before the /api/ prefix below. nginx matches on the decoded, normalised URI,
   # so //api//metrics, /api/./metrics and %6d-style encodings are covered.
   location ~* ^/api/metrics(/.*)?$ {
+    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;   # nginx answers here, not the API
     default_type application/json;
     return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
   }
   location = /api/metrics {
+    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
     default_type application/json;
     return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
   }
@@ -75,7 +77,8 @@ server {
   location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers)/?$ {
     client_max_body_size ${PP_UPLOAD_BIG_MB}m;
     client_body_timeout 120s;
-    limit_conn pp_big_uploads 20;
+    limit_conn pp_big_uploads 2;         # per address
+    limit_conn pp_big_global 4;          # whole server: bounds the disk and worker use of unauthenticated big bodies
     proxy_request_buffering on;          # the API only sees a complete body (and a half upload costs it nothing)
     include /etc/nginx/pp-snippets/proxy-common.conf;
     set $api_upstream http://api:3000;
@@ -113,13 +116,16 @@ server {
   }
 
   # An exact "/api" has no meaning; do not hand it to the SPA either.
-  location = /api { return 404; }
+  location = /api {
+    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+    return 404;
+  }
 
   # --- the SPA (frontend container). Cache-Control comes from the frontend nginx: /assets/* immutable for a year,
   #     index.html and deep links no-cache. Headers added here: HSTS and the CSP (see spa-headers.conf).
   location / {
     include /etc/nginx/pp-snippets/spa-headers.conf;
-    include /etc/nginx/pp-snippets/csp-${PP_CSP_MODE}.conf;
+    include /etc/nginx/conf.d/snippets/csp-${PP_CSP_MODE}.conf;
     include /etc/nginx/pp-snippets/proxy-common.conf;
     set $spa_upstream http://frontend:8080;
     proxy_pass $spa_upstream;

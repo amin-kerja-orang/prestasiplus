@@ -91,12 +91,17 @@ on_exit() {
   cat "$evidence"
   rm -f "$log"
   if [ "$result" != PASS ]; then
-    pp_alert "RESTORE DRILL FAILED: $reason (evidence: $evidence)"
+    # Fixed text only: the webhook is a third party; the reason (already filtered) stays in the evidence file.
+    pp_alert "RESTORE DRILL FAILED. Details in the evidence file on the server: $evidence"
     exit "$([ "$rc" -ne 0 ] && echo "$rc" || echo 1)"
   fi
   exit 0
 }
 trap on_exit EXIT
+
+# A leftover throw-away database from an earlier aborted run would make the check refuse; remove only that name.
+# shellcheck disable=SC2016  # the variables must expand inside the container
+pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 -c "drop database if exists \"${POSTGRES_DB}_restorecheck\" with (force)"' >/dev/null
 
 if [ "$quiesce" = 1 ]; then
   pp_log "stopping the api so the database is idle (users see an error page until it starts again)"
@@ -121,7 +126,8 @@ dump_size="$(sed -n 's/^BACKUP_SIZE=//p' <<<"$out")"
 pp_log "restoring $dump_name into the throw-away database"
 check_rc=0
 node "$PP_REPO/scripts/db-restore-check.mjs" --file "$dump_path" --container "$db_container" >"$log" 2>&1 || check_rc=$?
-cat "$log"
+# Never echo row data: pg_restore errors can carry DETAIL / CONTEXT / "Key (...)" lines with values.
+grep -vE 'DETAIL|CONTEXT|Key \(' "$log"
 
 tables="$(sed -n 's/^public tables: //p' "$log" | head -n1)"
 migrations="$(sed -n 's/^_prisma_migrations rows: //p' "$log" | head -n1)"
@@ -134,6 +140,6 @@ if [ "$check_rc" = 0 ] && grep -q '^ROW-COUNT COMPARISON PASSED' "$log" && grep 
   reason=""
 else
   if [ -n "$line" ]; then cmp="FAIL ($line)"; fi
-  reason="restore check failed (exit $check_rc): $(grep -E '^(ERROR|  )' "$log" | head -n 5 | tr '\n' ' ' | cut -c1-400)"
+  reason="restore check failed (exit $check_rc): $(grep -E '^(ERROR|  )' "$log" | grep -vE 'DETAIL|CONTEXT|Key \(' | head -n 5 | tr '\n' ' ' | cut -c1-300)"
   exit 1
 fi

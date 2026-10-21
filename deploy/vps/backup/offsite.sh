@@ -10,8 +10,10 @@
 #           on the bucket (and object lock if the provider supports it), see the runbook.
 #   rsync   rsync over ssh to PP_OFFSITE_RSYNC_TARGET with a key-based, passwordless login of the backup user
 #   none    nothing is copied; a loud warning is logged (accepted only until the LEAD names a target)
-# PP_BACKUP_GPG_RECIPIENT: when set, each file is encrypted with that public key before it leaves the server
-# (the .sha256 sidecar stays plain and describes the unencrypted file). Dumps hold personal data of minors.
+# PP_BACKUP_GPG_RECIPIENT: REQUIRED for s3/rsync (the run dies without it, unless PP_OFFSITE_ALLOW_PLAINTEXT=true).
+# Each file is encrypted with that public key before it leaves the server; the key must be in the user's keyring
+# (checked with gpg --list-keys) and its PRIVATE half is kept off the server. The .sha256 sidecar stays plain and
+# describes the unencrypted file. Dumps hold personal data of minors.
 set -euo pipefail
 umask 077
 export PP_SCRIPT=offsite
@@ -28,6 +30,16 @@ if [ "$kind" = none ]; then
   exit 0
 fi
 
+# Backups hold personal data of minors: a copy that leaves the server is encrypted, or the operator has said in
+# writing (PP_OFFSITE_ALLOW_PLAINTEXT=true, a recorded LEAD decision) that the target is trusted with plaintext.
+# The PRIVATE key stays off this server (only the public key is imported here), so a break-in cannot read old copies.
+if [ -n "$gpg_rcpt" ]; then
+  command -v gpg >/dev/null || pp_die "PP_BACKUP_GPG_RECIPIENT is set but gpg is not installed"
+  gpg --list-keys -- "$gpg_rcpt" >/dev/null 2>&1 || pp_die "no public key for PP_BACKUP_GPG_RECIPIENT in this user's keyring (gpg --import the public key)"
+elif [ "$(pp_cfg PP_OFFSITE_ALLOW_PLAINTEXT false)" != true ]; then
+  pp_die "PP_OFFSITE_KIND=$kind but PP_BACKUP_GPG_RECIPIENT is empty: refusing to send plaintext backups off the server (set the key, or PP_OFFSITE_ALLOW_PLAINTEXT=true with the LEAD's recorded decision)"
+fi
+
 tmpdir=""
 cleanup() { [ -z "$tmpdir" ] || rm -rf "$tmpdir"; }
 trap cleanup EXIT
@@ -39,7 +51,6 @@ for f in "$@"; do
     *.sha256) send+=("$f") ;;
     *)
       if [ -n "$gpg_rcpt" ]; then
-        command -v gpg >/dev/null || pp_die "PP_BACKUP_GPG_RECIPIENT is set but gpg is not installed"
         [ -n "$tmpdir" ] || tmpdir="$(mktemp -d)"
         gpg --batch --yes --trust-model always --encrypt --recipient "$gpg_rcpt" \
           --output "$tmpdir/$(basename "$f").gpg" "$f"

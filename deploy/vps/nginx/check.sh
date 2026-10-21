@@ -17,19 +17,23 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/conf.d" "$work/tmp" "$work/le/live/test.example.my" "$work/snippets" "$work/webroot"
 
-export PP_DOMAIN=test.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_MODE="$mode"
+export PP_DOMAIN=test.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE="$mode"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" \
   -keyout "$work/le/live/$PP_DOMAIN/privkey.pem" -out "$work/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 
 cp "$here"/snippets/*.conf "$work/snippets/"
+for t in "$here"/templates/snippets/*.template; do
+  out="$(basename "$t" .template)"
+  perl -pe 's/\$\{(PP_[A-Z_]+)\}/$ENV{$1}/g' <"$t" >"$work/snippets/$out"
+done
 # Same result as the image's envsubst filter for ${PP_*} (perl is used because gettext's envsubst may be missing).
 perl -pe 's/\$\{(PP_[A-Z_]+)\}/$ENV{$1}/g' <"$here/templates/pp.conf.template" \
   | sed -e "s#/etc/letsencrypt#$work/le#g" \
-        -e "s#/etc/nginx/pp-snippets#$work/snippets#g" \
+        -e "s#/etc/nginx/pp-snippets#$work/snippets#g" -e "s#/etc/nginx/conf.d/snippets#$work/snippets#g" \
         -e "s#/var/www/certbot#$work/webroot#g" \
         -e '/^[[:space:]]*http2 on;/d' >"$work/conf.d/pp.conf"
 
-sed -e "s#/tmp/#$work/tmp/#g" \
+sed -e "s#/var/cache/nginx/#@@CACHE@@/#g" -e "s#/tmp/#$work/tmp/#g" -e "s#@@CACHE@@/#$work/tmp/#g" -e '/^user /d' \
     -e "s#/etc/nginx/conf.d#$work/conf.d#" \
     -e "s#^pid .*#pid $work/nginx.pid;#" \
     -e "s#^error_log .*#error_log $work/error.log warn;#" \

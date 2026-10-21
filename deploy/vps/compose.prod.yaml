@@ -161,7 +161,7 @@ services:
   # Official nginx image (root master so it can read the certbot key files, workers run as `nginx`).
   # Config is rendered at start from nginx/templates/*.template (only PP_* variables are substituted).
   edge:
-    image: nginx:1.27-alpine
+    image: ${PP_EDGE_IMAGE:-nginx:1.28-alpine}
     depends_on:
       frontend:
         condition: service_healthy
@@ -175,6 +175,7 @@ services:
       PP_DOMAIN: ${PP_DOMAIN:?set PP_DOMAIN in prod.env}
       PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-22}
       PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-256}
+      PP_CSP_IMG_HOSTS: ${PP_CSP_IMG_HOSTS:-}
       PP_CSP_MODE: ${PP_CSP_MODE:-report-only}   # report-only | enforce | off: picks nginx/snippets/csp-<mode>.conf
     volumes:
       - ./deploy/vps/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -182,9 +183,12 @@ services:
       - ./deploy/vps/nginx/snippets:/etc/nginx/pp-snippets:ro
       - ${PP_LE_DIR:-/srv/pretasiplus/letsencrypt}:/etc/letsencrypt:ro
       - ${PP_WEBROOT_DIR:-/srv/pretasiplus/certbot-webroot}:/var/www/certbot:ro
+      - edgetmp:/var/cache/nginx
+    # Request bodies (up to PP_UPLOAD_BIG_MB) and proxy buffers go to the DISK-backed named volume `edgetmp`
+    # (/var/cache/nginx), not to tmpfs: tmpfs pages count against the memory limit and an unauthenticated big
+    # upload would OOM-kill the edge. Only the tiny rendered config and pid file are tmpfs.
     tmpfs:
       - /etc/nginx/conf.d
-      - /var/cache/nginx
       - /var/run
       - /tmp
     read_only: true
@@ -210,7 +214,7 @@ services:
       resources:
         limits:
           cpus: ${PP_EDGE_CPUS:-0.5}
-          memory: ${PP_EDGE_MEM:-256m}
+          memory: ${PP_EDGE_MEM:-512m}
     logging: *logging
 
   # ---- Let's Encrypt client. Never long-running; deploy/vps/tls/init-cert.sh and renew.sh call `run --rm`. ----
@@ -246,6 +250,8 @@ services:
       CLAMD_CONF_StreamMaxLength: 32M
     expose:
       - '3310'
+    networks:
+      - scan
     volumes:
       - clamdb:/var/lib/clamav
     healthcheck:
@@ -256,6 +262,14 @@ services:
       start_period: 300s            # first start downloads and loads the signatures
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:                        # root entrypoint fixes volume ownership, then drops to the clamav user
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
     restart: unless-stopped
     stop_grace_period: 30s
     deploy:
@@ -268,13 +282,17 @@ services:
   # ---- Uptime Kuma (self-hosted status page and checks). Loopback only: reach it with an SSH tunnel. ----
   kuma:
     profiles: ['monitoring']
-    image: ${PP_KUMA_IMAGE:-louislam/uptime-kuma:1}
+    image: ${PP_KUMA_IMAGE:-louislam/uptime-kuma:1.23.16}
     ports:
       - '127.0.0.1:${PP_KUMA_PORT:-3001}:3001'
+    networks:
+      - monitor
     volumes:
       - kumadata:/app/data
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
     stop_grace_period: 20s
     deploy:
@@ -285,5 +303,13 @@ services:
     logging: *logging
 
 volumes:
+  edgetmp:
   clamdb:
   kumadata:
+
+# frontend, api, db and the edge share `default`. kuma is on `monitor` and clamav on `scan` only, so a compromised
+# kuma/clamav container cannot reach api or db directly. Kuma probes the public name through the edge. When the
+# half-AM scan card lands, add `scan` to the api service's networks (and keep clamav off `default`).
+networks:
+  monitor:
+  scan:

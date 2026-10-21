@@ -68,24 +68,36 @@ pp_assert_outside_repo() {
   esac
 }
 
+# _pp_cfg_quote TEXT -> TEXT escaped for a double-quoted curl config value
+_pp_cfg_quote() {
+  local t="$1"
+  t="${t//\\/\\\\}"; t="${t//\"/\\\"}"; t="${t//$'\n'/\\n}"
+  printf '%s' "$t"
+}
+
 # pp_ping URL [suffix]: healthchecks.io-style ping (suffix: start | fail | empty). Never fails the caller.
+# The URL is a secret (it identifies the check): it goes to curl on stdin (--config -), never on the command line,
+# so it is not visible in the process list.
 pp_ping() {
   local url="$1" suffix="${2:-}"
   [ -n "$url" ] || return 0
   command -v curl >/dev/null || return 0
-  curl -fsS -m 10 --retry 3 -o /dev/null "${url%/}${suffix:+/$suffix}" 2>/dev/null || pp_warn "ping failed ($suffix)"
+  printf 'url = "%s"\n' "$(_pp_cfg_quote "${url%/}${suffix:+/$suffix}")" \
+    | curl -fsS -m 10 --retry 3 -o /dev/null --config - 2>/dev/null || pp_warn "ping failed ($suffix)"
   return 0
 }
 
-# pp_alert MESSAGE: journal/stderr always; webhook when PP_ALERT_WEBHOOK_URL is set. Never fails the caller.
+# pp_alert MESSAGE: journal/stderr always; webhook when PP_ALERT_WEBHOOK_URL is set (URL and text via stdin config).
+# Callers pass fixed text only: the webhook is a third party. Never fails the caller.
 pp_alert() {
   local msg="$1" url
   pp_warn "ALERT: $msg"
   url="$(pp_cfg PP_ALERT_WEBHOOK_URL '')"
   [ -n "$url" ] || return 0
   command -v curl >/dev/null || return 0
-  curl -fsS -m 10 --retry 2 -o /dev/null -H 'Content-Type: text/plain; charset=utf-8' \
-    --data-binary "[$(pp_cfg PP_DOMAIN host)] $msg" "$url" 2>/dev/null || pp_warn "alert webhook failed"
+  printf 'url = "%s"\nheader = "Content-Type: text/plain; charset=utf-8"\ndata-binary = "%s"\n' \
+    "$(_pp_cfg_quote "$url")" "$(_pp_cfg_quote "[$(pp_cfg PP_DOMAIN host)] $msg")" \
+    | curl -fsS -m 10 --retry 2 -o /dev/null --config - 2>/dev/null || pp_warn "alert webhook failed"
   return 0
 }
 
@@ -94,7 +106,9 @@ pp_alert() {
 _pp_curl_edge() {
   local domain; domain="$(pp_cfg PP_DOMAIN '')"
   local port="$1" scheme="$2" path="$3"; shift 3
-  curl -sS -m 15 --resolve "$domain:$port:127.0.0.1" "$@" "$scheme://$domain$path"
+  local bind; bind="$(pp_cfg PP_HTTP_BIND 0.0.0.0)"
+  [ "$bind" != 0.0.0.0 ] || bind=127.0.0.1
+  curl -sS -m 15 --resolve "$domain:$port:$bind" "$@" "$scheme://$domain$path"
 }
 
 pp_health_checks() {

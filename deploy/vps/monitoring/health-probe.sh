@@ -9,7 +9,7 @@
 #   - no compose service of this stack is unhealthy or exited
 #   - disk use of /, the Docker data root and the backup directory is below PP_ALERT_DISK_PCT
 #   - the certificate expires in more than PP_ALERT_CERT_DAYS days (read from the certificate file)
-#   - the newest dump is younger than PP_ALERT_BACKUP_MAX_AGE_H hours (backup failure that went unnoticed)
+#   - the newest DAILY dump (pp-backup-<ts>Z.dump; pre-deploy and drill dumps do not count) is younger than PP_ALERT_BACKUP_MAX_AGE_H hours (backup failure that went unnoticed)
 #   - API error lines (pino level 50) in the last 5 minutes stay below PP_ALERT_API_ERRORS_5M (default 25): a cheap
 #     error tracker until a decision on Sentry/GlitchTip (runbook, DECISION NEEDED)
 # On failure: PP_ALERT_WEBHOOK_URL gets one message (repeated at most every 6 h while the SAME problem persists,
@@ -46,7 +46,7 @@ for path in /api/health /api/ready; do
 done
 
 # ---- containers ----
-if command -v docker >/dev/null && ps_out="$(pp_compose ps --format '{{.Service}} {{.State}} {{.Health}}' 2>/dev/null)" && [ -n "$ps_out" ]; then
+if command -v docker >/dev/null && ps_out="$(pp_compose ps --all --format '{{.Service}} {{.State}} {{.Health}}' 2>/dev/null)" && [ -n "$ps_out" ]; then
   while read -r svc state health; do
     [ -n "$svc" ] || continue
     case "$svc" in certbot|migrate) continue ;; esac
@@ -77,7 +77,7 @@ else
 fi
 
 # ---- newest backup ----
-newest="$(find "$backup_dir" -maxdepth 1 -type f -name 'pp-backup-*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f1)"
+newest="$(find "$backup_dir" -maxdepth 1 -type f -name 'pp-backup-????????T??????Z.dump' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f1)"
 if [ -z "$newest" ]; then problems+=("no backup file found in $backup_dir")
 else
   age_h=$(( ($(date +%s) - ${newest%.*}) / 3600 ))

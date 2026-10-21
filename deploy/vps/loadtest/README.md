@@ -5,20 +5,20 @@
 measurement instead of the assumptions in that table.
 
 **Never run it against production without the LEAD's say-so.** It writes attempts and logs in many accounts. The
-script refuses to start unless `LT_CONFIRM_TARGET` equals the host of `BASE_URL`: typing it is the deliberate act.
+script refuses to start unless `LT_CONFIRM_TARGET` equals the host of `BASE_URL` and `LT_I_UNDERSTAND_THIS_WRITES_DATA=yes`: typing them is the deliberate act.
 
 ## Run
 
 ```
 k6 run \
-  -e BASE_URL=https://staging.example.my -e LT_CONFIRM_TARGET=staging.example.my \
+  -e BASE_URL=https://staging.example.my -e LT_CONFIRM_TARGET=staging.example.my -e LT_I_UNDERSTAND_THIS_WRITES_DATA=yes \
   -e LT_ACCOUNTS_FILE=/path/outside/the/repo/accounts.json \
   -e VUS=300 -e DURATION=10m \
   deploy/vps/loadtest/pupil-load.k6.js
 ```
 
-Accounts come from the environment only: `LT_ACCOUNTS_FILE` (JSON `[{"identifier":"...","password":"..."}]`, kept
-outside the repo) or `LT_IDENTIFIER_PREFIX` + `LT_IDENTIFIER_COUNT` + `LT_PASSWORD`. Use fictitious accounts on a
+Accounts come from the environment only: `LT_ACCOUNTS_FILE` (preferred; JSON `[{"identifier":"...","password":"..."}]`, mode 600, kept
+outside the repo; avoids passwords in the process list and shell history) or `LT_IDENTIFIER_PREFIX` + `LT_IDENTIFIER_COUNT` + `LT_PASSWORD`. Use fictitious accounts on a
 staging copy (the demo seed accounts), never real pupils. One account per VU: the login throttle is 5 per minute per
 identifier and address.
 

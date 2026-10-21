@@ -1,7 +1,7 @@
 // k6 load test for the PrestasiPlus API through the edge (AZ-09). Guide: deploy/vps/loadtest/README.md
 //
 //   k6 run -e BASE_URL=https://staging.example.my -e LT_CONFIRM_TARGET=staging.example.my \
-//          -e LT_ACCOUNTS_FILE=/path/outside/repo/accounts.json -e VUS=100 -e DURATION=10m deploy/vps/loadtest/pupil-load.k6.js
+//          -e LT_I_UNDERSTAND_THIS_WRITES_DATA=yes -e LT_ACCOUNTS_FILE=/path/outside/repo/accounts.json -e VUS=100 -e DURATION=10m deploy/vps/loadtest/pupil-load.k6.js
 //
 // One virtual user = one pupil who logs in once and then repeats: dashboard reads, and (EXAM_RATIO of the
 // iterations) a Bijak exam attempt with an autosave every LT_SAVE_INTERVAL_S seconds, then submit and result.
@@ -10,8 +10,10 @@
 // Environment (names only; no value is stored in the repo):
 //   BASE_URL                 required, https://host (no trailing slash)
 //   LT_CONFIRM_TARGET        required, must equal the host of BASE_URL (a deliberate act, see the README)
-//   LT_ACCOUNTS_FILE         JSON file [{"identifier":"...","password":"..."}], kept OUTSIDE the repo; or
-//   LT_IDENTIFIER_PREFIX + LT_IDENTIFIER_COUNT + LT_PASSWORD   (identifier = prefix + 1..count, one shared password)
+//   LT_I_UNDERSTAND_THIS_WRITES_DATA   required, must be `yes`: the run logs in many accounts and writes attempts
+//   LT_ACCOUNTS_FILE         PREFERRED. JSON file [{"identifier":"...","password":"..."}], mode 600, kept OUTSIDE the repo; or
+//   LT_IDENTIFIER_PREFIX + LT_IDENTIFIER_COUNT + LT_PASSWORD   (one shared password; `-e` values show in the process list
+//   and shell history, so use this only for throw-away staging accounts)
 //   VUS (50)  DURATION (5m)  RAMP (1m)
 //   LT_EXAM_RATIO (0.3)      share of iterations that run an exam attempt
 //   LT_SAVE_INTERVAL_S (10)  seconds between autosaves; LT_SAVES (6) autosaves per attempt
@@ -80,6 +82,7 @@ const accounts = new SharedArray('accounts', () => {
 
 export function setup() {
   if (!BASE_URL) fail('BASE_URL is required')
+  if (__ENV.LT_I_UNDERSTAND_THIS_WRITES_DATA !== 'yes') fail('set LT_I_UNDERSTAND_THIS_WRITES_DATA=yes: this test logs in many accounts and writes exam attempts')
   const host = (BASE_URL.match(/^https?:\/\/([^/:]+)/) || [])[1]
   if (!host || __ENV.LT_CONFIRM_TARGET !== host) {
     fail(`LT_CONFIRM_TARGET must equal the host of BASE_URL (${host}). Set it only for an environment the LEAD approved for load tests.`)

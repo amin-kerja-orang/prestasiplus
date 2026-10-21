@@ -95,7 +95,7 @@ Decisions and why:
   (security updates). Kernel reboots: containers come back by themselves (`unless-stopped`), so a scheduled reboot is safe;
   `LEAD:` decide whether `Unattended-Upgrade::Automatic-Reboot` is on (04:30 suggested).
 - **Non-root deploy user:** `sudo adduser --disabled-password --gecos "" ppdeploy && sudo usermod -aG docker ppdeploy`.
-  Docker group membership is root-equivalent: keep the user's SSH key to people the LEAD trusts. The timers in
+  **Docker group membership is root-equivalent on this host** (anyone in the group can mount `/` into a container): keep the deploy user's SSH key, and the user itself, to the few people the LEAD trusts, and treat that key like root's. The timers in
   `deploy/vps/systemd/` run as this user.
 - **Swap:** a 2 GB swap file as a safety net for image builds (`fallocate -l 2G /swapfile`, `chmod 600`, `mkswap`, `swapon`, fstab,
   `vm.swappiness=10`). The containers have memory limits, so swap is not part of normal operation.
@@ -105,6 +105,11 @@ Decisions and why:
 - **Disk encryption:** backups hold personal data of minors. `LEAD:` confirm the VPS disk or the backup volume is encrypted
   (LUKS on a data volume if the provider does not encrypt at rest). Without encryption at rest do not store backups there
   ([db-backup.md](db-backup.md)).
+
+- **Image pinning.** Tags in the pack: `nginx:1.28-alpine` (edge), `postgres:16-alpine`, `certbot/certbot:v3.0.1`, `clamav/clamav:1.4`, `louislam/uptime-kuma:1.23.16`.
+  The build environment had no network to resolve digests, and those tags were not checked against the registries. `LEAD:` at install, confirm each tag is a currently supported release (for nginx the
+  current stable line), pull it, and **pin by digest**: `docker image inspect --format '{{index .RepoDigests 0}}' <image>`, then put `name@sha256:...` into `PP_EDGE_IMAGE`, `PP_CERTBOT_IMAGE`,
+  `PP_CLAMAV_IMAGE`, `PP_KUMA_IMAGE` (and the `postgres` line of `compose.yaml` if the LEAD wants it). Re-check monthly with the security updates.
 
 ---
 
@@ -140,7 +145,8 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_HTTP_BIND` | `0.0.0.0` | OPS | Address for ports 80/443 |
 | `PP_API_CPUS`, `PP_API_MEM`, `PP_API_HEAP_MB`, `PP_API_STOP_GRACE` | `1.5`, `2g`, `1536`, `35s` | OPS (LEAD sizes) | API limits; heap about 75% of the memory limit; stop grace above `SHUTDOWN_GRACE_MS` |
 | `PP_DB_CPUS`, `PP_DB_MEM`, `PP_DB_SHM` | `2`, `2g`, `256m` | OPS (LEAD sizes) | Database limits |
-| `PP_FRONTEND_CPUS/MEM`, `PP_EDGE_CPUS/MEM`, `PP_MIGRATE_CPUS/MEM`, `PP_CLAMAV_CPUS/MEM`, `PP_KUMA_CPUS/MEM` | see the file | OPS | Limits of the other services |
+| `PP_EDGE_MEM` | `512m` | OPS | Edge memory limit; see the sizing note in section 13 |
+| `PP_FRONTEND_CPUS/MEM`, `PP_EDGE_CPUS`, `PP_MIGRATE_CPUS/MEM`, `PP_CLAMAV_CPUS/MEM`, `PP_KUMA_CPUS/MEM` | see the file | OPS | Limits of the other services |
 | `PP_KUMA_PORT` | `3001` | OPS | Loopback port of Uptime Kuma |
 | `PP_PG_SHARED_BUFFERS`, `PP_PG_EFFECTIVE_CACHE_SIZE`, `PP_PG_WORK_MEM`, `PP_PG_MAINTENANCE_WORK_MEM`, `PP_PG_MAX_CONNECTIONS`, `PP_PG_MAX_WAL_SIZE`, `PP_PG_LOG_MIN_DURATION_MS` | `512MB`, `1GB`, `8MB`, `128MB`, `100`, `2GB`, `1000` | OPS (LEAD sizes) | Postgres settings passed as `-c` (table in section 13) |
 | `PP_UPLOAD_FILES_MB`, `PP_UPLOAD_BIG_MB` | `22`, `256` | OPS | Edge body limits (section 5) |
@@ -151,7 +157,11 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none` |
 | `PP_OFFSITE_S3_URI`, `PP_OFFSITE_S3_ENDPOINT`, `PP_OFFSITE_S3_PROFILE` | empty | LEAD | S3-compatible target (credentials in the backup user's aws CLI config, not here) |
 | `PP_OFFSITE_RSYNC_TARGET`, `PP_OFFSITE_RSYNC_SSH_PORT` | empty, `22` | LEAD | rsync-over-ssh target (key-based login of the backup user) |
-| `PP_BACKUP_GPG_RECIPIENT` | empty | LEAD | Encrypt copies that leave the server with this public key |
+| `PP_BACKUP_GPG_RECIPIENT` | empty | LEAD | **Required when `PP_OFFSITE_KIND` is `s3` or `rsync`**: public key (id/e-mail) that every off-site copy is encrypted to. The PRIVATE key is kept off the server (LEAD's vault / a second machine); `offsite.sh` checks `gpg --list-keys` and dies otherwise |
+| `PP_OFFSITE_ALLOW_PLAINTEXT` | `false` | LEAD | `true` only as a recorded LEAD decision; lets off-site copies leave unencrypted |
+| `PP_BACKUP_MAX_AGE_DAYS` | `35` | LEAD | Erasure rule: nothing older stays on the server (section 9) |
+| `PP_CSP_IMG_HOSTS` | `https://img.youtube.com` | LEAD | Space-separated https origins allowed for images in the CSP (no bare `https:`) |
+| `PP_EDGE_IMAGE` | `nginx:1.28-alpine` | OPS | Edge image pin (see "Image pinning" in section 2) |
 | `PP_HEALTHCHECK_PING_URL`, `PP_HEALTHCHECK_PROBE_URL` | empty | LEAD (account) | Dead man's switch URLs (backup job, health probe) |
 | `PP_ALERT_WEBHOOK_URL` | empty | LEAD (channel) | Generic webhook that receives alert text |
 | `PP_ALERT_DISK_PCT`, `PP_ALERT_CERT_DAYS`, `PP_ALERT_BACKUP_MAX_AGE_H`, `PP_ALERT_API_ERRORS_5M` | `85`, `21`, `30`, `25` | OPS | Alert thresholds |
@@ -193,8 +203,7 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
    (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
    and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values). Choose the size profile of section 13.
-5. Dry run: `deploy/vps/deploy.sh --dry-run`. It must end with `preflight passed`; it prints every step it would run. Fix what it reports.
-   (Before step 6 it will say that no certificate exists; that is the next step.)
+5. Dry run: `deploy/vps/deploy.sh --dry-run`. **Before step 6 the only failure it should report is the missing-certificate line** (`no certificate for ...`); everything else must already pass. After step 6 it must end with `preflight passed`. It prints every step it would run.
 6. Certificate (section 6): `deploy/vps/tls/init-cert.sh --dry-run`, then `deploy/vps/tls/init-cert.sh`.
 7. Deploy (section 7): `deploy/vps/deploy.sh`. On a first install there is nothing to back up; the script says so.
 8. Reference data, once: `deploy/vps/deploy.sh --seed-reference` (section 7). Then the smoke test of section 7.
@@ -218,10 +227,11 @@ Template `deploy/vps/nginx/templates/pp.conf.template`, rendered at container st
 | `/api/metrics` | `404` for `/api/metrics`, `/api/metrics/`, any case (`/api/Metrics`), any suffix, `//api//metrics`, `/api/./metrics`, percent-encoded spellings (nginx matches on the decoded URI) |
 | `/api/` | Proxied to `api:3000` with `Host`, `X-Real-IP`, `X-Forwarded-For` (= the peer address, overwritten), `X-Forwarded-Proto`, `X-Request-Id`. 3 MB body, connect 5 s, send 60 s, **read 125 s**: just above `REQUEST_TIMEOUT_MS=120000`, so the API answers its own timeout first. The edge's keep-alive towards clients is 60 s, below `KEEP_ALIVE_TIMEOUT_MS=65000`. **No `add_header` on `/api`**: the API's own headers (nosniff, DENY, no-referrer, COOP/CORP, CSP `default-src 'none'`, `Cache-Control: no-store` on session responses) reach the browser unchanged |
 | Uploads, tier 1 (`PP_UPLOAD_FILES_MB`, 22 MB) | `/api/files`, `/api/timeline`, `/api/me/picture`, `/api/spm-walkthrough/solve`, `/api/bijak/attempts/:id/photos`, `/api/diagram-audit/:kind/:id/image`. Body timeout 120 s, upstream 300 s |
-| Uploads, tier 2 (`PP_UPLOAD_BIG_MB`, 256 MB) | Many-file multipart routes: `/api/intake/batches` and `/api/intake/batches/:id/files` (up to `INTAKE_MAX_FILES_PER_BATCH`+1 = 11 files x 20 MB = 220 MB), `/api/admin/audio-kbat-sets` (4 x 20 MB = **80 MB**, the biggest the audio KBAT needs), `/api/admin/screenshots` (20 x 10 MB), `/api/perutusan` (6 x 2 MB + 3 x 5 MB), `/api/guru/question-papers` (up to 101 MB). 20 concurrent connections per address (`limit_conn`). The API enforces each purpose itself; this is the outer fence. A new many-file route needs a line in that regex |
+| Uploads, tier 2 (`PP_UPLOAD_BIG_MB`, 256 MB) | Many-file multipart routes: `/api/intake/batches` and `/api/intake/batches/:id/files` (up to `INTAKE_MAX_FILES_PER_BATCH`+1 = 11 files x 20 MB = 220 MB), `/api/admin/audio-kbat-sets` (4 x 20 MB = **80 MB**, the biggest the audio KBAT needs), `/api/admin/screenshots` (20 x 10 MB), `/api/perutusan` (6 x 2 MB + 3 x 5 MB), `/api/guru/question-papers` (up to 101 MB). At most **2 concurrent big uploads per address and 4 for the whole server** (`limit_conn`). The API enforces each purpose itself; this is the outer fence. A new many-file route needs a line in that regex |
 | SPA | `/` proxied to `frontend:8080`. Cache headers come from the frontend nginx (`/assets/*` immutable for a year, `index.html` and deep links `no-cache`, SPA fallback). Gzip is on for SPA assets, **off for `/api`** (the JSON carries the CSRF token: BREACH) |
 | Security headers on the SPA | The frontend nginx already sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; the edge adds only HSTS and the CSP, so nothing is duplicated |
-| CSP | Decision **D-7 is open** (add a CSP, or replicate live, which has none). Default `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy, `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
+| CSP | Decision **D-7 is open** (add a CSP, or replicate live, which has none). Default `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
+| Request-body buffers | `client_body_temp_path` and `proxy_temp_path` are on the **disk-backed named volume `edgetmp`** (`/var/cache/nginx`), not tmpfs. tmpfs pages count against the edge's memory limit, so buffering unauthenticated 256 MB bodies in RAM would OOM-kill the edge. Worst case on disk: 4 big uploads x 256 MB + the 22 MB tier, a few GB at most; the nginx workers' memory stays small. HSTS is also sent on the 404s that nginx itself answers (`/api/metrics`, `/api`) |
 | Access log | Same format as the frontend nginx: a 64-hex path segment (parent invite token) is logged as `[redacted]`, no Referer |
 
 Check without Docker: `deploy/vps/nginx/check.sh [report-only|enforce|off]` (syntax) and `deploy/vps/nginx/test-routing.sh`
@@ -268,6 +278,8 @@ What it does, in order (`deploy.sh --help`):
 8. **Health checks through the edge** (real host name, forced to 127.0.0.1): `/api/health` 200, `/api/ready` 200 `ready` (database up and every shipped migration applied), `/` 200,
    `/api/metrics` 404, `http://` redirects 301.
 9. Records `current.tag` and `previous.tag` in `PP_STATE_DIR`, appends to `history.log` (tag, sha, user).
+
+**Expected log line:** in production the API logs one boot warning (`clientIpBootWarning`, #91) when `TRUST_PROXY_HOPS` > 0 and `CLIENT_IP_HEADER` / `EDGE_PROXY_SECRET` are unset. On this stack that is expected and harmless: the edge is the single proxy and sets the client address itself; those two keys are for the Cloudflare Pages path and stay empty here.
 
 There is **no automatic rollback**: migrations are forward-only, so the script stops, prints what to do and sends an alert. The old API keeps serving until step 6 replaces it.
 
@@ -339,7 +351,7 @@ The units assume the checkout `/opt/pretasiplus` and the user `ppdeploy`; edit t
 - `PP_OFFSITE_KIND=s3`: any S3-compatible bucket through `aws s3 cp --endpoint-url PP_OFFSITE_S3_ENDPOINT`. Credentials live in the backup user's aws CLI configuration (`aws configure --profile pp-backup`), never in `prod.env`.
   Use a write-only key if the provider supports it, and set a bucket lifecycle rule (for example 35 days) plus object lock/versioning: that is the off-site retention.
 - `PP_OFFSITE_KIND=rsync`: `rsync -a -e "ssh -p PORT"` to `PP_OFFSITE_RSYNC_TARGET`; key-based login of `ppdeploy` (`ssh-keygen`, add the public key on the target, `ssh` once to accept the host key). Prune on the target side.
-- `PP_BACKUP_GPG_RECIPIENT`: encrypts every copy that leaves the server (import the LEAD's public key for the deploy user). Strongly recommended: the dumps hold personal data of minors (PDPA).
+- `PP_BACKUP_GPG_RECIPIENT` is **required** for `s3` and `rsync`: `offsite.sh` refuses to send plaintext (override only with `PP_OFFSITE_ALLOW_PLAINTEXT=true`, a recorded LEAD decision) and checks the key with `gpg --list-keys`. Generate the key pair on the LEAD's own machine, import only the PUBLIC key for the deploy user (`gpg --import public.asc`), and **keep the private key off the server** (a break-in must not read old copies). Write down where the private key and its passphrase are kept: without them the off-site copies are unreadable.
 - `none` is accepted only until the target exists; every run logs a loud warning and `deploy.sh` warns too.
 
 **Restore drill and evidence (BE-33 AC7).** `deploy/vps/backup/restore-drill.sh` wraps `scripts/db-restore-check.mjs`; it does not duplicate it:
@@ -374,6 +386,11 @@ operator: Rehearsal Operator (fictitious)
 Fields: UTC time, dump file name and sha256, size, server version, tables restored, `_prisma_migrations` rows, total rows restored, the row-count comparison result, duration, quiesce mode, `PASS`/`FAIL` (a FAIL adds `failure_reason:`), operator
 (default `OPERATOR-NAME-TO-FILL-IN` if `--operator`/`PP_OPERATOR` is not given: write the name in by hand). Attach the file (not the dump) to the BE-33 AC7 evidence and keep it with the ops log.
 
+**Retention and erasure rule (`LEAD:` decision, proposed default 35 days).** Backups contain personal data of minors, so they must not live forever. Proposal: nothing older than **35 days** exists anywhere
+(local `PP_BACKUP_MAX_AGE_DAYS=35`, enforced by `backup.sh` after each successful run; off-site: a bucket lifecycle rule or a prune on the rsync target of the same 35 days, plus the GPG-encrypted copies expire together).
+Consequence the LEAD must accept: a deletion request is satisfied in the live database at once but the data remains in backups up to 35 days; a restore re-applies the deletions made since (record them).
+Real-data migration dumps follow the shorter 7-day rule of the migration runbook.
+
 **Cadence.** First drill right after the first install (empty-ish database) and again after the data migration; then monthly (first working day) on the newest scheduled backup, per [db-backup.md](db-backup.md);
 `pp-restore-drill.timer` can automate the monthly run once two manual drills passed. A failed drill blocks releases until a good backup exists. Also restore one off-site copy to a scratch host once, to prove the off-site path and the GPG key work.
 
@@ -388,7 +405,7 @@ Fields: UTC time, dump file name and sha256, size, server version, tables restor
 | Dead man's switch, probe | `PP_HEALTHCHECK_PROBE_URL` | `health-probe.sh` pings success every 5 minutes (period 10 min); a dead server or probe alerts at the provider |
 | Local probe | `deploy/vps/monitoring/health-probe.sh` (timer, every 5 minutes) | Alerts on: `/api/health` or `/api/ready` not 200 through the public name; a compose service not running or unhealthy; disk of `/`, the Docker root, the backup dir >= `PP_ALERT_DISK_PCT` (85); certificate < `PP_ALERT_CERT_DAYS` (21) days; newest dump older than `PP_ALERT_BACKUP_MAX_AGE_H` (30 h); API error lines in 5 minutes >= `PP_ALERT_API_ERRORS_5M` (25). The same problem alerts once, then every 6 h while it lasts; a new problem alerts at once |
 | Alert delivery | `PP_ALERT_WEBHOOK_URL` (a generic webhook: ntfy, a Slack-compatible incoming webhook) | `LEAD:` channel and who receives it. Failed systemd units (`OnFailure=`) and failed deploys/rollbacks use the same path; without a webhook they still appear in `journalctl -t` / the unit log |
-| Status page and checks (optional) | Uptime Kuma, profile `monitoring` | `PP_PROFILES=monitoring`; listens on `127.0.0.1:3001` only: `ssh -L 3001:127.0.0.1:3001 ppdeploy@host`, open `http://127.0.0.1:3001`, create the admin user on first visit, add HTTP monitors for `/api/health` and `/api/ready` with a keyword check on `"status":"ready"`, certificate-expiry notification, and notification targets. Do not publish it behind the edge without authentication in front |
+| Status page and checks (optional) | Uptime Kuma, profile `monitoring` | `PP_PROFILES=monitoring`; listens on `127.0.0.1:3001` only: `ssh -L 3001:127.0.0.1:3001 ppdeploy@host`, open `http://127.0.0.1:3001`, create the admin user on first visit, add HTTP monitors for `/api/health` and `/api/ready` with a keyword check on `"status":"ready"`, certificate-expiry notification, and notification targets. Do not publish it behind the edge without authentication in front. It sits on its own network (`monitor`), cannot reach `api` or `db`, runs with `cap_drop: ALL` and `no-new-privileges`; it probes the public name through the edge |
 | Metrics | `/api/metrics` (Prometheus text) | Blocked at the edge. Admin session or an internal peer only. If Prometheus is added, join it to the compose network and set `METRICS_INTERNAL_CIDRS` to that network |
 
 Alerts required by the task and where they come from: **disk usage** (probe), **backup failure** (backup.sh alert + `/fail` ping + backup-age check + dead man's switch), **certificate expiry** (probe + renewal failure alert + Let's Encrypt e-mail), **service down** (probe + external checker).
@@ -478,7 +495,7 @@ Reading it:
 | 1,000 | 2 / 3g / 2304 | 3 / 4g | 1GB | 2GB | 8MB | 256MB | 100 |
 | 3,000 | per API instance 2 / 3g (after the shared store) | 6 / 12g | 3GB | 6GB | 16MB | 512MB | 200 |
 
-`PP_DB_SHM` stays 256m. `shared_buffers` + `maintenance_work_mem` + connections x `work_mem` must stay well below `PP_DB_MEM`.
+`PP_EDGE_MEM` (512m default): nginx workers and TLS are small, but 4 concurrent big uploads are buffered on the disk volume `edgetmp` and still stream through worker memory; keep at least 512m, and give the VPS 5 to 10 GB of disk headroom for the request-body buffers. `PP_DB_SHM` stays 256m. `shared_buffers` + `maintenance_work_mem` + connections x `work_mem` must stay well below `PP_DB_MEM`.
 
 ### Load test (k6)
 
@@ -516,7 +533,7 @@ This pack provides the environment:
 - Enable with `PP_PROFILES=clamav` in `prod.env`, then `deploy.sh`.
 - **Reserved env names, read once the half-AM card lands:** `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`. They are only comments in `.env.prod.example`. Do not add them to `api.env` before the card: `env.schema.ts` does not know them and a test keeps `.env.api.example` equal to the schema.
 - Until the card lands, clamd runs but nothing calls it. Check it is alive: `docker compose ... ps clamav` shows `healthy` (the image's `clamdcheck.sh` health check asks clamd to answer).
-- `LEAD:` decide with AM whether go-live waits for the scan card or the risk is accepted again in writing for the first weeks (row 43 currently says it is required).
+- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
 - ClamAV needs outbound HTTPS to the ClamAV mirrors for signature updates (freshclam). Cost: 1 to 1.5 GB RAM (section 13).
 
 ---
@@ -534,6 +551,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received |
 | T-2 d | First **backup + restore drill** on the production box; evidence file kept; one off-site copy restored on a scratch host | AZ | `result: PASS`, off-site copy restores |
 | **T-2 d** | **DNS TTL lowered** to 300 s (48 h before the switch) on the records that will change | LEAD | `dig` shows TTL <= 300 |
+| **T-2 d** | **Decide D-7 (SPA CSP) before go-live**: check the report-only policy in a browser on staging (video embeds, article images, audio player), then set `PP_CSP_MODE=enforce` (and `PP_CSP_IMG_HOSTS`) or record the LEAD's decision to stay on `report-only`/`off` | LEAD + frontend | decision recorded |
 | T-1 d | Load test on a staging box of the same size at 1 x and 1.5 x the expected N (section 13); decision on `THROTTLE_GLOBAL_PER_MINUTE` made (F2); CSP decision D-7 made (`PP_CSP_MODE`); error-tracking decision made (section 10); go-live checklist items 17-19 closed or waived in writing | LEAD + AZ | numbers recorded |
 | T-1 d | Freeze announced: no merges after the release tag; the release SHA in `deploy.sh --dry-run` equals the tag the LEAD approved | LEAD | tag recorded |
 | T-2 h | Rollback readiness: previous image tag present (`previous.tag`), disk free > 30%, last scheduled backup < 24 h old and off-site, operator awake and `sudo`-capable, on-call phone list | AZ | checklist ticked |
@@ -545,7 +563,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T0 + 30 min to +4 h | **Monitoring watch**: the operator watches the uptime checker, the probe, `logs api | grep '"level":50'`, 429 rates, CPU and memory against the 70% / 80% lines, p95 from the edge log (`rt=`), disk growth. First 4 hours continuous, then the normal alerts | AZ | no trigger hit |
 | T0 + 1 d | Nightly backup + off-site verified; certificate renewal dry run (`certbot renew --dry-run`); capacity review against the sizing table; post-cutover drill after the first full backup | AZ | recorded |
 
-**Go / no-go (infrastructure part)** - go only if all hold: `/api/ready` 200 and the smoke test 100% on the real name; backup taken within the last hour and its sha256 recorded, off-site copy present, last restore drill PASS; certificate valid > 60 days;
+**Go / no-go (infrastructure part)** - go only if all hold: **uploads gate: no pupil/teacher uploads are enabled in production until the #78 ClamAV wiring has landed, or the LEAD has recorded a risk acceptance in the cutover log**; `/api/ready` 200 and the smoke test 100% on the real name; backup taken within the last hour and its sha256 recorded, off-site copy present, last restore drill PASS; certificate valid > 60 days;
 external checker, probe, dead-man's switches and the alert channel proven by a test alert; no Critical/High open from QA or security; migrated-data reconciliation green (AM) when D-3 = yes; disk > 30% free; the operator and the LEAD reachable for the next 4 hours.
 No-go on any failure. The application-side go/no-go list is in [go-live-bijak-spm.md](go-live-bijak-spm.md) section 4.3.
 
@@ -569,7 +587,7 @@ Found while building this pack; AZ does not change application code.
 | F6 | `apifiles` (uploads) is not in the database dump. This pack archives it weekly; pupil photos grow it. A plan for object storage or incremental backup is a later improvement | devops | Info |
 | F7 | ClamAV: the scan code is not in the API yet (half AM). Reserved env names `CLAMAV_HOST` / `CLAMAV_PORT` | half AM (backlog #78) | High before go-live per row 43 |
 | F8 | No error tracking in the API (section 10 DECISION NEEDED) | LEAD | Decision |
-| F9 | SPA CSP decision D-7; the pack ships report-only | LEAD, frontend-developer (verify the policy in a browser) | Decision |
+| F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16) | LEAD, frontend-developer (verify the policy in a browser) | Decision |
 
 ---
 
