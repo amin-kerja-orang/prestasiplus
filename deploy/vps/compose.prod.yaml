@@ -19,7 +19,7 @@
 #   clamav    (profile `clamav`)     clamd for upload scanning, reserved until the API reads CLAMAV_* (backlog #78)
 #   kuma      (profile `monitoring`) Uptime Kuma on 127.0.0.1 only
 #
-# Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db}.env (root, mode 600) hold them.
+# Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db}.env (owner root, group ppdeploy, mode 640) hold them.
 # The *.example files in deploy/vps/ list the names with placeholders.
 #
 # SINGLE-INSTANCE RULE (threat model row 18, accepted by the LEAD 2026-10-21): the API keeps its rate-limit
@@ -176,6 +176,8 @@ services:
       PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-22}
       PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-256}
       PP_CSP_IMG_HOSTS: ${PP_CSP_IMG_HOSTS:-}
+      PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-60r/m}
+      PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-60}
       PP_CSP_MODE: ${PP_CSP_MODE:-report-only}   # report-only | enforce | off: picks nginx/snippets/csp-<mode>.conf
     volumes:
       - ./deploy/vps/nginx/nginx.conf:/etc/nginx/nginx.conf:ro

@@ -10,6 +10,7 @@ export PP_SCRIPT=cert-renew
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
+pp_lock 600
 export PP_IMAGE_TAG="${PP_IMAGE_TAG:-prod}"
 trap 'pp_alert "CERTIFICATE RENEWAL FAILED (exit $?). Check: docker compose --profile tls run --rm certbot renew --dry-run"' ERR
 pp_compose --profile tls run --rm certbot renew --webroot -w /var/www/certbot --quiet

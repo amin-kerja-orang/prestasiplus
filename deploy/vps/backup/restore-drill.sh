@@ -39,6 +39,9 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$operator" ] || operator="OPERATOR-NAME-TO-FILL-IN"
 
+# The drill stops the api: take the shared lock first (before the exit trap that restarts it).
+pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
+
 command -v node >/dev/null || pp_die "node (22) is required on the host for scripts/db-restore-check.mjs"
 backup_dir="$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)"
 pp_assert_outside_repo "$backup_dir"

@@ -15,6 +15,8 @@
 #   5 migrate (one-shot, `prisma migrate deploy` only, never a seed)   6 api + frontend up (wait healthy)
 #   7 edge (re)created   8 health checks through the edge: /api/health, /api/ready, /, /api/metrics (404), http->https
 #   9 record current and previous image tag for rollback.sh
+# deploying.tag (state dir) names the release being started from step 5 on; it is removed in step 9.
+# One lock (PP_LOCK_FILE) serialises deploy, rollback, backup, restore drill and certificate jobs.
 #
 # Reference data (the school_packages catalogue and SPM subject configs) is NOT part of a deploy. Load it once,
 # explicitly: `deploy/vps/deploy.sh --seed-reference` (runs `be:db:seed` with ALLOW_DEMO_SEED=false; production loads
@@ -35,7 +37,7 @@ while [ $# -gt 0 ]; do
     --allow-dirty) allow_dirty=1; shift ;;
     --tag) tag="${2:?--tag needs a value}"; shift 2 ;;
     --seed-reference) seed_reference=1; shift ;;
-    -h|--help) sed -n '2,19p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) pp_die "unknown argument: $1" 2 ;;
   esac
 done
@@ -63,12 +65,20 @@ run() { # run CMD...: print, and execute unless --dry-run
 step() { pp_log "---- $* ----"; }
 
 is_true() { case "${1,,}" in true|1) return 0 ;; *) return 1 ;; esac; }
-urldecode() { local s="${1//+/ }"; printf '%b' "${s//%/\\x}"; }
+# Percent-decoding only: a '+' in a URL userinfo is a literal plus, not a space.
+urldecode() {
+  local s="$1" out="" h
+  while [ -n "$s" ]; do
+    if [[ "$s" =~ ^%([0-9A-Fa-f]{2})(.*)$ ]]; then printf -v h '%b' "\\x${BASH_REMATCH[1]}"; out+="$h"; s="${BASH_REMATCH[2]}"
+    else out+="${s:0:1}"; s="${s:1}"; fi
+  done
+  printf '%s' "$out"
+}
 
 # ------------------------------------------------------------------------------------------------------------
 preflight() {
-  local f k v c cfg_err
-  for c in docker git curl sha256sum; do command -v "$c" >/dev/null || err "missing command: $c"; done
+  local f k v c m cfg_err pem
+  for c in docker git curl sha256sum openssl flock; do command -v "$c" >/dev/null || err "missing command: $c"; done
   if command -v docker >/dev/null; then
     v="$(docker compose version --short 2>/dev/null || true)"; v="${v#v}"
     if [ -z "$v" ]; then err "docker compose plugin not found"
@@ -80,7 +90,11 @@ preflight() {
 
   for f in "$PP_PROD_ENV" "$api_env" "$db_env"; do
     if [ ! -r "$f" ]; then err "env file missing or unreadable: $f"; continue; fi
-    case "$(stat -c %a "$f")" in *[1-7]) err "$f is readable by everyone (mode $(stat -c %a "$f")); chmod 640 and chgrp to the deploy group, or 600" ;; esac
+    m="$(stat -c %a "$f")"
+    # Standard: 640 root:ppdeploy (the deploy user reads, nobody else). 600 and 400 are accepted; anything that
+    # gives "others" any access, or the group write access, is refused.
+    case "$m" in *[1-7]) err "$f is accessible to everyone (mode $m): sudo chown root:ppdeploy $f && sudo chmod 640 $f" ;; esac
+    case "$m" in ?[2367]?|[2367]?) err "$f is writable by its group (mode $m): sudo chmod 640 $f" ;; esac
   done
   [ ${#errors[@]} -eq 0 ] || return 0   # nothing below makes sense without the files
 
@@ -146,8 +160,16 @@ preflight() {
   # Domain and certificate.
   if [ -z "$domain" ] || [ "$domain" = app.example.my ]; then err "PP_DOMAIN is not set to the real host name"
   else
-    [ -f "$(pp_cfg PP_LE_DIR /srv/pretasiplus/letsencrypt)/live/$domain/fullchain.pem" ] \
-      || err "no certificate for $domain under PP_LE_DIR: run deploy/vps/tls/init-cert.sh first"
+    # certbot keeps live/ root-only; pp_cert_pem falls back to reading it through the running edge container.
+    if ! pem="$(pp_cert_pem "$domain")" || [ -z "$pem" ]; then
+      err "cannot read the certificate for $domain (missing, or live/ is root-only and the edge container is not running): run deploy/vps/tls/init-cert.sh first (runbook section 6)"
+    elif pp_cert_is_selfsigned "$pem"; then
+      err "the certificate for $domain is self-signed (the init-cert.sh placeholder?): issue the real one with deploy/vps/tls/init-cert.sh first"
+    elif openssl x509 -noout -issuer <<<"$pem" 2>/dev/null | grep -qi 'staging'; then
+      warn "the certificate for $domain comes from the Let's Encrypt STAGING servers: browsers will warn"
+    elif ! openssl x509 -noout -checkend 0 <<<"$pem" >/dev/null 2>&1; then
+      err "the certificate for $domain has expired"
+    fi
   fi
   case "$(pp_cfg PP_CSP_MODE report-only)" in report-only|enforce|off) ;; *) err "PP_CSP_MODE must be report-only, enforce or off" ;; esac
   if [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ]; then warn "PP_OFFSITE_KIND=none: backups stay on this server only"
@@ -186,6 +208,7 @@ if [ ${#errors[@]} -gt 0 ]; then
 fi
 pp_log "preflight passed"
 
+[ "$dry" = 1 ] || pp_lock 0   # one operation at a time; the pre-deploy backup below inherits it (PP_LOCK_HELD)
 prev=""; [ -r "$state_dir/current.tag" ] && prev="$(cat "$state_dir/current.tag")"
 pp_log "current release: ${prev:-none (first install)}; new release: $tag"
 [ "$prev" != "$tag" ] || pp_warn "the new tag equals the current one; this redeploys the same images"
@@ -203,15 +226,22 @@ if [ "$seed_reference" = 1 ]; then
   exit 0
 fi
 
-on_fail() {
-  local rc=$?
-  pp_log "DEPLOY FAILED at: ${BASH_COMMAND} (exit $rc)" >&2
+fail_deploy() { # fail_deploy EXIT_CODE WHAT: alert and print the way back. Called by the ERR trap and by the health-check gate.
+  local rc="$1" what="$2" running
+  trap - ERR
+  running="$(cat "$state_dir/deploying.tag" 2>/dev/null || true)"
+  pp_log "DEPLOY FAILED at: ${what} (exit $rc)" >&2
   pp_log "Nothing is rolled back automatically. If the failure happened before 'migrate', the old release is still running." >&2
-  pp_log "If it happened after 'migrate': images -> deploy/vps/rollback.sh ${prev:---previous}; schema -> forward-only, restore the pre-deploy dump only with the LEAD's confirmation (runbook section 8)." >&2
+  if [ -n "$running" ]; then
+    pp_log "The new release $running was started (deploying.tag). Images back to ${prev:-none}: deploy/vps/rollback.sh ${prev:---previous}   (rollback.sh compares with the image that is actually running)" >&2
+  else
+    pp_log "No container was switched to the new release yet; the old release is still running." >&2
+  fi
+  pp_log "Schema: forward-only. Restore the pre-deploy dump only with the LEAD's confirmation (runbook section 8)." >&2
   pp_alert "DEPLOY FAILED for release $tag (exit $rc). Previous release: ${prev:-none}."
   exit "$rc"
 }
-[ "$dry" = 1 ] || trap on_fail ERR
+[ "$dry" = 1 ] || trap 'fail_deploy $? "$BASH_COMMAND"' ERR
 
 step "2/9 pre-deploy backup"
 if [ "$skip_backup" = 1 ]; then pp_warn "--skip-backup: NO backup before migrating"
@@ -228,6 +258,10 @@ fi
 step "4/9 database"
 run pp_compose up -d --wait --no-deps db
 
+# Written before the first container of the new release starts (migrate runs the new image): rollback.sh and the
+# failure message use it to tell "new release started but not recorded" from "nothing started".
+[ "$dry" = 1 ] || { mkdir -p "$state_dir"; printf '%s\n' "$tag" >"$state_dir/deploying.tag"; }
+
 step "5/9 migrate (prisma migrate deploy only)"
 run pp_compose run --rm --no-deps migrate
 
@@ -241,7 +275,8 @@ step "8/9 health checks through the edge"
 if [ "$dry" = 1 ]; then
   pp_log "DRY-RUN would check via 127.0.0.1 with the real host name: GET https://$domain/api/health (200), /api/ready (200 ready), / (200), /api/metrics (404), http://$domain/x (301)"
 else
-  pp_health_checks || pp_die "health checks failed; see the logs: docker compose logs --since 10m api edge"
+  # pp_die would exit without the ERR trap: call the failure handler explicitly so the alert and guidance are printed.
+  pp_health_checks || fail_deploy 1 "health checks through the edge (logs: docker compose logs --since 10m api edge)"
 fi
 
 step "9/9 record the release"
@@ -251,6 +286,7 @@ else
   mkdir -p "$state_dir"
   [ -z "$prev" ] || [ "$prev" = "$tag" ] || printf '%s\n' "$prev" >"$state_dir/previous.tag"
   printf '%s\n' "$tag" >"$state_dir/current.tag"
+  rm -f "$state_dir/deploying.tag"
   printf '%s deploy tag=%s previous=%s sha=%s user=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" "${prev:-none}" \
     "$(git -C "$PP_REPO" rev-parse HEAD)" "$(id -un)" >>"$state_dir/history.log"
 fi

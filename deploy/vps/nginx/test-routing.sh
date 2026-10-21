@@ -15,7 +15,7 @@ mkdir -p "$w/conf.d" "$w/tmp" "$w/le/live/t.example.my" "$w/snip" "$w/web"
 # nginx workers drop to an unprivileged user when this runs as root: let them write the temp dir
 chmod 755 "$w"
 chmod 777 "$w/tmp"
-export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only
+export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" -keyout "$w/le/live/$PP_DOMAIN/privkey.pem" -out "$w/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 cp "$here"/snippets/*.conf "$w/snip/"
 for t in "$here"/templates/snippets/*.template; do
@@ -73,4 +73,14 @@ expect "30 MB /api/files is refused" 413 "$(code -X POST --data-binary @"$w/30m"
 expect "30 MB Bijak photo is refused" 413 "$(code -X POST --data-binary @"$w/30m" "$B/api/bijak/attempts/a1/photos")"
 expect "30 MB intake file upload is allowed" 200 "$(code -X POST --data-binary @"$w/30m" "$B/api/intake/batches/abc/files")"
 expect "100 MB audio KBAT create is allowed" 200 "$(code -X POST --data-binary @"$w/100m" "$B/api/admin/audio-kbat-sets")"
+# edge flood guard on /api/auth/ (30r/m, burst 5 in this test): the first requests pass, a rapid run gets 429,
+# and other API paths are not affected
+u="https://$PP_DOMAIN:18443"
+first="$(code -X POST "$u/api/auth/login")"
+codes=""; for _ in 1 2 3 4 5 6 7 8; do codes="$codes $(code -X POST "$u/api/auth/login")"; done
+expect "auth: first request passes" "200" "$first"
+expect "auth: a rapid burst is limited" "yes" "$(case "$codes" in *429*) echo yes ;; *) echo "no:$codes" ;; esac)"
+last=""; for _ in 1 2 3 4 5 6 7 8 9 10; do last="$(code "$u/api/health")"; done
+expect "other /api paths are not limited" "200" "$last"
+
 if [ "$fails" -eq 0 ]; then echo "ALL PASSED"; else echo "$fails FAILED"; exit 1; fi

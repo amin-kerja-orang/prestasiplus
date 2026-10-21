@@ -15,7 +15,7 @@ pp_warn() { pp_log "WARN: $*" >&2; }
 pp_die()  { pp_log "ERROR: $1" >&2; exit "${2:-1}"; }
 
 # pp_env_value FILE KEY -> last value of KEY in an env file (compose rules: no export, quotes stripped, an unquoted
-# value ends at " #"). Prints nothing when absent. Never evaluates the file.
+# value ends at " #", see below). Prints nothing when absent. Never evaluates the file.
 pp_env_value() {
   local file="$1" key="$2" line val=""
   [ -r "$file" ] || return 0
@@ -25,9 +25,12 @@ pp_env_value() {
       "$key="*) val="${line#"$key="}" ;;
     esac
   done <"$file"
+  # Compose rules: a quoted value ends at the closing quote (anything after it, such as ' # comment', is dropped);
+  # an unquoted value ends at ' #' and loses trailing blanks.
+  val="${val#"${val%%[![:space:]]*}"}"
   case "$val" in
-    \"*\") val="${val#\"}"; val="${val%\"}" ;;
-    \'*\') val="${val#\'}"; val="${val%\'}" ;;
+    \"*) val="${val#\"}"; val="${val%%\"*}" ;;
+    \'*) val="${val#\'}"; val="${val%%\'*}" ;;
     *) val="${val%%[[:space:]]#*}"; val="${val%"${val##*[![:space:]]}"}" ;;
   esac
   printf '%s' "$val"
@@ -99,6 +102,50 @@ pp_alert() {
     "$(_pp_cfg_quote "$url")" "$(_pp_cfg_quote "[$(pp_cfg PP_DOMAIN host)] $msg")" \
     | curl -fsS -m 10 --retry 2 -o /dev/null --config - 2>/dev/null || pp_warn "alert webhook failed"
   return 0
+}
+
+# pp_lock [WAIT_SECONDS]: one shared lock for every script that changes or reads a consistent state of the stack
+# (backup, deploy, rollback, restore drill, certificate issue/renew). PP_LOCK_FILE (default /var/lock/pretasiplus.lock;
+# /run/lock is world-writable on Debian and Ubuntu). A script that holds the lock exports PP_LOCK_HELD=1, so the
+# scripts it starts itself (deploy -> backup) do not wait for their parent. WAIT_SECONDS 0 (default) fails at once.
+pp_lock() {
+  local wait="${1:-0}" f
+  [ "${PP_LOCK_HELD:-}" != 1 ] || return 0
+  f="$(pp_cfg PP_LOCK_FILE /var/lock/pretasiplus.lock)"
+  command -v flock >/dev/null || pp_die "flock is required (util-linux)" 3
+  exec 9>>"$f" || pp_die "cannot open the lock file $f (set PP_LOCK_FILE to a path the deploy user can write)" 3
+  flock -w "$wait" 9 || pp_die "another PrestasiPlus operation (backup, deploy, rollback, restore drill or certificate job) holds $f; wait for it to finish" 75
+  export PP_LOCK_HELD=1
+}
+
+# pp_running_tag: image tag of the api container that is actually running (empty when none). The recorded
+# current.tag is only written at the end of a successful deploy, so after a failed deploy the two differ.
+pp_running_tag() {
+  local cid img
+  cid="$(pp_compose ps -q api 2>/dev/null | head -n1 || true)"
+  [ -n "$cid" ] || return 0
+  img="$(docker inspect --format '{{.Config.Image}}' "$cid" 2>/dev/null || true)"
+  case "${img##*/}" in *:*) printf '%s' "${img##*:}" ;; esac
+  return 0
+}
+
+# pp_cert_pem DOMAIN: the live certificate chain as PEM on stdout. certbot keeps live/ and archive/ root-only, so the
+# deploy user may not read them: fall back to reading the file through the running edge container (no sudo needed).
+pp_cert_pem() {
+  local d="$1" le f
+  le="$(pp_cfg PP_LE_DIR /srv/pretasiplus/letsencrypt)"
+  f="$le/live/$d/fullchain.pem"
+  if [ -r "$f" ]; then cat "$f"; return 0; fi
+  pp_compose exec -T edge cat "/etc/letsencrypt/live/$d/fullchain.pem" 2>/dev/null
+}
+
+# pp_cert_is_selfsigned PEM_TEXT: success when issuer and subject are the same (the init-cert.sh placeholder or any
+# other self-signed certificate; a Let's Encrypt certificate always has a different issuer).
+pp_cert_is_selfsigned() {
+  local i s
+  i="$(openssl x509 -noout -issuer -nameopt RFC2253 <<<"$1" 2>/dev/null)" || return 1
+  s="$(openssl x509 -noout -subject -nameopt RFC2253 <<<"$1" 2>/dev/null)" || return 1
+  [ "${i#issuer=}" = "${s#subject=}" ]
 }
 
 # ---- health checks through the edge (used by deploy.sh and rollback.sh) ----

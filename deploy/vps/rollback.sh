@@ -3,7 +3,9 @@
 #
 #   deploy/vps/rollback.sh [--dry-run] [--yes] [--checkout] [TAG | --previous]
 #
-# - TAG / --previous: the image tag to run again (default --previous: $PP_STATE_DIR/previous.tag, written by deploy.sh).
+# - TAG / --previous: the image tag to run again (default --previous: $PP_STATE_DIR/previous.tag, written by deploy.sh;
+#   after a deploy that failed half-way, --previous means the last release deploy.sh recorded as complete).
+#   The "already running" check compares with the api image that is really running, not with the recorded tag.
 #   The images must still be on this server (deploy.sh never prunes) or be pullable (PP_BUILD_MODE=pull).
 # - Restarts api and frontend on that tag. It does NOT run `migrate` and does NOT touch the database.
 # - MIGRATIONS ARE FORWARD-ONLY. If the bad release applied a migration, the older code runs on the newer schema.
@@ -29,7 +31,7 @@ while [ $# -gt 0 ]; do
     --yes) yes=1; shift ;;
     --checkout) checkout=1; shift ;;
     --previous) tag=""; shift ;;
-    -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "${BASH_SOURCE[0]}"; exit 0 ;;
     -*) pp_die "unknown argument: $1" 2 ;;
     *) tag="$1"; shift ;;
   esac
@@ -37,13 +39,28 @@ done
 
 state_dir="$(pp_cfg PP_STATE_DIR /var/lib/pretasiplus-deploy)"
 domain="$(pp_cfg PP_DOMAIN '')"
-cur=""; [ -r "$state_dir/current.tag" ] && cur="$(cat "$state_dir/current.tag")"
+[ "$dry" = 1 ] || pp_lock 0
+# rec = the last release that deploy.sh recorded as complete; cur = what is really running. They differ after a
+# deploy that failed after it had started the new containers (deploy.sh writes current.tag only at the very end).
+rec=""; [ -r "$state_dir/current.tag" ] && rec="$(cat "$state_dir/current.tag")"
+cur="$(pp_running_tag)"
+if [ -z "$cur" ] && [ -r "$state_dir/deploying.tag" ]; then cur="$(cat "$state_dir/deploying.tag")"; fi   # docker could not tell
+[ -n "$cur" ] || cur="$rec"
+failed_deploy=0
+if [ -n "$rec" ] && [ -n "$cur" ] && [ "$cur" != "$rec" ]; then
+  failed_deploy=1
+  pp_warn "running release $cur differs from the last recorded release $rec: a deploy did not finish"
+fi
 if [ -z "$tag" ]; then
-  [ -r "$state_dir/previous.tag" ] || pp_die "no previous release recorded in $state_dir; pass a TAG"
-  tag="$(cat "$state_dir/previous.tag")"
+  if [ "$failed_deploy" = 1 ]; then
+    tag="$rec"   # --previous after a failed deploy means the release that was live before it
+  else
+    [ -r "$state_dir/previous.tag" ] || pp_die "no previous release recorded in $state_dir; pass a TAG"
+    tag="$(cat "$state_dir/previous.tag")"
+  fi
 fi
 [[ "$tag" =~ ^[A-Za-z0-9_.-]{1,64}$ ]] || pp_die "bad tag: $tag" 2
-[ "$tag" != "$cur" ] || pp_die "$tag is already the current release"
+[ "$tag" != "$cur" ] || pp_die "$tag is already the release that is running"
 [ -n "$domain" ] || pp_die "PP_DOMAIN is not set in $PP_PROD_ENV"
 export PP_IMAGE_TAG="$tag"
 
@@ -81,7 +98,10 @@ if [ "$dry" = 1 ]; then
 else
   pp_health_checks || pp_die "health checks failed after the rollback; read: docker compose logs --since 10m api edge"
   mkdir -p "$state_dir"
-  [ -z "$cur" ] || printf '%s\n' "$cur" >"$state_dir/previous.tag"
+  # previous.tag keeps pointing at the release before the live one; after a failed deploy the failed release is not
+  # worth keeping as "previous" (the last good previous.tag stays).
+  if [ "$failed_deploy" = 0 ] && [ -n "$cur" ]; then printf '%s\n' "$cur" >"$state_dir/previous.tag"; fi
+  rm -f "$state_dir/deploying.tag"
   printf '%s\n' "$tag" >"$state_dir/current.tag"
   printf '%s rollback tag=%s from=%s user=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" "${cur:-unknown}" "$(id -un)" >>"$state_dir/history.log"
   pp_alert "ROLLBACK done: production now runs $tag (was ${cur:-unknown})."

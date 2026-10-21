@@ -1,10 +1,16 @@
 # Rendered by the nginx image entrypoint (envsubst, only PP_* variables) into /etc/nginx/conf.d/pp.conf.
-# Variables: PP_DOMAIN, PP_UPLOAD_FILES_MB, PP_UPLOAD_BIG_MB, PP_CSP_MODE.
+# Variables: PP_DOMAIN, PP_UPLOAD_FILES_MB, PP_UPLOAD_BIG_MB, PP_CSP_MODE, PP_CSP_IMG_HOSTS, PP_EDGE_AUTH_RATE, PP_EDGE_AUTH_BURST.
 #
 # Request path:  browser -> edge (this file) -> /api/* -> api:3000     everything else -> frontend:8080 (SPA)
 # The frontend nginx is NOT in the API path (its /api/ block is unreachable from here), so the body limits below
 # are the only ones in front of the API. Upstream names are resolved at request time through Docker DNS, so
 # recreating api or frontend during a deploy never leaves the edge pointing at a dead address.
+
+# Optional flood guard on /api/auth/ per client IP. SECONDARY to the API's own login throttle (which counts per account
+# and per IP in the database): many schools sit behind one NAT address, so the default is generous. Raise the rate
+# (for example 100000r/m) to make it a no-op.
+limit_req_zone $binary_remote_addr zone=pp_auth:10m rate=${PP_EDGE_AUTH_RATE};
+limit_req_status 429;
 
 # ---- 80: ACME challenge, health probe, everything else redirects to https on the configured host ----
 server {
@@ -100,6 +106,18 @@ server {
     proxy_connect_timeout 5s;
     proxy_send_timeout 300s;
     proxy_read_timeout 300s;             # large downloads and audio range requests share this path family
+  }
+
+  # --- authentication endpoints: same proxying as /api/, plus the per-IP flood guard (PP_EDGE_AUTH_RATE / _BURST).
+  #     ^~ so the regex locations above never take these paths. No add_header, same as /api/.
+  location ^~ /api/auth/ {
+    limit_req zone=pp_auth burst=${PP_EDGE_AUTH_BURST} nodelay;
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 125s;
   }
 
   # --- everything else under /api ---

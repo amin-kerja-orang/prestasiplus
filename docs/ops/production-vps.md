@@ -142,7 +142,11 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_IMAGE_PREFIX` | empty | LEAD | Registry prefix with trailing slash, e.g. `ghcr.io/ORG/`; empty = build on the VPS |
 | `PP_BUILD_MODE` | `local` | OPS | `local` builds on the VPS (needs ~2 GB free RAM); `pull` pulls from `PP_IMAGE_PREFIX` |
 | `PP_PROFILES` | empty | LEAD | Compose profiles to run: `clamav`, `monitoring` (comma list) |
-| `PP_HTTP_BIND` | `0.0.0.0` | OPS | Address for ports 80/443 |
+| `PP_HTTP_BIND` | `0.0.0.0` | OPS | IPv4 address for ports 80/443. The edge publishes **IPv4 only**: create an A record, no AAAA record |
+| `PP_EDGE_AUTH_RATE` | `60r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address. A huge value (`100000r/m`) makes it a no-op |
+| `PP_EDGE_AUTH_BURST` | `60` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
+| `PP_LOCK_FILE` | `/var/lock/pretasiplus.lock` | OPS | The shared lock for backup, deploy, rollback, restore drill and certificate jobs; the deploy user must be able to write it |
+| `PP_LOCK_WAIT` | `1800` | OPS | Seconds a timer-started backup or drill waits for another operation before it fails |
 | `PP_API_CPUS`, `PP_API_MEM`, `PP_API_HEAP_MB`, `PP_API_STOP_GRACE` | `1.5`, `2g`, `1536`, `35s` | OPS (LEAD sizes) | API limits; heap about 75% of the memory limit; stop grace above `SHUTDOWN_GRACE_MS` |
 | `PP_DB_CPUS`, `PP_DB_MEM`, `PP_DB_SHM` | `2`, `2g`, `256m` | OPS (LEAD sizes) | Database limits |
 | `PP_EDGE_MEM` | `512m` | OPS | Edge memory limit; see the sizing note in section 13 |
@@ -195,7 +199,7 @@ Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=
 
 Every step that touches the server is the operator's, after the LEAD's go. `LEAD:` items are inputs.
 
-1. `LEAD:` VPS ready (section 2), domain chosen, **DNS A (and AAAA) record of `PP_DOMAIN` points at the VPS**. For the cutover (section 16)
+1. `LEAD:` VPS ready (section 2), domain chosen, **DNS A record of `PP_DOMAIN` points at the VPS** (the edge publishes IPv4 only: do not create an AAAA record, or IPv6 clients cannot connect). For the cutover (section 16)
    lower the TTL to 300 s at least 48 hours before.
 2. As `ppdeploy`: `sudo mkdir -p /opt/pretasiplus && sudo chown ppdeploy: /opt/pretasiplus && git clone <repo url> /opt/pretasiplus && cd /opt/pretasiplus && git checkout <release tag>`.
    `LEAD:` the repo URL/deploy key and the release tag.
@@ -232,6 +236,7 @@ Template `deploy/vps/nginx/templates/pp.conf.template`, rendered at container st
 | Security headers on the SPA | The frontend nginx already sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; the edge adds only HSTS and the CSP, so nothing is duplicated |
 | CSP | Decision **D-7 is open** (add a CSP, or replicate live, which has none). Default `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
 | Request-body buffers | `client_body_temp_path` and `proxy_temp_path` are on the **disk-backed named volume `edgetmp`** (`/var/cache/nginx`), not tmpfs. tmpfs pages count against the edge's memory limit, so buffering unauthenticated 256 MB bodies in RAM would OOM-kill the edge. Worst case on disk: 4 big uploads x 256 MB + the 22 MB tier, a few GB at most; the nginx workers' memory stays small. HSTS is also sent on the 404s that nginx itself answers (`/api/metrics`, `/api`) |
+| Auth flood guard | `/api/auth/` has `limit_req` per client IP (`PP_EDGE_AUTH_RATE`, `PP_EDGE_AUTH_BURST`, status 429). It is a secondary guard: the API throttles logins per account and per IP itself, and the edge sees one address for a whole school behind NAT, hence the generous default. Tested by `test-routing.sh` |
 | Access log | Same format as the frontend nginx: a 64-hex path segment (parent invite token) is logged as `[redacted]`, no Referer |
 
 Check without Docker: `deploy/vps/nginx/check.sh [report-only|enforce|off]` (syntax) and `deploy/vps/nginx/test-routing.sh`
@@ -245,6 +250,8 @@ Check without Docker: `deploy/vps/nginx/check.sh [report-only|enforce|off]` (syn
 - **First certificate:** `deploy/vps/tls/init-cert.sh --dry-run` (certbot against the Let's Encrypt staging servers; proves DNS, port 80 and the
   webroot path without issuing), then `deploy/vps/tls/init-cert.sh`. It makes a 1-day self-signed placeholder so nginx can start, starts the edge,
   removes the placeholder, runs certbot, reloads the edge. Rate limits: do not repeat the real run in a loop.
+- **Reading the certificate without root.** certbot creates `live/` and `archive/` root-only. The deploy user (`ppdeploy`) does not need to read them: `deploy.sh` and `health-probe.sh` read `fullchain.pem` through the running edge (`docker compose exec -T edge cat ...`; the directory is mounted read-only there), after trying a direct read. Consequence: before the edge has ever run (first install), the preflight cannot see the file and says so; run `init-cert.sh` first, which starts the edge. If you prefer direct reads, give the group access: `sudo chgrp ppdeploy $PP_LE_DIR/live $PP_LE_DIR/archive && sudo chmod 750 $PP_LE_DIR/live $PP_LE_DIR/archive` (note that the key files then become readable to the group as well; `ppdeploy` is root-equivalent anyway through the docker group).
+- **Failed issuance.** If certbot fails, `init-cert.sh` puts the placeholder back (the edge keeps a certificate) and exits non-zero; a re-run reuses the placeholder and never nests directories. `deploy.sh` refuses a self-signed certificate, so a half-finished first install cannot be deployed by mistake.
 - **Renewal:** `deploy/vps/tls/renew.sh` twice a day (systemd timer `pp-cert-renew.timer` or cron). Certbot renews when fewer than 30 days remain;
   the script reloads the edge every time. Failure raises an alert. The health probe alerts when fewer than `PP_ALERT_CERT_DAYS` (21) days remain.
 - Alternative: a different ACME client (Caddy, acme.sh) or a provider-managed certificate: put `fullchain.pem` and `privkey.pem` at
@@ -264,10 +271,10 @@ deploy/vps/deploy.sh                    # asks you to type the domain: the LEAD'
 
 What it does, in order (`deploy.sh --help`):
 
-1. **Preflight.** Tools and Compose version; the three env files exist and are not world-readable; **no placeholder** (`change-me`, `USER:PASSWORD`,
+1. **Preflight.** Tools and Compose version; the three env files exist, mode `640` (`root:ppdeploy`; `600`/`400` also pass) and are neither readable by others nor writable by the group; **no placeholder** (`change-me`, `USER:PASSWORD`,
    `app.example.my`, the dev WhatsApp number, ...); **fail-closed guard**: refuses if `ALLOW_DEMO_SEED`, `BIJAK_POC_QUESTIONS` or `MAIL_LOG_RESET_LINKS` is `true`/`1`
    in any env file or the shell; secrets 32+ characters, `IC_HASH_KEY` different from `SESSION_SECRET` (what the API enforces at boot, plus the 32-character team policy);
-   `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate exists; `docker compose config -q`
+   `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
    passes with the overlay; the working tree is clean (`--allow-dirty` to override).
 2. **Pre-deploy backup** (`backup.sh --tag pre-deploy --no-files`) if the database is running. `--skip-backup` exists and is logged as a warning: do not use it with a migrating release.
 3. **Build or pull** the three images tagged with the git sha.
@@ -282,6 +289,15 @@ What it does, in order (`deploy.sh --help`):
 **Expected log line:** in production the API logs one boot warning (`clientIpBootWarning`, #91) when `TRUST_PROXY_HOPS` > 0 and `CLIENT_IP_HEADER` / `EDGE_PROXY_SECRET` are unset. On this stack that is expected and harmless: the edge is the single proxy and sets the client address itself; those two keys are for the Cloudflare Pages path and stay empty here.
 
 There is **no automatic rollback**: migrations are forward-only, so the script stops, prints what to do and sends an alert. The old API keeps serving until step 6 replaces it.
+
+**Lock.** `deploy.sh`, `rollback.sh`, `backup.sh`, `restore-drill.sh` and the certificate scripts share one lock file (`PP_LOCK_FILE`, default `/var/lock/pretasiplus.lock`). A second operation fails at once with exit 75 (deploy, rollback) or waits up to `PP_LOCK_WAIT` seconds (timer-started backup, drill, renewal). The backup that a deploy or a drill starts itself inherits the lock (`PP_LOCK_HELD=1`).
+
+**A deploy that fails (the failed-deploy path).** Any failed step, including a failed step-8 health check, runs the failure handler: it prints where it stopped, sends the alert and prints the rollback command. From step 5 on, `deploying.tag` in `PP_STATE_DIR` names the release being started; `current.tag` still names the last release that finished (it is written only in step 9). So after a failure past `migrate`, the containers run the new tag while `current.tag` is the old one. `rollback.sh` therefore compares the requested tag with the api image that is actually running (`docker inspect` of the api container), not with `current.tag`:
+- `deploy/vps/rollback.sh <old tag>` (the command the failure message prints) works;
+- `deploy/vps/rollback.sh --previous` means "the last release that finished" in that state (it picks `current.tag`, not `previous.tag`), and prints a warning that a deploy did not finish;
+- `--checkout` uses the same tag, so the commit comes from `history.log`;
+- a failure before step 5 changed no container; nothing to roll back.
+After the rollback `deploying.tag` is removed and `previous.tag` is left as it was.
 
 **Reference data (once per environment, and after a release that adds reference modules):**
 ```
@@ -305,7 +321,7 @@ refused cleanly; an audio KBAT set create (up to 80 MB) and an intake batch uplo
 deploy/vps/rollback.sh --dry-run
 deploy/vps/rollback.sh                  # to previous.tag; or: rollback.sh <tag>; add --checkout to also check out that release's commit
 ```
-It restarts `api` and `frontend` on the earlier tag, recreates the edge, runs the same health checks, swaps `current.tag`/`previous.tag`. It does not run `migrate` and does not touch the database.
+It restarts `api` and `frontend` on the earlier tag, recreates the edge, runs the same health checks, swaps `current.tag`/`previous.tag` (after a failed deploy it only resets `current.tag`; see the failed-deploy path in section 7). It does not run `migrate` and does not touch the database.
 Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad release (the edge config comes from the checkout, not from an image).
 
 **Database: migrations are forward-only.** After a release that migrated:
@@ -317,7 +333,7 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
   3. `$PC cp <dump> db:/tmp/restore.dump`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`.
-  4. Roll the images back (`rollback.sh --checkout`), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
+  4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.
 - Rollback triggers and go/no-go rules for the cutover: section 16.
@@ -342,9 +358,12 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
 sudo mkdir -p /var/log/pretasiplus && sudo chown ppdeploy: /var/log/pretasiplus
 sudo cp deploy/vps/systemd/pp-*.service deploy/vps/systemd/pp-*.timer 'deploy/vps/systemd/pp-alert@.service' /etc/systemd/system/
 sudo systemctl daemon-reload
+systemd-analyze verify /etc/systemd/system/pp-*.service /etc/systemd/system/pp-*.timer   # only /opt/... path notes are acceptable
 sudo systemctl enable --now pp-backup.timer pp-health-probe.timer pp-cert-renew.timer     # pp-restore-drill.timer after the first manual drills
 systemctl list-timers 'pp-*'
 ```
+
+The units run as `ppdeploy` with `NoNewPrivileges`, `ProtectSystem=full`, `PrivateTmp`, `ProtectHome=read-only`, `ProtectKernelTunables`, `ProtectControlGroups`, `RestrictSUIDSGID` and `ReadWritePaths` for the backup directory, the state directory and `/run/lock`. If you move `PP_BACKUP_DIR`, `PP_STATE_DIR` or `PP_LOCK_FILE`, edit `ReadWritePaths` in the units too. These settings keep the docker socket reachable; the socket itself stays the real privilege (docker group = root-equivalent).
 The units assume the checkout `/opt/pretasiplus` and the user `ppdeploy`; edit them if yours differ. Cron alternative (install ONE of the two): `sudo install -m 644 deploy/vps/systemd/cron.pretasiplus /etc/cron.d/pretasiplus`.
 
 **Off-site copy** (`offsite.sh`, called by `backup.sh`; `LEAD:` choose the target, a disk loss on this VPS must not lose the only copies):
@@ -559,7 +578,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T-1 h | **Deploy / migrate**: `deploy/vps/deploy.sh` (confirmation typed by the LEAD's go): builds, runs the schema migrations, starts the release. Health checks pass through the edge | AZ | `deploy complete` |
 | **T0 slot** | **Half-AM migration slot**: AM runs the BE-30 orchestrator against this database (freeze window, dry-run, `--apply` with its `PP_ALLOW_MIGRATE_APPLY` / `PP_MIGRATE_TARGET_DB` guards, delta run, reconciliation). AZ keeps the API reachable only to the team (DNS not switched yet), watches `docker stats`, `logs api`, disk and `pg_stat_activity`, and **takes a second dump right after the load** (`backup.sh --tag pre-deploy`) so the migrated state is restorable. How AM runs the tooling on the VPS (for example `docker compose ... run --rm --no-deps -e PP_ALLOW_MIGRATE_APPLY=1 -e PP_MIGRATE_TARGET_DB=<db> migrate <command>` from the `migrate` image, which has the tooling) is **unverified** and agreed with AM before T-2 d | AM (runs), AZ (supports) | reconciliation green (AM's report); dump taken |
 | T0 + 15 min | **Smoke test** on the real name through the edge (section 7 list), including login of a migrated account, a Bijak attempt, an upload, the throttle/XFF check from two networks, the metrics 404 | AZ + QA | all pass |
-| **T0 + 30 min** | **Go / no-go** (below). On go: **DNS switch** (change the A/AAAA records to the VPS; they should already be, in which case this is lifting the access restriction). Announce | LEAD | decision logged |
+| **T0 + 30 min** | **Go / no-go** (below). On go: **DNS switch** (change the A record to the VPS (no AAAA record); they should already be, in which case this is lifting the access restriction). Announce | LEAD | decision logged |
 | T0 + 30 min to +4 h | **Monitoring watch**: the operator watches the uptime checker, the probe, `logs api | grep '"level":50'`, 429 rates, CPU and memory against the 70% / 80% lines, p95 from the edge log (`rt=`), disk growth. First 4 hours continuous, then the normal alerts | AZ | no trigger hit |
 | T0 + 1 d | Nightly backup + off-site verified; certificate renewal dry run (`certbot renew --dry-run`); capacity review against the sizing table; post-cutover drill after the first full backup | AZ | recorded |
 
@@ -597,6 +616,7 @@ The build environment has **no Docker daemon, no k6, no ClamAV, no public networ
 the edge nginx config (`nginx -t` and a live behaviour test against stub upstreams), the backup, retention and restore-drill scripts against a local PostgreSQL 16.15 (through a stand-in for `docker exec`), the deploy dry run and its guards, the health probe, `shellcheck` on all scripts, and the k6 script logic against a stub API (with a stand-in `k6` module).
 
 **Not run, so unproven until the first real run:**
+- **Verify on the first VPS rehearsal (added after G4 round 2):** (a) that `ppdeploy` really cannot read `$PP_LE_DIR/live` and that the preflight and the health probe then read the certificate through `docker compose exec -T edge cat` (or that your `chgrp`/`chmod 750` group-read step works); (b) the systemd hardening (`NoNewPrivileges`, `ProtectSystem=full`, `PrivateTmp`, `ProtectHome=read-only`, `ReadWritePaths`) with a real `systemctl start pp-backup.service pp-health-probe.service pp-cert-renew.service` and `journalctl -u`: the docker CLI must still reach the socket and `/run/lock` must be writable; (c) a failed deploy on staging (stop the api healthcheck on purpose) followed by `rollback.sh <old tag>` and `rollback.sh --previous`, with the real `docker inspect` of the api container (the rehearsal used a stand-in); (d) a second `deploy.sh` or `backup.sh` started while one runs gets the lock message; (e) `limit_req` on `/api/auth/` with the real client address (it must not trip for a normal school).
 - `docker compose up` of any service: image builds, the `migrate` job on the VPS, container health, `--wait`, the real `read_only`/`cap_drop` behaviour of the edge (root master + capabilities), the tmpfs-rendered nginx template, the compose `!reset []` effect on a real engine (rendered correctly by `config`), resource limits taking effect.
 - TLS: certificate issuance (`init-cert.sh`, including the `--dry-run` path and the placeholder swap), renewal, HTTP/2 (the host nginx is 1.24, the image 1.27; `http2 on;` was removed for the host test), real browser behaviour of the CSP.
 - `deploy.sh` and `rollback.sh` beyond `--dry-run` (builds, migrate, recreate, health checks through a real edge, the typed confirmation).

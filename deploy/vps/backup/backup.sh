@@ -71,6 +71,10 @@ on_exit() {
 }
 trap on_exit EXIT
 
+# One operation at a time (deploy, rollback, drill, certificate jobs share the lock). deploy.sh and restore-drill.sh
+# start this script while holding it (PP_LOCK_HELD=1), so they do not wait for themselves. A timer run waits.
+pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
+
 pp_ping "$ping_url" start
 pp_log "backup start: tag=$tag dir=$dir"
 

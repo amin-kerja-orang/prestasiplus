@@ -8,3 +8,14 @@ User=ppdeploy
 Group=ppdeploy
 Environment=PP_ENV_DIR=/etc/pretasiplus
 ExecStart=/opt/pretasiplus/deploy/vps/monitoring/alert.sh "systemd unit %i failed on this server (journalctl -u %i)"
+# Hardening that is compatible with using the docker CLI (the docker socket stays reachable; the socket is the real
+# privilege, see the runbook). Paths with a leading "-" are skipped when absent. Change them with PP_BACKUP_DIR /
+# PP_STATE_DIR / PP_LOCK_FILE.
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+ReadWritePaths=-/var/backups/pretasiplus -/var/lib/pretasiplus-deploy -/run/lock

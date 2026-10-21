@@ -31,7 +31,6 @@ cert_days="$(pp_cfg PP_ALERT_CERT_DAYS 21)"
 max_age_h="$(pp_cfg PP_ALERT_BACKUP_MAX_AGE_H 30)"
 max_errors="$(pp_cfg PP_ALERT_API_ERRORS_5M 25)"
 backup_dir="$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)"
-le_dir="$(pp_cfg PP_LE_DIR /srv/pretasiplus/letsencrypt)"
 state_dir="$(pp_cfg PP_STATE_DIR /var/lib/pretasiplus-deploy)"
 probe_url="$(pp_cfg PP_HEALTHCHECK_PROBE_URL '')"
 export PP_IMAGE_TAG="${PP_IMAGE_TAG:-prod}"
@@ -66,14 +65,15 @@ for p in / "$docker_root" "$backup_dir"; do
 done
 
 # ---- certificate ----
-cert="$le_dir/live/$domain/fullchain.pem"
-if [ -f "$cert" ]; then
-  end="$(openssl x509 -enddate -noout -in "$cert" 2>/dev/null | cut -d= -f2)"
+pem="$(pp_cert_pem "$domain" 2>/dev/null || true)"
+if [ -n "$pem" ]; then
+  end="$(openssl x509 -enddate -noout <<<"$pem" 2>/dev/null | cut -d= -f2)"
   end_s="$(date -d "$end" +%s 2>/dev/null || echo 0)"
   days=$(( (end_s - $(date +%s)) / 86400 ))
   if [ "$end_s" -eq 0 ] || [ "$days" -lt "$cert_days" ]; then problems+=("certificate for $domain expires in ${days} days (limit ${cert_days})"); else say "ok   certificate $days days left"; fi
+  if pp_cert_is_selfsigned "$pem"; then problems+=("the certificate for $domain is self-signed (placeholder?): run tls/init-cert.sh"); fi
 else
-  problems+=("certificate file not found: $cert")
+  problems+=("certificate for $domain not readable (not in PP_LE_DIR for this user, and the edge container is not running)")
 fi
 
 # ---- newest backup ----
