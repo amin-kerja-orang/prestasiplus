@@ -5,6 +5,8 @@ private repo `amin-kerja-orang/prestasiplus`. A cloud session sees only this Git
 no local memory folder, no global user instructions, no local credentials and no old-PC Docker.
 Everything needed is below. Anything not verified is marked **Perlu pengesahan**.
 
+**Precedence:** issue #109 and `docs/plan/half-am/{LEAD-PROMPT,DEV-PROMPT-TEMPLATE}.md` (PR #110) win over this file where they differ; this file adds the background and working habits.
+
 Reply language to Amin: Bahasa Melayu. Code, commits, PR text and docs: English.
 
 ---
@@ -90,7 +92,7 @@ Role and delegation (from Amin's global instructions):
 8. Brief subagents precisely (goal, exact files, task IDs, decisions made, expected output) and tell each to keep scratch files in its own subfolder. Why: subagents do not see this conversation.
 
 Git and GitHub:
-9. Before every push: `git fetch origin && git rebase origin/feature/v2-backend`, then `npm run contract:emit` and commit any `openapi.json` change. Why: stale-base `openapi.json` caused heavy conflicts. After rebasing a branch that had merge commits use `git push --force-with-lease`, only on your own branch.
+9. Before every push: `git fetch origin` and **merge** `origin/feature/v2-backend` into your branch (normal merge; no rebase, no force-push, per `docs/plan/half-am/DEV-PROMPT-TEMPLATE.md`), then `npm run contract:emit` and commit any `openapi.json` change. Why: stale-base `openapi.json` caused heavy conflicts.
 10. No repeated WIP pushes; batch and push once, but push at least hourly and before a session ends, updating the tracker row and PR description with each push. Why: every push runs CI (about 10 min) and Actions minutes hit 90% on 2026-10-20, yet others see only what is on GitHub. Obey any LEAD "tahan push" hold.
 11. Targeted checks while developing (`be:typecheck`, `be:lint`, vitest on the card's folders). Run the full `npm run be:verify` ONCE before the push, and tell the LEAD first. Why: heavy, and it gave false timeouts under load. In the cloud each session has its own VM, so only the one-run-per-push part still matters.
 12. Post every `gh pr comment` / `gh issue comment` with `--body-file <file>` (write the text to a file first). Why: inline `--body` lets bash eat backticked paths and SHAs, silently.
