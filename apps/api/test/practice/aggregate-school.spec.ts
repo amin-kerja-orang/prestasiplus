@@ -17,6 +17,10 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 const MIGRATION_0018 = fileURLToPath(
   new URL('../../prisma/migrations/0018_aggregate_school_id/migration.sql', import.meta.url),
 )
+/** AZ-22: 0041 renames the 0018 index (its 66-character name was truncated by Postgres). */
+const MIGRATION_0041 = fileURLToPath(
+  new URL('../../prisma/migrations/0041_aggregate_school_index_name/migration.sql', import.meta.url),
+)
 
 let n = 0
 const uuid = (): string => `00000000-0000-4000-8018-${String(++n).padStart(12, '0')}`
@@ -168,8 +172,9 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
     const a = input(withSchool)
     const b = input(noSchool)
     const t = input(withSchool, { isTest: true })
-    // Roll 0018 back (its documented reverse), write rows as the pre-0018 code did, then apply 0018 again.
-    await db.query('DROP INDEX "ix_practice_attempt_aggregates_school_id_subject_code_submitted_at"')
+    // Roll 0041 and 0018 back (0018's documented reverse, on the index's name since 0041), write rows as the
+    // pre-0018 code did, then apply 0018 and 0041 again.
+    await db.query('DROP INDEX "ix_practice_attempt_aggregates_school_subject_submitted"')
     await db.query('ALTER TABLE "practice_attempt_aggregates" DROP COLUMN "school_id"')
     for (const x of [a, b, t]) {
       await db.query(
@@ -179,11 +184,12 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
       )
     }
     await db.query(readFileSync(MIGRATION_0018, 'utf8'))
+    await db.query(readFileSync(MIGRATION_0041, 'utf8'))
     expect(await schoolOf(a.attemptId)).toBe(f)
     expect(await schoolOf(b.attemptId)).toBeNull()
     expect(await schoolOf(t.attemptId)).toBe(f)
     const [idx] = await db.query<{ indexdef: string }>(
-      `select indexdef from pg_indexes where indexname = 'ix_practice_attempt_aggregates_school_id_subject_code_submitted_at'`,
+      `select indexdef from pg_indexes where indexname = 'ix_practice_attempt_aggregates_school_subject_submitted'`,
     )
     expect(idx!.indexdef).toMatch(/\(school_id, subject_code, submitted_at DESC\) WHERE \(NOT is_test\)/)
     const [fk] = await db.query<{ def: string }>(

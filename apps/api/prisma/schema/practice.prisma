@@ -221,7 +221,8 @@ model PracticeAttemptAggregate {
   /// Snapshot of the student's `users.school_id` at write time (migration 0018, LEAD decision 4); a later
   /// school move never rewrites it; null when the student had no school. FK to `schools` ON DELETE SET NULL
   /// (no back-relation: BE-12 may not edit the schools schema). Partial index (school_id, subject_code,
-  /// submitted_at DESC) WHERE NOT is_test is hand-written in 0018.
+  /// submitted_at DESC) WHERE NOT is_test is hand-written in 0018 and named
+  /// "ix_practice_attempt_aggregates_school_subject_submitted" since 0041 (AZ-22).
   schoolId        BigInt?   @map("school_id")
 
   items PracticeAttemptAggregateItem[]
