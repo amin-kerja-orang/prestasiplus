@@ -47,6 +47,14 @@ Failed gate → route findings to the owning role, fix, and re-run that gate onl
 
 Run in sequence only when there is a real dependency (one's output is the other's input).
 
+**Split for speed (user instruction 2026-10-19, applies to every track including Fast).** Speed and quality both matter; one agent doing several things in a row is the slow path.
+- **One agent per independent part.** If a request has 2+ parts that touch different files (e.g. a theme config fix and a component fix), launch one agent per part in the same message. Use one agent only when the parts edit the same files or one needs the other's output.
+- **Split by file ownership.** Give each parallel agent its own set of files to edit and tell it not to touch the others' files, so they never conflict in the shared tree.
+- **Delegate the investigation too.** The Delivery Lead does at most a few quick lookups to write the brief. Wider searches go to parallel `Explore` agents (one per area), not a long run of searches in the main session.
+- **Pipeline, don't wait.** As soon as one part is built, send it to `code-reviewer` while the other parts are still being built. Run independent G4/G5 checks in parallel.
+- **Keep agents fast.** Tell each agent to run targeted checks (type-check, lint on changed files, the affected tests), not the whole suite, unless the gate needs the full suite. Ask for a short report.
+- **Tell the user the plan in one line**, e.g. "3 agents in parallel: A (button theme), B (select), C (search)".
+
 **Brief precisely.** Every delegation prompt includes:
 1. Goal and feature slug.
 2. Exact input files to read (paths) - don't make the agent search for what you already know.

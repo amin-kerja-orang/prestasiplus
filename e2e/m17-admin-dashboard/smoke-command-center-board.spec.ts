@@ -110,6 +110,59 @@ async function expectTodayAndFeedNotClipped(page: Page): Promise<void> {
   ).toBeGreaterThanOrEqual(2)
 }
 
+/**
+ * Panel grid (`cc-panels`): child order = the mobile reading order; at xl Live Feed sits left of the Today /
+ * Pembetulan / Mood stack (top to bottom); at md every row fills both columns (no half-row hole).
+ */
+async function expectPanelGrid(page: Page, alias: boolean): Promise<void> {
+  const grid = tid(page, 'cc-panels')
+  const ids = await grid
+    .locator('> [data-testid^="cc-panel-"]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
+  expect(ids).toEqual([
+    'cc-panel-feed',
+    'cc-panel-today',
+    'cc-panel-correction',
+    'cc-panel-mood',
+    ...(alias ? [] : ['cc-panel-top-schools']),
+    'cc-panel-top-pupils',
+    'cc-panel-kirkpatrick',
+    'cc-panel-alesa',
+  ])
+  const box = (id: string) =>
+    tid(page, id).evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return { left: r.left, right: r.right, top: r.top }
+    })
+  const w = viewportWidth(page)
+  if (w >= 1280) {
+    const [feed, today, correction, mood] = await Promise.all(
+      ['cc-panel-feed', 'cc-panel-today', 'cc-panel-correction', 'cc-panel-mood'].map(box),
+    )
+    expect(feed!.left).toBeLessThan(today!.left)
+    expect(today!.top).toBeLessThan(correction!.top)
+    expect(correction!.top).toBeLessThan(mood!.top)
+  } else if (w >= 768) {
+    const g = await grid.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      const rows = new Map<number, { left: number; right: number }>()
+      for (const c of el.children) {
+        const b = c.getBoundingClientRect()
+        const key = Math.round(b.top)
+        const row = rows.get(key) ?? { left: Infinity, right: -Infinity }
+        row.left = Math.min(row.left, b.left)
+        row.right = Math.max(row.right, b.right)
+        rows.set(key, row)
+      }
+      return { left: r.left, right: r.right, rows: [...rows.values()] }
+    })
+    for (const row of g.rows) {
+      expect(Math.abs(row.left - g.left)).toBeLessThanOrEqual(1)
+      expect(Math.abs(row.right - g.right)).toBeLessThanOrEqual(1)
+    }
+  }
+}
+
 async function expectNotFound(page: Page): Promise<void> {
   await expect(page.locator('[data-page=not-found]')).toBeVisible()
   await expectTabTitle(page, NOT_FOUND_TITLE)
@@ -248,14 +301,19 @@ test.describe('S2 admin', MODULE, () => {
   test('E2E-M17-37 / 38 / 39 Mood, Pembetulan and Engagement', async ({ page, gotoApp }) => {
     await openBoard(page, gotoApp, CC)
     await expect(tid(page, 'cc-mood-count')).toHaveText(['307', '280', '72', '91'])
-    await expect(tid(page, 'cc-correction-value')).toHaveText(['899', '+0.0%', '0%'])
+    await expect(tid(page, 'cc-correction-total')).toContainText('899')
+    await expect(tid(page, 'cc-correction-avg')).toContainText('+0.0%')
+    await expect(tid(page, 'cc-correction-rate')).toContainText('0%')
     await expect(page.getByText('Top Improvers')).toHaveCount(0)
-    await expect(tid(page, 'cc-band-bar')).toHaveText(['29', '11', '43', '3', '2,229'])
-    const widths = await tid(page, 'cc-band-bar').evaluateAll((els) =>
-      els.map((e) => parseFloat((e as HTMLElement).style.width)),
-    )
-    expect(widths[4]).toBeCloseTo(100, 1)
-    expect(widths[0]).toBeCloseTo((29 / 2229) * 100, 1)
+    const bands = [
+      ['champion', '29'],
+      ['consistent', '11'],
+      ['developing', '43'],
+      ['minimum', '3'],
+      ['disengaged', '2,229'],
+    ] as const
+    for (const [key, count] of bands)
+      await expect(tid(page, `cc-engagement-${key}`)).toContainText(count)
   })
 
   test('E2E-M17-25 polling: the board re-requests live-data every 10 s and a failed poll keeps the values', async ({
@@ -276,7 +334,7 @@ test.describe('S2 admin', MODULE, () => {
     await expect(tid(page, 'cc-title')).toBeVisible()
   })
 
-  test('E2E-M17-40 layout: 1 / 2 / 3 columns, no horizontal scroll, text >= 12 px, header clock visible', async ({
+  test('E2E-M17-40 layout: panel grid order and rows, no horizontal scroll, text >= 12 px, header clock visible', async ({
     page,
     gotoApp,
   }) => {
@@ -284,45 +342,18 @@ test.describe('S2 admin', MODULE, () => {
     await expect(tid(page, 'cc-top-school')).toHaveCount(5)
     await expectNoHorizontalScroll(page)
     const w = viewportWidth(page)
-    const columns = await columnsOf(page.locator('[data-testid^="cc-col-"]'))
-    expect(columns).toBe(w >= 1280 ? 3 : w >= 768 ? 2 : 1)
-    // live placement: column 2 = Aktiviti Hari Ini, Live Feed, Top Pelajar, Mood; column 3 = Pembetulan alone
-    const ids = (col: string) =>
-      page
-        .locator(`[data-testid="${col}"] > section`)
-        .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
-    expect(await ids('cc-col-2')).toEqual([
-      'cc-panel-today',
-      'cc-panel-feed',
-      'cc-panel-top-pupils',
-      'cc-panel-mood',
-    ])
-    expect(await ids('cc-col-3')).toEqual(['cc-panel-correction'])
-    if (w >= 1280) {
-      await expectTodayAndFeedNotClipped(page)
-      // nothing is clipped below the board: every column ends above the Engagement panel
-      const top = await tid(page, 'cc-panel-engagement').evaluate(
-        (e) => e.getBoundingClientRect().top,
-      )
-      const bottoms = await page
-        .locator('[data-testid^="cc-col-"]')
-        .evaluateAll((els) =>
-          els.map((c) => Math.max(...[...c.children].map((k) => k.getBoundingClientRect().bottom))),
-        )
-      for (const b of bottoms) expect(b).toBeLessThanOrEqual(top + 1)
-    }
+    await expectPanelGrid(page, false)
+    if (w >= 1280) await expectTodayAndFeedNotClipped(page)
     expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
     await expect(tid(page, 'cc-clock')).toBeInViewport()
     await expect(tid(page, 'cc-live-badge')).toBeInViewport()
-    if (w >= 1280) {
-      // the board fills the viewport; panels scroll inside themselves
-      const doc = await page.evaluate(() => document.documentElement.scrollHeight)
-      expect(doc).toBeLessThanOrEqual(800 + 1)
-    } else {
-      // every panel reachable by scrolling the page
+    {
+      // the page scrolls; nothing overflows sideways
+      await expectNoHorizontalScroll(page)
       await tid(page, 'cc-panel-engagement').scrollIntoViewIfNeeded()
       await expect(tid(page, 'cc-footer')).toBeVisible()
     }
+
   })
 
   test('guest on the board goes to /login (E2E-M17-05)', async ({ newTab }) => {
@@ -561,34 +592,20 @@ test.describe('S2 / S3 Admin Sekolah alias (account 8, SMK DEMO)', MODULE, () =>
     provisional('INFERRED / PROPOSED: Pembetulan zeros, 7-day Engagement'),
     async ({ page, gotoApp }) => {
       await openBoard(page, gotoApp, SA)
-      await expect(tid(page, 'cc-correction-value')).toHaveText(['0', '+0.0%', '0%'])
-      await expect(tid(page, 'cc-day')).toHaveCount(7)
-      const labels = await tid(page, 'cc-day-label').allInnerTexts()
+      await expect(tid(page, 'cc-correction-total')).toContainText('0')
+      await expect(tid(page, 'cc-correction-avg')).toContainText('+0.0%')
+      await expect(tid(page, 'cc-correction-rate')).toContainText('0%')
+      const dayRows = tid(page, 'cc-engagement-days').locator('tbody tr')
+      await expect(dayRows).toHaveCount(7)
+      const labels = await dayRows.locator('td:first-child, th:first-child').allInnerTexts()
       expect(labels).toHaveLength(7)
       for (const l of labels) expect(l).toMatch(/^(Isn|Sel|Rab|Kha|Jum|Sab|Ahd)$/)
-      const heights = await tid(page, 'cc-day-bar').evaluateAll((els) =>
-        els.map((e) => parseFloat((e as HTMLElement).style.height)),
-      )
-      expect(Math.max(...heights)).toBeCloseTo(100, 1)
-      expect(Math.min(...heights)).toBeGreaterThanOrEqual(4)
       await expect(tid(page, 'cc-engagement-bands')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
       expect(await minFontSize(page)).toBeGreaterThanOrEqual(12)
       const w = viewportWidth(page)
       if (w >= 1280) await expectTodayAndFeedNotClipped(page)
-      expect(await columnsOf(page.locator('[data-testid^="cc-col-"]'))).toBe(
-        w >= 1280 ? 3 : w >= 768 ? 2 : 1,
-      )
-      if (w >= 1280) {
-        // no column ends in a hole: the last panel of each column reaches the column's bottom
-        const gaps = await page.locator('[data-testid^="cc-col-"]').evaluateAll((cols) =>
-          cols.map((c) => {
-            const last = c.lastElementChild?.getBoundingClientRect().bottom ?? 0
-            return Math.abs(c.getBoundingClientRect().bottom - last)
-          }),
-        )
-        for (const g of gaps) expect(g).toBeLessThanOrEqual(2)
-      }
+      await expectPanelGrid(page, true)
     },
   )
 

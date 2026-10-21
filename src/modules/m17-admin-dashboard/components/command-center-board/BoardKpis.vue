@@ -60,10 +60,10 @@ const tiles = computed<{ id: string; label: string; value: string; sub: string; 
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="cc-kpis" aria-live="off">
+  <div class="grid grid-cols-2 gap-3 xl:grid-cols-4" data-testid="cc-kpis" aria-live="off">
     <UCard v-for="(t, i) in tiles" :key="t.id" class="min-w-0" :data-testid="`cc-kpi-${t.id}`">
       <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
+        <span class="flex w-full min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
           <DsIconChip :icon="t.icon" :accent="accentAt(i)" size="sm" />
           <span class="min-w-0 text-overline text-muted">{{ t.label }}</span>
         </span>

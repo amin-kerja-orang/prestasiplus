@@ -22,22 +22,22 @@ const paths = ccPaths(props.basePath)
       <li
         v-for="(s, i) in rows"
         :key="s.schoolId"
-        class="flex min-h-11 items-center gap-3"
+        class="flex min-h-12 items-center gap-3 py-1"
         data-testid="cc-top-school"
       >
-        <UBadge :color="rankColor(i)" variant="soft" class="shrink-0" data-testid="cc-rank">{{
+        <UBadge :color="rankColor(i)" variant="soft" class="w-7 shrink-0 justify-center" data-testid="cc-rank">{{
           i + 1
         }}</UBadge>
         <UButton
           :to="paths.school(s.schoolId)"
           variant="link"
           color="neutral"
-          class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
+          class="h-auto min-w-0 flex-1 justify-start truncate p-0 text-start"
           :label="shortSchool(s.schoolName)"
           :title="s.schoolName"
           data-testid="cc-top-school-link"
         />
-        <span class="tabular shrink-0 text-body text-muted" data-testid="cc-top-school-count"
+        <span class="tabular shrink-0 text-body text-toned" data-testid="cc-top-school-count"
           >{{ formatCount(s.activeCount) }} plj</span
         >
       </li>

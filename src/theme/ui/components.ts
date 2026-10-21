@@ -36,7 +36,7 @@ const menuSlots = {
   group: 'p-0',
   empty: 'px-3 py-6 text-body text-muted',
   label: 'px-3 py-2 text-overline text-muted',
-  separator: 'my-1 h-0.5 bg-elevated',
+  separator: 'mx-0 my-1 h-0.5 bg-elevated',
   item,
   itemLeadingIcon: 'size-5 text-muted group-data-highlighted:text-highlighted',
   itemTrailingIcon: 'size-5 text-primary-t',
@@ -51,6 +51,27 @@ export const selectSlots = {
   trailingIcon: 'text-muted transition-transform duration-base group-data-[state=open]:rotate-180',
   leadingIcon: 'text-muted',
 }
+
+/**
+ * Stock size variants set item/label/empty padding, gap and text size, and outrank the slot base
+ * (tailwind-variants order: slot, size variant, compounds, caller). So ours live in the size
+ * variants, otherwise popup rows fall back to 6px padding. `fieldSizes` keeps a field's own variants.
+ */
+const sizeKeys = ['xs', 'sm', 'md', 'lg', 'xl']
+const menuRowSizes = {
+  item: 'gap-2.5 px-3 py-2 text-label',
+  label: 'gap-2 px-3 py-2 text-overline',
+  empty: 'px-3 py-6 text-body',
+}
+export function mergeMenuSizes(fieldSizes: Record<string, Record<string, string>> = {}) {
+  return Object.fromEntries(
+    sizeKeys.map((k) => [k, { ...menuRowSizes, ...fieldSizes[k] }]),
+  ) as Record<string, Record<string, string>>
+}
+/** Dropdown menu has no `empty` slot. */
+export const menuItemSizes = Object.fromEntries(
+  sizeKeys.map((k) => [k, { item: menuRowSizes.item, label: menuRowSizes.label }]),
+)
 
 const soft = (c: string) => ({ root: `bg-${c}-soft text-${c}` })
 const tinted = ['soft', 'subtle', 'outline']
@@ -84,6 +105,8 @@ export const componentDefaults = {
       title: 'text-label font-semibold',
       description: 'text-body opacity-100',
       icon: 'size-5',
+      // Compact square so a one-line closable alert stays one line (button md is 44px, 52px learner).
+      close: 'size-8 min-h-0 p-0 learner:size-8 learner:min-h-0 self-start -my-1',
     },
     defaultVariants: { variant: 'soft' },
     compoundVariants: [
@@ -131,7 +154,7 @@ export const componentDefaults = {
     },
   },
 
-  dropdownMenu: { slots: menuSlots },
+  dropdownMenu: { slots: menuSlots, variants: { size: menuItemSizes } },
 
   popover: {
     slots: {
@@ -235,6 +258,11 @@ export const componentDefaults = {
   },
 
   commandPalette: {
+    variants: {
+      size: Object.fromEntries(
+        sizeKeys.map((k) => [k, { ...menuRowSizes, empty: 'px-3 py-8 text-body' }]),
+      ),
+    },
     slots: {
       root: 'divide-y-0 bg-default',
       content: 'bg-default',

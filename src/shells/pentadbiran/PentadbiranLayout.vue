@@ -173,6 +173,17 @@ const accountItems = computed(() => [
           </template>
 
           <template #default="{ collapsed }">
+            <UDashboardSearchButton
+              :collapsed="collapsed"
+              label="Cari menu"
+              color="neutral"
+              variant="soft"
+              size="md"
+              class="mb-3 shrink-0 font-normal text-muted"
+              :class="collapsed ? 'mx-auto' : 'w-full justify-start'"
+              :ui="{ label: 'grow text-start' }"
+              data-testid="pentadbiran-search"
+            />
             <UNavigationMenu
               :items="navItems"
               :collapsed="collapsed"
@@ -264,14 +275,6 @@ const accountItems = computed(() => [
                 </div>
               </template>
               <template #right>
-                <UDashboardSearchButton
-                  label="Cari menu"
-                  color="neutral"
-                  variant="soft"
-                  size="sm"
-                  class="hidden w-52 justify-start font-normal text-muted lg:inline-flex"
-                  :ui="{ label: 'grow text-start' }"
-                />
                 <UDashboardSearchButton
                   :collapsed="true"
                   color="neutral"

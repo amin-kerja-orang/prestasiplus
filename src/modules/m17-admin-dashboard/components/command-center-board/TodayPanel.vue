@@ -20,13 +20,13 @@ const TONE = { down: 'text-error', up: 'text-success', same: 'text-muted' } as c
 
 <template>
   <BoardPanel icon="i-ph-chart-line-up" title="Aktiviti Hari Ini" testid="cc-panel-today">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-1 flex-col justify-center gap-2">
       <span class="tabular text-heading text-highlighted" data-testid="cc-today-bar">{{
         today
       }}</span>
       <UProgress :model-value="percent" :max="100" aria-hidden="true" />
     </div>
-    <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-body">
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-body">
       <span class="text-muted" data-testid="cc-week"
         >Minggu ini:
         <b class="text-highlighted">{{ data ? formatCount(data.answeredWeek) : 0 }}</b></span

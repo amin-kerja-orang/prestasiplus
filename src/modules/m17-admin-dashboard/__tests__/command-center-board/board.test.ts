@@ -115,34 +115,35 @@ describe('S2 admin board', () => {
       ...texts(w, 'cc-correction-total'),
       ...texts(w, 'cc-correction-avg'),
       ...texts(w, 'cc-correction-rate'),
-    ]).toEqual(['899Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
+    ]).toEqual(['Rekod899', 'Purata Naik+0.0%', 'Kadar Baik0%'])
     expect(w.text()).not.toContain('Top Improvers')
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(true)
+    expect(w.find('[data-testid="cc-engagement-bands"] h3').text()).toBe('Engagement')
+    expect(w.find('[data-testid="cc-engagement-bands"] caption').text()).toBe('Engagement pelajar mengikut tahap')
+    for (const key of ['champion', 'consistent', 'developing', 'minimum', 'disengaged'])
+      expect(w.find(`[data-testid="cc-engagement-${key}"]`).exists()).toBe(true)
     expect(text(w, 'cc-footer')).toBe(
       'Powered by ALESA AI · PrestasiPlus © 2026 · Dijana automatik · Data dikemaskini setiap 10 saat',
     )
     w.unmount()
   })
 
-  it('places the panels as live: column 2 ends with Mood, column 3 holds Pembetulan alone (S2 desktop)', async () => {
+  it('places the panels in one grid in the mobile reading order (S2 desktop)', async () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive())
     const w = await mountBoard(false)
-    const ids = (col: string) =>
-      w
-        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
-        .map((e) => e.attributes('data-testid'))
-    expect(ids('cc-col-1')).toEqual([
+    const ids = w
+      .findAll('[data-testid="cc-panels"] > [data-testid^="cc-panel"]')
+      .map((e) => e.attributes('data-testid'))
+    expect(ids).toEqual([
+      'cc-panel-feed',
+      'cc-panel-today',
+      'cc-panel-correction',
+      'cc-panel-mood',
       'cc-panel-top-schools',
+      'cc-panel-top-pupils',
       'cc-panel-kirkpatrick',
       'cc-panel-alesa',
     ])
-    expect(ids('cc-col-2')).toEqual([
-      'cc-panel-today',
-      'cc-panel-feed',
-      'cc-panel-top-pupils',
-      'cc-panel-mood',
-    ])
-    expect(ids('cc-col-3')).toEqual(['cc-panel-correction'])
     w.unmount()
   })
 
@@ -245,7 +246,7 @@ describe('S2 admin board', () => {
       platformLive({ topSchools: [], topStudents: [], recentFeed: [] }),
     )
     const w = await mountBoard(false)
-    expect(texts(w, 'cc-empty')).toEqual(['Tiada data', 'Tiada aktiviti terkini', 'Tiada data'])
+    expect(texts(w, 'cc-empty')).toEqual(['Tiada aktiviti terkini', 'Tiada data', 'Tiada data'])
     w.unmount()
   })
 
@@ -283,15 +284,20 @@ describe('S2 Admin Sekolah alias', () => {
     return w
   }
 
-  it('reflows without "Top Sekolah": Mood moves under Pembetulan so no column has a hole', async () => {
+  it('drops "Top Sekolah" for the school view and keeps every other panel', async () => {
     const w = await load()
-    const ids = (col: string) =>
-      w
-        .findAll(`[data-testid="${col}"] > [data-testid^="cc-panel"]`)
-        .map((e) => e.attributes('data-testid'))
-    expect(ids('cc-col-1')).toEqual(['cc-panel-kirkpatrick', 'cc-panel-alesa'])
-    expect(ids('cc-col-2')).toEqual(['cc-panel-today', 'cc-panel-feed', 'cc-panel-top-pupils'])
-    expect(ids('cc-col-3')).toEqual(['cc-panel-correction', 'cc-panel-mood'])
+    const ids = w
+      .findAll('[data-testid="cc-panels"] > [data-testid^="cc-panel"]')
+      .map((e) => e.attributes('data-testid'))
+    expect(ids).toEqual([
+      'cc-panel-feed',
+      'cc-panel-today',
+      'cc-panel-correction',
+      'cc-panel-mood',
+      'cc-panel-top-pupils',
+      'cc-panel-kirkpatrick',
+      'cc-panel-alesa',
+    ])
     w.unmount()
   })
 
@@ -329,7 +335,7 @@ describe('S2 Admin Sekolah alias', () => {
       ...texts(w, 'cc-correction-total'),
       ...texts(w, 'cc-correction-avg'),
       ...texts(w, 'cc-correction-rate'),
-    ]).toEqual(['0Rekod', '+0.0%Purata Naik', '0%Kadar Baik'])
+    ]).toEqual(['Rekod0', 'Purata Naik+0.0%', 'Kadar Baik0%'])
     expect(w.find('[data-testid="cc-engagement-days"]').exists()).toBe(true)
     expect(w.find('[data-testid="cc-engagement-bands"]').exists()).toBe(false)
     w.unmount()

@@ -33,7 +33,7 @@ const props = withDefaults(
     rowKey?: string
     /** `card` = own card, `flush` = edge-to-edge card (list pages), `bare` = no surface. */
     variant?: 'card' | 'flush' | 'bare'
-    /** `fixed` = `table-fixed` full width (the caller sets column widths); `auto` scrolls inside its container when wider. */
+    /** `fixed` = `table-fixed` full width from `lg` (the caller sets column widths; below `lg` it is auto-width and scrolls inside its container); `auto` scrolls inside its container when wider. */
     layout?: 'auto' | 'fixed'
     /** `tight` = 4px less cell padding for tables with many columns. */
     density?: DsTableDensity
@@ -150,7 +150,7 @@ const tableUi = computed(() => {
   ].join(' ')
   return {
     root: flush.value ? 'max-w-full overflow-visible rounded-none shadow-none' : 'max-w-full',
-    base: fixed.value ? 'table-fixed w-full' : bare.value ? 'min-w-full' : 'w-full',
+    base: fixed.value ? 'w-full lg:table-fixed' : bare.value ? 'min-w-full' : 'w-full',
     thead: bare.value ? 'bg-elevated' : 'bg-default',
     th,
     td: [
@@ -286,7 +286,7 @@ function cell(row: T, key: string): string {
           </li>
         </ul>
       </div>
-      <div v-else :class="fixed ? 'max-w-full' : 'max-w-full overflow-x-auto'">
+      <div v-else :class="fixed ? 'max-w-full overflow-x-auto lg:overflow-x-visible' : 'max-w-full overflow-x-auto'">
         <UTable
           v-model:row-selection="rowSelection"
           :sticky="bare"

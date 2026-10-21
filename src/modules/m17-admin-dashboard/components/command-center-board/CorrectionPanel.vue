@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsStatTile } from '@/ds'
+import { DsSurface } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcCorrection } from '../../api/command-center-board'
@@ -33,10 +33,20 @@ const stats = computed(() => {
 <template>
   <BoardPanel icon="i-ph-arrows-clockwise" title="Pembetulan" testid="cc-panel-correction">
     <p v-if="!correction" class="text-body text-muted">{{ S2_COPY.loading }}</p>
-    <ul v-else class="grid grid-cols-3 gap-3">
-      <li v-for="s in stats" :key="s.id" class="min-w-0" :data-testid="`cc-correction-${s.id}`">
-        <DsStatTile :value="s.value" :unit="s.label" />
-      </li>
+    <ul v-else class="flex flex-col gap-2">
+      <DsSurface
+        v-for="s in stats"
+        :key="s.id"
+        as="li"
+        level="soft"
+        radius="chip"
+        padding="sm"
+        class="flex min-w-0 items-baseline justify-between gap-3"
+        :data-testid="`cc-correction-${s.id}`"
+      >
+        <span class="min-w-0 truncate text-body text-muted">{{ s.label }}</span>
+        <span class="tabular shrink-0 text-heading text-highlighted">{{ s.value }}</span>
+      </DsSurface>
     </ul>
   </BoardPanel>
 </template>

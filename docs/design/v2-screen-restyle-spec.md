@@ -641,6 +641,7 @@ Murid account basics A1-A5 are specified above and apply with the learner person
 ### Guru (staff personality, B+) - matrix order
 
 #### G-1 Command Center (row 1)
+- Admin board (`/admin/command-center`, M17 `CommandCenterBoardPage`) layout: one header row (LIVE badge + clock left, "Dashboard" / "Aktiviti Harian" right, wraps on mobile); KPI tiles 2x2 below `xl`, 4 across from `xl`; panels in one CSS grid (1 col mobile, 2 at `md`, 12 at `xl`): Live Feed (8, spans 3 rows) beside Aktiviti Hari Ini + Pembetulan + Mood (4), then Top Sekolah + Top Pelajar (6+6; Admin Sekolah: Top Pelajar full width), then Kirkpatrick (7) + ALESA AI (5), then Engagement. Short panels never share a row with a tall one.
 - Routes: `/guru/command-center` (`CommandCenterPage.vue`), mounted drill-downs under `/guru/command-center/...` (M17 pages reused). Panels in `m10-teacher-class/components/command-center/*` (`TopBar`, `KpiTile`, `ClassPanel`, `ActivityPanel`, `EngagementPanel`, `FeedPanel`, `InsightPanel`, `KirkPanel`, `LeaderboardPanel`, `MoodPanel`, and modals `AchievementsModal`, `ClassSummaryModal`, `DrillModal`, `EvaluateModal`, `PredictiveModal`, `RemedialModal`). Batch B11. Admin Sekolah uses the same page through the M17 alias `/admin-sekolah/command-center` (see AS-1).
 - Personality: staff. The v1 "standalone dark layout" is dropped; v2 renders it **inside the staff shell** with the same live behaviour as `Pemantauan > Langsung` (`v2-shells.md` §4). Size: L. Dep: `DsLiveTiles`, `DsDrillTable`, `DsLiveBadge` (exist), `DsChart`.
 

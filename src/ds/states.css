@@ -4,12 +4,12 @@
  * and read the theme colour tokens. T-H0 / T-H1 may move them into `ui.config` / `tokens.css`.
  */
 :is(
-    [data-ds='stat-tile'],
-    [data-ds='pill-nav'] a,
-    [data-ds='pill-nav'] button,
-    [data-ds='native-select'],
-    [data-ds='media-card'] a
-  ):focus-visible {
+  [data-ds='stat-tile'],
+  [data-ds='pill-nav'] a,
+  [data-ds='pill-nav'] button,
+  [data-ds='native-select'],
+  [data-ds='media-card'] a
+):focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--ui-primary);
 }
@@ -25,4 +25,9 @@
 
 [data-ds='native-select'][data-state='loading'] {
   cursor: progress;
+}
+
+/* The select draws its own caret (DsNativeSelect), so the browser one is off. */
+[data-ds='native-select'] {
+  appearance: none;
 }

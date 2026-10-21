@@ -104,6 +104,19 @@ describe('DsNativeSelect', () => {
     await sel.setValue('b')
     expect(w.emitted('update:modelValue')?.[0]).toEqual(['b'])
   })
+  it('puts class on the wrapper, attrs on the select, and renders its own caret', () => {
+    const w = mount(DsNativeSelect, {
+      props: { modelValue: '' },
+      attrs: { class: 'w-40', 'data-testid': 'filter', name: 'f' },
+    })
+    expect(w.classes()).toContain('w-40')
+    const sel = w.get('select')
+    expect(sel.classes()).not.toContain('w-40')
+    expect(sel.attributes('data-testid')).toBe('filter')
+    expect(sel.attributes('name')).toBe('f')
+    expect(sel.classes()).toEqual(expect.arrayContaining(['pr-10']))
+    expect(w.find('[data-testid="native-select-caret"]').exists()).toBe(true)
+  })
   it('invalid sets aria-invalid; slot options and custom placeholder work', () => {
     const w = mount(DsNativeSelect, {
       props: { modelValue: '', placeholder: 'Semua', invalid: true },

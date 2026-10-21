@@ -14,42 +14,65 @@
  */
 
 import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
-import { componentDefaults, disabledState, focusRing, selectSlots } from './ui/components.ts'
+import { componentDefaults, disabledState, focusRing, mergeMenuSizes, selectSlots } from './ui/components.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled = [
   'bg-elevated text-highlighted placeholder:text-dimmed transition-colors duration-fast',
   'hover:bg-accented focus:bg-elevated focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
   // disabled: one token; invalid: error fill + ring; read-only: flat soft layer, no hover.
-  'disabled:cursor-not-allowed disabled:opacity-(--ds-disabled-opacity) disabled:hover:bg-elevated',
+  'disabled:cursor-not-allowed disabled:opacity-(--ds-disabled-opacity) disabled:bg-elevated disabled:hover:bg-elevated',
   'aria-invalid:bg-error-field aria-invalid:ring-2 aria-invalid:ring-inset aria-invalid:ring-error',
   'read-only:cursor-default read-only:bg-soft read-only:hover:bg-soft',
 ].join(' ')
 
-/** Field height: staff 40px (44px on coarse pointers), learner 52px; text is 16px on every size. */
 /**
  * Radius scale (tokens.css): xs 4 tags and checkboxes, sm 8 inputs, md 12 buttons and segmented
  * lists, lg 16 cards and tables, xl 24 modals and hero cards, full pills. Inputs sit one step below
  * the buttons beside them; a control inside a card is always smaller than the card.
  */
-const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staff:text-body'
+/** Field height: 44px staff, 52px learner. Text is 16px; staff drops to the body token (14px) at md+. */
+const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base'
 
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
   variants: {
     variant: { soft: filled },
+    // Icon edge offset 14px (matches px-3.5); icon is 20px, so ps/pe-11 leaves a 10px gap to the text.
     size: {
-      md: { base: fieldSize },
-      lg: { base: fieldSize },
+      md: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
+      lg: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
-  compoundVariants: [{ highlight: true, class: 'ring-2' }],
+  compoundVariants: [
+    { highlight: true, class: 'ring-2' },
+    // Compounds run after the size variant, so this is what beats the stock `fixed:false` md:text-sm.
+    { size: ['md', 'lg'], class: 'md:text-body' },
+    { leading: true, size: ['md', 'lg'], class: 'ps-11' },
+    { trailing: true, size: ['md', 'lg'], class: 'pe-11' },
+  ],
+}
+
+/** Textarea: same field, with comfortable vertical padding (inputs keep their fixed height). */
+const textareaConfig = {
+  ...fieldConfig,
+  variants: {
+    ...fieldConfig.variants,
+    size: {
+      md: { base: `${fieldSize} py-3`, leading: 'ps-3.5 inset-y-3', trailing: 'pe-3.5 inset-y-3' },
+      lg: { base: `${fieldSize} py-3`, leading: 'ps-3.5 inset-y-3', trailing: 'pe-3.5 inset-y-3' },
+    },
+  },
 }
 
 /** Closed field plus its popup list (item states, checked, empty, group labels). */
-const menuField = { ...fieldConfig, slots: { ...fieldConfig.slots, ...selectSlots } }
+const menuField = {
+  ...fieldConfig,
+  slots: { ...fieldConfig.slots, ...selectSlots },
+  variants: { ...fieldConfig.variants, size: mergeMenuSizes(fieldConfig.variants.size) },
+}
 
 /**
  * Nuxt UI's internal icons, remapped from Lucide to Phosphor (design system section 10.1: Lucide is
@@ -170,11 +193,43 @@ export const uiConfig = {
       },
     },
     compoundVariants: [
+      // Icon-only (`square`): an exact square matching the size's min-height, icon centred. Stock
+      // `square` only sets small padding, which left the button tall and narrow.
+      { size: 'xs', square: true, class: 'size-9 p-0 justify-center' },
+      { size: 'sm', square: true, class: 'size-10 p-0 justify-center' },
+      { size: 'md', square: true, class: 'size-11 p-0 justify-center learner:size-13 learner:p-0' },
+      { size: 'lg', square: true, class: 'size-12 p-0 justify-center learner:size-14 learner:p-0' },
       { variant: ['outline', 'subtle'], class: 'ring-0' },
       {
         color: ['primary', 'neutral'],
         variant: ['outline', 'subtle'],
-        class: 'bg-elevated text-highlighted hover:bg-accented active:bg-accented',
+        class:
+          'bg-elevated text-highlighted hover:bg-accented active:bg-accented disabled:bg-elevated aria-disabled:bg-elevated dark:disabled:bg-elevated dark:aria-disabled:bg-elevated hover:disabled:bg-elevated hover:aria-disabled:bg-elevated dark:hover:disabled:bg-elevated dark:hover:aria-disabled:bg-elevated',
+      },
+      // Semantic colours: same tonal fill (token tint) instead of plain coloured text.
+      {
+        color: 'error',
+        variant: ['outline', 'subtle'],
+        class:
+          'bg-error-soft hover:bg-error/20 active:bg-error/20 disabled:bg-error-soft aria-disabled:bg-error-soft dark:disabled:bg-error-soft dark:aria-disabled:bg-error-soft hover:disabled:bg-error-soft hover:aria-disabled:bg-error-soft dark:hover:disabled:bg-error-soft dark:hover:aria-disabled:bg-error-soft',
+      },
+      {
+        color: 'success',
+        variant: ['outline', 'subtle'],
+        class:
+          'bg-success-soft hover:bg-success/20 active:bg-success/20 disabled:bg-success-soft aria-disabled:bg-success-soft dark:disabled:bg-success-soft dark:aria-disabled:bg-success-soft hover:disabled:bg-success-soft hover:aria-disabled:bg-success-soft dark:hover:disabled:bg-success-soft dark:hover:aria-disabled:bg-success-soft',
+      },
+      {
+        color: 'info',
+        variant: ['outline', 'subtle'],
+        class:
+          'bg-info-soft hover:bg-info/20 active:bg-info/20 disabled:bg-info-soft aria-disabled:bg-info-soft dark:disabled:bg-info-soft dark:aria-disabled:bg-info-soft hover:disabled:bg-info-soft hover:aria-disabled:bg-info-soft dark:hover:disabled:bg-info-soft dark:hover:aria-disabled:bg-info-soft',
+      },
+      {
+        color: 'warning',
+        variant: ['outline', 'subtle'],
+        class:
+          'bg-warning-soft hover:bg-warning/20 active:bg-warning/20 disabled:bg-warning-soft aria-disabled:bg-warning-soft dark:disabled:bg-warning-soft dark:aria-disabled:bg-warning-soft hover:disabled:bg-warning-soft hover:aria-disabled:bg-warning-soft dark:hover:disabled:bg-warning-soft dark:hover:aria-disabled:bg-warning-soft',
       },
       // Solid primary: gradient in the learner portal, flat in staff (token), label from `primary-on`.
       {
@@ -199,7 +254,7 @@ export const uiConfig = {
   },
 
   input: fieldConfig,
-  textarea: fieldConfig,
+  textarea: textareaConfig,
   select: menuField,
   selectMenu: menuField,
   inputMenu: menuField,
@@ -214,7 +269,13 @@ export const uiConfig = {
     slots: {
       root: 'max-w-full',
       list: 'flex-wrap justify-center gap-1.5',
-      item: 'min-w-11 tabular-nums',
+      // Every control is the button's own square (size-11 / learner size-13): no min-width override.
+      item: 'tabular-nums',
+      // Disabled edge arrows keep the tonal fill (stock outline resets it to transparent), only faded.
+      first: 'disabled:bg-elevated! aria-disabled:bg-elevated!',
+      prev: 'disabled:bg-elevated! aria-disabled:bg-elevated!',
+      next: 'disabled:bg-elevated! aria-disabled:bg-elevated!',
+      last: 'disabled:bg-elevated! aria-disabled:bg-elevated!',
       ellipsis: 'text-muted',
     },
   },
@@ -242,7 +303,7 @@ export const uiConfig = {
   tabs: {
     defaultVariants: { variant: 'pill', color: 'neutral' },
     slots: {
-      list: 'w-fit max-w-full overflow-x-auto',
+      list: 'max-w-full overflow-x-auto',
       trigger: `text-label transition-colors duration-fast hover:text-highlighted ${disabledState} ${focusRing}`,
     },
     variants: {
@@ -250,7 +311,9 @@ export const uiConfig = {
         pill: {
           list: 'bg-elevated rounded-md p-1 gap-1',
           indicator: 'rounded-sm',
-          trigger: 'min-h-11',
+          // Bar = p-1 + trigger: 36 + 8 = 44px staff, 44 + 8 = 52px learner (matches field/button height).
+          // Trigger radius = indicator radius so the focus ring hugs the chip.
+          trigger: 'min-h-9 rounded-sm learner:min-h-11',
         },
       },
     },
@@ -275,6 +338,8 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
       base: "relative overflow-visible rounded-xs bg-accented transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      // Label line 1 centred on the 44px box: pad = (44px - label line-height) / 2.
+      wrapper: 'pt-[calc((2.75rem-var(--text-label)*var(--text-label--line-height))/2)]',
       label: 'text-label',
       description: 'text-caption text-muted',
     },
@@ -286,20 +351,23 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
+      wrapper: 'pt-[calc((2.75rem-var(--text-label)*var(--text-label--line-height))/2)]',
       label: 'text-label',
       description: 'text-caption text-muted',
     },
   },
   navigationMenu: {
     slots: {
-      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted data-[state=open]:bg-elevated ${disabledState} ${focusRing}`,
-      childLink: 'min-h-11 px-3 text-label',
+      link: `min-h-11 gap-3 rounded-md text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted data-[state=open]:bg-elevated ${disabledState} ${focusRing}`,
+      childLink: 'min-h-11 text-label',
       linkLeadingIcon: 'size-5',
     },
     // Nested groups (Kirkpatrick) step in by 8px, not 20px, so long labels read in full.
     variants: {
       orientation: {
-        vertical: { childList: 'ms-3', childItem: 'ps-0' },
+        // Padding lives here: slot strings lose to the stock orientation variants.
+        vertical: { link: 'px-3', childLink: 'px-3', childList: 'ms-3', childItem: 'ps-0' },
+        horizontal: { link: 'px-3', childLink: 'px-3' },
       },
     },
   },
@@ -311,11 +379,13 @@ export const uiConfig = {
     slots: {
       overlay: 'z-50 bg-overlay',
       content: 'z-50 divide-y-0',
-      header: 'p-5',
+      // End padding keeps a long title clear of the close button; min-h centres the title on it.
+      header: 'p-5 pe-16 sm:pe-16 min-h-21 learner:min-h-23',
       body: 'p-5',
       footer: 'p-5',
       title: 'text-heading text-highlighted',
       description: 'text-body text-muted',
+      close: 'top-5 end-3',
     },
     variants: {
       fullscreen: { false: { content: 'rounded-xl shadow-modal ring-0' } },
@@ -323,7 +393,12 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: {
+      overlay: 'z-50 bg-overlay',
+      content: 'z-50 divide-y-0 shadow-modal ring-0',
+      header: 'pe-16 sm:pe-16 min-h-21 learner:min-h-23',
+      close: 'top-5 end-3',
+    },
   },
   drawer: {
     slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },
@@ -358,6 +433,14 @@ export const uiConfig = {
     },
     compoundVariants: [
       { variant: ['outline', 'subtle'], class: 'ring-0' },
+      // Soft, subtle and outline are one tonal chip (D34: no outline): tint token + readable tone.
+      { variant: ['soft', 'subtle', 'outline'], color: 'primary', class: 'bg-primary-soft text-primary-t' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'secondary', class: 'bg-highlight-soft text-highlighted' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'success', class: 'bg-success-soft text-success' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'warning', class: 'bg-warning-soft text-warning' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'error', class: 'bg-error-soft text-error' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'info', class: 'bg-info-soft text-info' },
+      { variant: ['soft', 'subtle', 'outline'], color: 'neutral', class: 'bg-elevated text-default' },
       { color: 'primary', variant: 'solid', class: 'text-primary-on' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
@@ -371,8 +454,15 @@ export const uiConfig = {
     slots: {
       base: 'bg-accented transition-colors duration-fast aria-invalid:ring-2 aria-invalid:ring-error',
       legend: 'text-label font-semibold',
+      // 44px tap box with a centred 24px radio (matches checkbox); wrapper pad aligns label line 1 to the box centre.
+      container: 'min-h-11 min-w-11 justify-center',
+      wrapper: 'pt-[calc((2.75rem-var(--text-label)*var(--text-label--line-height))/2)]',
       label: 'text-label',
       description: 'text-caption text-muted',
+    },
+    variants: {
+      indicator: { hidden: { container: 'min-h-0! min-w-0!', wrapper: 'pt-0' } },
+      size: { md: { base: 'size-6', indicator: 'after:size-2.5' }, sm: { base: 'size-6', indicator: 'after:size-2.5' } },
     },
     compoundVariants: [
       {
@@ -390,6 +480,8 @@ export const uiConfig = {
       root: 'bg-elevated shadow-modal ring-0 rounded-md',
       title: 'text-label font-semibold',
       description: 'text-body',
+      // Compact square aligned with the title (the stock icon button is 44/52px and bloats the toast).
+      close: 'size-8 min-h-0 learner:size-8 learner:min-h-0 self-start -my-1.5',
     },
   },
 

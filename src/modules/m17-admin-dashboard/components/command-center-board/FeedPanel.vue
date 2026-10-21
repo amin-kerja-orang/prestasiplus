@@ -19,37 +19,44 @@ const paths = ccPaths(props.basePath)
     <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
       {{ S2_COPY.noFeed }}
     </p>
-    <ul v-else class="flex flex-col gap-1" aria-live="off">
+    <ul v-else class="flex flex-1 flex-col" aria-live="off">
       <li
         v-for="(r, i) in rows"
         :key="i"
-        class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 bg-soft px-3 py-2 text-body"
+        class="flex min-h-14 flex-1 flex-wrap items-center gap-x-2 gap-y-1 px-2 py-2 hover:bg-soft md:grid md:grid-cols-12 md:flex-nowrap md:gap-x-3 md:px-3"
         data-testid="cc-feed-row"
       >
-        <span class="tabular shrink-0 text-caption text-muted" data-testid="cc-feed-time">{{
-          r.time
-        }}</span>
-        <span class="min-w-0 text-label break-words text-highlighted" data-testid="cc-feed-name">{{
-          r.student
-        }}</span>
-        <span class="shrink-0 text-caption text-toned" data-testid="cc-feed-subject">{{
-          r.subject
-        }}</span>
-        <UButton
+        <UBadge
+          role="img"
+          :aria-label="r.correct ? 'Betul' : 'Salah'"
+          :color="r.correct ? 'success' : 'error'"
+          variant="soft"
+          class="order-1 size-6 shrink-0 justify-center p-0 md:order-none md:col-span-1 md:size-7 md:justify-self-start"
+          data-testid="cc-feed-mark"
+          >{{ r.correct ? '✓' : '✗' }}</UBadge
+        >
+        <span
+          class="order-2 min-w-0 flex-1 truncate text-label text-highlighted md:order-none md:col-span-4"
+          data-testid="cc-feed-name"
+          >{{ r.student }}</span
+        >
+        <span class="order-3 shrink-0 md:order-none md:col-span-2 md:min-w-0 md:justify-self-start">
+          <UBadge color="neutral" variant="soft" size="sm" data-testid="cc-feed-subject">{{
+            r.subject
+          }}</UBadge>
+        </span>
+        <span
+          class="tabular order-4 w-12 shrink-0 text-end text-caption text-muted md:order-none md:col-span-1 md:col-start-12 md:row-start-1 md:w-auto"
+          data-testid="cc-feed-time"
+          >{{ r.time }}</span
+        >
+        <ULink
           v-if="r.schoolId !== null && r.schoolName"
           :to="paths.school(r.schoolId)"
           :title="r.schoolName"
-          variant="link"
-          color="neutral"
-          size="sm"
-          class="h-auto min-w-0 p-0"
-          :label="shortSchool(r.schoolName)"
+          class="order-5 min-w-0 basis-full truncate ps-8 text-caption text-muted md:order-none md:col-span-4 md:basis-auto md:ps-0"
           data-testid="cc-feed-school"
-        />
-        <span
-          :class="['ms-auto shrink-0', r.correct ? 'text-success' : 'text-error']"
-          data-testid="cc-feed-mark"
-          >{{ r.correct ? '✓' : '✗' }}</span
+          >{{ shortSchool(r.schoolName) }}</ULink
         >
       </li>
     </ul>
