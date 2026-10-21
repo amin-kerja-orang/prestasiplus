@@ -8,7 +8,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 
 1. `core-identity`: demo schools and the canonical demo accounts
 2. `core-schools`: extra fictitious schools
-3. `core-school-packages`: REFERENCE module (the only one that runs in production)
+3. `core-school-packages`: REFERENCE module (runs in production, with `spm-subject-configs`)
 4. `core-population`: generated pupils, teachers, officers and the out-of-scope demo accounts
 5. `curriculum`: levels, subjects, chapters, topics, DSKP nodes
 6. `questions`: the question bank
@@ -18,10 +18,15 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 10. `exam-demo-blueprints`
 11. `poc-classes`: classes and rosters
 12. `poc-bijak-sittings`: submitted Bijak SPM sittings, results, aggregates
-13. `poc-cikgu`
-14. `practice`: practice sessions and answers
-15. `gamification`
-16. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
+13. `battle` (BE-44): battles and their participants
+14. `games` (BE-45): rooms, solo sessions, boards, leagues
+15. `poc-cikgu`
+16. `spm-subject-configs` (BE-41): REFERENCE module, the 19 SPM subject configuration rows
+17. `spm` (BE-41): Tracking A sets, Duta profiles
+18. `poc-performance` (BE-19): headcount and timeline demo rows
+19. `practice`: practice sessions and answers
+20. `gamification`
+21. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
 
 BE-26 adds no data of its own: every row comes from its owner module (one owner per store, ADR-0014). `apps/api/prisma/seed/poc/fixtures/` is not created because no cross-domain fixture was needed.
 
@@ -38,6 +43,8 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | attempt_answers | 122 |
 | attempt_results | 15 |
 | banners | 3 |
+| battle_participants | 142 |
+| battles | 71 |
 | blueprint_sections | 9 |
 | blueprints | 5 |
 | challenges | 10 |
@@ -49,12 +56,26 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | curriculum_tp_descriptors | 1394 |
 | draw_prizes | 2 |
 | draws | 1 |
+| duta_profiles | 5 |
 | education_levels | 11 |
 | enrolments | 34 |
 | essay_markings | 1 |
 | exam_attempts | 15 |
+| game_room_players | 8 |
+| game_rooms | 4 |
+| game_sessions | 3 |
+| game_settings | 1 |
+| game_standings | 48 |
 | gamification_settings | 10 |
+| headcount_configs | 2 |
+| headcount_entries | 13 |
+| headcount_entry_marks | 36 |
 | jpns | 2 |
+| jutawan_stats | 8 |
+| league_class_levels | 3 |
+| league_schools | 5 |
+| league_standings | 4 |
+| leagues | 2 |
 | learner_badges | 3 |
 | legacy_subtopics | 335 |
 | legacy_topics | 125 |
@@ -64,6 +85,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | papers | 5 |
 | part_options | 60 |
 | pbd_tags | 2 |
+| personal_bests | 40 |
 | ppds | 3 |
 | practice_answers | 30 |
 | practice_attempt_aggregate_items | 126 |
@@ -79,6 +101,11 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | rph_plans | 2 |
 | school_packages | 4 |
 | schools | 4 |
+| sekolah_bersaing_weeks | 16 |
+| spin_stats | 8 |
+| spm_subject_configs | 19 |
+| spm_tracking_set_questions | 3 |
+| spm_tracking_sets | 3 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
 | stimulus_group_stimuli | 2 |
@@ -91,6 +118,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | support_tickets | 1 |
 | syiling_rewards | 11 |
 | tiers | 4 |
+| timeline_posts | 3 |
 | topics | 2423 |
 | user_roles | 52 |
 | user_scopes | 14 |
@@ -98,7 +126,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 65 of 141. Total rows: 9876.
+Tables with rows: 88 of 176. Total rows: 10323.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
