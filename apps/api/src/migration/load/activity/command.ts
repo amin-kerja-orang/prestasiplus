@@ -10,6 +10,7 @@
  * production, PP_MIGRATE_TARGET_DB). It reads only the staged copy; it never connects to or reads the settings of the source database.
  * File migration is OFF (Q2): there is no storage-directory flag.
  */
+import { mytDay, SystemClock, type Clock } from '../../../db/clock'
 import { registerMigrateCommand, type CliContext, type CommandArgs, type MigrateCommand } from '../../kit'
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { prepareOutputDir } from '../../profile'
@@ -41,6 +42,11 @@ function date(name: string, value: string | undefined): string | undefined {
   return value
 }
 
+/** The default `--as-of`: today's calendar day in Malaysia (Asia/Kuala_Lumpur, UTC+8), not the UTC day (OD-10 Q8). */
+export function defaultAsOf(clock: Clock = new SystemClock()): string {
+  return mytDay(clock.now())
+}
+
 export const migrateActivity: MigrateCommand = {
   name: 'migrate:activity',
   summary: 'ETL of wallets, practice and exam history, gamification, content and operations from staging_cloud (dry-run by default)',
@@ -48,7 +54,7 @@ export const migrateActivity: MigrateCommand = {
     for (const f of FILE_FLAGS) {
       if (args.flags.has(f)) throw new ApplyGuardError('file migration is off (Q2): the storage flags are not available; content image paths stay unset.')
     }
-    const asOf = date('as-of', flagValue(args, 'as-of')) ?? new Date().toISOString().slice(0, 10)
+    const asOf = date('as-of', flagValue(args, 'as-of')) ?? defaultAsOf()
     const coreAsOf = date('core-as-of', flagValue(args, 'core-as-of'))
     const sizeText = flagValue(args, 'batch-size')
     const batchSize = sizeText === undefined ? undefined : Number(sizeText)
