@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RouteLocationNormalized } from 'vue-router'
 
-import { effectiveLandingPath, isPathInScope, scopeHomePath, shellHomePath } from '../prototype-scope'
+import { isPathInScope, scopeHomePath, shellHomePath } from '../prototype-scope'
 import { decideAccess } from '../router'
 
 /** `/admin/command-center` (the target of `/admin`): Admin Pusat only, default `onForbidden`. */
@@ -34,20 +34,21 @@ describe('forbidden role in scope mode goes to the role home (demo rehearsal blo
   })
 })
 
-describe('student landing in http mode (GET /api/dashboard not built yet)', () => {
-  it('lands the student on Bijak SPM in http mode, inside the student scope', () => {
+describe('student landing (GET /api/dashboard is served in both modes)', () => {
+  it('lands the student on /dashboard in http mode, inside the student scope', () => {
     vi.stubEnv('VITE_API_MODE', 'http')
-    expect(scopeHomePath('student')).toBe('/spm/bijak')
-    expect(shellHomePath('student')).toBe('/spm/bijak')
-    expect(effectiveLandingPath('student', '/dashboard')).toBe('/spm/bijak')
-    expect(isPathInScope('student', '/spm/bijak')).toBe(true)
+    expect(scopeHomePath('student')).toBe('/dashboard')
+    expect(shellHomePath('student')).toBe('/dashboard')
+    expect(isPathInScope('student', '/dashboard')).toBe(true)
+    expect(
+      decideAccess(ADMIN_HOME, { isLoggedIn: true, role: 'student', landingPath: '/dashboard' }),
+    ).toEqual({ kind: 'redirect', to: '/dashboard' })
   })
 
-  it('keeps /dashboard in mock mode', () => {
+  it('lands the student on /dashboard in mock mode', () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
     expect(scopeHomePath('student')).toBe('/dashboard')
     expect(shellHomePath('student')).toBe('/dashboard')
-    expect(effectiveLandingPath('student', '/dashboard')).toBe('/dashboard')
   })
 
   it('leaves the other roles unchanged in http mode', () => {
@@ -55,7 +56,5 @@ describe('student landing in http mode (GET /api/dashboard not built yet)', () =
     expect(scopeHomePath('teacher')).toBe('/guru')
     expect(scopeHomePath('school_admin')).toBe('/admin-sekolah')
     expect(scopeHomePath('admin')).toBe('/admin/command-center')
-    expect(effectiveLandingPath('teacher', '/dashboard')).toBe('/dashboard')
-    expect(effectiveLandingPath('admin', '/admin')).toBe('/admin')
   })
 })
