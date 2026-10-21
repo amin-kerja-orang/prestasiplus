@@ -51,6 +51,19 @@ export interface VersionDraft {
   parts: PartDraft[]
 }
 
+/**
+ * Provenance columns of the first version (BE-38 accept-to-Draf; `source_type` goes on the question, the rest on
+ * `question_versions`). Every field is optional; ids are bigint.
+ */
+export interface VersionProvenance {
+  sourceRegion?: unknown
+  sourcePaperId?: bigint | null
+  intakeItemId?: bigint | null
+  sourceFileId?: bigint | null
+  aiRunId?: bigint | null
+  aiModel?: string | null
+}
+
 export interface NewQuestion {
   sourceType: StoreSourceType | null
   createdById: bigint | null
@@ -62,6 +75,7 @@ export interface NewQuestion {
   /** Clock time: stamps created_at / updated_at (and published_at when created published). */
   now: Date
   version: VersionDraft
+  provenance?: VersionProvenance
 }
 
 export interface NewStimulus {
@@ -285,9 +299,11 @@ export class QuestionsRepository {
     const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const whereAll = Prisma.join(withStatus, ' AND ')
     const whereBase = Prisma.join(base, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
+    const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
+    const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
     const [rows, totals, counted] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${whereAll} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
@@ -470,7 +486,7 @@ export class QuestionsRepository {
           : {}),
       },
     })
-    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null)
+    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null, input.provenance)
     return idToString(q.id)
   }
 
@@ -691,10 +707,34 @@ export class QuestionsRepository {
     }
   }
 
-  private async insertVersion(questionId: bigint, versionNo: number, draft: VersionDraft, now: Date, publishedAt: Date | null): Promise<void> {
+  private async insertVersion(
+    questionId: bigint,
+    versionNo: number,
+    draft: VersionDraft,
+    now: Date,
+    publishedAt: Date | null,
+    provenance?: VersionProvenance,
+  ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
     const version = await this.db.questionVersion.create({
-      data: { questionId, versionNo, publishedAt, createdAt: now, updatedAt: now, ...this.versionColumns(columns) },
+      data: {
+        questionId,
+        versionNo,
+        publishedAt,
+        createdAt: now,
+        updatedAt: now,
+        ...this.versionColumns(columns),
+        ...(provenance === undefined
+          ? {}
+          : {
+              ...(provenance.sourceRegion === undefined || provenance.sourceRegion === null ? {} : { sourceRegion: provenance.sourceRegion as object }),
+              sourcePaperId: provenance.sourcePaperId ?? null,
+              intakeItemId: provenance.intakeItemId ?? null,
+              sourceFileId: provenance.sourceFileId ?? null,
+              aiRunId: provenance.aiRunId ?? null,
+              aiModel: provenance.aiModel ?? null,
+            }),
+      },
     })
     await this.insertChildren(version.id, spNodeIds, stimulusIds, parts)
   }

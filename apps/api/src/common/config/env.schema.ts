@@ -11,6 +11,11 @@ import { CLIENT_IP_HEADERS, MIN_EDGE_SECRET_LENGTH } from '../net/client-ip'
  */
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 
+/** An optional integer env value; a blank string counts as unset. */
+function aiInt(min: number, max: number) {
+  return z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.coerce.number().int().min(min).max(max).optional())
+}
+
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -170,6 +175,15 @@ export const EnvSchema = z.object({
   INTAKE_DAILY_PAGE_QUOTA: z.coerce.number().int().min(1).max(100_000).optional(),
   INTAKE_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
   INTAKE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).optional(),
+  // BE-38 intake workflow
+  INTAKE_BULK_ACCEPT_MIN_BAND: z.enum(['high', 'medium', 'low']).optional(),
+  INTAKE_EXTRACT_BUDGET_RECHECK_SECONDS: z.coerce.number().int().min(1).max(86_400).optional(),
+  INTAKE_DUPLICATE_SCAN_LIMIT: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_MAX_ITEMS_PER_BATCH: z.coerce.number().int().min(1).max(5000).optional(),
+  INTAKE_REVIEW_WRITES_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_REVIEW_READS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_EXTRACTS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
+  INTAKE_BULK_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).optional(),
   // BE-20 (Kirkpatrick, feedback). Throttles per user; the code applies the defaults when unset.
   THROTTLE_KIRKPATRICK_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_KIRKPATRICK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
@@ -211,6 +225,26 @@ export const EnvSchema = z.object({
   MARKETPLACE_PLATFORM_WHATSAPP: z.string().trim().regex(/^\d{8,15}$/, 'must be 8 to 15 digits').default('60000000000'),
   THROTTLE_MARKETPLACE_VIEW_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   THROTTLE_MARKETPLACE_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  // BE-36 (AI extraction). All optional: the code applies the defaults named in .env.api.example (PC-5 block). AI_PROVIDER
+  // defaults to the mock; an unknown id is a start-up error of the AI module. AI_API_KEY is a secret: it is read only by
+  // AiConfig and never logged, returned or stored. A blank value counts as unset.
+  AI_PROVIDER: z.string().trim().optional(),
+  AI_MODEL: z.string().trim().optional(),
+  AI_API_KEY: z.string().optional(),
+  AI_BASE_URL: z.string().trim().optional(),
+  AI_BASE_URL_ALLOWLIST: z.string().trim().optional(),
+  AI_TIMEOUT_MS: aiInt(100, 600_000),
+  AI_MAX_CONCURRENCY: aiInt(1, 64),
+  AI_RATE_LIMIT_PER_MIN: aiInt(1, 100_000),
+  AI_RATE_LIMIT_PER_USER_PER_MIN: aiInt(1, 100_000),
+  AI_RATE_LIMIT_PER_SCHOOL_PER_MIN: aiInt(1, 100_000),
+  AI_MAX_RETRIES: aiInt(0, 10),
+  AI_RETRY_BASE_MS: aiInt(1, 600_000),
+  /** Lenient on purpose: a malformed value is ignored (no cap from the environment), as the BE-40 dashboard does. */
+  AI_MONTHLY_BUDGET_SEN: z.string().trim().optional(),
+  AI_PRICE_TABLE_JSON: z.string().trim().optional(),
+  THROTTLE_AI_READ_PER_MINUTE: aiInt(1, 100_000),
+  THROTTLE_AI_WRITE_PER_MINUTE: aiInt(1, 100_000),
 }).superRefine((env, ctx) => {
   if (env.CLIENT_IP_HEADER && !env.EDGE_PROXY_SECRET) {
     ctx.addIssue({ code: 'custom', path: ['EDGE_PROXY_SECRET'], message: 'required when CLIENT_IP_HEADER is set' })

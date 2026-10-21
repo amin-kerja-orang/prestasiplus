@@ -164,10 +164,23 @@ export async function insertBatch(db: TestDatabase, status: string, createdAt: s
   return rows[0]?.id as string
 }
 
+/** A bare question row (all columns default), the target of an accepted item or a bank duplicate. */
+async function bareQuestion(db: TestDatabase): Promise<string> {
+  return (await db.query<{ id: string }>(`INSERT INTO questions DEFAULT VALUES RETURNING id::text`))[0]?.id as string
+}
+
+/**
+ * BE-38 owns the real `intake_items` table (migration 0038): `position`, `item_type` and `payload` are required, a rejected
+ * item keeps a reason and an accepted item points at its question (check constraints).
+ */
 export async function insertItem(db: TestDatabase, batchId: string, state: string, createdAt: string): Promise<string> {
+  const questionId = state === 'accepted' ? await bareQuestion(db) : null
   const rows = await db.query<{ id: string }>(
-    `INSERT INTO intake_items (batch_id, review_state, created_at, updated_at) VALUES ($1::bigint, $2, $3::timestamptz, $3::timestamptz) RETURNING id::text`,
-    [batchId, state, createdAt],
+    `INSERT INTO intake_items (batch_id, position, item_type, payload, review_state, reject_reason, question_id, created_at, updated_at)
+     VALUES ($1::bigint, (SELECT COALESCE(MAX(position), 0) + 1 FROM intake_items WHERE batch_id = $1::bigint), 'short', '{}'::jsonb,
+             $2, CASE WHEN $2 = 'rejected' THEN 'Sebab ujian' ELSE NULL END, $4::bigint, $3::timestamptz, $3::timestamptz)
+     RETURNING id::text`,
+    [batchId, state, createdAt, questionId],
   )
   return rows[0]?.id as string
 }
@@ -177,7 +190,8 @@ export async function insertEvent(db: TestDatabase, itemId: string, event: strin
 }
 
 export async function insertDuplicate(db: TestDatabase, itemId: string, kind: string, decision = 'pending'): Promise<void> {
-  await db.query(`INSERT INTO duplicate_links (item_id, matched_question_id, kind, decision) VALUES ($1::bigint, 1, $2, $3)`, [itemId, kind, decision])
+  const questionId = await bareQuestion(db)
+  await db.query(`INSERT INTO duplicate_links (item_id, matched_question_id, kind, decision) VALUES ($1::bigint, $4::bigint, $2, $3)`, [itemId, kind, decision, questionId])
 }
 
 export interface UsageRow {

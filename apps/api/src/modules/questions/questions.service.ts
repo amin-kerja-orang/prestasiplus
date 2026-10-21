@@ -44,6 +44,7 @@ import type {
   QuestionGrade,
   QuestionGuruCreateInput,
   QuestionGuruUpdateInput,
+  QuestionProvenance,
   QuestionRecord,
   QuestionStatus,
   QuestionStatusInfo,
@@ -211,7 +212,7 @@ export class QuestionsService {
     return this.detail(record)
   }
 
-  async create(input: QuestionCreateInput, actor: QuestionActor): Promise<QuestionView> {
+  async create(input: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const flat: FlatSource = {
       questionType: input.questionType,
       questionText: input.questionText,
@@ -242,7 +243,17 @@ export class QuestionsService {
       },
       status,
       actor,
+      provenance,
     )
+  }
+
+  /**
+   * Creates a question like `create` and records its provenance (BE-38: an accepted intake item becomes a Draf question with
+   * its source paper, file, page, region, number label, source type, run id and model). `status` is the one in `input`
+   * (default `draft`); the intake never asks for more.
+   */
+  async createFromIntake(input: QuestionCreateInput, actor: QuestionActor, provenance: QuestionProvenance): Promise<QuestionView> {
+    return this.create(input, actor, provenance)
   }
 
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
@@ -516,8 +527,12 @@ export class QuestionsService {
     return 'questionText'
   }
 
-  private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor): Promise<QuestionView> {
+  private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const draft = await this.draftOf(n, status, null)
+    if (provenance) {
+      draft.numberLabel = provenance.numberLabel
+      draft.sourcePage = provenance.sourcePage
+    }
     if (status === 'published') {
       const fields = checkTagGate({
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
@@ -534,13 +549,25 @@ export class QuestionsService {
     const id = await this.prisma.transaction(async () => {
       const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
       const created = await this.repo.create({
-        sourceType: 'manual',
+        sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
         spmPool: false,
         now: this.clock.now(),
         version: draft,
+        ...(provenance
+          ? {
+              provenance: {
+                sourceRegion: provenance.sourceRegion,
+                sourcePaperId: parse(provenance.sourcePaperId ?? ''),
+                intakeItemId: parse(provenance.intakeItemId ?? ''),
+                sourceFileId: parse(provenance.sourceFileId ?? ''),
+                aiRunId: parse(provenance.aiRunId ?? ''),
+                aiModel: provenance.aiModel,
+              },
+            }
+          : {}),
       })
       return created
     }, TX)
