@@ -191,3 +191,25 @@ describe('bulk', () => {
     expect(r.issues.length).toBeGreaterThan(0)
   })
 })
+
+describe('confidence band without data (fail closed)', () => {
+  it('an AI item with an empty confidence map is low and is not taken by a bulk accept; a manual item stays high', async () => {
+    const { batchId, ids } = await extracted([{ fieldConfidence: {} }])
+    const item = IntakeItemEnvelopeSchema.parse((await teacher.agent.get(`/api/intake/items/${ids[0]!}`)).body).data
+    expect(item.confidenceBand).toBe('low')
+    expect(IntakeItemListResponseSchema.parse((await teacher.agent.get(`/api/intake/items?batchId=${batchId}&band=low`)).body).data).toHaveLength(1)
+    const res = await post(admin, '/intake/items/bulk', { action: 'accept', ids })
+    expect(res.body.data.results[0]).toMatchObject({ outcome: 'skipped', reason: 'BELOW_THRESHOLD' })
+    const manual = await post(teacher, `/intake/batches/${batchId}/items`, {})
+    expect(manual.body.data.confidenceBand).toBe('high')
+  })
+})
+
+describe('page parameter', () => {
+  it('a huge page is 422 on fields.page, never a 500', async () => {
+    const res = await teacher.agent.get('/api/intake/items?page=9007199254740991')
+    expect(res.status).toBe(422)
+    expect(res.body.error.fields.page).toBeTruthy()
+    expect((await teacher.agent.get('/api/intake/items?page=2&pageSize=100')).status).toBe(200)
+  })
+})

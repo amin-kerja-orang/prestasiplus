@@ -33,6 +33,7 @@ export const REDACTED_MARK = '[DIRAHSIAKAN]'
 
 export const WORKFLOW_MESSAGES = {
   tooManyItems: 'Terlalu banyak soalan dalam kumpulan ini.',
+  pageTooLarge: 'Nombor halaman terlalu besar.',
   tooManyStimuli: 'Terlalu banyak rajah atau petikan dalam kumpulan ini.',
   stimulusInvalid: 'Rajah / petikan yang dirujuk tidak wujud.',
   confirmedNotLow: 'Hanya medan keyakinan rendah boleh disahkan.',

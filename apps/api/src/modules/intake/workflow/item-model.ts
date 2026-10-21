@@ -125,7 +125,14 @@ export interface StateDuplicate {
 export const stateDuplicates = (rows: ReadonlyArray<Pick<DuplicateRow, 'kind' | 'decision'>>): StateDuplicate[] =>
   rows.map((d) => ({ kind: d.kind as IntakeDuplicateKind, status: entryStatus(d.decision) }))
 
-export const bandOf = (row: { fieldConfidence: unknown }) => intakeItemConfidenceBand(fieldConfidenceOf(row))
+/**
+ * Confidence band of an item: its lowest field. An AI-extracted item with no confidence data is `low` (fail closed: it
+ * can never be bulk-accepted on missing data); "no data = high" holds only for a hand-added item.
+ */
+export const bandOf = (row: { fieldConfidence: unknown; sourceType: string }) => {
+  const c = fieldConfidenceOf(row)
+  return Object.keys(c).length === 0 && row.sourceType !== 'manual' ? ('low' as const) : intakeItemConfidenceBand(c)
+}
 
 export type { IntakeDuplicateEntry, IntakeItemState }
 export { Prisma }

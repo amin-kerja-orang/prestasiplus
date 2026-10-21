@@ -7,6 +7,11 @@ export interface Redacted {
   text: string
   /** Spans masked per kind. Counts only, never the masked text. */
   masked: Partial<Record<RedactionFlag, number>>
+  /**
+   * The spans that were masked (in memory only, never stored or logged): used to mask a provider that echoes them back
+   * in its answer. Words of a masked person name are listed too.
+   */
+  spans: string[]
 }
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/gu
@@ -40,13 +45,22 @@ const LABELLED = LABELS.map(({ flag, words }) => ({
   re: new RegExp(`^([ \\t]*(?:${words})[ \\t]*[:：][ \\t]*)([^\\n]*\\S[^\\n]*)$`, 'gimu'),
 }))
 
+const MIN_SPAN = 4
+
+function addSpan(spans: string[], text: string, flag: RedactionFlag): void {
+  const t = text.trim()
+  if (t.length >= MIN_SPAN) spans.push(t)
+  if (flag === 'person_name') for (const w of t.split(/[\s,]+/)) if (w.length >= MIN_SPAN && w.toLowerCase() !== 'bin' && w.toLowerCase() !== 'binti') spans.push(w)
+}
+
 function bump(masked: Redacted['masked'], flag: RedactionFlag, n = 1): void {
   masked[flag] = (masked[flag] ?? 0) + n
 }
 
-function replaceAll(text: string, re: RegExp, flag: RedactionFlag, masked: Redacted['masked']): string {
-  return text.replace(re, () => {
+function replaceAll(text: string, re: RegExp, flag: RedactionFlag, masked: Redacted['masked'], spans: string[]): string {
+  return text.replace(re, (all: string) => {
     bump(masked, flag)
+    addSpan(spans, all, flag)
     return REDACTED_MARK
   })
 }
@@ -59,20 +73,22 @@ function replaceAll(text: string, re: RegExp, flag: RedactionFlag, masked: Redac
  */
 export function redactText(text: string): Redacted {
   const masked: Redacted['masked'] = {}
+  const spans: string[] = []
   let out = text
   for (const { flag, re } of LABELLED) {
-    out = out.replace(re, (_all, label: string) => {
+    out = out.replace(re, (_all, label: string, value: string) => {
       bump(masked, flag)
+      addSpan(spans, value, flag)
       return `${label}${REDACTED_MARK}`
     })
   }
-  out = replaceAll(out, EMAIL, 'email', masked)
-  out = replaceAll(out, IC, 'ic_number', masked)
-  out = replaceAll(out, MOBILE, 'phone', masked)
-  out = replaceAll(out, LANDLINE, 'phone', masked)
-  out = replaceAll(out, SCHOOL_FULL, 'school_name', masked)
-  out = replaceAll(out, SCHOOL_ABBREV, 'school_name', masked)
-  return { text: out, masked }
+  out = replaceAll(out, EMAIL, 'email', masked, spans)
+  out = replaceAll(out, IC, 'ic_number', masked, spans)
+  out = replaceAll(out, MOBILE, 'phone', masked, spans)
+  out = replaceAll(out, LANDLINE, 'phone', masked, spans)
+  out = replaceAll(out, SCHOOL_FULL, 'school_name', masked, spans)
+  out = replaceAll(out, SCHOOL_ABBREV, 'school_name', masked, spans)
+  return { text: out, masked, spans: [...new Set(spans)] }
 }
 
 export function maskedCount(r: Redacted): number {
@@ -95,4 +111,18 @@ export function scrubIdentifiers<T>(value: T): T {
     return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, scrubIdentifiers(v)])) as T
   }
   return value
+}
+
+/** Masks every listed span (case-insensitive) in every string of a JSON value; the provider must not echo what was masked. */
+export function maskSpans<T>(value: T, spans: readonly string[]): T {
+  if (spans.length === 0) return value
+  const escaped = [...spans].sort((a, b) => b.length - a.length).map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const re = new RegExp(escaped.join('|'), 'giu')
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return v.replace(re, REDACTED_MARK)
+    if (Array.isArray(v)) return v.map(walk)
+    if (v !== null && typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, walk(x)]))
+    return v
+  }
+  return walk(value) as T
 }

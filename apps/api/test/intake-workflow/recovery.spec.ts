@@ -197,3 +197,41 @@ describe('redaction before the provider (AC-8)', () => {
     expect(text).not.toContain('9876543')
   })
 })
+
+describe('page images (AC-8, fail closed)', () => {
+  it('sends an image only for a page whose text was read, that redaction left alone, and that is not the cover', async () => {
+    const { batchId } = await readyBatch(t, teacher, { pages: 5 })
+    const rows = await t.db.query<{ id: string; page_no: number }>(
+      `select p.id::text, p.page_no from intake_pages p join intake_files f on f.id = p.intake_file_id where f.batch_id = $1 order by p.page_no`,
+      [batchId],
+    )
+    expect(rows).toHaveLength(5)
+    // page 2: a scan whose text could not be read; page 3: a cover-like page with a bare name and no label; page 4: labelled personal details.
+    await t.db.query(`update intake_pages set text = null, ocr_status = 'failed' where id = $1`, [rows[1]!.id])
+    await t.db.query(`update intake_pages set text = $2 where id = $1`, [rows[2]!.id, 'Ahmad Zulkifli Contoh\nSoalan 1. Hitung 2 + 3.'])
+    await t.db.query(`update intake_pages set text = $2 where id = $1`, [rows[3]!.id, 'Nama: Contoh Penuh Calon\nSoalan 2. Hitung 4 + 5.'])
+    t.ai.paper = () => paper([draft(t.codes, '1')])
+    const calls = t.ai.calls.length
+    await extractAndRun(t, teacher, batchId)
+    const req = t.ai.calls[calls]!
+    const imagePages = (req.images ?? []).map((im) => im.page).sort()
+    // 1 is the cover, 2 has no text, 4 had a masked span: only 3 (bare name: nothing to mask, text read) and 5 remain.
+    expect(imagePages).toEqual([3, 5])
+  })
+
+  it('a name the redaction masked in the input is masked again if the provider echoes it', async () => {
+    const { batchId } = await readyBatch(t, teacher)
+    await t.db.query(
+      `update intake_pages set text = $2 where intake_file_id in (select id from intake_files where batch_id = $1) and page_no = 1`,
+      [batchId, 'Nama: Zulkarnain Bin Contohan\nSekolah: SMK TAMAN CONTOHAN\nSoalan 1. Hitung 2 + 3.'],
+    )
+    t.ai.paper = () =>
+      paper([draft(t.codes, '1', { stem: 'Soalan ini disediakan untuk Zulkarnain dari SMK TAMAN CONTOHAN tentang pecahan sahaja.' })], {
+        warnings: ['Nama Zulkarnain Bin Contohan dikesan'],
+      })
+    await extractAndRun(t, teacher, batchId)
+    const text = JSON.stringify(await t.db.query(`select payload from intake_items where batch_id = $1`, [batchId])) +
+      JSON.stringify(await t.db.query(`select warnings from intake_extraction_runs where batch_id = $1`, [batchId]))
+    expect(text).not.toMatch(/Zulkarnain|CONTOHAN/i)
+  })
+})

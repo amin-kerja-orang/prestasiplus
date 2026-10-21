@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   IntakeItemRowSchema,
   IntakeItemSchema,
-  intakeItemConfidenceBand,
   type IntakeActorRef,
   type IntakeDuplicateEntry,
   type IntakeIssue,
@@ -23,6 +22,7 @@ import { isAdmin } from '../files/intake-access'
 import { CurriculumFactsService, type TagResolver } from './curriculum-facts'
 import { itemIssues, questionMarks } from './gate'
 import {
+  bandOf,
   entryStatus,
   fieldConfidenceOf,
   payloadOf,
@@ -137,12 +137,11 @@ export class ItemViews {
   }
 
   private common(auth: AuthContext, row: ItemRow, l: Lookups) {
-    const confidence = fieldConfidenceOf(row)
     return {
       batchId: idToString(row.batchId),
       position: row.position,
       state: row.reviewState as IntakeItemState,
-      confidenceBand: intakeItemConfidenceBand(confidence),
+      confidenceBand: bandOf(row),
       uploader: this.uploader(row),
       question:
         row.questionId === null

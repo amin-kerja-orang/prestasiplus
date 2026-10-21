@@ -3,7 +3,6 @@ import {
   INTAKE_BLANK_ITEM_DEFAULTS,
   INTAKE_MESSAGES,
   IntakeBatchReviewSchema,
-  intakeItemConfidenceBand,
   intakeOpenState,
   type IntakeBatchIssue,
   type IntakeBatchReview,
@@ -37,13 +36,14 @@ import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
-import { ITEM_INCLUDE, PayloadSchema, fieldConfidenceOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
+import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
 import { IntakeWorkflowConfig, bandReaches } from './workflow.config'
 import { INTAKE_AUDIT, MAX_DUPLICATE_ENTRIES_PER_ITEM, WORKFLOW_MESSAGES } from './workflow.constants'
 
 const OPEN: readonly IntakeItemState[] = ['generated', 'needs_review', 'duplicate']
+const MAX_OFFSET = 1_000_000
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.itemNotFound })
@@ -95,6 +95,8 @@ export class IntakeReviewService {
   }
 
   async list(auth: AuthContext, q: IntakeItemListQuery): Promise<IntakeItemListResponse> {
+    // The contract gives `page` no maximum; an offset this large cannot hold a row and would overflow the query.
+    if ((q.page - 1) * q.pageSize > MAX_OFFSET) throw invalid('page', WORKFLOW_MESSAGES.pageTooLarge)
     const base: Prisma.IntakeItemWhereInput = {
       batch: {
         ...visibleBatches(auth),
@@ -342,6 +344,8 @@ export class IntakeReviewService {
 
   /** Gathers the group of `stimulusId` contiguous (prototype `attachToStimulus`) and rewrites the positions. */
   private async regroup(tx: TxClient, batchId: bigint, itemId: bigint, stimulusId: bigint): Promise<boolean> {
+    // Two edits of one batch must not reorder it at the same time.
+    await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
     const rows = await tx.intakeItem.findMany({ where: { batchId }, orderBy: [{ position: 'asc' }, { id: 'asc' }], select: { id: true, position: true, stimulusId: true } })
     const ordered = rows.map((r) => ({ id: idToString(r.id), stimulusId: r.stimulusId === null ? null : idToString(r.stimulusId) }))
     const { items, moved } = attachToStimulus(ordered, [idToString(itemId)], idToString(stimulusId))
@@ -467,6 +471,9 @@ export class IntakeReviewService {
     if (row.reviewState === 'accepted') throw conflict(INTAKE_MESSAGES.itemAlreadyAccepted)
     if (row.reviewState === 'rejected') throw conflict(INTAKE_MESSAGES.itemLocked)
     if (row.reviewState === 'duplicate') throw conflict(INTAKE_MESSAGES.itemIsDuplicate)
+
+    // Items of one stimulus group are accepted one at a time: the first creates the bank stimulus and group, the rest join it.
+    if (row.stimulusId !== null) await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${row.batchId} FOR UPDATE`
 
     const q = questionOf(row)
     const stimulus = row.stimulus ? stimulusOf(row.stimulus) : undefined
@@ -599,7 +606,7 @@ export class IntakeReviewService {
     if (!OPEN.includes(row.reviewState as IntakeItemState)) return skip('WRONG_STATE')
     if (body.action === 'accept') {
       if (row.reviewState === 'duplicate') return skip('WRONG_STATE')
-      if (threshold && !bandReaches(intakeItemConfidenceBand(fieldConfidenceOf(row)), threshold)) return skip('BELOW_THRESHOLD')
+      if (threshold && !bandReaches(bandOf(row), threshold)) return skip('BELOW_THRESHOLD')
     }
     try {
       await this.prisma.transaction(async (tx) => {
@@ -647,9 +654,9 @@ export class IntakeReviewService {
 
 /** Band of an item is its lowest field confidence (no data counts as high). Boundaries as `intakeConfidenceBand`. */
 const BAND_WHERE: Record<'high' | 'medium' | 'low', Prisma.IntakeItemWhereInput[]> = {
-  high: [{ lowestConfidence: null }, { lowestConfidence: { gte: 0.9 } }],
+  high: [{ lowestConfidence: null, sourceType: 'manual' }, { lowestConfidence: { gte: 0.9 } }],
   medium: [{ lowestConfidence: { gte: 0.7, lt: 0.9 } }],
-  low: [{ lowestConfidence: { lt: 0.7 } }],
+  low: [{ lowestConfidence: { lt: 0.7 } }, { lowestConfidence: null, sourceType: { not: 'manual' } }],
 }
 
 /** "An entry with status open of that kind": any = an open exact or near entry; none = no open entry of any kind. */

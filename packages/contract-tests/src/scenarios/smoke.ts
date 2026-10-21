@@ -25,6 +25,7 @@ const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /cikgu/rph': 'teacher', // teacher or admin
   'GET /questions/summary': 'admin', // role list not stated in the contract: best guess
   'GET /intake/dashboard': 'admin', // Admin Pusat only; BE-40 (smoke picks this one op for the intake-dashboard tag)
+  'GET /intake/items': 'teacher', // Guru (own batches) and Admin Pusat (all); BE-38
 }
 
 /** A role that must get 403 where a student is allowed (default: student). */
