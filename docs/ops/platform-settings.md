@@ -176,12 +176,17 @@ Details, files and hardening are in the production VPS runbook (`docs/ops/produc
 
 ### 4.3 HSTS (HTTP Strict Transport Security)
 
-Not set in `docker/frontend/nginx.conf` today (`LEAD: confirm` with a header check). Ramp it up; a wrong HSTS value is hard to undo because browsers cache it.
+Ramp it up; a wrong HSTS value is hard to undo because browsers cache it for `max-age` seconds.
+
+Who sends it today:
+- **The API**, in production (`NODE_ENV=production` or a secure request): `max-age=15552000; includeSubDomains`, hard-coded in `apps/api/src/common/security/security-headers.ts` (BE-33). Any browser that sees one `/api` answer of a production API on a host caches that policy for 6 months, subdomains included.
+- **Production VPS edge (AZ-09, #116):** the edge owns HSTS for the whole host. It sends `PP_HSTS` (default `max-age=300`) on every https response, SPA and `/api`, and hides the API's own header on `/api` (`proxy_hide_header`), so the ramp below is what browsers see.
+- `docker/frontend/nginx.conf` (the compose frontend) sets none.
 
 | Where | Setting | Rule | Verify |
 |---|---|---|---|
-| Production nginx (HTTPS server block, AZ-09) | `add_header Strict-Transport-Security "max-age=300" always;` | Ramp: 5 minutes, then 1 day (86400), 1 week (604800), then 6 months (15552000) once every subdomain serves HTTPS. Add `includeSubDomains` only after checking all subdomains. Do NOT add `preload` until the value has been stable for months and the lead agrees (preload is effectively permanent). | `curl -sI https://<site>/ \| grep -i strict-transport` |
-| Demo, Cloudflare | Zone SSL/TLS, Edge Certificates, HSTS (custom domain only); `*.pages.dev` already sends HSTS | Same ramp, same no-preload rule. `LEAD: confirm` if a custom domain is used. | Same `curl -sI`. |
+| Production VPS edge (AZ-09) | `PP_HSTS` in `/etc/pretasiplus/prod.env` (default `max-age=300`; empty = no header) | Ramp: 5 minutes (`max-age=300`), then 1 day (86400), 1 week (604800), then 6 months (15552000). Add `; includeSubDomains` only after checking that every subdomain of the registrable domain serves HTTPS (the owner may have other subdomains). Do NOT add `preload` until the value has been stable for months and the lead agrees (preload is effectively permanent). | `curl -sI https://<site>/ \| grep -i strict-transport` and the same for `https://<site>/api/health`: exactly one header each, equal to `PP_HSTS` |
+| Demo, Cloudflare | Zone SSL/TLS, Edge Certificates, HSTS (custom domain only). `*.pages.dev` is expected to send HSTS already (`LEAD: confirm` with one `curl -sI https://<project>.pages.dev/`). The Pages worker passes the API's own header through on `/api`, so a custom demo domain gets `max-age=15552000; includeSubDomains` from the first `/api` answer unless the worker strips or replaces it (`LEAD: confirm` before attaching a custom domain). | Same ramp, same no-preload rule. | Same `curl -sI`, on `/` and on `/api/health`. |
 
 ## 5. Pre-demo checklist (23 Oct)
 

@@ -35,13 +35,17 @@ Rollback (if step 5 or 6 fails): the old password is gone, so there is no going 
 
 Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09; arrives with PR #116) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. **Use the same `-f` files and env file as the deploy for every `docker compose` command below.** For production (AZ-09 pack) that is `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>`; staging uses `-f compose.yaml -f compose.staging.yaml`. The examples below write the short form `docker compose ...` for readability; without the right files compose targets a different project or config. The database port is not published; psql runs inside the `db` container.
 
-Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail. Prepare the new `.env.api` first (step 4 edits, with the new password already known from step 2) and run steps 3 and 5 back to back; the window is still minutes, not seconds, because the api restart and its readiness check take time.
+Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail. Prepare the new env files first (step 3, with the new password already known from step 2), then run steps 4 and 5 back to back; the window is still minutes, not seconds, because the api restart and its readiness check take time.
 
 Steps:
 
 1. Confirm with the lead; back up first: `npm run db:backup` (exit code 0, newest `pp-backup-*.dump` and its `.sha256` exist). Optionally `npm run db:restore-check` if the last drill is older than a month.
-2. Generate the new password with `openssl rand -hex 24`; keep it in the password manager. You paste it at the `\password` prompt (step 3) and into the two env files with an editor (step 4); no temporary file is needed.
-3. Set the new password inside the database, without typing it on a command line. Either interactively with `\password`:
+2. Generate the new password with `openssl rand -hex 24`; keep it in the password manager. You paste it into the two env files with an editor (step 3) and at the `\password` prompt (step 4); no temporary file is needed.
+3. Update the secret files consistently (edit with an editor, not `echo >>`). Nothing reads them until step 5, so the api keeps its old pool meanwhile. Then run step 4 (`\password`) and step 5 (`up -d api`) back to back:
+   - `.env.api`: `DATABASE_URL=postgresql://<USER>:<NEW PASSWORD>@db:5432/<DBNAME>` (this is what `api` and the `migrate` job read).
+   - `.env.db`: `POSTGRES_PASSWORD=<NEW PASSWORD>`. Note: this value only matters at the FIRST initialisation of an empty `pgdata` volume; the live role changes only by `ALTER ROLE`/`\password`. Keeping it in sync matters for a future re-init, and because `db` containers and the backup script read `POSTGRES_PASSWORD` from the container environment.
+   - Check modes: `chmod 600 .env.api .env.db`.
+4. Set the new password inside the database, without typing it on a command line. Either interactively with `\password`:
 
    ```
    docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
@@ -52,10 +56,6 @@ Steps:
    ```
 
    Use the interactive `\password` only. Do not use `ALTER ROLE ... PASSWORD 'literal'` typed on a command line or pasted into a script: the literal lands in shell history and, with `log_statement` enabled, in the server log. `\password` sends a pre-hashed value. A non-interactive variant (a psql script on stdin using `ALTER ROLE <role> PASSWORD :'pw'` with the value read from a mode-600 file inside the container) was not exercised from the repo; `LEAD: confirm` before using it. Note that `psql` inside the container connects through the local socket, which the official image trusts, so no current password is needed.
-4. Update the secret files consistently (edit with an editor, not `echo >>`). Order: do this edit BEFORE step 3 (keep the editor open or the file staged), then run step 3 (`\password`) and step 5 (`up -d api`) back to back:
-   - `.env.api`: `DATABASE_URL=postgresql://<USER>:<NEW PASSWORD>@db:5432/<DBNAME>` (this is what `api` and the `migrate` job read).
-   - `.env.db`: `POSTGRES_PASSWORD=<NEW PASSWORD>`. Note: this value only matters at the FIRST initialisation of an empty `pgdata` volume; the live role changes only by `ALTER ROLE`/`\password`. Keeping it in sync matters for a future re-init, and because `db` containers and the backup script read `POSTGRES_PASSWORD` from the container environment.
-   - Check modes: `chmod 600 .env.api .env.db`.
 5. Restart the api with the new URL: `docker compose up -d api` (the API shuts down gracefully, `SHUTDOWN_GRACE_MS`, and answers `/api/ready` 503 while draining). The `db` container is recreated later (step 8), because recreating it restarts Postgres.
 6. Verify (section 3).
 7. Remove every copy of the old password (password manager, notes, editor backup files of `.env.api` and `.env.db`).
@@ -64,7 +64,7 @@ Steps:
 
 Optional zero-gap variant (second role): create a second role with the same grants and ownership, switch `DATABASE_URL` to it, then drop the first. The tables are owned by the first role and migrations run as it, so ownership must move (`REASSIGN OWNED BY`), which is a DBA change; only do it with the backend developers.
 
-Rollback: if the api cannot connect after step 5, the database still holds the new password you set in step 3. Check `.env.api` for a typo first (`docker compose logs api` names `DATABASE_URL` or an authentication failure, never the value). If you must go back to the old password, set it again with `\password` (the old value from the password manager, still kept until step 7) and restore the previous `.env.api`/`.env.db`, then `docker compose up -d api`. If the volume must be rebuilt, restore from the step 1 backup (db-backup.md "Real restore"), which needs the lead's confirmation.
+Rollback: if the api cannot connect after step 5, the database still holds the new password you set in step 4. Check `.env.api` for a typo first (`docker compose logs api` names `DATABASE_URL` or an authentication failure, never the value). If you must go back to the old password, set it again with `\password` (the old value from the password manager, still kept until step 7) and restore the previous `.env.api`/`.env.db`, then `docker compose up -d api`. If the volume must be rebuilt, restore from the step 1 backup (db-backup.md "Real restore"), which needs the lead's confirmation.
 
 ## 3. Verification checklist (both environments)
 
