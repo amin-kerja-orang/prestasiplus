@@ -17,6 +17,8 @@ export const REVIEW_LIMITS = {
 export const INTAKE_AUDIT = {
   extractionRequested: 'intake.extraction_requested',
   itemAccepted: 'intake.item_accepted',
+  itemAdded: 'intake.item_added',
+  itemEdited: 'intake.item_edited',
   itemRejected: 'intake.item_rejected',
   itemDuplicate: 'intake.item_duplicate_decided',
   itemsBulk: 'intake.items_bulk',

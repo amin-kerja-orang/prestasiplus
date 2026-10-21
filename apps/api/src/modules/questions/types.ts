@@ -174,6 +174,8 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
+  idBelow?: string
 }
 
 /** Admin list page plus `meta.counts` (rows per status over the whole filter, status keys of the contract). */

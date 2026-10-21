@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { IntakeDuplicateKind, QuestionPart } from '@pp/contract'
 
 import { idToString } from '../../../db/ids'
@@ -43,10 +43,12 @@ const RANK: Record<IntakeDuplicateKind, number> = { exact: 3, near: 2, variant: 
 /**
  * The duplicate check of the intake (card AC5): exact and variant duplicates against the question bank and across the
  * batch. The bank is read through the questions owner (`QuestionsRepository`, never its tables); archived questions are
- * not compared. The scan is bounded by `INTAKE_DUPLICATE_SCAN_LIMIT` newest questions of the batch subject.
+ * not compared. The scan reads at most `INTAKE_DUPLICATE_SCAN_LIMIT` (exactly) of the newest questions of the batch subject, by keyset paging.
  */
 @Injectable()
 export class DuplicateDetector {
+  private readonly log = new Logger(DuplicateDetector.name)
+
   constructor(
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
@@ -58,10 +60,17 @@ export class DuplicateDetector {
     const subject = await this.curriculum.subjectByCode(subjectCode)
     if (!subject) return []
     const out: BankEntry[] = []
+    const limit = this.config.duplicateScanLimit
     const pageSize = 200
-    for (let page = 1; out.length < this.config.duplicateScanLimit; page++) {
-      const ids = await this.questions.listIds({ page, pageSize, subjectId: idToString(subject.id) })
+    let scanned = 0
+    let lastId: string | undefined
+    // Keyset paging (newest first): never scans more than `limit` rows and is stable under concurrent inserts.
+    while (scanned < limit) {
+      const want = Math.min(pageSize, limit - scanned)
+      const ids = await this.questions.listIds({ page: 1, pageSize: want, subjectId: idToString(subject.id), ...(lastId === undefined ? {} : { idBelow: lastId }) })
       if (ids.ids.length === 0) break
+      scanned += ids.ids.length
+      lastId = ids.ids[ids.ids.length - 1] as string
       for (const rec of await this.questions.getMany(ids.ids, 'latest')) {
         if (rec.version.status === 'archived') continue
         // A single-leaf question repeats its stem as the leaf prompt; counting it twice would turn an exact copy into "near".
@@ -70,7 +79,11 @@ export class DuplicateDetector {
         const text = stem !== '' && !partsText.includes(stem) ? `${stem} \n ${partsText}` : partsText
         out.push({ id: rec.id, sig: signatureOf(text) })
       }
-      if (ids.ids.length < pageSize) break
+      if (ids.ids.length < want) break
+      if (scanned >= limit) {
+        // The contract has no field to tell the reviewer the bank was cut short.
+        this.log.debug(`duplicate scan stopped at the ${limit} newest bank questions of subject ${subjectCode}; older ones are not compared`)
+      }
     }
     return out
   }

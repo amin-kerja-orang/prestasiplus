@@ -196,9 +196,11 @@ export class IntakeReviewService {
     const batchId = parseId(batchIdText)
     if (batchId === null) throw batchNotFound()
     const id = await this.prisma.transaction(async (tx) => {
+      // Scope first, lock second: a caller who cannot see the batch must not queue on its row lock.
+      const visible = await tx.intakeBatch.findFirst({ where: { id: batchId, ...visibleBatches(auth) }, select: { id: true } })
+      if (!visible) throw batchNotFound()
       const locked = await tx.$queryRaw<{ id: bigint; subject: string }[]>`SELECT id, subject FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
-      const visible = locked[0] && (await tx.intakeBatch.findFirst({ where: { id: batchId, ...visibleBatches(auth) }, select: { id: true } }))
-      if (!locked[0] || !visible) throw batchNotFound()
+      if (!locked[0]) throw batchNotFound()
       const items = await tx.intakeItem.findMany({ where: { batchId }, select: { numberLabel: true, position: true } })
       if (items.length >= this.config.maxItemsPerBatch) throw invalid('batchId', WORKFLOW_MESSAGES.tooManyItems)
       const nextLabel = items.reduce((m, r) => Math.max(m, Number.parseInt(r.numberLabel, 10) || 0), 0) + 1
@@ -227,16 +229,15 @@ export class IntakeReviewService {
       await tx.intakeItemEvent.create({
         data: { itemId: row.id, event: 'added', toState: 'generated', actorUserId: idFromString(auth.userId), actorRole: auth.active.role },
       })
+      await this.record(INTAKE_AUDIT.itemAdded, auth, row, who, { to: 'generated', label: String(nextLabel) }, tx)
       return row.id
     })
-    void who
     return this.views.detail(auth, await this.loadVisible(auth, idToString(id)))
   }
 
   // ---- edit ----------------------------------------------------------------------------------------
 
   async patch(auth: AuthContext, idText: string, body: IntakeItemPatch, who: CallerInfo): Promise<IntakeItemPatchResult> {
-    void who
     const first = await this.loadVisible(auth, idText)
     const itemId = first.id
     let reordered = false
@@ -337,7 +338,11 @@ export class IntakeReviewService {
         })),
         ...confirmedEvents.map((c) => ({ itemId, event: 'confirmed', field: c.field.slice(0, 64), ...actor })),
       ]
-      if (events.length > 0) await tx.intakeItemEvent.createMany({ data: events })
+      if (events.length > 0) {
+        await tx.intakeItemEvent.createMany({ data: events })
+        const fields = [...new Set([...changes.map((c) => c.field), ...confirmedEvents.map((c) => c.field)])]
+        await this.record(INTAKE_AUDIT.itemEdited, auth, row, who, { from, to: state, fields: fields.slice(0, 50) }, tx)
+      }
     }, TX)
     return { data: await this.views.detail(auth, await this.loadVisible(auth, idText)), reordered }
   }
@@ -634,7 +639,7 @@ export class IntakeReviewService {
 
   // ---- audit ---------------------------------------------------------------------------------------
 
-  private async record(action: string, auth: AuthContext, row: ItemRow, who: CallerInfo, details: Record<string, unknown>, tx: TxClient): Promise<void> {
+  private async record(action: string, auth: AuthContext, row: Pick<ItemRow, 'id' | 'batchId'>, who: CallerInfo, details: Record<string, unknown>, tx: TxClient): Promise<void> {
     await this.audit.record({
       action,
       actorUserId: auth.userId,

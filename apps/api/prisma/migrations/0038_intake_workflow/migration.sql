@@ -104,9 +104,10 @@ CREATE TABLE "intake_items" (
     CONSTRAINT "ck_intake_items_lowest_confidence" CHECK ("lowest_confidence" IS NULL OR "lowest_confidence" BETWEEN 0 AND 1),
     CONSTRAINT "ck_intake_items_review_state" CHECK ("review_state" IN ('generated', 'needs_review', 'accepted', 'rejected', 'duplicate')),
     CONSTRAINT "ck_intake_items_reject_reason" CHECK ("reject_reason" IS NULL OR char_length("reject_reason") <= 500),
-    -- A rejected item always keeps its reason; an accepted item always points at its Draf question, and only it does.
+    -- A rejected item always keeps its reason; only an accepted item points at a question. The link may become NULL later: deleting the Draf question
+    -- sets it to NULL (fk ON DELETE SET NULL) and the item stays accepted, history intact.
     CONSTRAINT "ck_intake_items_rejected_reason" CHECK ("review_state" <> 'rejected' OR "reject_reason" IS NOT NULL),
-    CONSTRAINT "ck_intake_items_accepted_question" CHECK (("review_state" = 'accepted') = ("question_id" IS NOT NULL)),
+    CONSTRAINT "ck_intake_items_accepted_question" CHECK ("question_id" IS NULL OR "review_state" = 'accepted'),
     CONSTRAINT "ck_intake_items_question_version_no" CHECK ("question_version_no" IS NULL OR "question_version_no" >= 1)
 );
 

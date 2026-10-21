@@ -59,6 +59,20 @@ describe('provenance and audit', () => {
     const actions = audit.map((r) => r.action)
     expect(actions).toContain('intake.item_rejected')
     expect(actions).toContain('intake.item_duplicate_decided')
+    expect(actions).toContain('intake.item_edited')
+  })
+
+  it('adding a blank item and editing an item each write an audit row in the same transaction', async () => {
+    t.ai.paper = () => paper([draft(t.codes, '1')])
+    const { batchId } = await readyBatch(t, teacher)
+    await extractAndRun(t, teacher, batchId)
+    const added = await post(teacher, `/intake/batches/${batchId}/items`, {})
+    expect(added.status, JSON.stringify(added.body)).toBe(201)
+    const id = (added.body.data as { id: string }).id
+    const edited = await patch(teacher, `/intake/items/${id}`, { stem: 'Teks yang disunting.' })
+    expect(edited.status, JSON.stringify(edited.body)).toBe(200)
+    const rows = await t.db.query<{ action: string; target_id: string }>(`select action, target_id::text from audit_events where target_type = 'intake_item' and target_id = $1 order by id`, [id])
+    expect(rows.map((r) => r.action)).toEqual(['intake.item_added', 'intake.item_edited'])
   })
 })
 

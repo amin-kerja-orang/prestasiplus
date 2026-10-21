@@ -265,9 +265,11 @@ export class QuestionsRepository {
     const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const whereAll = Prisma.join(withStatus, ' AND ')
     const whereBase = Prisma.join(base, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
+    const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
+    const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
     const [rows, totals, counted] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${whereAll} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
