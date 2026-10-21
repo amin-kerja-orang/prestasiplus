@@ -32,6 +32,7 @@ import { battleSeed } from './battle'
 import { spmSeed } from './spm'
 import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { performanceSeed } from './poc/performance'
+import { pocProfileSeed } from './poc'
 
 export { assertSeedAllowed }
 
@@ -71,7 +72,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, spmSubjectConfigsSeed, spmSeed, performanceSeed, practiceSeed, gamificationSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, spmSubjectConfigsSeed, spmSeed, performanceSeed, practiceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
@@ -136,9 +137,27 @@ export function parseProfile(argv: readonly string[]): string {
   return value
 }
 
+export const FORCE_DEMO_FLAG = '--force-demo'
+
+/**
+ * `--force-demo` (BE-26, AC7): the explicit command-line opt-in to load demo data when NODE_ENV=production. It is an
+ * alternative to ALLOW_DEMO_SEED=true (which keeps working unchanged): it sets that variable on `env` so the demo guard
+ * in every module sees it. Without either, production loads the reference modules only. Returns whether it was passed.
+ */
+export function applyForceDemo(argv: readonly string[], env: Record<string, string | undefined> = process.env): boolean {
+  const bad = argv.find((a) => a.startsWith(`${FORCE_DEMO_FLAG}=`))
+  if (bad) throw new Error(`${FORCE_DEMO_FLAG} takes no value (got "${bad}"). Pass it alone.`)
+  if (!argv.includes(FORCE_DEMO_FLAG)) return false
+  env.ALLOW_DEMO_SEED = 'true'
+  return true
+}
+
 async function main(): Promise<void> {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is not set.')
+  if (applyForceDemo(process.argv.slice(2)) && process.env.NODE_ENV === 'production') {
+    console.warn('seed: --force-demo passed, demo data will be loaded although NODE_ENV=production.')
+  }
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)
   try {
