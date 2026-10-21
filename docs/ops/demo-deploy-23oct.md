@@ -22,13 +22,12 @@ This replaces the rehearsal checklist of `be/demo-rehearsal-23oct` @ `917a152b`:
 git fetch origin +refs/heads/feature/v2-backend:refs/remotes/origin/feature/v2-backend \
                  +refs/heads/be/integration-frontend:refs/remotes/origin/be/integration-frontend
 git log --oneline -1 origin/feature/v2-backend
-ls apps/api/prisma/migrations | grep -c '^00'                              # on that commit: expect 33
+git ls-tree --name-only 23c98226 apps/api/prisma/migrations/ | grep -c '/00'   # expect 33
 git merge-base --is-ancestor 23c98226 origin/be/integration-frontend && echo "SPA branch is synced"
 ```
 
-- If the tip moved past `23c98226` and the migration count is still 33, you may deploy the newer tip; the counts in
-  section 2.6 should still hold if no seed file changed (`git diff --stat 23c98226 origin/feature/v2-backend -- apps/api/prisma`
-  shows nothing). If a migration or seed file changed, ask DevOps to re-run the rehearsal first.
+- This pack is for **`23c98226`** (every step below names it). If the tip has moved on, still deploy `23c98226`, or
+  ask DevOps to re-rehearse and update this pack for the newer commit; do not swap the SHA by hand.
 - If "SPA branch is synced" does not print, the sync PR has not merged yet: wait for it (4.1).
 
 **Prepare the checkout now, before anything is reset** (a failed install must not leave the API on an empty DB):
@@ -39,7 +38,8 @@ npm ci
 npm run db:generate -w @pp/api                 # the seed needs the generated client
 ```
 
-Do the whole run outside demo hours: from step 2.2 until step 3 is live, the old API faces the new schema.
+Do the whole run outside demo hours. **Nobody uses the demo from the reset (2.2) until the Pages upload is live
+(4.3 step 2)**: first the old API faces the new schema, then (3.3 to 4.3) the old worker sends no edge secret.
 
 ## 1. Backup before the reset (5 min)
 
@@ -53,30 +53,68 @@ the password out of every command line (`ps`), file and the history, and needs n
 (checked locally against a password-protected role: a wrong `PGPASSWORD` fails, the right one connects).
 
 ```bash
-umask 077                                          # the dump below is readable by you only
+umask 077                                          # the dump below is readable by you only (stays for this shell; harmless)
+read -rp  'Project ref of prestasiplus-demo (from supabase.com/dashboard/project/<ref>): ' DEMO_REF
 read -rsp 'Session pooler URL WITHOUT password: ' PGURL && export PGURL; echo
 read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
-export SSLQ="sslmode=verify-full&sslrootcert=$HOME/prod-ca-2021.crt"
+CA="$(cygpath -m "$HOME" 2>/dev/null || printf %s "$HOME")/prod-ca-2021.crt"   # Git Bash: C:/Users/..., native tools need it
+export SSLQ="sslmode=verify-full&sslrootcert=$CA"
 export DUMP=~/demo-before-23oct-$(date +%F-%H%M).dump
 ```
 
 URL form: `postgresql://postgres.<PROJECT_REF>@aws-<n>-ap-southeast-1.pooler.supabase.com:5432/postgres`.
-If `verify-full` fails with a certificate error, use `export SSLQ="sslmode=require"` (encrypted, certificate not
-verified: only from a trusted network, never on public Wi-Fi). `scripts/demo-db-delta.mjs` ignores every `ssl*`
-parameter and always uses TLS without verification for a non-local host (its header).
+`PGPASSWORD` is exported for sections 1 and 2 only (psql, pg_dump, the delta script and the seed); it is unset at
+the end of 2.6, before any build, `npm` or `wrangler` step, and asked again only for a rollback (section 6).
+
+**Pre-flight: both clients connect with the CA** (before anything else, so a bad CA path fails here, not after
+the reset):
+
+```bash
+psql "$PGURL?$SSLQ" -At -c "select 'psql: OK'"
+DATABASE_URL="$PGURL?$SSLQ" node -e "const c=new (require('pg').Client)({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query('select 1')).then(()=>{console.log('node pg: OK');return c.end()}).catch(e=>{console.error('node pg: FAIL',e.code||e.message);process.exit(1)})"
+```
+
+Both must print OK. If either fails with a certificate error (not a missing file), use
+`export SSLQ="sslmode=require"` for `psql`/`pg_dump`, and `no-verify` for the seed (2.3 note): encrypted,
+certificate not verified, only from a trusted network, never on public Wi-Fi. `ENOENT` = wrong CA path: fix `CA`.
+`scripts/demo-db-delta.mjs` ignores every `ssl*` parameter and always uses TLS without verification for a non-local
+host (its header).
 
 ### 1.0 Stop gate: is this the demo project? (do not skip)
 
+Paste this function once into the shell. Every destructive command below runs as `pp_gate && <command>`, so a
+failed check stops it even inside a pasted block:
+
 ```bash
-echo "user/ref: ${PGURL#postgresql://}" | cut -d@ -f1        # postgres.<PROJECT_REF>
-psql "$PGURL?$SSLQ" -At -c "select current_database(), current_user, inet_server_addr()"
-psql "$PGURL?$SSLQ" -At -c "select count(*) from users where email is not null and lower(email) not like '%@demo.test' and lower(email) not like '%@example.test'"
+pp_gate() {
+  local ref n d
+  ref="${PGURL#postgresql://}"; ref="${ref%%@*}"; ref="${ref%%:*}"      # never prints a pasted password
+  [ -n "${DEMO_REF:-}" ] && [ "$ref" = "postgres.$DEMO_REF" ] || { echo "STOP: PGURL user '$ref' is not postgres.<DEMO_REF>"; return 1; }
+  psql "$PGURL?$SSLQ" -At -c "select current_database(), current_user, inet_server_addr()" || { echo "STOP: cannot connect"; return 1; }
+  if [ -n "$(psql "$PGURL?$SSLQ" -At -c "select to_regclass('public.users')")" ]; then
+    n=$(psql "$PGURL?$SSLQ" -At -c "select count(*) from users where email is not null and lower(email) not like '%@demo.test' and lower(email) not like '%@example.test'") || return 1
+    [ "$n" = 0 ] || { echo "STOP: $n account(s) outside @demo.test/@example.test"; return 1; }
+  fi
+  d=$(pg_restore -l "$DUMP" 2>/dev/null | grep -c 'TABLE DATA')
+  [ "${d:-0}" -gt 0 ] || { echo "STOP: no readable dump at $DUMP"; return 1; }
+  echo "GATE OK: postgres.$DEMO_REF, dump $DUMP ($d tables with data)"
+}
 ```
 
-- The `<PROJECT_REF>` must equal the ref in the dashboard URL of **`prestasiplus-demo`**
-  (`supabase.com/dashboard/project/<ref>`). Any other ref: stop.
-- The last query must print `0` (the demo DB holds only `@demo.test` / `@example.test` accounts). Not `0`: stop and
-  look at those rows before going on; a real account means this is not the demo DB.
+What it checks: the pooler user in `$PGURL` is `postgres.<DEMO_REF>` (the ref you typed from the
+`prestasiplus-demo` dashboard URL); the DB answers; it holds no account outside `@demo.test` / `@example.test`
+(skipped only when `public` has no `users` table, e.g. a rollback after a half-done reset); and `$DUMP` is a
+readable dump. It prints `STOP: ...` and returns non-zero otherwise. Rehearsed locally: it stops on a wrong ref, on
+one non-demo account and on a missing dump, and passes on a demo DB.
+
+The dump does not exist yet, so before 1.2 check only the target:
+
+```bash
+echo "user: $(r=${PGURL#postgresql://}; r=${r%%@*}; echo "${r%%:*}")   expect: postgres.$DEMO_REF"
+psql "$PGURL?$SSLQ" -At -c "select count(*) from users where email is not null and lower(email) not like '%@demo.test' and lower(email) not like '%@example.test'"   # expect 0
+```
+
+Wrong user or a non-zero count: stop, look at those rows; a real account means this is not the demo DB.
 
 1.1 Record the current state (read-only):
 
@@ -122,9 +160,11 @@ Only after the stop gate (1.0) passed and the dump check (1.2) printed a non-zer
 SAME `$PGURL` the gate checked (not in the SQL Editor, so there is only one target to verify):
 
 ```bash
-psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; CREATE SCHEMA public; COMMIT;"
+pp_gate && psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; CREATE SCHEMA public; COMMIT;"
 psql "$PGURL?$SSLQ" -At -c "select count(*) from information_schema.tables where table_schema = 'public'"   # expect 0
 ```
+
+`GATE OK` must print before the `DROP`; a `STOP:` line means nothing was dropped.
 
 The pooler user `postgres.<PROJECT_REF>` is `postgres`, the owner of every app table. This drops the app tables and `_prisma_migrations` only; Supabase's own schemas (`auth`, `storage`, `extensions`,
 ...) are not touched. `pgcrypto` stays in `extensions`. If the `DROP` is refused (permission), stop: use the
@@ -218,8 +258,14 @@ Expected (exact; the seed is deterministic, two fresh rehearsal builds gave iden
 Whole DB: 197 tables in `public` (incl. `_prisma_migrations`), 99 of them non-empty, 15,734 rows in total. Any
 difference: stop and compare before deploying the API.
 
-Keep `PGURL`, `PGPASSWORD`, `SSLQ` and `DUMP` in this shell only until section 5 is green (section 6 needs them for a
-rollback); then `unset PGURL PGPASSWORD SSLQ DUMP` (also in the checklist).
+Now drop the DB password from the shell, before any build, `npm` or `wrangler` step:
+
+```bash
+unset PGPASSWORD
+```
+
+Keep `PGURL`, `SSLQ`, `DUMP`, `DEMO_REF` and `pp_gate` in this shell until section 5 is green (section 6 needs them
+for a rollback); then unset them (end of section 6, also in the checklist).
 
 ## 3. Render: the API (~8 min, of which ~6 min build)
 
@@ -286,6 +332,7 @@ Rehearsed locally (not pushed): `be/integration-frontend` `d909e1e0` merged with
 In a SEPARATE checkout or worktree (the section 0 checkout stays at `23c98226` for sections 5 and 6):
 
 ```bash
+git worktree remove --force ../pp-spa 2>/dev/null    # only if an earlier attempt left it
 git worktree add ../pp-spa <sync merge commit on be/integration-frontend>
 cd ../pp-spa
 npm ci
@@ -295,7 +342,11 @@ cp deploy/pages-direct/_worker.js dist/
 git diff --quiet 23c98226 -- deploy/pages-direct/_worker.js apps/api packages scripts/demo-smoke.sh scripts/demo-walkthrough.sh \
   && echo "worker + API + demo scripts = deploy commit"
 ls dist/index.html dist/_worker.js                   # both must exist
+cd -                                                 # back to the section 0 checkout (23c98226) for sections 3, 5 and 6
+git log --oneline -1                                 # expect 23c98226
 ```
+
+The folder to upload in 4.3 is `../pp-spa/dist`.
 
 If the `git diff` line prints nothing, the sync commit differs from `23c98226` in the worker, the API or the demo
 scripts: stop and ask DevOps (the expected results in section 5 were rehearsed with the scripts at `23c98226`).
@@ -311,7 +362,7 @@ and if you want a zip, `Compress-Archive -Path dist/* -DestinationPath $HOME\pag
    for the value; the SAME value as Render), or dashboard -> Settings -> Variables and Secrets -> type **Secret**.
    `API_ORIGIN` stays the Render URL. It applies to the next deployment only.
 2. **Right after Render is Live (3.3):** Workers & Pages -> `prestasiplus-demo` -> **Create deployment** ->
-   Production -> drag the `dist` folder (or upload the zip) -> Save and deploy.
+   Production -> drag the `../pp-spa/dist` folder (or upload the zip) -> Save and deploy.
 3. `https://<project>.pages.dev/api/health` -> db up.
 
 ## 5. After the deploy (15 min)
@@ -360,24 +411,26 @@ Not covered by either script (check by hand in the browser): SPA rendering, the 
 - **SPA:** Pages -> Deployments -> the previous deployment -> **Rollback to this deployment**.
 - **API:** Render -> Settings -> Branch back to `be/demo-deploy-2` -> Manual Deploy -> commit `adcaad0c`.
   Remove `CLIENT_IP_HEADER` if the edge side is rolled back too (`EDGE_PROXY_SECRET` may stay).
-- **Database** (only together with the API rollback; the old API on the new DB is untested). In the same shell
-  (`PGURL`, `PGPASSWORD`, `SSLQ`, `DUMP` still set; in a new shell set them again as in section 1, with
-  `DUMP=<the file name noted in 1.2>`). First run the **stop gate 1.0 again** (the user query may now also count the
-  walkthrough's demo rows, still only `@demo.test`), and check the dump: `pg_restore -l "$DUMP" | grep -c 'TABLE DATA'`
-  non-zero. Then:
+- **Database** (only together with the API rollback; the old API on the new DB is untested). From the section 0
+  checkout (`cd` there first: the lockdown path is relative). In the same shell, `PGURL`, `SSLQ`, `DUMP`, `DEMO_REF`
+  and `pp_gate` are still set; in a new shell set them again as in section 1 (with `DUMP=<the file name noted in
+  1.2>`, NOT a new date) and paste `pp_gate` again. The password was unset after 2.6, so ask for it again:
 
   ```bash
-  psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; COMMIT;"   # do NOT re-create public: the dump does
-  pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP"
+  read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
+  pp_gate && psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; COMMIT;"   # do NOT re-create public: the dump does
+  pp_gate && pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP"
+  psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -f scripts/supabase/lockdown-data-api.sql
+  unset PGPASSWORD
   ```
 
-  then re-run the lockdown (2.5). Rehearsed locally: the restore gave the same row count in all 197 tables as the
-  source at dump time. A restore into a schema that already exists fails on `CREATE SCHEMA public`.
+  then the two lockdown checks of 2.5. Rehearsed locally: the restore gave the same row count in all 197 tables as
+  the source at dump time. A restore into a schema that already exists fails on `CREATE SCHEMA public`.
 
 When section 5 is green (or after a rollback):
 
 ```bash
-unset PGURL PGPASSWORD SSLQ DUMP
+unset PGURL PGPASSWORD SSLQ DUMP DEMO_REF CA DEMO_PASSWORD; unset -f pp_gate
 ```
 
 ## 7. After the demo: rotate the DB password (5 min)
@@ -399,11 +452,12 @@ Optionally rotate `EDGE_PROXY_SECRET` the same way (both sides together, see "Ro
 ## 8. Checklist
 
 - [ ] 0: tip still 33 migrations; SPA branch synced; checkout at `23c98226`, `npm ci` + `db:generate` done
-- [ ] 1: stop gate 1.0 passed (demo project ref, 0 non-demo users); current state noted; dump written, `TABLE DATA` non-zero
+- [ ] 1: pre-flight psql + node pg OK with the CA; target check (ref, 0 non-demo users); current state noted; dump written, `TABLE DATA` non-zero; `GATE OK` printed before the DROP
+- [ ] 2: `unset PGPASSWORD` after 2.6
 - [ ] 2: reset, 33 migrations, seed 25 modules, lockdown 0 leaked grants, counts match 2.6
 - [ ] 3/4: Pages secret set; SPA built (diff check OK); Render env (`BIJAK_POC_QUESTIONS`, `CLIENT_IP_HEADER`, `EDGE_PROXY_SECRET`), branch, commit `23c98226`; Pages upload right after Render is Live; health db up
 - [ ] 5: smoke 28/0, no `ClientIp` warning, two-network check, walkthrough read-only 102/0/5 (exit 3), writes 116/0/0 (exit 0)
-- [ ] 5/6: `unset PGURL PGPASSWORD SSLQ DUMP`
+- [ ] 5/6: `unset PGURL PGPASSWORD SSLQ DUMP DEMO_REF CA DEMO_PASSWORD; unset -f pp_gate`
 - [ ] 7: after the demo, DB password rotated, Render redeployed
 
 ## 9. Rehearsal record (21 Oct 2026, cloud container, Postgres 16.15)
@@ -429,5 +483,7 @@ owned by `pg_database_owner`, roles `anon`/`authenticated`/`service_role` with d
 8. **G4 minors (second pass):** `PGPASSWORD` with a password-less URL against a `scram-sha-256` role: `psql`,
    `pg_dump`, the delta script and the seed connect, and a wrong `PGPASSWORD` fails. The 1.0 gate queries, the
    `psql` reset (2.2), the lockdown (2.5) and the rollback (`DROP` without re-create, then `pg_restore "$DUMP"`)
-   ran as written on a scratch DB.
+   ran as written on a scratch DB. Third pass: `pp_gate` returned non-zero (and `pp_gate && <cmd>` did not run the
+   command) on a wrong ref, one non-demo account and a missing dump, and passed on a demo DB and on an empty
+   `public`; the node pre-flight failed with `ENOENT` on a wrong CA path.
 9. Not rehearsable here: Supabase itself, the Pages edge, Render. Those are checked by 2.6 and section 5.
