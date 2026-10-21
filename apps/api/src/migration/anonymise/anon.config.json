@@ -256,7 +256,8 @@
       "created_by": "keep",
       "classroom_id": "keep",
       "type": "keep",
-      "title": "scrub-text"
+      "title": "scrub-text",
+      "criteria": "keep"
     },
     "challenge_user": {
       "challenge_id": "keep",
@@ -541,7 +542,8 @@
       "max_score": "keep",
       "section_scores": "keep",
       "section_selections": "keep",
-      "served_composition": "keep"
+      "served_composition": "keep",
+      "status": "keep"
     },
     "part_responses": {
       "exam_attempt_id": "keep",
