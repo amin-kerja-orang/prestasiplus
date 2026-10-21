@@ -33,7 +33,7 @@ Rollback (if step 5 or 6 fails): the old password is gone, so there is no going 
 
 ## 2. Production (VPS, docker compose, Postgres 16)
 
-Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. The database port is not published; psql runs inside the `db` container.
+Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. **Use the same `-f` files and env file as the deploy for every `docker compose` command below.** For production (AZ-09 pack) that is `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>`; staging uses `-f compose.yaml -f compose.staging.yaml`. The examples below write the short form `docker compose ...` for readability; without the right files compose targets a different project or config. The database port is not published; psql runs inside the `db` container.
 
 Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail, which is seconds.
 
