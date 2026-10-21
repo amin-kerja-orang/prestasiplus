@@ -148,10 +148,11 @@ code="$(req a-logout POST /api/auth/logout)"
 
 echo "5. Client address seen by the API (TRUST_PROXY_HOPS)"
 # The login pair throttle allows THROTTLE_LOGIN_PER_MINUTE (5) attempts per identifier and client address.
-# Each attempt below spoofs a different X-Forwarded-For. The Function overwrites that header with the real
-# client address, so the 6th attempt must get 429. If all get 401, the API trusts one hop too many and a
-# client can choose its own address. (Too FEW hops shows up differently: every user shares one bucket; see
-# the runbook for the two-network check.) Uses a random identifier that does not exist; about 10 s.
+# Each attempt below spoofs a different X-Forwarded-For. The edge deletes that header and sets the real client
+# address (CF-Connecting-IP) in X-Forwarded-For and X-PP-Client-IP (the API uses the latter when CLIENT_IP_HEADER
+# and EDGE_PROXY_SECRET are set), so the 6th attempt must get 429. If all get 401, the API lets a client choose
+# its own address (client-IP trust misconfigured). (Too little trust shows up differently: every user shares
+# one bucket; see the runbook for the two-network check.) Uses a random identifier that does not exist; about 10 s.
 JAR="$TMP/spoof.jar"; : >"$JAR"; CSRF=""
 SPOOF_ID="smoke-$(node -e 'process.stdout.write(require("crypto").randomBytes(4).toString("hex"))')@demo.test"
 codes=""
