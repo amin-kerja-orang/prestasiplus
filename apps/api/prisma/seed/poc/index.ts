@@ -24,13 +24,13 @@
  *  15. poc-cikgu              Cikgu Alesa demo rows
  *  16. pksk                   PKSK demo rows (BE-42)
  *  17. poc-performance        headcount configs and entries, timeline posts (BE-19)
- *  18. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
- *  19. spm                    SPM hub demo rows (BE-41)
- *  20. practice               practice sessions and answers of the demo accounts
- *  21. core-marketplace-categories  REFERENCE: the 6 marketplace categories (BE-46; also runs in production)
- *  22. marketplace            demo seller, products and images (BE-46)
- *  23. gamification           achievements, challenges, rewards, draws
- *  24. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path)
+ *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path); BEFORE the spm seeds, which read the bank
+ *  19. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
+ *  20. spm                    SPM hub demo rows (BE-41)
+ *  21. practice               practice sessions and answers of the demo accounts
+ *  22. core-marketplace-categories  REFERENCE: the 6 marketplace categories (BE-46; also runs in production)
+ *  23. marketplace            demo seller, products and images (BE-46)
+ *  24. gamification           achievements, challenges, rewards, draws
  *  25. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
@@ -60,13 +60,13 @@ export const POC_PROFILE_ORDER = [
   'poc-cikgu',
   'pksk',
   'poc-performance',
+  'questions-pool',
   'spm-subject-configs',
   'spm',
   'practice',
   'core-marketplace-categories',
   'marketplace',
   'gamification',
-  'questions-pool',
   'poc-profile',
 ] as const
 

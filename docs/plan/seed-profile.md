@@ -23,13 +23,13 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 15. `poc-cikgu`
 16. `pksk` (BE-42): PKSK demo rows (2 access grants, 2 T1 attempts, 7 mastery values; the 15 domains and 3 packages are inserted by migration 0028)
 17. `poc-performance` (BE-19): headcount configs and entries, timeline posts
-18. `spm-subject-configs` (BE-41): REFERENCE module (also runs in production)
-19. `spm` (BE-41): SPM hub demo rows
-20. `practice`: practice sessions and answers
-21. `core-marketplace-categories` (BE-46): REFERENCE module, the 6 marketplace categories (also runs in production)
-22. `marketplace` (BE-46): demo shop, 10 products, 45 image paths
-23. `gamification`
-24. `questions-pool` (BE-09 seed path, PoC only): the question pool for battle, games and practice, see below
+18. `questions-pool` (BE-09 seed path, PoC only): the question pool for battle, games and practice, runs before the spm seeds (they read the bank), see below
+19. `spm-subject-configs` (BE-41): REFERENCE module (also runs in production)
+20. `spm` (BE-41): SPM hub demo rows
+21. `practice`: practice sessions and answers
+22. `core-marketplace-categories` (BE-46): REFERENCE module, the 6 marketplace categories (also runs in production)
+23. `marketplace` (BE-46): demo shop, 10 products, 45 image paths
+24. `gamification`
 25. `poc-profile` (BE-26): runs `apps/api/prisma/seed/poc/verify.ts` and fails the run when a rule is violated
 
 BE-26 itself adds no data: every row comes from its owner module (one owner per store, ADR-0014). `apps/api/prisma/seed/poc/fixtures/` is not created because no cross-domain fixture was needed.
@@ -117,8 +117,8 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | sekolah_bersaing_weeks | 16 |
 | spin_stats | 8 |
 | spm_subject_configs | 19 |
-| spm_tracking_set_questions | 3 |
-| spm_tracking_sets | 3 |
+| spm_tracking_set_questions | 483 |
+| spm_tracking_sets | 10 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
 | stimulus_group_stimuli | 2 |
@@ -139,7 +139,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 97 of 196. Total rows: 15214.
+Tables with rows: 97 of 196. Total rows: 15701.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
@@ -152,7 +152,7 @@ The base bank (`questions`, 19 rows, plus 4 Bijak PoC MCQs) has at most 4 publis
 - Sizes: the largest one-level draw is a practice session of 20 (battle 10, Jutawan 15 with TP ladder 4/4/4/3); 24 per level is the margin. Every pool row is in the SPM pool, so each subject has 48 (SPM mock paper 1 needs 30, the default Latih Tubi / Tracking A set is 40).
 - Difficulty TP cycles 1 to 4, the key cycles over A to D. The stem holds the full question text (the arena and the games show the stem).
 - Content is generic and written for this seed: computed exercises (key computed) and small fact tables asked both ways (unit SI, element symbols, antonyms and synonyms, irregular verbs, events and years, Hijri months, rukun iman, values of Pendidikan Moral, art elements and design principles, colour theory). No exam text, no person names.
-- Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs just before `gamification` and `poc-profile` (neither writes question rows), so no earlier id moves. Profile `poc` only; refused in production like every demo module.
+- Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs after `poc-performance` and before `spm-subject-configs` / `spm`: the SPM seed builds one Tracking A set per subject from the SPM pool and skips a subject whose set exists, so the pool must exist on the first run (otherwise a second run adds sets and the AC1 fingerprint differs). No module that runs after it creates questions, so no question id moves; the seeded Tracking A sets now draw from the pool. Profile `poc` only; refused in production like every demo module.
 
 Not covered (no DSKP unit at Tingkatan 4 or 5, so a published row would break the publish gate): the other 21 active subjects (TI has DSKP units but no fact set was written for it). The battle lobby still lists them; quick-match for them answers 422 "Soalan tidak mencukupi.". Questions carry no `chapter_id` / `topic_id`, so practice chapter mode still finds no chapter questions. Practice sessions also need the BE-12 question source wiring (`PracticePorts.provideQuestions`) before they can draw from the bank.
 

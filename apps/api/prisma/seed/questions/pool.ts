@@ -14,8 +14,9 @@
  * - Owner: the first admin account (by role). Natural key `question_versions.number_label` = `SEED-POOL-<S>-<L>-<NN>`;
  *   an existing row is never updated, so a re-run inserts nothing. No randomness; time from ctx.clock.
  *
- * Runs after every other data module (just before `gamification` and `poc-profile`, which write no question rows), so the ids of the rows the earlier modules create
- * do not move. Production: refused like every demo module (the runner skips it without ALLOW_DEMO_SEED, and a direct
+ * Runs after `poc-performance` and BEFORE `spm-subject-configs` / `spm`: the SPM seed builds its Tracking A sets from the
+ * SPM pool once per subject, so the pool must exist on the first run or a re-run would add sets. No later module creates
+ * questions, so no question id of an earlier module moves. Production: refused like every demo module (the runner skips it without ALLOW_DEMO_SEED, and a direct
  * call throws).
  */
 import { QuestionPartSchema, type QuestionPart } from '@pp/contract'

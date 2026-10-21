@@ -42,6 +42,19 @@ describe('PoC question pool content (pure)', () => {
     }
   })
 
+  it('renders computed values with at most 2 decimal places', () => {
+    for (const s of poolSpecs()) {
+      const part = s.part as { options: { body: { ms: string } }[] }
+      for (const o of part.options) expect(o.body.ms, s.ref).not.toMatch(/\d\.\d{3,}/)
+    }
+  })
+
+  it("never offers 'pendek' as a wrong option for the antonym of 'tinggi'", () => {
+    const s = poolSpecs().find((x) => x.text === "Apakah antonim bagi perkataan 'tinggi'?")
+    const part = s?.part as { options: { body: { ms: string } }[] } | undefined
+    expect(part?.options.map((o) => o.body.ms)).not.toContain('pendek')
+  })
+
   it('spreads the key over A to D and the difficulty TP over 1 to 4 in each subject and level', () => {
     for (const s of POOL_SUBJECTS) {
       for (const l of POOL_LEVELS) {
@@ -156,6 +169,13 @@ describe('PoC question pool seed (database)', () => {
     const before = await count()
     await runSeeds([questionPoolSeed], { prisma: db.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
     expect(await count()).toBe(before)
+  })
+
+  it('runs before the spm seeds, which build their Tracking A sets from the SPM pool once per subject', () => {
+    const names = seedModules.map((m) => m.name)
+    expect(names.indexOf('questions-pool')).toBeGreaterThan(-1)
+    expect(names.indexOf('questions-pool')).toBeLessThan(names.indexOf('spm'))
+    expect(names.indexOf('questions-pool')).toBeLessThan(names.indexOf('spm-subject-configs'))
   })
 
   it('runs in the poc profile only and is refused in production', async () => {
