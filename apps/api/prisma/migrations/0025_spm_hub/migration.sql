@@ -1,7 +1,7 @@
--- 0034_spm_hub (BE-41, owner module M06): spm_subject_configs, spm_tracking_sets, spm_tracking_set_questions,
+-- 0025_spm_hub (BE-41, owner module M06): spm_subject_configs, spm_tracking_sets, spm_tracking_set_questions,
 -- spm_mock_exams, spm_mock_exam_items, duta_profiles (provisional owner, M24 is not built). Data model 3.13.
--- Renumbered 0025 -> 0034 at the batch-3 refresh (0026+ are applied on the base, 0033 is BE-45, 0024 is
--- never used); LEAD to confirm.
+-- Folder 0025 per the LEAD migration allocation (0025 is BE-41, 0033 is BE-45, 0034 is BE-47; 0024 is never
+-- used). It was briefly 0034 at the batch-3 refresh.
 -- Hand-written in the style of 0015: identity columns (GENERATED ALWAYS), CHECK constraints (enums are text +
 -- check), foreign keys to tables of other owners (subjects, users, questions) which the Prisma schema does not
 -- declare as relations (see spm.prisma).
