@@ -382,7 +382,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     plantEnum('coin_transactions.type', UNKNOWN_COIN_TYPE)
   }
   put('coin_transactions', coins)
-  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, type: 'harian', title: `Cabaran Contoh ${i + 1}` })))
+  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, type: 'harian', title: `Cabaran Contoh ${i + 1}`, criteria: 'Contoh' })))
   const cu: Row[] = pupils.filter((_, i) => i % 2 === 0).map((id, i) => {
     const ms = BASE_MS + (i % 60) * DAY + 5 * 60 * MIN
     return { challenge_id: (i % 5) + 1, user_id: id, progress: i % 10, completed_at: iso(ms), claimed_on: utcDate(ms), created_at: iso(ms), updated_at: iso(ms) }
@@ -412,7 +412,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   const pays = pupils.filter((_, i) => i % 10 === 5)
   put('payments', pays.map((id, i) => ({ id: i + 1, user_id: id, package_id: (i % 3) + 1, amount: 10 + (i % 3), status: i % 7 === 0 ? 'gagal' : 'berjaya', created_at: created(i), updated_at: created(i) })))
   put('invoices', pays.map((_, i) => ({ id: i + 1, payment_id: i + 1, amount: 10 + (i % 3), status: 'dibayar', created_at: created(i), updated_at: created(i) })))
-  put('exam_attempts', pupils.filter((_, i) => i % 5 === 0).map((id, i) => ({ id: i + 1, user_id: id, exam_paper_id: (i % 3) + 1, mode: 'latihan', score: i % 40, max_score: 40, section_scores: { a: i % 20, b: i % 20 }, section_selections: null, served_composition: null, created_at: created(i), updated_at: created(i) })))
+  put('exam_attempts', pupils.filter((_, i) => i % 5 === 0).map((id, i) => ({ id: i + 1, user_id: id, exam_paper_id: (i % 3) + 1, mode: 'latihan', status: 'selesai', score: i % 40, max_score: 40, section_scores: { a: i % 20, b: i % 20 }, section_selections: null, served_composition: null, created_at: created(i), updated_at: created(i) })))
 
   return { tables, planted }
 }
