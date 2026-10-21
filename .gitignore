@@ -65,3 +65,9 @@ apps/api/src/db/generated/
 
 # Local git worktrees created by agent sessions (never tracked)
 .claude/worktrees/
+
+# AM-10 dump pipeline: option files, env files and key files never enter git
+# (pp-anon*.key is already covered by *.key)
+.env.migration
+*.key
+*.cnf
