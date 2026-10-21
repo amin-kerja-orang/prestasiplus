@@ -138,6 +138,8 @@ export class PasswordResetService {
         await this.audit.record({
           action: ACCOUNT_AUDIT.RESET_DONE,
           actorUserId: user.id,
+          actorRole: issued.session.active.role,
+          scopeLevel: issued.session.active.scope.level,
           targetType: 'user',
           targetId: user.id,
           schoolId: user.schoolId,
