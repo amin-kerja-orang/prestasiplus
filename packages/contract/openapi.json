@@ -18306,7 +18306,8 @@
         "properties": {
           "q": {
             "type": "string",
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+            "maxLength": 100,
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
           }
         }
       },
@@ -18943,7 +18944,14 @@
             "minimum": 1
           },
           "userId": {
-            "$ref": "#/components/schemas/Id"
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+            "example": "1042"
           },
           "name": {
             "type": "string"
@@ -19151,7 +19159,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19179,7 +19194,14 @@
             "type": "object",
             "properties": {
               "id": {
-                "$ref": "#/components/schemas/Id"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "example": "1042"
               },
               "name": {
                 "type": "string"
@@ -19342,7 +19364,14 @@
               "type": "object",
               "properties": {
                 "userId": {
-                  "$ref": "#/components/schemas/Id"
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                  "example": "1042"
                 },
                 "name": {
                   "type": "string"
@@ -19541,7 +19570,8 @@
             "maxLength": 255
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 5000
           },
           "education_level_id": {
             "type": "string",
@@ -81182,10 +81212,11 @@
           {
             "schema": {
               "type": "string",
-              "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+              "maxLength": 100,
+              "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject)."
             },
             "required": false,
-            "description": "Name fragment, case-insensitive; from 2 trimmed characters.",
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject).",
             "name": "q",
             "in": "query"
           }
