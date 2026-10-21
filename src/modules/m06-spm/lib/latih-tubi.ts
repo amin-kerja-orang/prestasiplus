@@ -3,9 +3,12 @@
  * Difficulty buttons are bound to keys 2–5 of the site-wide 1–5 scale, as live (DV-M06-02 withdrawn).
  */
 
+import { isHttpMode } from '@/api/mode'
+
 import type { LatihTubiConfig, TargetType } from '../api'
 
-export type LevelKey = 10 | 11
+/** The mock uses the M03 ids 10 and 11; the real API keys `levelCounts` by its own level ids (BE-41). */
+export type LevelKey = number
 export type DifficultyKey = 2 | 3 | 4 | 5
 
 export interface DifficultyOption {
@@ -27,6 +30,26 @@ export const LEVEL_OPTIONS: readonly { key: LevelKey; label: string }[] = [
   { key: 11, label: 'Tingkatan 5' },
 ]
 
+const LEVEL_LABELS = ['Tingkatan 4', 'Tingkatan 5'] as const
+
+/**
+ * The level buttons of S4. Mock: the fixed 10 / 11. Http: the level ids the API sent in
+ * `levelCounts` (decimal strings), lowest first = Tingkatan 4, next = Tingkatan 5.
+ */
+export function levelOptions(config: LatihTubiConfig): readonly { key: LevelKey; label: string }[] {
+  if (!isHttpMode()) return LEVEL_OPTIONS
+  return Object.keys(config.levelCounts)
+    .filter((k) => /^[0-9]+$/.test(k))
+    .map(Number)
+    .sort((a, b) => a - b)
+    .slice(0, LEVEL_LABELS.length)
+    .map((key, i) => ({ key, label: LEVEL_LABELS[i] ?? '' }))
+}
+
+/** Pool size of one level; 0 when the level is absent (never undefined). */
+export const levelCount = (config: LatihTubiConfig, key: LevelKey): number =>
+  (config.levelCounts as Record<string, number | undefined>)[String(key)] ?? 0
+
 const TARGET_NAMES: Record<TargetType, string> = {
   spm: 'SPM',
   custom: 'Custom',
@@ -44,7 +67,10 @@ export function diffCount(
 ): number {
   const k = String(key) as '2' | '3' | '4' | '5'
   if (level === null) return config.difficultyStats[k] || 0
-  return config.difficultyByLevel[String(level) as '10' | '11'][k] || 0
+  const byLevel = (config.difficultyByLevel as Record<string, Record<string, number> | undefined>)[
+    String(level)
+  ]
+  return byLevel?.[k] || 0
 }
 
 /** `quizUrl()`: updated on every change. */
@@ -80,7 +106,7 @@ export function parseLatihTubiQuery(query: Record<string, unknown>): LatihTubiQu
   const difficulty = toInt(query.difficulty)
   return {
     count: toInt(query.count),
-    levelId: level === 10 || level === 11 ? level : null,
+    levelId: isHttpMode() ? level : level === 10 || level === 11 ? level : null,
     difficulty:
       difficulty !== null && difficulty >= 2 && difficulty <= 5
         ? (difficulty as DifficultyKey)

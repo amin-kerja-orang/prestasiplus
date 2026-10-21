@@ -12,6 +12,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router'
 import { useApi } from '@/composables'
 import { DsPage, DsLoadError } from '@/ds'
@@ -25,7 +26,7 @@ const SUBMIT_ERROR = 'Gagal menghantar jawapan. Sila cuba semula.'
 
 const route = useRoute()
 const router = useRouter()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => (isHttpMode() ? String(route.params.id) : Number(route.params.id)))
 const { data, error, loading, reload } = useApi((signal) => fetchMock(id.value, { signal }), id)
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)

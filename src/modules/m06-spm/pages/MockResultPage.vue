@@ -11,6 +11,7 @@ import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
 import { DsArt3D, DsPage, DsPanel, DsLoadError } from '@/ds'
@@ -24,7 +25,7 @@ const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => (isHttpMode() ? String(route.params.id) : Number(route.params.id)))
 const { data, error, loading, reload } = useApi(
   (signal) => fetchMockResult(id.value, { signal }),
   id,

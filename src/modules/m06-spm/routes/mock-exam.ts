@@ -1,5 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
+
+/** Mock ids are digits in the mock and opaque strings on the wire (BE-41, UD-1). */
+const ID_PATTERN = isHttpMode() ? ['[^/', ']+'].join('') : '[0-9]+'
+const mockPath = (suffix: string): string => '/spm-mock/:id(' + ID_PATTERN + ')' + suffix
+
 /**
  * M06 route fragment "mock-exam" (M06-T4): S11 `/spm-mock`, Q4 `/spm-mock/:id` (provisional, L-8),
  * S12 `/spm-mock/:id/result` and S13 `/pusat-ai/spm`. `layout: 'role'` (DV-07): the admin sees them
@@ -21,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/spm-mock/:id(\\d+)',
+    path: mockPath(''),
     name: 'm06.mock-run',
     component: () => import('../pages/MockRunPage.vue'),
     meta: {
@@ -34,7 +40,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/spm-mock/:id(\\d+)/result',
+    path: mockPath('/result'),
     name: 'm06.mock-result',
     component: () => import('../pages/MockResultPage.vue'),
     meta: {

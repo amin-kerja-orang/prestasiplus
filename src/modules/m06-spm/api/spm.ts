@@ -28,6 +28,9 @@ import type {
 interface Signal {
   signal?: AbortSignal
 }
+/** Mock ids are opaque strings on the wire (BE-41, UD-1); the mock keeps numbers. */
+export type MockId = number | string
+
 const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 
 /** #1 S1. */
@@ -70,15 +73,15 @@ export const createMock = (body: { subject: string; paperNumber: 1 | 2 }) =>
   api.post<{ id: number }>('/api/spm-mocks', { body })
 
 /** #14 Q4 (provisional). */
-export const fetchMock = (id: number, o: Signal = {}) =>
+export const fetchMock = (id: MockId, o: Signal = {}) =>
   api.get<MockExamView>(`/api/spm-mocks/${String(id)}`, withSignal(o))
 
 /** #15 Q4 submit. */
-export const submitMock = (id: number, answers: MockAnswerInput[]) =>
+export const submitMock = (id: MockId, answers: MockAnswerInput[]) =>
   api.post<MockResult>(`/api/spm-mocks/${String(id)}/submit`, { body: { answers } })
 
 /** #16 S12. */
-export const fetchMockResult = (id: number, o: Signal = {}) =>
+export const fetchMockResult = (id: MockId, o: Signal = {}) =>
   api.get<MockResult>(`/api/spm-mocks/${String(id)}/result`, withSignal(o))
 
 /** #17 S13; the live-shaped body is returned untouched. */

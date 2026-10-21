@@ -123,3 +123,22 @@ describe('createSpmQuizApi', () => {
     await expect(api.start({ mode: 'past_year' })).rejects.toThrow('boom')
   })
 })
+
+describe('http-mode level ids (BE-41)', () => {
+  it('derives level buttons from the keys the API sent and never crashes on unknown ones', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const { levelOptions, levelCount, diffCount: dc, parseLatihTubiQuery: pq } = await import(
+      '../lib/latih-tubi'
+    )
+    const cfg = { ...CONFIG, levelCounts: { '501': 3, '500': 7 }, difficultyByLevel: {} } as unknown as LatihTubiConfig
+    expect(levelOptions(cfg)).toEqual([
+      { key: 500, label: 'Tingkatan 4' },
+      { key: 501, label: 'Tingkatan 5' },
+    ])
+    expect(levelCount(cfg, 500)).toBe(7)
+    expect(levelCount(cfg, 999)).toBe(0)
+    expect(dc(cfg, 500, 2)).toBe(0)
+    expect(pq({ level: '500' }).levelId).toBe(500)
+    vi.unstubAllEnvs()
+  })
+})
