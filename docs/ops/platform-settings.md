@@ -2,7 +2,7 @@
 
 One checklist of every platform setting that the application depends on, per platform and environment. It points to the step-by-step guides instead of repeating them and never contains a secret value. Variable names are defined in `apps/api/src/common/config/env.schema.ts`, `.env.api.example`, `render.yaml` and `deploy/pages-direct/_worker.js`.
 
-Related: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md) (demo, step by step), [deploy-execution.md](deploy-execution.md), [deploy-staging.md](deploy-staging.md), [go-live-bijak-spm.md](go-live-bijak-spm.md) (section 3, production env), [api-runbook.md](api-runbook.md) (section 13, secret rotation), [db-password-rotation.md](db-password-rotation.md), the production VPS runbook (`docs/ops/production-vps.md`, AZ-09), threat model `docs/architecture/v2-threat-model.md` (rows 18 to 21).
+Related: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md) (demo, step by step), [deploy-execution.md](deploy-execution.md), [deploy-staging.md](deploy-staging.md), [go-live-bijak-spm.md](go-live-bijak-spm.md) (section 3, production env), [api-runbook.md](api-runbook.md) (section 13, secret rotation), [db-password-rotation.md](db-password-rotation.md), the production VPS runbook (`docs/ops/production-vps.md`, AZ-09; arrives with PR #116), threat model `docs/architecture/v2-threat-model.md` (rows 18 to 21).
 
 Conventions in the tables:
 
@@ -37,7 +37,7 @@ Direct upload of `dist/` plus `deploy/pages-direct/_worker.js`. Secrets and vari
 |---|---|---|---|---|---|
 | `EDGE_PROXY_SECRET` | Pages project, Settings, Variables and Secrets (encrypted secret), or `npx wrangler pages secret put EDGE_PROXY_SECRET --project-name <project>` | Random, at least 32 characters, identical to the API's `EDGE_PROXY_SECRET` (surrounding whitespace is ignored on both sides). | LEAD | After the first request through the edge the Render log has NO `ClientIp` warning. Two-network check: 6 wrong logins from a phone on mobile data, then the laptop on another network can still log in (demo-cloudflare-supabase.md, "Edge client IP"). | Mismatch or missing: the API ignores the header and puts every user in the socket-peer bucket (all pupils share one throttle bucket, early 429). A shorter value is a Render boot failure on the API side, not here. No data exposure. |
 | `API_ORIGIN` | Pages project, Variables (plain) | `https://<service>.onrender.com`, no path. Empty falls back to the default constant in `_worker.js` (the project's Render URL); a bad URL gives 500 `SERVER_ERROR`. | LEAD | `curl -fsS https://<project>.pages.dev/api/health` returns `status: ok`. | `/api` unreachable (502 or 500 JSON from the worker). |
-| Worker header handling | `deploy/pages-direct/_worker.js` (in the repo, nothing to set) | Strips client `x-forwarded-for`, `x-real-ip`, `cf-connecting-ip`, `true-client-ip`, `x-pp-client-ip`, `x-pp-edge-secret`, `forwarded`; rebuilds from `CF-Connecting-IP`; forces `cache-control: no-store` unless the API set one. Covered by `npm run test:edge` (`scripts/edge-worker.test.mjs`). | n/a | `npm run test:edge`; smoke test `scripts/demo-smoke.sh` step 1 (no-store) and step 5 (spoofed XFF still 429 on the 6th login). | A stale upload of an older worker lacks the secret header: same symptom as a secret mismatch. |
+| Worker header handling | `deploy/pages-direct/_worker.js` (in the repo, nothing to set) | Strips client `x-forwarded-for`, `x-real-ip`, `cf-connecting-ip`, `true-client-ip`, `x-pp-client-ip`, `x-pp-edge-secret`, `forwarded`, `x-forwarded-port`, `x-forwarded-ssl` (the exact list in `_worker.js`); rebuilds from `CF-Connecting-IP`; forces `cache-control: no-store` unless the API set one. Covered by `npm run test:edge` (`scripts/edge-worker.test.mjs`). | n/a | `npm run test:edge`; smoke test `scripts/demo-smoke.sh` step 1 (no-store) and step 5 (spoofed XFF still 429 on the 6th login). | A stale upload of an older worker lacks the secret header: same symptom as a secret mismatch. |
 | Cache rule for `/api/*` | Cloudflare dashboard, Caching, Cache Rules (defence in depth) | Rule: path starts with `/api/` then "Bypass cache". The worker already sets `no-store`, so this is a second layer. `*.pages.dev` may not expose zone cache rules at all. | LEAD: confirm | `curl -sI https://<project>.pages.dev/api/health` shows `cache-control: no-store` and no `cf-cache-status: HIT`. | A cached `/api` answer would serve one user's data to another. Treat any `HIT` on `/api` as an incident. |
 | Build variables | Build environment of the SPA (not a Pages setting when uploading `dist/`) | `VITE_API_MODE=http`; `VITE_API_BASE_URL` empty (same origin). Unset `VITE_API_MODE` silently falls back to the mock. | LEAD | Log in with a seeded demo account; the network tab shows `/api/...` calls. | The demo shows mock data, not the database. |
 | Custom domain, TLS | Pages project, Custom domains | `LEAD: confirm` (not in the repo). If a domain is added, update `PUBLIC_ORIGINS` and `PUBLIC_BASE_URL` on Render. | LEAD | Browser opens the domain over HTTPS. | Cookies and QR join links point at the wrong origin. |
@@ -66,7 +66,7 @@ Defined in `render.yaml` (free plan, Singapore, Docker). Every `sync: false` val
 | `PUBLIC_ORIGINS` | Dashboard | Comma-separated web origins allowed in article and banner image URLs (the API origin is always allowed): the Pages origin. | LEAD | An article with an image from the Pages origin saves. | Image URL validation rejects valid images. |
 | `ALLOW_DEMO_SEED` | `render.yaml` | `false` on the running API (the seed is a one-off from a laptop; the running API never seeds). Only the laptop shell runs the seed with `true`, never saved on Render. | LEAD | Dashboard shows `false`. | `true` on a public service invites a re-seed with published demo credentials. |
 | `BIJAK_POC_QUESTIONS` | `render.yaml` | `true` for the demo (the demo papers place PoC questions). `false` in production. | LEAD | A demo Bijak paper shows its questions. | `false` on the demo: PoC ids are refused, papers look empty. `true` in production serves PoC questions to real pupils. |
-| `SEED_DEMO_PASSWORD_HASH` | Laptop shell only, at seed time (not a Render variable) | An argon2id PHC string used as the password hash of every demo account. Set it before the first seed on any public environment; unset hashes the published dev password `Demo1234`. An invalid value fails the seed without printing it. Existing accounts keep their hash. | LEAD | Log in as a demo account with the published dev password: it must FAIL. | Anyone can log in as the demo admin. |
+| `SEED_DEMO_PASSWORD_HASH` | Laptop shell only, at seed time (not a Render variable) | An argon2id PHC string used as the password hash of every demo account. Set it before the first seed on any public environment; unset hashes the published dev password (named in demo-reseed.md). An invalid value fails the seed without printing it. Existing accounts keep their hash. | LEAD | Log in as a demo account with the published dev password: it must FAIL. | Anyone can log in as the demo admin. |
 | Throttles `THROTTLE_*` | Dashboard (plain) | See 2.5 below. | LEAD | See 2.5. | See 2.5. |
 | `METRICS_ENABLED` | Dashboard (optional) | `true` (default) is fine: in production `/api/metrics` needs an admin session unless the caller's peer is in `METRICS_INTERNAL_CIDRS`. `false` makes it answer 404. | LEAD | Anonymous `curl -s -o /dev/null -w '%{http_code}' https://<project>.pages.dev/api/metrics` is not 200. | Metrics readable by anyone (only if a CIDR is too wide). |
 | `METRICS_INTERNAL_CIDRS` | Dashboard (optional) | Leave unset on Render: the direct peer is a Render proxy address, so a CIDR allow-list is meaningless there. | LEAD | Anonymous request to `/api/metrics` is refused. | A broad CIDR would let any proxy-routed request read metrics. |
@@ -83,6 +83,8 @@ Defined in `render.yaml` (free plan, Singapore, Docker). Every `sync: false` val
 | SSL mode | Project Settings, Database, SSL Configuration | Runtime: `sslmode=verify-full&sslrootcert=...` (node-postgres) or `no-verify` as a documented fallback. Laptop Prisma migrate: `sslmode=require`. Laptop seed: `no-verify`. Never `require` for the runtime (node-postgres treats it as verify). "Enforce SSL" `LEAD: confirm` is on. | LEAD | Boot logs no TLS error. | `self-signed certificate in certificate chain`, boot failure or `db: down`. |
 | Data API lockdown | Supabase SQL editor, run `scripts/supabase/lockdown-data-api.sql` once after the migrations, again after any re-migration | Revokes `anon`, `authenticated`, `service_role` rights on `public` (the tables have no Row Level Security). The API connects as the `postgres` pooler role and is unaffected. Idempotent. | LEAD | As the anon key, an unauthenticated REST read of a table (`curl` with the project's public key) is refused (permission denied). Do the check from the laptop; never paste the key into the repo. | Pupil data readable through the public Data API. Treat as a breach. |
 | Database password | Project Settings, Database | Alphanumeric random, stored only as part of `DATABASE_URL`. Rotation: [db-password-rotation.md](db-password-rotation.md) section 1. | LEAD | `/api/ready` after rotation. | API cannot connect. |
+| Data API exposure | Project Settings, API (Data API) | Defence in depth: turn the Data API off, or remove `public` from the exposed schemas (the app never uses it). `LEAD: confirm` the UI wording. | LEAD: confirm | The REST endpoint with the public key returns an error for `public` tables. | Data API stays reachable if the revoke SQL is ever skipped after a re-migration. |
+| Row Level Security | SQL editor (not in the repo) | Enable RLS on every `public` table with no policies (deny-all for `anon` and `authenticated`); the API's owner role bypasses it. `LEAD: confirm` this is applied; the repo has only the revoke SQL, and new tables from later migrations need it again. | LEAD: confirm | `select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity;` returns no rows. | A re-grant by Supabase defaults would expose a table. |
 | Pool size | Project, Connect | Free tier session pool is about 15 connections per role; the API's pg pool (10) fits one instance only. | LEAD: confirm | Supabase dashboard, connections graph. | `too many clients` if a second API instance or a long laptop script runs. |
 | Backups | Project, Database, Backups | Free plan has no point-in-time restore. Take a manual `pg_dump` before any delta or reseed (demo-cloudflare-supabase.md). `LEAD: confirm` plan features. | LEAD | A dump file restores into a scratch database. | No recovery point after a bad migration. |
 | Pausing | Free plan | A free project pauses after a week of inactivity. `LEAD: confirm` it is active before 23 Oct. | LEAD | Dashboard shows "Active". | The API shows `db: down`. |
@@ -91,7 +93,7 @@ Defined in `render.yaml` (free plan, Singapore, Docker). Every `sync: false` val
 
 1. Pages secrets or variables, then upload a new deployment.
 2. Render environment variables (a save triggers a restart or redeploy), wait for `API listening on port ...`.
-3. Smoke test: `BASE_URL=https://<project>.pages.dev DEMO_PASSWORD='<demo password>' bash scripts/demo-smoke.sh`.
+3. Smoke test: `BASE_URL=https://<project>.pages.dev bash scripts/demo-smoke.sh`, after `read -rs DEMO_PASSWORD; export DEMO_PASSWORD` in the same shell (the prompt does not echo and keeps the value out of history).
 4. Edge secret changes follow section 3 below.
 
 ### 2.5 Demo throttle values (23 Oct demo)
@@ -135,7 +137,7 @@ Cadence: every 90 days (api-runbook.md section 13) and immediately after a suspe
 
 ## 4. Production environment (owner's VPS, docker compose)
 
-Details, files and hardening are in the production VPS runbook (`docs/ops/production-vps.md`, AZ-09). The settings below are the application-side rules that runbook must satisfy; the `LEAD: confirm` rows are decided there.
+Details, files and hardening are in the production VPS runbook (`docs/ops/production-vps.md`, AZ-09; arrives with PR #116). The settings below are the application-side rules that runbook must satisfy; the `LEAD: confirm` rows are decided there.
 
 ### 4.1 `.env.api` (git-ignored, copied from `.env.api.example`)
 
@@ -171,6 +173,15 @@ Details, files and hardening are in the production VPS runbook (`docs/ops/produc
 | Instance count | `api` runs as ONE container. | LEAD | `docker compose ps api` lists one. | Per-process rate limits split (threat model row 18). |
 | Backups | Daily `npm run db:backup`, monthly restore drill (db-backup.md); alert on a non-zero exit. | LEAD | Newest `pp-backup-*.dump` is under a day old. | No recovery point. |
 | Uptime and alerts | External check on `/api/ready` through the public domain; account `LEAD: confirm` (api-runbook.md section 11). | LEAD | Test alert received. | Outage unnoticed. |
+
+### 4.3 HSTS (HTTP Strict Transport Security)
+
+Not set in `docker/frontend/nginx.conf` today (`LEAD: confirm` with a header check). Ramp it up; a wrong HSTS value is hard to undo because browsers cache it.
+
+| Where | Setting | Rule | Verify |
+|---|---|---|---|
+| Production nginx (HTTPS server block, AZ-09) | `add_header Strict-Transport-Security "max-age=300" always;` | Ramp: 5 minutes, then 1 day (86400), 1 week (604800), then 6 months (15552000) once every subdomain serves HTTPS. Add `includeSubDomains` only after checking all subdomains. Do NOT add `preload` until the value has been stable for months and the lead agrees (preload is effectively permanent). | `curl -sI https://<site>/ \| grep -i strict-transport` |
+| Demo, Cloudflare | Zone SSL/TLS, Edge Certificates, HSTS (custom domain only); `*.pages.dev` already sends HSTS | Same ramp, same no-preload rule. `LEAD: confirm` if a custom domain is used. | Same `curl -sI`. |
 
 ## 5. Pre-demo checklist (23 Oct)
 

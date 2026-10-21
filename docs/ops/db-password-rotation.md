@@ -14,12 +14,12 @@ Common rules:
 
 Who uses the password: the Render service (`DATABASE_URL`), and any laptop shell used for migrations, the seed or `pg_dump` (their `DATABASE_URL` is typed per session, not stored).
 
-Supabase has one `postgres` login behind the pooler (user `postgres.<PROJECT_REF>`), and the API owns every table as that role, so a second role would need ownership transfers and a code review; it is not worth it for the demo. The procedure therefore has a short window (the Render restart) rather than zero downtime. Existing pool connections usually stay up until Render restarts the process, so users mostly see nothing, but plan for about 1 to 3 minutes of errors.
+Supabase has one `postgres` login behind the pooler (user `postgres.<PROJECT_REF>`), and the API owns every table as that role, so a second role would need ownership transfers and a code review; it is not worth it for the demo. The procedure therefore has a short window (the Render restart) rather than zero downtime. Existing pool connections usually stay up until Render restarts the process, so users mostly see nothing, but plan for minutes of errors (a Render rebuild can take about 6 minutes; `LEAD: confirm` the window from the last deploy time).
 
 Steps:
 
 1. Confirm with the lead and pick a quiet time. Open the Render service Environment page and the Supabase Project Settings, Database page in two tabs.
-2. Backup: manual `pg_dump` from the laptop (the URL typed into the prompt, not the command line, as in demo-cloudflare-supabase.md "Backups").
+2. Backup: manual `pg_dump` from the laptop (the URL typed into the prompt, not the command line, as in demo-cloudflare-supabase.md section 9.2, "Laptop: put the DB URL in this shell only").
 3. Generate the new password (above) and store it in the password manager.
 4. Supabase: Project Settings, Database, reset the database password, and paste the new value into the dialog. The old password stops working for new connections immediately. `LEAD: confirm` the exact UI wording; it is not in the repo.
 5. Render: edit `DATABASE_URL` (secret), replacing only the password inside the URL. Keep the host, user `postgres.<PROJECT_REF>`, port 5432 (session pooler) and the `?sslmode=...&sslrootcert=...` suffix unchanged. Save; Render restarts or redeploys. Wait for "Live" and `API listening on port ...`.
@@ -33,9 +33,9 @@ Rollback (if step 5 or 6 fails): the old password is gone, so there is no going 
 
 ## 2. Production (VPS, docker compose, Postgres 16)
 
-Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. **Use the same `-f` files and env file as the deploy for every `docker compose` command below.** For production (AZ-09 pack) that is `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>`; staging uses `-f compose.yaml -f compose.staging.yaml`. The examples below write the short form `docker compose ...` for readability; without the right files compose targets a different project or config. The database port is not published; psql runs inside the `db` container.
+Applies once the production stack from the production VPS runbook (`docs/ops/production-vps.md`, AZ-09; arrives with PR #116) exists. Services: `db` (Postgres 16, volume `pgdata`, `.env.db`), `api` and `migrate` (read `.env.api`), backup job (`scripts/db-backup.mjs`). Commands run on the VPS from the compose directory. **Use the same `-f` files and env file as the deploy for every `docker compose` command below.** For production (AZ-09 pack) that is `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>`; staging uses `-f compose.yaml -f compose.staging.yaml`. The examples below write the short form `docker compose ...` for readability; without the right files compose targets a different project or config. The database port is not published; psql runs inside the `db` container.
 
-Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail, which is seconds.
+Zero or near-zero downtime: changing the role password does not drop existing connections, so the API keeps serving on its old pool until it restarts with the new `DATABASE_URL`. Only a connection opened between the `ALTER ROLE` and the api restart can fail. Prepare the new `.env.api` first (step 4 edits, with the new password already known from step 2) and run steps 3 and 5 back to back; the window is still minutes, not seconds, because the api restart and its readiness check take time.
 
 Steps:
 
@@ -52,7 +52,7 @@ Steps:
    ```
 
    Use the interactive `\password` only. Do not use `ALTER ROLE ... PASSWORD 'literal'` typed on a command line or pasted into a script: the literal lands in shell history and, with `log_statement` enabled, in the server log. `\password` sends a pre-hashed value. A non-interactive variant (a psql script on stdin using `ALTER ROLE <role> PASSWORD :'pw'` with the value read from a mode-600 file inside the container) was not exercised from the repo; `LEAD: confirm` before using it. Note that `psql` inside the container connects through the local socket, which the official image trusts, so no current password is needed.
-4. Update the secret files consistently (edit with an editor, not `echo >>`):
+4. Update the secret files consistently (edit with an editor, not `echo >>`). Order: do this edit BEFORE step 3 (keep the editor open or the file staged), then run step 3 (`\password`) and step 5 (`up -d api`) back to back:
    - `.env.api`: `DATABASE_URL=postgresql://<USER>:<NEW PASSWORD>@db:5432/<DBNAME>` (this is what `api` and the `migrate` job read).
    - `.env.db`: `POSTGRES_PASSWORD=<NEW PASSWORD>`. Note: this value only matters at the FIRST initialisation of an empty `pgdata` volume; the live role changes only by `ALTER ROLE`/`\password`. Keeping it in sync matters for a future re-init, and because `db` containers and the backup script read `POSTGRES_PASSWORD` from the container environment.
    - Check modes: `chmod 600 .env.api .env.db`.
