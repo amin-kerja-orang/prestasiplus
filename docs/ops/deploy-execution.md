@@ -53,7 +53,9 @@ Auto-Deploy off. Environment (dashboard):
 | `FILE_STORAGE_DIR` | leave unset | required in production, absolute; the Dockerfile already sets `/var/lib/pretasiplus/files` |
 | `COOKIE_SECURE` | `true` | in Blueprint |
 | `COOKIE_DOMAIN` | empty / unset | host-only cookie on the Pages domain |
-| `TRUST_PROXY_HOPS` | `2` | in Blueprint; verify after deploy (section 6) |
+| `TRUST_PROXY_HOPS` | `2` | in Blueprint; still governs `req.secure`; verify after deploy (section 6) |
+| `CLIENT_IP_HEADER` | `x-pp-client-ip` | go-live fix: the API keys the throttle on this edge header. Unset = old behaviour (TRUST_PROXY_HOPS) |
+| `EDGE_PROXY_SECRET` | secret, 32+ chars (`node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`) | same value as the Pages secret; without a matching `X-PP-Edge-Secret` the API uses the socket peer |
 | `PUBLIC_BASE_URL` | `https://<project>.pages.dev` | set in step 5 once the Pages domain is known |
 | `PUBLIC_ORIGINS` | `https://<project>.pages.dev` | same; used for article/banner image URLs |
 | `ALLOW_DEMO_SEED` | `true` (optional) | staging only. The API runtime ignores it; the seed is run from the laptop in step 1.4 |
@@ -85,6 +87,7 @@ Environment variables (Production and Preview; the first five are build time, `A
 | `VITE_TEST_HOOKS` | `false` |
 | `VITE_PROTOTYPE_SCOPE` | `on` (the compose default for the real-API build; see open item) |
 | `API_ORIGIN` | `https://<service>.onrender.com` (no trailing path) |
+| `EDGE_PROXY_SECRET` | **encrypted secret**, same value as on Render (runtime; sent as `X-PP-Edge-Secret`). Never a `VITE_*` value. |
 
 Why this build command: `npm run build` is `vue-tsc -b && vite build --mode demo && node scripts/check-demo-bundle.mjs`. `--mode demo` loads `.env.demo` (`VITE_API_MODE=mock`), defers the mock boot (`bootstrap.ts` checks `MODE === 'demo'`) and applies the mock-bundle size budget, so it produces the mock build. The http build uses `--mode production` (there is no `.env.production`, so everything comes from the dashboard vars, and with `VITE_API_MODE` unset the app silently falls back to mock: always set it) and skips the demo guard. This mirrors `compose.http.yaml` (`BUILD_MODE=production`, `VITE_API_MODE=http`). `vue-tsc` is not run on Pages: CI already type-checks (`npm run typecheck`), and it would only add build time (not measured here). Run `npm run typecheck` and the bundle test hooks check in CI before tagging the deploy SHA.
 
@@ -115,6 +118,10 @@ Data stays in the browser.
 - [ ] Upload under the limit works; over 22 MB gets a 413 JSON error. (Files are lost on Render restart.)
 
 ## 6. Verify TRUST_PROXY_HOPS=2
+> **User action - deploy needs G6 confirmation.** Nothing here is applied by the agent. Env names and rollout order: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md), section "Edge client IP + no-store (go-live fix)".
+
+With `CLIENT_IP_HEADER` and `EDGE_PROXY_SECRET` set (Pages first, then Render) the throttle key is the edge-supplied `X-PP-Client-IP`, not the XFF hop count; the check below still applies and `TRUST_PROXY_HOPS=2` remains for `req.secure`. Rollback: remove `CLIENT_IP_HEADER`.
+
 The chain is: Function sets `X-Forwarded-For` to the client, Render appends the Function's egress IP. Hop 2 should give
 the client address. Test: from two different networks, fail login 5+ times within a minute for a throwaway identifier
 (`THROTTLE_LOGIN_PER_MINUTE` default 5) and confirm the second network is not throttled by the first, and that Render
