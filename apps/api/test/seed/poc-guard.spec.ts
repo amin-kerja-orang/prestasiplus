@@ -46,7 +46,9 @@ describe('AC5 no real personal data in the seed', () => {
       if (/\b\d{6}-\d{2}-\d{4}\b/.test(text)) bad.push(`${f.slice(SEED_DIR.length)}: IC-like`)
       for (const m of text.matchAll(/(?<![\d.])(?:\+?60|0)1\d[- ]?\d{7,8}(?!\d)/g)) {
         // The support config's placeholder 60100000000 is all zeros after the prefix: not a real number.
-        if (!/^(?:\+?60|0)10+$/.test(m[0].replace(/[- ]/g, ''))) bad.push(`${f.slice(SEED_DIR.length)}: phone-like`)
+        // The ascending digit run 0123456789 (an alphabet constant, e.g. the games room-code alphabet) is not one either.
+        const digits = m[0].replace(/[- ]/g, '')
+        if (!/^(?:\+?60|0)10+$/.test(digits) && !'0123456789'.includes(digits)) bad.push(`${f.slice(SEED_DIR.length)}: phone-like`)
       }
     }
     expect(bad).toEqual([])
