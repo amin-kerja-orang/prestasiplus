@@ -129,7 +129,11 @@ function bmD3(): PoolItem[] {
     ['kucing', 'seekor'], ['kereta', 'sebuah'], ['pensel', 'sebatang'], ['kertas', 'sehelai'], ['bola', 'sebiji'], ['buku', 'sebuah'],
     ['burung', 'seekor'], ['pokok', 'sepohon'], ['baju', 'sehelai'], ['epal', 'sebiji'], ['jalan', 'sebatang'], ['rumah', 'sebuah'],
   ]
-  out.push(...oneWay(counters, (n) => `Apakah penjodoh bilangan yang sesuai bagi '${n}'?`, ['seekor', 'sebuah', 'sebatang', 'sehelai', 'sebiji', 'sepohon']))
+  const asks = oneWay(counters, (n) => `Apakah penjodoh bilangan yang sesuai bagi '${n}'?`, ['seekor', 'sebuah', 'sebatang', 'sehelai', 'sebiji', 'sepohon'])
+  // 'sebatang pokok' is also acceptable BM, so 'pokok' gets a fixed distractor set without 'sebatang' (key stays at the same slot).
+  const pokok = counters.findIndex(([n]) => n === 'pokok')
+  asks[pokok] = item(`Apakah penjodoh bilangan yang sesuai bagi 'pokok'?`, 'sepohon', ['seekor', 'sebuah', 'sehelai'], pokok)
+  out.push(...asks)
   const genders: [string, string][] = [
     ['lelaki', 'perempuan'], ['abang', 'kakak'], ['bapa', 'ibu'], ['datuk', 'nenek'], ['raja', 'permaisuri'], ['putera', 'puteri'],
   ]
@@ -190,7 +194,7 @@ function sciD1(): PoolItem[] {
   const out: PoolItem[] = []
   const senses: [string, string][] = [['mata', 'melihat'], ['telinga', 'mendengar'], ['hidung', 'menghidu'], ['lidah', 'merasa'], ['kulit', 'menyentuh']]
   out.push(...table(senses, (a) => `Apakah fungsi deria '${a}'?`, (b) => `Organ deria yang digunakan untuk ${b} ialah`))
-  const moves: [string, string][] = [['ikan', 'berenang'], ['burung', 'terbang'], ['ular', 'menjalar'], ['katak', 'melompat'], ['siput', 'merayap'], ['kucing', 'berjalan']]
+  const moves: [string, string][] = [['ikan', 'berenang'], ['burung', 'terbang'], ['ular', 'menjalar'], ['arnab', 'melompat'], ['siput', 'merayap'], ['kucing', 'berjalan']]
   out.push(...table(moves, (a) => `Bagaimanakah ${a} bergerak?`, (b) => `Haiwan manakah yang bergerak dengan cara ${b}?`, 1))
   out.push(item('Haiwan manakah yang bertelur?', 'ayam', ['kucing', 'lembu', 'kambing'], 2))
   out.push(item('Apakah yang diperlukan oleh tumbuhan untuk hidup?', 'air', ['plastik', 'besi', 'kaca'], 3))
@@ -237,7 +241,7 @@ function sciD4(): PoolItem[] {
     ['kuprum', 'konduktor elektrik'], ['plastik', 'penebat elektrik'], ['besi', 'konduktor elektrik'], ['getah', 'penebat elektrik'],
     ['aluminium', 'konduktor elektrik'], ['kayu kering', 'penebat elektrik'], ['perak', 'konduktor elektrik'], ['kaca', 'penebat elektrik'],
   ]
-  out.push(...oneWay(materials, (a) => `${a.charAt(0).toUpperCase()}${a.slice(1)} ialah bahan`, ['konduktor elektrik', 'penebat elektrik', 'bahan api', 'bahan magnet'], 1))
+  out.push(...oneWay(materials, (a) => `${a.charAt(0).toUpperCase()}${a.slice(1)} ialah bahan`, ['konduktor elektrik', 'penebat elektrik', 'bahan cecair', 'bahan gas'], 1))
   return out
 }
 
@@ -319,6 +323,8 @@ function piD2(): PoolItem[] {
     ['Izrail', 'mencabut nyawa'], ['Raqib', 'mencatat amal baik'], ['Atid', 'mencatat amal buruk'],
   ]
   out.push(...table(angels, (a) => `Apakah tugas malaikat ${a}?`, (b) => `Malaikat yang bertugas ${b} ialah`, 2))
+  // 5 + 10 + 12 = 27 items are defined; the bank takes the first PRIMARY_PER_LEVEL, so the last three (backward items of
+  // the last three angels) are spare and intentionally not seeded.
   return out
 }
 
@@ -347,7 +353,7 @@ function pmD1(): PoolItem[] {
   const meanings: [string, string][] = [
     ['baik hati', 'suka menolong'], ['jujur', 'bercakap benar'], ['rajin', 'tekun berusaha'], ['hormat', 'menghargai orang lain'],
     ['berterima kasih', 'menghargai pemberian'], ['bertanggungjawab', 'menjalankan tugas'], ['bekerjasama', 'membantu dalam kumpulan'],
-    ['sederhana', 'tidak berlebihan'], ['berani', 'tidak takut kebenaran'], ['kasih sayang', 'menyayangi keluarga'], ['adil', 'tidak berat sebelah'],
+    ['sederhana', 'tidak berlebihan'], ['berani', 'berani bercakap benar'], ['kasih sayang', 'menyayangi keluarga'], ['adil', 'tidak berat sebelah'],
     ['bersih', 'menjaga kebersihan'],
   ]
   return table(meanings, (a) => `Apakah maksud nilai '${a}'?`, (b) => `Nilai yang bermaksud '${b}' ialah`)
@@ -357,8 +363,8 @@ function pmD2(): PoolItem[] {
   const acts: [string, string][] = [
     ['membantu rakan yang terjatuh', 'baik hati'], ['memulangkan dompet yang dijumpai', 'jujur'], ['menyiapkan kerja rumah setiap hari', 'rajin'],
     ['memberi salam kepada guru', 'hormat'], ['mengucapkan terima kasih apabila diberi hadiah', 'berterima kasih'], ['menyiram pokok yang menjadi tugasnya', 'bertanggungjawab'],
-    ['bergotong-royong membersihkan kelas', 'bekerjasama'], ['berbelanja mengikut keperluan', 'sederhana'], ['mengaku kesilapan sendiri', 'berani'],
-    ['menjaga adik yang sakit', 'kasih sayang'], ['membahagikan kek sama banyak', 'adil'], ['membuang sampah ke dalam tong', 'bersih'],
+    ['bergotong-royong membersihkan kelas', 'bekerjasama'], ['berbelanja mengikut keperluan', 'sederhana'], ['menjaga adik yang sakit', 'kasih sayang'],
+    ['mengaku kesilapan sendiri', 'berani'], ['membahagikan kek sama banyak', 'adil'], ['membuang sampah ke dalam tong', 'bersih'],
   ]
   return table(acts, (a) => `Perbuatan ${a} menunjukkan nilai`, (b) => `Perbuatan manakah yang menunjukkan nilai ${b}?`)
 }
@@ -406,7 +412,7 @@ function psvD2(): PoolItem[] {
   const out: PoolItem[] = []
   const media: [string, string][] = [
     ['catan', 'cat air'], ['kolaj', 'gam'], ['lukisan', 'pensel'], ['cetakan', 'blok cetakan'],
-    ['resis', 'krayon minyak'], ['origami', 'kertas'], ['arca', 'tanah liat'], ['gosokan', 'krayon'],
+    ['resis', 'krayon minyak'], ['origami', 'kertas'], ['arca', 'tanah liat'], ['gosokan', 'permukaan bertekstur'],
   ]
   out.push(...table(media, (a) => `Bahan atau alat utama bagi aktiviti ${a} ialah`, (b) => `Aktiviti seni yang menggunakan ${b} sebagai bahan utama ialah`))
   const elements: [string, string][] = [['garisan', 'titik yang bersambung'], ['rupa', 'kawasan tertutup'], ['jalinan', 'kesan permukaan'], ['ruang', 'kawasan sekitar objek']]
