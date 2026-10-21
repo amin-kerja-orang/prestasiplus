@@ -257,7 +257,7 @@
       "classroom_id": "keep",
       "type": "keep",
       "title": "scrub-text",
-      "criteria": "keep"
+      "criteria": "scrub-json"
     },
     "challenge_user": {
       "challenge_id": "keep",
