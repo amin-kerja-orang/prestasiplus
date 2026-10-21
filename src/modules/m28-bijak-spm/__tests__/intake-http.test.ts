@@ -4,7 +4,10 @@ import { ApiClient, ApiError } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
 import { createHttpBijakAdminServer, uploadError } from '../server/http-admin'
+import { IntakeBatchCreateSchema } from '@pp/contract'
+
 import {
+  batchCreateToWire,
   batchFromWire,
   pagesFromWire,
   paperTypeFromWire,
@@ -79,6 +82,18 @@ describe('intake wire mappers', () => {
     expect(paperTypeToWire('Percubaan SPM')).toBe('trial')
     expect(paperTypeToWire('x')).toBe('other')
     expect(paperTypeFromWire('exercise_book')).toBe('Buku Latihan')
+  })
+  it('builds the POST /intake/batches body the contract accepts (78-10)', () => {
+    const meta = { subject: 'MAT' as const, kertas: 2 as const, year: 2025, paperType: 'Percubaan SPM', source: ' Sekolah ', copyright: 'sendiri', notes: '  Nota  ' }
+    const body = batchCreateToWire(meta)
+    expect(body).toEqual({ paperType: 'trial', subject: 'MAT', kertas: 2, year: 2025, source: ' Sekolah ', copyright: 'sendiri', notes: 'Nota', declaration: true })
+    expect(IntakeBatchCreateSchema.safeParse(body).success).toBe(true)
+    // blank notes are left out; an unchosen copyright is sent as it is, so the server's 422 names the field
+    const blank = batchCreateToWire({ ...meta, notes: '   ', copyright: '' })
+    expect(blank).not.toHaveProperty('notes')
+    const parsed = IntakeBatchCreateSchema.safeParse(blank)
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues.map((i) => i.path.join('.'))).toEqual(['copyright'])
   })
   it('maps a summary', () => {
     const s = summaryFromWire(summary, () => 'Matematik')
