@@ -176,9 +176,9 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
 
   describe('a migrated header without a class (AZ-31, Q4 A, migration 0042)', () => {
     const at = new Date(NOW)
+    let n = 0
     const header = (over: Partial<Parameters<typeof insertSet>[1]> = {}) =>
       insertSet(t, { teacherId, classroomId: null, title: 'Set Migrasi Tanpa Kelas', status: 'draft', needsRebuild: true, legacy: { source: 'cloud', id: `qs-${String(++n)}` }, ...over })
-    let n = 0
 
     it('the database accepts a NULL class only for a migrated header that needs a rebuild', async () => {
       const ok = await header()

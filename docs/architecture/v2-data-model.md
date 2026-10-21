@@ -2452,7 +2452,7 @@ Teacher question sets / papers.
 | Table | Column | Type | Null | Default | Notes |
 |---|---|---|---|---|---|
 | `question_sets` | teacher_id | bigint | Y | | FK -> users.id |
-| | classroom_id | bigint | N | | FK -> classrooms.id (the mock keeps `classroomKind` + `classroomId`; one FK now). NULL only for a migrated header (`legacy_source` set, `needs_rebuild` true; Q4 A, migration 0042, check `ck_question_sets_classroom_or_migrated`): never listed to a student or served until rebuilt into a class (AZ-31) |
+| | classroom_id | bigint | N | | FK -> classrooms.id (the mock keeps `classroomKind` + `classroomId`; one FK now). **Nullable since migration 0042** (the only nullable `classroom_id` in this table's history; v2 rows always have a class): NULL only for a migrated header (`legacy_source` set, `needs_rebuild` true; Q4 A, migration 0042, check `ck_question_sets_classroom_or_migrated`): never listed to a student or served until rebuilt into a class (AZ-31) |
 | | subject_id | bigint | N | | FK -> subjects.id |
 | | title | text | Y | | |
 | | description | text | N | | |
