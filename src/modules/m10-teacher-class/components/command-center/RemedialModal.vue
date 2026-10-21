@@ -8,6 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, reactive, watch } from 'vue'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { confirmNative, useApi } from '@/composables'
 import { DsDrillTable } from '@/ds'
 
@@ -19,13 +20,15 @@ import {
 import type { CcExistingRemedial, CcWeakStudent } from '../../api/command-center-types'
 import CcDialog from './CcDialog.vue'
 import { useOpenTab } from './composables'
-import { plain, remedialPath, studentPath } from './copy'
+import { plain, remedialPath, REMEDIAL_UNAVAILABLE, studentPath } from './copy'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcWeakStudent]: CcWeakStudent[K] }
 
 defineEmits<{ close: [] }>()
 
+const unavailable = (err: unknown): boolean =>
+  isHttpMode() && isApiError(err) && err.status === 404
 const { data, error } = useApi((signal) => fetchRemedialScan({ signal }))
 const openTab = useOpenTab()
 
@@ -91,7 +94,7 @@ async function generate(s: CcWeakStudent, subject: string) {
     if (res.quizId) st.made[subject] = { quizId: res.quizId, total: res.totalQuestions }
     else st.failed[subject] = 'Gagal'
   } catch (err) {
-    st.failed[subject] = isApiError(err) ? err.message || 'Gagal' : 'Ralat'
+    st.failed[subject] = unavailable(err) ? REMEDIAL_UNAVAILABLE : isApiError(err) ? err.message || 'Gagal' : 'Ralat'
   } finally {
     st.busy[subject] = false
   }
@@ -109,7 +112,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
     st.cancelled = true
     st.cancelText = 'Dibatalkan — boleh jana semula'
   } catch (err) {
-    st.cancelText = isApiError(err) ? 'Gagal — cuba lagi' : 'Ralat — cuba lagi'
+    st.cancelText = unavailable(err) ? REMEDIAL_UNAVAILABLE : isApiError(err) ? 'Gagal — cuba lagi' : 'Ralat — cuba lagi'
   } finally {
     st.cancelling = false
   }
@@ -124,7 +127,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
     @close="$emit('close')"
   >
     <p v-if="error" class="text-body text-error" data-testid="cc-remedial-error">
-      Ralat: {{ error.message }}
+      {{ unavailable(error) ? REMEDIAL_UNAVAILABLE : `Ralat: ${error.message}` }}
     </p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Mengimbas topik lemah pelajar...

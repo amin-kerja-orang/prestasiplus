@@ -33,37 +33,37 @@ const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 export const ALL_SESSIONS_RANGE = { start: '2020-01-01', end: '2030-12-31' } as const
 
 /** #6 `GET /api/command-center/school/{id}` (S4). */
-export const fetchCcSchool = (schoolId: number, o: Signal = {}) =>
+export const fetchCcSchool = (schoolId: number | string, o: Signal = {}) =>
   api.get<CcSchool>(`/api/command-center/school/${String(schoolId)}`, withSignal(o))
 
 /** #7 `GET /api/command-center/school/{sid}/teacher/{uid}` (S5). */
-export const fetchCcTeacher = (schoolId: number, userId: number, o: Signal = {}) =>
+export const fetchCcTeacher = (schoolId: number | string, userId: number | string, o: Signal = {}) =>
   api.get<CcTeacher>(
     `/api/command-center/school/${String(schoolId)}/teacher/${String(userId)}`,
     withSignal(o),
   )
 
 /** #8 `GET /api/command-center/classroom/{id}` (S6). */
-export const fetchCcClass = (classroomId: number, o: Signal = {}) =>
+export const fetchCcClass = (classroomId: number | string, o: Signal = {}) =>
   api.get<CcClass>(`/api/command-center/classroom/${String(classroomId)}`, withSignal(o))
 
 /** #9 `GET /api/command-center/student/{id}` (S7). */
-export const fetchCcStudent = (userId: number, o: Signal = {}) =>
+export const fetchCcStudent = (userId: number | string, o: Signal = {}) =>
   api.get<CcStudent>(`/api/command-center/student/${String(userId)}`, withSignal(o))
 
 /** #10 `GET /api/command-center/student/{id}/week?start=&end=` (week and all-sessions modals). */
-export const fetchCcStudentWeek = (userId: number, start: string, end: string, o: Signal = {}) =>
+export const fetchCcStudentWeek = (userId: number | string, start: string, end: string, o: Signal = {}) =>
   api.get<CcSessionList>(`/api/command-center/student/${String(userId)}/week`, {
     ...withSignal(o),
     query: { start, end },
   })
 
 /** #10 with the all-time range: the "Semua Sesi Latihan" modal. */
-export const fetchCcStudentAllSessions = (userId: number, o: Signal = {}) =>
+export const fetchCcStudentAllSessions = (userId: number | string, o: Signal = {}) =>
   fetchCcStudentWeek(userId, ALL_SESSIONS_RANGE.start, ALL_SESSIONS_RANGE.end, o)
 
 /** #11 `GET /api/command-center/student/{id}/subject?code=` (subject modal; `UMUM` = free practice). */
-export const fetchCcStudentSubject = (userId: number, code: string, o: Signal = {}) =>
+export const fetchCcStudentSubject = (userId: number | string, code: string, o: Signal = {}) =>
   api.get<CcSessionList>(`/api/command-center/student/${String(userId)}/subject`, {
     ...withSignal(o),
     query: { code },
@@ -77,5 +77,5 @@ export const fetchCcSession = (sessionId: string, o: Signal = {}) =>
   )
 
 /** #13 `GET /api/command-center/headcount/{configId}` (headcount modal). */
-export const fetchCcHeadcount = (configId: number, o: Signal = {}) =>
+export const fetchCcHeadcount = (configId: number | string, o: Signal = {}) =>
   api.get<CcHeadcountDetail>(`/api/command-center/headcount/${String(configId)}`, withSignal(o))
