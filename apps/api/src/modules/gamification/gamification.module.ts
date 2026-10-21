@@ -1,13 +1,16 @@
-import { Module } from '@nestjs/common'
+import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
+import { PerformanceModule } from '../reports/performance/performance.module'
+import { PerformancePorts } from '../reports/performance/ports'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
 import { GamificationAdminService } from './admin.service'
 import { GamificationController } from './gamification.controller'
 import { GamificationRepository } from './gamification.repository'
 import { GamificationService } from './gamification.service'
+import { PerformanceGamificationAdapter } from './performance-gamification.adapter'
 import { GamificationPorts } from './ports'
 
 /**
@@ -20,11 +23,24 @@ import { GamificationPorts } from './ports'
  *
  * `GamificationPorts` carries what M14 reads but M05 owns (practice day facts, mastery, session counts); BE-12/13
  * call `ports.providePracticeFacts(...)` from their own `onModuleInit`. Until then it answers "nothing yet".
+ *
+ * On init it binds `PerformanceGamificationAdapter` into BE-19's `PerformancePorts` (the reports'
+ * `GamificationReadPort`: public profile, rankings).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, WalletModule],
+  imports: [AuditModule, ThrottleModule, WalletModule, PerformanceModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
-  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts],
+  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],
 })
-export class GamificationModule {}
+export class GamificationModule implements OnModuleInit {
+  constructor(
+    @Inject(PerformancePorts) private readonly performance: PerformancePorts,
+    @Inject(PerformanceGamificationAdapter) private readonly gamificationRead: PerformanceGamificationAdapter,
+  ) {}
+
+  /** Binds the real gamification read port of BE-19's reports (once; `provideGamification` throws on a second call). */
+  onModuleInit(): void {
+    this.performance.provideGamification(this.gamificationRead)
+  }
+}
