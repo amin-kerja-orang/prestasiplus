@@ -8,6 +8,11 @@ import { z } from 'zod'
  */
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 
+/** An optional integer env value; a blank string counts as unset. */
+function aiInt(min: number, max: number) {
+  return z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.coerce.number().int().min(min).max(max).optional())
+}
+
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -166,6 +171,26 @@ export const EnvSchema = z.object({
   THROTTLE_CIKGU_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_CIKGU_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-36 (AI extraction). All optional: the code applies the defaults named in .env.api.example (PC-5 block). AI_PROVIDER
+  // defaults to the mock; an unknown id is a start-up error of the AI module. AI_API_KEY is a secret: it is read only by
+  // AiConfig and never logged, returned or stored. A blank value counts as unset.
+  AI_PROVIDER: z.string().trim().optional(),
+  AI_MODEL: z.string().trim().optional(),
+  AI_API_KEY: z.string().optional(),
+  AI_BASE_URL: z.string().trim().optional(),
+  AI_BASE_URL_ALLOWLIST: z.string().trim().optional(),
+  AI_TIMEOUT_MS: aiInt(100, 600_000),
+  AI_MAX_CONCURRENCY: aiInt(1, 64),
+  AI_RATE_LIMIT_PER_MIN: aiInt(1, 100_000),
+  AI_RATE_LIMIT_PER_USER_PER_MIN: aiInt(1, 100_000),
+  AI_RATE_LIMIT_PER_SCHOOL_PER_MIN: aiInt(1, 100_000),
+  AI_MAX_RETRIES: aiInt(0, 10),
+  AI_RETRY_BASE_MS: aiInt(1, 600_000),
+  /** Lenient on purpose: a malformed value is ignored (no cap from the environment), as the BE-40 dashboard does. */
+  AI_MONTHLY_BUDGET_SEN: z.string().trim().optional(),
+  AI_PRICE_TABLE_JSON: z.string().trim().optional(),
+  THROTTLE_AI_READ_PER_MINUTE: aiInt(1, 100_000),
+  THROTTLE_AI_WRITE_PER_MINUTE: aiInt(1, 100_000),
 })
 export type Env = z.infer<typeof EnvSchema>
 
