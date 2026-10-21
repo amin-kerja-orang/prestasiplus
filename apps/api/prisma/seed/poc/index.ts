@@ -25,8 +25,8 @@
  *  16. gamification           achievements, challenges, rewards, draws
  *  17. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
- * Production: refused unless the operator opts in (ALLOW_DEMO_SEED=true or the `--force-demo` flag of the seed
- * command, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
+ * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
+ * command is accepted there only together with it (two keys, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
  * says so; calling this module directly in that case throws.
  */
 import { assertSeedAllowed } from '../guard'
