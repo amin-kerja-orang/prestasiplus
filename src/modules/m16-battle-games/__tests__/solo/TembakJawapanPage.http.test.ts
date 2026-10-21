@@ -3,6 +3,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
 import type { TembakJawapanPayload } from '../../api'
 import SoloTembakJawapanPage from '../../pages/SoloTembakJawapanPage.vue'
 import { mountAt, rawOk } from './helpers'
@@ -178,5 +180,29 @@ describe('Tembak Jawapan, http mode (D58a)', () => {
     expect(text('solo-score')).toBe('0')
     expect(wrapper!.text()).toContain('Soalan 1')
     expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+  })
+
+  it('a 409 resolves the question with 0 points, costs no life and is never re-posted', async () => {
+    checkSoloAnswer.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sudah dijawab.' }))
+    await startPlaying()
+    await tap(0)
+    expect(console.error).toHaveBeenCalledWith('Check error:', 409)
+    expect(wrapper!.text()).toContain('Soalan 2')
+    expect(text('solo-score')).toBe('0')
+    expect(lost()).toHaveLength(0)
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the score and counts the server computed, not the local ones', async () => {
+    submitSoloGame.mockResolvedValue(
+      rawOk({ is_new_record: false, syiling_awarded: 0, score: 99, correct_count: 7, total_answered: 9 }),
+    )
+    await startPlaying()
+    await tap(0) // local: 10 points, 1/1
+    await vi.advanceTimersByTimeAsync(600_000) // every question is missed until the lives run out
+    const overlay = wrapper!.text()
+    expect(overlay).toContain('99')
+    expect(overlay).toContain('7/9')
+    expect(overlay).not.toContain('1/4')
   })
 })

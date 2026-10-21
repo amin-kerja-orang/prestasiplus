@@ -60,6 +60,12 @@ async function open(page: Page, game: string, query = `?darjah=${String(DARJAH)}
   return res
 }
 
+/** No horizontal page scroll at the current viewport (the mandatory responsive rule). */
+async function expectNoHorizontalScroll(page: Page): Promise<void> {
+  const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+  expect(fits, 'no horizontal page scroll').toBe(true)
+}
+
 async function expectSubmit(req: Request, res: Promise<Response>): Promise<void> {
   expect(req.postDataJSON(), 'submit body is only the session id').toEqual({
     session_id: expect.any(String),
@@ -96,6 +102,7 @@ test.describe('solo games (http) @api', () => {
     const card = page.getByTestId('solo-card')
     await expect(card).toBeVisible({ timeout: 30_000 }) // after the 3 s countdown
     await expect(card).not.toHaveText('')
+    await expectNoHorizontalScroll(page)
 
     // The clock ends the game at 45 s: arm the submit listeners now.
     const submitReq = waitPostReq(page, 'betul-salah', '/submit')
@@ -129,6 +136,7 @@ test.describe('solo games (http) @api', () => {
     expect(await options.count()).toBeGreaterThanOrEqual(2)
     await expect(page.getByTestId('solo-card')).not.toHaveText('')
     await expect(options.first()).toHaveAttribute('data-state', 'idle')
+    await expectNoHorizontalScroll(page)
 
     const check = waitPostRes(page, 'cabaran-kilat', '/check')
     await options.first().click()
@@ -151,6 +159,7 @@ test.describe('solo games (http) @api', () => {
     await expect(page.getByTestId('solo-heart')).toHaveCount(3)
     await expect(page.locator('[data-testid=solo-heart][data-lost=true]')).toHaveCount(0)
     await expect(page.getByTestId('solo-score')).toHaveText('0')
+    await expectNoHorizontalScroll(page)
 
     const check = waitPostRes(page, 'tembak-jawapan', '/check')
     await tile.click({ force: true }) // the tile is falling: do not wait for it to be stable
@@ -172,6 +181,7 @@ test.describe('solo games (http) @api', () => {
     await expect(page.getByTestId('solo-card')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByText('Soalan 1 daripada')).toBeVisible()
     await expect(page.getByTestId('solo-check')).toBeDisabled()
+    await expectNoHorizontalScroll(page)
 
     // Place every tile in the shown order, then Semak.
     const source = page.getByTestId('solo-source').getByTestId('solo-tile')
@@ -196,7 +206,10 @@ test.describe('solo games (http) @api', () => {
     const result = page.getByTestId('solo-result')
     const next = page.locator('[data-testid=solo-next], [data-testid=solo-skip], [data-testid=solo-skip-question]')
     for (let i = 0; i < 40 && !(await result.isVisible()); i++) {
-      await next.first().click({ timeout: 10_000 }).catch(() => {})
+      // Bounded and explicit: either a continue/skip button is there to click, or the result is already shown.
+      await expect(next.first().or(result)).toBeVisible({ timeout: 10_000 })
+      if (await result.isVisible()) break
+      await next.first().click({ timeout: 10_000 })
     }
     await expectSubmit(await submitReq, submitRes)
     await expect(result).toBeVisible({ timeout: 30_000 })
@@ -211,6 +224,7 @@ test.describe('solo games (http) @api', () => {
     const cards = page.getByTestId('solo-card-item')
     await expect(cards).toHaveCount(12, { timeout: 30_000 })
     await expect(cards.first()).toHaveAttribute('data-state', 'hidden')
+    await expectNoHorizontalScroll(page)
 
     const reveal = waitPostRes(page, 'kad-memori', '/reveal')
     await cards.nth(0).click()

@@ -1,7 +1,10 @@
 /** D58a answer checking (components/solo/solo-check.ts): synchronous key in mock mode, check route in http mode. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
 import {
+  CONFLICT,
   createInflight,
   judgeBetulSalah,
   judgeCabaranKilat,
@@ -122,6 +125,38 @@ describe('http mode: the check / reveal routes with string ids', () => {
     await expect(judgeBetulSalah('S', { id: 1 }, true)).resolves.toBeNull()
     await expect(revealCard('S', { id: 'x' })).resolves.toBeNull()
     expect(log).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    log.mockRestore()
+  })
+
+  it('a 409 is CONFLICT (status logged, no key), any other failure stays null', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const conflict = () => new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sudah dijawab.' })
+    checkSoloAnswer.mockRejectedValue(conflict())
+    await expect(judgeBetulSalah('S', { id: 1 }, true)).resolves.toBe(CONFLICT)
+    await expect(judgeCabaranKilat('S', { id: 1, options: [] }, 0)).resolves.toBe(CONFLICT)
+    await expect(judgeTembakJawapan('S', { id: 1, options: [] }, 0)).resolves.toBe(CONFLICT)
+    await expect(judgeSusunJawapan('S', { id: 1, type: 'letters' }, ['A'])).resolves.toBe(CONFLICT)
+    expect(log).toHaveBeenCalledWith('Check error:', 409)
+    checkSoloAnswer.mockReset()
+    checkSoloAnswer.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }))
+    await expect(judgeBetulSalah('S', { id: 1 }, true)).resolves.toBeNull()
+    revealKadMemoriCard.mockRejectedValueOnce(conflict())
+    await expect(revealCard('S', { id: 'x' })).resolves.toBeNull()
+    log.mockRestore()
+  })
+
+  it('settle does not report an error thrown by apply as a check error', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const unhandled: unknown[] = []
+    const onUnhandled = (e: unknown) => unhandled.push(e)
+    process.on('unhandledRejection', onUnhandled)
+    settle(Promise.resolve(1), () => {
+      throw new Error('apply broke')
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    process.off('unhandledRejection', onUnhandled)
+    expect(log).not.toHaveBeenCalledWith('Check error:', expect.anything())
+    expect(unhandled).toHaveLength(1)
     log.mockRestore()
   })
 

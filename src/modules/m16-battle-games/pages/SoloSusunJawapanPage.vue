@@ -8,14 +8,15 @@
  * the FIRST "Semak" of a puzzle goes to `POST /check`, which decides correct/wrong and the scoring. After
  * "Cuba lagi" a later "Semak" is judged locally against the answer that first check revealed; a match resolves
  * the puzzle but scores NOTHING (shows "+0 mata", no solved count, the dot ends red as for a skip), because the
- * server stored the puzzle as wrong. Mock mode is unchanged.
+ * server stored the puzzle as wrong. A 409 on the first check is treated as a skip (0 points, red dot, next puzzle).
+ * Mock mode is unchanged.
  */
 import { computed, ref, watch } from 'vue'
 
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
-import { createInflight, judgeSusunJawapan, settle } from '../components/solo/solo-check'
+import { CONFLICT, createInflight, judgeSusunJawapan, settle } from '../components/solo/solo-check'
 import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
@@ -25,6 +26,14 @@ import { DsLoadError } from '@/ds'
 const timers = useGameTimers()
 const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('susun-jawapan')
+
+interface ResultState {
+  newRecord: boolean
+  credited: number
+  serverScore?: number
+  serverCorrect?: number
+  serverAnswered?: number
+}
 
 type Phase = 'idle' | 'playing' | 'submitting' | 'done'
 type Check = 'idle' | 'correct' | 'wrong'
@@ -39,7 +48,8 @@ const coins = ref(0)
 const solved = ref(0)
 const lastPoints = ref(0)
 const dots = ref<Dot[]>([])
-const result = ref({ newRecord: false, credited: 0 })
+/** `server*`: the values the server computed (http mode); they replace the local ones on the result card. */
+const result = ref<ResultState>({ newRecord: false, credited: 0 })
 /** http mode: a check is in flight / the answer the first check revealed / the puzzle was resolved locally. */
 const checking = ref(false)
 const revealed = ref<string | null>(null)
@@ -122,8 +132,20 @@ function verify(): void {
   const myRun = run
   checking.value = true
   settle(judgeSusunJawapan(payload.value?.sessionId ?? '', p, tiles, inflight), (r) => {
-    if (myRun !== run || phase.value !== 'playing' || index.value !== qi) return // stale
+    if (myRun !== run) return // restarted: reset() already cleared the flag
+    if (phase.value !== 'playing' || index.value !== qi) {
+      checking.value = false
+      return // stale
+    }
     checking.value = false
+    if (r === CONFLICT) {
+      // 409: the server already holds a check for this puzzle, so it can never be accepted and its answer is
+      // unknown here. Treat it as a skip (0 points, red dot, next puzzle) so nothing claims "BETUL!" and
+      // "Cuba lagi" can never re-post it.
+      dots.value[index.value] = 'wrong'
+      advance()
+      return
+    }
     if (r?.correct === true) {
       const gain = susunGain(p.points)
       score.value += gain.points
@@ -133,7 +155,7 @@ function verify(): void {
       dots.value[index.value] = 'done'
       check.value = 'correct'
     } else {
-      if (isHttpMode()) revealed.value = r?.answer ?? null
+      if (isHttpMode()) revealed.value = r?.answer ?? null // r is null on a network failure: a retry re-posts
       check.value = 'wrong'
     }
   })
@@ -177,15 +199,23 @@ async function finish(): Promise<void> {
     score: score.value,
     syiling_earned: coins.value,
   }, inflight)
-  result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
+  result.value = {
+    newRecord: res?.is_new_record === true,
+    credited: res?.syiling_awarded ?? 0,
+    serverScore: res?.score,
+    serverCorrect: res?.correct_count,
+    serverAnswered: res?.total_answered,
+  }
   phase.value = 'done'
 }
 
+const shownScore = computed(() => result.value.serverScore ?? score.value)
+const shownSolved = computed(() => result.value.serverCorrect ?? solved.value)
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
+  { label: 'Skor Total', value: String(shownScore.value), tone: 'text-primary-t' },
   {
     label: 'Selesai',
-    value: `${String(solved.value)}/${String(puzzles.value.length)}`,
+    value: `${String(shownSolved.value)}/${String(puzzles.value.length)}`,
     tone: 'text-success',
   },
   {
@@ -376,7 +406,7 @@ watch(darjah, () => void start(), { immediate: true })
       <ResultCard
         v-if="phase === 'done'"
         theme="teal"
-        :title="susunTitle(solved, puzzles.length)"
+        :title="susunTitle(shownSolved, puzzles.length)"
         subtitle="Susun Jawapan selesai!"
         :tiles="tiles"
         :new-record="false"

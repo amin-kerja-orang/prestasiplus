@@ -2,6 +2,9 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
+import { GENERIC_ERROR } from '../../components/lobby/lobby-lib'
 import SoloKadMemoriPage from '../../pages/SoloKadMemoriPage.vue'
 import { mountAt, rawOk } from './helpers'
 
@@ -31,6 +34,8 @@ const faceOf = (n: number) =>
     ? { id: String(n), type: 'question' as const, content: `S${String(n - 101)}` }
     : { id: String(n), type: 'answer' as const, content: `J${String(n - 107)}` }
 const pairOf = (n: number) => (n <= 106 ? n - 101 : n - 107)
+
+const conflict = () => new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sudah dijawab.' })
 
 function deferred<T>() {
   let resolve!: (v: T) => void
@@ -110,7 +115,7 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     expect(card(102).attributes('data-state')).toBe('flipped')
   })
 
-  it('blocks input while the reveal is pending and undoes the tap when it fails', async () => {
+  it('blocks input while the reveal is pending; a failed reveal toasts and restarts the session', async () => {
     const d = deferred<null>()
     revealKadMemoriCard.mockImplementationOnce(() => d.promise.then(() => Promise.reject(new Error('boom'))))
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -124,13 +129,27 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     d.resolve(null)
     await vi.advanceTimersByTimeAsync(0)
     expect(err).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    expect(useToast().toasts.value.map((t) => t.title)).toContain(GENERIC_ERROR)
+    expect(fetchSoloGame).toHaveBeenCalledTimes(2) // a new session
     expect(card(101).attributes('data-state')).toBe('hidden')
-    await tap(102)
+    await tap(102) // the new board is playable
     expect(card(102).attributes('data-state')).toBe('flipped')
     err.mockRestore()
   })
 
-  it('blocks input while the pair check is pending; a failed check is a mismatch', async () => {
+  it('a reveal that is a 409 (card already open) toasts and restarts too', async () => {
+    revealKadMemoriCard.mockRejectedValueOnce(conflict())
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await mount()
+    await tap(101)
+    expect(err).toHaveBeenCalledWith('Check error:', 409)
+    expect(useToast().toasts.value.map((t) => t.title)).toContain(GENERIC_ERROR)
+    expect(fetchSoloGame).toHaveBeenCalledTimes(2)
+    expect(card(101).attributes('data-state')).toBe('hidden')
+    err.mockRestore()
+  })
+
+  it('blocks input while the pair check is pending; a failed check toasts and restarts the session', async () => {
     const d = deferred<never>()
     checkSoloAnswer.mockImplementationOnce(() => d.promise)
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -140,11 +159,26 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     expect(wrapper!.get('[data-testid="solo-moves"]').text()).toBe('👆 1 langkah')
     await tap(103) // locked
     expect(card(103).attributes('data-state')).toBe('hidden')
-    d.resolve(Promise.reject(new Error('boom')) as never)
+    d.resolve(Promise.reject(conflict()) as never)
     await vi.advanceTimersByTimeAsync(0)
-    expect(card(101).attributes('data-state')).toBe('wrong')
-    await vi.advanceTimersByTimeAsync(800)
+    expect(err).toHaveBeenCalledWith('Check error:', 409)
+    expect(useToast().toasts.value.map((t) => t.title)).toContain(GENERIC_ERROR)
+    expect(fetchSoloGame).toHaveBeenCalledTimes(2)
     expect(card(101).attributes('data-state')).toBe('hidden')
+    expect(wrapper!.get('[data-testid="solo-moves"]').text()).toBe('👆 0 langkah')
+    await tap(102)
+    expect(card(102).attributes('data-state')).toBe('flipped')
+    err.mockRestore()
+  })
+
+  it('a pair check that fails on the network toasts and restarts too', async () => {
+    checkSoloAnswer.mockRejectedValueOnce(new Error('boom'))
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await mount()
+    await tap(101)
+    await tap(107)
+    expect(useToast().toasts.value.map((t) => t.title)).toContain(GENERIC_ERROR)
+    expect(fetchSoloGame).toHaveBeenCalledTimes(2)
     err.mockRestore()
   })
 
@@ -184,5 +218,21 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(wrapper!.get('[data-testid="solo-matched"]').text()).toBe('✅ 0 / 6 padan')
     expect(card(106).attributes('data-state')).toBe('hidden')
+  })
+
+  it('shows the moves and time the server counted, not the local ones', async () => {
+    submitSoloGame.mockResolvedValue(
+      rawOk({ results: { syiling_earned: 3, accuracy: 75, moves: 8, time_seconds: 41 } }),
+    )
+    await mount()
+    for (let p = 0; p < 6; p++) {
+      await tap(101 + p)
+      await tap(107 + p)
+    }
+    const overlay = wrapper!.get('[data-testid="solo-overlay"]').text()
+    expect(overlay).toContain('0:41')
+    expect(overlay).toContain('8') // Langkah from the server (the local count is 6)
+    expect(overlay).toContain('75%')
+    expect(overlay).not.toContain('100%')
   })
 })

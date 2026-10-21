@@ -11,6 +11,7 @@
  * it at once when it is not a Promise. In http mode a failed call resolves to `null` (logged as "Check error:");
  * the engine decides what `null` means (no score, the move is undone, or the tap is allowed again).
  */
+import { isApiError } from '@/api'
 import { isHttpMode } from '@/api/mode'
 
 import { checkSoloAnswer, revealKadMemoriCard } from '../../api'
@@ -19,10 +20,17 @@ import { susunMatches } from './solo-lib'
 
 export type Judged<T> = T | Promise<T>
 
-/** Applies `r` now when it is a value, or when the Promise settles. */
+/**
+ * The server answered 409: the item was already checked (one check per item). It will never be accepted, so the
+ * engine resolves the item locally with 0 points and must not post it again. A plain failure stays `null`.
+ */
+export const CONFLICT = 'conflict' as const
+export type Conflict = typeof CONFLICT
+
+/** Applies `r` now when it is a value, or when the Promise settles (an error inside `apply` is not a check error). */
 export function settle<T>(r: Judged<T>, apply: (v: T) => void): void {
   if (r instanceof Promise) {
-    r.then(apply).catch((e: unknown) => {
+    r.then(apply, (e: unknown) => {
       console.error('Check error:', e)
     })
   } else apply(r)
@@ -31,17 +39,35 @@ export function settle<T>(r: Judged<T>, apply: (v: T) => void): void {
 /** The item id of a check body: ids are opaque strings on the wire (ADR-0018 item 6). */
 const wireId = (id: SoloItemId): string => String(id)
 
+type Checked<R> = { ok: true; data: R } | { ok: false; conflict: boolean }
+
+/** Logs a failed call: the status of a 409, else the error itself (never a key or an answer). */
+function logFailure(e: unknown): boolean {
+  if (isApiError(e) && e.status === 409) {
+    console.error('Check error:', e.status)
+    return true
+  }
+  console.error('Check error:', e)
+  return false
+}
+
 async function post<G extends SoloGame>(
   game: G,
   body: SoloCheckBodies[G],
   track: Inflight | undefined,
-): Promise<SoloCheckResults[G] | null> {
-  const call = checkSoloAnswer(game, body).catch((e: unknown) => {
-    console.error('Check error:', e)
-    return null
-  })
+): Promise<Checked<SoloCheckResults[G]>> {
+  const call: Promise<Checked<SoloCheckResults[G]>> = checkSoloAnswer(game, body).then(
+    (data) => ({ ok: true as const, data }),
+    (e: unknown) => ({ ok: false as const, conflict: logFailure(e) }),
+  )
   track?.add(call)
   return call
+}
+
+/** `null` for a plain failure, `CONFLICT` for a 409, else the mapped result. */
+function verdictOf<R, T>(c: Checked<R>, map: (r: R) => T): T | null | Conflict {
+  if (c.ok) return map(c.data)
+  return c.conflict ? CONFLICT : null
 }
 
 /**
@@ -77,9 +103,11 @@ export function judgeBetulSalah(
   item: { id: SoloItemId; is_true?: boolean },
   answer: boolean,
   track?: Inflight,
-): Judged<{ correct: boolean } | null> {
+): Judged<{ correct: boolean } | null | Conflict> {
   if (!isHttpMode()) return { correct: answer === item.is_true }
-  return post('betul-salah', { session_id: sessionId, item_id: wireId(item.id), answer }, track)
+  return post('betul-salah', { session_id: sessionId, item_id: wireId(item.id), answer }, track).then((c) =>
+    verdictOf(c, (r) => ({ correct: r.correct })),
+  )
 }
 
 // --- Cabaran Kilat ------------------------------------------------------------------------------------------------
@@ -89,15 +117,15 @@ export function judgeCabaranKilat(
   question: { id: SoloItemId; options: { id: number; correct?: boolean }[] },
   optionId: number,
   track?: Inflight,
-): Judged<{ correct: boolean; correctOptionId: number | null } | null> {
+): Judged<{ correct: boolean; correctOptionId: number | null } | null | Conflict> {
   if (!isHttpMode()) {
     return {
       correct: question.options.find((o) => o.id === optionId)?.correct === true,
       correctOptionId: question.options.find((o) => o.correct === true)?.id ?? null,
     }
   }
-  return post('cabaran-kilat', { session_id: sessionId, item_id: wireId(question.id), option_id: optionId }, track).then(
-    (r) => (r ? { correct: r.correct, correctOptionId: r.correct_option_id } : null),
+  return post('cabaran-kilat', { session_id: sessionId, item_id: wireId(question.id), option_id: optionId }, track).then((c) =>
+    verdictOf(c, (r) => ({ correct: r.correct, correctOptionId: r.correct_option_id })),
   )
 }
 
@@ -108,7 +136,7 @@ export function judgeTembakJawapan(
   question: { id: SoloItemId; options: { correct?: boolean }[] },
   optionIndex: number,
   track?: Inflight,
-): Judged<{ correct: boolean; correctIndex: number | null } | null> {
+): Judged<{ correct: boolean; correctIndex: number | null } | null | Conflict> {
   if (!isHttpMode()) {
     const key = question.options.findIndex((o) => o.correct === true)
     return { correct: question.options[optionIndex]?.correct === true, correctIndex: key < 0 ? null : key }
@@ -117,7 +145,7 @@ export function judgeTembakJawapan(
     'tembak-jawapan',
     { session_id: sessionId, item_id: wireId(question.id), option_index: optionIndex },
     track,
-  ).then((r) => (r ? { correct: r.correct, correctIndex: r.correct_option_index } : null))
+  ).then((c) => verdictOf(c, (r) => ({ correct: r.correct, correctIndex: r.correct_option_index })))
 }
 
 // --- Susun Jawapan --------------------------------------------------------------------------------------------------
@@ -132,13 +160,13 @@ export function judgeSusunJawapan(
   puzzle: { id: SoloItemId; type: 'letters' | 'words'; answer?: string },
   tiles: string[],
   track?: Inflight,
-): Judged<{ correct: boolean; answer: string | null } | null> {
+): Judged<{ correct: boolean; answer: string | null } | null | Conflict> {
   if (!isHttpMode()) {
     return { correct: susunMatches(tiles, puzzle.type, puzzle.answer ?? ''), answer: puzzle.answer ?? null }
   }
   const answer = susunBuilt(tiles, puzzle.type).trim().slice(0, 200)
-  return post('susun-jawapan', { session_id: sessionId, item_id: wireId(puzzle.id), answer }, track).then((r) =>
-    r ? { correct: r.correct, answer: r.answer } : null,
+  return post('susun-jawapan', { session_id: sessionId, item_id: wireId(puzzle.id), answer }, track).then((c) =>
+    verdictOf(c, (r) => ({ correct: r.correct, answer: r.answer })),
   )
 }
 
@@ -159,7 +187,7 @@ export function revealCard(sessionId: string, card: MemoryCard, track?: Inflight
   const call = revealKadMemoriCard({ session_id: sessionId, card_id: wireId(card.id) })
     .then((f): Face => ({ type: f.type, content: f.content }))
     .catch((e: unknown) => {
-      console.error('Check error:', e)
+      logFailure(e)
       return null
     })
   track?.add(call)
@@ -180,6 +208,6 @@ export function judgePair(
     }
   }
   return post('kad-memori', { session_id: sessionId, card_id: wireId(a.id), other_card_id: wireId(b.id) }, track).then(
-    (r) => (r ? { correct: r.correct, faces: [r.cards[0], r.cards[1]] } : null),
+    (c) => (c.ok ? { correct: c.data.correct, faces: [c.data.cards[0], c.data.cards[1]] } : null),
   )
 }

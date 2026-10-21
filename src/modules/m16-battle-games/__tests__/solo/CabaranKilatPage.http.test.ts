@@ -2,6 +2,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
 import type { CabaranKilatPayload } from '../../api'
 import SoloCabaranKilatPage from '../../pages/SoloCabaranKilatPage.vue'
 import { mountAt, rawOk } from './helpers'
@@ -139,5 +141,31 @@ describe('S14 Cabaran Kilat, http mode (D58a)', () => {
     await vi.advanceTimersByTimeAsync(2400)
     expect(wrapper!.get('[data-testid="solo-score"]').text()).toBe('0')
     expect(wrapper!.text()).toContain('Soalan 1')
+  })
+
+  it('a 409 resolves the item with 0 points, logs the status only and is never re-posted', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    checkSoloAnswer.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sudah dijawab.' }))
+    await start()
+    await options()[1]!.trigger('click')
+    await vi.advanceTimersByTimeAsync(400)
+    expect(log).toHaveBeenCalledWith('Check error:', 409)
+    expect(wrapper!.text()).toContain('Soalan 2')
+    expect(wrapper!.get('[data-testid="solo-score"]').text()).toBe('0')
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+    log.mockRestore()
+  })
+
+  it('shows the score and counts the server computed, not the local ones', async () => {
+    submitSoloGame.mockResolvedValue(
+      rawOk({ is_new_record: false, syiling_awarded: 0, score: 99, correct_count: 7, total_answered: 9 }),
+    )
+    await start()
+    await options()[1]!.trigger('click') // local: 10 points, 1/1
+    await vi.advanceTimersByTimeAsync(60_000)
+    const overlay = wrapper!.text()
+    expect(overlay).toContain('99')
+    expect(overlay).toContain('7/9')
+    expect(overlay).not.toContain('1/1')
   })
 })

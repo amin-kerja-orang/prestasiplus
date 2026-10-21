@@ -13,7 +13,8 @@
  * FIRST tap on a question goes to `POST /check`, which decides correct/wrong and the scoring. Later taps on the
  * same question are judged locally against the key that first check revealed; they can resolve the question
  * but score NOTHING and do not count as correct (the server stored the item as wrong). While the first check
- * is pending taps are ignored and a deadline miss is held back until the result is in. Mock mode is unchanged.
+ * is pending taps are ignored and a deadline miss is held back until the result is in. A 409 on that check (the item
+ * was already checked) resolves the question locally with 0 points and moves on. Mock mode is unchanged.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -33,7 +34,7 @@ import {
   tembakTitle,
   tileFallSeconds,
 } from '../components/solo/solo-lib'
-import { createInflight, judgeTembakJawapan, settle } from '../components/solo/solo-check'
+import { CONFLICT, createInflight, judgeTembakJawapan, settle } from '../components/solo/solo-check'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
 import { isHttpMode } from '@/api/mode'
@@ -66,6 +67,14 @@ const timers = useGameTimers()
 const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('tembak-jawapan')
 
+interface ResultState {
+  newRecord: boolean
+  credited: number
+  serverScore?: number
+  serverCorrect?: number
+  serverAnswered?: number
+}
+
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
 const phase = ref<Phase>('idle')
 const count = ref(3)
@@ -81,7 +90,8 @@ const elapsed = ref(0)
 const questionLevel = ref(1)
 const banner = ref('')
 const wrongTiles = ref<number[]>([])
-const result = ref({ newRecord: false, credited: 0 })
+/** `server*`: the values the server computed (http mode); they replace the local ones on the result card. */
+const result = ref<ResultState>({ newRecord: false, credited: 0 })
 /** http mode: the first tap's check is in flight / the correct tile the first check revealed / a miss was held back. */
 const checking = ref(false)
 const revealedIndex = ref<number | null>(null)
@@ -227,8 +237,19 @@ function tap(tileIndex: number): void {
   const myRun = run
   checking.value = true
   settle(judgeTembakJawapan(payload.value?.sessionId ?? '', q, tileIndex, inflight), (r) => {
-    if (myRun !== run || phase.value !== 'playing' || index.value !== qi) return // stale
+    if (myRun !== run) return // restarted: reset() already cleared the flag
+    if (phase.value !== 'playing' || index.value !== qi) {
+      checking.value = false
+      return // stale
+    }
     checking.value = false
+    if (r === CONFLICT) {
+      // 409: the item was already checked and can never be accepted. Resolve it locally with 0 points (no life
+      // lost, not counted as correct) and go on; the tile can not be tapped again.
+      answered.value += 1
+      nextQuestion()
+      return
+    }
     if (r?.correct === true) {
       correctTap()
       return
@@ -255,13 +276,24 @@ async function finish(): Promise<void> {
     score: score.value,
     syiling_earned: coins.value,
   }, inflight)
-  result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
+  result.value = {
+    newRecord: res?.is_new_record === true,
+    credited: res?.syiling_awarded ?? 0,
+    serverScore: res?.score,
+    serverCorrect: res?.correct_count,
+    serverAnswered: res?.total_answered,
+  }
   phase.value = 'done'
 }
 
+const shownScore = computed(() => result.value.serverScore ?? score.value)
 const resultTiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-warning' },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Skor Total', value: String(shownScore.value), tone: 'text-warning' },
+  {
+    label: 'Ketepatan',
+    value: ratio(result.value.serverCorrect ?? correct.value, result.value.serverAnswered ?? answered.value),
+    tone: 'text-success',
+  },
   { label: 'Tertinggi', value: `Level ${String(maxLevel.value)}`, tone: 'text-error' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
@@ -356,7 +388,7 @@ watch(darjah, () => void start(), { immediate: true })
       <ResultCard
         v-if="phase === 'done'"
         theme="ember"
-        :title="tembakTitle(score)"
+        :title="tembakTitle(shownScore)"
         :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
         :tiles="resultTiles"
         :new-record="result.newRecord"

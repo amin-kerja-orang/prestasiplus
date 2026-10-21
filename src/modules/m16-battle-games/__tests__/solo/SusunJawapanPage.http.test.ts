@@ -3,6 +3,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
 import type { SusunJawapanPayload } from '../../api'
 import SoloSusunJawapanPage from '../../pages/SoloSusunJawapanPage.vue'
 import { mountAt, rawOk } from './helpers'
@@ -189,5 +191,35 @@ describe('Susun Jawapan, http mode (D58a)', () => {
     await flushPromises()
     expect(byTestId('solo-score').text()).toContain('0')
     expect(wrapper!.find('[data-testid="solo-feedback"]').exists()).toBe(false)
+  })
+
+  it('a 409 is treated as a skip (0 points, red dot, next puzzle), logs the status only and never re-posts it', async () => {
+    checkSoloAnswer.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: 'Soalan sudah dijawab.' }))
+    await open()
+    await spell('ABC')
+    await semak()
+    expect(console.error).toHaveBeenCalledWith('Check error:', 409)
+    expect(wrapper!.text()).not.toContain('BETUL!')
+    expect(byTestId('solo-score').text()).toContain('0')
+    expect(dots()[0]).toBe('wrong')
+    expect(wrapper!.text()).toContain('Soalan 2 daripada 20')
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the score and solved count the server computed, not the local ones', async () => {
+    submitSoloGame.mockResolvedValue(
+      rawOk({ is_new_record: false, syiling_awarded: 0, score: 99, correct_count: 7, total_answered: 20 }),
+    )
+    await open()
+    for (let i = 0; i < 20; i++) {
+      await spell('ABC')
+      await semak()
+      await byTestId('solo-next').trigger('click')
+    }
+    await flushPromises()
+    const overlay = wrapper!.text()
+    expect(overlay).toContain('99')
+    expect(overlay).toContain('7/20')
+    expect(overlay).not.toContain('20/20')
   })
 })

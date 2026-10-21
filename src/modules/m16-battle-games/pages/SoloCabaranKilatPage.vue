@@ -21,7 +21,7 @@ import {
   ratio,
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
-import { createInflight, judgeCabaranKilat, settle } from '../components/solo/solo-check'
+import { CONFLICT, createInflight, judgeCabaranKilat, settle } from '../components/solo/solo-check'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 
 const GAME_SECONDS = 60
@@ -33,6 +33,14 @@ const CHIP_COLOR = { green: 'success', amber: 'warning', red: 'error' } as const
 const timers = useGameTimers()
 const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('cabaran-kilat')
+
+interface ResultState {
+  newRecord: boolean
+  credited: number
+  serverScore?: number
+  serverCorrect?: number
+  serverAnswered?: number
+}
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
 const phase = ref<Phase>('idle')
@@ -47,7 +55,8 @@ const timeLeft = ref(GAME_SECONDS)
 const picked = ref<number | null>(null)
 const pickedCorrect = ref(false)
 const checking = ref(false)
-const result = ref({ newRecord: false, credited: 0 })
+/** `server*`: the values the server computed (http mode); they replace the local ones on the result card. */
+const result = ref<ResultState>({ newRecord: false, credited: 0 })
 let coins = 0
 let run = 0 // incremented by reset(): a check result of an earlier run is dropped
 
@@ -104,7 +113,8 @@ function pick(optionId: number): void {
   settle(judgeCabaranKilat(payload.value?.sessionId ?? '', q, optionId, inflight), (verdict) => {
     if (myRun !== run) return // restarted while the check was in flight
     checking.value = false
-    const ok = verdict?.correct === true // a failed check counts as wrong
+    // A failed check counts as wrong; a 409 (already checked) resolves the item with 0 points and is never re-posted.
+    const ok = verdict !== CONFLICT && verdict?.correct === true
     answered.value += 1
     if (ok) {
       correct.value += 1
@@ -145,13 +155,24 @@ async function finish(): Promise<void> {
     score: score.value,
     syiling_earned: coins,
   }, inflight)
-  result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
+  result.value = {
+    newRecord: res?.is_new_record === true,
+    credited: res?.syiling_awarded ?? 0,
+    serverScore: res?.score,
+    serverCorrect: res?.correct_count,
+    serverAnswered: res?.total_answered,
+  }
   phase.value = 'done'
 }
 
+const shownScore = computed(() => result.value.serverScore ?? score.value)
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
-  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Skor Total', value: String(shownScore.value), tone: 'text-primary-t' },
+  {
+    label: 'Betul / Jawab',
+    value: ratio(result.value.serverCorrect ?? correct.value, result.value.serverAnswered ?? answered.value),
+    tone: 'text-success',
+  },
   { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x`, tone: 'text-warning' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])

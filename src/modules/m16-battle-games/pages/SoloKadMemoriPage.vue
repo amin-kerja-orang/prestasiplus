@@ -13,6 +13,7 @@ import type { SoloItemId } from '../api'
 import ResultCard from '../components/solo/ResultCard.vue'
 import { createInflight, judgePair, revealCard, settle } from '../components/solo/solo-check'
 import type { Face } from '../components/solo/solo-check'
+import { GENERIC_ERROR } from '../components/lobby/lobby-lib'
 import { formatClock } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
@@ -20,6 +21,7 @@ import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 const PAIRS = 6
 const MISMATCH_MS = 800
 
+const toast = useToast()
 const timers = useGameTimers()
 const inflight = createInflight()
 let runId = 0 // bumped by reset(): a check that lands after a restart is dropped
@@ -34,7 +36,7 @@ const matched = ref<SoloItemId[]>([])
 const wrong = ref<SoloItemId[]>([])
 const locked = ref(false)
 const faces = ref<Record<string, Face>>({}) // known faces (http: from the server)
-const result = ref({ accuracy: 0, coins: 0, time: 0 })
+const result = ref({ accuracy: 0, coins: 0, time: 0, moves: null as number | null })
 
 const cards = computed(() => payload.value?.cards ?? [])
 const matchedPairs = computed(() => matched.value.length / 2)
@@ -50,7 +52,16 @@ function reset(): void {
   matched.value = []
   wrong.value = []
   locked.value = false
-  result.value = { accuracy: 0, coins: 0, time: 0 }
+  result.value = { accuracy: 0, coins: 0, time: 0, moves: null }
+}
+
+/**
+ * A reveal or a pair check that failed (network, or 409: a card already open / the pair already checked) leaves
+ * the server and the board out of step, so the board is never left frozen: tell the player and start a new session.
+ */
+function failAndRestart(): void {
+  toast.add({ title: GENERIC_ERROR, color: 'error' })
+  void start()
 }
 
 async function start(): Promise<void> {
@@ -78,8 +89,11 @@ function flip(cardId: SoloItemId): void {
     locked.value = true
     settle(revealCard(sessionId, card, inflight), (face) => {
       if (stale()) return
-      if (face) faces.value = { ...faces.value, [String(cardId)]: face }
-      else flipped.value = [] // reveal failed: undo the tap
+      if (!face) {
+        failAndRestart() // reveal failed (incl. 409)
+        return
+      }
+      faces.value = { ...faces.value, [String(cardId)]: face }
       locked.value = false
     })
     return
@@ -90,23 +104,24 @@ function flip(cardId: SoloItemId): void {
   flipped.value = [first.id, cardId]
   moves.value += 1
   locked.value = true
-  // Server rule (BE-45, not a client change): a move less than 1 s after the previous one earns 0 coins.
   settle(judgePair(sessionId, first, card, inflight), (res) => {
     if (stale()) return
-    if (res) {
-      const next = { ...faces.value }
-      if (res.faces[0]) next[String(first.id)] = res.faces[0]
-      if (res.faces[1]) next[String(cardId)] = res.faces[1]
-      faces.value = next
+    if (!res) {
+      failAndRestart() // pair check failed (incl. 409)
+      return
     }
-    if (res?.correct) {
+    const next = { ...faces.value }
+    if (res.faces[0]) next[String(first.id)] = res.faces[0]
+    if (res.faces[1]) next[String(cardId)] = res.faces[1]
+    faces.value = next
+    if (res.correct) {
       matched.value = [...matched.value, first.id, cardId]
       flipped.value = []
       locked.value = false
       if (matchedPairs.value >= PAIRS) void finish()
       return
     }
-    // Mismatch (or a failed check): show `wrong`, flip back after 800 ms.
+    // Mismatch: show `wrong`, flip back after 800 ms.
     wrong.value = [...flipped.value]
     timers.after(() => {
       wrong.value = []
@@ -134,7 +149,8 @@ async function finish(): Promise<void> {
   result.value = {
     accuracy: res?.results?.accuracy ?? Math.round((PAIRS / Math.max(moves.value, 1)) * 100),
     coins: res?.results?.syiling_earned ?? 0,
-    time,
+    time: res?.results?.time_seconds ?? time,
+    moves: res?.results?.moves ?? null,
   }
   phase.value = 'done'
 }
@@ -156,7 +172,7 @@ const CARD_VARIANT = { matched: 'soft', wrong: 'soft', flipped: 'soft', '': 'sol
 
 const resultTiles = computed(() => [
   { label: 'Masa', value: formatClock(result.value.time), tone: 'text-info' },
-  { label: 'Langkah', value: String(moves.value), tone: 'text-primary-t' },
+  { label: 'Langkah', value: String(result.value.moves ?? moves.value), tone: 'text-primary-t' },
   { label: 'Ketepatan', value: `${String(result.value.accuracy)}%`, tone: 'text-success' },
   { label: 'Syiling 🪙', value: `+${String(result.value.coins)}`, tone: 'text-warning' },
 ])

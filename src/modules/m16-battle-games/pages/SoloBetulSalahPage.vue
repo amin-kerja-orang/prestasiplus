@@ -13,7 +13,7 @@ import ResultCard from '../components/solo/ResultCard.vue'
 import GameHud from '../components/solo/GameHud.vue'
 import { betulSalahGain, betulSalahTitle, ratio } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
-import { createInflight, judgeBetulSalah, settle } from '../components/solo/solo-check'
+import { CONFLICT, createInflight, judgeBetulSalah, settle } from '../components/solo/solo-check'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 import { DsLoadError } from '@/ds'
 
@@ -24,6 +24,14 @@ const STEP_MS = 800
 const timers = useGameTimers()
 const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('betul-salah')
+
+interface ResultState {
+  newRecord: boolean
+  credited: number
+  serverScore?: number
+  serverCorrect?: number
+  serverAnswered?: number
+}
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
 const phase = ref<Phase>('idle')
@@ -37,7 +45,8 @@ const answered = ref(0)
 const timeLeft = ref(GAME_SECONDS)
 const feedback = ref<'' | '✅' | '❌'>('')
 const checking = ref(false)
-const result = ref({ newRecord: false, credited: 0 })
+/** `server*`: the values the server computed (http mode); they replace the local ones on the result card. */
+const result = ref<ResultState>({ newRecord: false, credited: 0 })
 let coins = 0
 let run = 0 // incremented by reset(): a check result of an earlier run is dropped
 
@@ -91,7 +100,8 @@ function answer(choice: boolean): void {
   settle(judgeBetulSalah(payload.value?.sessionId ?? '', item, choice, inflight), (verdict) => {
     if (myRun !== run) return // restarted while the check was in flight
     checking.value = false
-    const ok = verdict?.correct === true // a failed check counts as wrong
+    // A failed check counts as wrong; a 409 (already checked) resolves the item with 0 points and is never re-posted.
+    const ok = verdict !== CONFLICT && verdict?.correct === true
     answered.value += 1
     if (ok) {
       correct.value += 1
@@ -125,13 +135,24 @@ async function finish(): Promise<void> {
     score: score.value,
     syiling_earned: coins,
   }, inflight)
-  result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
+  result.value = {
+    newRecord: res?.is_new_record === true,
+    credited: res?.syiling_awarded ?? 0,
+    serverScore: res?.score,
+    serverCorrect: res?.correct_count,
+    serverAnswered: res?.total_answered,
+  }
   phase.value = 'done'
 }
 
+const shownScore = computed(() => result.value.serverScore ?? score.value)
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
-  { label: 'Ketepatan', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Skor Total', value: String(shownScore.value), tone: 'text-primary-t' },
+  {
+    label: 'Ketepatan',
+    value: ratio(result.value.serverCorrect ?? correct.value, result.value.serverAnswered ?? answered.value),
+    tone: 'text-success',
+  },
   { label: 'Kombo Max', value: `${String(maxStreak.value)} 🔥`, tone: 'text-warning' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
@@ -213,7 +234,7 @@ watch(darjah, () => void start(), { immediate: true })
       <ResultCard
         v-if="phase === 'done'"
         theme="indigo"
-        :title="betulSalahTitle(score)"
+        :title="betulSalahTitle(shownScore)"
         subtitle="45 saat — Betul atau Salah!"
         :tiles="tiles"
         :new-record="result.newRecord"
