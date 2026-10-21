@@ -69,7 +69,7 @@ export async function* readExpanded<E>(
   if (!spec || spec.group !== 'staging') throw new RangeError(`Table "${options.table}" is not a staging table.`)
   const known = new Set(columnNames(spec))
   for (const c of options.columns) if (!known.has(c)) throw new RangeError(`Column "${c}" is not in the staging spec of "${options.table}".`)
-  const select = ['id', ...options.columns].map((c) => `${quoteIdent(c)}::text AS ${quoteIdent(c)}`).join(', ')
+  const select = ['id', ...options.columns].map((c) => `t.${quoteIdent(c)}::text AS ${quoteIdent(c)}`).join(', ')
   const from = `${quoteIdent(STAGING_SCHEMA)}.${quoteIdent(options.table)}`
   let afterId: string | null = null
   let afterPos = -1
@@ -81,7 +81,8 @@ export async function* readExpanded<E>(
   let first = true
   for (;;) {
     const res: pg.QueryResult<StagedRow> = await pool.query<StagedRow>(
-      `SELECT ${select} FROM ${from} WHERE ($1::bigint IS NULL OR "id" ${first ? '>=' : '>'} $1::bigint)${options.where ? ` AND (${options.where})` : ''} ORDER BY "id" LIMIT $2`,
+      // `t."id"` is the bigint column; a bare `ORDER BY "id"` would bind to the text output alias of the same name.
+      `SELECT ${select} FROM ${from} t WHERE ($1::bigint IS NULL OR t."id" ${first ? '>=' : '>'} $1::bigint)${options.where ? ` AND (${options.where})` : ''} ORDER BY t."id" LIMIT $2`,
       [afterId, pageSize],
     )
     for (const row of res.rows) {
