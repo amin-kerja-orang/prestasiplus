@@ -43,7 +43,7 @@ const options = (extra: Partial<PipelineOptions> = {}): PipelineOptions => ({
   verify: fakeVerify, writeReport: () => ({ json: join(outDir, 'recon-test.json'), md: join(outDir, 'recon-test.md') }), ...extra,
 })
 
-/** `table/legacy_id` -> md5 of the whole row (ids, timestamps and legacy_hash included) for every legacy-keyed v2 table. */
+/** `table/legacy_id` (etl_id_map: `table/entity/legacy_id`) -> md5 of the whole row (ids, timestamps and legacy_hash included) for every legacy-keyed v2 table. */
 async function snapshot(): Promise<Map<string, string>> {
   const tables = await h.q<{ table_name: string }>(
     `SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'legacy_source'
@@ -52,8 +52,10 @@ async function snapshot(): Promise<Map<string, string>> {
   )
   const out = new Map<string, string>()
   for (const { table_name: t } of tables) {
+    // etl_id_map is keyed by (entity, legacy_id): the legacy id alone repeats across entities.
+    const key = t === 'etl_id_map' ? `x.entity || '/' || x.legacy_id` : 'x.legacy_id'
     const rows = await h.q<{ legacy_id: string; h: string }>(
-      `SELECT legacy_id, md5(to_jsonb(x)::text) AS h FROM "${t}" x WHERE legacy_source = 'cloud'`,
+      `SELECT ${key} AS legacy_id, md5(to_jsonb(x)::text) AS h FROM "${t}" x WHERE legacy_source = 'cloud'`,
     )
     for (const r of rows) out.set(`${t}/${r.legacy_id}`, r.h)
   }
@@ -175,4 +177,54 @@ describe('preconditions and flags', () => {
     expect(text).toMatch(/delta report: .*\.migration-out.*delta-.*\.json/)
     expect(text).not.toMatch(/@/)
   }, 300_000)
+})
+
+/** Sets `_row_hash` the way the staging loader would after a change: a hash of the row without the loader's own columns. */
+async function restage(table: string, id: string, set: string): Promise<void> {
+  await h.q(`update staging_cloud.${table} set ${set}, updated_at = $2::timestamptz where id = $1::bigint`, [id, NEWER])
+  const row = (await h.q<{ j: Record<string, unknown> }>(
+    `select to_jsonb(t) - '_row_hash' - '_loaded_at' as j from staging_cloud.${table} t where id = $1::bigint`, [id],
+  ))[0]?.j
+  await h.q(`update staging_cloud.${table} set _row_hash = $2 where id = $1::bigint`, [id, hashRow(row ?? {})])
+}
+
+describe('a changed core row and a new row', () => {
+  it('users row: the apply writes exactly that user; the dry-run skips activity (its preflight needs the core apply)', async () => {
+    expect((await runDelta({ ...options(), since: SINCE })).status).toBe('succeeded') // bring the database level with staging
+    const base = await snapshot()
+    const userId = (await h.q<{ legacy_id: string }>(`select legacy_id from users where legacy_source = 'cloud' order by legacy_id::bigint limit 1`))[0]?.legacy_id ?? ''
+    expect(userId).not.toBe('')
+    await restage('users', userId, `name = 'Renamed Fixture User'`)
+
+    const dry = await runDelta({ ...options({ mode: 'dry-run' }), since: SINCE })
+    expect(dry.status).toBe('succeeded')
+    expect(dry.stages.map((s) => [s.name, s.mode, s.status])).toEqual([['core', 'dry-run', 'succeeded'], ['activity', 'dry-run', 'skipped']])
+    expect(dry.stages[1]?.skippedReason).toBe('needs migrate:core --apply first')
+    expect(touched(dry)).toEqual(['core/users:0+1'])
+    expect(diff(base, await snapshot())).toEqual([])
+
+    const applied = await runDelta({ ...options(), since: SINCE })
+    expect(applied.status).toBe('succeeded')
+    expect(diff(base, await snapshot())).toEqual([`users/${userId}`])
+    expect(touched(applied)).toEqual(['core/users:0+1'])
+    expect(applied.delta?.staged.find((t) => t.table === 'users')?.changedRows).toBe(1)
+  }, 400_000)
+
+  it('a new staged row is inserted (inserted = 1 for its entity) and nothing else changes', async () => {
+    const base = await snapshot()
+    await h.q(
+      `insert into staging_cloud.practice_sessions
+       select (jsonb_populate_record(null::staging_cloud.practice_sessions,
+                 to_jsonb(t) || '{"id": 9001, "client_uuid": "00000000-0000-0000-0000-000000009001"}'::jsonb)).*
+       from staging_cloud.practice_sessions t where id = $1::bigint`, [legacyId],
+    )
+    await restage('practice_sessions', '9001', 'duration_seconds = duration_seconds')
+
+    const r = await runDelta({ ...options(), since: SINCE })
+    expect(r.status).toBe('succeeded')
+    // The new row and its id-map entry (the only bookkeeping row a load adds).
+    expect(diff(base, await snapshot())).toEqual(['etl_id_map/practice_sessions/9001', 'practice_sessions/9001'])
+    expect(touched(r)).toEqual(['activity/practice_sessions:1+0'])
+    expect(r.delta?.entities.find((e) => e.entity === 'practice_sessions')).toMatchObject({ read: 6, inserted: 1, updated: 0 })
+  }, 400_000)
 })

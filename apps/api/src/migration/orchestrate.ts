@@ -33,7 +33,7 @@
  *   path has no such limit: core dry-run, core apply, then activity dry-run and apply.
  *
  * `migrate:verify` runs the reconciliation (exit 0 on pass, 1 on fail). `migrate:rollback` deletes the rows loaded from
- * the source (dry-run by default, `--confirm` must equal the database name). `migrate:link-questions` is the optional
+ * the source (dry-run by default, `--confirm` must equal the database name; a refusal, `RollbackRefusedError`, exits 2). `migrate:link-questions` is the optional
  * MIG-09 backfill. The source is always `cloud`.
  *
  * Environment and guards are those of the kit: DATABASE_URL, `PP_ALLOW_MIGRATE_APPLY=1` for any `--apply`, and in
@@ -482,6 +482,9 @@ export const migrateRollback: MigrateCommand = {
     ctx.out('table | deleted')
     for (const t of report.tables) ctx.out(`${t.table} | ${t.deleted}`)
     ctx.out(`etl_id_map | ${report.idMapDeleted}`)
+    // Adopted seed rows that other tables use are kept and unmarked, not deleted (counts only).
+    for (const r of report.released ?? []) ctx.out(`released ${r.table}: ${r.rows}`)
+    for (const w of report.warnings ?? []) ctx.out(`warning: ${w}`)
     return report.status === 'succeeded' ? 0 : 1
   },
 }
