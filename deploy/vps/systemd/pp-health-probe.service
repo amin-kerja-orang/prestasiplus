@@ -1,0 +1,12 @@
+[Unit]
+Description=PrestasiPlus health probe
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ppdeploy
+Group=ppdeploy
+Environment=PP_ENV_DIR=/etc/pretasiplus
+WorkingDirectory=/opt/pretasiplus
+ExecStart=/opt/pretasiplus/deploy/vps/monitoring/health-probe.sh --quiet
+TimeoutStartSec=2min

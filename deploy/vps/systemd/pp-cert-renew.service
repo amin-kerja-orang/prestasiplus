@@ -1,0 +1,13 @@
+[Unit]
+Description=PrestasiPlus certificate renewal check
+After=docker.service
+Requires=docker.service
+OnFailure=pp-alert@%n.service
+
+[Service]
+Type=oneshot
+User=ppdeploy
+Group=ppdeploy
+Environment=PP_ENV_DIR=/etc/pretasiplus
+WorkingDirectory=/opt/pretasiplus
+ExecStart=/opt/pretasiplus/deploy/vps/tls/renew.sh

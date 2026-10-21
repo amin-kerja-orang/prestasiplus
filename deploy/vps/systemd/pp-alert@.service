@@ -1,0 +1,10 @@
+# Started by OnFailure= of the other units: pp-alert@pp-backup.service.service sends "unit failed" to the webhook.
+[Unit]
+Description=PrestasiPlus alert for failed unit %i
+
+[Service]
+Type=oneshot
+User=ppdeploy
+Group=ppdeploy
+Environment=PP_ENV_DIR=/etc/pretasiplus
+ExecStart=/opt/pretasiplus/deploy/vps/monitoring/alert.sh "systemd unit %i failed on this server (journalctl -u %i)"
