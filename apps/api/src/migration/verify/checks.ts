@@ -89,7 +89,9 @@ async function usersPerRolePerSchool({ pool, source }: CheckContext): Promise<St
      WHERE x.legacy_source = $1 GROUP BY 1, 2`,
     [source],
   )
-  const expected = countMap(staged.rows.map((r) => ({ k: `${ROLE_MAP[r.role ?? ''] ?? `unmapped(${r.role ?? ''})`} | school ${r.school ?? 'none'}`, n: r.n })))
+  // A staged role word is printed only when it looks like a code; free text never reaches the report.
+  const roleLabel = (raw: string | null): string => ROLE_MAP[raw ?? ''] ?? `unmapped(${/^[a-z_]{1,30}$/.test(raw ?? '') ? raw : 'other'})`
+  const expected = countMap(staged.rows.map((r) => ({ k: `${roleLabel(r.role)} | school ${r.school ?? 'none'}`, n: r.n })))
   const actual = countMap(loaded.rows.map((r) => ({ k: `${r.role} | school ${r.school ?? 'none'}`, n: r.n })))
   const diff = diffMaps(expected, actual)
   return [
@@ -277,7 +279,9 @@ async function orphans({ pool, source }: CheckContext): Promise<StatCheck[]> {
       expected: 0,
       actual: total,
       status: total === 0 ? 'ok' : 'mismatch',
-      detail: total === 0 ? `${fks.length} foreign keys scanned, no orphan` : capped(failing),
+      detail:
+        (total === 0 ? `${fks.length} foreign keys scanned, no orphan` : capped(failing)) +
+        '. A column with a real foreign key can show an orphan only if the constraint is NOT VALID or disabled; the live rule is the soft reference on practice answers.',
     },
   ]
   // Soft reference by design (no FK to the question): an answer needs the question OR its curriculum subject (plan 14.5 item 2).
@@ -304,19 +308,18 @@ async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[
   const roles = await n(`SELECT count(*)::int AS n FROM user_roles WHERE legacy_source = $1`)
   const scopes = await n(`SELECT count(*)::int AS n FROM user_scopes WHERE legacy_source = $1`)
   const teachers = await n(`SELECT count(*)::int AS n FROM teacher_profiles WHERE legacy_source = $1`)
-  const attempts = await n(`SELECT count(*)::int AS n FROM exam_attempts WHERE legacy_source = $1`)
   const results = await n(
     `SELECT count(*)::int AS n FROM attempt_results r JOIN exam_attempts a ON a.id = r.attempt_id WHERE a.legacy_source = $1`,
   )
-  const atMost = (name: string, actual: number, limit: number, why: string): StatCheck => ({
-    name,
-    kind: 'counts',
-    expected: `<= ${limit}`,
-    actual,
-    status: actual <= limit ? 'ok' : 'mismatch',
-    detail: why,
-  })
-  return [
+  const attempts = await n(`SELECT count(*)::int AS n FROM exam_attempts WHERE legacy_source = $1`)
+
+  // Exact rules of the transform: a national scope for every admin, a district scope for a ppd_officer whose school has a
+  // state and a district (`transformUser`). The inputs are the loaded rows themselves, so deleting scope rows is caught.
+  const scopeRule = await n(
+    `SELECT count(*)::int AS n FROM users x JOIN user_roles r ON r.user_id = x.id LEFT JOIN schools s ON s.id = x.school_id
+     WHERE x.legacy_source = $1 AND (r.role = 'admin' OR (r.role = 'ppd_officer' AND s.state IS NOT NULL AND s.district IS NOT NULL))`,
+  )
+  const out: StatCheck[] = [
     {
       name: 'user_roles rows versus users (one role per user)',
       kind: 'counts',
@@ -324,10 +327,54 @@ async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[
       actual: roles,
       status: roles === users ? 'ok' : 'mismatch',
     },
-    atMost('user_scopes rows versus users', scopes, users, 'only administrators and officers carry a scope'),
-    atMost('teacher_profiles rows versus users', teachers, users, 'only teachers with a subject, qualification or experience carry a profile'),
-    atMost('attempt_results rows versus exam attempts', results, attempts, 'an attempt without a score has no result row'),
+    {
+      name: 'user_scopes rows versus admins and scoped officers',
+      kind: 'counts',
+      expected: scopeRule,
+      actual: scopes,
+      status: scopes === scopeRule ? 'ok' : 'mismatch',
+      detail: 'one national scope per admin, one district scope per ppd_officer whose school has a state and a district',
+    },
   ]
+
+  // The teacher profile and the attempt result depend on staged columns: the loaded rows that have the input must have the output.
+  if (!(await exists(pool, STAGING_SCHEMA, 'users'))) {
+    out.push(reported('teacher_profiles rows versus teachers with profile data', 'counts', 'staging_cloud.users is not available; not compared'))
+  } else {
+    const blank = (c: string): string => `nullif(btrim(regexp_replace(u.${c}::text, '\\s+', ' ', 'g')), '') IS NOT NULL`
+    const expected = await n(
+      `SELECT count(*)::int AS n FROM ${S}."users" u
+       WHERE EXISTS (SELECT 1 FROM users x JOIN user_roles r ON r.user_id = x.id AND r.role = 'teacher'
+                     WHERE x.legacy_source = $1 AND x.legacy_id = u.id::text)
+         AND (${blank('teaching_subject')} OR ${blank('teaching_qualification')} OR ${blank('teaching_experience_years')})`,
+    )
+    out.push({
+      name: 'teacher_profiles rows versus teachers with profile data',
+      kind: 'counts',
+      expected,
+      actual: teachers,
+      status: teachers === expected ? 'ok' : 'mismatch',
+      detail: 'a teacher gets a profile when the staged row has a subject, a qualification or an experience value',
+    })
+  }
+  if (!(await exists(pool, STAGING_SCHEMA, 'exam_attempts'))) {
+    out.push(reported('attempt_results rows versus scored exam attempts', 'counts', 'staging_cloud.exam_attempts is not available; not compared'))
+  } else {
+    const expected = await n(
+      `SELECT count(*)::int AS n FROM ${S}."exam_attempts" a
+       WHERE EXISTS (SELECT 1 FROM exam_attempts x WHERE x.legacy_source = $1 AND x.legacy_id = a.id::text)
+         AND nullif(btrim(a.score::text), '') IS NOT NULL AND nullif(btrim(a.max_score::text), '') IS NOT NULL`,
+    )
+    out.push({
+      name: 'attempt_results rows versus scored exam attempts',
+      kind: 'counts',
+      expected,
+      actual: results,
+      status: results === expected ? 'ok' : 'mismatch',
+      detail: `an attempt without a score or a maximum has no result row (${attempts} migrated attempts)`,
+    })
+  }
+  return out
 }
 
 // ---------------------------------------------------------------- (g) accepted drift

@@ -84,6 +84,31 @@ describe('dry-run', () => {
   })
 })
 
+describe('concurrent work', () => {
+  it('refuses while an apply run of the source is marked running', async () => {
+    await h.q(`insert into etl_runs (mode, sources, entity_set, input_hash, status, counters) values ('apply', array['cloud'], array['users'], 'running-test', 'running', '{}'::jsonb)`)
+    try {
+      await expect(call()).rejects.toBeInstanceOf(RollbackRefusedError)
+      await expect(call({ dryRun: true })).rejects.toThrow(/marked running/)
+      expect(await legacyTableCounts(h)).toEqual(afterLoad)
+    } finally {
+      await h.q(`delete from etl_runs where input_hash = 'running-test'`)
+    }
+  })
+
+  it('refuses while another rollback of the source holds the advisory lock', async () => {
+    const other = await h.env.pool.connect()
+    try {
+      await other.query(`SELECT pg_advisory_lock(hashtextextended('etl:rollback:cloud', 0))`)
+      await expect(call()).rejects.toThrow(/another rollback/)
+      expect(await legacyTableCounts(h)).toEqual(afterLoad)
+    } finally {
+      await other.query(`SELECT pg_advisory_unlock_all()`)
+      other.release()
+    }
+  })
+})
+
 describe('pinned rows', () => {
   it('refuses, and changes nothing, while v2 data depends on a migrated user', async () => {
     const migrated = (await h.q<{ id: string }>(`select min(id)::text as id from users where legacy_source = 'cloud'`))[0]?.id as string
