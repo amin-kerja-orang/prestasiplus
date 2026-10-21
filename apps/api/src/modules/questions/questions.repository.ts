@@ -142,6 +142,9 @@ export class QuestionsRepository {
    * Exact versions, whatever their status or the question's `is_active` (a pinned read: practice grades a
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
+   *
+   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
+   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
@@ -681,7 +684,10 @@ export class QuestionsRepository {
     return this.hydratePicks(picks)
   }
 
-  /** `hydrate` for explicit (question, version) pairs (`getVersions`). */
+  /**
+   * `hydrate` for explicit (question, version) pairs (`getVersions`). Pinned grading only, never a serving
+   * path: it applies no active, status or PKSK scope.
+   */
   private async hydrateVersions(wanted: readonly { id: bigint; versionNo: number }[]): Promise<QuestionRecord[]> {
     const questions = await this.db.question.findMany({
       where: { id: { in: [...new Set(wanted.map((w) => w.id))] } },

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import { isIdString } from '../../../db/ids'
-import type { Prng } from '../../../db/prng'
+import { mulberry32, type Prng } from '../../../db/prng'
 import { QuestionsRepository } from '../../questions'
 import type { QuestionFilter, QuestionRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
@@ -9,8 +9,10 @@ import type { PracticeQuestion, PracticeQuestionSource, PracticeSelection } from
 import { versionKey } from '../ports'
 import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
 
-/** Ids hydrated per round while `sample` / `chapterQuestionIds` look for servable questions. */
-const BATCH = 100
+/** Most ids hydrated in one `getMany` call (one hydrate round trip); `hydratePicks` binds 2 parameters per id. */
+const HYDRATE_MAX = 500
+/** `sample` asks the bank for `n * OVER_FETCH` ids, and widens by the same factor while the draw comes up short. */
+export const OVER_FETCH = 4
 /** Refusals logged once per question version; the memory is bounded (cleared when full). */
 const LOGGED_MAX = 10_000
 
@@ -29,6 +31,8 @@ const LOGGED_MAX = 10_000
  *
  * `versions` is a pinned read (OD-28, AC 11): the exact version a session served, without re-checking
  * eligibility, so a later edit, unpublish or deactivation never changes how an open session is graded.
+ * It is for grading an already-served version ONLY and must never feed a serving path (`sample`,
+ * `chapterQuestionIds`, `live`): it skips the active, published and PKSK scope.
  */
 @Injectable()
 export class Be09PracticeQuestionSource implements PracticeQuestionSource {
@@ -42,31 +46,33 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 
   async sample(filter: PracticeSelection, n: number, rng: Prng): Promise<string[]> {
     if (!Number.isSafeInteger(n) || n <= 0) return []
-    // BE-09 `sample` forces published + active and shuffles the WHOLE eligible list (Fisher-Yates over the
-    // ascending ids with `rng`), so the same seed gives the same order. Walk it until `n` are servable.
-    const shuffled = await this.questions.sample(this.filterOf(filter), Number.MAX_SAFE_INTEGER, rng)
+    const f = this.filterOf(filter)
+    // BE-09 `sample` forces published + active and Fisher-Yates-shuffles the WHOLE eligible list before it
+    // slices, so a wider window keeps the same prefix as long as every window shuffles with the same stream.
+    // One child seed from the caller's stream gives each window an identical fresh copy: same seed, same draw.
+    const seed = rng.int(0, 0xffffffff)
     const out: string[] = []
-    for (let i = 0; i < shuffled.length && out.length < n; i += BATCH) {
-      const chunk = shuffled.slice(i, i + BATCH)
-      const servable = await this.servableIds(chunk)
-      for (const id of chunk) {
+    const seen = new Set<string>()
+    for (let limit = Math.min(n * OVER_FETCH, Number.MAX_SAFE_INTEGER); ; limit = Math.min(limit * OVER_FETCH, Number.MAX_SAFE_INTEGER)) {
+      const window = await this.questions.sample(f, limit, mulberry32(seed))
+      // Only ids not already checked (a concurrent publish can shift the window; never serve one twice).
+      const fresh = window.filter((id) => !seen.has(id))
+      for (const id of fresh) seen.add(id)
+      const servable = await this.servableIds(fresh)
+      for (const id of fresh) {
         if (out.length >= n) break
         if (servable.has(id)) out.push(id)
       }
+      // Done when the draw is full, or the bank had no more eligible ids than this window asked for.
+      if (out.length >= n || window.length < limit || limit === Number.MAX_SAFE_INTEGER) return out
     }
-    return out
   }
 
   async chapterQuestionIds(chapterId: string): Promise<string[]> {
     if (!isIdString(chapterId)) return []
     const ids = await this.questions.eligibleIds({ chapterId, type: 'mcq' })
-    const out: string[] = []
-    for (let i = 0; i < ids.length; i += BATCH) {
-      const chunk = ids.slice(i, i + BATCH)
-      const servable = await this.servableIds(chunk)
-      out.push(...chunk.filter((id) => servable.has(id)))
-    }
-    return out
+    const servable = await this.servableIds(ids)
+    return ids.filter((id) => servable.has(id))
   }
 
   async live(ids: readonly string[]): Promise<ReadonlyMap<string, PracticeQuestion>> {
@@ -76,6 +82,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return this.mapAll(records, (r) => r.id)
   }
 
+  /** Pinned grading read only: never a serving path (it skips the active, published and PKSK scope). */
   async versions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, PracticeQuestion>> {
     const wanted = refs.filter((r) => isIdString(r.questionId) && Number.isSafeInteger(r.versionNo) && r.versionNo >= 1)
     if (wanted.length === 0) return new Map()
@@ -96,10 +103,17 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     }
   }
 
-  /** The ids among `ids` whose live version is eligible and servable now. */
+  /**
+   * The ids among `ids` whose live version is eligible and servable now. One `getMany` (one hydrate round
+   * trip) per `HYDRATE_MAX` ids, so a typical draw window or chapter is a single round trip.
+   */
   private async servableIds(ids: readonly string[]): Promise<Set<string>> {
-    const records = await this.questions.getMany(ids, 'live')
-    return new Set(records.filter((r) => eligible(r) && this.check(r)).map((r) => r.id))
+    const out = new Set<string>()
+    for (let i = 0; i < ids.length; i += HYDRATE_MAX) {
+      const records = await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live')
+      for (const r of records) if (eligible(r) && this.check(r)) out.add(r.id)
+    }
+    return out
   }
 
   /** `servableMcq`, logging a refusal once per version with the id and reason only (never content or the key). */

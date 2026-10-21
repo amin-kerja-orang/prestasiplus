@@ -254,6 +254,29 @@ describe('filters, pinned versions and the contributor', () => {
     for (const id of [byTeacher, byAdmin]) await c.svc.deactivate(id)
   })
 
+  // #92 G4 nit 4. PKSK questions (a `pksk_domain` tag) belong to M07; BE-42 adds the bank's NOT_PKSK scope and
+  // the `pksk_domains` table in the same change. Until BE-42 is in this tree there is no PKSK scope to test,
+  // so the test skips itself on the table's absence instead of depending on Group A code.
+  it('a published PKSK question is never drawn, listed for a chapter or served live (needs BE-42)', async (ctx) => {
+    const has = (await c.t.db.query<{ t: string | null }>(`select to_regclass('public.pksk_domains')::text t`))[0]?.t
+    if (!has) {
+      ctx.skip('BE-42 (PKSK) is not merged into this tree: no pksk_domains table and no NOT_PKSK bank scope yet')
+      return
+    }
+    const id = await mcq({ level: c.dLevel, text: 'Soalan PKSK BE-12' })
+    await c.t.db.query(`update question_versions set chapter_id = $2 where question_id = $1`, [id, c.chapterId])
+    await c.t.db.query(
+      `insert into question_tags (question_id, kind, code) values ($1, 'pksk_domain', 'BE12-PKSK'), ($1, 'pksk_level', 'T1') on conflict do nothing`,
+      [id],
+    )
+    await pool(id)
+    const sel = { subjectId: c.w.tag.subjectId, educationLevelIds: [c.dLevel] }
+    for (let seed = 0; seed < 10; seed++) expect(await c.source.sample(sel, 1000, prngStream(`k${String(seed)}`))).not.toContain(id)
+    expect(await c.source.sample({ subjectId: c.w.tag.subjectId, spmPool: true }, 1000, prngStream('kp'))).not.toContain(id)
+    expect(await c.source.chapterQuestionIds(c.chapterId)).not.toContain(id)
+    expect((await c.source.live([id])).size).toBe(0)
+  })
+
   it('bad ids and an empty selection never reach the bank', async () => {
     expect((await c.source.live(['abc', '-1', ''])).size).toBe(0)
     expect((await c.source.versions([{ questionId: 'x', versionNo: 1 }, { questionId: '1', versionNo: 0 }])).size).toBe(0)
