@@ -124,7 +124,7 @@ describe('http mode: the check / reveal routes with string ids', () => {
     revealKadMemoriCard.mockRejectedValueOnce(new Error('409'))
     await expect(judgeBetulSalah('S', { id: 1 }, true)).resolves.toBeNull()
     await expect(revealCard('S', { id: 'x' })).resolves.toBeNull()
-    expect(log).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    expect(log).toHaveBeenCalledWith('Check error:', 'Error')
     log.mockRestore()
   })
 
@@ -145,18 +145,26 @@ describe('http mode: the check / reveal routes with string ids', () => {
     log.mockRestore()
   })
 
-  it('settle does not report an error thrown by apply as a check error', async () => {
+  it('settle logs an error thrown by apply (name only) and runs onApplyError; no unhandled rejection', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const unhandled: unknown[] = []
     const onUnhandled = (e: unknown) => unhandled.push(e)
     process.on('unhandledRejection', onUnhandled)
-    settle(Promise.resolve(1), () => {
-      throw new Error('apply broke')
-    })
+    const recovered = vi.fn()
+    settle(
+      Promise.resolve(1),
+      () => {
+        throw new TypeError('apply broke with a secret')
+      },
+      recovered,
+    )
     await new Promise((r) => setTimeout(r, 10))
     process.off('unhandledRejection', onUnhandled)
+    expect(recovered).toHaveBeenCalledTimes(1)
+    expect(log).toHaveBeenCalledWith('Apply error:', 'TypeError')
     expect(log).not.toHaveBeenCalledWith('Check error:', expect.anything())
-    expect(unhandled).toHaveLength(1)
+    expect(JSON.stringify(log.mock.calls)).not.toContain('secret')
+    expect(unhandled).toHaveLength(0)
     log.mockRestore()
   })
 

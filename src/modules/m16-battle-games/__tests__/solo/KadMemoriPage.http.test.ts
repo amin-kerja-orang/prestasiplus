@@ -128,7 +128,7 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     expect(card(107).attributes('data-state')).toBe('hidden')
     d.resolve(null)
     await vi.advanceTimersByTimeAsync(0)
-    expect(err).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    expect(err).toHaveBeenCalledWith('Check error:', 'Error')
     expect(useToast().toasts.value.map((t) => t.title)).toContain(GENERIC_ERROR)
     expect(fetchSoloGame).toHaveBeenCalledTimes(2) // a new session
     expect(card(101).attributes('data-state')).toBe('hidden')
@@ -234,5 +234,45 @@ describe('S17 Kad Memori, http mode (keyless, D58a)', () => {
     expect(overlay).toContain('8') // Langkah from the server (the local count is 6)
     expect(overlay).toContain('75%')
     expect(overlay).not.toContain('100%')
+  })
+
+  it('Cuba Semula after a failed load restarts the game and it plays', async () => {
+    fetchSoloGame.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    wrapper = await mountAt(SoloKadMemoriPage, '/permainan/kad-memori')
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('Cuba Semula'))!
+    await retry.trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
+    await tap(101)
+    expect(card(101).attributes('data-state')).toBe('flipped')
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(wrapper.get('[data-testid="solo-time"]').text()).toContain('0:02')
+  })
+
+  it('a result that settles after the page was left shows no toast and starts no session', async () => {
+    useToast().clear()
+    const d = deferred<null>()
+    revealKadMemoriCard.mockImplementationOnce(() => d.promise.then(() => Promise.reject(new Error('boom'))))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await mount()
+    await tap(101)
+    wrapper!.unmount()
+    wrapper = undefined
+    d.resolve(null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useToast().toasts.value).toHaveLength(0)
+    expect(fetchSoloGame).toHaveBeenCalledTimes(1)
+  })
+
+  it('a pair check that throws while being read unlocks the board', async () => {
+    checkSoloAnswer.mockResolvedValueOnce({ correct: true }) // no `cards`: reading the faces throws
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await mount()
+    await tap(101)
+    await tap(107)
+    expect(err).toHaveBeenCalledWith('Check error:', 'TypeError')
+    expect(card(101).attributes('data-state')).toBe('hidden')
+    await tap(102)
+    expect(card(102).attributes('data-state')).toBe('flipped')
   })
 })

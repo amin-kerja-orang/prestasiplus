@@ -222,4 +222,17 @@ describe('Susun Jawapan, http mode (D58a)', () => {
     expect(overlay).toContain('7/20')
     expect(overlay).not.toContain('20/20')
   })
+
+  it('Cuba Semula after a failed load restarts the game and it plays', async () => {
+    fetchSoloGame.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    wrapper = await mountAt(SoloSusunJawapanPage, '/permainan/susun-jawapan?darjah=4')
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('Cuba Semula'))!
+    await retry.trigger('click')
+    await flushPromises()
+    await spell('ABC')
+    await semak()
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+    expect(byTestId('solo-feedback').text()).toBe('🎉 BETUL! +6 mata')
+  })
 })

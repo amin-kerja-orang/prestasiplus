@@ -120,6 +120,8 @@ function answer(choice: boolean): void {
       index.value += 1
       if (index.value >= statements.value.length) void finish()
     }, FEEDBACK_MS)
+  }, () => {
+    checking.value = false // apply threw: do not leave the game locked
   })
 }
 
@@ -168,7 +170,7 @@ watch(darjah, () => void start(), { immediate: true })
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+      <DsLoadError v-else-if="error" :message="error" @retry="start()" />
 
       <CountdownView v-if="phase === 'countdown'" title="✅❌ BETUL ATAU SALAH" :count="count" />
 

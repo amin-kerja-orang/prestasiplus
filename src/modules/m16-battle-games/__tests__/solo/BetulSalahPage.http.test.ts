@@ -120,7 +120,7 @@ describe('S13 Betul atau Salah, http mode (D58a)', () => {
     await start()
     await click('solo-betul')
     await vi.advanceTimersByTimeAsync(0)
-    expect(log).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    expect(log).toHaveBeenCalledWith('Check error:', 'Error')
     expect(wrapper!.get('[data-testid="solo-feedback"]').text()).toBe('❌')
     await vi.advanceTimersByTimeAsync(700)
     expect(wrapper!.text()).toContain('Kenyataan 2')
@@ -184,5 +184,18 @@ describe('S13 Betul atau Salah, http mode (D58a)', () => {
     expect(overlay).toContain('99')
     expect(overlay).toContain('7/9')
     expect(overlay).not.toContain('1/1')
+  })
+
+  it('Cuba Semula after a failed load restarts the game and it plays', async () => {
+    fetchSoloGame.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    wrapper = await mountAt(SoloBetulSalahPage, '/permainan/betul-salah?darjah=4')
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('Cuba Semula'))!
+    await retry.trigger('click')
+    await vi.advanceTimersByTimeAsync(2400)
+    await click('solo-betul')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="solo-score"]').text()).toBe('12')
   })
 })

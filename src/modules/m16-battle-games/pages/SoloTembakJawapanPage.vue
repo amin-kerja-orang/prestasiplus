@@ -260,6 +260,8 @@ function tap(tileIndex: number): void {
     }
     // A miss held back while the check was pending; a null result costs nothing, but the deadline stands.
     if (missDue.value && phase.value === 'playing') missQuestion()
+  }, () => {
+    checking.value = false // apply threw: do not leave the game locked
   })
 }
 
@@ -309,7 +311,7 @@ watch(darjah, () => void start(), { immediate: true })
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+      <DsLoadError v-else-if="error" :message="error" @retry="start()" />
 
       <CountdownView
         v-if="phase === 'countdown'"

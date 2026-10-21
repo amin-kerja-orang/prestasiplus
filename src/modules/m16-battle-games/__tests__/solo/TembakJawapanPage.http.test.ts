@@ -205,4 +205,16 @@ describe('Tembak Jawapan, http mode (D58a)', () => {
     expect(overlay).toContain('7/9')
     expect(overlay).not.toContain('1/4')
   })
+
+  it('Cuba Semula after a failed load restarts the game and it plays', async () => {
+    fetchSoloGame.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    wrapper = await mountAt(SoloTembakJawapanPage, '/permainan/tembak-jawapan?darjah=4')
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('Cuba Semula'))!
+    await retry.trigger('click')
+    await vi.advanceTimersByTimeAsync(2400)
+    await tap(0)
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+    expect(text('solo-score')).toBe('10')
+  })
 })

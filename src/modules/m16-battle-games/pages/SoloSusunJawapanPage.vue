@@ -158,6 +158,8 @@ function verify(): void {
       if (isHttpMode()) revealed.value = r?.answer ?? null // r is null on a network failure: a retry re-posts
       check.value = 'wrong'
     }
+  }, () => {
+    checking.value = false // apply threw: do not leave the game locked
   })
 }
 
@@ -237,7 +239,7 @@ watch(darjah, () => void start(), { immediate: true })
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+      <DsLoadError v-else-if="error" :message="error" @retry="start()" />
 
       <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
         <div class="flex items-center justify-between gap-2">

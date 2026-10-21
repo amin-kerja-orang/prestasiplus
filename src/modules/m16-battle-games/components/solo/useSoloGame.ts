@@ -5,6 +5,7 @@ import { isHttpMode } from '@/api/mode'
 
 import { fetchSoloGame, submitSoloGame } from '../../api'
 import type { SoloGame, SoloPayloads, SoloSubmitBody, SoloSubmitResponse } from '../../api'
+import { errorInfo } from './solo-check'
 import { parseDarjah } from './solo-lib'
 
 /**
@@ -57,10 +58,10 @@ export async function submitResult(
     if (before) await before.idle()
     const res = await submitSoloGame(game, isHttpMode() ? { session_id: body.session_id } : body)
     if (res.status >= 200 && res.status < 300) return res.body
-    console.error('Submit error:', res.body.message ?? res.status)
+    console.error('Submit error:', res.status)
     return null
   } catch (e) {
-    console.error('Submit error:', e)
+    console.error('Submit error:', errorInfo(e))
     return null
   }
 }

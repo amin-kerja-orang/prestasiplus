@@ -27,11 +27,25 @@ export type Judged<T> = T | Promise<T>
 export const CONFLICT = 'conflict' as const
 export type Conflict = typeof CONFLICT
 
-/** Applies `r` now when it is a value, or when the Promise settles (an error inside `apply` is not a check error). */
-export function settle<T>(r: Judged<T>, apply: (v: T) => void): void {
+/** What is safe to log about a failure: the HTTP status of an API error, else the error name (never a message or body). */
+export function errorInfo(e: unknown): number | string {
+  if (isApiError(e)) return e.status
+  return e instanceof Error ? e.name : 'unknown'
+}
+
+/**
+ * Applies `r` now when it is a value, or when the Promise settles (an error inside `apply` is not a check error).
+ * An exception thrown by `apply` of a settled Promise is logged ("Apply error:", name only) and `onApplyError`
+ * runs so the page can release its lock (it also runs when the Promise itself rejects); it never becomes an unhandled rejection.
+ */
+export function settle<T>(r: Judged<T>, apply: (v: T) => void, onApplyError?: () => void): void {
   if (r instanceof Promise) {
     r.then(apply, (e: unknown) => {
-      console.error('Check error:', e)
+      console.error('Check error:', errorInfo(e))
+      onApplyError?.() // a judge that rejects (not expected: they resolve null) must not leave the page locked either
+    }).catch((e: unknown) => {
+      console.error('Apply error:', errorInfo(e))
+      onApplyError?.()
     })
   } else apply(r)
 }
@@ -41,14 +55,10 @@ const wireId = (id: SoloItemId): string => String(id)
 
 type Checked<R> = { ok: true; data: R } | { ok: false; conflict: boolean }
 
-/** Logs a failed call: the status of a 409, else the error itself (never a key or an answer). */
+/** Logs a failed call (status or error name only, never a key, an answer or a message); `true` for a 409. */
 function logFailure(e: unknown): boolean {
-  if (isApiError(e) && e.status === 409) {
-    console.error('Check error:', e.status)
-    return true
-  }
-  console.error('Check error:', e)
-  return false
+  console.error('Check error:', errorInfo(e))
+  return isApiError(e) && e.status === 409
 }
 
 async function post<G extends SoloGame>(

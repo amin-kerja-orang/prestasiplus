@@ -61,6 +61,7 @@ function reset(): void {
  */
 function failAndRestart(): void {
   toast.add({ title: GENERIC_ERROR, color: 'error' })
+  // Not awaited on purpose: start() never rejects (load() catches its own errors and reports them through `error`).
   void start()
 }
 
@@ -81,7 +82,14 @@ function flip(cardId: SoloItemId): void {
   if (!card) return
   const run = runId
   const sessionId = payload.value?.sessionId ?? ''
-  const stale = () => run !== runId || phase.value !== 'playing'
+  const stale = () => run !== runId || phase.value !== 'playing' || timers.isDisposed()
+  // An exception inside a settled result must not leave the board locked.
+  const recover = () => {
+    if (stale()) return
+    flipped.value = []
+    wrong.value = []
+    locked.value = false
+  }
 
   if (flipped.value.length === 0) {
     // First card of a move: its face comes from the reveal route (http); the mock reads it at once.
@@ -95,7 +103,7 @@ function flip(cardId: SoloItemId): void {
       }
       faces.value = { ...faces.value, [String(cardId)]: face }
       locked.value = false
-    })
+    }, recover)
     return
   }
 
@@ -128,7 +136,7 @@ function flip(cardId: SoloItemId): void {
       flipped.value = []
       locked.value = false
     }, MISMATCH_MS)
-  })
+  }, recover)
 }
 
 async function finish(): Promise<void> {
@@ -206,7 +214,7 @@ onMounted(() => void start())
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
     </div>
-    <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+    <DsLoadError v-else-if="error" :message="error" @retry="start()" />
 
     <div
       v-if="cards.length > 0"

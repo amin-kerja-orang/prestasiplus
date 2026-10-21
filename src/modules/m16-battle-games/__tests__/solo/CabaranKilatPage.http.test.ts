@@ -109,7 +109,7 @@ describe('S14 Cabaran Kilat, http mode (D58a)', () => {
     await start()
     await options()[1]!.trigger('click')
     await vi.advanceTimersByTimeAsync(400)
-    expect(log).toHaveBeenCalledWith('Check error:', expect.any(Error))
+    expect(log).toHaveBeenCalledWith('Check error:', 'Error')
     expect(wrapper!.text()).toContain('Soalan 2')
     expect(wrapper!.get('[data-testid="solo-score"]').text()).toBe('0')
     log.mockRestore()
@@ -167,5 +167,18 @@ describe('S14 Cabaran Kilat, http mode (D58a)', () => {
     expect(overlay).toContain('99')
     expect(overlay).toContain('7/9')
     expect(overlay).not.toContain('1/1')
+  })
+
+  it('Cuba Semula after a failed load restarts the game and it plays', async () => {
+    fetchSoloGame.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    wrapper = await mountAt(SoloCabaranKilatPage, '/permainan/cabaran-kilat?darjah=4')
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('Cuba Semula'))!
+    await retry.trigger('click')
+    await vi.advanceTimersByTimeAsync(2400)
+    await options()[1]!.trigger('click')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(checkSoloAnswer).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="solo-score"]').text()).toBe('10')
   })
 })
