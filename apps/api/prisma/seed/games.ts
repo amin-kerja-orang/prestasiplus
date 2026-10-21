@@ -178,13 +178,14 @@ async function seedRoomsAndSessions(ctx: SeedContext): Promise<void> {
     { email: GAMES_SEED_STUDENTS[1], game: 'cabaran-kilat', score: 250, correct: 9, items: 30, ago: 3 },
     { email: GAMES_SEED_STUDENTS[0], game: 'tembak-jawapan', score: 120, correct: 8, items: 30, ago: 4 },
   ] as const
-  for (const s of sessions) {
+  for (const [n, s] of sessions.entries()) {
     const id = await userId(prisma, s.email)
     if (id === null) continue
     const created = new Date(now.getTime() - s.ago * DAY)
     if (await prisma.gameSession.findFirst({ where: { userId: id, game: s.game, createdAt: created } })) continue
     await prisma.gameSession.create({
-      data: { userId: id, game: s.game, darjah: 10, itemCount: s.items, score: s.score, correctCount: s.correct, checks: s.correct, submittedAt: created, createdAt: created, updatedAt: created },
+      // A fixed uuid (as the battle seed does): the column default gen_random_uuid() would differ per database.
+      data: { id: `00000000-0000-4000-8000-${String(450_001 + n).padStart(12, '0')}`, userId: id, game: s.game, darjah: 10, itemCount: s.items, score: s.score, correctCount: s.correct, checks: s.correct, submittedAt: created, createdAt: created, updatedAt: created },
     })
   }
 }
