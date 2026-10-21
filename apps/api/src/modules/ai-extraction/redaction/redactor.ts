@@ -18,7 +18,7 @@ export const MASK = {
   address: '[ALAMAT]',
 } as const satisfies Record<AiRedactionFlag, string>
 
-const NAME_PART = String.raw`[A-ZÀ-Ý][\p{L}'’.-]*`
+const NAME_PART = String.raw`[A-ZÀ-Ý][\p{L}'’.-]{0,40}`
 const NAME_SEQ = String.raw`${NAME_PART}(?:[ \t]+(?:(?:bin|binti|bt\.?|b\.|a\/l|a\/p|anak|ibni)[ \t]+)?${NAME_PART}){0,5}`
 
 /** Labelled lines: `Nama: ...`. The value (rest of the line) is masked; the label stays so the page still reads. */
@@ -64,7 +64,7 @@ const SCHOOL_RULES: RegExp[] = [
   new RegExp(String.raw`\b(?:Maktab[ \t]+Rendah[ \t]+Sains[ \t]+MARA|Kolej[ \t]+(?:Vokasional|Matrikulasi|Tingkatan[ \t]+Enam))(?:[ \t]+${NAME_PART}){1,4}`, 'gu'),
   new RegExp(String.raw`\b(?:${NAME_PART}[ \t]+){1,4}(?:Secondary|High|Primary|National)[ \t]+School\b`, 'gu'),
   // Cover pages print the school in capitals: "SEKOLAH MENENGAH KEBANGSAAN TAMAN CONTOH".
-  new RegExp(String.raw`\b(?:SEKOLAH|MAKTAB|KOLEJ)[ \t]+[A-ZÀ-Ý][A-ZÀ-Ý'’.()-]*(?:[ \t]+[A-ZÀ-Ý][A-ZÀ-Ý'’.()-]*){1,8}`, 'gu'),
+  new RegExp(String.raw`\b(?:SEKOLAH|MAKTAB|KOLEJ)[ \t]+[A-ZÀ-Ý][A-ZÀ-Ý'’.()-]{0,40}(?:[ \t]+[A-ZÀ-Ý][A-ZÀ-Ý'’.()-]{0,40}){1,8}`, 'gu'),
 ]
 
 const NAME_RULES: RegExp[] = [
@@ -77,13 +77,19 @@ const NAME_RULES: RegExp[] = [
   new RegExp(String.raw`\b${NAME_PART}(?:[ \t]+${NAME_PART}){0,2}[ \t]+(?:bin|binti|bt\.?|b\.|a\/l|a\/p|anak|ibni)[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,3}`, 'gu'),
 ]
 
-const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/gu
+/**
+ * Every e-mail quantifier is bounded and every start is anchored behind a character that cannot be part of the local
+ * part, so a long unbroken token is scanned once, not once per start position (no quadratic backtracking on hostile text).
+ */
+const EMAIL = /(?<![\p{L}\p{N}._%+-])[\p{L}\p{N}._%+-]{1,64}@[\p{L}\p{N}-]{1,63}(?:\.[\p{L}\p{N}-]{1,63}){1,8}/gu
 /**
  * "name [at] school [dot] edu [dot] my", "name (at) school.edu.my" and "name @ school.edu.my" are written to dodge filters;
  * they are put back into one address so the e-mail rule sees them. A plain "." needs no spaces around it.
  */
-const OBFUSCATED_EMAIL = /([\p{L}\p{N}._%+-]+)[ \t]*(?:@|[[(][ \t]*at[ \t]*[\])])[ \t]*((?:[\p{L}\p{N}-]+(?:\.|[ \t]*[[(][ \t]*dot[ \t]*[\])][ \t]*))+[\p{L}\p{N}-]+)/giu
-const DOT_WORD = /[ \t]*[[(][ \t]*dot[ \t]*[\])][ \t]*/gi
+const OBFUSCATED_EMAIL = /(?<![\p{L}\p{N}._%+-])([\p{L}\p{N}._%+-]{1,64})[ \t]{0,3}(?:@|[[(][ \t]{0,3}at[ \t]{0,3}[\])])[ \t]{0,3}((?:[\p{L}\p{N}-]{1,63}(?:\.|[ \t]{0,3}[[(][ \t]{0,3}dot[ \t]{0,3}[\])][ \t]{0,3})){1,8}[\p{L}\p{N}-]{1,63})/giu
+/** Cheap gate: the e-mail rules cannot match without an @ or an "at" marker. */
+const MAY_HAVE_EMAIL = /@|[[(][ \t]{0,3}at[ \t]{0,3}[\])]/i
+const DOT_WORD = /[ \t]{0,3}[[(][ \t]{0,3}dot[ \t]{0,3}[\])][ \t]{0,3}/gi
 
 /** Characters NFKC would damage in a maths paper (superscripts, subscripts, vulgar fractions): kept as they are. */
 const KEEP = /([\u00B2\u00B3\u00B9\u00BC-\u00BE\u2070-\u209F\u2150-\u215F\u2189])/u
@@ -106,7 +112,7 @@ const IC = new RegExp(String.raw`(?<!\d)\d{6}${SEP}{0,2}\d{2}${SEP}{0,2}\d{4}(?!
 const PHONE_MY = new RegExp(String.raw`(?<![\w.])(?:\+?60${SEP}{0,2}|0)(?:1\d|[3-9])${SEP}{0,2}\d{3,4}${SEP}{0,2}\d{4}(?![\w])`, 'g')
 const PHONE_INTL = new RegExp(String.raw`(?<![\w.])\+\d{1,3}${SEP}{0,2}\d[\d \t.\-–—]{6,12}\d(?![\w])`, 'g')
 const STREET = new RegExp(
-  String.raw`\b(?:No\.?[ \t]*\d+[A-Za-z]?,?[ \t]*)?(?:Jalan|Jln\.?|Lorong|Lrg\.?|Taman|Kampung|Kg\.?|Persiaran|Lebuh|Lebuhraya|Bandar)[ \t]+[\p{L}\p{N}'’./-]+(?:[ \t]+[\p{L}\p{N}'’./-]+){0,6}(?:,[ \t]*\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`,
+  String.raw`\b(?:No\.?[ \t]*\d+[A-Za-z]?,?[ \t]*)?(?:Jalan|Jln\.?|Lorong|Lrg\.?|Taman|Kampung|Kg\.?|Persiaran|Lebuh|Lebuhraya|Bandar)[ \t]+[\p{L}\p{N}'’./-]{1,40}(?:[ \t]+[\p{L}\p{N}'’./-]{1,40}){0,6}(?:,[ \t]*\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`,
   'gu',
 )
 const POSTCODE_CITY = new RegExp(String.raw`(?<!\d)\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2}(?:,[ \t]*${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`, 'gu')
@@ -118,7 +124,8 @@ export class Redactor {
   /** Masks `input` and counts what was masked. The same instance can redact several texts of one request. */
   redact(input: string): string {
     let text = normaliseForRedaction(input)
-    text = text.replace(OBFUSCATED_EMAIL, (_m, local: string, domain: string) => `${local}@${domain.replace(DOT_WORD, '.')}`)
+    const emailPossible = MAY_HAVE_EMAIL.test(text)
+    if (emailPossible) text = text.replace(OBFUSCATED_EMAIL, (_m, local: string, domain: string) => `${local}@${domain.replace(DOT_WORD, '.')}`)
     const sub = (re: RegExp, flag: AiRedactionFlag): void => {
       text = text.replace(re, () => {
         this.counts[flag] += 1
@@ -126,7 +133,7 @@ export class Redactor {
       })
     }
     // Contact details first: they are unambiguous and must not be split by the broader rules below.
-    sub(EMAIL, 'email')
+    if (emailPossible) sub(EMAIL, 'email')
     sub(IC, 'ic_number')
     sub(PHONE_MY, 'phone')
     sub(PHONE_INTL, 'phone')

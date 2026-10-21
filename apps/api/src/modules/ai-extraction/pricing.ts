@@ -41,8 +41,11 @@ export function parsePriceTable(raw: string | undefined | null): ParsedPriceTabl
 
 /** The rates for a provider and model: the exact model first, then `*`. Undefined when none is configured. */
 export function priceFor(table: PriceTable, provider: AiProviderId, model: string): PriceEntry | undefined {
-  const byModel = table[provider]
-  return byModel?.[model] ?? byModel?.['*']
+  // Own keys only: AI_MODEL=constructor or __proto__ must not resolve to a prototype member.
+  const byModel = Object.hasOwn(table, provider) ? table[provider] : undefined
+  if (!byModel) return undefined
+  if (Object.hasOwn(byModel, model)) return byModel[model]
+  return Object.hasOwn(byModel, '*') ? byModel['*'] : undefined
 }
 
 export function costSenOf(entry: PriceEntry, usage: { tokensIn: number; tokensOut: number; pages: number }): number {

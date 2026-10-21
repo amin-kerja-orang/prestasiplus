@@ -163,7 +163,7 @@ export class OpenAiCompatibleProvider extends ChatCompletionsProvider {
   }
 
   isConfigured(): boolean {
-    return this.base !== null && this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model) && this.config.hasPrice(this.id, this.model)
+    return this.base !== null && this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model)
   }
 
   protected endpoint(): string {

@@ -144,9 +144,12 @@ export class AiCallPipeline {
             this.logger.warn('usage row of an unusable reply could not be written')
           }
         },
+        // The usage row is written while the slot is still held: a queued call re-checks the budget only after it.
+        onSuccess: async (v) => {
+          await log(this.price(v, args.pages))
+        },
       })
       const usage = this.price(value, args.pages)
-      await log(usage)
       if (runId) await this.runs.succeed(runId, { pages: usage.pages, tokensIn: usage.tokensIn + billedTotals.tokensIn, tokensOut: usage.tokensOut + billedTotals.tokensOut, costSen: usage.costSen + billedTotals.costSen })
       await this.budget.afterCall(provider.id)
       return { value, usage: { provider: provider.id, model: provider.model, ...usage } }

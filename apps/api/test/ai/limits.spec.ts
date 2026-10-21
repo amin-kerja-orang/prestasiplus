@@ -249,3 +249,13 @@ describe('price table (AI_PRICE_TABLE_JSON)', () => {
     expect(parsePriceTable('{"unknown-provider":{}}').problem).toMatch(/shape/)
   })
 })
+
+describe('price lookup uses own keys only', () => {
+  it('a model or provider named like a prototype member has no price', () => {
+    const { table } = parsePriceTable(JSON.stringify({ anthropic: { 'model-x': { inSenPerMTok: 1, outSenPerMTok: 1 } } }))
+    for (const model of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) expect(priceFor(table, 'anthropic', model), model).toBeUndefined()
+    expect(priceFor({}, 'anthropic', 'constructor')).toBeUndefined()
+    const wild = parsePriceTable(JSON.stringify({ anthropic: { '*': { inSenPerMTok: 1, outSenPerMTok: 1 } } })).table
+    expect(priceFor(wild, 'anthropic', 'constructor')).toEqual({ inSenPerMTok: 1, outSenPerMTok: 1 })
+  })
+})

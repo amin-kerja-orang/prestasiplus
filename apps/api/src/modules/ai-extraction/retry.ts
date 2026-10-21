@@ -2,7 +2,7 @@ import { AiCancelledError, AiError } from './ai.errors'
 import { ProviderAttemptError } from './providers/provider-errors'
 import type { AiSleep } from './ai.types'
 
-export interface RetryPolicy {
+export interface RetryPolicy<T = unknown> {
   /** Retries after the first attempt (`AI_MAX_RETRIES`); the number of attempts is this plus one. */
   maxRetries: number
   baseMs: number
@@ -22,6 +22,11 @@ export interface RetryPolicy {
   gate?: () => Promise<() => void>
   /** A 2xx reply that could not be used was still billed: called once per such attempt. */
   onBilled?: (billed: { tokensIn: number; tokensOut: number }) => Promise<void>
+  /**
+   * Called once with the successful result while the gate's slot is still held, so the usage row is written before a
+   * queued call can take the slot and re-check the budget. Its error propagates as is (it is not a provider failure).
+   */
+  onSuccess?: (value: T) => Promise<void>
 }
 
 export interface AttemptOptions {
@@ -40,7 +45,7 @@ export function backoffMs(retry: number, p: Pick<RetryPolicy, 'baseMs' | 'maxMs'
  * fails with a clear code (`AI_PROVIDER_ERROR` or `AI_TIMEOUT`, AC4). A 4xx other than 429, an unusable reply or an unsafe
  * URL fails at once. A caller abort stops everything and is `AiCancelledError`. Returns the result and the attempts made.
  */
-export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, policy: RetryPolicy): Promise<{ value: T; attempts: number }> {
+export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, policy: RetryPolicy<T>): Promise<{ value: T; attempts: number }> {
   const total = policy.maxRetries + 1
   let last: ProviderAttemptError | null = null
   for (let n = 1; n <= total; n += 1) {
@@ -49,8 +54,9 @@ export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, p
     const timeout = new AbortController()
     const timer = setTimeout(() => timeout.abort(), policy.timeoutMs)
     const signal = policy.signal ? AbortSignal.any([policy.signal, timeout.signal]) : timeout.signal
+    let done: { value: T } | undefined
     try {
-      return { value: await attempt({ signal }), attempts: n }
+      done = { value: await attempt({ signal }) }
     } catch (err) {
       if (err instanceof ProviderAttemptError && err.billed) await policy.onBilled?.(err.billed)
       if (policy.signal?.aborted) throw new AiCancelledError()
@@ -65,7 +71,15 @@ export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, p
       }
     } finally {
       clearTimeout(timer)
-      release?.()
+      if (!done) release?.()
+    }
+    if (done) {
+      try {
+        await policy.onSuccess?.(done.value)
+      } finally {
+        release?.()
+      }
+      return { value: done.value, attempts: n }
     }
     try {
       await policy.sleep(backoffMs(n, policy, last?.retryAfterMs), policy.signal)

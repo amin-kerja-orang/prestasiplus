@@ -218,3 +218,28 @@ describe('redaction survives look-alike text (hardening)', () => {
     expect(out).toBe('Nilai x² + y³ = ½ dan H₂O; 3 × 4 ≤ 12')
   })
 })
+
+describe('redaction is linear on hostile text (no event-loop stall)', () => {
+  const MAX = 100_000
+  const cases: [string, string][] = [
+    ['one long alphanumeric run', 'a1'.repeat(MAX / 2)],
+    ['a.a.a. run', 'a.'.repeat(MAX / 2)],
+    ['local part with @ and no domain', `${'ab'.repeat(MAX / 4)}@${'cd'.repeat(MAX / 4 - 1)}`],
+    ['many @ without domains', 'ab@'.repeat(MAX / 3)],
+    ['capitalised dotted run', 'A.'.repeat(MAX / 2)],
+    ['capitalised words', 'Aaaa '.repeat(MAX / 5)],
+    ['digits', '1'.repeat(MAX)],
+    ['digits and separators', '12 '.repeat(MAX / 3)],
+    ['street words', 'Jalan ' + 'a/'.repeat(MAX / 2)],
+    ['all caps heading', 'SEKOLAH ' + 'AB '.repeat(MAX / 3)],
+    ['label lines', 'Nama:\n'.repeat(MAX / 6)],
+  ]
+  it.each(cases)('%s (100k chars) redacts in linear time (under 1 s)', (_n, text) => {
+    expect(text.length).toBeLessThanOrEqual(MAX + 16)
+    const started = performance.now()
+    new Redactor().redact(text)
+    const ms = performance.now() - started
+    console.info(`redaction perf: ${_n}: ${ms.toFixed(0)} ms`)
+    expect(ms).toBeLessThan(1000)
+  })
+})
