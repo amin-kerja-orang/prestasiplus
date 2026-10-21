@@ -304,9 +304,11 @@ describe('PKSK questions are never drawn (BE-42 scope, G4 nit 4 of #92)', () => 
     // `versions` is the pinned grading read (OD-28, see the source's doc): it returns the exact served version
     // without re-checking eligibility, so it is not a serving path and is not asserted here.
     const versions = await c.source.versions([normal].map((questionId) => ({ questionId, versionNo: 1 })))
-    expect([...versions.keys()]).toEqual([normal])
+    expect([...versions.keys()]).toEqual([`${normal}@1`])
 
     await c.svc.deactivate(normal)
+    // The bank service hides a pksk_domain-tagged question (NOT_PKSK scope), so drop the planted tags before the cleanup.
+    await c.t.db.query(`delete from question_tags where question_id = $1 and kind in ('pksk_domain', 'pksk_level')`, [tagged])
     await c.svc.deactivate(tagged)
   })
 })
