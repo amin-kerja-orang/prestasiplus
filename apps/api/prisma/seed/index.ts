@@ -124,7 +124,7 @@ export async function runSeeds(
   // Say so loudly: an operator must see that demo data was refused, not silently absent (BE-03 H2).
   if (skipped.length > 0) {
     console.warn(
-      `seed: demo modules skipped in production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
+      `seed: demo modules skipped: NODE_ENV is not development or test, so this run counts as production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
     )
   }
   return done
