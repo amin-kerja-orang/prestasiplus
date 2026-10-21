@@ -1,0 +1,78 @@
+{
+  "_note": "Authored in the documented response shape of the vendor (no network or key was used). Fictitious content only.",
+  "extract": {
+    "id": "msg_fixture",
+    "type": "message",
+    "role": "assistant",
+    "model": "model-x",
+    "content": [
+      {
+        "type": "text",
+        "text": "```json\n{\"questions\":[{\"id\":\"q-1\",\"label\":\"1\",\"type\":\"mcq\",\"stem\":\"Antara berikut, yang manakah nilai min bagi 2, 4, 6, 8?\",\"options\":[{\"id\":\"A\",\"text\":\"4\"},{\"id\":\"B\",\"text\":\"5\"},{\"id\":\"C\",\"text\":\"6\"},{\"id\":\"D\",\"text\":\"8\"}],\"marks\":1,\"mode\":\"match_letter\",\"parts\":[],\"scheme\":{\"kind\":\"option\",\"marks\":1,\"correct\":\"B\",\"reason\":\"\"},\"tag\":{\"subject\":\"MAT\",\"level\":\"T4\",\"unit\":\"MAT-T4-09\",\"unitLabel\":\"Statistik\",\"sp\":[\"09.1\"],\"tp\":3,\"formOrigin\":\"T4\"},\"page\":1,\"lowFields\":[],\"fieldConfidence\":{\"stem\":0.95,\"marks\":0.5},\"status\":\"approved\",\"confirmed\":[\"stem\"]},{\"id\":\"q-2\",\"label\":\"2\",\"type\":\"short\",\"stem\":\"Selesaikan persamaan 2x + 6 = 14.\",\"options\":[],\"marks\":2,\"mode\":\"working\",\"parts\":[],\"tag\":{\"subject\":\"MAT\",\"level\":\"T4\",\"unit\":\"XXX-99\",\"unitLabel\":\"Unit rekaan\",\"sp\":[],\"tp\":3,\"formOrigin\":\"T4\"},\"stimulusId\":\"stim-9\",\"page\":1,\"lowFields\":[],\"fieldConfidence\":{\"stem\":0.9}},\"bukan objek soalan\"],\"stimuli\":[{\"id\":\"stim-1\",\"kind\":\"diagram\",\"label\":\"Rajah 1\",\"alt\":\"Segi tiga bersudut tegak\",\"svg\":\"<svg onload=\\\"alert(1)\\\"></svg>\",\"page\":1}],\"unmatched\":[],\"warnings\":[\"Satu soalan diabaikan.\"]}\n```"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 1200,
+      "output_tokens": 800
+    }
+  },
+  "tags": {
+    "id": "msg_fixture",
+    "type": "message",
+    "role": "assistant",
+    "model": "model-x",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"suggestions\":[{\"ref\":\"q1\",\"tag\":{\"subject\":\"MAT\",\"level\":\"T4\",\"unit\":\"MAT-T4-09\",\"unitLabel\":\"Statistik\",\"sp\":[],\"tp\":3,\"formOrigin\":\"T4\"},\"confidence\":0.8},{\"ref\":\"q2\",\"tag\":{\"subject\":\"MAT\",\"level\":\"T4\",\"unit\":\"XXX-99\",\"unitLabel\":\"Unit rekaan\",\"sp\":[],\"tp\":3,\"formOrigin\":\"T4\"},\"confidence\":0.4},{\"ref\":\"q99\",\"tag\":{\"subject\":\"MAT\",\"level\":\"T4\",\"unit\":null,\"unitLabel\":\"\",\"sp\":[],\"tp\":3,\"formOrigin\":\"T4\"},\"confidence\":0.9}]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 300,
+      "output_tokens": 200
+    }
+  },
+  "text": {
+    "id": "msg_fixture",
+    "type": "message",
+    "role": "assistant",
+    "model": "model-x",
+    "content": [
+      {
+        "type": "text",
+        "text": "Terima kasih. Ini ialah jawapan contoh yang direkodkan."
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 40,
+      "output_tokens": 12
+    }
+  },
+  "health": {
+    "id": "msg_fixture",
+    "type": "message",
+    "role": "assistant",
+    "model": "model-x",
+    "content": [
+      {
+        "type": "text",
+        "text": "OK"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 1
+    }
+  },
+  "error": {
+    "type": "error",
+    "error": {
+      "type": "overloaded_error",
+      "message": "CANARY-PROVIDER-ERROR-BODY page text echo"
+    }
+  }
+}

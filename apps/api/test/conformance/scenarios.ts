@@ -32,6 +32,7 @@ import { practiceReadsScenarios } from './practice-reads'
 import { kirkpatrickScenarios } from './analytics/kirkpatrick'
 import { analyticsScenarios } from './analytics/analytics'
 import { heatmapScenarios } from './heatmap/heatmap'
+import { aiScenarios } from './ai/ai'
 import { intakeDashboardScenarios } from './intake/dashboard'
 import { cikguScenarios } from './cikgu/cikgu'
 import { commandCenterScenarios } from './command-center/command-center'
@@ -79,6 +80,7 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...kirkpatrickScenarios,
     ...analyticsScenarios,
     ...heatmapScenarios,
+    ...aiScenarios,
     ...intakeDashboardScenarios,
     ...cikguScenarios,
     ...commandCenterScenarios,
