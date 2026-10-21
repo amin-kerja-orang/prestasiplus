@@ -3,7 +3,7 @@
 # deploy/rehearsal/rehearsal-db.sh with a timing and WAL record per step, and writes one log per step.
 # It adds nothing to the environment: it only calls rehearsal-db.sh and the npm ETL scripts.
 #
-#   mig07-rehearse.sh full      up, load-dump, stage, snapshot pre_etl, core dry-run + apply,
+#   mig07-rehearse.sh full      up, reference seeds, load-dump, stage, snapshot pre_etl, core dry-run + apply,
 #                               activity dry-run + apply, status          (needs MIG07_DUMP)
 #   mig07-rehearse.sh rollback  restore-snapshot pre_etl, then core and activity dry-runs again
 #   mig07-rehearse.sh delta     snapshot after_full, load-dump (delta), stage, core + activity
@@ -65,6 +65,16 @@ etl() { # etl <stage> <dry-run|apply> [extra flags]
   fi
 }
 
+# The reference seeds the ETL expects on the target before migrate:core: the school_packages catalogue (migrate:core reads it
+# for school subscriptions) and the other `kind: 'reference'` modules. They run in `NODE_ENV=production` on purpose: the seed
+# runner then loads reference modules only and skips every demo module (demo accounts, demo curriculum, tiers), so no demo
+# user can reach the target. `rehearsal-db.sh exec` forces NODE_ENV=development, hence the `env` override. The profile name is
+# not `poc`. Curriculum (a demo-kind seed that cannot be selected alone) is not seeded: migrate:core loads the levels, subjects
+# and chapters of the dump itself. Tier rows are not seeded by any seed (BE-11); migrate:activity rejects tiers without a v2 match.
+seed_reference() {
+  "$RDB" exec target -- env NODE_ENV=production npm run db:seed -w @pp/api -- --profile=migration
+}
+
 content_owner() {
   if [ -n "${MIG07_CONTENT_OWNER:-}" ]; then printf '%s' "$MIG07_CONTENT_OWNER"; return; fi
   target_psql "select u.id from users u join user_roles r on r.user_id = u.id where r.role::text = 'admin' order by u.id limit 1"
@@ -86,6 +96,7 @@ case "$PHASE" in
   full)
     : "${MIG07_DUMP:?set MIG07_DUMP}"
     step up "$RDB" up
+    step seed-reference seed_reference
     step load-dump "$RDB" load-dump "$MIG07_DUMP"
     step stage "$RDB" stage
     step snapshot-pre_etl "$RDB" snapshot pre_etl
