@@ -64,8 +64,8 @@ export class AiRunsService {
     return this.repo.finishRun(runId, { status: 'succeeded', finishedAt: this.clock.now(), ...totals })
   }
 
-  fail(runId: string, errorCode: string): Promise<void> {
-    return this.repo.finishRun(runId, { status: 'failed', finishedAt: this.clock.now(), errorCode })
+  fail(runId: string, errorCode: string, totals?: { pages: number; tokensIn: number; tokensOut: number; costSen: number }): Promise<void> {
+    return this.repo.finishRun(runId, { status: 'failed', finishedAt: this.clock.now(), errorCode, ...(totals ?? {}) })
   }
 
   cancel(runId: string): Promise<void> {

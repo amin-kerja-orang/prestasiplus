@@ -13,6 +13,9 @@ import {
   insertAdmin,
   insertUsageRow,
   jsonResponse,
+  get,
+  login,
+  ADMIN,
   stubFetch,
   vendorEnv,
   type AiTestApp,
@@ -73,18 +76,46 @@ describe('usage log and run lifecycle (AC5)', () => {
     expect(t.fetch.calls[0]?.headers['x-api-key']).toBe(FAKE_KEY)
   })
 
-  it('a model without a price is recorded with cost 0 and warned about once', async () => {
-    const logs = captureLogs()
-    try {
-      t = await bootAiApp({ env: anthropicEnv({ AI_PRICE_TABLE_JSON: '' }), fetch: answers() })
-      await svc(t).extractPaper(REQ)
-      await svc(t).extractPaper(REQ)
-      const rows = await t.db.query<{ cost_sen: number }>(`select cost_sen from ai_usage_logs`)
-      expect(rows.map((r) => r.cost_sen)).toEqual([0, 0])
-      expect(logs.lines.filter((l) => l.includes('no price in AI_PRICE_TABLE_JSON'))).toHaveLength(1)
-    } finally {
-      logs.restore()
+  it('a paid provider whose model has no price (or a broken table) is not configured: AI_UNAVAILABLE, no provider call, status configured false', async () => {
+    for (const table of ['', '{"anthropic":{"other-model":{"inSenPerMTok":1,"outSenPerMTok":1}}}', '{nope', '{"anthropic":{"model-x":{"inSenPerMTok":-1}}}']) {
+      const f = answers()
+      t = await bootAiApp({ env: anthropicEnv({ AI_PRICE_TABLE_JSON: table }), fetch: f })
+      await expect(svc(t).extractPaper(REQ), table).rejects.toMatchObject({ code: 'AI_UNAVAILABLE', retryable: false })
+      expect(f.calls, table).toHaveLength(0)
+      expect(await t.db.query('select 1 from ai_usage_logs')).toHaveLength(0)
+      const admin = await login(t, ADMIN)
+      const status = await get(admin, '/ai/status')
+      expect(status.body.data, table).toMatchObject({ provider: 'anthropic', configured: false, capabilities: null })
+      await t.close()
+      t = undefined
     }
+  })
+
+  it('a wildcard price covers any model of the provider', async () => {
+    t = await bootAiApp({ env: anthropicEnv({ AI_PRICE_TABLE_JSON: JSON.stringify({ anthropic: { '*': { inSenPerMTok: 300, outSenPerMTok: 1500 } } }) }), fetch: answers() })
+    expect((await svc(t).extractPaper(REQ)).usage.costSen).toBe(2)
+  })
+
+  it('a 2xx reply that cannot be used is still billed: one usage row with its tokens and cost, and the run ends failed with those totals', async () => {
+    const empty = { ...(rec.extract as object), content: [{ type: 'text', text: '' }], usage: { input_tokens: 1200, output_tokens: 800 } }
+    t = await bootAiApp({ env: anthropicEnv(), fetch: stubFetch(() => jsonResponse(empty)) })
+    await expect(svc(t).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_PROVIDER_ERROR', retryable: false })
+    expect(await t.db.query('select provider, tokens_in, tokens_out, cost_sen, purpose from ai_usage_logs')).toEqual([{ provider: 'anthropic', tokens_in: 1200, tokens_out: 800, cost_sen: 2, purpose: 'extract_paper' }])
+    expect(await t.db.query('select status, error_code, tokens_in, cost_sen from ai_extraction_runs')).toEqual([{ status: 'failed', error_code: 'AI_PROVIDER_ERROR', tokens_in: 1200, cost_sen: 2 }])
+  })
+
+  it('a model reply that is not JSON (billed tokens from usage) and a body that is not a reply at all (estimated tokens) each log one row', async () => {
+    const junk = { ...(rec.extract as object), content: [{ type: 'text', text: 'maaf, tiada JSON di sini' }], usage: { input_tokens: 1200, output_tokens: 800 } }
+    t = await bootAiApp({ env: anthropicEnv(), fetch: stubFetch(() => jsonResponse(junk)) })
+    await expect(svc(t).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_PROVIDER_ERROR' })
+    expect(await t.db.query('select tokens_in, tokens_out, cost_sen from ai_usage_logs')).toEqual([{ tokens_in: 1200, tokens_out: 800, cost_sen: 2 }])
+    await t.close()
+    t = await bootAiApp({ env: anthropicEnv(), fetch: stubFetch(() => jsonResponse({ content: 'not a list' })) })
+    await expect(svc(t).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_PROVIDER_ERROR' })
+    const rows = await t.db.query<{ tokens_in: number; tokens_out: number }>('select tokens_in, tokens_out from ai_usage_logs')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.tokens_in).toBeGreaterThan(0)
+    expect(rows[0]?.tokens_out).toBe(0)
   })
 
   it('a failed call writes no usage row and ends the run failed with the code', async () => {
@@ -207,6 +238,56 @@ describe('limits under load (AC8)', () => {
     expect(peak).toBe(2)
     expect(t.app.get(AiCallPipeline).concurrency.peak).toBe(2)
     expect(await t.db.query(`select 1 from ai_usage_logs`)).toHaveLength(10)
+  })
+
+  it('the cap crossed while calls are queued refuses the queued calls (budget re-checked after the slot), with no run for them', async () => {
+    const prices = JSON.stringify({ anthropic: { 'model-x': { inSenPerMTok: 2500, outSenPerMTok: 3750 } } }) // 1200 in + 800 out = 6 sen
+    const f = stubFetch(async () => {
+      await new Promise((r) => setTimeout(r, 10))
+      return jsonResponse(rec.extract)
+    })
+    t = await bootAiApp({ env: anthropicEnv({ AI_PRICE_TABLE_JSON: prices, AI_MONTHLY_BUDGET_SEN: '10', AI_MAX_CONCURRENCY: '1' }), fetch: f })
+    const results = await Promise.allSettled(Array.from({ length: 4 }, () => svc(t as AiTestApp).extractPaper(REQ)))
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2) // 6, then 12 (the check before the second still saw 6)
+    const refused = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    expect(refused).toHaveLength(2)
+    for (const r of refused) expect(r.reason).toMatchObject({ code: 'AI_BUDGET_EXHAUSTED' })
+    expect(f.calls).toHaveLength(2)
+    expect(await t.db.query('select 1 from ai_usage_logs')).toHaveLength(2)
+    expect(await t.db.query('select status from ai_extraction_runs')).toEqual([{ status: 'succeeded' }, { status: 'succeeded' }])
+  })
+
+  it('a retry that waits in backoff holds no concurrency slot, and the budget is checked again before the retry', async () => {
+    const prices = JSON.stringify({ anthropic: { 'model-x': { inSenPerMTok: 2500, outSenPerMTok: 3750 } } })
+    let app: AiTestApp | undefined
+    const inFlightDuringSleep: number[] = []
+    const f = stubFetch((_c, n) => (n === 1 ? jsonResponse({}, 429) : jsonResponse(rec.extract)))
+    app = await bootAiApp({
+      env: anthropicEnv({ AI_PRICE_TABLE_JSON: prices, AI_MONTHLY_BUDGET_SEN: '10', AI_MAX_CONCURRENCY: '1' }),
+      fetch: f,
+      sleep: () => {
+        inFlightDuringSleep.push((app as AiTestApp).app.get(AiCallPipeline).concurrency.inFlight)
+        return Promise.resolve()
+      },
+    })
+    t = app
+    await svc(app).extractPaper(REQ)
+    expect(inFlightDuringSleep).toEqual([0])
+    expect(app.app.get(AiCallPipeline).concurrency.inFlight).toBe(0)
+    // Cap reached while the first attempt backs off: the retry is refused instead of spending past the cap.
+    await app.close()
+    const g = stubFetch((_c, n) => (n === 1 ? jsonResponse({}, 503) : jsonResponse(rec.extract)))
+    app = await bootAiApp({
+      env: anthropicEnv({ AI_PRICE_TABLE_JSON: prices, AI_MONTHLY_BUDGET_SEN: '10', AI_MAX_CONCURRENCY: '1' }),
+      fetch: g,
+      sleep: async () => {
+        await insertUsageRow((app as AiTestApp).db, { provider: 'anthropic', costSen: 10, at: '2026-10-19T01:00:00Z' })
+      },
+    })
+    t = app
+    await expect(svc(app).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_BUDGET_EXHAUSTED' })
+    expect(g.calls).toHaveLength(1)
+    expect(await app.db.query('select status, error_code from ai_extraction_runs')).toEqual([{ status: 'failed', error_code: 'AI_BUDGET_EXHAUSTED' }])
   })
 
   it('the global rate limit lets exactly AI_RATE_LIMIT_PER_MIN of a burst through; the rest get RATE_LIMITED with retryAfter and leave no row', async () => {

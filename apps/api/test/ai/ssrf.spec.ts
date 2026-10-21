@@ -18,7 +18,7 @@ const refused = async (url: string, reason: UnsafeUrlError['reason'], resolver?:
 }
 
 function config(env: Record<string, string>): AiConfig {
-  const data: Record<string, string> = { AI_PROVIDER: 'openai-compatible', AI_MODEL: 'model-x', AI_API_KEY: FAKE_KEY, ...env }
+  const data: Record<string, string> = { AI_PROVIDER: 'openai-compatible', AI_MODEL: 'model-x', AI_API_KEY: FAKE_KEY, AI_PRICE_TABLE_JSON: '{"openai-compatible":{"*":{"inSenPerMTok":1,"outSenPerMTok":1}},"openai":{"*":{"inSenPerMTok":1,"outSenPerMTok":1}},"anthropic":{"*":{"inSenPerMTok":1,"outSenPerMTok":1}}}', ...env }
   return new AiConfig({ get: (k: string) => data[k] } as never)
 }
 

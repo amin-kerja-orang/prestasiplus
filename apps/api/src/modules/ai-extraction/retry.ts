@@ -14,6 +14,14 @@ export interface RetryPolicy {
   random: () => number
   /** The caller's signal (job cancelled or timed out). */
   signal?: AbortSignal | undefined
+  /**
+   * Called before every attempt (the first and each retry), outside the attempt timeout; it returns the release of what it
+   * took (the concurrency slot). Because it is released before the backoff sleep, a waiting retry holds no slot. It may
+   * throw an `AiError` (budget): that ends the call at once.
+   */
+  gate?: () => Promise<() => void>
+  /** A 2xx reply that could not be used was still billed: called once per such attempt. */
+  onBilled?: (billed: { tokensIn: number; tokensOut: number }) => Promise<void>
 }
 
 export interface AttemptOptions {
@@ -37,12 +45,14 @@ export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, p
   let last: ProviderAttemptError | null = null
   for (let n = 1; n <= total; n += 1) {
     if (policy.signal?.aborted) throw new AiCancelledError()
+    const release = policy.gate ? await policy.gate() : undefined
     const timeout = new AbortController()
     const timer = setTimeout(() => timeout.abort(), policy.timeoutMs)
     const signal = policy.signal ? AbortSignal.any([policy.signal, timeout.signal]) : timeout.signal
     try {
       return { value: await attempt({ signal }), attempts: n }
     } catch (err) {
+      if (err instanceof ProviderAttemptError && err.billed) await policy.onBilled?.(err.billed)
       if (policy.signal?.aborted) throw new AiCancelledError()
       if (err instanceof ProviderAttemptError) last = err
       else if (err instanceof AiError || err instanceof AiCancelledError) throw err
@@ -55,6 +65,7 @@ export async function withRetry<T>(attempt: (o: AttemptOptions) => Promise<T>, p
       }
     } finally {
       clearTimeout(timer)
+      release?.()
     }
     try {
       await policy.sleep(backoffMs(n, policy, last?.retryAfterMs), policy.signal)

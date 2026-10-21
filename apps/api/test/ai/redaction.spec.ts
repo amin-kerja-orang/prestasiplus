@@ -138,3 +138,83 @@ describe('request redaction', () => {
     expect(summary.masked.length).toBeGreaterThan(0)
   })
 })
+
+describe('redaction survives look-alike text (hardening)', () => {
+  const run = (text: string) => {
+    const r = new Redactor()
+    const out = r.redact(text)
+    return { out, flags: r.summary().masked.map((m) => m.flag) }
+  }
+
+  it.each([
+    ['full-width IC', 'No. KP ９００１０１－１４－５６７８', '900101'],
+    ['IC with NBSP separators', 'IC: 900101 14 5678', '900101'],
+    ['IC with dot separators', 'Kad 900101.14.5678 tamat', '900101'],
+    ['IC with en dash separators', 'Kad 900101–14–5678 tamat', '900101'],
+    ['IC with em dash separators', 'Kad 900101—14—5678 tamat', '900101'],
+  ])('%s', (_n, text, secret) => {
+    const { out, flags } = run(text)
+    expect(out).not.toContain(secret)
+    expect(out).not.toContain('5678')
+    expect(flags).toContain('ic_number')
+  })
+
+  it('phone numbers with bidi marks, dots, dashes and NBSP', () => {
+    for (const text of ['Hubungi ‪012-345 6789‬ segera', 'Hubungi 012.345.6789 segera', 'Hubungi 012 345 6789 segera', 'Hubungi +60‏12–345–6789 segera']) {
+      const { out, flags } = run(text)
+      expect(out, text).not.toMatch(/345/)
+      expect(flags, text).toContain('phone')
+    }
+  })
+
+  it('e-mail with a zero-width space before @, a full-width @, [at], (at), spaced and [dot] variants', () => {
+    for (const text of [
+      'cikgu.contoh​@example.test',
+      'cikgu.contoh＠example.test',
+      'cikgu.contoh [at] example.test',
+      'cikgu.contoh(at)example.test',
+      'cikgu.contoh @ example.test',
+      'cikgu.contoh [at] example [dot] test',
+    ]) {
+      const { out, flags } = run(`Emel pengawas: ${text} sekian`)
+      expect(out, text).not.toMatch(/contoh|example/)
+      expect(flags, text).toContain('email')
+    }
+  })
+
+  it('full-width labels, bullets, indentation, a missing colon and a value on the next line', () => {
+    const cases: [string, string][] = [
+      ['ＮＡＭＡ: Zulkifli bin Contoh', 'Zulkifli'],
+      ['  - Nama: Zulkifli bin Contoh', 'Zulkifli'],
+      ['\t• Nama : Zulkifli bin Contoh', 'Zulkifli'],
+      ['Nama :\nZulkifli bin Contoh', 'Zulkifli'],
+      ['Nama:\n   Zulkifli bin Contoh', 'Zulkifli'],
+      ['Nama Zulkifli bin Contoh', 'Zulkifli'],
+      ['  * No. KP 900101145678', '900101'],
+      ['Sekolah:\nSekolah Contoh Maju', 'Contoh'],
+      ['- Kelas: 5 Cemerlang', 'Cemerlang'],
+      ['  - Tel: 012 345 6789', '345'],
+      ['• E-mel: pengawas.contoh@example.test', 'example'],
+    ]
+    for (const [text, secret] of cases) {
+      const { out, flags } = run(`${text}\n1. Selesaikan 2x + 6 = 14.`)
+      expect(out, text).not.toContain(secret)
+      expect(flags.length, text).toBeGreaterThan(0)
+      expect(out, text).toContain('2x + 6 = 14')
+    }
+  })
+
+  it('does not eat ordinary question lines (words that are labels only with a colon)', () => {
+    for (const line of ['Murid A mempunyai 5 buah buku.', 'Name the largest planet.', 'Kelas itu mempunyai 30 orang.', 'Emel saya ahmad.contoh@example.test dan nilai x = 3']) {
+      const { out } = run(line)
+      expect(out.startsWith(line.slice(0, 5))).toBe(true)
+    }
+    expect(run('Name the largest planet.').out).toBe('Name the largest planet.')
+    expect(run('Murid A mempunyai 5 buah buku.').out).toBe('Murid A mempunyai 5 buah buku.')
+  })
+
+  it('keeps mathematics intact: superscripts, subscripts and fractions are not rewritten by NFKC', () => {
+    const { out } = run('Nilai x² + y³ = ½ dan H₂O; 3 × 4 ≤ 12')
+    expect(out).toBe('Nilai x² + y³ = ½ dan H₂O; 3 × 4 ≤ 12')
+  })
+})

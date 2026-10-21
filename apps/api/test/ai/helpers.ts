@@ -228,6 +228,8 @@ export function vendorEnv(id: (typeof VENDORS)[number]['id']): Record<string, st
     AI_PROVIDER: id,
     AI_MODEL: 'model-x',
     AI_API_KEY: FAKE_KEY,
+    // A paid provider needs a price for its model (otherwise it counts as not configured).
+    AI_PRICE_TABLE_JSON: JSON.stringify({ [id]: { '*': { inSenPerMTok: 300, outSenPerMTok: 1500 } } }),
     ...(id === 'openai-compatible' ? { AI_BASE_URL: 'https://gateway.example.test/v1', AI_BASE_URL_ALLOWLIST: 'gateway.example.test' } : {}),
   }
 }

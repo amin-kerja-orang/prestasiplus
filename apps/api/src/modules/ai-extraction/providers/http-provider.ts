@@ -8,6 +8,7 @@ import type {
 } from '@pp/contract'
 
 import type { AiTagSuggestion, ExtractedDraftPaper, ExtractionProvider, ProviderCallOptions, ProviderHealth, Tokens } from '../ai.types'
+import { ProviderAttemptError } from './provider-errors'
 import { parseExtractReply, parseTagsReply } from './model-output'
 import { EXTRACT_SYSTEM, extractUserPrompt, HEALTH_INPUT, HEALTH_SYSTEM, TAGS_SYSTEM, tagsUserPrompt } from './prompts'
 
@@ -27,6 +28,15 @@ export interface CompleteResult extends Tokens {
 /** Rough token count used only when a vendor omits `usage` (4 characters per token). */
 export const estimateTokens = (text: string): number => Math.ceil(text.length / 4)
 
+/** Runs a parser over a billed reply; any failure keeps the tokens of the reply so they are still logged. */
+function billedParse<T>(r: CompleteResult, parse: () => T): T {
+  try {
+    return parse()
+  } catch {
+    throw new ProviderAttemptError('fatal', undefined, undefined, { tokensIn: r.tokensIn, tokensOut: r.tokensOut })
+  }
+}
+
 /**
  * Shared behaviour of the HTTP adapters (anthropic, openai, gemini, openai-compatible): the four provider operations are
  * the same prompt + parse on top of one vendor call, `complete`. A vendor adapter only knows its URL, headers, request
@@ -44,13 +54,13 @@ export abstract class HttpExtractionProvider implements ExtractionProvider {
 
   async extractPaper(input: AiExtractRequest, options: ProviderCallOptions): Promise<{ paper: ExtractedDraftPaper } & Tokens> {
     const r = await this.complete({ system: EXTRACT_SYSTEM, user: extractUserPrompt(input), json: true, maxTokens: this.maxOutputTokens, signal: options.signal })
-    const parsed = parseExtractReply(r.text, input)
+    const parsed = billedParse(r, () => parseExtractReply(r.text, input))
     return { paper: { provider: this.id, model: this.model, ...parsed }, tokensIn: r.tokensIn, tokensOut: r.tokensOut }
   }
 
   async suggestTags(input: AiSuggestTagsRequest, options: ProviderCallOptions): Promise<{ suggestions: AiTagSuggestion[] } & Tokens> {
     const r = await this.complete({ system: TAGS_SYSTEM, user: tagsUserPrompt(input), json: true, maxTokens: this.maxOutputTokens, signal: options.signal })
-    return { suggestions: parseTagsReply(r.text, input), tokensIn: r.tokensIn, tokensOut: r.tokensOut }
+    return { suggestions: billedParse(r, () => parseTagsReply(r.text, input)), tokensIn: r.tokensIn, tokensOut: r.tokensOut }
   }
 
   async generateText(input: AiGenerateTextRequest, options: ProviderCallOptions): Promise<AiGenerateTextResult> {

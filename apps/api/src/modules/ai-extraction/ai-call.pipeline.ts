@@ -31,11 +31,14 @@ export interface PipelineCall<T extends Tokens> {
  * The one path every provider call takes (extractPaper, suggestTags, generateText, health check), so that every rule
  * applies to every operation and every adapter in the same way:
  *
- *   budget guard -> rate limits (global, user, school) -> run start -> concurrency slot -> call with timeout and
- *   retry/backoff -> ONE usage row (priced from the table) -> run end -> 80% notification.
+ *   budget guard -> rate limits (global, user, school) -> [per attempt: concurrency slot -> budget re-check -> (first
+ *   attempt) run start -> call with timeout] -> backoff sleep without a slot -> ... -> ONE usage row (priced from the table)
+ *   -> run end -> 80% notification.
  *
- * A refused call (budget, rate limit) costs nothing and writes no usage row and no run. A failed call (retries used up)
- * writes no usage row (nothing was billed) and ends its run `failed` with the AI_* code.
+ * A refused call (budget, rate limit) costs nothing and writes no usage row and no run. A call that fails with no reply
+ * (network error, 429, 5xx, timeout) writes no usage row, because nothing was billed; its run ends `failed` with the
+ * AI_* code. A 2xx reply that cannot be used WAS billed: it writes one usage row with its tokens and cost (per such
+ * attempt) before the run ends `failed`.
  */
 @Injectable()
 export class AiCallPipeline {
@@ -72,30 +75,11 @@ export class AiCallPipeline {
     await this.budget.assertAvailable(provider.id)
     await this.enforceLimits(args.ctx)
 
-    const runId = args.run
-      ? await this.runs.begin({
-          kind: args.run,
-          provider: provider.id,
-          model: provider.model,
-          batchId: args.ctx.batchId ?? null,
-          requestedById: args.ctx.actorId ?? null,
-          runId: args.ctx.runId ?? null,
-        })
-      : null
-
-    let release: (() => void) | null = null
-    try {
-      release = await this.semaphore.acquire(args.signal)
-      const { value } = await withRetry((o) => args.call(o), {
-        maxRetries: this.config.maxRetries,
-        baseMs: this.config.retryBaseMs,
-        maxMs: this.config.retryMaxMs,
-        timeoutMs: this.config.timeoutMs,
-        sleep: this.sleep,
-        random: Math.random,
-        signal: args.signal,
-      })
-      const usage = this.price(value, args.pages)
+    // The run starts only once the call really gets a slot and the budget is re-checked (below), so a call that is queued
+    // behind others and then refused leaves no run behind.
+    let runId: string | null = null
+    const billedTotals = { pages: 0, tokensIn: 0, tokensOut: 0, costSen: 0 }
+    const log = async (usage: { pages: number; tokensIn: number; tokensOut: number; costSen: number }): Promise<void> => {
       await this.repo.insertUsage({
         runId,
         batchId: args.ctx.batchId ?? null,
@@ -109,17 +93,69 @@ export class AiCallPipeline {
         costSen: usage.costSen,
         at: this.clock.now(),
       })
-      if (runId) await this.runs.succeed(runId, { pages: usage.pages, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, costSen: usage.costSen })
+    }
+
+    /**
+     * Before every attempt (the first and each retry): take a concurrency slot, then check the budget again, because the
+     * cap may have been reached while this call was queued or sleeping in a backoff. The slot is held for the provider
+     * call only, never for a backoff sleep.
+     */
+    const gate = async (): Promise<() => void> => {
+      const release = await this.semaphore.acquire(args.signal)
+      try {
+        await this.budget.assertAvailable(provider.id)
+        if (runId === null && args.run) {
+          runId = await this.runs.begin({
+            kind: args.run,
+            provider: provider.id,
+            model: provider.model,
+            batchId: args.ctx.batchId ?? null,
+            requestedById: args.ctx.actorId ?? null,
+            runId: args.ctx.runId ?? null,
+          })
+        }
+      } catch (err) {
+        release()
+        throw err
+      }
+      return release
+    }
+
+    try {
+      const { value } = await withRetry((o) => args.call(o), {
+        maxRetries: this.config.maxRetries,
+        baseMs: this.config.retryBaseMs,
+        maxMs: this.config.retryMaxMs,
+        timeoutMs: this.config.timeoutMs,
+        sleep: this.sleep,
+        random: Math.random,
+        signal: args.signal,
+        gate,
+        // A 2xx reply that cannot be used was billed all the same: one usage row per such attempt.
+        onBilled: async (billed) => {
+          const usage = this.price(billed, args.pages)
+          billedTotals.pages += usage.pages
+          billedTotals.tokensIn += usage.tokensIn
+          billedTotals.tokensOut += usage.tokensOut
+          billedTotals.costSen += usage.costSen
+          try {
+            await log(usage)
+          } catch {
+            this.logger.warn('usage row of an unusable reply could not be written')
+          }
+        },
+      })
+      const usage = this.price(value, args.pages)
+      await log(usage)
+      if (runId) await this.runs.succeed(runId, { pages: usage.pages, tokensIn: usage.tokensIn + billedTotals.tokensIn, tokensOut: usage.tokensOut + billedTotals.tokensOut, costSen: usage.costSen + billedTotals.costSen })
       await this.budget.afterCall(provider.id)
       return { value, usage: { provider: provider.id, model: provider.model, ...usage } }
     } catch (err) {
       if (runId) {
         if (err instanceof AiCancelledError) await this.runs.cancel(runId).catch(() => undefined)
-        else await this.runs.fail(runId, err instanceof AiError ? err.code : 'AI_PROVIDER_ERROR').catch(() => undefined)
+        else await this.runs.fail(runId, err instanceof AiError ? err.code : 'AI_PROVIDER_ERROR', billedTotals.tokensIn + billedTotals.tokensOut > 0 ? billedTotals : undefined).catch(() => undefined)
       }
       throw err
-    } finally {
-      release?.()
     }
   }
 

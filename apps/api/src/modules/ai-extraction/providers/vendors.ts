@@ -30,15 +30,24 @@ const GeminiReply = z.object({
   usageMetadata: z.object({ promptTokenCount: count, candidatesTokenCount: count }).optional(),
 })
 
-function parseReply<T extends z.ZodType>(schema: T, json: unknown): z.output<T> {
+/**
+ * A 2xx reply was billed whatever its content. When it cannot be used the failure still carries the tokens (the vendor's
+ * `usage`, else an estimate of the request) so the pipeline logs one usage row for it.
+ */
+function decode<T extends z.ZodType>(
+  schema: T,
+  json: unknown,
+  req: CompleteRequest,
+  pick: (reply: z.output<T>) => { text: string; tin: number | undefined; tout: number | undefined },
+): CompleteResult {
+  const estimatedIn = estimateTokens(req.system) + estimateTokens(req.user)
   const r = schema.safeParse(json)
-  if (!r.success) throw new ProviderAttemptError('fatal')
-  return r.data
-}
-
-function finish(text: string, req: CompleteRequest, tin: number | undefined, tout: number | undefined): CompleteResult {
-  if (text.trim() === '') throw new ProviderAttemptError('fatal')
-  return { text, tokensIn: tin ?? estimateTokens(req.system) + estimateTokens(req.user), tokensOut: tout ?? estimateTokens(text) }
+  if (!r.success) throw new ProviderAttemptError('fatal', undefined, undefined, { tokensIn: estimatedIn, tokensOut: 0 })
+  const { text, tin, tout } = pick(r.data)
+  const tokensIn = tin ?? estimatedIn
+  const tokensOut = tout ?? estimateTokens(text)
+  if (text.trim() === '') throw new ProviderAttemptError('fatal', undefined, undefined, { tokensIn, tokensOut })
+  return { text, tokensIn, tokensOut }
 }
 
 /** Anthropic Messages API. */
@@ -52,7 +61,7 @@ export class AnthropicProvider extends HttpExtractionProvider {
   }
 
   isConfigured(): boolean {
-    return this.config.hasApiKey() && MODEL_ID.test(this.model)
+    return this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model)
   }
 
   protected async complete(req: CompleteRequest): Promise<CompleteResult> {
@@ -63,9 +72,11 @@ export class AnthropicProvider extends HttpExtractionProvider {
       body: { model: this.model, max_tokens: req.maxTokens, system: req.system, messages: [{ role: 'user', content: req.user }] },
       signal: req.signal,
     })
-    const r = parseReply(AnthropicReply, json)
-    const text = r.content.filter((c) => c.type === 'text').map((c) => c.text ?? '').join('')
-    return finish(text, req, r.usage?.input_tokens, r.usage?.output_tokens)
+    return decode(AnthropicReply, json, req, (r) => ({
+      text: r.content.filter((c) => c.type === 'text').map((c) => c.text ?? '').join(''),
+      tin: r.usage?.input_tokens,
+      tout: r.usage?.output_tokens,
+    }))
   }
 }
 
@@ -95,8 +106,7 @@ abstract class ChatCompletionsProvider extends HttpExtractionProvider {
       },
       signal: req.signal,
     })
-    const r = parseReply(ChatReply, json)
-    return finish(r.choices[0]?.message?.content ?? '', req, r.usage?.prompt_tokens, r.usage?.completion_tokens)
+    return decode(ChatReply, json, req, (r) => ({ text: r.choices[0]?.message?.content ?? '', tin: r.usage?.prompt_tokens, tout: r.usage?.completion_tokens }))
   }
 }
 
@@ -112,7 +122,7 @@ export class OpenAiProvider extends ChatCompletionsProvider {
   }
 
   isConfigured(): boolean {
-    return this.config.hasApiKey() && MODEL_ID.test(this.model)
+    return this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model)
   }
 
   protected endpoint(): string {
@@ -153,7 +163,7 @@ export class OpenAiCompatibleProvider extends ChatCompletionsProvider {
   }
 
   isConfigured(): boolean {
-    return this.base !== null && this.config.hasApiKey() && MODEL_ID.test(this.model)
+    return this.base !== null && this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model) && this.config.hasPrice(this.id, this.model)
   }
 
   protected endpoint(): string {
@@ -176,7 +186,7 @@ export class GeminiProvider extends HttpExtractionProvider {
   }
 
   isConfigured(): boolean {
-    return this.config.hasApiKey() && MODEL_ID.test(this.model)
+    return this.config.hasApiKey() && MODEL_ID.test(this.model) && this.config.hasPrice(this.id, this.model)
   }
 
   protected async complete(req: CompleteRequest): Promise<CompleteResult> {
@@ -191,8 +201,10 @@ export class GeminiProvider extends HttpExtractionProvider {
       },
       signal: req.signal,
     })
-    const r = parseReply(GeminiReply, json)
-    const text = (r.candidates[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('')
-    return finish(text, req, r.usageMetadata?.promptTokenCount, r.usageMetadata?.candidatesTokenCount)
+    return decode(GeminiReply, json, req, (r) => ({
+      text: (r.candidates[0]?.content?.parts ?? []).map((p) => p.text ?? '').join(''),
+      tin: r.usageMetadata?.promptTokenCount,
+      tout: r.usageMetadata?.candidatesTokenCount,
+    }))
   }
 }

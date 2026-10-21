@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import { AI_PROVIDER_IDS, aiUnknownProviderMessage, type AiProviderId } from '@pp/contract'
 
 import { AI_DEFAULTS } from './ai.constants'
-import { parsePriceTable, type ParsedPriceTable } from './pricing'
+import { parsePriceTable, priceFor, type ParsedPriceTable } from './pricing'
 
 function intOr(value: unknown, fallback: number, min = 1): number {
   const n = Number(value)
@@ -69,6 +69,15 @@ export class AiConfig {
   /** The key. Only the HTTP adapters call this, and only to build a request header. */
   apiKey(): string {
     return this.#apiKey
+  }
+
+  /**
+   * A paid provider is usable only when the price table prices its model (exact id or `*`). Without a price every call
+   * would be logged at cost 0 and the monthly cap could never be reached, so a missing entry or an unreadable table means
+   * "not configured" (fail closed). The mock costs nothing and needs no entry.
+   */
+  hasPrice(provider: AiProviderId, model: string): boolean {
+    return provider === 'mock' || priceFor(this.prices.table, provider, model) !== undefined
   }
 
   hasApiKey(): boolean {

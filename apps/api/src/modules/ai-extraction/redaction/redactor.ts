@@ -35,7 +35,24 @@ const LABELS: { flag: AiRedactionFlag; label: string }[] = [
   { flag: 'address', label: String.raw`alamat(?:\s+(?:rumah|sekolah|surat-menyurat))?|address` },
 ]
 
-const LABEL_RULES = LABELS.map((l) => ({ flag: l.flag, re: new RegExp(String.raw`^([ \t]*(?:${l.label})[ \t]*[:：][ \t]*)(\S.*)$`, 'gimu') }))
+/** Bullets and indentation before a label ("  - Nama: ..."). */
+const LEAD = String.raw`[ \t]*(?:[-*•·▪‣◦>–—]+[ \t]*)*`
+/** With a colon the value is on the same line or, when that is empty, on the next one. */
+const LABEL_RULES = LABELS.map((l) => ({
+  flag: l.flag,
+  re: new RegExp(String.raw`^(${LEAD}(?:\d{1,2}[.)][ \t]+)?(?:${l.label})[ \t]*[:：][ \t]*(?:\r?\n[ \t]*)?)(\S.*)$`, 'gimu'),
+}))
+
+/**
+ * Labels that are unambiguous enough to be masked without a colon ("Nama Ahmad bin Ali", "No KP 900101145678"). Words that
+ * are also ordinary question vocabulary (guru, murid, kelas, class, name, emel ...; an e-mail address is masked by its own pattern anyway) need the colon.
+ */
+const COLONLESS: { flag: AiRedactionFlag; label: string }[] = [
+  { flag: 'person_name', label: String.raw`nama(?:\s+(?:penuh|calon|pelajar|murid|guru|pengetua))?` },
+  { flag: 'ic_number', label: String.raw`no\.?\s*(?:kp|k\/p|ic|kad\s+pengenalan)|angka\s+giliran` },
+  { flag: 'address', label: String.raw`alamat(?:\s+(?:rumah|sekolah|surat-menyurat))?` },
+]
+const COLONLESS_RULES = COLONLESS.map((l) => ({ flag: l.flag, re: new RegExp(String.raw`^(${LEAD}(?:${l.label})[ \t]+)(\S.*)$`, 'gimu') }))
 
 const SCHOOL_PREFIX = String.raw`(?:SMK|SMJK|SJK|SK|SBP|SMT|SMA|SMKA|SMKP|SMV|KV|MRSM|SAM|SABK|SRA|SRK|SRJK|SMS|SMSA|SSM)`
 const SCHOOL_RULES: RegExp[] = [
@@ -61,9 +78,33 @@ const NAME_RULES: RegExp[] = [
 ]
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/gu
-const IC = /(?<!\d)\d{6}[- ]?\d{2}[- ]?\d{4}(?!\d)/g
-const PHONE_MY = /(?<![\w.])(?:\+?60[ -]?|0)(?:1\d|[3-9])[ -]?\d{3,4}[ -]?\d{4}(?![\w])/g
-const PHONE_INTL = /(?<![\w.])\+\d{1,3}[ -]?\d[\d -]{6,12}\d(?![\w])/g
+/**
+ * "name [at] school [dot] edu [dot] my", "name (at) school.edu.my" and "name @ school.edu.my" are written to dodge filters;
+ * they are put back into one address so the e-mail rule sees them. A plain "." needs no spaces around it.
+ */
+const OBFUSCATED_EMAIL = /([\p{L}\p{N}._%+-]+)[ \t]*(?:@|[[(][ \t]*at[ \t]*[\])])[ \t]*((?:[\p{L}\p{N}-]+(?:\.|[ \t]*[[(][ \t]*dot[ \t]*[\])][ \t]*))+[\p{L}\p{N}-]+)/giu
+const DOT_WORD = /[ \t]*[[(][ \t]*dot[ \t]*[\])][ \t]*/gi
+
+/** Characters NFKC would damage in a maths paper (superscripts, subscripts, vulgar fractions): kept as they are. */
+const KEEP = /([\u00B2\u00B3\u00B9\u00BC-\u00BE\u2070-\u209F\u2150-\u215F\u2189])/u
+
+/**
+ * Makes look-alike text plain before any pattern runs: NFKC (full-width digits, letters, @ and dashes become ASCII),
+ * invisible format characters (zero-width, bidi marks, soft hyphen) removed, every Unicode space a plain space.
+ */
+export function normaliseForRedaction(input: string): string {
+  return input
+    .split(KEEP)
+    .map((seg, i) => (i % 2 === 1 ? seg : seg.normalize('NFKC')))
+    .join('')
+    .replace(/[\p{Cf}\u200B-\u200D\u2060\uFEFF]/gu, '')
+    .replace(/[\p{Zs}]/gu, ' ')
+}
+
+const SEP = String.raw`[ \t.\-–—]`
+const IC = new RegExp(String.raw`(?<!\d)\d{6}${SEP}{0,2}\d{2}${SEP}{0,2}\d{4}(?!\d)`, 'g')
+const PHONE_MY = new RegExp(String.raw`(?<![\w.])(?:\+?60${SEP}{0,2}|0)(?:1\d|[3-9])${SEP}{0,2}\d{3,4}${SEP}{0,2}\d{4}(?![\w])`, 'g')
+const PHONE_INTL = new RegExp(String.raw`(?<![\w.])\+\d{1,3}${SEP}{0,2}\d[\d \t.\-–—]{6,12}\d(?![\w])`, 'g')
 const STREET = new RegExp(
   String.raw`\b(?:No\.?[ \t]*\d+[A-Za-z]?,?[ \t]*)?(?:Jalan|Jln\.?|Lorong|Lrg\.?|Taman|Kampung|Kg\.?|Persiaran|Lebuh|Lebuhraya|Bandar)[ \t]+[\p{L}\p{N}'’./-]+(?:[ \t]+[\p{L}\p{N}'’./-]+){0,6}(?:,[ \t]*\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`,
   'gu',
@@ -76,7 +117,8 @@ export class Redactor {
 
   /** Masks `input` and counts what was masked. The same instance can redact several texts of one request. */
   redact(input: string): string {
-    let text = input
+    let text = normaliseForRedaction(input)
+    text = text.replace(OBFUSCATED_EMAIL, (_m, local: string, domain: string) => `${local}@${domain.replace(DOT_WORD, '.')}`)
     const sub = (re: RegExp, flag: AiRedactionFlag): void => {
       text = text.replace(re, () => {
         this.counts[flag] += 1
@@ -89,7 +131,7 @@ export class Redactor {
     sub(PHONE_MY, 'phone')
     sub(PHONE_INTL, 'phone')
     // Labelled lines keep the label and mask the value (one count per line).
-    for (const { flag, re } of LABEL_RULES) {
+    for (const { flag, re } of [...LABEL_RULES, ...COLONLESS_RULES]) {
       text = text.replace(re, (_m, label: string, value: string) => {
         if (isAlreadyMasked(value)) return `${label}${value}`
         this.counts[flag] += 1
