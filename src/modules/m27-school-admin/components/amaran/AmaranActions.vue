@@ -11,7 +11,7 @@ import { csvHref, keberkesananHref, ringkasanHref } from './amaran-format'
 defineProps<{ schoolId: number; downloading: boolean }>()
 defineEmits<{ download: [] }>()
 
-// Prototype scope (D43): the two deferred pages are outside the matrix, so their buttons are hidden.
+// Prototype scope (D43): the two M18 pages are in the school admin's allow-list, so both buttons show.
 const { allows } = usePrototypeScope()
 </script>
 
