@@ -336,7 +336,6 @@ export function buildDumpSql(plans: readonly TablePlan[]): string {
         `SELECT COUNT(*) FROM ${table} WHERE ${quoteIdent(col)} IS NOT NULL AND JSON_VALID(${quoteIdent(col)}) = 0;`,
       )
     }
-    if (p.columns.length === 0) continue // nothing selectable: the count still tells how many rows exist
     const pairs = p.columns.map((c) => `'${assertIdentifier(c.name)}', ${c.expr}`).join(', ')
     lines.push(`SELECT JSON_OBJECT(${pairs}) FROM ${table}${p.orderBy ? ` ORDER BY ${quoteIdent(p.orderBy)}` : ''};`)
   }

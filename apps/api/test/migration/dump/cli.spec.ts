@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { chmodSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -214,19 +214,58 @@ describe('dump:cloud', () => {
     expect(existsSync(out) || existsSync(`${out}.partial`)).toBe(false)
   })
 
-  it('refuses an output location that is outside .migration-out, not empty, or has a stale .partial, before any connection', async () => {
+  it.each([
+    ['dump:cloud', '--out'],
+    ['dump:check', '--out'],
+    ['dump:produce', '--work'],
+  ])('%s refuses an output location outside .migration-out, not empty, or with a stale .partial BEFORE any client is started', async (command, flag) => {
     fx.setScenario(scenario())
-    expect((await cli(['dump:cloud', '--out', work.outside('x')])).code).toBe(DUMP_EXIT.usage)
-    const full = work.out('cloud-full')
-    await cli(['dump:cloud', '--out', full, '--tables', 'schools'])
-    const before = fx.calls().length
-    const again = await cli(['dump:cloud', '--out', full, '--tables', 'schools'])
-    expect(again.code).toBe(DUMP_EXIT.usage)
-    expect(again.text).toMatch(/not empty/)
-    const stale = work.out('cloud-stale')
-    writeFileSync(`${stale}.partial`, '')
-    expect((await cli(['dump:cloud', '--out', stale])).code).toBe(DUMP_EXIT.usage)
-    expect(fx.calls().length).toBe(before)
+    const extra = command === 'dump:produce' ? ['--tables', 'schools'] : []
+    const env = command === 'dump:produce' ? { ...fx.env, ANON_HMAC_KEY_FILE: keyFile() } : fx.env
+    const outside = await cli([command, flag, work.outside('x'), ...extra], {}, env)
+    expect(outside.code, outside.text).toBe(DUMP_EXIT.usage)
+    expect(outside.text).toMatch(/\.migration-out/)
+
+    const full = work.out(`full-${command.replace(':', '-')}`)
+    mkdirSync(full, { recursive: true })
+    writeFileSync(join(full, 'old.txt'), 'old')
+    const notEmpty = await cli([command, flag, full, ...extra], {}, env)
+    expect(notEmpty.code, notEmpty.text).toBe(DUMP_EXIT.usage)
+    expect(notEmpty.text).toMatch(/not empty/)
+    expect(readFileSync(join(full, 'old.txt'), 'utf8')).toBe('old')
+
+    if (command !== 'dump:produce') {
+      const stale = work.out(`stale-${command.replace(':', '-')}`)
+      writeFileSync(`${stale}.partial`, '')
+      const r = await cli([command, flag, stale, ...extra], {}, env)
+      expect(r.code, r.text).toBe(DUMP_EXIT.usage)
+      expect(r.text).toMatch(/\.partial/)
+    }
+    // Not one client process was ever started.
+    expect(fx.calls().length).toBe(0)
+  })
+
+  it('refuses a remote host without verified TLS (exit 2) before the client starts', async () => {
+    fx.setScenario(scenario())
+    writeFileSync(fx.optionFile, `[client]\nhost=${DB_HOST}\nuser=${DB_USER}\npassword=${PASSWORD}\ndatabase=pp\nssl-mode=REQUIRED\n`, { mode: 0o600 })
+    const r = await cli(['dump:check', '--out', work.out('tls-refused')])
+    expect(r.code).toBe(DUMP_EXIT.usage)
+    expect(r.text).toMatch(/VERIFY_IDENTITY or an SSH tunnel to 127\.0\.0\.1/)
+    expectNoSecrets(r.text)
+    expect(fx.calls().length).toBe(0)
+  })
+
+  it('passes the client an allow-listed environment: no key, no MYSQL_PWD, no CLOUD_* variable', async () => {
+    fx.setScenario(scenario())
+    const env = { ...fx.env, PATH: '/usr/bin', HOME: '/home/nobody', LANG: 'C', ANON_HMAC_KEY: TEST_KEY, ANON_HMAC_KEY_FILE: '/x/k', MYSQL_PWD: PASSWORD, SECRET_TOKEN: 'abc' }
+    const r = await cli(['dump:check', '--out', work.out('env-check')], {}, env)
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    const names = fx.calls().flatMap((c) => c.env)
+    expect(names.length).toBeGreaterThan(0)
+    for (const forbidden of ['ANON_HMAC_KEY', 'ANON_HMAC_KEY_FILE', 'MYSQL_PWD', 'SECRET_TOKEN', 'CLOUD_MYSQL_DEFAULTS_FILE', 'CLOUD_MYSQL_CLIENT']) {
+      expect(names, forbidden).not.toContain(forbidden)
+    }
+    expect(names).toEqual(expect.arrayContaining(['PATH', 'HOME', 'LANG']))
   })
 
   it('exits 2 when the client binary is missing', async () => {
@@ -236,6 +275,38 @@ describe('dump:cloud', () => {
     const r2 = await cli(['dump:check', '--out', work.out('nobin-2')], {}, { CLOUD_MYSQL_DEFAULTS_FILE: fx.optionFile, PATH: join(fx.dir, 'empty') })
     expect(r2.code).toBe(DUMP_EXIT.usage)
     expect(r2.text).toMatch(/client binary was not found/)
+    // A client inside the repository is refused (a planted file must not get the credentials).
+    const planted = work.out('planted-mysql')
+    writeFileSync(planted, readFileSync(fx.clientPath), { mode: 0o755 })
+    chmodSync(planted, 0o755)
+    const r3 = await cli(['dump:check', '--out', work.out('nobin-3')], {}, { ...fx.env, CLOUD_MYSQL_CLIENT: planted })
+    expect(r3.code).toBe(DUMP_EXIT.usage)
+    expect(r3.text).toMatch(/inside the repository or the working directory/)
+    expect(fx.calls().length).toBe(0)
+  })
+})
+
+describe('dump:grants', () => {
+  it('prints the script with no option file, no client and no connection', async () => {
+    const r = await cli(['dump:grants', '--database', 'pp_cloud', '--account', "'pp_dump'@'127.0.0.1'"], {}, {})
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    expect(r.text).toContain("CREATE USER IF NOT EXISTS 'pp_dump'@'127.0.0.1' IDENTIFIED BY '<generate-a-password>' REQUIRE SSL;")
+    expect(r.text).toContain("GRANT SELECT (`id`, `name`, `email`")
+    expect(r.text).toMatch(/-- SELECT table_name, column_name, data_type FROM information_schema\.columns WHERE table_schema = 'pp_cloud'/)
+    expect(r.text).not.toContain('remember_token')
+    expect(fx.calls().length).toBe(0)
+  })
+
+  it.each([
+    ['no flags', ['dump:grants']],
+    ['no account', ['dump:grants', '--database', 'pp']],
+    ['bad database', ['dump:grants', '--database', 'pp;drop', '--account', "'u'@'h'"]],
+    ['unquoted account', ['dump:grants', '--database', 'pp', '--account', 'u@h']],
+    ['quote inside the account', ['dump:grants', '--database', 'pp', '--account', "'u'x'@'h'"]],
+    ['unknown flag', ['dump:grants', '--database', 'pp', '--account', "'u'@'h'", '--out', 'x']],
+  ])('%s -> exit 2', async (_n, args) => {
+    const r = await cli(args, {}, {})
+    expect(r.code, r.text).toBe(DUMP_EXIT.usage)
   })
 })
 
@@ -363,6 +434,100 @@ describe('dump:produce', () => {
     expect(existsSync(join(w, 'anon'))).toBe(false)
     expect(r.text).not.toContain(PII.name1)
     expect(r.text).toMatch(/Raw dump deleted/)
+  })
+
+  it('refuses a writable account (exit 3): no row SQL is sent and nothing is left in the work directory', async () => {
+    fx.setScenario(scenario({ grants: ['GRANT SELECT, INSERT ON `pp`.* TO `u`@`%`'] }))
+    const w = work.out('produce-rw')
+    const r = await cli(['dump:produce', '--work', w, '--tables', 'users'], {}, produceEnv())
+    expect(r.code, r.text).toBe(DUMP_EXIT.notReadOnly)
+    expect(fx.calls().length).toBe(1)
+    expect(fx.calls().some((c) => c.sql.includes('JSON_OBJECT') || c.sql.includes('COUNT(*)'))).toBe(false)
+    expect(existsSync(join(w, 'raw'))).toBe(false)
+    expect(existsSync(join(w, 'anon'))).toBe(false)
+  })
+
+  it('a real leak-scan hit (planted in a column that is kept) exits 5; anon and raw are both really deleted', async () => {
+    const leaky = USER_ROWS.map((r) => JSON.stringify({ ...JSON.parse(r), kelas: 'hubungi planted.leak@leak-check.invalid' }))
+    fx.setScenario(scenario({ tables: { users: sourceTable('users', leaky) } }))
+    const w = work.out('produce-leak')
+    const r = await cli(['dump:produce', '--work', w, '--tables', 'users,schools'], {}, produceEnv())
+    expect(r.code, r.text).toBe(DUMP_EXIT.leak)
+    expect(r.text).toMatch(/users\.kelas \(email\)/)
+    expect(r.text).not.toContain('planted.leak')
+    expect(existsSync(join(w, 'anon'))).toBe(false)
+    expect(existsSync(join(w, 'anon.partial'))).toBe(false)
+    expect(existsSync(join(w, 'raw'))).toBe(false)
+    expect(readdirSync(w).sort()).toEqual(['schema-report.json', 'schema-report.md'])
+  })
+
+  it('an interrupt during the dump exits 1 and leaves no raw and no anon', async () => {
+    fx.setScenario(scenario({ delayMs: 5000 }))
+    const w = work.out('produce-abort-dump')
+    const abort = new AbortController()
+    setTimeout(() => abort.abort(), 600)
+    const r = await cli(['dump:produce', '--work', w, '--tables', 'schools'], { signal: abort.signal }, produceEnv())
+    expect(r.code, r.text).toBe(DUMP_EXIT.failed)
+    expect(r.text).toMatch(/Interrupted/)
+    expect(readdirSync(w)).toEqual([])
+  })
+
+  it('an interrupt that arrives while the anonymiser runs is never exit 0: anon is removed, raw is wiped', async () => {
+    fx.setScenario(scenario())
+    const w = work.out('produce-abort-anon')
+    const abort = new AbortController()
+    const real = (await import('../../../src/migration/anonymise/run')).runAnonymise
+    const r = await cli(
+      ['dump:produce', '--work', w, '--tables', 'users,schools'],
+      {
+        signal: abort.signal,
+        runAnonymise: async (opts) => {
+          const done = await real(opts)
+          abort.abort() // the signal lands just after the anonymiser finished
+          return done
+        },
+      },
+      produceEnv(),
+    )
+    expect(r.code, r.text).toBe(DUMP_EXIT.failed)
+    expect(existsSync(join(w, 'anon'))).toBe(false)
+    expect(existsSync(join(w, 'raw'))).toBe(false)
+  })
+
+  it('an interrupt that arrives right after the dump skips the anonymiser', async () => {
+    fx.setScenario(scenario())
+    const w = work.out('produce-abort-between')
+    const abort = new AbortController()
+    let ran = false
+    const r = await cli(
+      ['dump:produce', '--work', w, '--tables', 'schools'],
+      {
+        signal: abort.signal,
+        // the report is written right after the dump; aborting from the log sink models a signal in that window
+        runAnonymise: async () => {
+          ran = true
+          throw new Error('must not run')
+        },
+        out: (line: string) => {
+          if (line.startsWith('Done:')) abort.abort()
+        },
+      },
+      produceEnv(),
+    )
+    expect(ran).toBe(false)
+    expect(r.code).toBe(DUMP_EXIT.failed)
+    expect(readdirSync(w).filter((f) => f === 'raw' || f === 'anon')).toEqual([])
+  })
+
+  it('falls back to removal when the zero-overwrite fails, and still reports failure (exit 1)', async () => {
+    fx.setScenario(scenario())
+    const w = work.out('produce-wipe-fails')
+    const log = capture()
+    const code = await runDumpCli(['dump:produce', '--work', w, '--tables', 'schools'], { env: produceEnv(), out: log.out, err: log.err, wipe: async () => { throw new Error('disk says no') } })
+    expect(code).toBe(DUMP_EXIT.failed)
+    expect(log.text()).toMatch(/removed without overwriting/)
+    expect(existsSync(join(w, 'raw'))).toBe(false)
+    expect(existsSync(join(w, 'anon'))).toBe(true)
   })
 
   it('wipes the raw directory when the dump itself fails (row-count mismatch, exit 6)', async () => {

@@ -2,27 +2,19 @@
  * Grant check for the .cloud MySQL account (AM-10). The export must run as a READ-ONLY account; this is
  * the first guard (the READ ONLY transaction in export-sql.ts is the second).
  *
- * Allow-list (privileges that cannot change data or schema and cannot stall production):
- *   USAGE, SELECT, SHOW VIEW, SHOW DATABASES, PROCESS, REPLICATION CLIENT (MariaDB 10.5+: BINLOG MONITOR).
- * Everything else is refused: ALL PRIVILEGES, INSERT/UPDATE/DELETE, any DDL, INDEX, REFERENCES, EXECUTE,
- * TRIGGER, EVENT, FILE, SUPER, GRANT OPTION, CREATE USER, RELOAD, SHUTDOWN, routines, temporary tables,
- * PROXY, dynamic privileges (e.g. BINLOG_ADMIN) and LOCK TABLES (not needed for a consistent snapshot, and
- * it lets the account block writes on production). A role grant (`GRANT role TO user`) or any line that
- * cannot be parsed counts as unverifiable and is refused, so is an empty grant list.
+ * Allow-list (privileges that cannot change data or schema and cannot read anything beyond the tables):
+ *   USAGE, SELECT (also column-level SELECT), SHOW VIEW, SHOW DATABASES.
+ * Everything else is refused: ALL PRIVILEGES, INSERT/UPDATE/DELETE, any DDL, INDEX, REFERENCES, EXECUTE, TRIGGER, EVENT,
+ * FILE, SUPER, GRANT OPTION, CREATE USER, RELOAD, SHUTDOWN, routines, temporary tables, PROXY, dynamic privileges (e.g.
+ * BINLOG_ADMIN), LOCK TABLES (not needed for a consistent snapshot; it lets the account block writes), and also PROCESS
+ * (it shows other sessions' queries and so their data), REPLICATION CLIENT and BINLOG MONITOR. A role grant
+ * (`GRANT role TO user`) or any line that cannot be parsed counts as unverifiable and is refused, so is an empty grant list.
  *
  * Both the MySQL 5.7/8 format (`GRANT SELECT ON `db`.* TO 'u'@'h'`) and the MariaDB format are parsed.
  * Only privilege names are ever reported: the grant text (user, host, password hash) is never kept.
  */
 
-export const ALLOWED_PRIVILEGES: readonly string[] = [
-  'USAGE',
-  'SELECT',
-  'SHOW VIEW',
-  'SHOW DATABASES',
-  'PROCESS',
-  'REPLICATION CLIENT',
-  'BINLOG MONITOR',
-]
+export const ALLOWED_PRIVILEGES: readonly string[] = ['USAGE', 'SELECT', 'SHOW VIEW', 'SHOW DATABASES']
 
 export interface GrantVerdict {
   readOnly: boolean

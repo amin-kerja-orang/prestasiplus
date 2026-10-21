@@ -22,6 +22,7 @@ import { assertDatetimeOffset, buildCountSql, buildDumpSql, buildMetaSql, buildP
 import { describeVerdict, evaluateGrants, type GrantVerdict } from './grants'
 import { buildReport, writeReport, type SchemaReport } from './report'
 import { splitExport, type SplitTable } from './split'
+import { registerSensitive } from './cleanup'
 import { wipeDir } from './wipe'
 
 export const DEFAULT_DATETIME_OFFSET = '+08:00'
@@ -63,6 +64,15 @@ export function refusalMessage(verdict: GrantVerdict): string {
   return `Refusing: the MySQL account is not read-only (${describeVerdict(verdict)}). Nothing was read. Ask for a SELECT-only account.`
 }
 
+/**
+ * The output location, checked BEFORE any connection: inside `.migration-out` (and the working directory or repository),
+ * new or empty, no stale `.partial`. Creates nothing that stays.
+ */
+export function checkOutputLocation(outDir: string): void {
+  assertOutputUsable(outDir)
+  rmSync(prepareOutputDir(`${resolve(outDir)}${PARTIAL_SUFFIX}`), { recursive: true, force: true })
+}
+
 function validateTables(tables: readonly string[] | undefined, specs: readonly TableSpec[]): void {
   if (!tables) return
   const known = new Set(specs.map((s) => s.name))
@@ -80,7 +90,7 @@ export async function runCheck(options: CommonOptions & { outDir: string }): Pro
   const specs = options.specs ?? TABLES
   const now = options.now ?? (() => new Date())
   validateTables(options.tables, specs)
-  assertOutputUsable(options.outDir)
+  checkOutputLocation(options.outDir)
   const { schema, verdict } = await readSchema(options.client)
   log.info(`Server: ${schema.flavor} ${schema.version}. Grants: ${verdict.readOnly ? 'read-only' : 'NOT read-only'}.`)
   const plans = buildPlan(schema, specs, { datetimeOffset: options.datetimeOffset ?? DEFAULT_DATETIME_OFFSET, only: options.tables })
@@ -111,8 +121,8 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
   const now = options.now ?? (() => new Date())
   const offset = assertDatetimeOffset(options.datetimeOffset ?? DEFAULT_DATETIME_OFFSET)
   validateTables(options.tables, specs)
-  // Nothing is created before the output location is accepted.
-  assertOutputUsable(options.outDir)
+  // Nothing is read, and no connection is opened, before the output location is accepted.
+  checkOutputLocation(options.outDir)
 
   const { schema, verdict } = await readSchema(options.client)
   if (!verdict.readOnly) throw new ReadOnlyRequiredError(refusalMessage(verdict))
@@ -123,16 +133,17 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
   const gone = plans.filter((p) => !p.present)
   if (gone.length > 0) {
     const names = (reason: string) => gone.filter((p) => (p.absentReason ?? 'absent') === reason).map((p) => p.name)
-    const parts = [['absent', names('absent')], ['views', names('view')]].filter(([, n]) => (n as string[]).length > 0).map(([label, n]) => `${(n as string[]).length} ${label} (${(n as string[]).join(', ')})`)
+    const parts = [['absent or not granted', names('absent')], ['views', names('view')]].filter(([, n]) => (n as string[]).length > 0).map(([label, n]) => `${(n as string[]).length} ${label} (${(n as string[]).join(', ')})`)
     log.warn(`Spec tables not exported: ${parts.join('; ')}.`)
   }
   for (const p of present) {
-    if (p.missingInSource.length > 0) log.warn(`Table ${p.name}: ${p.missingInSource.length} spec column(s) are missing in the source: ${p.missingInSource.join(', ')}.`)
+    if (p.missingInSource.length > 0) log.warn(`Table ${p.name}: ${p.missingInSource.length} spec column(s) are missing or not granted: ${p.missingInSource.join(', ')}.`)
   }
   if (present.length === 0) throw new DumpUsageError('None of the requested spec tables exists in the source database.')
 
   const finalDir = realEvenIfMissing(options.outDir)
   const partial = prepareOutputDir(`${finalDir}${PARTIAL_SUFFIX}`)
+  const unregister = registerSensitive(partial)
   try {
     const split = await splitExport(runClient(options.client, buildDumpSql(plans)), plans, partial)
     const counts = new Map(split.tables.map((t) => [t.table, t.rows]))
@@ -163,5 +174,7 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
     await wipeDir(partial, { missingOk: true }).catch(() => undefined)
     rmSync(partial, { recursive: true, force: true })
     throw e
+  } finally {
+    unregister()
   }
 }

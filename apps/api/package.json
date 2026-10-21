@@ -24,6 +24,7 @@
     "dump:cloud": "tsx src/migration/dump/cli.ts dump:cloud",
     "dump:produce": "tsx src/migration/dump/cli.ts dump:produce",
     "dump:wipe": "tsx src/migration/dump/cli.ts dump:wipe",
+    "dump:grants": "tsx src/migration/dump/cli.ts dump:grants",
     "fixtures:generate": "tsx src/migration/fixtures/cli.ts",
     "typecheck": "tsc --noEmit",
     "pretypecheck": "npm run db:generate",

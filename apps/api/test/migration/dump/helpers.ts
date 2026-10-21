@@ -44,12 +44,12 @@ export const READ_ONLY_GRANTS = ['GRANT USAGE ON *.* TO `reader`@`%`', 'GRANT SE
 /** The fake mysql client: a Node script. It reads the SQL from stdin and prints canned output per statement. */
 const FAKE_CLIENT = `
 const fs = require('fs')
-const sc = JSON.parse(fs.readFileSync(process.env.FAKE_SCENARIO, 'utf8'))
+const sc = JSON.parse(fs.readFileSync(SCENARIO, 'utf8'))
 let sql = ''
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', (c) => { sql += c })
 process.stdin.on('end', () => {
-  if (process.env.FAKE_LOG) fs.appendFileSync(process.env.FAKE_LOG, JSON.stringify({ args: process.argv.slice(2), sql }) + '\\n')
+  fs.appendFileSync(LOG, JSON.stringify({ args: process.argv.slice(2), sql, env: Object.keys(process.env) }) + '\\n')
   const isDump = sql.includes('START TRANSACTION')
   const out = []
   let last = ''
@@ -104,20 +104,21 @@ export interface Fixture {
   env: Record<string, string>
   setScenario(s: Scenario): void
   /** Every invocation of the fake client (args + SQL). */
-  calls(): { args: string[]; sql: string }[]
+  calls(): { args: string[]; sql: string; env: string[] }[]
   cleanup(): void
 }
 
 export function fixture(initial: Scenario): Fixture {
   const dir = mkdtempSync(join(tmpdir(), 'pp-am10-'))
   const clientPath = join(dir, 'fake-mysql')
-  writeFileSync(clientPath, `#!${process.execPath}\n${FAKE_CLIENT}`)
+  const scenarioPath = join(dir, 'scenario.json')
+  const logPath = join(dir, 'calls.log')
+  // The scenario and log paths are baked in: the client is started with an allow-listed environment.
+  writeFileSync(clientPath, `#!${process.execPath}\nconst SCENARIO = ${JSON.stringify(scenarioPath)}\nconst LOG = ${JSON.stringify(logPath)}\n${FAKE_CLIENT}`)
   chmodSync(clientPath, 0o755)
   const optionFile = join(dir, 'client.cnf')
   writeFileSync(optionFile, `[client]\nhost=${DB_HOST}\nport=3306\nuser=${DB_USER}\npassword=${PASSWORD}\ndatabase=pp\nssl-mode=VERIFY_IDENTITY\n`, { mode: 0o600 })
   chmodSync(optionFile, 0o600)
-  const scenarioPath = join(dir, 'scenario.json')
-  const logPath = join(dir, 'calls.log')
   const fx: Fixture = {
     dir,
     clientPath,
@@ -127,11 +128,9 @@ export function fixture(initial: Scenario): Fixture {
     env: {
       CLOUD_MYSQL_DEFAULTS_FILE: optionFile,
       CLOUD_MYSQL_CLIENT: clientPath,
-      FAKE_SCENARIO: scenarioPath,
-      FAKE_LOG: logPath,
     },
     setScenario: (s) => writeFileSync(scenarioPath, JSON.stringify({ grants: READ_ONLY_GRANTS, ...s })),
-    calls: () => (existsSync(logPath) ? readFileSync(logPath, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as { args: string[]; sql: string }) : []),
+    calls: () => (existsSync(logPath) ? readFileSync(logPath, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as { args: string[]; sql: string; env: string[] }) : []),
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
   }
   fx.setScenario(initial)

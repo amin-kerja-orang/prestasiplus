@@ -14,16 +14,42 @@
  *       raw directory is wiped in a `finally`. Prints only aggregates (rows, bytes, sha256 of anon/manifest.json, seconds).
  *   dump:wipe    --dir <dir in .migration-out>
  *       Overwrites every file with zeros once, fsyncs, unlinks, removes the directories. Refuses symlinks and anything
- *       outside .migration-out.
+ *       outside .migration-out. A file with several hard links is unlinked only (reported).
+ *
+ *   dump:grants  --database <name> --account "'user'@'host'"
+ *       Makes NO connection and needs no option file. Prints, to stdout, the SQL the data owner runs: CREATE USER ... REQUIRE SSL
+ *       (the password placeholder stays literal) and one column-level GRANT SELECT per spec table (spec columns minus the
+ *       redacted ones), plus the metadata-only information_schema query for column-name questions.
+ *       With such an account dump:check and dump:cloud work; a spec column it cannot see is reported as "missing or not granted".
+ *
+ * Output paths (--out, --work, --dir) are resolved against the working directory. Under `npm run <cmd> -w @pp/api` that
+ * directory is `apps/api`, so `--out .migration-out/x` means `apps/api/.migration-out/x`. The location (inside a
+ * `.migration-out` folder, new or empty, no stale `.partial`) is checked BEFORE any connection is opened.
  *
  * Environment (never flags: a connection string or password on a command line lands in shell history):
  *   CLOUD_MYSQL_DEFAULTS_FILE  path of a MySQL option file ([client] host, port, user, password, database, ssl-mode).
  *                              Must be OUTSIDE the repository and the working directory, chmod 600 on POSIX.
- *   CLOUD_MYSQL_CLIENT         optional path of the mysql/mariadb client binary (default `mysql`; `mysql.exe` on Windows).
+ *   CLOUD_MYSQL_CLIENT         optional path (or name on PATH) of the mysql/mariadb client. Default: `mysql` (`mysql.exe` on
+ *                              Windows) found by walking PATH (never the working directory). A client inside the repository
+ *                              or the working directory is refused.
  *   ANON_HMAC_KEY_FILE / ANON_HMAC_KEY   the pseudonymisation key, dump:produce only (use a FRESH key per run).
- * The client gets `--defaults-extra-file=<file>` as its first argument; SQL goes in on stdin.
+ * The client gets `--defaults-extra-file=<file>` as its first argument; SQL goes in on stdin. Its environment is an
+ * allow-list (PATH, HOME, LANG, LC_ALL, TZ, MYSQL_UNIX_PORT; on Windows also SystemRoot, TEMP, TMP, USERPROFILE, APPDATA,
+ * PATHEXT, ComSpec): the key and every other variable stay out of the child.
  *
- * Exit codes: 0 ok, 1 failed (client error, interrupted, unexpected), 2 usage or configuration (bad flags, option file,
+ * TLS: a remote host in the option file is refused (exit 2) unless it sets ssl-mode=VERIFY_IDENTITY or VERIFY_CA (MariaDB
+ * client: ssl plus ssl-verify-server-cert). REQUIRED, PREFERRED, DISABLED, ssl=0 or no setting are refused: use
+ * VERIFY_IDENTITY or an SSH tunnel to 127.0.0.1 (a local host needs no TLS).
+ *
+ * Grants: only USAGE, SELECT (column-level too), SHOW VIEW and SHOW DATABASES are accepted. Anything else, a role grant or an
+ * unreadable grant list is refused with exit 3 before a single row is read; PROCESS, REPLICATION CLIENT, BINLOG MONITOR and
+ * LOCK TABLES are refused as well.
+ *
+ * Signals: SIGINT, SIGTERM, SIGHUP (and SIGBREAK on Windows). The first one aborts: the client is killed, the partial output
+ * and (dump:produce) the raw directory are deleted, the exit code is 1 (an interrupted run never exits 0, also when the
+ * anonymiser had already finished). A second one deletes the raw/partial directories synchronously and exits 130.
+ *
+ * Exit codes: 0 ok, 1 failed (client error, interrupted, unexpected), 2 usage or configuration (bad flags, option file, TLS,
  * no key, no client binary, output location not acceptable), 3 the account is not read-only (nothing was read),
  * 4 anonymiser default deny (a column has no rule; dump:produce, checked before connecting), 5 leak scan hit
  * (dump:produce; the output was deleted), 6 row-count mismatch or a bad export stream (the partial output was deleted).
@@ -31,20 +57,22 @@
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { TABLES } from '../ddl/spec'
 import { AnonymiseUsageError, CoverageError, InputError, LeakScanError, OutputError } from '../anonymise/errors'
 import { DEFAULT_CONFIG_PATH, loadConfigFile } from '../anonymise/cli'
 import { loadHmacKey } from '../anonymise/key'
-import { assertOutputUsable, type runAnonymise } from '../anonymise/run'
+import type { runAnonymise } from '../anonymise/run'
 import type { AnonConfig } from '../anonymise/rules'
 import { ProfileOutputError } from '../profile'
 import { scrub, scrubbingLogger } from '../staging/log'
 import { DumpFormatError } from '../staging/readers'
-import { dumpCloud, runCheck } from './cloud'
+import { dumpCloud, refusalMessage, runCheck } from './cloud'
+import { installSignalHandlers } from './cleanup'
 import { makeClientConfig, type SpawnFn } from './client'
 import { ClientError, DumpAbortedError, DumpError, DumpUsageError, ExportStreamError, ReadOnlyRequiredError, WipeRefusedError } from './errors'
+import { buildGrantScript } from './grants-sql'
 import { loadOptionFile, WINDOWS_WARNING } from './option-file'
 import { produceDump } from './produce'
-import { refusalMessage } from './cloud'
 import { WIPE_NOTE, wipeDir } from './wipe'
 
 export const DUMP_EXIT = { ok: 0, failed: 1, usage: 2, notReadOnly: 3, coverage: 4, leak: 5, stream: 6 } as const
@@ -61,6 +89,7 @@ export interface DumpCliDeps {
   spawn?: SpawnFn
   config?: AnonConfig
   runAnonymise?: typeof runAnonymise
+  wipe?: typeof wipeDir
   now?: () => Date
 }
 
@@ -69,6 +98,7 @@ const KNOWN_FLAGS: Record<string, readonly string[]> = {
   'dump:cloud': ['out', 'datetime-offset', 'tables'],
   'dump:produce': ['work', 'datetime-offset', 'tables'],
   'dump:wipe': ['dir'],
+  'dump:grants': ['database', 'account'],
 }
 
 function parseFlags(argv: readonly string[]): { command: string | undefined; flags: Map<string, string> } {
@@ -115,10 +145,18 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
 
   try {
     const { command, flags } = parseFlags(argv)
-    if (command === undefined || !(command in KNOWN_FLAGS)) throw new DumpUsageError('Use dump:check, dump:cloud, dump:produce or dump:wipe.')
+    if (command === undefined || !(command in KNOWN_FLAGS)) throw new DumpUsageError('Use dump:check, dump:cloud, dump:produce, dump:wipe or dump:grants.')
     for (const name of flags.keys()) if (!(KNOWN_FLAGS[command] as readonly string[]).includes(name)) throw new DumpUsageError('Unknown flag.')
     for (const v of flags.values()) {
       if (CONNECTION_STRING.test(v)) throw new DumpUsageError('Do not put a connection string on the command line. Use CLOUD_MYSQL_DEFAULTS_FILE (an option file outside the repository).')
+    }
+
+    if (command === 'dump:grants') {
+      const database = flags.get('database')
+      const account = flags.get('account')
+      if (!database || !account) throw new DumpUsageError("Give --database <name> and --account \"'user'@'host'\".")
+      for (const line of buildGrantScript(database, account, TABLES)) out(line)
+      return DUMP_EXIT.ok
     }
 
     if (command === 'dump:wipe') {
@@ -126,6 +164,7 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
       if (!dir) throw new DumpUsageError('Give --dir <directory inside a .migration-out folder>.')
       const r = await wipeDir(dir)
       log.info(`Wiped ${r.files} file(s), ${fmt(r.bytes)} bytes, ${r.dirs} director${r.dirs === 1 ? 'y' : 'ies'}.`)
+      if (r.hardLinked > 0) log.warn(`${r.hardLinked} file(s) had more than one hard link: removed but NOT overwritten (the other links still hold the data).`)
       log.info(WIPE_NOTE)
       return DUMP_EXIT.ok
     }
@@ -167,7 +206,6 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
     }
 
     if (command === 'dump:cloud') {
-      assertOutputUsable(outDir)
       const r = await dumpCloud({ client, outDir, log, tables, datetimeOffset: offset, now: deps.now })
       log.info(`Output: ${r.tables.length} tables, ${fmt(r.totalRows)} rows in ${r.outDir}. RAW personal data: run dump:wipe --dir on it the same day.`)
       return DUMP_EXIT.ok
@@ -175,7 +213,7 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
 
     // dump:produce
     const { key, config } = produceInputs as { key: Buffer; config: AnonConfig }
-    const r = await produceDump({ client, workDir: outDir, key, config, log, tables, datetimeOffset: offset, now: deps.now, runAnonymise: deps.runAnonymise })
+    const r = await produceDump({ client, workDir: outDir, key, config, log, tables, datetimeOffset: offset, now: deps.now, runAnonymise: deps.runAnonymise, wipe: deps.wipe })
     for (const t of r.tables) log.info(`${t.table}: ${fmt(t.rows)} rows, ${fmt(t.bytes)} bytes`)
     log.info(`Anonymised dump: ${r.tables.length} tables, ${fmt(r.totalRows)} rows in ${r.anonDir}.`)
     log.info(`sha256 of anon/manifest.json: ${r.manifestSha256}`)
@@ -219,8 +257,13 @@ export async function runDumpCli(argv: readonly string[], deps: DumpCliDeps = {}
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const abort = new AbortController()
-  process.once('SIGINT', () => abort.abort())
-  process.once('SIGTERM', () => abort.abort())
+  installSignalHandlers({
+    target: process,
+    abort,
+    platform: process.platform,
+    exit: (code) => process.exit(code),
+    err: (line) => console.error(line),
+  })
   runDumpCli(process.argv.slice(2), { signal: abort.signal }).then(
     (code) => {
       process.exitCode = code

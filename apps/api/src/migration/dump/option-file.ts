@@ -6,6 +6,11 @@
  * The file must exist, be a regular file, sit OUTSIDE the repository and the working directory (real paths), and on
  * POSIX not be readable by group or others (chmod 600). `!include` directives are refused (they could pull in a second,
  * unchecked file). The values of user, password and host are collected as secrets so every client message is scrubbed.
+ *
+ * TLS: a host that is not local (anything but localhost, 127.0.0.1, ::1, or no host at all = a socket) is refused unless
+ * the file demands certificate verification: `ssl-mode=VERIFY_IDENTITY` or `VERIFY_CA` (MySQL client), or, when no
+ * ssl-mode is set, `ssl-verify-server-cert` with ssl on (MariaDB client). REQUIRED, PREFERRED, DISABLED, `ssl=0` or no
+ * setting on a remote host are refused. A local host (an SSH tunnel to 127.0.0.1) needs no TLS.
  */
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, relative, resolve } from 'node:path'
@@ -18,9 +23,9 @@ export const WINDOWS_WARNING =
 
 type Env = Readonly<Record<string, string | undefined>>
 
-const repoRoot = (): string => fileURLToPath(new URL('../../../../../', import.meta.url))
+export const repoRoot = (): string => fileURLToPath(new URL('../../../../../', import.meta.url))
 
-const real = (p: string): string => {
+export const real = (p: string): string => {
   try {
     return realpathSync.native(p)
   } catch {
@@ -28,7 +33,7 @@ const real = (p: string): string => {
   }
 }
 
-const isInside = (child: string, parent: string): boolean => {
+export const isInside = (child: string, parent: string): boolean => {
   const rel = relative(parent, child)
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
@@ -38,8 +43,6 @@ export interface OptionFile {
   path: string
   /** Strings to scrub from every message: password (any length), user and host (3+ characters). */
   secrets: string[]
-  /** True when no `ssl-mode`/`ssl` option is present and the host is not local. */
-  noTls: boolean
   warnings: string[]
 }
 
@@ -70,11 +73,40 @@ export function parseOptionText(text: string): { values: Map<string, string>; ra
     if (group !== 'client' && group !== 'mysql') continue
     const eq = line.indexOf('=')
     const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
-    if (eq === -1) continue
+    if (eq === -1) {
+      values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
+      raw.set(key, '')
+      continue
+    }
     raw.set(key, unquote(line.slice(eq + 1)))
     values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
   }
   return { values, raw, hasInclude }
+}
+
+const OFF = new Set(['0', 'false', 'off', 'no'])
+/** A bare flag (empty value) or an explicit on value. */
+const flagOn = (v: string | undefined): boolean => v !== undefined && !OFF.has(v.toLowerCase())
+
+export function isLocalHost(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/^\[|\]$/g, '')
+  return h === '' || h === 'localhost' || h === '127.0.0.1' || h === '::1'
+}
+
+const TLS_REFUSED =
+  'The option file points to a remote host without verified TLS: use VERIFY_IDENTITY or an SSH tunnel to 127.0.0.1 (ssl-mode=VERIFY_IDENTITY or VERIFY_CA under [client]; MariaDB client: ssl plus ssl-verify-server-cert).'
+
+/** Exported for tests: the TLS rule on parsed option values. */
+export function assertTransportSafe(values: ReadonlyMap<string, string>): void {
+  if (isLocalHost(values.get('host') ?? '')) return
+  const mode = values.get('ssl-mode')
+  if (mode !== undefined) {
+    if (/^VERIFY_(IDENTITY|CA)$/i.test(mode.trim())) return
+    throw new DumpUsageError(TLS_REFUSED)
+  }
+  // MariaDB client style: ssl on AND the server certificate verified.
+  if (!values.has('skip-ssl') && !values.has('disable-ssl') && flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
+  throw new DumpUsageError(TLS_REFUSED)
 }
 
 export function loadOptionFile(env: Env, platform: string, roots: readonly string[] = [repoRoot(), process.cwd()]): OptionFile {
@@ -104,9 +136,6 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
   for (const key of ['user', 'host'] as const) {
     for (const v of [values.get(key), raw.get(key)]) if (v && v.length >= 3) secrets.push(v)
   }
-  const host = (values.get('host') ?? '').toLowerCase()
-  const local = host === '' || host === 'localhost' || host === '127.0.0.1' || host === '::1'
-  const noTls = !local && !values.has('ssl-mode') && !values.has('ssl')
-  if (noTls) warnings.push('The option file sets no ssl-mode for a remote host. Add ssl-mode=VERIFY_IDENTITY (or REQUIRED) under [client].')
-  return { path, secrets, noTls, warnings }
+  assertTransportSafe(values)
+  return { path, secrets, warnings }
 }

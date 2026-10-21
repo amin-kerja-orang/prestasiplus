@@ -6,10 +6,13 @@
  * a regular file nor a directory, is not strictly below a `.migration-out` folder, or is outside the working directory and
  * the repository root.
  *
+ * A file with more than one hard link is only unlinked (reported, not overwritten). Files are opened with O_NOFOLLOW where the
+ * platform has it.
+ *
  * Overwriting is best effort: on an SSD, wear levelling and journaling file systems can keep old blocks. Full-disk
  * encryption is the real protection; this only removes the readable file.
  */
-import { existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs'
+import { constants as fsConstants, existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs'
 import { open, rmdir, unlink } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 
@@ -34,9 +37,12 @@ const isInside = (child: string, parent: string): boolean => {
 }
 
 export interface WipeResult {
+  /** Files overwritten with zeros and removed. */
   files: number
   bytes: number
   dirs: number
+  /** Files with more than one hard link: removed (unlinked) but NOT overwritten, the other links keep the data. */
+  hardLinked: number
 }
 
 interface Entry {
@@ -63,21 +69,36 @@ function inventory(root: string): Entry[] {
   return out
 }
 
-async function overwriteAndRemove(path: string, size: number): Promise<void> {
-  const handle = await open(path, 'r+')
+/** Opens without following a symbolic link (where the platform supports it), so a swapped-in link cannot redirect the overwrite. */
+const OPEN_FLAGS = fsConstants.O_RDWR | (fsConstants.O_NOFOLLOW ?? 0)
+
+/** Returns the bytes overwritten, or null when the file has several hard links (only unlinked). */
+async function overwriteAndRemove(path: string): Promise<number | null> {
+  const handle = await open(path, OPEN_FLAGS)
+  let written: number | null = null
   try {
-    const zeros = Buffer.alloc(Math.min(CHUNK, Math.max(size, 1)))
-    let done = 0
-    while (done < size) {
-      const n = Math.min(zeros.length, size - done)
-      await handle.write(zeros, 0, n, done)
-      done += n
+    const st = await handle.stat()
+    if (!st.isFile()) throw new WipeRefusedError('An entry is not a regular file any more; refusing to wipe it.')
+    if (st.nlink > 1) {
+      // Overwriting would destroy the data behind the other links, which is not ours to touch.
+      written = null
+    } else {
+      const size = st.size
+      const zeros = Buffer.alloc(Math.min(CHUNK, Math.max(size, 1)))
+      let done = 0
+      while (done < size) {
+        const n = Math.min(zeros.length, size - done)
+        await handle.write(zeros, 0, n, done)
+        done += n
+      }
+      await handle.sync()
+      written = size
     }
-    await handle.sync()
   } finally {
     await handle.close()
   }
   await unlink(path)
+  return written
 }
 
 /** `missingOk`: a missing directory is not an error (the wipe in a `finally` may run twice). */
@@ -87,7 +108,7 @@ export async function wipeDir(dir: string, options: { roots?: readonly string[];
   try {
     st = lstatSync(wanted)
   } catch {
-    if (options.missingOk) return { files: 0, bytes: 0, dirs: 0 }
+    if (options.missingOk) return { files: 0, bytes: 0, dirs: 0, hardLinked: 0 }
     throw new WipeRefusedError('The directory does not exist.')
   }
   if (st.isSymbolicLink()) throw new WipeRefusedError('The target is a symbolic link; refusing to wipe.')
@@ -102,12 +123,16 @@ export async function wipeDir(dir: string, options: { roots?: readonly string[];
     throw new WipeRefusedError('The target must be under the working directory or the repository root.')
   }
   const entries = inventory(where) // refuses before anything is touched
-  const result: WipeResult = { files: 0, bytes: 0, dirs: 0 }
+  const result: WipeResult = { files: 0, bytes: 0, dirs: 0, hardLinked: 0 }
   for (const e of entries) {
     if (e.dir) continue
-    await overwriteAndRemove(e.path, e.size)
-    result.files++
-    result.bytes += e.size
+    const bytes = await overwriteAndRemove(e.path)
+    if (bytes === null) {
+      result.hardLinked++
+    } else {
+      result.files++
+      result.bytes += bytes
+    }
   }
   for (const e of entries) {
     if (!e.dir) continue

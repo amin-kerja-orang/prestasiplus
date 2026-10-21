@@ -1,9 +1,9 @@
-import { chmodSync, existsSync, linkSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { chmodSync, closeSync, existsSync, linkSync, mkdirSync, openSync, readFileSync, readSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
 
 import { afterAll, describe, expect, it } from 'vitest'
 
-import type { ColumnSpec, ColumnType, TableSpec } from '../../../src/migration/ddl/spec'
+import { TABLES, type ColumnSpec, type ColumnType, type TableSpec } from '../../../src/migration/ddl/spec'
 import { DumpUsageError, ExportStreamError, WipeRefusedError } from '../../../src/migration/dump/errors'
 import {
   assertDatetimeOffset,
@@ -17,7 +17,10 @@ import {
   type SchemaInfo,
   type SourceColumn,
 } from '../../../src/migration/dump/export-sql'
+import { childEnvironment, findOnPath, resolveClientBinary } from '../../../src/migration/dump/client'
+import { emergencyWipeSync, installSignalHandlers, registerSensitive, sensitivePaths } from '../../../src/migration/dump/cleanup'
 import { evaluateGrants } from '../../../src/migration/dump/grants'
+import { buildGrantScript } from '../../../src/migration/dump/grants-sql'
 import { loadOptionFile, parseOptionText } from '../../../src/migration/dump/option-file'
 import { splitExport } from '../../../src/migration/dump/split'
 import { wipeDir } from '../../../src/migration/dump/wipe'
@@ -160,13 +163,15 @@ describe('grant check', () => {
   it('accepts read-only accounts in the MySQL 8, MySQL 5.7 and MariaDB formats', () => {
     expect(ok(['GRANT USAGE ON *.* TO `reader`@`%`', 'GRANT SELECT, SHOW VIEW ON `pp`.* TO `reader`@`%`']).readOnly).toBe(true)
     expect(ok(["GRANT USAGE ON *.* TO 'reader'@'%' IDENTIFIED BY PASSWORD '*0123456789ABCDEF0123456789ABCDEF01234567'", "GRANT SELECT ON `pp`.* TO 'reader'@'%'"]).readOnly).toBe(true)
-    expect(ok(['GRANT SHOW DATABASES, PROCESS, REPLICATION CLIENT ON *.* TO `reader`@`%`', 'GRANT SELECT ON `pp`.* TO `reader`@`%`']).readOnly).toBe(true)
-    expect(ok(['GRANT BINLOG MONITOR ON *.* TO `reader`@`%` IDENTIFIED BY PASSWORD \'*00\'', 'GRANT SELECT ON `pp`.`users` TO `reader`@`%`']).readOnly).toBe(true)
+    expect(ok(['GRANT SHOW DATABASES ON *.* TO `reader`@`%`', 'GRANT SELECT ON `pp`.* TO `reader`@`%`']).readOnly).toBe(true)
+    expect(ok(["GRANT USAGE ON *.* TO `reader`@`%` IDENTIFIED BY PASSWORD '*00'", 'GRANT SELECT ON `pp`.`users` TO `reader`@`%`']).readOnly).toBe(true)
     // column-level SELECT and table names that contain the word ON
     expect(ok(['GRANT SELECT (`id`, `name on x`) ON `pp`.`users` TO `reader`@`%`']).readOnly).toBe(true)
     // a partial revoke only narrows the account
     expect(ok(['GRANT SELECT ON *.* TO `reader`@`%`', "REVOKE SELECT ON `mysql`.* FROM `reader`@`%`"]).readOnly).toBe(true)
     expect(ok(['GRANT SELECT ON `pp`.* TO `reader`@`%`']).privileges).toEqual(['SELECT'])
+    // what dump:grants produces: column-level SELECT only, REQUIRE SSL on the USAGE line
+    expect(ok(["GRANT USAGE ON *.* TO `c`@`127.0.0.1` IDENTIFIED BY PASSWORD '*00' REQUIRE SSL", 'GRANT SELECT (`id`, `name`) ON `pp`.`users` TO `c`@`127.0.0.1`', 'GRANT SELECT (`id`) ON `pp`.`schools` TO `c`@`127.0.0.1`'])).toMatchObject({ readOnly: true, privileges: ['SELECT', 'USAGE'] })
   })
 
   it.each([
@@ -189,6 +194,9 @@ describe('grant check', () => {
     ['GRANT OPTION (MariaDB)', ["GRANT USAGE ON *.* TO `u`@`%` IDENTIFIED BY PASSWORD '*00' WITH GRANT OPTION", 'GRANT SELECT ON `pp`.* TO `u`@`%`'], 'GRANT OPTION'],
     ['column-level write', ['GRANT SELECT (`id`), UPDATE (`name`) ON `pp`.`users` TO `u`@`%`'], 'UPDATE'],
     ['PROXY', ["GRANT PROXY ON ''@'' TO 'u'@'%'"], 'PROXY'],
+    ['PROCESS', ['GRANT SELECT, PROCESS ON *.* TO `u`@`%`'], 'PROCESS'],
+    ['REPLICATION CLIENT', ['GRANT SELECT, REPLICATION CLIENT ON *.* TO `u`@`%`'], 'REPLICATION CLIENT'],
+    ['BINLOG MONITOR', ['GRANT BINLOG MONITOR ON *.* TO `u`@`%`', 'GRANT SELECT ON `pp`.* TO `u`@`%`'], 'BINLOG MONITOR'],
   ])('refuses %s', (_name, lines, privilege) => {
     const v = ok(lines)
     expect(v.readOnly).toBe(false)
@@ -228,11 +236,40 @@ describe('option file', () => {
     expect(() => loadOptionFile(env(write(work.outside('inc.cnf'), `${GOOD}!include /etc/other.cnf\n`)), 'linux')).toThrow(/!include/)
   })
 
-  it('on Windows the mode is not checked but a warning is given; a remote host without ssl-mode warns', () => {
-    const f = write(work.outside('win.cnf'), '[client]\nhost=db.example.test\npassword=abc\n', 0o644)
+  it('on Windows the mode is not checked but a warning is given', () => {
+    const f = write(work.outside('win.cnf'), '[client]\nhost=127.0.0.1\npassword=abc\n', 0o644)
     const o = loadOptionFile(env(f), 'win32')
     expect(o.warnings.join('\n')).toMatch(/not enforced on Windows/)
-    expect(o.warnings.join('\n')).toMatch(/ssl-mode/)
+  })
+
+  describe('TLS rule', () => {
+    const tls = (body: string) => loadOptionFile(env(write(work.outside(`tls-${Math.random().toString(16).slice(2)}.cnf`), `[client]\n${body}\npassword=abc\n`)), 'linux')
+    it.each([
+      ['VERIFY_IDENTITY', 'host=db.example.test\nssl-mode=VERIFY_IDENTITY'],
+      ['VERIFY_CA, lower case', 'host=db.example.test\nssl-mode=verify_ca'],
+      ['MariaDB ssl + ssl-verify-server-cert', 'host=db.example.test\nssl=1\nssl-verify-server-cert'],
+      ['MariaDB bare ssl flags', 'host=db.example.test\nssl\nssl-verify-server-cert=1'],
+      ['localhost without TLS (tunnel)', 'host=localhost\nssl-mode=DISABLED'],
+      ['127.0.0.1 without TLS (tunnel)', 'host=127.0.0.1'],
+      ['::1 without TLS', 'host=::1'],
+      ['no host (socket)', 'socket=/var/run/mysqld/mysqld.sock'],
+    ])('accepts %s', (_n, body) => {
+      expect(() => tls(body)).not.toThrow()
+    })
+    it.each([
+      ['no TLS setting on a remote host', 'host=db.example.test'],
+      ['REQUIRED', 'host=db.example.test\nssl-mode=REQUIRED'],
+      ['PREFERRED', 'host=db.example.test\nssl-mode=PREFERRED'],
+      ['DISABLED', 'host=db.example.test\nssl-mode=DISABLED'],
+      ['ssl=0', 'host=db.example.test\nssl=0'],
+      ['ssl without verification', 'host=db.example.test\nssl=1'],
+      ['verification without ssl', 'host=db.example.test\nssl-verify-server-cert'],
+      ['ssl-verify-server-cert=0', 'host=db.example.test\nssl=1\nssl-verify-server-cert=0'],
+      ['ssl-mode REQUIRED even with verify flags', 'host=db.example.test\nssl-mode=REQUIRED\nssl=1\nssl-verify-server-cert'],
+      ['a remote IP', 'host=203.0.113.9\nssl-mode=REQUIRED'],
+    ])('refuses %s', (_n, body) => {
+      expect(() => tls(body)).toThrow(/VERIFY_IDENTITY or an SSH tunnel to 127\.0\.0\.1/)
+    })
   })
 
   it('parses quotes, comments and groups', () => {
@@ -301,19 +338,35 @@ describe('splitter', () => {
 })
 
 describe('wipe', () => {
-  it('overwrites with zeros (seen through a hard link), unlinks and removes the directories', async () => {
+  it('overwrites with zeros (seen through a descriptor opened before), unlinks and removes the directories', async () => {
     const dir = work.out('wipe-ok')
     mkdirSync(join(dir, 'sub'), { recursive: true })
     writeFileSync(join(dir, 'a.ndjson'), 'x'.repeat(3 * 1024 * 1024 + 7))
     writeFileSync(join(dir, 'sub', 'b.txt'), 'secret')
-    const keep = work.out('wipe-keep')
-    linkSync(join(dir, 'a.ndjson'), keep)
+    const fd = openSync(join(dir, 'a.ndjson'), 'r') // keeps the inode readable after the unlink
+    try {
+      const r = await wipeDir(dir)
+      expect(r).toMatchObject({ files: 2, dirs: 2, hardLinked: 0 })
+      expect(existsSync(dir)).toBe(false)
+      const left = Buffer.alloc(3 * 1024 * 1024 + 7)
+      expect(readSync(fd, left, 0, left.length, 0)).toBe(left.length)
+      expect(left.every((b) => b === 0)).toBe(true)
+    } finally {
+      closeSync(fd)
+    }
+  })
+
+  it('only unlinks a file with several hard links and reports it (the other link keeps its data)', async () => {
+    const dir = work.out('wipe-hard')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'a.txt'), 'precious')
+    writeFileSync(join(dir, 'b.txt'), 'plain')
+    const keep = work.out('wipe-hard-keep')
+    linkSync(join(dir, 'a.txt'), keep)
     const r = await wipeDir(dir)
-    expect(r).toMatchObject({ files: 2, dirs: 2 })
+    expect(r).toMatchObject({ files: 1, hardLinked: 1, dirs: 1 })
     expect(existsSync(dir)).toBe(false)
-    const left = readFileSync(keep)
-    expect(left.length).toBe(3 * 1024 * 1024 + 7)
-    expect(left.every((b) => b === 0)).toBe(true)
+    expect(readFileSync(keep, 'utf8')).toBe('precious')
   })
 
   it('refuses a symlink target, a symlink inside (deleting nothing), a path outside .migration-out and the folder itself', async () => {
@@ -338,6 +391,141 @@ describe('wipe', () => {
     const root = work.out('.')
     await expect(wipeDir(join(root, '..'))).rejects.toThrow(WipeRefusedError)
     await expect(wipeDir(work.out('missing'))).rejects.toThrow(/does not exist/)
-    await expect(wipeDir(work.out('missing'), { missingOk: true })).resolves.toEqual({ files: 0, bytes: 0, dirs: 0 })
+    await expect(wipeDir(work.out('missing'), { missingOk: true })).resolves.toEqual({ files: 0, bytes: 0, dirs: 0, hardLinked: 0 })
+  })
+})
+
+describe('client binary and child environment', () => {
+  const bin = (dir: string, name: string) => {
+    mkdirSync(dir, { recursive: true })
+    const path = join(dir, name)
+    writeFileSync(path, '#!/bin/sh\n', { mode: 0o755 })
+    chmodSync(path, 0o755)
+    return path
+  }
+
+  it('walks PATH itself: absolute entries only, never the working directory', () => {
+    const a = work.outside('bin-a')
+    const bDir = work.outside('bin-b')
+    const b = bin(bDir, 'mysql')
+    const env = { PATH: ['', '.', 'relative/dir', a, bDir].join(delimiter) }
+    expect(findOnPath(['mysql'], env, 'linux')).toBe(b)
+    expect(findOnPath(['mysql'], { PATH: ['', '.', 'relative/dir'].join(delimiter) }, 'linux')).toBeUndefined()
+    expect(resolveClientBinary(env, 'linux', [])).toBe(b)
+  })
+
+  it('on Windows looks for mysql.exe and reads Path case-insensitively', () => {
+    const dir = work.outside('bin-win')
+    const exe = bin(dir, 'mysql.exe')
+    expect(findOnPath(['mysql.exe', 'mysql'], { Path: dir }, 'win32')).toBe(exe)
+  })
+
+  it('refuses a binary inside the repository or the working directory (real path), and a missing one', () => {
+    const inside = bin(work.out('bin-inside'), 'mysql')
+    expect(() => resolveClientBinary({ CLOUD_MYSQL_CLIENT: inside }, 'linux')).toThrow(/inside the repository or the working directory/)
+    expect(() => resolveClientBinary({ PATH: work.out('bin-inside') }, 'linux')).toThrow(/inside the repository or the working directory/)
+    const outside = bin(work.outside('bin-outside'), 'mysql')
+    const link = work.out('mysql-link')
+    symlinkSync(outside, link)
+    expect(() => resolveClientBinary({ CLOUD_MYSQL_CLIENT: link }, 'linux')).not.toThrow() // a link INTO the repo to an outside file resolves outside
+    const planted = work.out('planted-target')
+    writeFileSync(planted, '#!/bin/sh\n', { mode: 0o755 })
+    const outsideLink = work.outside('mysql-link-out')
+    symlinkSync(planted, outsideLink)
+    expect(() => resolveClientBinary({ CLOUD_MYSQL_CLIENT: outsideLink }, 'linux')).toThrow(/inside the repository/)
+    expect(() => resolveClientBinary({ CLOUD_MYSQL_CLIENT: join(work.outside('x'), 'nope') }, 'linux')).toThrow(/existing, executable file/)
+    expect(() => resolveClientBinary({ PATH: work.outside('empty-path') }, 'linux')).toThrow(/not found/)
+  })
+
+  it('hands the child an allow-listed environment only', () => {
+    const env = { PATH: '/usr/bin', HOME: '/home/x', LANG: 'C', LC_ALL: 'C', TZ: 'UTC', MYSQL_UNIX_PORT: '/s', ANON_HMAC_KEY: 'k'.repeat(40), ANON_HMAC_KEY_FILE: '/k', MYSQL_PWD: 'p', CLOUD_MYSQL_DEFAULTS_FILE: '/o', SystemRoot: 'C:\\Windows', TEMP: '/t', NODE_OPTIONS: '--x' }
+    expect(Object.keys(childEnvironment(env, 'linux')).sort()).toEqual(['HOME', 'LANG', 'LC_ALL', 'MYSQL_UNIX_PORT', 'PATH', 'TZ'])
+    expect(Object.keys(childEnvironment(env, 'win32')).sort()).toEqual(['HOME', 'LANG', 'LC_ALL', 'MYSQL_UNIX_PORT', 'PATH', 'SystemRoot', 'TEMP', 'TZ'])
+    expect(Object.keys(childEnvironment({ SYSTEMROOT: 'C:\\Windows', Path: 'x', ANON_HMAC_KEY: 'k' }, 'win32')).sort()).toEqual(['Path', 'SYSTEMROOT'])
+  })
+})
+
+describe('interrupt handling', () => {
+  class FakeProcess {
+    handlers = new Map<string, () => void>()
+    on(name: string, fn: () => void) {
+      this.handlers.set(name, fn)
+    }
+  }
+
+  it('registers SIGINT, SIGTERM and SIGHUP (SIGBREAK on Windows); the first aborts, the second wipes and exits 130', () => {
+    for (const [platform, names] of [['linux', ['SIGHUP', 'SIGINT', 'SIGTERM']], ['win32', ['SIGBREAK', 'SIGHUP', 'SIGINT', 'SIGTERM']]] as const) {
+      const target = new FakeProcess()
+      const abort = new AbortController()
+      const exits: number[] = []
+      let wiped = 0
+      const lines: string[] = []
+      installSignalHandlers({ target, abort, platform, exit: (c) => void exits.push(c), err: (l) => void lines.push(l), wipe: () => void wiped++ })
+      expect([...target.handlers.keys()].sort()).toEqual(names)
+      target.handlers.get('SIGTERM')?.()
+      expect(abort.signal.aborted).toBe(true)
+      expect(wiped).toBe(0)
+      expect(exits).toEqual([])
+      target.handlers.get('SIGHUP')?.()
+      expect(wiped).toBe(1)
+      expect(exits).toEqual([130])
+      expect(lines.length).toBe(1)
+    }
+  })
+
+  it('emergencyWipeSync zeroes and removes the registered directories, never following a symlink', () => {
+    const dir = work.out('emergency')
+    mkdirSync(join(dir, 'sub'), { recursive: true })
+    writeFileSync(join(dir, 'sub', 'a.ndjson'), 'secret'.repeat(1000))
+    const target = work.out('emergency-target')
+    writeFileSync(target, 'keep me')
+    symlinkSync(target, join(dir, 'link'))
+    const fd = openSync(join(dir, 'sub', 'a.ndjson'), 'r')
+    const unregister = registerSensitive(dir)
+    expect(sensitivePaths()).toContain(dir)
+    try {
+      emergencyWipeSync()
+      expect(existsSync(dir)).toBe(false)
+      const buf = Buffer.alloc(6000)
+      readSync(fd, buf, 0, 6000, 0)
+      expect(buf.every((b) => b === 0)).toBe(true)
+      expect(readFileSync(target, 'utf8')).toBe('keep me')
+    } finally {
+      closeSync(fd)
+      unregister()
+    }
+    expect(sensitivePaths()).not.toContain(dir)
+  })
+})
+
+describe('dump:grants script', () => {
+  const ACCOUNT = "'pp_dump'@'10.0.0.%'"
+  const small = [spec('things', [col('id', 'id'), col('name', 't'), col('secret', 't', true)]), spec('only_secret', [col('token', 't', true)], null)]
+
+  it('prints the CREATE USER placeholder, one column-level GRANT per table without the redacted columns, and the metadata query', () => {
+    const lines = buildGrantScript('pp_cloud', ACCOUNT, small)
+    expect(lines).toContain(`CREATE USER IF NOT EXISTS ${ACCOUNT} IDENTIFIED BY '<generate-a-password>' REQUIRE SSL;`)
+    expect(lines).toContain(`GRANT SELECT (\`id\`, \`name\`) ON \`pp_cloud\`.\`things\` TO ${ACCOUNT};`)
+    expect(lines.filter((l) => l.startsWith('GRANT '))).toHaveLength(1) // a redact-only table gets no grant
+    expect(lines.join('\n')).not.toContain('secret')
+    expect(lines).toContain("-- SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'pp_cloud' ORDER BY table_name, ordinal_position;")
+  })
+
+  it('covers every spec table of the real spec and never grants a redact column', () => {
+    const lines = buildGrantScript('pp_cloud', ACCOUNT, TABLES)
+    expect(lines.filter((l) => l.startsWith('GRANT ')).length).toBe(TABLES.length)
+    const users = lines.find((l) => l.includes('`pp_cloud`.`users`')) as string
+    expect(users).toContain('`email`')
+    expect(users).not.toContain('remember_token')
+    expect(users).not.toContain('parent_invite_token')
+    expect(lines.join('\n')).not.toMatch(/INSERT|UPDATE|DELETE|ALL PRIVILEGES|GRANT OPTION/)
+  })
+
+  it('validates the database and the account strictly', () => {
+    for (const bad of ['pp-cloud', 'pp cloud', 'pp`x', "pp'; DROP", '']) expect(() => buildGrantScript(bad, ACCOUNT, small), bad).toThrow(DumpUsageError)
+    for (const bad of ['user@host', "'user'@host", "user@'host'", "'us'er'@'host'", "'user'@'ho\\st'", "'user'@'host' IDENTIFIED BY 'x'", "'user'@'host';--", "''@'host'", "'user'@''", "'a b'@'host'"]) {
+      expect(() => buildGrantScript('pp', bad, small), bad).toThrow(DumpUsageError)
+    }
+    for (const ok of ["'pp_dump'@'localhost'", "'pp-dump.ro'@'127.0.0.1'", "'u'@'%'", "'u'@'db-1.example.test'", "'u'@'::1'"]) expect(() => buildGrantScript('pp', ok, small), ok).not.toThrow()
   })
 })

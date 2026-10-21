@@ -100,7 +100,7 @@ export function renderReportMarkdown(r: SchemaReport): string {
     '',
     `Tables present: ${r.totals.tables_present} of ${r.totals.tables_expected}. Rows: ${r.totals.rows ?? 'not counted'}.`,
     '',
-    '| Table | Present | Rows | Selected | Redacted | Spec columns missing in source | Source columns not in spec |',
+    '| Table | Present | Rows | Selected | Redacted | Spec columns missing or not granted | Source columns not in spec |',
     '|---|---|---:|---:|---|---|---|',
     ...r.tables.map(
       (t) =>
