@@ -375,11 +375,14 @@ describe('openapi registration', () => {
     }
   })
 
-  it('D57(b): no marketplace response carries a credential or token, so none sets Cache-Control', () => {
+  it('Cache-Control: no-store only on the 200 of the two routes that move a counter (BE-46); no credential anywhere', () => {
+    const counterRoutes = new Set(['get /marketplace/products/{slug}', 'post /marketplace/products/{slug}/whatsapp'])
     for (const [method, path, op] of operations()) {
       for (const [status, r] of Object.entries(op.responses)) {
         const headers = Object.keys((r as { headers?: Record<string, unknown> }).headers ?? {})
-        expect(headers, `${method} ${path} ${status}`).not.toContain('Cache-Control')
+        const expectNoStore = status === '200' && counterRoutes.has(`${method} ${path}`)
+        if (expectNoStore) expect(headers, `${method} ${path} ${status}`).toContain('Cache-Control')
+        else expect(headers, `${method} ${path} ${status}`).not.toContain('Cache-Control')
       }
     }
   })
