@@ -357,13 +357,15 @@ export interface Mastery {
 export interface StartSessionRequest {
   mode: PracticeMode
   subjectCode?: string
-  levelId?: number | null
+  /** A number in the mock; the level id string on the real API (contract `IdSchema`). */
+  levelId?: number | string | null
   difficulty?: number | null
   count?: number
   chapterId?: number
   year?: number
   setNo?: number
-  targetQuestionId?: number | null
+  /** A number in the mock; the question id string on the real API (contract `IdSchema`). */
+  targetQuestionId?: number | string | null
   missionId?: number
   remedialTestId?: number
   questionSetId?: number

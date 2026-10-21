@@ -23,6 +23,7 @@ import type {
   TrackingAHub,
   TrackingASubjectResult,
   WalkthroughResponse,
+  WireId,
 } from './types'
 
 interface Signal {
@@ -67,18 +68,18 @@ export const fetchMocks = (o: Signal = {}) =>
 
 /** #13 S11 "Jana Mock SPM". */
 export const createMock = (body: { subject: string; paperNumber: 1 | 2 }) =>
-  api.post<{ id: number }>('/api/spm-mocks', { body })
+  api.post<{ id: WireId }>('/api/spm-mocks', { body })
 
 /** #14 Q4 (provisional). */
-export const fetchMock = (id: number, o: Signal = {}) =>
+export const fetchMock = (id: WireId, o: Signal = {}) =>
   api.get<MockExamView>(`/api/spm-mocks/${String(id)}`, withSignal(o))
 
 /** #15 Q4 submit. */
-export const submitMock = (id: number, answers: MockAnswerInput[]) =>
+export const submitMock = (id: WireId, answers: MockAnswerInput[]) =>
   api.post<MockResult>(`/api/spm-mocks/${String(id)}/submit`, { body: { answers } })
 
 /** #16 S12. */
-export const fetchMockResult = (id: number, o: Signal = {}) =>
+export const fetchMockResult = (id: WireId, o: Signal = {}) =>
   api.get<MockResult>(`/api/spm-mocks/${String(id)}/result`, withSignal(o))
 
 /** #17 S13; the live-shaped body is returned untouched. */

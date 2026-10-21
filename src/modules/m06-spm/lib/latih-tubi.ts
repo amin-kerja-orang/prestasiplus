@@ -3,9 +3,13 @@
  * Difficulty buttons are bound to keys 2–5 of the site-wide 1–5 scale, as live (DV-M06-02 withdrawn).
  */
 
-import type { LatihTubiConfig, TargetType } from '../api'
+import { isHttpMode } from '@/api/mode'
 
-export type LevelKey = 10 | 11
+import type { LatihTubiConfig, TargetType, WireId } from '../api'
+import { queryId } from './wire-id'
+
+/** A level id: 10 or 11 in the mock, the `education_levels` id string on the real API (BE-41). */
+export type LevelKey = WireId
 export type DifficultyKey = 2 | 3 | 4 | 5
 
 export interface DifficultyOption {
@@ -22,10 +26,34 @@ export const DIFFICULTY_OPTIONS: readonly DifficultyOption[] = [
   { key: 5, label: 'Sangat Sukar', color: 'error' },
 ]
 
-export const LEVEL_OPTIONS: readonly { key: LevelKey; label: string }[] = [
-  { key: 10, label: 'Tingkatan 4' },
-  { key: 11, label: 'Tingkatan 5' },
+export interface LevelOption {
+  key: LevelKey
+  label: string
+}
+
+const LEVEL_LABELS = ['Tingkatan 4', 'Tingkatan 5'] as const
+
+export const LEVEL_OPTIONS: readonly LevelOption[] = [
+  { key: 10, label: LEVEL_LABELS[0] },
+  { key: 11, label: LEVEL_LABELS[1] },
 ]
+
+/** Orders decimal id strings by value (ids are bigint identities; never `Number()`). */
+const byIdValue = (a: string, b: string): number =>
+  a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0
+
+/**
+ * The two Tingkatan buttons of S4. Mock: `LEVEL_OPTIONS`. Real API: the keys of `levelCounts` (the
+ * Tingkatan 4 and Tingkatan 5 level ids, BE-41 open question 7), in id order, labelled Tingkatan 4
+ * then Tingkatan 5 (a JSON object cannot keep the server order of integer-like keys).
+ */
+export function levelOptions(config: Pick<LatihTubiConfig, 'levelCounts'>): readonly LevelOption[] {
+  if (!isHttpMode()) return LEVEL_OPTIONS
+  return Object.keys(config.levelCounts)
+    .sort(byIdValue)
+    .slice(0, LEVEL_LABELS.length)
+    .map((key, i) => ({ key, label: LEVEL_LABELS[i]! }))
+}
 
 const TARGET_NAMES: Record<TargetType, string> = {
   spm: 'SPM',
@@ -44,7 +72,7 @@ export function diffCount(
 ): number {
   const k = String(key) as '2' | '3' | '4' | '5'
   if (level === null) return config.difficultyStats[k] || 0
-  return config.difficultyByLevel[String(level) as '10' | '11'][k] || 0
+  return config.difficultyByLevel[String(level)]?.[k] || 0
 }
 
 /** `quizUrl()`: updated on every change. */
@@ -71,20 +99,26 @@ export interface LatihTubiQuery {
   count: number | null
   levelId: LevelKey | null
   difficulty: DifficultyKey | null
-  questionId: number | null
+  questionId: WireId | null
 }
 
-/** The Q2 query string: `count`, `level` (10|11), `difficulty` (2–5), `question_id`. */
+/** `level`: 10 or 11 in the mock; on the real API any level id string (the server rules, M05 #4). */
+function parseLevel(v: unknown): LevelKey | null {
+  if (isHttpMode()) return queryId(v)
+  const level = toInt(v)
+  return level === 10 || level === 11 ? level : null
+}
+
+/** The Q2 query string: `count`, `level` (a level id), `difficulty` (2–5), `question_id`. */
 export function parseLatihTubiQuery(query: Record<string, unknown>): LatihTubiQuery {
-  const level = toInt(query.level)
   const difficulty = toInt(query.difficulty)
   return {
     count: toInt(query.count),
-    levelId: level === 10 || level === 11 ? level : null,
+    levelId: parseLevel(query.level),
     difficulty:
       difficulty !== null && difficulty >= 2 && difficulty <= 5
         ? (difficulty as DifficultyKey)
         : null,
-    questionId: toInt(query.question_id),
+    questionId: queryId(query.question_id),
   }
 }

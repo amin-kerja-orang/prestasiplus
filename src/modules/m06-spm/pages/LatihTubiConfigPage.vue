@@ -19,8 +19,8 @@ import { subjectGlyph } from '@/modules/m05-practice'
 import { fetchLatihTubiConfig } from '../api'
 import {
   DIFFICULTY_OPTIONS,
-  LEVEL_OPTIONS,
   diffCount,
+  levelOptions,
   quizHref,
   targetName,
   type DifficultyKey,
@@ -137,7 +137,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
             <h3 class="text-subheading text-highlighted">Tingkatan</h3>
             <div class="grid grid-cols-2 gap-2 md:gap-3" data-testid="config-levels">
               <UButton
-                v-for="l in LEVEL_OPTIONS"
+                v-for="l in levelOptions(config)"
                 :key="l.key"
                 v-bind="pick(selectedLevel === l.key)"
                 class="h-auto min-h-14 flex-col justify-center gap-0 py-2"
@@ -147,7 +147,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
               >
                 <span class="text-label">{{ l.label }}</span>
                 <span class="text-caption" data-testid="level-count">
-                  {{ formatCount(config.levelCounts[String(l.key) as '10' | '11']) }} soalan
+                  {{ formatCount(config.levelCounts[String(l.key)] ?? 0) }} soalan
                 </span>
               </UButton>
             </div>
