@@ -31,23 +31,57 @@ git merge-base --is-ancestor 23c98226 origin/be/integration-frontend && echo "SP
   shows nothing). If a migration or seed file changed, ask DevOps to re-run the rehearsal first.
 - If "SPA branch is synced" does not print, the sync PR has not merged yet: wait for it (4.1).
 
+**Prepare the checkout now, before anything is reset** (a failed install must not leave the API on an empty DB):
+
+```bash
+git checkout 23c98226ba1c5d0291b18af19f992e5342a4b1d7
+npm ci
+npm run db:generate -w @pp/api                 # the seed needs the generated client
+```
+
 Do the whole run outside demo hours: from step 2.2 until step 3 is live, the old API faces the new schema.
 
 ## 1. Backup before the reset (5 min)
 
 Needs a Postgres **17** client (`pg_dump`, `pg_restore`, `psql`; Windows: the PostgreSQL 17 installer, "Command
-Line Tools" only). Put the session pooler URL in this shell only (it never goes into a file or the history):
+Line Tools" only) and the Supabase CA file (`prod-ca-2021.crt`, Project Settings -> Database -> SSL Configuration ->
+Download certificate) saved as `~/prod-ca-2021.crt`.
+
+The URL WITHOUT the password, and the password separately in `PGPASSWORD`, both from silent prompts. This keeps
+the password out of every command line (`ps`), file and the history, and needs no URL encoding of `@ : / # %`.
+`psql`, `pg_dump`, `pg_restore`, `scripts/demo-db-delta.mjs` and the seed (node-postgres) all read `PGPASSWORD`
+(checked locally against a password-protected role: a wrong `PGPASSWORD` fails, the right one connects).
 
 ```bash
-read -rsp 'Supabase session pooler URL (no ?suffix): ' PGURL && export PGURL; echo
+umask 077                                          # the dump below is readable by you only
+read -rsp 'Session pooler URL WITHOUT password: ' PGURL && export PGURL; echo
+read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
+export SSLQ="sslmode=verify-full&sslrootcert=$HOME/prod-ca-2021.crt"
+export DUMP=~/demo-before-23oct-$(date +%F-%H%M).dump
 ```
 
-`postgresql://postgres.<PROJECT_REF>:<SUPABASE_DB_PASSWORD>@aws-<n>-ap-southeast-1.pooler.supabase.com:5432/postgres`
+URL form: `postgresql://postgres.<PROJECT_REF>@aws-<n>-ap-southeast-1.pooler.supabase.com:5432/postgres`.
+If `verify-full` fails with a certificate error, use `export SSLQ="sslmode=require"` (encrypted, certificate not
+verified: only from a trusted network, never on public Wi-Fi). `scripts/demo-db-delta.mjs` ignores every `ssl*`
+parameter and always uses TLS without verification for a non-local host (its header).
+
+### 1.0 Stop gate: is this the demo project? (do not skip)
+
+```bash
+echo "user/ref: ${PGURL#postgresql://}" | cut -d@ -f1        # postgres.<PROJECT_REF>
+psql "$PGURL?$SSLQ" -At -c "select current_database(), current_user, inet_server_addr()"
+psql "$PGURL?$SSLQ" -At -c "select count(*) from users where email is not null and lower(email) not like '%@demo.test' and lower(email) not like '%@example.test'"
+```
+
+- The `<PROJECT_REF>` must equal the ref in the dashboard URL of **`prestasiplus-demo`**
+  (`supabase.com/dashboard/project/<ref>`). Any other ref: stop.
+- The last query must print `0` (the demo DB holds only `@demo.test` / `@example.test` accounts). Not `0`: stop and
+  look at those rows before going on; a real account means this is not the demo DB.
 
 1.1 Record the current state (read-only):
 
 ```bash
-psql "$PGURL?sslmode=require" -At -c "select count(*), max(migration_name) from _prisma_migrations where finished_at is not null and rolled_back_at is null"
+psql "$PGURL?$SSLQ" -At -c "select count(*), max(migration_name) from _prisma_migrations where finished_at is not null and rolled_back_at is null"
 ```
 
 Last recorded live state (#67, 21 Oct 11:04 MYT, deploy `adcaad0c`): `25|0030_headcount_timeline`. Note what you see.
@@ -55,8 +89,9 @@ Last recorded live state (#67, 21 Oct 11:04 MYT, deploy `adcaad0c`): `25|0030_he
 1.2 Dump the whole `public` schema, OUTSIDE the checkout (it holds all demo data):
 
 ```bash
-pg_dump "$PGURL?sslmode=require" -n public -Fc -f ~/demo-before-23oct-$(date +%F-%H%M).dump
-pg_restore -l ~/demo-before-23oct-*.dump | grep -c 'TABLE DATA'          # non-zero = readable dump
+pg_dump "$PGURL?$SSLQ" -n public -Fc -f "$DUMP"
+pg_restore -l "$DUMP" | grep -c 'TABLE DATA'        # must be non-zero; 0 or an error: stop, do not reset
+echo "$DUMP"                                        # note the file name for the rollback (section 6)
 ```
 
 Keep the file until after the demo. It is the database rollback (section 6).
@@ -83,36 +118,35 @@ fictitious data the demo wrote (the backup in 1.2 keeps it).
 
 ### 2.2 Reset the `public` schema
 
-Supabase dashboard -> SQL Editor -> New query (it runs as `postgres`, the owner of every app table):
+Only after the stop gate (1.0) passed and the dump check (1.2) printed a non-zero count. Run it with `psql` on the
+SAME `$PGURL` the gate checked (not in the SQL Editor, so there is only one target to verify):
 
-```sql
-BEGIN;
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-COMMIT;
-SELECT count(*) AS tables_left FROM information_schema.tables WHERE table_schema = 'public';   -- expect 0
+```bash
+psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; CREATE SCHEMA public; COMMIT;"
+psql "$PGURL?$SSLQ" -At -c "select count(*) from information_schema.tables where table_schema = 'public'"   # expect 0
 ```
 
-This drops the app tables and `_prisma_migrations` only; Supabase's own schemas (`auth`, `storage`, `extensions`,
+The pooler user `postgres.<PROJECT_REF>` is `postgres`, the owner of every app table. This drops the app tables and `_prisma_migrations` only; Supabase's own schemas (`auth`, `storage`, `extensions`,
 ...) are not touched. `pgcrypto` stays in `extensions`. If the `DROP` is refused (permission), stop: use the
 fallback in [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md) 9.8 (new Supabase project).
 
 ### 2.3 Migrate 0001 -> 0038 (1 min)
 
-From the laptop checkout at the deploy commit (`npm ci` done):
+From the checkout prepared in section 0 (at `23c98226`, `npm ci` and `db:generate` done):
 
 ```bash
-git checkout 23c98226ba1c5d0291b18af19f992e5342a4b1d7
-npm ci
-npm run db:generate -w @pp/api                 # the seed needs the generated client
-export DATABASE_URL="$PGURL?sslmode=no-verify"
+export DATABASE_URL="$PGURL?$SSLQ"             # no password in it: node-postgres reads PGPASSWORD
 node scripts/demo-db-delta.mjs --dry-run       # expect: "_prisma_migrations: not present (empty database)", 33 "would apply"
 node scripts/demo-db-delta.mjs                 # expect last line: Done: 33 migration(s) applied; _prisma_migrations now has 33 applied row(s).
 node scripts/demo-db-delta.mjs                 # expect: Up to date: no migration to apply.
 ```
 
-`0001_init` prints a NOTICE that `pgcrypto` already exists: fine. (`npm run be:db:migrate` with `?sslmode=require`
-does the same through Prisma; the rehearsal used the delta script, which needs no Prisma engine download.)
+`0001_init` prints a NOTICE that `pgcrypto` already exists: fine. Use the delta script, as rehearsed; the Prisma
+path (`npm run be:db:migrate`) needs the Prisma schema engine and was NOT rehearsed for this pack.
+
+For the seed (node-postgres), `$SSLQ` = `verify-full` checks the Supabase certificate. If you had to fall back to
+`sslmode=require` in section 1, the seed needs `export DATABASE_URL="$PGURL?sslmode=no-verify"` instead (node-postgres
+rejects `require` against Supabase's CA); same rule, trusted network only.
 
 ### 2.4 PoC seed (1 min)
 
@@ -141,20 +175,19 @@ unset SEED_DEMO_PASSWORD_HASH DATABASE_URL
 
 ### 2.5 Data API lockdown (do not skip)
 
-SQL Editor -> paste [scripts/supabase/lockdown-data-api.sql](../../scripts/supabase/lockdown-data-api.sql) -> Run,
-then:
+[scripts/supabase/lockdown-data-api.sql](../../scripts/supabase/lockdown-data-api.sql), same target:
 
-```sql
-SELECT count(*) AS leaked_grants FROM information_schema.role_table_grants
- WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated', 'service_role');    -- expect 0
-SELECT has_table_privilege('anon', 'public.users', 'SELECT') AS anon_reads_users;           -- expect false
+```bash
+psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -f scripts/supabase/lockdown-data-api.sql
+psql "$PGURL?$SSLQ" -At -c "select count(*) from information_schema.role_table_grants where table_schema = 'public' and grantee in ('anon','authenticated','service_role')"   # expect 0
+psql "$PGURL?$SSLQ" -At -c "select has_table_privilege('anon', 'public.users', 'SELECT')"                                                                         # expect f
 ```
 
 Also check Integrations -> Data API is still switched off.
 
 ### 2.6 Verify the counts
 
-SQL Editor:
+`psql "$PGURL?$SSLQ" -x` (or the SQL Editor of `prestasiplus-demo`), then:
 
 ```sql
 SELECT
@@ -185,7 +218,17 @@ Expected (exact; the seed is deterministic, two fresh rehearsal builds gave iden
 Whole DB: 197 tables in `public` (incl. `_prisma_migrations`), 99 of them non-empty, 15,734 rows in total. Any
 difference: stop and compare before deploying the API.
 
+Keep `PGURL`, `PGPASSWORD`, `SSLQ` and `DUMP` in this shell only until section 5 is green (section 6 needs them for a
+rollback); then `unset PGURL PGPASSWORD SSLQ DUMP` (also in the checklist).
+
 ## 3. Render: the API (~8 min, of which ~6 min build)
+
+**Order with section 4 (edge secret).** Set `EDGE_PROXY_SECRET` on BOTH sides before either deploy: the Pages
+secret first (4.3 step 1, it only takes effect on the next upload), then the Render variables (3.1). Then run the
+Render deploy (3.3) and the Pages upload (4.3 step 2) **back to back**: build the SPA zip/folder (4.2) BEFORE 3.3,
+so the upload follows the Render "Live" within minutes. In the gap the old worker sends no secret, the API falls
+back to the socket peer (the Cloudflare egress) and logs a `ClientIp` warning: all users briefly share one login
+throttle bucket (5 a minute). Nobody should use the demo during that gap.
 
 3.1 `prestasiplus-api` -> **Environment**. Names only; values come from your vault, never from the repo or a chat.
 
@@ -238,35 +281,43 @@ Rehearsed locally (not pushed): `be/integration-frontend` `d909e1e0` merged with
 (one docs conflict, no code conflict); after it, `apps/api` and `packages/` are identical to the tip. Build 20 s,
 `check-demo-bundle: OK (3 marker(s), 526 file(s) checked in dist)`, 669 files, about 17 MB.
 
-### 4.2 Build
+### 4.2 Build (before 3.3, see the order note in section 3)
+
+In a SEPARATE checkout or worktree (the section 0 checkout stays at `23c98226` for sections 5 and 6):
 
 ```bash
-git checkout <sync merge commit on be/integration-frontend>
+git worktree add ../pp-spa <sync merge commit on be/integration-frontend>
+cd ../pp-spa
 npm ci
 VITE_API_MODE=http npx vite build --mode demo        # the shell value wins over VITE_API_MODE=mock in .env.demo
 node scripts/check-demo-bundle.mjs dist              # expect "check-demo-bundle: OK"
 cp deploy/pages-direct/_worker.js dist/
-git diff --quiet 23c98226 -- deploy/pages-direct/_worker.js apps/api packages && echo "worker + API = deploy commit"
-cd dist && zip -qr ~/pages-dist.zip . && cd ..      # the CONTENTS of dist at the zip root
-unzip -l ~/pages-dist.zip | grep -E ' (index.html|_worker.js)$'   # both listed at the root
+git diff --quiet 23c98226 -- deploy/pages-direct/_worker.js apps/api packages scripts/demo-smoke.sh scripts/demo-walkthrough.sh \
+  && echo "worker + API + demo scripts = deploy commit"
+ls dist/index.html dist/_worker.js                   # both must exist
 ```
 
-PowerShell: `$env:VITE_API_MODE='http'; npx vite build --mode demo`, then `Copy-Item deploy/pages-direct/_worker.js dist/`
-and `Compress-Archive -Path dist/* -DestinationPath $HOME\pages-dist.zip`.
+If the `git diff` line prints nothing, the sync commit differs from `23c98226` in the worker, the API or the demo
+scripts: stop and ask DevOps (the expected results in section 5 were rehearsed with the scripts at `23c98226`).
 
-### 4.3 Secret, then upload (Pages first, then Render is the safe order; doing both within minutes is fine too)
+Upload form: stock Git Bash has no `zip`, so upload the **`dist` folder itself** (drag the folder, 4.3 step 2).
+PowerShell instead: `$env:VITE_API_MODE='http'; npx vite build --mode demo`, `Copy-Item deploy/pages-direct/_worker.js dist/`,
+and if you want a zip, `Compress-Archive -Path dist/* -DestinationPath $HOME\pages-dist.zip` (the contents of
+`dist` at the zip root, not a `dist/` folder).
 
-1. `npx wrangler pages secret put EDGE_PROXY_SECRET --project-name prestasiplus-demo` (prompts for the value; the
-   SAME value as Render), or dashboard -> Settings -> Variables and Secrets -> type **Secret**. `API_ORIGIN` stays
-   the Render URL.
-2. Workers & Pages -> `prestasiplus-demo` -> **Create deployment** -> Production -> upload `~/pages-dist.zip` ->
-   Save and deploy. Secrets apply to new deployments only, so upload after setting it.
+### 4.3 Secret, then upload
+
+1. **Before 3.1/3.3:** `npx wrangler pages secret put EDGE_PROXY_SECRET --project-name prestasiplus-demo` (prompts
+   for the value; the SAME value as Render), or dashboard -> Settings -> Variables and Secrets -> type **Secret**.
+   `API_ORIGIN` stays the Render URL. It applies to the next deployment only.
+2. **Right after Render is Live (3.3):** Workers & Pages -> `prestasiplus-demo` -> **Create deployment** ->
+   Production -> drag the `dist` folder (or upload the zip) -> Save and deploy.
 3. `https://<project>.pages.dev/api/health` -> db up.
 
 ## 5. After the deploy (15 min)
 
-Wake the API first (`/api/health`, Render free sleeps after 15 min). Git Bash, from the deploy checkout, with jq on
-PATH. Never run these at the same time as each other or as UAT (shared login limits).
+Wake the API first (`/api/health`, Render free sleeps after 15 min). Git Bash, from the section 0 checkout at
+`23c98226` (the scripts the expected results were rehearsed with), with jq on PATH. Never run these at the same time as each other or as UAT (shared login limits).
 
 5.1 Smoke behind Pages:
 
@@ -309,26 +360,33 @@ Not covered by either script (check by hand in the browser): SPA rendering, the 
 - **SPA:** Pages -> Deployments -> the previous deployment -> **Rollback to this deployment**.
 - **API:** Render -> Settings -> Branch back to `be/demo-deploy-2` -> Manual Deploy -> commit `adcaad0c`.
   Remove `CLIENT_IP_HEADER` if the edge side is rolled back too (`EDGE_PROXY_SECRET` may stay).
-- **Database** (only together with the API rollback; the old API on the new DB is untested): SQL Editor
-  `BEGIN; DROP SCHEMA public CASCADE; COMMIT;` (do NOT re-create `public`: the dump does), then
+- **Database** (only together with the API rollback; the old API on the new DB is untested). In the same shell
+  (`PGURL`, `PGPASSWORD`, `SSLQ`, `DUMP` still set; in a new shell set them again as in section 1, with
+  `DUMP=<the file name noted in 1.2>`). First run the **stop gate 1.0 again** (the user query may now also count the
+  walkthrough's demo rows, still only `@demo.test`), and check the dump: `pg_restore -l "$DUMP" | grep -c 'TABLE DATA'`
+  non-zero. Then:
 
   ```bash
-  pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?sslmode=require" ~/demo-before-23oct-<stamp>.dump
+  psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; COMMIT;"   # do NOT re-create public: the dump does
+  pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP"
   ```
 
   then re-run the lockdown (2.5). Rehearsed locally: the restore gave the same row count in all 197 tables as the
   source at dump time. A restore into a schema that already exists fails on `CREATE SCHEMA public`.
 
+When section 5 is green (or after a rollback):
+
 ```bash
-unset PGURL
+unset PGURL PGPASSWORD SSLQ DUMP
 ```
 
 ## 7. After the demo: rotate the DB password (5 min)
 
 The pooler URL (with its password) has been on laptops and in the Render dashboard. Rotate it right after the demo:
 
-1. Supabase -> Project Settings -> Database -> **Reset database password** -> generate a new one (letters and
-   digits only avoids URL encoding) -> save it in the vault.
+1. Supabase -> Project Settings -> Database -> **Reset database password** -> generate a new one -> save it in the
+   vault. Letters and digits only avoids URL encoding in `DATABASE_URL`; otherwise encode `@` = `%40`, `:` = `%3A`,
+   `/` = `%2F`, `#` = `%23`, `%` = `%25`.
 2. Render -> `prestasiplus-api` -> Environment -> `DATABASE_URL` -> the same URL with the new password and the same
    suffix as now (`?sslmode=verify-full&sslrootcert=/etc/secrets/supabase-ca.crt`, or the `no-verify` fallback) ->
    Save -> Manual Deploy (same commit). Until the redeploy is Live the API answers `db: down`.
@@ -340,12 +398,12 @@ Optionally rotate `EDGE_PROXY_SECRET` the same way (both sides together, see "Ro
 
 ## 8. Checklist
 
-- [ ] 0: tip still 33 migrations; SPA branch synced
-- [ ] 1: current state noted; dump written and readable
+- [ ] 0: tip still 33 migrations; SPA branch synced; checkout at `23c98226`, `npm ci` + `db:generate` done
+- [ ] 1: stop gate 1.0 passed (demo project ref, 0 non-demo users); current state noted; dump written, `TABLE DATA` non-zero
 - [ ] 2: reset, 33 migrations, seed 25 modules, lockdown 0 leaked grants, counts match 2.6
-- [ ] 3: Render env (`BIJAK_POC_QUESTIONS`, `CLIENT_IP_HEADER`, `EDGE_PROXY_SECRET`), branch, commit `23c98226`, health db up
-- [ ] 4: Pages secret, build + bundle check, upload, health
+- [ ] 3/4: Pages secret set; SPA built (diff check OK); Render env (`BIJAK_POC_QUESTIONS`, `CLIENT_IP_HEADER`, `EDGE_PROXY_SECRET`), branch, commit `23c98226`; Pages upload right after Render is Live; health db up
 - [ ] 5: smoke 28/0, no `ClientIp` warning, two-network check, walkthrough read-only 102/0/5 (exit 3), writes 116/0/0 (exit 0)
+- [ ] 5/6: `unset PGURL PGPASSWORD SSLQ DUMP`
 - [ ] 7: after the demo, DB password rotated, Render redeployed
 
 ## 9. Rehearsal record (21 Oct 2026, cloud container, Postgres 16.15)
@@ -368,4 +426,8 @@ owned by `pg_database_owner`, roles `anon`/`authenticated`/`service_role` with d
 6. **Worker:** `node scripts/edge-worker.test.mjs` 15 pass, 0 fail.
 7. **Backup/restore:** `pg_dump -n public -Fc` then drop schema + `pg_restore --no-owner --no-privileges`: same
    counts in all 197 tables.
-8. Not rehearsable here: Supabase itself, the Pages edge, Render. Those are checked by 2.6 and section 5.
+8. **G4 minors (second pass):** `PGPASSWORD` with a password-less URL against a `scram-sha-256` role: `psql`,
+   `pg_dump`, the delta script and the seed connect, and a wrong `PGPASSWORD` fails. The 1.0 gate queries, the
+   `psql` reset (2.2), the lockdown (2.5) and the rollback (`DROP` without re-create, then `pg_restore "$DUMP"`)
+   ran as written on a scratch DB.
+9. Not rehearsable here: Supabase itself, the Pages edge, Render. Those are checked by 2.6 and section 5.
