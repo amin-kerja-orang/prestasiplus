@@ -10,13 +10,14 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
 import { DsBackLink, DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
-import { fetchLatihTubiConfig } from '../api'
+import { fetchLatihTubiConfig, fetchSpmLevels } from '../api'
 import {
   DIFFICULTY_OPTIONS,
   diffCount,
@@ -37,6 +38,19 @@ const {
   error,
   reload,
 } = useApi((signal) => fetchLatihTubiConfig(code.value, { signal }), code)
+
+// Real API only: the level ids are labelled from their grade (a failed lookup falls back, see levelOptions).
+const { data: levelList, loading: levelsLoading, reload: reloadLevels } = useApi(
+  (signal) => (isHttpMode() ? fetchSpmLevels({ signal }) : Promise.resolve(null)),
+)
+const levelChoices = computed(() =>
+  config.value ? levelOptions(config.value, levelList.value?.data ?? null) : [],
+)
+// Real API with a level set that cannot be labelled: the existing load-error state, never an empty row.
+const retryLevels = () => void Promise.all([reload(), reloadLevels()])
+const levelsBroken = computed(
+  () => !!config.value && isHttpMode() && !levelsLoading.value && levelChoices.value.length === 0,
+)
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)
 watch(
@@ -135,9 +149,16 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
           <!-- Tingkatan -->
           <div class="flex flex-col gap-3">
             <h3 class="text-subheading text-highlighted">Tingkatan</h3>
-            <div class="grid grid-cols-2 gap-2 md:gap-3" data-testid="config-levels">
+            <DsLoadError
+              v-if="levelsBroken"
+              :message="LOAD_ERROR"
+              testid="config-levels-error"
+              retry-testid="config-levels-retry"
+              @retry="retryLevels()"
+            />
+            <div v-else-if="!levelsLoading" class="grid grid-cols-2 gap-2 md:gap-3" data-testid="config-levels">
               <UButton
-                v-for="l in levelOptions(config)"
+                v-for="l in levelChoices"
                 :key="l.key"
                 v-bind="pick(selectedLevel === l.key)"
                 class="h-auto min-h-14 flex-col justify-center gap-0 py-2"

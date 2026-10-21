@@ -7,11 +7,12 @@
  * 409 `NOT_SUBMITTED` / already submitted, 422 `fields.subject`.
  */
 
-import { api } from '@/api'
+import { api, ApiError } from '@/api'
 
 import type {
   DatabankSubject,
   DutaCard,
+  EducationLevel,
   LatihTubiConfig,
   LatihTubiList,
   MockAnswerInput,
@@ -47,6 +48,13 @@ export const fetchLatihTubiList = (o: Signal = {}) =>
 export const fetchLatihTubiConfig = (code: string, o: Signal = {}) =>
   api.get<LatihTubiConfig>(`/api/spm/latih-tubi/${encodeURIComponent(code)}`, withSignal(o))
 
+/**
+ * `GET /api/education-levels` (owned by M03): the level ids with their `grade` (10 / 11 = Tingkatan 4 / 5),
+ * used to label the S4 level buttons on the real API. A typed M06 wrapper of the same URL (ADR-0009).
+ */
+export const fetchSpmLevels = (o: Signal = {}) =>
+  api.list<EducationLevel>('/api/education-levels', withSignal(o))
+
 /** #5 S5. */
 export const fetchTrackingAHub = (o: Signal = {}) =>
   api.get<TrackingAHub>('/api/spm/tracking-a', withSignal(o))
@@ -62,6 +70,17 @@ export const fetchTrackingASubject = (code: string, o: Signal = {}) =>
 export const fetchSubjektif = (o: Signal = {}) =>
   api.get<SubjektifOverview>('/api/spm/subjektif', withSignal(o))
 
+/**
+ * An empty id (an invalid route param on the real API) must never reach `/api/spm-mocks/`, which is
+ * the list endpoint: it rejects as a 404, which the pages show as the global 404.
+ */
+const guardId = (id: WireId): Promise<never> | null =>
+  String(id) === ''
+    ? Promise.reject(
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Not found' }),
+      )
+    : null
+
 /** #12 S11 list, newest first. */
 export const fetchMocks = (o: Signal = {}) =>
   api.get<MockListItem[]>('/api/spm-mocks', withSignal(o))
@@ -72,14 +91,16 @@ export const createMock = (body: { subject: string; paperNumber: 1 | 2 }) =>
 
 /** #14 Q4 (provisional). */
 export const fetchMock = (id: WireId, o: Signal = {}) =>
-  api.get<MockExamView>(`/api/spm-mocks/${String(id)}`, withSignal(o))
+  guardId(id) ?? api.get<MockExamView>(`/api/spm-mocks/${String(id)}`, withSignal(o))
 
 /** #15 Q4 submit. */
 export const submitMock = (id: WireId, answers: MockAnswerInput[]) =>
+  guardId(id) ??
   api.post<MockResult>(`/api/spm-mocks/${String(id)}/submit`, { body: { answers } })
 
 /** #16 S12. */
 export const fetchMockResult = (id: WireId, o: Signal = {}) =>
+  guardId(id) ??
   api.get<MockResult>(`/api/spm-mocks/${String(id)}/result`, withSignal(o))
 
 /** #17 S13; the live-shaped body is returned untouched. */

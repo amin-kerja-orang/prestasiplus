@@ -24,6 +24,13 @@ export interface SpmOverview {
   me: { sessions: number; avgAccuracy: number; coins: number; answered: number }
 }
 
+/** `GET /api/education-levels` item, the fields S4 reads (M03 owns the full shape). */
+export interface EducationLevel {
+  id: WireId
+  /** 10 = Tingkatan 4, 11 = Tingkatan 5 (SPM levels); null for levels without a grade. */
+  grade: number | null
+}
+
 /** #2 row (S2). */
 export interface DatabankSubject {
   code: string

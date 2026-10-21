@@ -104,7 +104,7 @@ export function fetchChapterSubjects(options: Signal = {}): Promise<ListResult<C
 /** #8 `GET /api/practice/chapter-subjects/:code?levelId=`. */
 export function fetchChapterSubject(
   code: string,
-  query: { levelId?: number | null } = {},
+  query: { levelId?: number | string | null } = {},
   options: Signal = {},
 ): Promise<ChapterSubjectDetail> {
   return api.get<ChapterSubjectDetail>(

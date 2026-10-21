@@ -7,7 +7,8 @@
  * S3 /spm/latih-tubi, S4 /spm/latih-tubi/:code, S5 /spm/ramalan, S6 /spm/ramalan/:code,
  * S8 /spm/subjektif, S10 /spm/history. The quiz starts (Q1/Q2/Q3) go through M05
  * `POST /api/practice/sessions` and create a practice session for the seed pupil.
- * The mock exam (/spm-mock) and the walkthrough (/pusat-ai/spm) are outside the prototype scope.
+ * The mock exam routes (/spm-mock/:uuid, /spm-mock/:uuid/result) are covered by the last test; the
+ * walkthrough (/pusat-ai/spm) is not.
  *
  * Every figure on screen is compared with the API body the page loaded; each test ends with the
  * horizontal-scroll check at the project viewport (375 / 768 / 1280).
@@ -18,7 +19,10 @@
 import type { Page, Response } from '@playwright/test'
 
 import { expect, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll } from './helpers'
+import { account, csrfOf, expectNoHScroll, newPeerContext } from './helpers'
+
+/** Tab title of the global 404 page (src/app/router/outcome.ts `NOT_FOUND_TITLE`). */
+const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const digits = (s: string | null): string => (s ?? '').replace(/\D/g, '')
 
@@ -148,14 +152,10 @@ test.describe('M06 SPM hub @api', () => {
     const body = res.request().postDataJSON() as Record<string, unknown>
     expect(body).toMatchObject({ mode: 'latih_tubi', subjectCode: open!.code, levelId: level })
     expect(typeof body.levelId, 'levelId is an Id string (contract IdSchema)').toBe('string')
-    // 2xx, or 422 NOT_ENOUGH_QUESTIONS when the level pool is below the count (then the §8 message).
-    if (res.status() === 422) {
-      expect(((await res.json()) as { error: { code: string } }).error.code).toBe('NOT_ENOUGH_QUESTIONS')
-      await expect(page.getByTestId('spm-no-questions')).toBeVisible()
-    } else {
-      expect(res.status(), 'POST /api/practice/sessions (latih_tubi)').toBeLessThan(300)
-      await expect(page.getByTestId('spm-no-questions')).toHaveCount(0)
-    }
+    // The real API starts this session (201): the BM level-11 pool covers the target count. Pinned so a
+    // regression to NOT_ENOUGH_QUESTIONS (422 + the S4 message) fails here instead of passing silently.
+    expect(res.status(), 'POST /api/practice/sessions (latih_tubi)').toBe(201)
+    await expect(page.getByTestId('spm-no-questions')).toHaveCount(0)
     await expectNoHScroll(page)
   })
 
@@ -227,6 +227,86 @@ test.describe('M06 SPM hub @api', () => {
     await expect(page.getByTestId('spm-history-page')).toBeVisible({ timeout: 20_000 })
     await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
     await expect(page.getByTestId('history-rows').or(page.getByTestId('history-empty'))).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
+  test('S4 an unknown subject code is a 404 and the global not-found page @api', async ({ page }) => {
+    const wait = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === '/api/spm/latih-tubi/ZZNOSUCH' && r.request().method() === 'GET',
+      { timeout: 30_000 },
+    )
+    await page.goto('/spm/latih-tubi/ZZNOSUCH')
+    expect((await wait).status(), 'GET /api/spm/latih-tubi/ZZNOSUCH').toBe(404)
+    await expect(page).toHaveTitle(NOT_FOUND_TITLE, { timeout: 20_000 })
+    await expect(page.getByTestId('spm-config-page')).toHaveCount(0)
+    await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
+    await expectNoHScroll(page)
+  })
+
+  // The mock exam pages (/spm-mock/...) are outside the prototype scope (a pupil is sent home), so this
+  // drives the BE-41 endpoints the pages call, with the uuid ids the pages build their URLs from.
+  test('S11/Q4/S12 mock exam API over uuid ids: create, run, submit, result; foreign mock is 404 @api', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const csrf = await csrfOf(page)
+    const created = await page.request.post('/api/spm-mocks', {
+      data: { subject: 'Matematik', paperNumber: 1 },
+      headers: { 'x-csrf-token': csrf },
+    })
+    expect(created.status(), 'POST /api/spm-mocks').toBe(201)
+    const id = ((await created.json()) as { data: { id: string } }).data.id
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+
+    const viewRes = await page.request.get(`/api/spm-mocks/${id}`)
+    expect(viewRes.status(), 'GET mock (run)').toBe(200)
+    const view = ((await viewRes.json()) as {
+      data: { id: string; status: string; items: { no: number; options?: string[] }[] }
+    }).data
+    expect(view).toMatchObject({ id, status: 'in_progress' })
+    expect(view.items.length).toBeGreaterThan(0)
+    expect(JSON.stringify(view), 'the paper carries no key').not.toContain('modelAnswer')
+
+    const early = await page.request.get(`/api/spm-mocks/${id}/result`)
+    expect(early.status(), 'result before submit').toBe(409)
+
+    const answers = view.items.map((it) => ({ no: it.no, answer: it.no === 1 ? 'A' : '' }))
+    const submitted = await page.request.post(`/api/spm-mocks/${id}/submit`, {
+      data: { answers },
+      headers: { 'x-csrf-token': csrf },
+    })
+    expect(submitted.status(), 'POST submit').toBe(200)
+    const result = ((await submitted.json()) as { data: { id: string; items: unknown[] } }).data
+    expect(result.id).toBe(id)
+    expect(result.items).toHaveLength(view.items.length)
+
+    const again = await page.request.get(`/api/spm-mocks/${id}/result`)
+    expect(again.status(), 'GET result').toBe(200)
+    expect(((await again.json()) as { data: unknown }).data).toEqual(result)
+    const resubmit = await page.request.post(`/api/spm-mocks/${id}/submit`, {
+      data: { answers },
+      headers: { 'x-csrf-token': csrf },
+    })
+    expect(resubmit.status(), 'POST submit twice').toBe(409)
+
+    // Another pupil gets 404 for every route of A's mock; the list is per user.
+    const peer = await newPeerContext(browser, testInfo)
+    try {
+      const pageB = await peer.newPage()
+      const b = account('studentB')
+      await loginViaUi(pageB, b.user, b.pass)
+      expect((await pageB.request.get(`/api/spm-mocks/${id}`)).status(), 'GET mock as B').toBe(404)
+      expect((await pageB.request.get(`/api/spm-mocks/${id}/result`)).status(), 'GET result as B').toBe(404)
+      const submitB = await pageB.request.post(`/api/spm-mocks/${id}/submit`, {
+        data: { answers: [] },
+        headers: { 'x-csrf-token': await csrfOf(pageB) },
+      })
+      expect(submitB.status(), 'POST submit as B').toBe(404)
+      const listB = await pageB.request.get('/api/spm-mocks')
+      expect(JSON.stringify(await listB.json())).not.toContain(id)
+    } finally {
+      await peer.close()
+    }
     await expectNoHScroll(page)
   })
 })

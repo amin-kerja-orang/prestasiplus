@@ -5,7 +5,7 @@
 
 import { isHttpMode } from '@/api/mode'
 
-import type { LatihTubiConfig, TargetType, WireId } from '../api'
+import type { EducationLevel, LatihTubiConfig, TargetType, WireId } from '../api'
 import { queryId } from './wire-id'
 
 /** A level id: 10 or 11 in the mock, the `education_levels` id string on the real API (BE-41). */
@@ -42,17 +42,35 @@ export const LEVEL_OPTIONS: readonly LevelOption[] = [
 const byIdValue = (a: string, b: string): number =>
   a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0
 
+/** SPM grade of the curriculum level -> button label (grade 10 = Tingkatan 4, 11 = Tingkatan 5). */
+const GRADE_LABELS: Record<number, string> = { 10: LEVEL_LABELS[0], 11: LEVEL_LABELS[1] }
+
 /**
- * The two Tingkatan buttons of S4. Mock: `LEVEL_OPTIONS`. Real API: the keys of `levelCounts` (the
- * Tingkatan 4 and Tingkatan 5 level ids, BE-41 open question 7), in id order, labelled Tingkatan 4
- * then Tingkatan 5 (a JSON object cannot keep the server order of integer-like keys).
+ * The Tingkatan buttons of S4. Mock: `LEVEL_OPTIONS`. Real API: the keys of `levelCounts` (the
+ * Tingkatan 4 and 5 level ids, BE-41 open question 7), labelled from the level's `grade` in
+ * `GET /api/education-levels` (`levels`), in grade order. Without that lookup the labels fall back to
+ * id order, but only when exactly two keys came back (a JSON object cannot keep the server order of
+ * integer-like keys); any other key count is ambiguous and yields no options (the page then shows
+ * its load-error state).
  */
-export function levelOptions(config: Pick<LatihTubiConfig, 'levelCounts'>): readonly LevelOption[] {
+export function levelOptions(
+  config: Pick<LatihTubiConfig, 'levelCounts'>,
+  levels: readonly EducationLevel[] | null = null,
+): readonly LevelOption[] {
   if (!isHttpMode()) return LEVEL_OPTIONS
-  return Object.keys(config.levelCounts)
-    .sort(byIdValue)
-    .slice(0, LEVEL_LABELS.length)
-    .map((key, i) => ({ key, label: LEVEL_LABELS[i]! }))
+  const keys = Object.keys(config.levelCounts)
+  if (levels) {
+    const graded = keys
+      .map((key) => {
+        const grade = levels.find((l) => String(l.id) === key)?.grade
+        return { key, grade, label: grade == null ? undefined : GRADE_LABELS[grade] }
+      })
+      .filter((o): o is { key: string; grade: number; label: string } => o.label !== undefined)
+      .sort((a, b) => a.grade - b.grade)
+    if (graded.length > 0) return graded.map(({ key, label }) => ({ key, label }))
+  }
+  if (keys.length !== LEVEL_LABELS.length) return []
+  return keys.sort(byIdValue).map((key, i) => ({ key, label: LEVEL_LABELS[i]! }))
 }
 
 const TARGET_NAMES: Record<TargetType, string> = {

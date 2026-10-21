@@ -149,6 +149,7 @@ const MOCK_RESULT = {
 
 const spm = vi.hoisted(() => ({
   fetchLatihTubiConfig: vi.fn(),
+  fetchSpmLevels: vi.fn(),
   fetchMock: vi.fn(),
   submitMock: vi.fn(),
   fetchMockResult: vi.fn(),
@@ -232,6 +233,7 @@ describe('wire ids', () => {
   it('http mode keeps ids as strings; mock mode keeps numbers', () => {
     expect(routeId(MOCK_UUID)).toBe(MOCK_UUID)
     expect(routeId(['42'])).toBe('42')
+    expect(routeId(undefined)).toBe('')
     expect(queryId('570024')).toBe('570024')
     expect(queryId('12345678901234')).toBe('12345678901234')
     expect(queryId('x1')).toBeNull()
@@ -246,7 +248,47 @@ describe('wire ids', () => {
   })
 })
 
+const LEVELS = { data: [{ id: '104', grade: 11 }, { id: '99', grade: 10 }, { id: '7', grade: 1 }] }
+const counts = (keys: string[]) => ({ levelCounts: Object.fromEntries(keys.map((k) => [k, 5])) })
+
 describe('S4/Q2 level ids', () => {
+  it('labels a level from its grade, whatever the key order or count', () => {
+    expect(levelOptions(counts(['104', '99']), LEVELS.data)).toEqual([
+      { key: '99', label: 'Tingkatan 4' },
+      { key: '104', label: 'Tingkatan 5' },
+    ])
+    expect(levelOptions(counts(['104']), LEVELS.data)).toEqual([{ key: '104', label: 'Tingkatan 5' }])
+    expect(levelOptions(counts(['99']), LEVELS.data)).toEqual([{ key: '99', label: 'Tingkatan 4' }])
+    expect(levelOptions(counts(['7']), LEVELS.data)).toEqual([])
+  })
+
+  it('without the level lookup: two keys by id order, any other count has no options', () => {
+    expect(levelOptions(counts([]))).toEqual([])
+    expect(levelOptions(counts(['104']))).toEqual([])
+    expect(levelOptions(counts(['104', '99']))).toEqual([
+      { key: '99', label: 'Tingkatan 4' },
+      { key: '104', label: 'Tingkatan 5' },
+    ])
+    expect(levelOptions(counts(['1', '2', '3']))).toEqual([])
+  })
+
+  it('S4 shows the load-error state, not an empty row, when the levels cannot be labelled', async () => {
+    spm.fetchSpmLevels.mockResolvedValue({ data: [] })
+    spm.fetchLatihTubiConfig.mockResolvedValue({ ...CONFIG, levelCounts: { '104': 25 } })
+    const w = await render(LatihTubiConfigPage, '/spm/latih-tubi/MATH', '/spm/latih-tubi/:code')
+    expect(w.find('[data-testid=config-levels]').exists()).toBe(false)
+    expect(w.find('[data-testid=config-levels-error]').exists()).toBe(true)
+  })
+
+  it('S4 labels a single T5 key as Tingkatan 5', async () => {
+    spm.fetchSpmLevels.mockResolvedValue(LEVELS)
+    spm.fetchLatihTubiConfig.mockResolvedValue({ ...CONFIG, levelCounts: { '104': 25 } })
+    const w = await render(LatihTubiConfigPage, '/spm/latih-tubi/MATH', '/spm/latih-tubi/:code')
+    expect(w.get('[data-testid=config-levels]').findAll('button').map((b) => b.text())).toEqual([
+      'Tingkatan 525 soalan',
+    ])
+  })
+
   it('the Tingkatan buttons come from the levelCounts keys in id order (http)', () => {
     expect(levelOptions(CONFIG)).toEqual([
       { key: '99', label: 'Tingkatan 4' },
@@ -271,6 +313,7 @@ describe('S4/Q2 level ids', () => {
   })
 
   it('S4 renders the level buttons and counts from the real level ids', async () => {
+    spm.fetchSpmLevels.mockResolvedValue(LEVELS)
     spm.fetchLatihTubiConfig.mockResolvedValue(CONFIG)
     const w = await render(LatihTubiConfigPage, '/spm/latih-tubi/MATH', '/spm/latih-tubi/:code')
     const levels = w.get('[data-testid=config-levels]').findAll('button')
