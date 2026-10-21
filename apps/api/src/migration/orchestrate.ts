@@ -1,5 +1,5 @@
 /**
- * BE-30 orchestrator: the five `migrate:*` commands that drive a whole cut-over rehearsal.
+ * BE-30 orchestrator: the six `migrate:*` commands that drive a whole cut-over rehearsal.
  *
  *   npm run migrate:all -w @pp/api -- [--dry-run | --apply] [--as-of YYYY-MM-DD] [--batch-size N]
  *       [--content-owner <v2 user id>] [--out-dir <.migration-out path>]
@@ -7,6 +7,7 @@
  *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>]
  *   npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
  *   npm run migrate:link-questions -w @pp/api -- [--apply] [--batch-size N]
+ *   npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]
  *
  * `migrate:all`
  *   --dry-run (default)  core dry-run; then activity dry-run only when the activity preflight passes (a succeeded
@@ -34,7 +35,8 @@
  *
  * `migrate:verify` runs the reconciliation (exit 0 on pass, 1 on fail). `migrate:rollback` deletes the rows loaded from
  * the source (dry-run by default, `--confirm` must equal the database name; a refusal, `RollbackRefusedError`, exits 2). `migrate:link-questions` is the optional
- * MIG-09 backfill. The source is always `cloud`.
+ * MIG-09 backfill. `migrate:export-question-reports` (Q9 A) writes the open question reports to a CSV for the content team
+ * (read-only; `--apply` is refused with exit 2; see `export/question-reports.ts`). The source is always `cloud`.
  *
  * Environment and guards are those of the kit: DATABASE_URL, `PP_ALLOW_MIGRATE_APPLY=1` for any `--apply`, and in
  * production `PP_MIGRATE_TARGET_DB` equal to the connected database. Exit codes: 0 ok, 1 failed / mismatch, 2 usage or
@@ -65,6 +67,7 @@ import {
 import { quoteIdent } from './kit/sql'
 import { runCore } from './load'
 import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
+import { exportOpenQuestionReports } from './export/question-reports'
 import { prepareOutputDir, ProfileOutputError } from './profile'
 import { linkQuestions, LinkQuestionsBusyError } from './backfill/link-questions'
 import { rollbackLegacy, runVerify, writeVerifyReport, type VerifyOptions, type VerifyReport } from './verify'
@@ -374,12 +377,17 @@ function outDirOf(args: CommandArgs): string {
   }
 }
 
+/** Today's calendar date in Asia/Kuala_Lumpur (UTC+8), `YYYY-MM-DD`; the clock is a test seam. */
+export function malaysiaDate(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
 function commonFlags(args: CommandArgs, requireAsOf = false): CommonFlags {
   const given = flagValue(args, 'as-of')
   if (given === undefined && requireAsOf) {
     throw new ApplyGuardError('--as-of is required: reuse the --as-of of the first load (YYYY-MM-DD).')
   }
-  const asOf = given ?? new Date().toISOString().slice(0, 10)
+  const asOf = given ?? malaysiaDate()
   if (!DATE.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))) throw new ApplyGuardError('--as-of must be YYYY-MM-DD.')
   const contentOwner = flagValue(args, 'content-owner')
   if (contentOwner !== undefined && !USER_ID.test(contentOwner)) throw new ApplyGuardError('--content-owner must be a v2 user id (digits).')
@@ -516,7 +524,25 @@ export const migrateLinkQuestions: MigrateCommand = {
   },
 }
 
-for (const c of [migrateAll, migrateDelta, migrateVerify, migrateRollback, migrateLinkQuestions]) registerMigrateCommand(c)
+export const migrateExportQuestionReports: MigrateCommand = {
+  name: 'migrate:export-question-reports',
+  summary: 'export the open question reports to a CSV for the content team (read-only; personal-data-bearing file)',
+  async run(args, ctx) {
+    // Reads only: there is nothing to apply, so --apply is a usage error rather than something silently ignored.
+    if (args.mode === 'apply') throw new ApplyGuardError('migrate:export-question-reports is a read-only command: it has no --apply.')
+    const outDir = outDirOf(args)
+    const r = await exportOpenQuestionReports({ pool: ctx.pool, source: 'cloud', outDir })
+    ctx.out(`migrate:export-question-reports: ${r.exported} open report(s) exported of ${r.total} (working assumption for "open": see the summary file)`)
+    ctx.out('status | reports | exported')
+    for (const s of r.byStatus) ctx.out(`${s.status} | ${s.count} | ${s.exported ? 'yes' : 'no'}`)
+    ctx.out(`csv: ${r.csv}`)
+    ctx.out(`summary: ${r.summary}`)
+    ctx.out('The CSV holds reporter free text: hand it over to the content team and delete it (runbook section 17a).')
+    return 0
+  },
+}
+
+for (const c of [migrateAll, migrateDelta, migrateVerify, migrateRollback, migrateLinkQuestions, migrateExportQuestionReports]) registerMigrateCommand(c)
 
 // Run the CLI only when this file is the entry (`tsx src/migration/orchestrate.ts migrate:all ...`), never on import.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

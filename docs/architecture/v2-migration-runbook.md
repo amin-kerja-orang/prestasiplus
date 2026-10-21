@@ -450,6 +450,17 @@ Migrated rows that other data depends on:
 5. **Backfill.** `migrate:link-questions` (section 12) can be run any time after the cutover. Cutover does not wait for it.
 6. **.cloud stays read-only** after the cutover and is not modified by us (D28a).
 
+### 17a. Open question reports export (Q9 A)
+
+Decision Q9 A (data-migration 3.3 item 4): `question_reports` is not migrated, but the reports that are still open go to the content team as a file. Closed reports are dropped.
+
+1. **Command** (read-only, after `staging:load`, before `staging_cloud` and `archive_cloud` are dropped): `npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]`. There is no `--apply`; passing it exits 2. It writes `.migration-out/question-reports-open-<stamp>.csv` and `.summary.json` (mode 0600) and prints only counts per status and the two paths, never a row.
+2. **Columns:** legacy report id, legacy question id, source paper natural key and number label (the BE-29 snapshot join, so the content team can find the question in the new bank), subject code, chapter number, topic id, status, reason, created at (UTC). The reporter is never exported: no user id, name, e-mail or school. Identifier cells are empty when the question is not in the archive or has no canonical bridge.
+3. **"Open" is a working assumption** until the status values are profiled (MIG-01): `baru`, `menunggu`, `pending`, `open`, `new` (case and spaces ignored). The summary and the console list the count of every status with `exported` yes or no. If a value that means open is listed as `no`, tell the owner of the command before the hand-over; do not edit the file by hand.
+4. **The file holds personal data.** `reason` is free text written by the reporter and can contain a name or contact detail. Treat the CSV like a dump copy (section 0): lead's encrypted storage only; hand it to the content team lead over the agreed encrypted channel; never in GitHub (PR, issue, CI artifact), chat or e-mail body. Cells that start with `=`, `+`, `-` or `@` are prefixed with `'` so a spreadsheet does not run them as formulas; the content team still opens the file as text/CSV import, not by double-click macros.
+5. **Custody and deletion:** the lead is the custodian. After the content team confirms receipt (a dated line in the issue, no data), delete the CSV and the summary from the lead's storage and from every working copy, and ask the content team to delete theirs after triage. Hard limit: **30 days at most after hand-over**, the same rule as the recon report (sections 17 and 18). Record the deletion date as text in the issue.
+6. If the file or a copy was exposed outside this chain, treat it as a PDPA incident (section 0, rule 8).
+
 ## 18. Deletion of dumps after cutover (BE-30)
 
 Extends sections 5 and 10. Timing follows section 0, rule 4: delete as soon as the load and reconciliation succeed, and within 7 days at most.

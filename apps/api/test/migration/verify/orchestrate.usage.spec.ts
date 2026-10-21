@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCli } from '../../../src/migration/cli'
 import { findMigrateCommand } from '../../../src/migration/kit'
 import { RollbackRefusedError } from '../../../src/migration/verify/rollback'
-import { parseSince } from '../../../src/migration/orchestrate'
+import { malaysiaDate, parseSince } from '../../../src/migration/orchestrate'
 import { capture } from '../staging/helpers'
 
 const mocks = vi.hoisted(() => ({
@@ -45,10 +45,20 @@ beforeEach(() => {
 })
 
 describe('registration', () => {
-  it('registers the five commands', () => {
-    for (const n of ['all', 'delta', 'verify', 'rollback', 'link-questions']) {
+  it('registers the six commands', () => {
+    for (const n of ['all', 'delta', 'verify', 'rollback', 'link-questions', 'export-question-reports']) {
       expect(findMigrateCommand(`migrate:${n}`), n).toBeDefined()
     }
+  })
+})
+
+describe('default --as-of (migrate:all)', () => {
+  it('is the Malaysia calendar date, not the UTC date', () => {
+    // 17:30 UTC on 29 October is 01:30 on 30 October in Asia/Kuala_Lumpur (UTC+8).
+    expect(malaysiaDate(new Date('2026-10-29T17:30:00Z'))).toBe('2026-10-30')
+    expect(malaysiaDate(new Date('2026-10-29T15:59:59Z'))).toBe('2026-10-29')
+    expect(malaysiaDate(new Date('2026-10-29T16:00:00Z'))).toBe('2026-10-30')
+    expect(malaysiaDate(new Date('2026-12-31T20:00:00Z'))).toBe('2027-01-01')
   })
 })
 
