@@ -84,6 +84,7 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     THROTTLE_GAMES_SPIN_PER_MINUTE: '100000',
     THROTTLE_GAMES_SOLO_START_PER_MINUTE: '100000',
     THROTTLE_GAMES_SOLO_CHECK_PER_MINUTE: '100000',
+    THROTTLE_FOSTER_APPLICATION_PER_MINUTE: '100000',
     FILE_STORAGE_DIR: storageDir,
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,
