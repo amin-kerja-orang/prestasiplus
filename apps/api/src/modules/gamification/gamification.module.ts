@@ -4,6 +4,7 @@ import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
 import { PerformanceModule } from '../reports/performance/performance.module'
 import { PerformancePorts } from '../reports/performance/ports'
+import { ClassesModule } from '../classes'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
 import { GamificationAdminService } from './admin.service'
@@ -26,9 +27,10 @@ import { GamificationPorts } from './ports'
  *
  * On init it binds `PerformanceGamificationAdapter` into BE-19's `PerformancePorts` (the reports'
  * `GamificationReadPort`: public profile, rankings).
+ * `ClassesModule` (BE-17, owner of classes and enrolments) gives the teacher's pupils for the leaderboard name scope (#76).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, WalletModule, PerformanceModule],
+  imports: [AuditModule, ThrottleModule, WalletModule, PerformanceModule, ClassesModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
   providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],
