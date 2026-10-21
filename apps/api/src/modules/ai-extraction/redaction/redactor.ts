@@ -44,6 +44,15 @@ const LABEL_RULES = LABELS.map((l) => ({
 }))
 
 /**
+ * The same labels in the middle of a line ("Soalan 1. Nama: Ali bin Abu, Kelas: 5A"). A colon is required, the label must
+ * not be the tail of a longer word, and the value ends at a comma, semicolon, bar or the end of the line.
+ */
+const INLINE_RULES = LABELS.map((l) => ({
+  flag: l.flag,
+  re: new RegExp(String.raw`((?<![\p{L}\p{N}])(?:${l.label})[ \t]*[:：][ \t]*)([^\n,;|]*[^\s,;|])`, 'giu'),
+}))
+
+/**
  * Labels that are unambiguous enough to be masked without a colon ("Nama Ahmad bin Ali", "No KP 900101145678"). Words that
  * are also ordinary question vocabulary (guru, murid, kelas, class, name, emel ...; an e-mail address is masked by its own pattern anyway) need the colon.
  */
@@ -107,10 +116,11 @@ export function normaliseForRedaction(input: string): string {
     .replace(/[\p{Zs}]/gu, ' ')
 }
 
-const SEP = String.raw`[ \t.\-–—]`
+// A number may wrap at a line end, so the separator takes a line break too (at most two separators between groups).
+const SEP = String.raw`[ \t\r\n.\-–—]`
 const IC = new RegExp(String.raw`(?<!\d)\d{6}${SEP}{0,2}\d{2}${SEP}{0,2}\d{4}(?!\d)`, 'g')
 const PHONE_MY = new RegExp(String.raw`(?<![\w.])(?:\+?60${SEP}{0,2}|0)(?:1\d|[3-9])${SEP}{0,2}\d{3,4}${SEP}{0,2}\d{4}(?![\w])`, 'g')
-const PHONE_INTL = new RegExp(String.raw`(?<![\w.])\+\d{1,3}${SEP}{0,2}\d[\d \t.\-–—]{6,12}\d(?![\w])`, 'g')
+const PHONE_INTL = new RegExp(String.raw`(?<![\w.])\+\d{1,3}${SEP}{0,2}\d[\d \t\r\n.\-–—]{6,12}\d(?![\w])`, 'g')
 const STREET = new RegExp(
   String.raw`\b(?:No\.?[ \t]*\d+[A-Za-z]?,?[ \t]*)?(?:Jalan|Jln\.?|Lorong|Lrg\.?|Taman|Kampung|Kg\.?|Persiaran|Lebuh|Lebuhraya|Bandar)[ \t]+[\p{L}\p{N}'’./-]{1,40}(?:[ \t]+[\p{L}\p{N}'’./-]{1,40}){0,6}(?:,[ \t]*\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`,
   'gu',
@@ -138,7 +148,7 @@ export class Redactor {
     sub(PHONE_MY, 'phone')
     sub(PHONE_INTL, 'phone')
     // Labelled lines keep the label and mask the value (one count per line).
-    for (const { flag, re } of [...LABEL_RULES, ...COLONLESS_RULES]) {
+    for (const { flag, re } of [...LABEL_RULES, ...COLONLESS_RULES, ...INLINE_RULES]) {
       text = text.replace(re, (_m, label: string, value: string) => {
         if (isAlreadyMasked(value)) return `${label}${value}`
         this.counts[flag] += 1
