@@ -164,6 +164,13 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
         'ownerId',
       ],
       [
+        // #100 (BE-12): the start body is strict; the forged owner is refused before any session row is written.
+        'practice: POST /practice/sessions with ownerId',
+        () => call(student, 'post', '/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5, ownerId: '1' }),
+        () => count(t.db, 'practice_sessions'),
+        'ownerId',
+      ],
+      [
         'subscriptions: POST /admin/school-subscriptions with status',
         () => call(admin, 'post', '/admin/school-subscriptions', { schoolId: school2, packageTier: 'full', schoolPackageId: '1', studentQuota: 10, status: 'active' }),
         () => count(t.db, 'school_subscriptions'),
@@ -219,7 +226,6 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
       ['school admin people (BE-21): POST /admin-sekolah/guru', () => call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Jurang', email: 'guru.jurang@ujian.test', isAdmin: true }), 'isAdmin'],
       ['articles (BE-24): POST /admin/articles', () => call(admin, 'post', '/admin/articles', { title: 'Artikel jurang', content: '<p>Isi</p>', category: 'UMUM', isPublished: false, views: 5 }), 'views'],
       ['notifications (BE-06): POST /me/notifications/bulk-read', () => call(student, 'post', '/me/notifications/bulk-read', { ids: ['999999999'], userId: '1' }), 'userId'],
-      ['practice (BE-12): POST /practice/sessions', () => call(student, 'post', '/practice/sessions', { mode: 'random', ownerId: '1' }), 'ownerId'],
       ['support tickets (BE-24): POST /tiket', () => call(student, 'post', '/tiket', { subject: 'Jurang', body: 'Ujian medan lebih.', status: 'closed' }), 'status'],
       [
         'registration (BE-06): POST /auth/register',
