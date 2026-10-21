@@ -179,6 +179,40 @@ Split plan when one call would hit the timeout:
 2. Else run `be:verify` as its parts, one command per call: `contract:check`, then `npm test -w @pp/contract-tests`, `be:lint`, `be:lint:migration`, `be:typecheck`, `be:build`, then `be:test` split by folder (`npm run be:test -- apps/api/src/<module>`).
 3. Full `be:verify` once before a push only, and tell the LEAD first (existing rule: one full verify per push; dev uses targeted checks).
 
+### 2.5 Setup script (`scripts/cloud-install.sh`)
+
+The committed script supersedes the sketch in 2.2 and covers 2.3. It does nothing unless `CLAUDE_CODE_REMOTE=true`, so it is a no-op on local PCs. Steps, in order:
+
+1. `npm ci` (skipped when `node_modules/.package-lock.json` is newer than `package-lock.json`).
+2. Start PostgreSQL (`service postgresql start`, else `pg_ctlcluster`) and wait for `pg_isready`.
+3. Create the test role (`LOGIN SUPERUSER`: `global-setup.ts` runs `CREATE`/`DROP DATABASE` and migration 0001 runs `CREATE EXTENSION pgcrypto`) and the database if missing.
+4. Export `TEST_DATABASE_URL=postgresql://<user>:<pass>@127.0.0.1:5432/<db>`: appended to `$CLAUDE_ENV_FILE` when set (SessionStart mechanism), else printed.
+5. `npm run db:generate -w @pp/api` (Prisma client).
+
+Env overrides (all optional, non-secret local defaults): `PP_TEST_DB_USER` (`pp_test`), `PP_TEST_DB_PASS` (`pp_test_local`), `PP_TEST_DB_NAME` (`postgres`), `PP_TEST_DB_HOST` (`127.0.0.1`), `PP_TEST_DB_PORT` (`5432`). Real secrets (AI keys etc.) stay in the cloud environment settings, never in the repo. Call it from the environment Setup script too if preferred.
+
+Proposed SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin); not committed by this PR.** The script exits early outside cloud sessions, so the hook is safe locally:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/cloud-install.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Verify in a cloud session (Perlu pengesahan until run once): `echo "$TEST_DATABASE_URL"`, `psql "$TEST_DATABASE_URL" -c 'select 1'`, then `npm run be:test -- --maxWorkers=2`. Re-running `bash scripts/cloud-install.sh` must be harmless.
+
 ## 3. Secrets
 
 Rules:
