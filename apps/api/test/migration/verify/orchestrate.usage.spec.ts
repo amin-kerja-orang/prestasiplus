@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runCli } from '../../../src/migration/cli'
 import { findMigrateCommand } from '../../../src/migration/kit'
+import { RollbackRefusedError } from '../../../src/migration/verify/rollback'
 import { parseSince } from '../../../src/migration/orchestrate'
 import { capture } from '../staging/helpers'
 
@@ -61,12 +62,19 @@ describe('usage errors exit 2', () => {
     const missing = await run(['migrate:delta'])
     expect(missing.code).toBe(2)
     expect(missing.text).toMatch(/--since is required/)
-    for (const bad of ['yesterday', '2026-06-02', '2026-06-02T10:00:00', '2026-13-02T00:00:00Z', '']) {
+    for (const bad of ['yesterday', '2026-06-02', '2026-06-02T10:00:00', '2026-13-02T00:00:00Z', '2026-02-30T00:00:00Z', '2026-06-02T24:00:00Z', '2026-06-02T00:60:00Z', '2026-06-02T00:00:00+24:00', '']) {
       const r = await run(['migrate:delta', `--since=${bad}`])
       expect(r.code, bad).toBe(2)
       expect(r.text).toMatch(/--since must be an ISO-8601 timestamp/)
     }
     expect((await run(['migrate:delta', '--since'])).code).toBe(2)
+    expect(fakePool.query).not.toHaveBeenCalled()
+  })
+
+  it('migrate:delta needs --as-of (the first load\'s value), also on a dry-run', async () => {
+    const r = await run(['migrate:delta', '--since=2026-06-02T00:00:00Z'])
+    expect(r.code).toBe(2)
+    expect(r.text).toMatch(/--as-of is required: reuse the --as-of of the first load/)
     expect(fakePool.query).not.toHaveBeenCalled()
   })
 
@@ -101,6 +109,13 @@ describe('parseSince', () => {
     expect(parseSince('2026-06-02T08:00:00+08:00')).toBe('2026-06-02T00:00:00.000Z')
     expect(parseSince('2026-06-02T00:00Z')).toBe('2026-06-02T00:00:00.000Z')
     expect(parseSince('2026-06-02T00:00:00.5Z')).toBe('2026-06-02T00:00:00.500Z')
+    expect(parseSince('2028-02-29T23:59:59Z')).toBe('2028-02-29T23:59:59.000Z')
+  })
+
+  it('rejects impossible dates and times instead of rolling them over', () => {
+    for (const bad of ['2026-02-30T00:00:00Z', '2027-02-29T00:00:00Z', '2026-06-02T24:00:00Z', '2026-06-02T00:60:00Z', '2026-06-02T00:00:60Z', '2026-04-31T00:00:00Z']) {
+      expect(() => parseSince(bad), bad).toThrow(/--since must be an ISO-8601/)
+    }
   })
 })
 
@@ -120,6 +135,25 @@ describe('migrate:rollback', () => {
     expect(mocks.rollbackLegacy).toHaveBeenCalledWith(expect.objectContaining({ source: 'cloud', confirmDb: 'pp_rehearsal', dryRun: true }))
     expect(r.text).toMatch(/practice_answers \| 7/)
     expect(r.text).toMatch(/etl_id_map \| 10/)
+  })
+
+  it('prints the released adopted rows and the warnings', async () => {
+    mocks.rollbackLegacy.mockResolvedValue({
+      ...report(false),
+      released: [{ table: 'schools', rows: 2 }],
+      warnings: ['unfinished runs keep their checkpoints'],
+    })
+    const r = await run(['migrate:rollback', '--apply', '--confirm=pp_rehearsal'])
+    expect(r.code).toBe(0)
+    expect(r.text).toMatch(/released schools: 2/)
+    expect(r.text).toMatch(/warning: unfinished runs keep their checkpoints/)
+  })
+
+  it('maps a refusal (RollbackRefusedError) to exit 2', async () => {
+    mocks.rollbackLegacy.mockRejectedValue(new RollbackRefusedError('Refusing rollback: table users is used by rows that are not migrated.'))
+    const r = await run(['migrate:rollback', '--confirm=pp_rehearsal'])
+    expect(r.code).toBe(2)
+    expect(r.text).toMatch(/Refusing rollback/)
   })
 
   it('--apply makes it real; a failed report exits 1', async () => {
