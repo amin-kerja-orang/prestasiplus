@@ -537,7 +537,7 @@ export const migrateExportQuestionReports: MigrateCommand = {
     for (const s of r.byStatus) ctx.out(`${s.status} | ${s.count} | ${s.exported ? 'yes' : 'no'}`)
     ctx.out(`csv: ${r.csv}`)
     ctx.out(`summary: ${r.summary}`)
-    ctx.out('The CSV holds reporter free text: hand it over to the content team and delete it (runbook section 17a).')
+    ctx.out('The CSV holds reporter free text: hand it over to the content team and delete it at hand-over, 7 days at most (runbook sections 17a, 18).')
     return 0
   },
 }

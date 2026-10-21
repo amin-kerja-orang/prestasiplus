@@ -31,6 +31,7 @@ const REPORTS: [id: number, question: number, user: number, status: string | nul
   [1, 1, 1, 'baru', 'Jawapan salah'],
   [2, 2, 2, ' Baru ', '=HYPERLINK("http://contoh.invalid","klik")'],
   [3, 3, 1, 'selesai', 'sudah dibaiki'],
+  [9, 2, 2, 'baru', 'hubungi ali@contoh.invalid atau 012-3456789, IC 010203-04-0506'],
   [4, 999, 4, 'menunggu', 'Soalan "tiada", jawapan\nbaris baru, koma'],
   [5, 1, 5, null, 'tiada status'],
   [6, 2, 3, 'ditolak', 'ditolak sebab lain'],
@@ -92,7 +93,7 @@ beforeAll(async () => {
   for (const [id, q, u, status, reason] of REPORTS) {
     await env.pool.query(
       `insert into archive_cloud.question_reports (id, question_id, user_id, status, reason, created_at, updated_at)
-       values ($1, $2, $3, $4, $5, '2026-03-01T08:15:00Z', '2026-03-02T00:00:00Z')`,
+       values ($1, $2, $3, $4, $5, '2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z')`,
       [id, q, u, status, reason],
     )
   }
@@ -111,7 +112,13 @@ describe('csvCell', () => {
     expect(csvCell('l1\nl2')).toBe('"l1\nl2"')
     for (const lead of ['=', '+', '-', '@', '\t', '\r']) expect(csvCell(`${lead}x`)).toMatch(/^"?'/)
     expect(csvCell('=1+1')).toBe("'=1+1")
-    expect(csvCell('2026-03-01T08:15:00Z')).toBe('2026-03-01T08:15:00Z')
+    expect(csvCell('2026-03-02')).toBe('2026-03-02')
+    // Leading blanks (space, NBSP, LF) do not hide a formula.
+    expect(csvCell(' =1+1')).toBe("' =1+1")
+    expect(csvCell('\u00a0@x')).toBe("'\u00a0@x")
+    expect(csvCell('\n=1')).toBe("\"'\n=1\"")
+    expect(csvCell('  - x')).toBe("'  - x")
+    expect(csvCell('a=b')).toBe('a=b')
   })
 })
 
@@ -121,18 +128,18 @@ describe('exportOpenQuestionReports', () => {
     const r = await exportOpenQuestionReports({ pool: env.pool, outDir: dir, now: () => NOW, pageSize: 2 })
     expect(r.csv).toBe(join(dir, `question-reports-open-${STAMP}.csv`))
     expect(r.summary).toBe(join(dir, `question-reports-open-${STAMP}.summary.json`))
-    expect(r.exported).toBe(4)
-    expect(r.total).toBe(8)
+    expect(r.exported).toBe(5)
+    expect(r.total).toBe(9)
 
     const rows = parseCsv(readFileSync(r.csv, 'utf8'))
     expect(rows[0]).toEqual([...CSV_COLUMNS])
     expect(CSV_COLUMNS.some((c) => /user|name|email|school/i.test(c))).toBe(false)
     const col = (row: string[], name: (typeof CSV_COLUMNS)[number]) => row[CSV_COLUMNS.indexOf(name)]
     const body = rows.slice(1)
-    expect(body.map((x) => col(x, 'legacy_report_id'))).toEqual(['1', '2', '4', '7'])
+    expect(body.map((x) => col(x, 'legacy_report_id'))).toEqual(['1', '2', '4', '7', '9'])
 
     const first = body[0] as string[]
-    expect(first).toEqual(['1', '1', 'contoh-2025-1', '3', 'MP1', '1', '1', 'baru', 'Jawapan salah', '2026-03-01T08:15:00Z'])
+    expect(first).toEqual(['1', '1', 'contoh-2025-1', '3', 'MP1', '1', '1', 'baru', 'Jawapan salah', '2026-03-02'])
     // No canonical bridge for question 2 and question 999 is not in the archive: identifiers are empty, the id stays.
     expect(body[1]?.slice(2, 7)).toEqual(['', '', 'MP1', '1', '1'])
     expect(body[2]?.slice(0, 7)).toEqual(['4', '999', '', '', '', '', ''])
@@ -148,6 +155,9 @@ describe('exportOpenQuestionReports', () => {
     expect(reason('2')).toBe(`'=HYPERLINK("http://contoh.invalid","klik")`)
     expect(reason('4')).toBe('Soalan "tiada", jawapan\nbaris baru, koma')
     expect(reason('7')).toBe("'+60 salah; -ulang; @sebut")
+    // E-mail, phone and IC in the free text are redacted before the file is written.
+    expect(reason('9')).toBe('hubungi [dihapus] atau [dihapus], IC [dihapus]')
+    expect(text).not.toMatch(/ali@|3456789|0506/)
     expect(text).toContain('"Soalan ""tiada"", jawapan\nbaris baru, koma"')
     // No data cell begins with a formula character.
     for (const row of body) for (const cell of row) expect(cell).not.toMatch(/^[=+\-@\t\r]/)
@@ -176,11 +186,11 @@ describe('exportOpenQuestionReports', () => {
       byStatus: { status: string; count: number; exported: boolean }[]
       openStatuses: string[]
     }
-    expect(s.total).toBe(8)
-    expect(s.exported).toBe(4)
+    expect(s.total).toBe(9)
+    expect(s.exported).toBe(5)
     expect(s.byStatus).toEqual([
       { status: '(null)', count: 1, exported: false },
-      { status: 'baru', count: 2, exported: true },
+      { status: 'baru', count: 3, exported: true },
       { status: 'ditolak', count: 1, exported: false },
       { status: 'menunggu', count: 1, exported: true },
       { status: 'pending', count: 1, exported: true },
@@ -208,6 +218,16 @@ describe('exportOpenQuestionReports', () => {
     await expect(exportOpenQuestionReports({ pool: env.pool, outDir: dir, now: () => NOW })).rejects.toThrow(/symbolic link/)
     expect(readFileSync(victim, 'utf8')).toBe('keep')
     expect(lstatSync(csv).isSymbolicLink()).toBe(true)
+
+    // The summary cannot be written (a link sits at its path): the CSV is removed too, and the link target is untouched.
+    const dir3 = fresh()
+    mkdirSync(dir3, { recursive: true })
+    const victim3 = join(dir3, 'victim3.txt')
+    writeFileSync(victim3, 'keep')
+    symlinkSync(victim3, join(dir3, `question-reports-open-${STAMP}.summary.json`))
+    await expect(exportOpenQuestionReports({ pool: env.pool, outDir: dir3, now: () => NOW })).rejects.toThrow(/symbolic link/)
+    expect(readdirSync(dir3).sort()).toEqual([`question-reports-open-${STAMP}.summary.json`, 'victim3.txt'])
+    expect(readFileSync(victim3, 'utf8')).toBe('keep')
 
     const dir2 = fresh()
     mkdirSync(dir2, { recursive: true })
@@ -264,8 +284,8 @@ describe('migrate:export-question-reports (CLI)', () => {
     const dir = fresh()
     const r = await run(['migrate:export-question-reports', `--out-dir=${dir}`])
     expect(r.code).toBe(0)
-    expect(r.text).toMatch(/4 open report\(s\) exported of 8/)
-    expect(r.text).toMatch(/baru \| 2 \| yes/)
+    expect(r.text).toMatch(/5 open report\(s\) exported of 9/)
+    expect(r.text).toMatch(/baru \| 3 \| yes/)
     expect(r.text).toMatch(/selesai \| 2 \| no/)
     expect(r.text).toContain(dir)
     expect(r.text).not.toMatch(/Jawapan|HYPERLINK|Soalan "tiada"|contoh\.invalid/)
