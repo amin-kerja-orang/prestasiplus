@@ -140,6 +140,8 @@ Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_H
 
 Differences from the card's working assumptions (registration 10 per hour per address, uploads 30 per hour per user, tickets 5 per hour per user): the code uses the numbers above, which are configurable. Registration is per minute because a school shares one address. The lead confirms or changes the numbers (card open question 1).
 
+Single instance: the API must run as ONE instance (Render free plan) because the rate-limit buckets live in process memory (only the login throttle is in the database). Before running more than one instance, move the buckets to a shared store (Redis). Accepted by the lead on 2026-10-21 (threat model row 18).
+
 ## 10. Backup and restore of pgdata
 
 Procedure, retention, encryption and the monthly drill are in [db-backup.md](db-backup.md): `npm run db:backup`, `npm run db:restore-check`, and the disaster-recovery steps (stop writers, safety backup, restore, `migrate`, check `/api/ready`). Uploads are in the separate `apifiles` volume and need their own backup.
@@ -313,4 +315,5 @@ Test files are under `apps/api/test/security/` unless a full path is given; scen
 | P10-9 | PR description from the template | `.github/pull_request_template.md` | lead |
 | P10-10 | Lead approval, `security-review` label | | lead |
 | Ops | Production backup scheduled, restore drill monthly, uptime check on `/api/ready`, alert contact | db-backup.md, section 11 | needs LEAD/ops (accounts, schedule, encrypted volume) |
+| Ops | No malware scan on stored uploads: accepted for demo/staging (admin-only uploads, magic-byte checks); ClamAV or equivalent required before production go-live (backlog #78) | threat model row 43 | needs LEAD/ops before go-live |
 | Ops | nginx does not proxy `/api/metrics`; `stop_grace_period: 30s` on `api` | sections 3 and 5 | needs lead (files outside this card) |

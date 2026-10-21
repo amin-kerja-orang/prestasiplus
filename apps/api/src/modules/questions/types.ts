@@ -238,6 +238,8 @@ export interface SetStatusOptions {
   actor?: 'admin' | 'owner_teacher'
   /** Stored by BE-10 in `question_status_events`; BE-09 ignores it. */
   reason?: string | null
+  /** Set by paths that bypass the BE-10 lifecycle (bulk-action): `setStatus` then writes the status event itself. */
+  event?: { actorUserId: string; actorRole: string; requestId: string | null }
 }
 
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */

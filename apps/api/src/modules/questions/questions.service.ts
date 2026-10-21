@@ -267,7 +267,8 @@ export class QuestionsService {
             done.push(id)
           }
         } else {
-          await this.setStatus(id, action, actor.userId)
+          const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
+          await this.setStatus(id, action, actor.userId, { event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
@@ -290,6 +291,11 @@ export class QuestionsService {
       if (!record) throw questionNotFound()
       const v = record.version
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
+      if (options.event) {
+        await this.prisma.client.questionStatusEvent.create({
+          data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
+        })
+      }
       if (status === 'published') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
         Object.assign(fields, checkKeysGate(v.parts))
