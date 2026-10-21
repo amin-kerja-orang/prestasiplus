@@ -5,7 +5,7 @@
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { linkQuestions, type LinkQuestionsReport } from '../../../src/migration/backfill/link-questions'
+import { linkQuestions, LinkQuestionsBusyError, type LinkQuestionsReport } from '../../../src/migration/backfill/link-questions'
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import { contentHash } from '../../../src/migration/snapshot-dims'
 import { bootBackfill, type BackfillHarness } from './helpers-backfill'
@@ -264,6 +264,53 @@ describe('linkQuestions: safety', () => {
       expect((await h.links())[a]).toBe(target)
     } finally {
       await one.end()
+    }
+  })
+
+  it('apply is refused while another backfill holds the advisory lock, and works again once it is released', async () => {
+    const k = key()
+    const paper = await h.addPaper(k)
+    await h.addQuestion({ paperId: paper, numberLabel: '1' })
+    const a = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const other = await h.pool.connect()
+    try {
+      await other.query(`select pg_advisory_lock(hashtextextended('etl:link-questions:cloud', 0))`)
+      await expect(run('apply')).rejects.toBeInstanceOf(LinkQuestionsBusyError)
+      expect((await h.links())[a]).toBeNull()
+      // A dry-run takes no lock and is not refused.
+      await expect(run('dry-run')).resolves.toMatchObject({ mode: 'dry-run' })
+      await other.query(`select pg_advisory_unlock(hashtextextended('etl:link-questions:cloud', 0))`)
+    } finally {
+      other.release()
+    }
+    await run('apply')
+    expect((await h.links())[a]).not.toBeNull()
+    // The lock was released by the finished run: it can be taken again.
+    const again = await h.q<{ ok: boolean }>(`select pg_try_advisory_lock(hashtextextended('etl:link-questions:cloud', 0)) as ok`)
+    expect(again[0]?.ok).toBe(true)
+    await h.q(`select pg_advisory_unlock_all()`)
+  })
+
+  it('apply is refused while etl_runs has a running apply run for the source', async () => {
+    const k = key()
+    const paper = await h.addPaper(k)
+    await h.addQuestion({ paperId: paper, numberLabel: '1' })
+    const a = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const run1 = await h.q<{ id: string }>(
+      `insert into etl_runs (mode, sources, status) values ('apply', ARRAY['cloud'], 'running') returning id::text as id`,
+    )
+    const id = run1[0]?.id as string
+    try {
+      await expect(run('apply')).rejects.toBeInstanceOf(LinkQuestionsBusyError)
+      expect((await h.links())[a]).toBeNull()
+      // A running run of another source, or a finished one, does not block.
+      await h.q(`update etl_runs set sources = ARRAY['my'] where id = $1`, [id])
+      await run('apply')
+      expect((await h.links())[a]).not.toBeNull()
+      await h.q(`update etl_runs set sources = ARRAY['cloud'], status = 'succeeded' where id = $1`, [id])
+      await expect(run('apply')).resolves.toMatchObject({ linked: 0 })
+    } finally {
+      await h.q(`delete from etl_runs where id = $1`, [id])
     }
   })
 
