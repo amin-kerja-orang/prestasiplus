@@ -217,7 +217,6 @@ export type SoloSubmitBody =
       score: number
       syiling_earned: number
     }
-  | { session_id: string }
   | {
       session_id: string
       matches: number

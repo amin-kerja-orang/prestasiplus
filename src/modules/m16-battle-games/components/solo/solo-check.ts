@@ -21,8 +21,11 @@ export type Judged<T> = T | Promise<T>
 
 /** Applies `r` now when it is a value, or when the Promise settles. */
 export function settle<T>(r: Judged<T>, apply: (v: T) => void): void {
-  if (r instanceof Promise) void r.then(apply)
-  else apply(r)
+  if (r instanceof Promise) {
+    r.then(apply).catch((e: unknown) => {
+      console.error('Check error:', e)
+    })
+  } else apply(r)
 }
 
 /** The item id of a check body: ids are opaque strings on the wire (ADR-0018 item 6). */

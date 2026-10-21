@@ -119,10 +119,13 @@ export function fetchSoloGame<G extends SoloGame>(
   })
 }
 
-/** #33 `POST /api/games/solo/{game}/submit` (409 already submitted, 422 impossible values). */
+/**
+ * #33 `POST /api/games/solo/{game}/submit` (409 already submitted, 422 impossible values). D58a, http mode:
+ * the body is only `{ session_id }` (the server computes the result from the stored checks).
+ */
 export function submitSoloGame(
   game: SoloGame,
-  body: SoloSubmitBody,
+  body: SoloSubmitBody | { session_id: string },
 ): Promise<RawResponse<SoloSubmitResponse>> {
   return api.raw<SoloSubmitResponse>('POST', `/api/games/solo/${game}/submit`, body)
 }
