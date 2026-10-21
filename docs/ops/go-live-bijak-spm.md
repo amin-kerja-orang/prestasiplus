@@ -1,7 +1,7 @@
 # Go-live readiness checklist: Bijak SPM
 
-Status read on 2026-10-21 (~10:00Z) from the repo at **`feature/v2-backend` @ `559265d1`**, and from the GitHub PRs
-and issues named below. `559265d1` is `3d0b1271` plus one doc (`docs/ops/cloud-migration.md`), so every code and
+Status read on 2026-10-21 (~10:10Z) from the repo at **`feature/v2-backend` @ `84438c70`**, and from the GitHub PRs
+and issues named below. `84438c70` is `559265d1` plus #89 and #91 (edge client IP, no migration), so every
 migration claim made at `3d0b1271` still holds.
 
 ## Needs a decision
@@ -33,8 +33,8 @@ No secret values appear here. Env vars are named only.
 **Sources**
 - Repo: `docs/ops/**`, `render.yaml`, `functions/`, `docker/**`, `compose*.yaml`, `scripts/**`, `.github/workflows/**`.
 - Plans and docs: `docs/plan/AGENT-SYNC.md` (HANDOFF 2026-10-21 ~09:30), `docs/plan/backend-tracker.md`, `docs/plan/backend-tasks/**`, `docs/TRACKER.md`, `docs/requirements/v2-bijak-spm.md`.
-- GitHub: PRs #81, #85, #86, #88, #89 and #90, the merge queue #67 (including the Group B update of 2026-10-21 08:30Z), and the reviews on #87.
-- The deploy files are `render.yaml`, `functions/` and `docker/`. `deploy/pages-direct/` arrives with #89.
+- GitHub: PRs #81, #85, #86, #88, #89, #90 and #91, the merge queue #67 (including the Group B update of 2026-10-21 08:30Z), and the reviews on #87.
+- The deploy files are `render.yaml`, `functions/` and `docker/`. `deploy/pages-direct/` is on the tip (#89).
 
 ---
 
@@ -71,7 +71,7 @@ and Mod Pelajar come from M01/M02.
 
 ### Modules and cards
 
-Merged means merged into `feature/v2-backend` @ `559265d1`.
+Merged means merged into `feature/v2-backend` @ `84438c70`.
 
 | Area | Module | Card(s) | State |
 |---|---|---|---|
@@ -87,16 +87,16 @@ Merged means merged into `feature/v2-backend` @ `559265d1`.
 | AI extraction service | Admin Pusat | BE-36 | **not merged**: PR #86, G4 Approve with minors (07:54Z), minors being fixed; migration 0037 (LEAD to confirm the number) |
 | Intake workflow (batches, review, accept to Draf) | Admin Pusat | BE-38 | **not merged**: PR #85, G4 Changes requested, fixes pushed (`ce554103`), waiting for re-review, migration 0038 (LEAD to confirm the number) |
 | Security hardening, `/api/ready`, `/api/metrics`, runbook | cross-cutting | BE-33 rest | **merged** (#81). `docs/ops/api-runbook.md` §15 is the release gate. |
-| Log PII redaction | cross-cutting | BE-33 part | **not merged**: branch `be/BE-33-log-pii-redaction` @ `521a6756` (Group A; passed in the cloud verify, #67) |
+| Log PII redaction | cross-cutting | BE-33 part | **not merged**: branch `be/BE-33-log-pii-redaction` @ `521a6756`, merged into `lead/merge-groupa` @ `ed45bb0c` (static checks green, waiting for be:verify) |
 | Seed guard fail-closed, PoC seed profile | seed | #80, BE-26 (#74) | **merged** |
-| Edge client IP + worker no-store | ops | #89 (`be/ops-edge-client-ip` @ `cd3cff26`) | **not merged**: G4 Approve with minors, Security Pass (09:18Z) (§2.1) |
+| Edge client IP + worker no-store | ops | #89, #91 | **merged** (#89 @ `29c9cf67`; #91 trims the secret and logs a production boot warning). `deploy/pages-direct/_worker.js` is on the tip. (§2.1 #6) |
 | HTTP switch, e2e against the real API | frontend | BE-32 | **partly merged**. PC-1 part merged 2026-10-20. Still open: AC3 `@api` e2e, the `/login` mobile re-measure, the 413 envelope and frontend AC7 (LEAD). |
 | Frontend in http mode | frontend | `be/integration-frontend` @ `23656b63` | **not merged** into `feature/v2-backend`. The demo Pages build is made from it. How it reaches production is **unverified**. Check the FE/API SHA pair per `docs/ops/staging-refresh-2.md` §0. |
 | Old-system data migration | PC-4 | BE-27, BE-34, BE-35 merged; BE-28, BE-29, BE-30 **not merged / not built** | see §2.3 |
 
 **Adjacent cards.** These are not needed for Bijak SPM unless the LEAD says so (D-1).
 - **Merged:** #73 BE-41 SPM hub M06 (0025), #77 BE-23 leaderboard privacy, #71 BE-44 battle (0027), #72 BE-45 games (0033), #83 BE-47 Keluarga Angkat (0034).
-- **Not merged:** Group A branches BE-42 PKSK and BE-46 marketplace, and frontend `fe/m18-amaran-summary` (see §2.1).
+- **Not merged:** Group A branches BE-42 PKSK and BE-46 marketplace (both in `lead/merge-groupa` @ `ed45bb0c`, waiting for be:verify), and frontend `fe/m18-amaran-summary` (see §2.1).
 
 ---
 
@@ -115,25 +115,26 @@ Owner lanes:
 | 1 | Fast-forward `feature/v2-backend` past `lead/merge-b5` (#77 + #69 + #71) | LEAD | #67 | **done** (in `3d0b1271`) |
 | 2 | Merge the approved Group B queue: #81, #80, #74, #73, #72, #83 | LEAD | #67 | **done** (in `3d0b1271`) |
 | 3 | G4 verdict and merge of BE-38 and BE-36; confirm migrations 0037 and 0038 | B (review), LEAD (merge, numbers) | #85, #86 | #85: Changes requested (07:37Z), fixes pushed (`ce554103`), waiting for re-review. #86: Approve with minors (07:54Z), minors being fixed. |
-| 4 | Group A test failures, all test-side, fixes proposed. No PR exists for either branch, and the heads are unchanged since the verify. | A | #67 Group A verify comment | open |
-| 5 | Merge the log PII redaction branch (`be/BE-33-log-pii-redaction` @ `521a6756`) | A / LEAD | #67 | passes, not merged |
-| 6 | **Login throttle behind Cloudflare and worker `cache-control: no-store`.** The demo smoke saw 6 spoofed attempts, all 401, none 429, and no `no-store` on proxied `/api`. Fix PR #89 adds `CLIENT_IP_HEADER` and `EDGE_PROXY_SECRET` (API, `render.yaml`) and `deploy/pages-direct/_worker.js`. The API trusts the client-IP header only with the matching secret. | B (DevOps) build, LEAD merges; user sets the Render and Pages secrets | #89, #81 | G4 Approve with minors, Security Pass (09:18Z); not merged |
+| 4 | Group A test failures (BE-42, BE-28), all test-side | A | #67 Group A verify comment | Group A test-side fixes pushed (BE-42 `ec74b76d`, BE-28 `06538cba`) and merged with BE-33-log-pii + BE-46 on `lead/merge-groupa @ ed45bb0c` (on `84438c70`). Static checks green; waiting for be:verify; not merged. |
+| 5 | Merge the log PII redaction branch (`be/BE-33-log-pii-redaction` @ `521a6756`) | A / LEAD | #67 | in `lead/merge-groupa @ ed45bb0c`; static checks green; waiting for be:verify; not merged |
+| 6 | **Login throttle behind Cloudflare and worker `cache-control: no-store`.** The demo smoke saw 6 spoofed attempts, all 401, none 429, and no `no-store` on proxied `/api`. Fixed by #89 (merged). Remaining (user): set both vars on Render and the secret on Pages, then check there is no ClientIp boot warning after the first request through the edge (#91). | user (Render and Pages secrets); B (DevOps) re-runs smoke step 5 | #89, #91, #81 | code merged; platform settings pending (**unverified**) |
 | 7 | **BE-32 `/login` mobile re-measure on real API data.** Pass needs all of these: horizontal overflow 0, the stat chip's right edge ≤ the viewport, `isMobile: true` at 320 and 375, and a sample taken for 3 s after the chip is visible. Then remove `TODO(d4)` in `e2e/api/helpers.ts` (on `be/integration-frontend`) and re-run the 6 mobile `@api` specs. That closes BE-32. | LEAD | `docs/plan/AGENT-SYNC.md` HANDOFF, `docs/ops/staging-refresh-2.md` §5 (iv) | open |
 | 8 | Decide how `be/integration-frontend` reaches the go-live build | LEAD | `docs/plan/AGENT-SYNC.md` | open (**unverified** plan) |
 | 9 | Refresh the test environment to the merged tip (`docs/ops/staging-refresh-2.md`, never executed) | B (DevOps) | — | **blockers cleared** at `3d0b1271` (#76 fixed via #77; BE-19 full and BE-21 full merged); **waiting for the user's go (G6)** |
 | 10 | 5 permainan solo rosak dalam mod http — keputusan skop go-live menunggu pemilik (Amin); bukan blocker Bijak SPM jika di luar skop. | LEAD (D-1) | LEAD review on #87, #78 (**unverified** in the repo) | open |
 | 11 | M18 S23/S21 `fe/m18-amaran-summary` @ `f20e6c80` | A (FE) | `docs/plan/AGENT-SYNC.md` HANDOFF | review APPROVE; not merged; e2e WIP |
-| 12 | BE-46 marketplace `be/BE-46-marketplace` @ `97766959` (migration 0032) | A | `docs/plan/AGENT-SYNC.md` HANDOFF | waiting for a Docker verify; passed in the cloud verify (#67); not merged. Out of Bijak scope unless D-1 says otherwise. |
+| 12 | BE-46 marketplace `be/BE-46-marketplace` @ `97766959` (migration 0032) | A | `docs/plan/AGENT-SYNC.md` HANDOFF | in `lead/merge-groupa @ ed45bb0c`; static checks green; waiting for be:verify; not merged. Out of Bijak scope unless D-1 says otherwise. |
 | 13 | BE-21 AC#13 doc fix `docs/BE-21-ac13-contract` @ `0ca65e73` | A | — | not merged |
 | 14 | **Demo blocker (23 Oct): practice cannot start.** `POST /api/practice/sessions` always returns 422 `NOT_ENOUGH_QUESTIONS`, because `PracticePorts.provideQuestions` is still the `NoPracticeQuestions` placeholder and is not wired to the BE-09 bank. | B (Developer 3, BE-12 / PC-2) | #67 Group B update 08:30Z, #88 | in progress on `be/BE-12-practice-question-source`. No PR yet, and the branch was not on GitHub at ~10:00Z (**unverified**). |
 | 15 | **Demo blocker (23 Oct): PoC question pool.** Battle quick-match answers 422 on the PoC seed (at most 3 published MCQs per subject at Tingkatan 4; battle needs 10). #90 adds 480 PoC-only MCQs (24 per subject per level, 10 subjects). Seed data only; production stays guarded by `ALLOW_DEMO_SEED`. | B (DevOps) | #90 | PR open, G4 pending. Its base is `be/BE-26-seed-poc-profile` (#74, now merged), so it must be retargeted to `feature/v2-backend` before merge. |
 | 16 | **Full-demo walkthrough script** (`scripts/demo-walkthrough.sh`). It found #14 and #15. | B (DevOps) | #88 | Group A review: Changes needed, 3 Majors (writes on by default, SKIP exits 0, overclaims coverage). **Under fix.** |
 
 Item 4 failures in detail:
-- **BE-42 (2 failures):**
-  - `pksk-db.spec.ts`: list order.
-  - `migratable-double-upsert`: `pksk_packages` check constraint.
-- **BE-28 (1 failure):** `core.db.spec.ts` duplicate rejects, because the query has no `run_id` filter.
+- **BE-42 (2 failures), fixed in `ec74b76d`:**
+  - `pksk-db.spec.ts`: list order (the spec now advances the fixed clock).
+  - `migratable-double-upsert`: `pksk_packages` check constraint (fixture added).
+- **BE-28 (1 failure), fixed in `06538cba`:** `core.db.spec.ts` duplicate rejects (the query is now scoped to the apply run).
+- Both fixes still need the full be:verify on `lead/merge-groupa`.
 
 Item 10, the five games broken in http mode: betul-salah, cabaran-kilat, tembak-jawapan, susun-jawapan, kad-memori.
 - If games are in the go-live scope, this is a blocker.
@@ -198,7 +199,7 @@ Verified state:
 | Card | State |
 |---|---|
 | BE-27, BE-34, BE-35 (staging, kit, anonymiser) | merged |
-| BE-28 | on a branch with 1 failing test (§2.1 #4) |
+| BE-28 | test fix pushed (`06538cba`), in `lead/merge-groupa @ ed45bb0c`, waiting for be:verify (§2.1 #4) |
 | BE-29 | WIP, draft PR #82 |
 | BE-30 | **not started** |
 | OD-10 (migration questions) | unanswered |
@@ -235,7 +236,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 | `SESSION_COOKIE_NAME` | Default `pp_session` |
 | `PUBLIC_BASE_URL`, `PUBLIC_ORIGINS` | The production URLs. An empty `PUBLIC_BASE_URL` fails the boot. |
 | `TRUST_PROXY_HOPS` | Measured per topology: 1 for compose + nginx; 2 assumed on Render + Pages. Behind the Cloudflare edge, use #89's header instead (next row). |
-| `CLIENT_IP_HEADER`, `EDGE_PROXY_SECRET` | New with #89 (not merged). `CLIENT_IP_HEADER=x-pp-client-ip` (API only). `EDGE_PROXY_SECRET` is a secret of 32+ chars on both the API and Pages, with the same value; the worker sends it as `X-PP-Edge-Secret`. A shorter secret fails the boot. Leave both empty for the old behaviour. **Rollout:** Pages first (secret, then re-upload the build with the new `_worker.js`), then Render (both vars, redeploy). **Rollback:** remove `CLIENT_IP_HEADER` on Render and redeploy. Source: #89's section "Edge client IP + no-store (go-live fix)" in `docs/ops/demo-cloudflare-supabase.md`. |
+| `CLIENT_IP_HEADER`, `EDGE_PROXY_SECRET` | Added by #89 (merged). `CLIENT_IP_HEADER` requires `EDGE_PROXY_SECRET` (`env.schema.ts`). In production the API logs one boot warning if `TRUST_PROXY_HOPS` > 0 and either var is unset (#91). The secret is trimmed; a whitespace-only value counts as unset. `CLIENT_IP_HEADER=x-pp-client-ip` (API only). `EDGE_PROXY_SECRET` is a secret of 32+ chars on both the API and Pages, with the same value; the worker sends it as `X-PP-Edge-Secret`. A shorter secret fails the boot. Leave both empty for the old behaviour. **Rollout:** Pages first (secret, then re-upload the build with the new `_worker.js`), then Render (both vars, redeploy). **Rollback:** remove `CLIENT_IP_HEADER` on Render and redeploy. Source: #89's section "Edge client IP + no-store (go-live fix)" in `docs/ops/demo-cloudflare-supabase.md`. |
 | `ALLOW_DEMO_SEED` | `false` |
 | `BIJAK_POC_QUESTIONS` | `false` |
 | `MAIL_LOG_RESET_LINKS` | Not `true` (boot fails) |
@@ -257,7 +258,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 
 **Pages Function / worker:**
 - `API_ORIGIN` fails closed with a 500 if unset.
-- With #89 the worker also needs the edge secret, with the same value as the API's `EDGE_PROXY_SECRET`.
+- The worker (`deploy/pages-direct/_worker.js`, #89, on the tip) also needs the edge secret, with the same value as the API's `EDGE_PROXY_SECRET`.
 
 **DB (compose path):** `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (in `.env.db`, git-ignored).
 
@@ -281,7 +282,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
   - Compose: the one-shot `migrate` service runs it.
   - Render: run `npm run be:db:migrate` from a laptop checkout of the release SHA. The free Render image has no Prisma CLI and no pre-deploy hook.
 - [ ] **0024 is never used**, because it would sort below the applied migrations. 0016 is also unused. Gaps are normal; do not "fix" them.
-- [ ] Present on the tip `559265d1` (same as `3d0b1271`): `0001`–`0015`, `0017`–`0023`, `0025`, `0026`, `0027`, `0030`, `0033`, `0034` (28 folders).
+- [ ] Present on the tip `84438c70` (same set as `3d0b1271`): `0001`–`0015`, `0017`–`0023`, `0025`, `0026`, `0027`, `0030`, `0033`, `0034` (28 folders).
 - [ ] Added only if the matching PR or branch merges:
 
   | Migration | Arrives with |
@@ -312,7 +313,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
   - HSTS in production
 - [ ] **SPA CSP:** `docker/frontend/nginx.conf` sets none, and no Pages `_headers` file was found. Decide whether to add one (D-7).
 - [ ] **Cookie:** HttpOnly, SameSite=Lax, Secure (`COOKIE_SECURE=true`), CSRF via `X-CSRF-Token`, no token in response bodies (#81 `cookies-and-tokens.spec.ts`).
-- [ ] `/api` responses carry `cache-control: no-store` through the edge (#89).
+- [ ] `/api` responses carry `cache-control: no-store` through the edge (#89, merged; `deploy/pages-direct/_worker.js` on the tip).
 - [ ] `/api/metrics` is not reachable from outside: the #81 rule plus the nginx 404 line (§2.2 #24).
 
 ---
