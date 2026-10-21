@@ -3,6 +3,21 @@ import { stdSerializers } from 'pino'
 import type { Env } from '../config/env.schema'
 
 /** Paths whose values must never reach a log line. */
+const SECRET_KEYS = [
+  'password',
+  'newPassword',
+  'newPasswordConfirmation',
+  'passwordConfirmation',
+  'currentPassword',
+  'generatedPassword',
+  'defaultPassword',
+  'credential',
+  'credentials',
+  'secret',
+  'token',
+  'apiKey',
+]
+
 export const REDACT_PATHS = [
   'req.headers.cookie',
   'req.headers.authorization',
@@ -11,11 +26,10 @@ export const REDACT_PATHS = [
   'req.headers.referer',
   'req.params.token',
   'res.headers["set-cookie"]',
-  'req.body.password',
-  '*.password',
-  'password',
   'cookie',
   'authorization',
+  // Credential-like keys at the top level, one level deep, and in a request body (defence in depth).
+  ...SECRET_KEYS.flatMap((k) => [k, `*.${k}`, `req.body.${k}`]),
 ]
 
 type WithId = { id?: unknown }
@@ -25,7 +39,24 @@ type WithId = { id?: unknown }
  * path or query). Every logged form of the URL goes through `redactUrl`.
  */
 const PATH_SECRET = /(parent-invites\/)[0-9a-f]{64}/gi
-export const redactUrl = (url: string): string => url.replace(PATH_SECRET, '$1[redacted]')
+const stripPathSecrets = (url: string): string => url.replace(PATH_SECRET, '$1[redacted]')
+
+/**
+ * The query string can carry personal data (`?search=<pupil name>`), so only the query KEYS are logged:
+ * `/api/x?search=Ali&page=2` becomes `/api/x?search=[redacted]&page=[redacted]`. Fragments are dropped.
+ */
+export function redactUrl(url: string): string {
+  const beforeFragment = url.split('#')[0] ?? ''
+  const q = beforeFragment.indexOf('?')
+  if (q === -1) return stripPathSecrets(beforeFragment)
+  const path = stripPathSecrets(beforeFragment.slice(0, q))
+  const keys = beforeFragment
+    .slice(q + 1)
+    .split('&')
+    .map((pair) => pair.split('=')[0] ?? '')
+    .filter((k) => k !== '')
+  return keys.length === 0 ? path : `${path}?${keys.map((k) => `${k}=[redacted]`).join('&')}`
+}
 
 type SerializedReq = { url?: unknown; originalUrl?: unknown; [key: string]: unknown }
 
