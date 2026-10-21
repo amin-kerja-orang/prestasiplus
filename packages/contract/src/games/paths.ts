@@ -299,7 +299,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Lobby of a room game (M16-23)',
     description:
-      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)).',
+      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
     request: { params: GameParam },
     responses: { 200: json(envelopeOf(GamesLobbySchema), 'Lobby.'), 401: UNAUTHORIZED, 404: err(GAME_404) },
   })
@@ -629,7 +629,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/games/pertandingan',
     tags: TAGS,
     summary: 'Weekly competition board (M16-40)',
-    description: '`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)).',
+    description: '`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
     responses: { 200: json(envelopeOf(GamesWeeklyCompetitionSchema), 'Weekly board.'), 401: UNAUTHORIZED },
   })
 

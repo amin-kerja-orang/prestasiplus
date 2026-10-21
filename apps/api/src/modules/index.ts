@@ -38,6 +38,10 @@ import { HeatmapModule } from './heatmap'
 import { IntakeDashboardModule } from './intake/dashboard'
 import { CikguModule } from './cikgu'
 import { CommandCenterModule } from './command-center'
+import { BattleModule } from './battle'
+import { SpmModule } from './spm'
+import { GamesModule } from './games'
+import { SponsorshipModule } from './sponsorship'
 import { PracticeQuestionsBridgeModule } from './practice/question-bridge'
 
 /**
@@ -47,4 +51,4 @@ import { PracticeQuestionsBridgeModule } from './practice/question-bridge'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, CommandCenterModule, PracticeQuestionsBridgeModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamesModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, CommandCenterModule, BattleModule, SpmModule, SponsorshipModule, PracticeQuestionsBridgeModule]
