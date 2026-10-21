@@ -29,6 +29,8 @@ import { contentSeed } from './content'
 import { gamificationSeed } from './gamification'
 import { cikguSeed } from './cikgu'
 import { battleSeed } from './battle'
+import { spmSeed } from './spm'
+import { spmSubjectConfigsSeed } from './spm-subject-configs'
 
 export { assertSeedAllowed }
 
@@ -60,14 +62,15 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue only
- * (`core-school-packages`), pinned by test/subscriptions/seed-production.spec.ts.
+ * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`) and the
+ * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
+ * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, practiceSeed, gamificationSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, cikguSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
