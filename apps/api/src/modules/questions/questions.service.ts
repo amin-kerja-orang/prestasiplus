@@ -13,7 +13,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { questionNotFound, transitionConflict } from './errors'
+import { bulkFailureOf, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -267,15 +267,18 @@ export class QuestionsService {
     if (!(await this.repo.remove(id))) throw questionNotFound()
   }
 
-  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[] }> {
+  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
     let affected = 0
     const done: string[] = []
+    const failed: BulkFailure[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
           if (await this.repo.remove(id)) {
             affected += 1
             done.push(id)
+          } else {
+            failed.push(bulkFailureOf(id, questionNotFound()) as BulkFailure)
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
@@ -285,11 +288,12 @@ export class QuestionsService {
         }
       } catch (e) {
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
-        if (e instanceof ApiError && (e.code === 'NOT_FOUND' || e.code === 'CONFLICT' || e.code === 'VALIDATION_ERROR')) continue
-        throw e
+        const failure = bulkFailureOf(id, e)
+        if (!failure) throw e
+        failed.push(failure)
       }
     }
-    return { affected, ids: done }
+    return { affected, ids: done, failed }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
