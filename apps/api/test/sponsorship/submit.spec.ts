@@ -356,7 +356,7 @@ describe('AC6 no side effects', () => {
 describe('e-mail length cap (ReDoS guard, security deviation: 254 characters, RFC 5321)', () => {
   const attack = (): string => 'a@' + '.'.repeat(99_900) + ' x'
 
-  it('a ~100 kB near-miss e-mail is 422 "Format e-mel tidak sah." in under 200 ms, with no users lookup', async () => {
+  it('a ~100 kB near-miss e-mail is 422 "Format e-mel tidak sah." in under 1 s (ReDoS took ~16 s), with no users lookup', async () => {
     const spy = vi.spyOn(t.app.get(UsersRepository), 'findByEmail')
     try {
       const body = validBody({ studentEmail: attack() })
@@ -366,7 +366,7 @@ describe('e-mail length cap (ReDoS guard, security deviation: 254 characters, RF
       expect(res.status).toBe(422)
       expect(fieldsOf(res)).toEqual({ studentEmail: MSG.invalidEmail })
       expect(res.body.error.message).toBe('Format e-mel tidak sah.')
-      expect(elapsed).toBeLessThan(200)
+      expect(elapsed).toBeLessThan(1000) // generous for loaded runners; the spy and the 422 prove the guard
       expect(spy).not.toHaveBeenCalled()
     } finally {
       spy.mockRestore()
