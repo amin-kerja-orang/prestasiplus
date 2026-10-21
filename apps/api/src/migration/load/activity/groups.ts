@@ -5,5 +5,7 @@
  * order of this array.
  */
 import type { ActivityGroup } from './context'
+import { activityGroupA, walletGroup } from './part-a'
+import { activityGroupB, catalogueGroup, contentGroup, opsGroup } from './part-b'
 
-export const ACTIVITY_GROUPS: ActivityGroup[] = []
+export const ACTIVITY_GROUPS: ActivityGroup[] = [walletGroup, activityGroupA, catalogueGroup, activityGroupB, contentGroup, opsGroup]

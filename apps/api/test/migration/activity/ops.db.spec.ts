@@ -1,0 +1,174 @@
+/**
+ * BE-29 Part B, operations group against a real PostgreSQL: support tickets, timeline posts and feedback.
+ *
+ * Tickets: the staging spec has no message body (LEAD Q6), so run R1 rejects every ticket INVALID_VALUE (`body`); run R2
+ * injects a body into the extract (what the step does once the spec carries the column) to show the status map and the
+ * subject limit. Timeline and feedback need no injection. The staged values are synthetic.
+ */
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { opsGroup } from '../../../src/migration/load/activity/part-b'
+import { ROLE_MAP } from '../../../src/migration/transform/enums'
+import { bootActivity, type ActivityHarness } from './helpers'
+import { ensureTargets, OPS_TARGETS } from './part-b-targets'
+
+let h: ActivityHarness
+let u: string[] = []
+let role0 = ''
+const groups = [opsGroup]
+
+type Reasons = Record<string, number>
+const reasonsOf = async (runId: string): Promise<Reasons> =>
+  Object.fromEntries(
+    (await h.q<{ entity: string; reason: string; column_name: string; n: number }>(
+      `select entity, reason, column_name, count(*)::int n from etl_rejects where run_id = $1 group by 1, 2, 3`, [runId],
+    )).map((r) => [`${r.entity}|${r.reason}|${r.column_name}`, r.n]),
+  )
+const n = (r: Reasons, entity: string, reason: string, column: string): number => r[`${entity}|${reason}|${column}`] ?? 0
+
+/** Adds columns the staging spec does not have yet to the rows an entity reads, by source id. */
+const inject =
+  (extra: Record<string, Record<string, Record<string, string>>>) =>
+  (steps: AnyEntityStep[]): AnyEntityStep[] =>
+    steps.map((step) => {
+      const add = extra[step.entity]
+      if (!add) return step
+      return {
+        ...step,
+        extract: (after: string | null) =>
+          (async function* () {
+            for await (const row of step.extract(after) as AsyncIterable<Record<string, string | null>>) yield { ...row, ...(add[row.id as string] ?? {}) }
+          })(),
+      }
+    })
+
+let r1: Reasons
+let r2: Reasons
+let r1Recon: Record<string, { source: number; eligible: number; loaded: number; rejected: number }> = {}
+
+beforeAll(async () => {
+  h = await bootActivity()
+  await ensureTargets(h.env.pool, OPS_TARGETS)
+  const q = (sql: string, params: unknown[] = []) => h.env.pool.query(sql, params)
+  u = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'users' order by legacy_id::bigint limit 2`)).map((r) => r.legacy_id)
+  expect(u.length).toBe(2)
+  role0 = (await h.q<{ role: string }>(`select role from staging_cloud.users where id = $1::bigint`, [u[0]]))[0]?.role ?? ''
+  for (const t of ['support_tickets', 'timeline_entries', 'feedback']) await q(`delete from staging_cloud.${t}`)
+
+  await q(
+    `insert into staging_cloud.support_tickets (id, user_id, subject, status) values
+      (1, ${u[0]}, 'Tiket satu', 'dibuka'), (2, ${u[0]}, $1, 'selesai'), (3, ${u[1]}, 'Tiket tiga', 'tidak_dikenali'), (4, 99999, 'Tiket empat', 'dibuka'),
+      (5, ${u[0]}, 'Tiket lima', 'open'), (6, ${u[0]}, 'Tiket enam', 'closed'), (7, ${u[0]}, 'Tiket tujuh', 'in_progress'),
+      (8, ${u[0]}, 'Tiket lapan', 'resolved'), (9, ${u[0]}, 'Tiket sembilan', 'menunggu_balas')`,
+    ['a'.repeat(256)],
+  )
+  await q(
+    `insert into staging_cloud.timeline_entries (id, user_id, title, body, happened_on) values
+      (1, ${u[0]}, 'Sijil Matematik', 'Cerita pendek', '2026-02-01'),
+      (2, ${u[0]}, $1, 'Cerita', '2026-02-02'),
+      (3, ${u[0]}, 'Tajuk baik', $2, '2026-02-03'),
+      (4, ${u[1]}, 'Tanpa cerita', null, null),
+      (5, 99999, 'Pengguna tiada', 'Cerita', null),
+      (6, ${u[0]}, $3, $4, '2026-02-06')`,
+    ['t'.repeat(151), 's'.repeat(2001), 'y'.repeat(150), 'z'.repeat(2000)],
+  )
+  await q(`insert into staging_cloud.feedback (id, user_id, score, satisfaction, usability, relevance, comment, created_at) values
+    (1, ${u[0]}, 4, 4, 3, 5, 'Komen satu', '2026-04-30T23:30:00Z'),
+    (2, ${u[0]}, 5, 5, 4, 4, 'Komen dua', '2026-05-20T10:00:00Z'),
+    (3, ${u[0]}, 3, 3, null, null, null, '2026-04-15T10:00:00Z'),
+    (4, ${u[1]}, 3, 6, 3, 3, null, '2026-03-10T10:00:00Z'),
+    (5, ${u[1]}, 9, 3, 3, 3, null, '2026-07-01T10:00:00Z'),
+    (6, ${u[1]}, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
+    (7, 99999, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
+    (8, ${u[1]}, 5, 5, 5, 5, 'Komen lapan', '2026-06-15T00:00:00Z')`)
+
+  const dry1 = await h.run('dry-run', { groups })
+  expect(dry1.report.status).toBe('succeeded')
+  const a1 = await h.run('apply', { groups })
+  expect(a1.report.status).toBe('succeeded')
+  r1 = await reasonsOf(a1.report.runId)
+  r1Recon = Object.fromEntries(a1.report.recon.map((r) => [r.entity, { source: r.sourceCount, eligible: r.eligibleCount, loaded: r.loaded, rejected: r.rejected }]))
+
+  const bodies = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => [String(i), { body: 'Mesej contoh' }]))
+  const a2 = await h.run('apply', { groups, transformSteps: inject({ support_tickets: bodies }) })
+  expect(a2.report.status).toBe('succeeded')
+  r2 = await reasonsOf(a2.report.runId)
+}, 600_000)
+afterAll(async () => {
+  await h?.close()
+})
+
+describe('support_tickets', () => {
+  it('R1: with the staging spec as it is, a valid ticket is rejected INVALID_VALUE on body, never loaded with an invented one', () => {
+    // ids 1 and 5 to 9 have a good status and subject; id 2 fails on the subject first.
+    expect(n(r1, 'support_tickets', 'INVALID_VALUE', 'body')).toBe(6)
+    expect(n(r1, 'support_tickets', 'INVALID_VALUE', 'subject')).toBe(1)
+    expect(n(r1, 'support_tickets', 'UNKNOWN_ENUM', 'status')).toBe(1)
+    expect(n(r1, 'support_tickets', 'ORPHAN_PARENT', 'user_id')).toBe(1)
+    expect(r1Recon.support_tickets).toEqual({ source: 9, eligible: 9, loaded: 0, rejected: 9 })
+  })
+
+  it('R2: with a body, the status is mapped onto the BM codes and a subject of 256 characters is rejected, not cut', async () => {
+    const rows = await h.q<{ legacy_id: string; status: string; body: string }>(`select legacy_id, status, body from support_tickets order by legacy_id::bigint`)
+    expect(rows.map((r) => `${r.legacy_id}=${r.status}`)).toEqual(['1=dibuka', '5=dibuka', '6=ditutup', '7=dalam_proses', '8=selesai', '9=menunggu_balas'])
+    expect(rows.every((r) => r.body === 'Mesej contoh')).toBe(true)
+    expect(n(r2, 'support_tickets', 'INVALID_VALUE', 'subject')).toBe(1)
+    expect(n(r2, 'support_tickets', 'UNKNOWN_ENUM', 'status')).toBe(1)
+  })
+})
+
+describe('timeline_posts', () => {
+  it('keeps the date as a date, fixes the category and moves body to story', async () => {
+    const rows = await h.q<{ legacy_id: string; category: string; event_date: string | null; story: string | null; title_len: number; story_len: number | null }>(
+      `select legacy_id, category, event_date::text, story, char_length(title) title_len, char_length(story) story_len from timeline_posts order by legacy_id::bigint`,
+    )
+    expect(rows).toEqual([
+      { legacy_id: '1', category: 'lain', event_date: '2026-02-01', story: 'Cerita pendek', title_len: 15, story_len: 13 },
+      { legacy_id: '4', category: 'lain', event_date: null, story: null, title_len: 12, story_len: null },
+      { legacy_id: '6', category: 'lain', event_date: '2026-02-06', story: 'z'.repeat(2000), title_len: 150, story_len: 2000 },
+    ])
+  })
+
+  it('rejects a title over 150 characters, a story over 2000 and an unknown user', () => {
+    expect(n(r1, 'timeline_posts', 'INVALID_VALUE', 'title')).toBe(1)
+    expect(n(r1, 'timeline_posts', 'INVALID_VALUE', 'body')).toBe(1)
+    expect(n(r1, 'timeline_posts', 'ORPHAN_PARENT', 'user_id')).toBe(1)
+    expect(r1Recon.timeline_posts).toEqual({ source: 6, eligible: 6, loaded: 3, rejected: 3 })
+  })
+})
+
+describe('feedback', () => {
+  it('keeps the newest row per user and Malaysia month, nps null, role and school from the user', async () => {
+    const rows = await h.q<{ legacy_id: string; month: string; role: string; nps: number | null; satisfaction: number; comment: string | null }>(
+      `select legacy_id, month::text, role, nps, satisfaction, comment from feedback order by legacy_id::bigint`,
+    )
+    expect(rows.map((r) => `${r.legacy_id}@${r.month}`)).toEqual(['2@2026-05-01', '3@2026-04-01', '8@2026-06-01'])
+    expect(rows.every((r) => r.nps === null)).toBe(true)
+    expect(rows[0]?.role).toBe(ROLE_MAP[role0.toLowerCase()])
+    expect(rows[0]?.comment).toBe('Komen dua')
+  })
+
+  it('treats 23:30 UTC on 30 April as 1 May in Malaysia, so it competes with the May row and loses to it', () => {
+    // Row 1 (2026-04-30T23:30Z) and row 2 (2026-05-20) share the Malaysia month 2026-05; row 6 and 8 share 2026-06.
+    expect(n(r1, 'feedback', 'DUPLICATE_KEY', 'month')).toBe(2)
+  })
+
+  it('rejects satisfaction or scores outside 1 to 5 and an unknown user', () => {
+    expect(n(r1, 'feedback', 'INVALID_VALUE', 'satisfaction')).toBe(1)
+    expect(n(r1, 'feedback', 'INVALID_VALUE', 'score')).toBe(1)
+    expect(n(r1, 'feedback', 'ORPHAN_PARENT', 'user_id')).toBe(1)
+    expect(r1Recon.feedback).toEqual({ source: 8, eligible: 8, loaded: 3, rejected: 5 })
+  })
+})
+
+describe('target table not merged yet', () => {
+  it('leaves the rows out as excluded and notes the count, so the run still reconciles', async () => {
+    await h.env.pool.query(`drop table timeline_posts`)
+    const again = await h.run('apply', { groups })
+    expect(again.report.status).toBe('succeeded')
+    const row = again.report.recon.find((r) => r.entity === 'timeline_posts')
+    expect(row).toMatchObject({ sourceCount: 6, eligibleCount: 0, loaded: 0, rejected: 0, status: 'ok' })
+    expect(again.activity.notes.counters.get('target_missing.timeline_posts')).toBe(6)
+  }, 120_000)
+})
