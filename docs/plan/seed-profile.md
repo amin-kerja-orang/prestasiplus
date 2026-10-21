@@ -24,6 +24,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 16. `pksk` (BE-42): PKSK demo rows (2 access grants, 2 T1 attempts, 7 mastery values; the 15 domains and 3 packages are inserted by migration 0028)
 17. `poc-performance` (BE-19): headcount configs and entries, timeline posts
 18. `questions-pool` (BE-09 seed path, PoC only): the question pool for battle, games and practice, runs before the spm seeds (they read the bank), see below
+18a. `questions-pool-primary` (BE-09 seed path, PoC only): the Darjah 1 to 4 pool for practice random, Jutawan and the solo games, right after `questions-pool`, see below
 19. `spm-subject-configs` (BE-41): REFERENCE module (also runs in production)
 20. `spm` (BE-41): SPM hub demo rows
 21. `practice`: practice sessions and answers
@@ -42,7 +43,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | Table | Rows |
 |---|---:|
 | achievements | 25 |
-| answer_keys | 507 |
+| answer_keys | 891 |
 | articles | 3 |
 | attempt_answers | 122 |
 | attempt_results | 15 |
@@ -91,7 +92,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | paper_placements | 31 |
 | paper_sections | 9 |
 | papers | 5 |
-| part_options | 1980 |
+| part_options | 3516 |
 | pbd_tags | 2 |
 | personal_bests | 40 |
 | pksk_accesses | 2 |
@@ -104,12 +105,12 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | practice_attempt_aggregate_items | 126 |
 | practice_attempt_aggregates | 15 |
 | practice_sessions | 4 |
-| question_parts | 509 |
+| question_parts | 893 |
 | question_tags | 483 |
 | question_version_sp_nodes | 501 |
 | question_version_stimuli | 7 |
-| question_versions | 503 |
-| questions | 503 |
+| question_versions | 887 |
+| questions | 887 |
 | rewards | 59 |
 | rph_plans | 2 |
 | school_packages | 4 |
@@ -139,7 +140,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 97 of 196. Total rows: 15701.
+Tables with rows: 97 of 196. Total rows: 18773.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
@@ -155,6 +156,15 @@ The base bank (`questions`, 19 rows, plus 4 Bijak PoC MCQs) has at most 4 publis
 - Natural key `SEED-POOL-<subject>-<level>-<NN>`; a re-run inserts nothing. The module runs after `poc-performance` and before `spm-subject-configs` / `spm`: the SPM seed builds one Tracking A set per subject from the SPM pool and skips a subject whose set exists, so the pool must exist on the first run (otherwise a second run adds sets and the AC1 fingerprint differs). No module that runs after it creates questions, so no question id moves; the seeded Tracking A sets now draw from the pool. Profile `poc` only; refused in production like every demo module.
 
 Not covered (no DSKP unit at Tingkatan 4 or 5, so a published row would break the publish gate): the other 21 active subjects (TI has DSKP units but no fact set was written for it). The battle lobby still lists them; quick-match for them answers 422 "Soalan tidak mencukupi.". Questions carry no `chapter_id` / `topic_id`, so practice chapter mode still finds no chapter questions. Practice sessions also need the BE-12 question source wiring (`PracticePorts.provideQuestions`) before they can draw from the bank.
+
+## Primary question pool (`questions-pool-primary`, card PC-2)
+
+`questions-pool` only covers Tingkatan 4 and 5, so a Darjah pupil had nothing for practice `mode: random`, the Jutawan subject tiles or the solo games. `apps/api/prisma/seed/questions/pool-primary.ts` (content in `pool-content-primary.ts`) adds, through the same BE-09 helpers:
+
+- 24 published, active, single-part MCQs for each of BM, BI, MATH and SCI at D1, D2, D3 and D4 (384 rows). Per level that is 96 across subjects: solo games sample by level over all subjects (Betul atau Salah 40, Cabaran Kilat and Tembak Jawapan 30 four-option, Susun Jawapan 20 with a correct option of at most 20 characters, Kad Memori 6 over D1 to D4); per subject and level 24 covers practice random (max 20) and Jutawan (15, ladder 4/4/4/3 over TP 1 to 4).
+- Natural key `SEED-PRIM-<subject>-<level>-<NN>` (own prefix, so the base pool's `SEED-POOL-` check and spec are unaffected); a re-run inserts nothing. Placed right after `questions-pool`: no later module creates questions, so no earlier question id moves; no `spm` pool tag (SPM is Tingkatan 4 and 5 only).
+- The curriculum seed has DSKP nodes for Tingkatan 4 and 5 only, so these rows carry no unit and no SP (`unit_node_id` null); no consumer above reads them. `form_origin` is `t1_t3` (the CHECK allows t1_t3, t4, t5; the questions module stores `t1_t3` for every level below Tingkatan 4).
+- Other subjects (SEJ, PI, PM, GEO, PSV, ...) are not seeded for Darjah: no demo flow needs them and none has DSKP nodes at Darjah level. Chapter mode still finds no chapter questions (no chapter ids).
 
 ## Comparison with D45 ("about 20 students, a few papers")
 

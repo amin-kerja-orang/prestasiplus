@@ -40,7 +40,7 @@ export interface PoolSpec {
 
 const LABELS = ['A', 'B', 'C', 'D'] as const
 
-function toPart(it: PoolItem): QuestionPart {
+export function toPart(it: PoolItem): QuestionPart {
   return {
     label: '1',
     prompt: { ms: it.text },

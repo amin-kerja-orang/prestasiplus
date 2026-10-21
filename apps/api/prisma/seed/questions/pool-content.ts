@@ -36,7 +36,7 @@ export const POOL_PER_LEVEL = 24
 // --------------------------------------------------------------------------------------------------------------------
 
 /** Places `right` at position `slot` among three wrong options; throws when the four are not distinct. */
-function item(text: string, right: string, wrong: readonly [string, string, string], slot: number): PoolItem {
+export function item(text: string, right: string, wrong: readonly [string, string, string], slot: number): PoolItem {
   const options = [...wrong]
   const at = ((slot % 4) + 4) % 4
   options.splice(at, 0, right)
@@ -45,7 +45,7 @@ function item(text: string, right: string, wrong: readonly [string, string, stri
 }
 
 /** Three wrong values for row `i` of a column: rows i+1, i+2, i+3 (mod n). The column values must be distinct. */
-function others(values: readonly string[], i: number): [string, string, string] {
+export function others(values: readonly string[], i: number): [string, string, string] {
   const n = values.length
   return [values[(i + 1) % n] as string, values[(i + 2) % n] as string, values[(i + 3) % n] as string]
 }
@@ -54,7 +54,7 @@ function others(values: readonly string[], i: number): [string, string, string] 
  * Both directions of a one-to-one table: `forward(a)` asks for b, `backward(b)` asks for a. Wrong options come from
  * the other rows of the same column, so every question has exactly one correct option.
  */
-function table(
+export function table(
   rows: readonly (readonly [string, string])[],
   forward: (a: string) => string,
   backward: (b: string) => string,
@@ -72,7 +72,7 @@ function table(
 }
 
 /** One direction of a table (the answer column may repeat; wrong options are the given fixed set minus the answer). */
-function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) => string, choices: readonly string[], slot0 = 0): PoolItem[] {
+export function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) => string, choices: readonly string[], slot0 = 0): PoolItem[] {
   return rows.map(([a, b], i) => {
     const wrong = choices.filter((c) => c !== b).slice(0, 3) as [string, string, string]
     return item(ask(a), b, wrong, slot0 + i)
@@ -81,9 +81,9 @@ function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) =
 
 /** Rounded to 2 decimal places, so a computed distractor never renders as a long binary fraction. */
 const round2 = (n: number): number => Math.round(n * 100) / 100
-const num = (n: number): string => String(n).replace('-', '−')
+export const num = (n: number): string => String(n).replace('-', '−')
 /** A numeric question: the answer and three distinct wrong values (computed slips), formatted with `fmt`. */
-function numeric(text: string, right: number, wrong: readonly number[], slot: number, fmt: (n: number) => string = num): PoolItem {
+export function numeric(text: string, right: number, wrong: readonly number[], slot: number, fmt: (n: number) => string = num): PoolItem {
   // Every value is rounded to 2 decimal places BEFORE the distinctness check and the formatter.
   const key = round2(right)
   const picked: number[] = []

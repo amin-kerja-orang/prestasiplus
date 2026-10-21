@@ -22,7 +22,7 @@ import type { TxClient } from '../../../src/db/client'
 import type { SeedContext, SeedModule } from '../index'
 import { SEED_GROUPS, SEED_QUESTIONS, SEED_STIMULI, type SeedQuestion } from './content'
 
-const json = (v: unknown): Prisma.InputJsonValue => v as Prisma.InputJsonValue
+export const json = (v: unknown): Prisma.InputJsonValue => v as Prisma.InputJsonValue
 
 export interface Tag {
   unitNodeId: bigint

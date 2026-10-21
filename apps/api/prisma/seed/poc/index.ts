@@ -25,6 +25,7 @@
  *  16. pksk                   PKSK demo rows (BE-42)
  *  17. poc-performance        headcount configs and entries, timeline posts (BE-19)
  *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path); BEFORE the spm seeds, which read the bank
+ *  18a. questions-pool-primary  the PoC primary pool: 24 published MCQs per subject (BM, BI, MATH, SCI) and Darjah 1 to 4, not in the SPM pool
  *  19. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
  *  20. spm                    SPM hub demo rows (BE-41)
  *  21. practice               practice sessions and answers of the demo accounts
@@ -61,6 +62,7 @@ export const POC_PROFILE_ORDER = [
   'pksk',
   'poc-performance',
   'questions-pool',
+  'questions-pool-primary',
   'spm-subject-configs',
   'spm',
   'practice',
