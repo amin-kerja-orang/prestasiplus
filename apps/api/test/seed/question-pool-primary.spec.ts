@@ -88,6 +88,29 @@ describe('PoC question pool at Darjah 1 to 4 (pure)', () => {
     }
   })
 
+  it('has no distractor that is also a correct answer (banned key -> distractor pairs)', () => {
+    // Each entry: every question containing `ask` must have key `key` and must never offer a `banned` option.
+    const BANNED: { ask: string; key: string; banned: string[]; why: string }[] = [
+      { ask: "penjodoh bilangan yang sesuai bagi 'pokok'", key: 'sepohon', banned: ['sebatang'], why: 'sebatang pokok is also correct' },
+      { ask: 'Besi ialah bahan', key: 'konduktor elektrik', banned: ['bahan magnet'], why: 'iron is magnetic' },
+      { ask: 'Kayu kering ialah bahan', key: 'penebat elektrik', banned: ['bahan api'], why: 'dry wood is a fuel' },
+      { ask: 'bergerak dengan cara berenang', key: 'ikan', banned: ['katak'], why: 'frogs swim' },
+      { ask: 'Perbuatan menjaga adik yang sakit menunjukkan nilai', key: 'kasih sayang', banned: ['baik hati'], why: 'also fits baik hati' },
+      { ask: 'bagi aktiviti gosokan', key: 'permukaan bertekstur', banned: ['krayon', 'krayon minyak'], why: 'gosokan shares crayon with resis' },
+      { ask: 'bagi aktiviti resis', key: 'krayon minyak', banned: ['krayon'], why: 'gosokan must not be the crayon activity' },
+    ]
+    for (const b of BANNED) {
+      const rows = primarySpecs().filter((x) => x.text.includes(b.ask))
+      expect(rows.length, `no item for "${b.ask}"`).toBeGreaterThan(0)
+      for (const r of rows) {
+        const part = r.part as Part
+        expect(keyText(part), `${r.ref} key`).toBe(b.key)
+        const options = part.options.map((o) => o.body.ms)
+        for (const x of b.banned) expect(options, `${r.ref}: ${x} (${b.why})`).not.toContain(x)
+      }
+    }
+  })
+
   it('computed items carry the right key (spot checks)', () => {
     const find = (prefix: string) => {
       const s = primarySpecs().find((x) => x.text.startsWith(prefix))
@@ -146,6 +169,16 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
       expect(PRIMARY_SUBJECTS as readonly string[]).toContain(r.subject)
       expect(r, `${r.subject} ${r.level}`).toMatchObject({ n: PRIMARY_PER_LEVEL, live: PRIMARY_PER_LEVEL, tp: PRIMARY_PER_LEVEL, untagged: PRIMARY_PER_LEVEL, spm: 0, origin: PRIMARY_PER_LEVEL })
     }
+  })
+
+  it('sets form_origin t1_t3 on Darjah rows and t4/t5 on Tingkatan rows', async () => {
+    const rows = await t.db.query<{ level: string; origin: string; n: number }>(
+      `select l.code as level, v.form_origin as origin, count(*)::int as n
+         from question_versions v join education_levels l on l.id = v.education_level_id
+        where v.number_label like 'SEED-POOL-%' group by l.code, v.form_origin`,
+    )
+    for (const r of rows) expect(r.origin, r.level).toBe(r.level === 'T4' ? 't4' : r.level === 'T5' ? 't5' : 't1_t3')
+    expect(rows.filter((r) => r.level.startsWith('D'))).toHaveLength(PRIMARY_LEVELS.length)
   })
 
   it('leaves the Tingkatan pool as it was (24 per subject and level, all in the SPM pool) and inserts it first', async () => {
