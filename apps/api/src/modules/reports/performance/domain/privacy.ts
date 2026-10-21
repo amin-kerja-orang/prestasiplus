@@ -1,6 +1,7 @@
 import type { RoleCode } from '@pp/contract'
 
 import { MIN_COHORT, REDACTED_NAME } from './constants'
+import { shortName } from './ranking'
 
 export { MIN_COHORT, REDACTED_NAME }
 
@@ -13,12 +14,22 @@ export const isStaff = (role: RoleCode): boolean => STAFF_ROLES.includes(role)
 export const meetsCohort = (role: RoleCode, pupils: number): boolean => isStaff(role) || pupils >= MIN_COHORT
 
 /**
- * Pupil names (LEAD, OQ-7): the admin, the school admin, the pupil themself, and a teacher for pupils of
- * the own classes (`ownPupils`). Officers and students never see other pupils' names.
+ * Pupil names (LEAD, OQ-7; security M1+M2): the admin, the pupil themself, a teacher for pupils of the own
+ * classes (`ownPupils`) and, when `schoolPupils` is given, a school admin for pupils of the own school.
+ * Officers and students never see other pupils' names. Without `schoolPupils` a school admin is trusted
+ * (callers whose data is already limited to the own school: school, class and item-analysis reports).
+ * Ranking and leaderboard rows span schools, so they pass `schoolPupils`.
  */
-export function canSeeName(role: RoleCode, viewerId: string, pupilId: string, ownPupils: ReadonlySet<string>): boolean {
+export function canSeeName(
+  role: RoleCode,
+  viewerId: string,
+  pupilId: string,
+  ownPupils: ReadonlySet<string>,
+  schoolPupils?: ReadonlySet<string>,
+): boolean {
   if (viewerId === pupilId) return true
-  if (role === 'admin' || role === 'school_admin') return true
+  if (role === 'admin') return true
+  if (role === 'school_admin') return schoolPupils === undefined || schoolPupils.has(pupilId)
   if (role === 'teacher') return ownPupils.has(pupilId)
   return false
 }
@@ -35,3 +46,12 @@ export function levelVisibleToNonStaff(role: RoleCode, levelContributors: number
   if (levelContributors < MIN_COHORT) return false
   return classContributors.every((n) => n === 0 || n >= MIN_COHORT)
 }
+
+/**
+ * Name on a ranking or leaderboard row (children's privacy): the full name when `visible` (see `canSeeName`),
+ * else the first name plus the initial of the last name ("Siti N."). The `userId` of a row follows the same flag.
+ */
+export const displayName = (fullName: string, visible: boolean): string => (visible ? fullName : shortName(fullName))
+
+/** A ranking scope may list pupils to a non-staff viewer only when it holds at least MIN_COHORT ranked pupils. */
+export const scopeVisible = (role: RoleCode, rankedPupils: number): boolean => meetsCohort(role, rankedPupils)

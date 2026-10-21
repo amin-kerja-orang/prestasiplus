@@ -13,6 +13,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /** True when `text` is shaped like a uuid (a non-uuid session id is an unknown session, never a 500). */
 export const isUuid = (text: string): boolean => UUID.test(text)
 
+/** Ids cut into lists of at most `size` (1000) for one `IN` / `ANY` each. */
+export function chunksOf<T>(items: readonly T[], size = 1000): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
+  return out
+}
+
 const bigOrNull = (id: string | null | undefined): bigint | null => (id == null ? null : idFromString(id))
 const strOrNull = (id: bigint | null): string | null => (id === null ? null : idToString(id))
 
@@ -601,6 +608,65 @@ export class PracticeRepository {
       coins: Number(r?.coins ?? 0),
       answered: Number(r?.answered ?? 0),
     }
+  }
+
+  /**
+   * Set-based `historyStats` for many users: sessions and mean accuracy over completed sessions of `modes`, one query per
+   * 1000-id chunk. Users without a session are absent from the map. Rows written under Mod Pelajar are excluded unless
+   * `includeTest` is set. Read only.
+   */
+  async statsOf(
+    userIds: readonly string[],
+    options: Pick<HistoryOptions, 'modes' | 'includeTest'>,
+  ): Promise<Map<string, { sessions: number; avgAccuracyPct: number }>> {
+    const modes = [...options.modes]
+    const includeTest = options.includeTest === true
+    const out = new Map<string, { sessions: number; avgAccuracyPct: number }>()
+    for (const part of chunksOf(userIds)) {
+      const rows = await this.db.$queryRaw<{ user_id: bigint; sessions: bigint; avg: string | null }[]>`
+        SELECT user_id, count(*) AS sessions,
+               (avg(correct_count::numeric / question_count * 100) FILTER (WHERE question_count > 0))::text AS avg
+          FROM practice_sessions
+         WHERE user_id = ANY(${part.map(idFromString)}::bigint[]) AND status = 'completed'
+           AND mode = ANY(${modes}::text[]) AND (${includeTest}::boolean OR NOT is_test)
+         GROUP BY user_id`
+      for (const r of rows) {
+        out.set(idToString(r.user_id), { sessions: Number(r.sessions), avgAccuracyPct: Math.round((r.avg == null ? 0 : Number(r.avg)) * 10) / 10 })
+      }
+    }
+    return out
+  }
+
+  /** The newest `completed_at` of completed sessions of `modes` per user (test rows excluded unless `includeTest`), one query per 1000-id chunk. */
+  async lastActivityOf(userIds: readonly string[], options: Pick<HistoryOptions, 'modes' | 'includeTest'>): Promise<Map<string, Date>> {
+    const modes = [...options.modes]
+    const includeTest = options.includeTest === true
+    const out = new Map<string, Date>()
+    for (const part of chunksOf(userIds)) {
+      const rows = await this.db.$queryRaw<{ user_id: bigint; last: Date | null }[]>`
+        SELECT user_id, max(completed_at) AS last
+          FROM practice_sessions
+         WHERE user_id = ANY(${part.map(idFromString)}::bigint[]) AND status = 'completed'
+           AND mode = ANY(${modes}::text[]) AND (${includeTest}::boolean OR NOT is_test)
+         GROUP BY user_id`
+      for (const r of rows) if (r.last !== null) out.set(idToString(r.user_id), r.last)
+    }
+    return out
+  }
+
+  /** The stored mastery counters of many users (as `mastery`, by subject id), one query per 1000-id chunk. Users without rows are absent. */
+  async masteryOf(userIds: readonly string[]): Promise<Map<string, MasteryRecord[]>> {
+    const out = new Map<string, MasteryRecord[]>()
+    for (const part of chunksOf(userIds)) {
+      const rows = await this.db.mastery.findMany({ where: { userId: { in: part.map(idFromString) } }, orderBy: [{ userId: 'asc' }, { subjectId: 'asc' }] })
+      for (const r of rows) {
+        const key = idToString(r.userId)
+        const list = out.get(key) ?? []
+        list.push({ subjectId: idToString(r.subjectId), correct: r.correct, answered: r.answered, lastAnsweredAt: r.lastAnsweredAt })
+        out.set(key, list)
+      }
+    }
+    return out
   }
 
   /** A user's answer log, oldest first. */

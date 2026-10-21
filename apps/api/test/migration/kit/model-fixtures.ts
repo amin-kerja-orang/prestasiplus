@@ -63,6 +63,34 @@ async function parentClassroom(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-19: the columns a headcount config needs: its teacher, class, subject and level (the class has its own level row). */
+async function headcountConfigColumns(query: FixtureQuery): Promise<Record<string, unknown>> {
+  const level = await parentLevel(query)
+  const classroom = await query<{ id: string }>(
+    `insert into classrooms (name, education_level_id, academic_year) values ('Kelas Contoh', $1, 2026) returning id::text as id`,
+    [level],
+  )
+  return {
+    teacher_id: await parentUser(query),
+    classroom_id: (classroom[0] as { id: string }).id,
+    subject_id: await parentSubject(query),
+    education_level_id: level,
+    academic_year: 2026,
+    active_otrs: 3,
+    mode: 'auto',
+  }
+}
+
+async function parentHeadcountConfig(query: FixtureQuery): Promise<string> {
+  const c = await headcountConfigColumns(query)
+  const rows = await query<{ id: string }>(
+    `insert into headcount_configs (teacher_id, classroom_id, subject_id, education_level_id, academic_year, active_otrs, mode)
+     values ($1, $2, $3, $4, $5, $6, $7) returning id::text as id`,
+    [c.teacher_id, c.classroom_id, c.subject_id, c.education_level_id, c.academic_year, c.active_otrs, c.mode],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
@@ -71,6 +99,14 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
   notes: async (query) => ({ author_id: await parentUser(query), subject: 'sains', note_type: 'RINGKASAN' }),
+  // chat_messages (BE-43): the thread and its owner must exist; role has a check.
+  chat_messages: async (query) => {
+    const user = await parentUser(query)
+    const thread = await query<{ id: string }>(`insert into chat_threads (user_id) values ($1) returning id::text as id`, [user])
+    return { thread_id: (thread[0] as { id: string }).id, user_id: user, role: 'user' }
+  },
+  // chat_threads (BE-43): the owner must exist.
+  chat_threads: async (query) => ({ user_id: await parentUser(query) }),
   // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
   // classrooms (BE-17): the level must exist; the academic year has a check.
@@ -83,6 +119,21 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   exam_attempts: async (query) => ({ user_id: await parentUser(query), paper_kind: 'pilihan', mode: 'exam', status: 'submitted', kertas: 1, duration_min: 60 }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
+  // feedback (BE-20): the user must exist; role and satisfaction have checks.
+  feedback: async (query) => ({ user_id: await parentUser(query), role: 'student', month: '2026-10-01', satisfaction: 4 }),
+  // headcount_configs (BE-19): teacher, class, subject and level must exist; mode, OTR count and year have checks.
+  headcount_configs: headcountConfigColumns,
+  // headcount_entries (BE-19): the config and the pupil must exist.
+  headcount_entries: async (query) => ({ config_id: await parentHeadcountConfig(query), student_id: await parentUser(query) }),
+  // interventions (BE-20): pupil and author must exist; alert type and the free text are required.
+  interventions: async (query) => ({
+    student_id: await parentUser(query),
+    created_by_id: await parentUser(query),
+    alert_type: 'inactive',
+    action_date: '2026-10-01',
+    alert_description: 'Huraian contoh',
+    action_taken: 'Tindakan contoh',
+  }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
@@ -107,6 +158,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     ends_on: '2026-12-31',
   }),
   // schools: name (text) is generated; nothing else is required.
+  // spm_targets (BE-13): user and subject must exist; the grade has a check.
+  spm_targets: async (query) => ({ user_id: await parentUser(query), subject_id: await parentSubject(query), target_grade: 'A' }),
+  // structured_attempts (BE-13): the user must exist; question_id has no FK (BE-09 owns the bank).
+  structured_attempts: async (query) => ({ user_id: await parentUser(query), question_id: 1, question_version_no: 1, total_awarded: 0, total_max: 0 }),
   support_tickets: async (query) => ({ user_id: await parentUser(query) }),
   videos: async (query) => ({ uploader_id: await parentUser(query), platform: 'Youtube', category: 'tutorial' }),
   // subject_levels (BE-08): both parents must exist.
@@ -117,10 +172,36 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   // streaks and wallets (BE-11): one row per user, so a parent user is all they need.
   streaks: async (query) => ({ user_id: await parentUser(query) }),
+  // timeline_posts (BE-19): the owner must exist; category has a check and the title is required.
+  timeline_posts: async (query) => ({ user_id: await parentUser(query), title: 'Tajuk Contoh', category: 'lain' }),
   // teacher_profiles (BE-17): the user must exist.
   teacher_profiles: async (query) => ({ user_id: await parentUser(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
+  // BE-23 gamification and shop: parents and the checked text columns.
+  challenge_completions: async (query) => ({
+    user_id: await parentUser(query),
+    challenge_id: (await query<{ id: string }>(`insert into challenges (title, challenge_type, target_value) values ('Cabaran Contoh', 'quiz_count', 1) returning id::text as id`))[0]!.id,
+  }),
+  challenges: { challenge_type: 'quiz_count' },
+  gamification_settings: { key: 'coins_per_question' },
+  referral_codes: async (query) => ({ user_id: await parentUser(query) }),
+  referrals: async (query) => ({ referrer_id: await parentUser(query), referee_id: await parentUser(query) }),
+  reward_claims: async (query) => ({
+    user_id: await parentUser(query),
+    reward_id: (await query<{ id: string }>(`insert into syiling_rewards (name, type, price_syiling, cost_value_sen) values ('Hadiah Contoh', 'voucher', 1, 1) returning id::text as id`))[0]!.id,
+  }),
+  reward_redemptions: async (query) => ({ user_id: await parentUser(query), status: 'pending_admin' }),
+  rewards: { category: 'telco' },
+  syiling_rewards: { type: 'voucher' },
+  user_achievements: async (query) => ({
+    user_id: await parentUser(query),
+    achievement_id: (await query<{ id: string }>(`insert into achievements (name) values ('Pencapaian Contoh') returning id::text as id`))[0]!.id,
+  }),
   // users: name (text) is generated; nothing else is required.
   wallets: async (query) => ({ user_id: await parentUser(query) }),
+  // missions (BE-18): teacher and subject must exist; mission_type and question_count have checks.
+  missions: async (query) => ({ teacher_id: await parentUser(query), title: 'Misi Contoh', mission_type: 'latih_tubi', mission_date: '2026-10-20', subject_id: await parentSubject(query), question_count: 10 }),
+  // question_sets (BE-18): teacher and class must exist.
+  question_sets: async (query) => ({ teacher_id: await parentUser(query), classroom_id: await parentClassroom(query), title: 'Set Contoh' }),
 }

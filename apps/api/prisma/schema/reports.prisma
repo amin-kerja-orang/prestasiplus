@@ -1,0 +1,184 @@
+// Reports and analytics tables (BE-20, owners M11 and M12). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2, data model section 3.10. BE-19 adds risk_profiles / sp_records / spm_history to this file later.
+// Not expressible in Prisma and written by hand in migration 0023_reports_analytics_kirkpatrick: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check) and the foreign keys to tables owned by other
+// modules (users, schools), which are NOT declared as Prisma relations here (a relation needs a back-relation field
+// in identity.prisma / schools.prisma, which this card must not edit). Repositories read those tables with separate
+// lookups, never with `include`.
+// Sensitive: feedback.comment and interventions free text are personal data and are never logged.
+
+/// M11 flag set by a teacher on a pupil: under review or excluded from the report figures. One row per pupil.
+model MonitoringFlag {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  /// review, excluded (check constraint).
+  level     String
+  flaggedAt DateTime @default(now()) @map("flagged_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId], map: "uq_monitoring_flags_user_id")
+  @@map("monitoring_flags")
+}
+
+/// M12 level 1 (Reaction): one answer per user per Malaysia calendar month. `nps` is null for migrated rows.
+model Feedback {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// Snapshot of the role that answered: admin, school_admin, ppd_officer, teacher, student, parent, sponsor (check).
+  role         String
+  /// Snapshot for scope filters.
+  schoolId     BigInt?  @map("school_id")
+  /// First day of the Malaysia month (mock `YYYY-MM`).
+  month        DateTime @db.Date
+  /// 0 to 10 (check); null for migrated rows.
+  nps          Int?     @db.SmallInt
+  /// 1 to 5 (check).
+  satisfaction Int      @db.SmallInt
+  usability    Int?     @db.SmallInt
+  relevance    Int?     @db.SmallInt
+  score        Int?     @db.SmallInt
+  /// Free text, personal content: never logged.
+  comment      String?
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  // is_test is part of the key: a Mod Pelajar response never blocks the user's real response of the month.
+  @@unique([userId, month, isTest], map: "uq_feedback_user_id_month_is_test")
+  @@unique([legacySource, legacyId], map: "uq_feedback_legacy")
+  @@index([schoolId, month], map: "ix_feedback_school_id_month")
+  @@map("feedback")
+}
+
+/// M12 level 3 (Behaviour): a teacher intervention for a pupil. Free text is sensitive and never logged.
+model Intervention {
+  id               BigInt   @id @default(autoincrement())
+  studentId        BigInt   @map("student_id")
+  /// mood, inactive, declining (check).
+  alertType        String   @map("alert_type")
+  actionDate       DateTime @map("action_date") @db.Date
+  alertDescription String   @map("alert_description")
+  actionTaken      String   @map("action_taken")
+  beforeAccuracy   Decimal? @map("before_accuracy") @db.Decimal(5, 2)
+  afterAccuracy    Decimal? @map("after_accuracy") @db.Decimal(5, 2)
+  /// happy, okay, sad, stressed (check).
+  beforeMood       String?  @map("before_mood")
+  afterMood        String?  @map("after_mood")
+  createdById      BigInt   @map("created_by_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_interventions_legacy")
+  @@index([studentId, actionDate], map: "ix_interventions_student_id_action_date")
+  @@index([createdById], map: "ix_interventions_created_by_id")
+  @@map("interventions")
+}
+
+// --- BE-19 completion (M08 headcount and the Prestasi timeline), migration 0030_headcount_timeline ---------------
+// Same rules as above: plain BigInt columns, no Prisma relations (not even between these tables: repositories read parents
+// and children with separate lookups). Foreign keys, CHECK constraints (enums are text + check) and the identity columns
+// are written by hand in the migration. Pupil marks and the free text of a post are personal data and are never logged.
+
+/// M08 headcount config: one tracked subject of one class, owned by the teacher. Created through the API or by auto-setup.
+model HeadcountConfig {
+  id               BigInt   @id @default(autoincrement())
+  teacherId        BigInt   @map("teacher_id")
+  /// Always a `classroom` (a school class owns no config).
+  classroomId      BigInt   @map("classroom_id")
+  subjectId        BigInt   @map("subject_id")
+  educationLevelId BigInt   @map("education_level_id")
+  academicYear     Int      @map("academic_year") @db.SmallInt
+  /// 2 to 5 (check): how many OTR checkpoints the table shows.
+  activeOtrs       Int      @map("active_otrs") @db.SmallInt
+  /// auto, manual (check).
+  mode             String
+  /// Config level TOV and RS carried by the source system; read by no v2 route (pupil values live on the entries).
+  legacyTov        Decimal? @map("legacy_tov") @db.Decimal(5, 2)
+  legacyRs         Decimal? @map("legacy_rs") @db.Decimal(5, 2)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  // Mode is part of the key (OQ-11): an Auto and a Manual config may exist for the same class, subject and year.
+  @@unique([classroomId, subjectId, academicYear, mode], map: "uq_headcount_configs_class_subject_year_mode")
+  @@unique([legacySource, legacyId], map: "uq_headcount_configs_legacy")
+  @@index([teacherId], map: "ix_headcount_configs_teacher_id")
+  @@index([classroomId], map: "ix_headcount_configs_classroom_id")
+  @@map("headcount_configs")
+}
+
+/// M08 headcount entry: one pupil in one config. TOV, ETR and RS are percentages; the OTR marks are child rows.
+model HeadcountEntry {
+  id           BigInt    @id @default(autoincrement())
+  configId     BigInt    @map("config_id")
+  studentId    BigInt    @map("student_id")
+  tov          Decimal?  @db.Decimal(5, 2)
+  etr          Decimal?  @db.Decimal(5, 2)
+  rs           Decimal?  @db.Decimal(5, 2)
+  rsRecordedAt DateTime? @map("rs_recorded_at") @db.Timestamptz(6)
+  /// Dropped ("Gugurkan"): leaves every count and average, stays in the table so it can be restored.
+  dropped      Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  @@unique([configId, studentId], map: "uq_headcount_entries_config_id_student_id")
+  @@unique([legacySource, legacyId], map: "uq_headcount_entries_legacy")
+  @@index([studentId], map: "ix_headcount_entries_student_id")
+  @@map("headcount_entries")
+}
+
+/// Target (OTR) and actual (AR) of one checkpoint of an entry. A child table because a Prisma list cannot hold nulls (OQ-10).
+model HeadcountEntryMark {
+  id         BigInt   @id @default(autoincrement())
+  entryId    BigInt   @map("entry_id")
+  /// 1 to 5 (check).
+  checkpoint Int      @db.SmallInt
+  target     Decimal? @db.Decimal(5, 2)
+  actual     Decimal? @db.Decimal(5, 2)
+
+  @@unique([entryId, checkpoint], map: "uq_headcount_entry_marks_entry_id_checkpoint")
+  @@map("headcount_entry_marks")
+}
+
+/// Prestasi timeline post of a pupil (built by the timeline service). `story` and the photo captions are personal content.
+model TimelinePost {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @map("user_id")
+  title        String
+  /// sijil, pencapaian, aktiviti, cerita, lain (check).
+  category     String
+  eventDate    DateTime? @map("event_date") @db.Date
+  story        String?
+  /// Written under Mod Pelajar: never listed.
+  isTest       Boolean   @default(false) @map("is_test")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_timeline_posts_legacy")
+  @@index([userId, createdAt(sort: Desc)], map: "ix_timeline_posts_user_id_created_at")
+  @@map("timeline_posts")
+}
+
+/// A photo of a timeline post: a `files` row (purpose timeline_photo) with an optional caption.
+model TimelinePostPhoto {
+  id       BigInt  @id @default(autoincrement())
+  postId   BigInt  @map("post_id")
+  fileId   BigInt  @map("file_id")
+  caption  String?
+  /// Order inside the post (check: not negative).
+  position Int     @db.SmallInt
+
+  @@unique([postId, position], map: "uq_timeline_post_photos_post_id_position")
+  @@index([fileId], map: "ix_timeline_post_photos_file_id")
+  @@map("timeline_post_photos")
+}

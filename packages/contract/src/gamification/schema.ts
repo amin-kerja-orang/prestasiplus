@@ -244,11 +244,14 @@ export type GamificationChallengesResponse = z.infer<typeof GamificationChalleng
 // Leaderboard
 // ---------------------------------------------------------------------------------------------
 
-/** Ranks 1 to 3. `name` is the student's display name. */
+/**
+ * Ranks 1 to 3. `name` is the student's display name. Children's names rule (LEAD 2026-10-21, #76): outside the
+ * viewer's `canSeeName` scope (and not the viewer's own row) `name` is first name + initial and `userId` is null.
+ */
 export const GamificationPodiumEntrySchema = z
   .object({
     rank: z.number().int().min(1).max(3),
-    userId: IdSchema,
+    userId: IdSchema.nullable(),
     name: z.string(),
     initials: z.string(),
     totalSyilingEarned: count,
@@ -257,11 +260,11 @@ export const GamificationPodiumEntrySchema = z
   .meta({ id: 'GamificationPodiumEntry' })
 export type GamificationPodiumEntry = z.infer<typeof GamificationPodiumEntrySchema>
 
-/** Ranks 4 to 50. */
+/** Ranks 4 to 50. Same children's names rule as the podium: `userId` is null outside the viewer's scope. */
 export const GamificationLeaderboardRowSchema = z
   .object({
     rank: z.number().int().min(4).max(50),
-    userId: IdSchema,
+    userId: IdSchema.nullable(),
     name: z.string(),
     initials: z.string(),
     title: z.string(),

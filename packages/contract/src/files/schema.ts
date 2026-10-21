@@ -11,7 +11,7 @@ import { IdSchema } from '../common/ids'
  * attribute name `file` (BE-06 keeps `profilePicture` for `POST /me/picture`).
  */
 
-export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot'] as const
+export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot', 'timeline_photo'] as const
 export const FilePurposeSchema = z.enum(FILE_PURPOSES).meta({ id: 'FilePurpose' })
 export type FilePurpose = z.infer<typeof FilePurposeSchema>
 
@@ -53,6 +53,10 @@ export const FILE_PURPOSE_RULES: Readonly<
     typeMessage: 'The file field must be a file of type: jpeg, png, webp.',
     sizeMessage: 'The file field must not be greater than 10240 kilobytes.',
   },
+  // BE-19: photo of a Prestasi timeline post. Written only by POST /timeline (no role may upload it through POST /files);
+  // 2 MB, jpeg/png/webp (the same as PERFORMANCE_TIMELINE_LIMITS). Read: as avatar (owner, admin, scoped school_admin /
+  // ppd_officer) — children's photos, least privilege (LEAD 2026-10-21).
+  timeline_photo: AVATAR_LIKE,
 }
 
 export const FILE_MESSAGES = {
