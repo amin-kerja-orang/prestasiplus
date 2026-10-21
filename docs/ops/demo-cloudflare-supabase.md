@@ -306,6 +306,65 @@ Admin Pusat note: the student Bijak API is student-only; Admin Pusat sees studen
 The paper builder API (BE-39, #47) is on the base, but the admin Bijak pages of the SPA have no http client yet
 (they throw "Bijak admin API is not available in http mode"). Do not show them in the demo.
 
+### 7.1 API walkthrough (not UI)
+
+`scripts/demo-walkthrough.sh` calls the demo API routes persona by persona. It complements the smoke test
+(`scripts/demo-smoke.sh`): it does not replace it and runs after it. Rules:
+
+- **Demo project only.** Never against production, staging during UAT, or any shared environment.
+- **Run it after the smoke test passes** (Render, then Pages), and **never at the same time as UAT, e2e or the smoke
+  test**: it logs in six times and shares the per-address limits (login 5 a minute, API 300 a minute).
+- Needs bash >= 4, curl and jq. Git Bash ships bash 5 and curl but no jq: `winget install jqlang.jq`, or put
+  `jq.exe` from https://jqlang.org/download/ on PATH. macOS: `brew install bash jq` (run with that bash).
+
+```
+read -rsp 'Demo password (docs/AKAUN-DEMO.md): ' DEMO_PASSWORD; echo
+BASE_URL=https://<project>.pages.dev BUILD_SHA=<deployed API commit> DEMO_PASSWORD="$DEMO_PASSWORD" bash scripts/demo-walkthrough.sh
+unset DEMO_PASSWORD
+```
+The password is not exported in your shell; the script un-exports it at start and hands it to `jq` only, for each
+login (stdin to curl, never argv, never printed).
+
+Personas: student (`pelajar@demo.test`), teacher (`guru@demo.test`), parent (`ibubapa@demo.test`), school admin
+(`adminsekolah@demo.test`), the teacher + school admin account (`guruadmin@demo.test`, seeded by
+`apps/api/prisma/seed/core/identity.ts`; role switch both ways) and Admin Pusat (`admin@demo.test`). It checks the
+main reads of the dashboard, practice, SPM hub (BE-41), leaderboard with the children's-names rule (a student, teacher
+and parent see other pupils masked; Admin Pusat sees all), gamification and shop, games hub / Papan Bijak / battle
+(BE-44/45), Keluarga Angkat (BE-47), Command Center (BE-22) and the intake dashboard (BE-40).
+
+**Writes are off by default.** With `CONFIRM_WRITES=1` the script prints the target `BASE_URL`, waits 5 s (Ctrl-C to
+stop) and then also does what the demo shows: one practice session (start, one answer, submit; subject, question and
+option come from the API), a battle quick match against the bot then forfeit, a Papan Bijak quick match then cancel
+(subjects from the contract, the API lists none), one Keluarga Angkat application as the parent and the role switch.
+Each such run leaves one pending Keluarga Angkat row, one practice session and a battle record: run it once per demo
+database refresh; rehearse with the read-only default.
+
+**A SKIP is never a go.** `STRICT=1` is the default: a module whose first route answers 404 `NOT_FOUND` is a FAIL.
+Only AI status (BE-36, #86) and the intake workflow (BE-38, #85) are exempt (`STRICT_EXEMPT`, default
+`ai intake-workflow`) while those PRs are unmerged; set `STRICT_EXEMPT=""` once both are merged. A non-JSON answer on
+`/api` (an HTML page from a misrouted proxy) is a FAIL "HTML on /api"; a bare 404 without the API's error envelope is
+a FAIL too. A 429 is retried up to 3 times after `Retry-After` (`LOGIN_GAP=<s>` also spaces the logins).
+
+Output: one line per check, a PASS/FAIL/SKIP markdown table, then
+`Result at build <sha> (...): N passed, M failed, K skipped` and a verdict. Exit code: 0 = GO (no FAIL, no SKIP
+except the exempt modules); 1 = a FAIL; 3 = "N modules SKIPPED — not a go" (includes every read-only run);
+2 = setup error. `BUILD_SHA` is printed with the result (default: HEAD of the checkout that runs the script, which
+is right only when the deployed API was built from the same commit). Quote the result with that SHA.
+
+**Not covered** (a GO says nothing about these; check them by hand in the browser):
+- SPA rendering: no page of the frontend is loaded.
+- The 5 solo games in http mode (#78, D58): the script never calls `/api/games/solo/*`.
+- `/login` on mobile (#78, not yet validated).
+
+**Known FAILs** (21 Oct, local API at `feature/v2-backend` 84438c70):
+- Practice, `POST /api/practice/sessions`: 422 `NOT_ENOUGH_QUESTIONS` until the BE-12 practice question source is
+  wired (PR by Developer 3, not open yet).
+- Battle, `POST /api/battle/quick-match`: 422 for every lobby subject on the base PoC seed; fixed by #90 (PoC question
+  pool).
+
+Local reference run (tip `2565b71d` + #90 `e684c054`, PoC seed, `CONFIRM_WRITES=1`): 109 passed, 1 failed (practice),
+3 skipped (the exempt AI and intake-workflow routes), exit 1, about 15 s including the 5 s pause.
+
 ## 8. Rollback and teardown
 
 - SPA: Pages -> Deployments -> a previous deployment -> Rollback (instant).
