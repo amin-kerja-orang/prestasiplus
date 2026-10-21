@@ -778,7 +778,7 @@ describe('settlement (AC10)', () => {
       ...o,
     }))
 
-  it('Papan Bijak: wins for the winner, jumlah/betul/skor for every human; coins are left to the tier rates', () => {
+  it('Papan Bijak: wins/jumlah/betul/skor for the acting human only (not a joined human); coins are left to the tier rates', () => {
     const st = finishedState({ winnerId: '10', total: 50 })
     const s = computeSettlement({
       code: 'AB12CD',
@@ -790,10 +790,7 @@ describe('settlement (AC10)', () => {
         { userId: '12', isBot: false, correct: 1, points: 10 },
       ]),
     })
-    expect(s.standings).toEqual([
-      { userId: '10', wins: 1, jumlah: 1, betul: 4, skor: 90 },
-      { userId: '12', wins: 0, jumlah: 1, betul: 1, skor: 10 },
-    ])
+    expect(s.standings).toEqual([{ userId: '10', wins: 1, jumlah: 1, betul: 4, skor: 90 }])
     expect(s.report).toMatchObject({
       userId: '10',
       game: 'papan_bijak',
@@ -812,6 +809,23 @@ describe('settlement (AC10)', () => {
     })
     expect(lost.report).toMatchObject({ event: 'correct', won: false })
     expect(lost.standings).toEqual([{ userId: '10', wins: 0, jumlah: 1, betul: 1, skor: 0 }]) // the bot winner has no standing
+  })
+
+  it('a joined human the engine simulated never gets a standing, even as the winner or the MVP', () => {
+    const joined = { userId: '11', isBot: false }
+    for (const game of ['benteng-ilmu', 'perang-fakta', 'perlumbaan-matematik', 'teka-silang-kata'] as const) {
+      const s = computeSettlement({ code: 'X', game, state: finishedState({ winnerId: '11' }), players: ps([{}, joined]) })
+      expect(s.standings).toEqual([])
+      expect(s.report).toMatchObject({ userId: '10', won: false })
+    }
+    const relay = computeSettlement({
+      code: 'X',
+      game: 'kuiz-relay',
+      state: finishedState({ mvpId: '11' }),
+      players: ps([{ team: 0 }, { ...joined, team: 0 }]),
+    })
+    expect(relay.standings).toEqual([])
+    expect(relay.report).toMatchObject({ userId: '10', won: true }) // same team as the MVP: the host's team won
   })
 
   it('Benteng Ilmu 35 on a win / 8 played; Perang Fakta 10 on a win only; Perlumbaan 5 with the rank; relay and crossword 0', () => {
@@ -838,7 +852,7 @@ describe('settlement (AC10)', () => {
     expect(coins('teka-silang-kata', { winnerId: '10' })).toMatchObject({ coins: 0 })
   })
 
-  it('Kuiz Relay: the MVP gets the win, the MVP team counts as winners; bots get nothing; nobody wins on a tie-less miss', () => {
+  it('Kuiz Relay: the acting MVP gets the win, the MVP team counts as winners; bots and joined humans get nothing', () => {
     const players4 = ps([{ team: 1 }, { team: 2 }, { team: 1, isBot: false }, { team: 2 }])
     const s = computeSettlement({
       code: 'X',
@@ -846,8 +860,15 @@ describe('settlement (AC10)', () => {
       state: finishedState({ mvpId: '12' }),
       players: players4,
     })
-    expect(s.standings).toEqual([{ userId: '12', wins: 1, jumlah: 0, betul: 0, skor: 0 }])
+    expect(s.standings).toEqual([]) // the MVP is a joined human the engine simulated
     expect(s.report).toMatchObject({ userId: '10', won: true, event: 'win', coins: 0 })
+    const hostMvp = computeSettlement({
+      code: 'X',
+      game: 'kuiz-relay',
+      state: finishedState({ mvpId: '10' }),
+      players: players4,
+    })
+    expect(hostMvp.standings).toEqual([{ userId: '10', wins: 1, jumlah: 0, betul: 0, skor: 0 }])
     const miss = computeSettlement({
       code: 'X',
       game: 'kuiz-relay',

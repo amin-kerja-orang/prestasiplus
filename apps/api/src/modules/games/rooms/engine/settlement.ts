@@ -80,9 +80,11 @@ export function computeSettlement(input: SettleInput): Settlement {
       d.skor += p.points
     }
   }
-  // Bots never have a standing (AC10); the service also drops is_test players.
+  // Only the acting human earns a standing (AC10). Bots never do, and neither does a joined human: the engine
+  // simulates every non-host player, so their wins and Papan Bijak figures were never played. The service also
+  // drops is_test players.
   const botIds = new Set(ps.filter((p) => p.isBot).map((p) => p.userId))
-  const standings = [...deltas.values()].filter((d) => !botIds.has(d.userId))
+  const standings = [...deltas.values()].filter((d) => d.userId === st.humanId && !botIds.has(d.userId))
 
   const me = humans.find((p) => p.userId === st.humanId)
   if (!me) return { standings, report: null }
