@@ -29,7 +29,9 @@ export class PracticeQuestionsBridgeModule implements OnModuleInit {
     try {
       this.ports.provideQuestions(this.source)
     } catch (err) {
-      this.logger.warn(`practice question source already bound, keeping it: ${err instanceof Error ? err.message : String(err)}`)
+      // Only "already set" (a test fake bound before init) is tolerated; anything else fails the boot.
+      if (!(err instanceof Error && /already set/.test(err.message))) throw err
+      this.logger.warn(`practice question source already bound, keeping it: ${err.message}`)
     }
   }
 }

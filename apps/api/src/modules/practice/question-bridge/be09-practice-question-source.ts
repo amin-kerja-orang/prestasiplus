@@ -11,6 +11,8 @@ import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practic
 
 /** Ids hydrated per round while `sample` / `chapterQuestionIds` look for servable questions. */
 const BATCH = 100
+/** Refusals logged once per question version; the memory is bounded (cleared when full). */
+const LOGGED_MAX = 10_000
 
 /**
  * BE-12 `PracticeQuestionSource` backed by the BE-09 question bank (M04). It reads ONLY through BE-09's
@@ -31,6 +33,7 @@ const BATCH = 100
 @Injectable()
 export class Be09PracticeQuestionSource implements PracticeQuestionSource {
   private readonly logger = new Logger(Be09PracticeQuestionSource.name)
+  private readonly logged = new Set<string>()
 
   constructor(
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
@@ -99,10 +102,17 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return new Set(records.filter((r) => eligible(r) && this.check(r)).map((r) => r.id))
   }
 
-  /** `servableMcq`, logging a refusal with the id and reason only (never content or the key). */
+  /** `servableMcq`, logging a refusal once per version with the id and reason only (never content or the key). */
   private check(r: QuestionRecord): boolean {
     const m = servableMcq(r)
-    if (!m.ok) this.logger.warn(`Question ${r.id} v${String(r.version.versionNo)} not served to practice: ${m.reason}`)
+    if (!m.ok) {
+      const key = versionKey(r.id, r.version.versionNo)
+      if (!this.logged.has(key)) {
+        if (this.logged.size >= LOGGED_MAX) this.logged.clear()
+        this.logged.add(key)
+        this.logger.warn(`Question ${r.id} v${String(r.version.versionNo)} not served to practice: ${m.reason}`)
+      }
+    }
     return m.ok
   }
 
