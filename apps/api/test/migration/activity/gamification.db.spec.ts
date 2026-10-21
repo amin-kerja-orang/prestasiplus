@@ -8,6 +8,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { readCompletionRows, readUnlockRows } from '../../../src/migration/load/activity/gamification-steps'
 import { activityGroupB, catalogueGroup } from '../../../src/migration/load/activity/part-b'
 import { bootActivity, type ActivityHarness } from './helpers'
 
@@ -16,8 +17,15 @@ let u: string[] = []
 let s: string[] = []
 let runId = ''
 let reasons: Record<string, number> = {}
+let notes: Record<string, number> = {}
 let recon: Record<string, { source: number; eligible: number; loaded: number; rejected: number }> = {}
 const groups = [catalogueGroup, activityGroupB]
+
+async function collect<T>(gen: AsyncGenerator<T>): Promise<T[]> {
+  const out: T[] = []
+  for await (const x of gen) out.push(x)
+  return out
+}
 
 const reject = (entity: string, reason: string, column: string): number => reasons[`${entity}|${reason}|${column}`] ?? 0
 
@@ -51,6 +59,7 @@ async function plant(): Promise<void> {
     (1, ${u[1]}, 3, '2026-01-01T23:30:00Z', null),
     (1, ${u[2]}, 1, null, null),
     (2, ${u[0]}, 3, null, '2026-01-05'),
+    (3, ${u[1]}, 1, null, '2026-01-06'),
     (1, 99999, 3, null, '2026-01-02')`)
   await q(`insert into staging_cloud.achievement_user (achievement_id, user_id, unlocked_at) values
     (1, ${u[0]}, '2026-01-01T00:00:00Z'), (1, ${u[0]}, '2026-02-01T00:00:00Z'), (2, ${u[1]}, '2026-03-01T00:00:00Z'), (2, 99999, '2026-03-01T00:00:00Z')`)
@@ -83,6 +92,7 @@ beforeAll(async () => {
   const applied = await h.run('apply', { groups })
   expect(applied.report.status).toBe('succeeded')
   runId = applied.report.runId
+  notes = Object.fromEntries(applied.activity.notes.counters)
   recon = Object.fromEntries(applied.report.recon.map((r) => [r.entity, { source: r.sourceCount, eligible: r.eligibleCount, loaded: r.loaded, rejected: r.rejected }]))
   const rows = await h.q<{ entity: string; reason: string; column_name: string; n: number }>(
     `select entity, reason, column_name, count(*)::int n from etl_rejects where run_id = $1 group by 1, 2, 3`, [runId],
@@ -147,12 +157,31 @@ describe('completions and unlocks', () => {
     ])
   })
 
-  it('excludes a row with no day and rejects a repeat day, an unknown user and a challenge that was not loaded', () => {
-    expect(recon.challenge_completions).toEqual({ source: 7, eligible: 6, loaded: 3, rejected: 3 })
+  it('excludes a row with no day and a completion of a teacher challenge; rejects a repeat day, an unknown user and a challenge that was not loaded', () => {
+    // 8 rows: 3 loaded; excluded: no day (1) and teacher challenge 2 (1); rejected: repeat day, unknown user, challenge 3 (type not mapped).
+    expect(recon.challenge_completions).toEqual({ source: 8, eligible: 6, loaded: 3, rejected: 3 })
     expect(reject('challenge_completions', 'DUPLICATE_KEY', 'claimed_on')).toBe(1)
     expect(reject('challenge_completions', 'ORPHAN_PARENT', 'user_id')).toBe(1)
     expect(reject('challenge_completions', 'ORPHAN_PARENT', 'challenge_id')).toBe(1)
   })
+
+  it('counts a teacher-challenge completion as excluded in the run notes, not as a reject', () => {
+    expect(notes['challenge_completions.excluded_teacher_challenge']).toBe(1)
+    expect(notes['challenge_completions.no_day']).toBe(1)
+  })
+
+  it('reads the pivots with any page size, to the end and to the same keys as one big page', async () => {
+    for (const read of [readCompletionRows, readUnlockRows]) {
+      const all = (await collect(read(h.env.pool, null, 1000))).map((r) => r.key)
+      expect(all.length).toBeGreaterThan(3)
+      for (const pageSize of [1, 2, 3]) {
+        expect((await collect(read(h.env.pool, null, pageSize))).map((r) => r.key), `${read.name} page size ${pageSize}`).toEqual(all)
+      }
+      // Resume after a key in the middle (inside a pair): the rest, once.
+      const mid = all[1] as string
+      expect((await collect(read(h.env.pool, mid, 1))).map((r) => r.key)).toEqual(all.slice(2))
+    }
+  }, 30_000)
 
   it('keeps the earliest unlock of a repeated pair and rejects the repeat and the unknown user', async () => {
     const rows = await h.q<{ legacy_id: string; unlocked_at: string }>(`select legacy_id, to_char(unlocked_at at time zone 'UTC', 'YYYY-MM-DD') as unlocked_at from user_achievements order by legacy_id`)

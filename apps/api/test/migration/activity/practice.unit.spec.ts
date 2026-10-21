@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { transformExamAttempt, parseScore, snapshotTitle, EXAM_FALLBACK_TITLE } from '../../../src/migration/transform/exam'
+import { transformExamAttempt, parseScore, parseSectionScores, snapshotTitle, EXAM_FALLBACK_TITLE } from '../../../src/migration/transform/exam'
 import {
   parseClientUuid,
   transformAnswer,
@@ -190,8 +190,11 @@ describe('transformWallet', () => {
     expect(transformWallet(wallet({ syiling_balance: '-1' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'syiling_balance' } })
     expect(transformWallet(wallet({ syiling_balance: null }), refs)).toMatchObject({ ok: false, reject: { column: 'syiling_balance' } })
     expect(transformWallet(wallet(), { ...refs, isStudent: false })).toMatchObject({ ok: false, reject: { reason: 'UNSUPPORTED' } })
-    expect(transformWallet(wallet(), { ...refs, tierId: undefined })).toMatchObject({ ok: false, reject: { reason: 'ORPHAN_PARENT', column: 'gamification_tier_id' } })
     expect(transformWallet(wallet(), { ...refs, userId: undefined })).toMatchObject({ ok: false, reject: { reason: 'ORPHAN_PARENT', column: 'user_id' } })
+  })
+
+  it('loads a wallet whose tier was not adopted with a null tier instead of dropping it', () => {
+    expect(transformWallet(wallet(), { ...refs, tierId: undefined })).toMatchObject({ ok: true, value: { tier_id: null, current_syiling: 10 } })
   })
 
   it('allows a wallet with no tier', () => {
@@ -251,6 +254,22 @@ describe('transformExamAttempt', () => {
       submitted_at: '2026-01-01 01:00:00+00',
     })
     expect(out.ok && out.value.result).toEqual({ score: '20.00', max_score: '40.00', section_scores: { a: 10, b: 10 } })
+  })
+
+  it('keeps only numeric leaves of section_scores and drops text (AC2)', () => {
+    const scores = (raw: string | null) => {
+      const out = transformExamAttempt(attempt({ section_scores: raw }), refs)
+      return out.ok ? out.value.result?.section_scores : 'rejected'
+    }
+    expect(scores('{"a":10,"b":"Cikgu kata bagus","c":"12","d":{"x":1.5,"note":"teks bebas"},"e":{"note":"teks"},"f":true,"g":null}'))
+      .toEqual({ a: 10, d: { x: 1.5 } })
+    expect(scores('[3,"teks",4]')).toEqual([3, null, 4])
+    expect(scores('{"a":"teks","b":{"c":"teks"}}')).toBeNull()
+    expect(scores('["teks"]')).toBeNull()
+    expect(scores('"teks"')).toBeNull()
+    expect(scores('bukan json')).toBeNull()
+    expect(scores(null)).toBeNull()
+    expect(parseSectionScores('{"a":0}')).toEqual({ a: 0 })
   })
 
   it('maps the status, leaves an abandoned attempt unsubmitted and rejects an unknown one', () => {

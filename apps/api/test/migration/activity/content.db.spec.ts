@@ -104,7 +104,7 @@ beforeAll(async () => {
       articles: { '1': { content: '<p>Isi</p>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
       notes: { '1': { subject: 'matematik', grade: 'Tingkatan 4' }, '2': { subject: 'matematik', grade: 'Tingkatan 4' } },
       videos: { '1': { category: 'tutorial' }, '2': { category: 'tutorial' }, '3': { category: 'tutorial' } },
-      audio_kbat: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
+      audio_kbat_sets: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
     }),
   })
 }, 600_000)
@@ -121,6 +121,8 @@ describe('R1: no content owner', () => {
   })
 
   it('an owner id that is not a v2 user is the same as no owner', async () => {
+    // The owner is part of the input hash, so this apply needs its own dry-run.
+    await h.run('dry-run', { groups, contentOwnerUserId: '987654321' })
     const bad = await h.run('apply', { groups, contentOwnerUserId: '987654321' })
     const rows = await h.q<{ n: number }>(`select count(*)::int n from etl_rejects where run_id = $1 and entity = 'notes' and reason = 'ORPHAN_PARENT'`, [bad.report.runId])
     expect(rows[0]?.n).toBe(2)

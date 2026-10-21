@@ -52,7 +52,11 @@ function qualified(name: string): { schema: string; table: string } {
   return { schema: ARCHIVE_SCHEMA, table: name.slice(dot + 1) }
 }
 
-/** `table=<rows>:<md5 of the loader's row hashes>` for each table (the same recipe as BE-28's `stagingFingerprint`). */
+/**
+ * `table=<rows>:<digest>` for each table. The digest is the sum of a 60-bit slice of md5 of every row hash, as numeric:
+ * order-independent, deterministic and constant in memory (a `string_agg` of the row hashes would pass Postgres's 1 GB
+ * text limit near 30 million rows). BE-28's own `stagingFingerprint` is a separate recipe and stays as it is.
+ */
 export async function tableFingerprints(pool: Pick<pg.Pool, 'query'>, names: readonly string[]): Promise<string[]> {
   const parts: string[] = []
   for (const name of [...new Set(names)].sort()) {
@@ -60,7 +64,7 @@ export async function tableFingerprints(pool: Pick<pg.Pool, 'query'>, names: rea
     const spec = findTable(table)
     if (!spec) throw new RangeError(`Table "${table}" is not in the staging spec.`)
     const res = await pool.query<{ n: string; h: string | null }>(
-      `SELECT count(*)::text AS n, md5(string_agg(coalesce("_row_hash", ''), ',' ORDER BY "_row_hash")) AS h FROM ${quoteIdent(schema)}.${quoteIdent(table)}`,
+      `SELECT count(*)::text AS n, coalesce(sum(('x' || substr(md5(coalesce("_row_hash", '')), 1, 15))::bit(60)::bigint::numeric), 0)::text AS h FROM ${quoteIdent(schema)}.${quoteIdent(table)}`,
     )
     parts.push(`${schema === ARCHIVE_SCHEMA ? `${ARCHIVE_SCHEMA}.` : ''}${table}=${res.rows[0]?.n}:${res.rows[0]?.h ?? ''}`)
   }
@@ -85,9 +89,11 @@ export interface ActivityHashInput {
   stepNames: readonly string[]
   /** Extra tables a group declared in `reads`. */
   extraTables?: readonly string[]
+  /** `--content-owner` (a v2 user id): the owner of the content rows is part of what an apply writes. */
+  contentOwnerUserId?: string
 }
 
-/** The input hash of a run: staged fingerprints, as-of, source, step list and the BE-28 id-map counts. */
+/** The input hash of a run: staged fingerprints, as-of, source, step list, the BE-28 id-map counts and the content owner. */
 export async function activityInputHash(input: ActivityHashInput): Promise<string> {
   const tables = [...ACTIVITY_READ_TABLES, ...(input.extraTables ?? [])]
   return hashInput([
@@ -96,6 +102,7 @@ export async function activityInputHash(input: ActivityHashInput): Promise<strin
     `source=${input.source}`,
     `steps=${input.stepNames.join(',')}`,
     `core-map=${await coreMapCounts(input.pool, input.source)}`,
+    `content-owner=${input.contentOwnerUserId?.trim() || 'none'}`,
   ])
 }
 

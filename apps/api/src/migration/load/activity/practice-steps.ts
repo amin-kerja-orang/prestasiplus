@@ -7,6 +7,7 @@
  * (only its content hash). Both steps read `staging_cloud` through the pool and write through the batch client.
  */
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
+import { hashRow } from '../../kit/sql'
 import type { LegacyRow } from '../../kit/upsert'
 import { heldValues } from '../claim'
 import { rejectRow, upsertAndMap } from '../helpers'
@@ -157,7 +158,12 @@ export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
           dims,
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
+        else {
+          const values = out.value as unknown as Record<string, unknown>
+          // `session_id` is a uuid minted when the session was first loaded, so it differs between databases and
+          // would make the stored hash depend on the target. The hash is taken over the session's legacy id instead.
+          items.push({ legacyId, values, legacyHash: hashRow({ ...values, session_id: `cloud:practice_sessions:${(row.practice_session_id ?? '').trim()}` }) })
+        }
       }
       return upsertAndMap(ctx, entity, 'practice_answers', ANSWER_COLUMNS, items, { register: false })
     },
