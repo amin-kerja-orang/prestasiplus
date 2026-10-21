@@ -20,7 +20,7 @@ export const GLOBAL_RATE_SPEC: RateLimitSpec = {
 
 /**
  * Global per-address ceiling. It is a floor under the per-route `@RateLimit` buckets, which are counted separately
- * and stay stricter. Per process, in memory (a shared store is a follow-up). `req.ip` follows `TRUST_PROXY_HOPS`.
+ * and stay stricter. Per process, in memory (a shared store is a follow-up). `req.ip` is derived in common/net/client-ip.ts (TRUST_PROXY_HOPS or the trusted edge header).
  */
 @Injectable()
 export class GlobalRateLimitGuard implements CanActivate {
