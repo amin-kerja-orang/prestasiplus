@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { compare, normalise, signatureOf } from '../../src/modules/intake/workflow/duplicates'
 import { batchLevelIssues, itemIssues, schemeTotal } from '../../src/modules/intake/workflow/gate'
 import { attachToStimulus, detachFromStimulus, groupsOf } from '../../src/modules/intake/workflow/grouping'
-import { maskedCount, redactText, scrubIdentifiers } from '../../src/modules/intake/workflow/redact'
 import { ConvertError, toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 import { bandReaches } from '../../src/modules/intake/workflow/workflow.config'
 
@@ -112,29 +111,6 @@ describe('duplicate rule (D11)', () => {
   it('unrelated or too short texts are not compared', () => {
     expect(compare(sig('Pilih'), sig('Pilih'))).toBeNull()
     expect(compare(sig('Hitung luas segi empat tepat itu'), sig('Nyatakan ibu negara Malaysia sekarang'))).toBeNull()
-  })
-})
-
-describe('redaction (AC-8)', () => {
-  it('masks labelled cover-page lines, e-mail, MyKad, phone and school names, and counts them', () => {
-    const r = redactText(
-      ['Nama: Contoh Penuh', 'Sekolah: SMK TAMAN CONTOH', 'No. KP: 080808-10-1234', 'Hubungi 012-3456789 atau a.b@sekolah.test', 'Soalan 1. Hitung 2 + 3.'].join('\n'),
-    )
-    expect(r.text).not.toMatch(/Contoh Penuh|TAMAN CONTOH|080808|3456789|a\.b@/)
-    expect(r.text).toContain('Soalan 1. Hitung 2 + 3.')
-    expect(maskedCount(r)).toBeGreaterThanOrEqual(5)
-    expect(r.masked.email).toBe(1)
-  })
-  it('leaves running text alone', () => {
-    const text = 'Nama-nama haiwan itu guru mengajar murid tentang pecahan.'
-    const r = redactText(text)
-    expect(r.text).toBe(text)
-    expect(maskedCount(r)).toBe(0)
-  })
-  it('scrubs identifiers from every string of a provider result', () => {
-    const out = scrubIdentifiers({ a: ['hubungi x@y.test'], b: { c: 'IC 080808-10-1234' }, n: 3 })
-    expect(JSON.stringify(out)).not.toMatch(/x@y|080808/)
-    expect(out.n).toBe(3)
   })
 })
 

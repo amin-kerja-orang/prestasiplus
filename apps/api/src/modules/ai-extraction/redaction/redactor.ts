@@ -127,9 +127,23 @@ const STREET = new RegExp(
 )
 const POSTCODE_CITY = new RegExp(String.raw`(?<!\d)\d{5}[ \t]+${NAME_PART}(?:[ \t]+${NAME_PART}){0,2}(?:,[ \t]*${NAME_PART}(?:[ \t]+${NAME_PART}){0,2})?`, 'gu')
 
+/**
+ * A masked value, kept in memory only for the length of one request: it is never stored, logged or returned. A caller
+ * uses it to mask a provider answer that echoes the value back (see `maskEchoes`).
+ */
+export interface MaskedSpan {
+  flag: AiRedactionFlag
+  text: string
+}
+
+/** Shorter values (and name words) are not echo-masked: they would hit ordinary words of a question. */
+const MIN_ECHO = 4
+const NAME_JOINERS = new Set(['bin', 'binti', 'bt', 'bt.', 'b.', 'a/l', 'a/p', 'anak', 'ibni'])
+
 /** Counts of what was masked, per flag. Never the text. */
 export class Redactor {
   private readonly counts: Record<AiRedactionFlag, number> = { person_name: 0, school_name: 0, phone: 0, email: 0, ic_number: 0, address: 0 }
+  private readonly found = new Map<string, AiRedactionFlag>()
 
   /** Masks `input` and counts what was masked. The same instance can redact several texts of one request. */
   redact(input: string): string {
@@ -137,8 +151,9 @@ export class Redactor {
     const emailPossible = MAY_HAVE_EMAIL.test(text)
     if (emailPossible) text = text.replace(OBFUSCATED_EMAIL, (_m, local: string, domain: string) => `${local}@${domain.replace(DOT_WORD, '.')}`)
     const sub = (re: RegExp, flag: AiRedactionFlag): void => {
-      text = text.replace(re, () => {
+      text = text.replace(re, (m: string) => {
         this.counts[flag] += 1
+        this.note(flag, m)
         return MASK[flag]
       })
     }
@@ -152,6 +167,7 @@ export class Redactor {
       text = text.replace(re, (_m, label: string, value: string) => {
         if (isAlreadyMasked(value)) return `${label}${value}`
         this.counts[flag] += 1
+        this.note(flag, value)
         return `${label}${MASK[flag]}`
       })
     }
@@ -168,6 +184,58 @@ export class Redactor {
       masked: AI_REDACTION_FLAGS.filter((flag) => this.counts[flag] > 0).map((flag) => ({ flag, count: this.counts[flag] })),
     }
   }
+
+  /** The values masked so far (in memory only). The words of a masked person name are listed too. */
+  maskedSpans(): MaskedSpan[] {
+    return [...this.found].map(([text, flag]) => ({ flag, text }))
+  }
+
+  private note(flag: AiRedactionFlag, value: string): void {
+    // Mask tokens already in the value (a line masked by an earlier rule) are not values.
+    const t = value.replace(/\[[A-Z_-]+\]/g, ' ').trim()
+    if (t.length >= MIN_ECHO && !this.found.has(t)) this.found.set(t, flag)
+    if (flag !== 'person_name') return
+    for (const w of t.split(/[\s,]+/)) {
+      if (w.length >= MIN_ECHO && !NAME_JOINERS.has(w.toLowerCase()) && !this.found.has(w)) this.found.set(w, flag)
+    }
+  }
+}
+
+/** Applies `fn` to every string of a JSON value; other values are returned as they are. */
+function mapStrings<T>(value: T, fn: (s: string) => string): T {
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return fn(v)
+    if (Array.isArray(v)) return v.map(walk)
+    if (v !== null && typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, walk(x)]))
+    return v
+  }
+  return walk(value) as T
+}
+
+/**
+ * Masks every value the redactor masked in the request (case-insensitive) wherever a provider answer repeats it, with the
+ * token of its kind. A provider that was sent only masked text should not know these values; this covers one that
+ * repeats a value it saw unmasked elsewhere in the paper.
+ */
+export function maskEchoes<T>(value: T, spans: readonly MaskedSpan[]): T {
+  if (spans.length === 0) return value
+  const sorted = [...spans].sort((a, b) => b.text.length - a.text.length)
+  const flagOf = new Map(sorted.map((s) => [s.text.toLowerCase(), s.flag]))
+  const re = new RegExp(sorted.map((s) => s.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'giu')
+  return mapStrings(value, (s) => s.replace(re, (m) => MASK[flagOf.get(m.toLowerCase()) ?? 'person_name']))
+}
+
+/**
+ * Removes MyKad numbers, e-mail addresses and phone numbers from every string of a provider answer before it is stored,
+ * whatever the provider returned. Only these unambiguous patterns run (no name or address rule, no normalisation), so
+ * the question text is otherwise kept as it is.
+ */
+export function scrubContactDetails<T>(value: T): T {
+  return mapStrings(value, (s) => {
+    let out = s
+    if (MAY_HAVE_EMAIL.test(out)) out = out.replace(EMAIL, MASK.email)
+    return out.replace(IC, MASK.ic_number).replace(PHONE_MY, MASK.phone).replace(PHONE_INTL, MASK.phone)
+  })
 }
 
 /** True when nothing but mask tokens and their separators is left (so the line is not masked, or counted, twice). */

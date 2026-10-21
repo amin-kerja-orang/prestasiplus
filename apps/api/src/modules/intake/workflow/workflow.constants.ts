@@ -30,9 +30,6 @@ export const MAX_ITEMS_PER_BATCH = 500
 export const MAX_STIMULI_PER_BATCH = 200
 export const MAX_DUPLICATE_ENTRIES_PER_ITEM = 50
 
-/** What replaces a masked span before text goes to a provider. */
-export const REDACTED_MARK = '[DIRAHSIAKAN]'
-
 export const WORKFLOW_MESSAGES = {
   tooManyItems: 'Terlalu banyak soalan dalam kumpulan ini.',
   pageTooLarge: 'Nombor halaman terlalu besar.',
