@@ -1,9 +1,11 @@
 import type { AiExtractRequest } from '@pp/contract'
-import { afterEach, describe, expect, it } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AiExtractionService } from '../../src/modules/ai-extraction'
 import { AiCallPipeline } from '../../src/modules/ai-extraction/ai-call.pipeline'
 import { AI_NOTIFICATION_TYPES } from '../../src/modules/ai-extraction/ai.constants'
+import { AiRepository } from '../../src/modules/ai-extraction/ai.repository'
 import {
   bootAiApp,
   captureLogs,
@@ -193,9 +195,13 @@ describe('budget (AC6, AC9)', () => {
     expect(await notices(t, AI_NOTIFICATION_TYPES.budgetCapped)).toHaveLength(await adminCount(t))
   })
 
-  it('cap 0 refuses even the mock; mock usage never counts', async () => {
+  it('cap 0 does not stop the mock (it costs nothing) but still refuses a paid provider; mock usage never counts', async () => {
     t = await bootAiApp({ env: { AI_MONTHLY_BUDGET_SEN: '0' } })
+    await expect(svc(t).extractPaper(REQ)).resolves.toBeDefined()
+    await t.close()
+    t = await bootAiApp({ env: anthropicEnv({ AI_MONTHLY_BUDGET_SEN: '0' }), fetch: answers() })
     await expect(svc(t).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_BUDGET_EXHAUSTED' })
+    expect(t.fetch.calls).toHaveLength(0)
     await t.close()
     t = await bootAiApp({ env: { AI_MONTHLY_BUDGET_SEN: '5' } })
     await insertUsageRow(t.db, { provider: 'mock', costSen: 999, at: '2026-10-05T01:00:00Z' })
@@ -219,6 +225,29 @@ describe('budget (AC6, AC9)', () => {
     await expect(svc(t).extractPaper(REQ)).rejects.toMatchObject({ code: 'AI_BUDGET_EXHAUSTED' })
     t.clock.set('2026-11-01T00:01:30+08:00')
     await expect(svc(t).extractPaper(REQ)).resolves.toBeDefined()
+  })
+})
+
+describe('usage row write failure (G4 m4)', () => {
+  it('a billed success whose usage row cannot be written is logged at error level (no key, no content) and still fails as before', async () => {
+    t = await bootAiApp({ env: anthropicEnv({ AI_MONTHLY_BUDGET_SEN: '100' }), fetch: answers() })
+    const repo = t.app.get(AiRepository)
+    const spy = vi.spyOn(repo, 'insertUsage').mockRejectedValueOnce(new Error('db down'))
+    const errors: string[] = []
+    const logSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation((...a: unknown[]) => {
+      errors.push(a.map((x) => String(x)).join(' '))
+    })
+    try {
+      await expect(svc(t).extractPaper(REQ)).rejects.toThrow()
+    } finally {
+      spy.mockRestore()
+      logSpy.mockRestore()
+    }
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('provider=anthropic')
+    expect(errors[0]).toMatch(/model=.+ batch=.+ run=.+ tokensIn=\d+ tokensOut=\d+ costSen=\d+/)
+    expect(errors[0]).not.toContain(FAKE_KEY)
+    expect(errors[0]).not.toContain('Selesaikan persamaan')
   })
 })
 

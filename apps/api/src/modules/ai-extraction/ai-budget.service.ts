@@ -36,8 +36,8 @@ const rm = (sen: number): string => `RM${(sen / 100).toFixed(2)}`
 
 /**
  * Monthly budget (AC6, AC-29.2). The month is the Malaysia calendar month. The cap is `ai_settings.monthly_budget_sen`,
- * else `AI_MONTHLY_BUDGET_SEN`, else none. With no cap the mock is unrestricted (it costs nothing) and every paid
- * provider is refused: a paid provider never runs without a cap an admin has set.
+ * else `AI_MONTHLY_BUDGET_SEN`, else none. The mock is never restricted (it costs nothing, so not even a cap of 0 stops
+ * it). With no cap every paid provider is refused: a paid provider never runs without a cap an admin has set.
  *
  *  - at `warn_percent` (80) one notification per month per active Admin Pusat (`last_warned_month` makes it once);
  *  - at 100% a call is refused with `AI_BUDGET_EXHAUSTED` (the caller may queue it) and, once per month, a second
@@ -77,8 +77,10 @@ export class AiBudgetService {
     const month = malaysiaMonthOf(this.clock.now())
     const [v, costSen] = await Promise.all([this.view(), this.monthToDateCostSen(month)])
     const budgetSen = v.budgetSen ?? 0
-    const reached = v.budgetSen === null ? provider !== 'mock' : costSen >= budgetSen
-    const warn = v.budgetSen !== null && costSen * 100 >= budgetSen * v.warnPercent
+    // The mock costs nothing, so no cap (not even 0) applies to it; every paid provider is bound by the cap.
+    const capped = provider !== 'mock'
+    const reached = capped && (v.budgetSen === null ? true : costSen >= budgetSen)
+    const warn = capped && v.budgetSen !== null && costSen * 100 >= budgetSen * v.warnPercent
     const percentUsed = budgetSen === 0 ? (costSen > 0 ? 100 : 0) : Math.round((costSen * 1000) / budgetSen) / 10
     return { month, costSen, budgetSen, remainingSen: Math.max(0, budgetSen - costSen), percentUsed, state: reached ? 'exhausted' : warn ? 'warning' : 'ok' }
   }

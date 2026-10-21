@@ -146,7 +146,17 @@ export class AiCallPipeline {
         },
         // The usage row is written while the slot is still held: a queued call re-checks the budget only after it.
         onSuccess: async (v) => {
-          await log(this.price(v, args.pages))
+          const usage = this.price(v, args.pages)
+          try {
+            await log(usage)
+          } catch (err) {
+            // A billed success whose usage row is lost is unrecorded spend: make it visible (no key, no prompt content), then fail as before.
+            this.logger.error(
+              `usage row of a successful call could not be written: provider=${provider.id} model=${provider.model} batch=${args.ctx.batchId ?? '-'} run=${runId ?? '-'} tokensIn=${String(usage.tokensIn)} tokensOut=${String(usage.tokensOut)} costSen=${String(usage.costSen)}`,
+              err instanceof Error ? err.stack : undefined,
+            )
+            throw err
+          }
         },
       })
       const usage = this.price(value, args.pages)
