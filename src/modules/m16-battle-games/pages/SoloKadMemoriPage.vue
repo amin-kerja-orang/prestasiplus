@@ -8,7 +8,9 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { DsPage, DsLoadError } from '@/ds'
+import { isHttpMode } from '@/api/mode'
 
+import SoloUnavailable from '../components/solo/SoloUnavailable.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
 import { formatClock } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
@@ -17,6 +19,8 @@ import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 const PAIRS = 6
 const MISMATCH_MS = 800
 
+// D58 stopgap: http mode has no client-side answer key; the game is not offered (backlog #78).
+const unavailable = isHttpMode()
 const timers = useGameTimers()
 const { payload, loading, error, load } = useSoloGame('kad-memori', false)
 
@@ -118,72 +122,77 @@ const resultTiles = computed(() => [
   { label: 'Syiling 🪙', value: `+${String(result.value.coins)}`, tone: 'text-warning' },
 ])
 
-onMounted(() => void start())
+onMounted(() => {
+  if (!unavailable) void start()
+})
 </script>
 
 <template>
   <DsPage data-testid="solo-kad-memori">
-    <div class="flex flex-col items-start gap-1">
-      <UButton to="/permainan" color="neutral" variant="ghost" icon="i-ph-arrow-left" class="min-h-11">
-        Permainan
-      </UButton>
-      <h1 class="text-title text-highlighted">🃏 Kad Memori</h1>
-      <p class="text-body text-muted">Padankan soalan dengan jawapan yang betul!</p>
-    </div>
+    <SoloUnavailable v-if="unavailable" />
+    <template v-else>
+      <div class="flex flex-col items-start gap-1">
+        <UButton to="/permainan" color="neutral" variant="ghost" icon="i-ph-arrow-left" class="min-h-11">
+          Permainan
+        </UButton>
+        <h1 class="text-title text-highlighted">🃏 Kad Memori</h1>
+        <p class="text-body text-muted">Padankan soalan dengan jawapan yang betul!</p>
+      </div>
 
-    <div class="flex flex-wrap gap-3" data-testid="solo-stats">
-      <UBadge color="neutral" variant="soft" size="xl" data-testid="solo-time"
-        >⏱️ {{ formatClock(seconds) }}</UBadge
-      >
-      <UBadge color="neutral" variant="soft" size="xl" data-testid="solo-moves"
-        >👆 {{ moves }} langkah</UBadge
-      >
-      <UBadge color="success" variant="soft" size="xl" data-testid="solo-matched"
-        >✅ {{ matchedPairs }} / {{ PAIRS }} padan</UBadge
-      >
-    </div>
+      <div class="flex flex-wrap gap-3" data-testid="solo-stats">
+        <UBadge color="neutral" variant="soft" size="xl" data-testid="solo-time"
+          >⏱️ {{ formatClock(seconds) }}</UBadge
+        >
+        <UBadge color="neutral" variant="soft" size="xl" data-testid="solo-moves"
+          >👆 {{ moves }} langkah</UBadge
+        >
+        <UBadge color="success" variant="soft" size="xl" data-testid="solo-matched"
+          >✅ {{ matchedPairs }} / {{ PAIRS }} padan</UBadge
+        >
+      </div>
 
-    <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
-      <USkeleton class="h-16 w-full" />
-      <USkeleton class="h-16 w-full" />
-    </div>
-    <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
-    <div
-      v-if="cards.length > 0"
-      class="mx-auto grid w-full max-w-2xl grid-cols-3 gap-3 sm:grid-cols-4"
-      data-testid="solo-cards"
-    >
-      <UButton
-        v-for="card in cards"
-        :key="card.id"
-        type="button"
-        size="xl"
-        :color="CARD_COLOR[cardState(card.id)]"
-        :variant="CARD_VARIANT[cardState(card.id)]"
-        class="aspect-square h-auto min-w-0 justify-center overflow-hidden p-2 text-center text-wrap break-words"
-        :data-state="cardState(card.id) || 'hidden'"
-        :data-type="cardState(card.id) !== '' ? card.type : undefined"
-        data-testid="solo-card-item"
-        @click="flip(card.id)"
+      <div
+        v-if="cards.length > 0"
+        class="mx-auto grid w-full max-w-2xl grid-cols-3 gap-3 sm:grid-cols-4"
+        data-testid="solo-cards"
       >
-        <span v-if="cardState(card.id) === ''" class="text-title">❓</span>
-        <span v-else class="text-caption">{{ card.content }}</span>
-      </UButton>
-    </div>
+        <UButton
+          v-for="card in cards"
+          :key="card.id"
+          type="button"
+          size="xl"
+          :color="CARD_COLOR[cardState(card.id)]"
+          :variant="CARD_VARIANT[cardState(card.id)]"
+          class="aspect-square h-auto min-w-0 justify-center overflow-hidden p-2 text-center text-wrap break-words"
+          :data-state="cardState(card.id) || 'hidden'"
+          :data-type="cardState(card.id) !== '' ? card.type : undefined"
+          data-testid="solo-card-item"
+          @click="flip(card.id)"
+        >
+          <span v-if="cardState(card.id) === ''" class="text-title">❓</span>
+          <span v-else class="text-caption">{{ card.content }}</span>
+        </UButton>
+      </div>
 
-    <ResultCard
-      v-if="phase === 'done'"
-      theme="indigo"
-      title="🎉 Tahniah!"
-      subtitle="Semua kad berjaya dipadankan!"
-      :tiles="resultTiles"
-      :new-record="false"
-      again-label="🔄 Main Lagi"
-      :coins-credited="0"
-      hub-label="🏠 Hub"
-      overlay-testid="solo-overlay"
-      @again="start"
-    />
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="indigo"
+        title="🎉 Tahniah!"
+        subtitle="Semua kad berjaya dipadankan!"
+        :tiles="resultTiles"
+        :new-record="false"
+        again-label="🔄 Main Lagi"
+        :coins-credited="0"
+        hub-label="🏠 Hub"
+        overlay-testid="solo-overlay"
+        @again="start"
+      />
+  </template>
   </DsPage>
 </template>

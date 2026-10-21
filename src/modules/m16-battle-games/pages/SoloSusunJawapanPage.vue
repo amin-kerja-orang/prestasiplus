@@ -6,6 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import SoloUnavailable from '../components/solo/SoloUnavailable.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
 import ResultCard from '../components/solo/ResultCard.vue'
@@ -13,7 +14,10 @@ import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
 import { DsLoadError } from '@/ds'
+import { isHttpMode } from '@/api/mode'
 
+// D58 stopgap: http mode has no client-side answer key; the game is not offered (backlog #78).
+const unavailable = isHttpMode()
 const timers = useGameTimers()
 const { darjah, payload, loading, error, load } = useSoloGame('susun-jawapan')
 
@@ -153,193 +157,202 @@ const tiles = computed(() => [
   },
 ])
 
-watch(darjah, () => void start(), { immediate: true })
+watch(
+  darjah,
+  () => {
+    if (!unavailable) void start()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div data-testid="solo-susun-jawapan">
-    <DarjahPicker v-if="darjah === null" title="Susun Jawapan" art="books" />
-    <GamePanel>
-      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
-        <USkeleton class="h-16 w-full" />
-        <USkeleton class="h-16 w-full" />
-      </div>
-      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+    <SoloUnavailable v-if="unavailable" />
+    <template v-else>
+      <DarjahPicker v-if="darjah === null" title="Susun Jawapan" art="books" />
+      <GamePanel>
+        <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+          <USkeleton class="h-16 w-full" />
+          <USkeleton class="h-16 w-full" />
+        </div>
+        <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
-      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
-        <div class="flex items-center justify-between gap-2">
-          <UButton
-            to="/permainan"
-            color="neutral"
-            variant="ghost"
-            icon="i-ph-arrow-left"
-            class="min-h-11"
-          >
-            Kembali
-          </UButton>
-          <div class="flex gap-2">
-            <UBadge color="primary" variant="soft" size="xl" data-testid="solo-score"
-              >Skor <b class="ms-1">{{ score }}</b></UBadge
+        <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+          <div class="flex items-center justify-between gap-2">
+            <UButton
+              to="/permainan"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-arrow-left"
+              class="min-h-11"
             >
-            <UBadge color="warning" variant="soft" size="xl" data-testid="solo-coins"
-              >🪙 {{ coinsShown }}</UBadge
-            >
+              Kembali
+            </UButton>
+            <div class="flex gap-2">
+              <UBadge color="primary" variant="soft" size="xl" data-testid="solo-score"
+                >Skor <b class="ms-1">{{ score }}</b></UBadge
+              >
+              <UBadge color="warning" variant="soft" size="xl" data-testid="solo-coins"
+                >🪙 {{ coinsShown }}</UBadge
+              >
+            </div>
           </div>
-        </div>
 
-        <h1 class="text-center text-title text-highlighted">🧩 Susun Jawapan</h1>
-        <div class="flex flex-wrap justify-center gap-2" data-testid="solo-dots">
-          <UBadge
-            v-for="(dot, i) in dots"
-            :key="i"
-            :color="dot === 'done' ? 'success' : dot === 'wrong' ? 'error' : i === index ? 'primary' : 'neutral'"
-            variant="solid"
-            size="sm"
-            class="size-3 p-0"
-            :data-state="dot"
-            :data-active="i === index"
-            data-testid="solo-dot"
-          />
-        </div>
+          <h1 class="text-center text-title text-highlighted">🧩 Susun Jawapan</h1>
+          <div class="flex flex-wrap justify-center gap-2" data-testid="solo-dots">
+            <UBadge
+              v-for="(dot, i) in dots"
+              :key="i"
+              :color="dot === 'done' ? 'success' : dot === 'wrong' ? 'error' : i === index ? 'primary' : 'neutral'"
+              variant="solid"
+              size="sm"
+              class="size-3 p-0"
+              :data-state="dot"
+              :data-active="i === index"
+              data-testid="solo-dot"
+            />
+          </div>
 
-        <UCard class="text-center" data-testid="solo-card">
-          <p class="text-overline text-primary-t">
-            Soalan {{ index + 1 }} daripada {{ puzzles.length }}
-          </p>
-          <p class="mt-2 text-subheading break-words text-highlighted">
-            {{ current.question }}
-          </p>
-        </UCard>
-
-        <div class="flex flex-col gap-2 text-center">
-          <p class="text-caption text-muted">📥 Jawapan Kamu:</p>
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-drop" @click="removeLast">
-            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
-              <span v-if="placedTiles.length === 0" class="text-body text-muted"
-                >Klik huruf/perkataan di bawah untuk susun</span
-              >
-              <UButton
-                v-for="tile in placedTiles"
-                :key="tile.i"
-                type="button"
-                size="lg"
-                :color="check === 'wrong' ? 'error' : 'primary'"
-                variant="soft"
-                class="min-h-11 min-w-11 justify-center"
-                data-testid="solo-placed"
-                @click.stop="remove(tile.i)"
-              >
-                {{ tile.text }}
-              </UButton>
-            </div>
+          <UCard class="text-center" data-testid="solo-card">
+            <p class="text-overline text-primary-t">
+              Soalan {{ index + 1 }} daripada {{ puzzles.length }}
+            </p>
+            <p class="mt-2 text-subheading break-words text-highlighted">
+              {{ current.question }}
+            </p>
           </UCard>
-        </div>
 
-        <div class="flex flex-col gap-2 text-center">
-          <p class="text-caption text-muted">🔤 Pilihan:</p>
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-source">
-            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
-              <UButton
-                v-for="tile in sourceTiles"
-                :key="tile.i"
-                type="button"
-                size="lg"
-                color="neutral"
-                variant="soft"
-                class="min-h-11 min-w-11 justify-center"
-                :disabled="check !== 'idle'"
-                data-testid="solo-tile"
-                @click="place(tile.i)"
-              >
-                {{ tile.text }}
-              </UButton>
-            </div>
-          </UCard>
-        </div>
+          <div class="flex flex-col gap-2 text-center">
+            <p class="text-caption text-muted">📥 Jawapan Kamu:</p>
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-drop" @click="removeLast">
+              <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
+                <span v-if="placedTiles.length === 0" class="text-body text-muted"
+                  >Klik huruf/perkataan di bawah untuk susun</span
+                >
+                <UButton
+                  v-for="tile in placedTiles"
+                  :key="tile.i"
+                  type="button"
+                  size="lg"
+                  :color="check === 'wrong' ? 'error' : 'primary'"
+                  variant="soft"
+                  class="min-h-11 min-w-11 justify-center"
+                  data-testid="solo-placed"
+                  @click.stop="remove(tile.i)"
+                >
+                  {{ tile.text }}
+                </UButton>
+              </div>
+            </UCard>
+          </div>
 
-        <div v-if="check === 'idle'" class="flex flex-col gap-3">
-          <UButton
-            type="button"
-            size="xl"
-            color="primary"
-            variant="solid"
-            class="min-h-14 w-full justify-center"
-            :disabled="placed.length === 0"
-            data-testid="solo-check"
-            @click="verify"
-          >
-            ✅ Semak Jawapan
-          </UButton>
-          <UButton
-            type="button"
-            size="lg"
-            color="neutral"
-            variant="soft"
-            class="min-h-12 w-full justify-center"
-            data-testid="solo-skip-question"
-            @click="skip"
-          >
-            ⏭️ Langkau Soalan Ini
-          </UButton>
-        </div>
+          <div class="flex flex-col gap-2 text-center">
+            <p class="text-caption text-muted">🔤 Pilihan:</p>
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-source">
+              <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
+                <UButton
+                  v-for="tile in sourceTiles"
+                  :key="tile.i"
+                  type="button"
+                  size="lg"
+                  color="neutral"
+                  variant="soft"
+                  class="min-h-11 min-w-11 justify-center"
+                  :disabled="check !== 'idle'"
+                  data-testid="solo-tile"
+                  @click="place(tile.i)"
+                >
+                  {{ tile.text }}
+                </UButton>
+              </div>
+            </UCard>
+          </div>
 
-        <div v-else-if="check === 'correct'" class="flex flex-col gap-3 text-center">
-          <p class="text-subheading text-success" data-testid="solo-feedback">
-            🎉 BETUL! +{{ lastPoints }} mata
-          </p>
-          <UButton
-            type="button"
-            size="xl"
-            color="primary"
-            variant="solid"
-            class="min-h-14 w-full justify-center"
-            data-testid="solo-next"
-            @click="next"
-          >
-            Seterusnya →
-          </UButton>
-        </div>
-
-        <div v-else class="flex flex-col gap-3 text-center">
-          <p class="text-label text-error" data-testid="solo-feedback">❌ Cuba lagi atau langkau</p>
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div v-if="check === 'idle'" class="flex flex-col gap-3">
             <UButton
               type="button"
               size="xl"
               color="primary"
               variant="solid"
-              class="min-h-12 justify-center"
-              data-testid="solo-retry"
-              @click="retry"
+              class="min-h-14 w-full justify-center"
+              :disabled="placed.length === 0"
+              data-testid="solo-check"
+              @click="verify"
             >
-              🔄 Cuba Lagi
+              ✅ Semak Jawapan
             </UButton>
             <UButton
               type="button"
-              size="xl"
+              size="lg"
               color="neutral"
               variant="soft"
-              class="min-h-12 justify-center"
-              data-testid="solo-skip"
+              class="min-h-12 w-full justify-center"
+              data-testid="solo-skip-question"
               @click="skip"
             >
-              ⏭️ Langkau
+              ⏭️ Langkau Soalan Ini
             </UButton>
           </div>
-        </div>
-      </div>
 
-      <ResultCard
-        v-if="phase === 'done'"
-        theme="teal"
-        :title="susunTitle(solved, puzzles.length)"
-        subtitle="Susun Jawapan selesai!"
-        :tiles="tiles"
-        :new-record="false"
-        again-label="🔄 Main Lagi"
-        :coins-credited="result.credited"
-        @again="start"
-      />
-    </GamePanel>
+          <div v-else-if="check === 'correct'" class="flex flex-col gap-3 text-center">
+            <p class="text-subheading text-success" data-testid="solo-feedback">
+              🎉 BETUL! +{{ lastPoints }} mata
+            </p>
+            <UButton
+              type="button"
+              size="xl"
+              color="primary"
+              variant="solid"
+              class="min-h-14 w-full justify-center"
+              data-testid="solo-next"
+              @click="next"
+            >
+              Seterusnya →
+            </UButton>
+          </div>
+
+          <div v-else class="flex flex-col gap-3 text-center">
+            <p class="text-label text-error" data-testid="solo-feedback">❌ Cuba lagi atau langkau</p>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <UButton
+                type="button"
+                size="xl"
+                color="primary"
+                variant="solid"
+                class="min-h-12 justify-center"
+                data-testid="solo-retry"
+                @click="retry"
+              >
+                🔄 Cuba Lagi
+              </UButton>
+              <UButton
+                type="button"
+                size="xl"
+                color="neutral"
+                variant="soft"
+                class="min-h-12 justify-center"
+                data-testid="solo-skip"
+                @click="skip"
+              >
+                ⏭️ Langkau
+              </UButton>
+            </div>
+          </div>
+        </div>
+
+        <ResultCard
+          v-if="phase === 'done'"
+          theme="teal"
+          :title="susunTitle(solved, puzzles.length)"
+          subtitle="Susun Jawapan selesai!"
+          :tiles="tiles"
+          :new-record="false"
+          again-label="🔄 Main Lagi"
+          :coins-credited="result.credited"
+          @again="start"
+        />
+      </GamePanel>
+  </template>
   </div>
 </template>

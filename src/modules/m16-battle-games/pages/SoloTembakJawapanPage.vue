@@ -11,6 +11,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import SoloUnavailable from '../components/solo/SoloUnavailable.vue'
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
@@ -29,6 +30,7 @@ import {
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
 import { DsLoadError } from '@/ds'
+import { isHttpMode } from '@/api/mode'
 
 /** The fall zone is a 4-lane grid of 14 rows; a tile's row follows its fall progress (no inline style). */
 const COL = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4'] as const
@@ -53,6 +55,8 @@ const LIVES = 3
 const BANNER_MS = 1200
 const LANES = 4
 
+// D58 stopgap: http mode has no client-side answer key; the game is not offered (backlog #78).
+const unavailable = isHttpMode()
 const timers = useGameTimers()
 const { darjah, payload, loading, error, load } = useSoloGame('tembak-jawapan')
 
@@ -212,104 +216,113 @@ const resultTiles = computed(() => [
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
-watch(darjah, () => void start(), { immediate: true })
+watch(
+  darjah,
+  () => {
+    if (!unavailable) void start()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div data-testid="solo-tembak-jawapan">
-    <DarjahPicker v-if="darjah === null" title="Tembak Jawapan" art="rocket" />
-    <GamePanel>
-      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
-        <USkeleton class="h-16 w-full" />
-        <USkeleton class="h-16 w-full" />
-      </div>
-      <DsLoadError v-else-if="error" :message="error" @retry="load()" />
+    <SoloUnavailable v-if="unavailable" />
+    <template v-else>
+      <DarjahPicker v-if="darjah === null" title="Tembak Jawapan" art="rocket" />
+      <GamePanel>
+        <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+          <USkeleton class="h-16 w-full" />
+          <USkeleton class="h-16 w-full" />
+        </div>
+        <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
-      <CountdownView
-        v-if="phase === 'countdown'"
-        title="🎯 TEMBAK JAWAPAN"
-        :count="count"
-        hint="Tap jawapan yang betul sebelum jatuh!"
-      />
+        <CountdownView
+          v-if="phase === 'countdown'"
+          title="🎯 TEMBAK JAWAPAN"
+          :count="count"
+          hint="Tap jawapan yang betul sebelum jatuh!"
+        />
 
-      <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">
-        <div class="grid grid-cols-4 gap-2" data-testid="solo-hud">
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <p class="text-caption text-muted">Skor</p>
-            <p class="tabular text-heading text-primary-t" data-testid="solo-score">{{ score }}</p>
+        <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">
+          <div class="grid grid-cols-4 gap-2" data-testid="solo-hud">
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+              <p class="text-caption text-muted">Skor</p>
+              <p class="tabular text-heading text-primary-t" data-testid="solo-score">{{ score }}</p>
+            </UCard>
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+              <p class="text-caption text-muted">Level</p>
+              <p class="tabular text-heading text-primary-t" data-testid="solo-level">{{ level }}</p>
+            </UCard>
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
+              <p class="sr-only">Nyawa</p>
+              <div class="flex items-center justify-center gap-1" data-testid="solo-lives">
+                <UIcon
+                  v-for="n in LIVES"
+                  :key="n"
+                  :name="n > lives ? 'i-ph-heart-duotone' : 'i-ph-heart-fill'"
+                  class="size-6"
+                  :class="n > lives ? 'text-dimmed' : 'text-error'"
+                  :data-lost="n > lives"
+                  data-testid="solo-heart"
+                />
+              </div>
+            </UCard>
+            <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center" data-testid="solo-coins">
+              <p class="tabular text-heading text-warning">🪙 {{ coinsShown }}</p>
+            </UCard>
+          </div>
+
+          <UCard class="text-center">
+            <p class="text-overline text-muted">Soalan {{ index + 1 }}</p>
+            <p class="mt-1 text-subheading break-words text-highlighted">
+              {{ current.question }}
+            </p>
           </UCard>
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <p class="text-caption text-muted">Level</p>
-            <p class="tabular text-heading text-primary-t" data-testid="solo-level">{{ level }}</p>
-          </UCard>
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <p class="sr-only">Nyawa</p>
-            <div class="flex items-center justify-center gap-1" data-testid="solo-lives">
-              <UIcon
-                v-for="n in LIVES"
-                :key="n"
-                :name="n > lives ? 'i-ph-heart-duotone' : 'i-ph-heart-fill'"
-                class="size-6"
-                :class="n > lives ? 'text-dimmed' : 'text-error'"
-                :data-lost="n > lives"
-                data-testid="solo-heart"
-              />
+
+          <div
+            id="fallZone"
+            class="relative mx-auto grid aspect-4/5 w-full max-w-lg grid-cols-4 grid-rows-14 gap-1 overflow-hidden bg-muted p-2"
+            data-testid="solo-fall-zone"
+          >
+            <template v-for="tile in tiles" :key="`${index}-${tile.i}`">
+              <UButton
+                v-if="tile.visible"
+                type="button"
+                :color="wrongTiles.includes(tile.i) ? 'error' : 'primary'"
+                variant="soft"
+                size="sm"
+                class="h-auto min-h-11 max-w-full self-start text-wrap break-words"
+                :class="`${tile.col} ${tile.row}`"
+                :disabled="wrongTiles.includes(tile.i)"
+                :data-wrong="wrongTiles.includes(tile.i)"
+                data-testid="solo-tile"
+                @click="tap(tile.i)"
+              >
+                <span class="line-clamp-3 break-words">{{ tile.text }}</span>
+              </UButton>
+            </template>
+            <div v-if="banner" class="col-span-4 row-start-6 text-center" data-testid="solo-level-banner">
+              <UBadge color="warning" variant="solid" size="xl">{{ banner }}</UBadge>
             </div>
-          </UCard>
-          <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center" data-testid="solo-coins">
-            <p class="tabular text-heading text-warning">🪙 {{ coinsShown }}</p>
-          </UCard>
-        </div>
-
-        <UCard class="text-center">
-          <p class="text-overline text-muted">Soalan {{ index + 1 }}</p>
-          <p class="mt-1 text-subheading break-words text-highlighted">
-            {{ current.question }}
-          </p>
-        </UCard>
-
-        <div
-          id="fallZone"
-          class="relative mx-auto grid aspect-4/5 w-full max-w-lg grid-cols-4 grid-rows-14 gap-1 overflow-hidden bg-muted p-2"
-          data-testid="solo-fall-zone"
-        >
-          <template v-for="tile in tiles" :key="`${index}-${tile.i}`">
-            <UButton
-              v-if="tile.visible"
-              type="button"
-              :color="wrongTiles.includes(tile.i) ? 'error' : 'primary'"
-              variant="soft"
-              size="sm"
-              class="h-auto min-h-11 max-w-full self-start text-wrap break-words"
-              :class="`${tile.col} ${tile.row}`"
-              :disabled="wrongTiles.includes(tile.i)"
-              :data-wrong="wrongTiles.includes(tile.i)"
-              data-testid="solo-tile"
-              @click="tap(tile.i)"
-            >
-              <span class="line-clamp-3 break-words">{{ tile.text }}</span>
-            </UButton>
-          </template>
-          <div v-if="banner" class="col-span-4 row-start-6 text-center" data-testid="solo-level-banner">
-            <UBadge color="warning" variant="solid" size="xl">{{ banner }}</UBadge>
-          </div>
-          <div class="col-span-4 row-start-14 flex items-end justify-end">
-            <UBadge color="error" variant="soft" size="lg">⚠ GARIS MAUT</UBadge>
+            <div class="col-span-4 row-start-14 flex items-end justify-end">
+              <UBadge color="error" variant="soft" size="lg">⚠ GARIS MAUT</UBadge>
+            </div>
           </div>
         </div>
-      </div>
 
-      <ResultCard
-        v-if="phase === 'done'"
-        theme="ember"
-        :title="tembakTitle(score)"
-        :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
-        :tiles="resultTiles"
-        :new-record="result.newRecord"
-        again-label="🔄 Main Lagi"
-        :coins-credited="result.credited"
-        @again="start"
-      />
-    </GamePanel>
+        <ResultCard
+          v-if="phase === 'done'"
+          theme="ember"
+          :title="tembakTitle(score)"
+          :subtitle="`Tembak Jawapan — Level ${String(maxLevel)}`"
+          :tiles="resultTiles"
+          :new-record="result.newRecord"
+          again-label="🔄 Main Lagi"
+          :coins-credited="result.credited"
+          @again="start"
+        />
+      </GamePanel>
+  </template>
   </div>
 </template>
