@@ -12,7 +12,8 @@ import { describe, expect, it } from 'vitest'
 
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
-import { migrateActivity } from '../../../src/migration/load/activity/command'
+import { FixedClock } from '../../../src/db/clock'
+import { defaultAsOf, migrateActivity } from '../../../src/migration/load/activity/command'
 import {
   ACTIVITY_GROUP_NAMES,
   ActivityContext,
@@ -35,6 +36,14 @@ const group = (name: ActivityGroup['name'], entities: string[], notMigrated: Act
   name,
   steps: () => entities.map(step),
   notMigrated,
+})
+
+describe('migrate:activity default --as-of (OD-10 Q8)', () => {
+  it('is the Malaysia calendar day, not the UTC day', () => {
+    expect(defaultAsOf(new FixedClock('2026-10-21T17:00:00Z'))).toBe('2026-10-22')
+    expect(defaultAsOf(new FixedClock('2026-10-21T15:59:59Z'))).toBe('2026-10-21')
+    expect(defaultAsOf(new FixedClock('2026-10-21T16:00:00Z'))).toBe('2026-10-22')
+  })
 })
 
 describe('enumMapper', () => {
