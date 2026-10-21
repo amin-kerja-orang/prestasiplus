@@ -33,6 +33,9 @@ const ATTEMPTS = [
   { completedAt: '2026-09-20T20:00:00+08:00', score: 64.0, a: 80, b: 67.0, c: 11, grade: 'C' },
 ] as const
 
+/** Fixed instant for the mastery rows (after the last seeded attempt), so two seeded databases are identical (AC1). */
+const MASTERY_AT = '2026-09-20T20:00:00+08:00'
+
 /** Mock domain ids 1 to 6 and 15 = the migration's insertion order; looked up by code so the ids never matter. */
 const MASTERY: readonly (readonly [string, number])[] = [
   ['PKSK_INSANIAH', 60],
@@ -88,7 +91,7 @@ export const pkskSeed: SeedModule = {
       const key = { userId: student.id, level: 'T1', domainId: domain.id }
       await prisma.pkskMastery.upsert({
         where: { userId_level_domainId: key },
-        create: { ...key, masteryPct: pct },
+        create: { ...key, masteryPct: pct, createdAt: new Date(MASTERY_AT), updatedAt: new Date(MASTERY_AT) },
         update: {},
       })
     }

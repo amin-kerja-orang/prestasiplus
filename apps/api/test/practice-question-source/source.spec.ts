@@ -301,8 +301,10 @@ describe('PKSK questions are never drawn (BE-42 scope, G4 nit 4 of #92)', () => 
 
     const live = await c.source.live([normal, real.id, tagged])
     expect([...live.keys()]).toEqual([normal])
-    const versions = await c.source.versions([normal, real.id, tagged].map((questionId) => ({ questionId, versionNo: 1 })))
-    expect(versions.size).toBe(1)
+    // `versions` is the pinned grading read (OD-28, see the source's doc): it returns the exact served version
+    // without re-checking eligibility, so it is not a serving path and is not asserted here.
+    const versions = await c.source.versions([normal].map((questionId) => ({ questionId, versionNo: 1 })))
+    expect([...versions.keys()]).toEqual([normal])
 
     await c.svc.deactivate(normal)
     await c.svc.deactivate(tagged)
