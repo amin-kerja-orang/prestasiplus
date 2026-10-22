@@ -3,6 +3,7 @@
  * password fields, `generatedPassword`, `resetPassword`, `credentials`). The transport is stubbed; the mode is
  * switched with `VITE_API_MODE`. Mock mode keeps the old shapes.
  */
+import { CreateUserRequestSchema, UpdateUserRequestSchema } from '@pp/contract'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installTransport } from '@/api'
@@ -77,6 +78,11 @@ describe('rolesAfterEdit', () => {
   })
   it('de-duplicates when the new role is already in the list', () => {
     expect(rolesAfterEdit(['school_admin', 'teacher'], 'teacher')).toEqual(['teacher'])
+  })
+  it('sends student or admin alone, as the contract allows (G4 #181 minor 2)', () => {
+    expect(rolesAfterEdit(['school_admin', 'teacher'], 'student')).toEqual(['student'])
+    expect(rolesAfterEdit(['school_admin', 'teacher'], 'admin')).toEqual(['admin'])
+    expect(rolesAfterEdit(['student'], 'teacher')).toEqual(['teacher'])
   })
   it('uses the role alone when nothing was loaded', () => {
     expect(rolesAfterEdit([], 'parent')).toEqual(['parent'])
@@ -168,6 +174,49 @@ describe('http mode', () => {
       resetPassword: true,
     })
     expect(result.data.generatedPassword).toBe('Terjana-2')
+  })
+
+  it('create and update bodies pass the strict contract schemas', async () => {
+    respond = () => ({ status: 201, headers: {}, body: { data: WIRE_DETAIL, status: 'ok' } })
+    await createAdminUser({
+      role: 'teacher',
+      name: 'Guru Contoh',
+      email: 'guru@example.test',
+      password: 'x',
+      passwordConfirmation: 'x',
+      schoolId: 3,
+    })
+    expect(CreateUserRequestSchema.safeParse(body()).success).toBe(true)
+    respond = () => ({ status: 200, headers: {}, body: { data: WIRE_DETAIL, status: 'ok' } })
+    await updateAdminUser(45, {
+      name: 'Guru Contoh',
+      email: 'guru@example.test',
+      role: 'school_admin',
+      roles: ['school_admin', 'teacher'],
+      isActive: true,
+      newPassword: 'x',
+      newPasswordConfirmation: 'x',
+      schoolId: 1,
+      resetPassword: true,
+    })
+    expect(UpdateUserRequestSchema.safeParse(body()).success).toBe(true)
+  })
+
+  it('update: a username-only account (empty e-mail) sends no e-mail key (G4 #181 minor 1)', async () => {
+    respond = () => ({
+      status: 200,
+      headers: {},
+      body: { data: { ...WIRE_DETAIL, email: null }, status: 'ok' },
+    })
+    await updateAdminUser(45, {
+      name: 'Murid Nama Pengguna',
+      email: '',
+      role: 'teacher',
+      roles: ['teacher'],
+      isActive: true,
+    })
+    expect(body()).not.toHaveProperty('email')
+    expect(UpdateUserRequestSchema.safeParse(body()).success).toBe(true)
   })
 
   it('bulk import: no default password, string school id; passes the credentials through', async () => {

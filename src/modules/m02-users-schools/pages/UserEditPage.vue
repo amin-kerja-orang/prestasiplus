@@ -321,7 +321,7 @@ async function submit(): Promise<void> {
               v-model="form.email"
               type="email"
               name="email"
-              required
+              :required="!(http && loaded?.email === '')"
               class="w-full"
               data-testid="user-email"
             />

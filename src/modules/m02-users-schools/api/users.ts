@@ -265,8 +265,11 @@ function fromWireDetail<T extends AdminUserDetail>(wire: T): T {
  * the select shows (the first) for the new one.
  */
 export function rolesAfterEdit(original: readonly Role[], role: Role): Role[] {
-  if (original.length === 0) return [role]
-  return [...new Set(original.map((r, i) => (i === 0 ? role : r)))]
+  // `student` never combines with another role and `admin` is single-role (contract `UserRolesSchema`).
+  if (original.length === 0 || role === 'student' || role === 'admin') return [role]
+  return [...new Set(original.map((r, i) => (i === 0 ? role : r)))].filter(
+    (r) => r !== 'student' && r !== 'admin',
+  )
 }
 
 const wireId = (id: string | number): string => String(id)
@@ -323,6 +326,9 @@ export async function updateAdminUser(
     'hasPkskSubscription',
   ])
     delete body[key]
+  // A username-only account has no e-mail (`null` on the wire, '' in the form): an empty value is not sent,
+  // so the stored value is kept instead of failing the contract's e-mail format.
+  if (body.email === '') delete body.email
   if (request.schoolId != null) body.schoolId = wireId(request.schoolId)
   if (request.linkedStudentIds) body.linkedStudentIds = request.linkedStudentIds.map(wireId)
   const result = await api.put<UserMutation<AdminUserDetailWithPassword>>(url, {
