@@ -214,7 +214,7 @@ describe('content', () => {
     const ok = transformNote({ ...note, subject: 'Matematik', grade: 'Tingkatan 4' }, { ownerId: '5' })
     expect(ok.ok && ok.value).toMatchObject({ author_id: '5', subject: 'matematik', note_type: 'FORMULA', content: 'Isi' })
 
-    const video = { title: 'Video', url: 'https://youtu.be/abc', is_published: '1' }
+    const video = { title: 'Video', url: 'https://youtu.be/abcdefghijk', is_published: '1' }
     expect(rejectOf(transformVideo(video, { ownerId: undefined }))).toBe('ORPHAN_PARENT:uploader_id')
     expect(rejectOf(transformVideo(video, { ownerId: '5' }))).toBe('INVALID_VALUE:category')
     expect(rejectOf(transformVideo({ ...video, is_published: '0' }, { ownerId: '5' }))).toBe('UNSUPPORTED:is_published')

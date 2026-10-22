@@ -14,6 +14,7 @@ import { Runner, type AnyEntityStep, type RunReport } from '../../kit/runner'
 import type { RunMode } from '../../kit/types'
 import { assertNotSyntheticInProduction } from '../index'
 import { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
+import { assertContentOwner } from './content-steps'
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 import { activityInputHash, assertCorePreflight } from './preflight'
@@ -103,6 +104,9 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
   await assertNotSyntheticInProduction(options.pool, options.env)
   await assertCorePreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
+  // Child safety: migrated videos are `global`, so a configured content owner must be an active admin. Checked once,
+  // before any group runs (dry-run and apply), so a refused owner writes nothing at all.
+  await assertContentOwner(options.pool, options.contentOwnerUserId)
 
   const activity = new ActivityContext(activityOptions)
   const wanted = groupNames === undefined || groupNames.length === 0 ? undefined : groupNames
