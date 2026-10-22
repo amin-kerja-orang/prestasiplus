@@ -198,6 +198,10 @@ describe('DsWinHero, DsSticker, DsFloatScore', () => {
     expect(w.classes()).toContain('animate-ds-stamp')
     expect(w.classes()).toContain('motion-reduce:animate-none')
   })
+  it('sticker marks itself contained only when asked (AZ-21a)', () => {
+    expect(mount(DsSticker).attributes('data-contained')).toBeUndefined()
+    expect(mount(DsSticker, { props: { contained: true } }).attributes('data-contained')).toBeDefined()
+  })
   it('float score is decorative', () => {
     const w = mount(DsFloatScore, { props: { text: '+10' } })
     expect(w.text()).toBe('+10')

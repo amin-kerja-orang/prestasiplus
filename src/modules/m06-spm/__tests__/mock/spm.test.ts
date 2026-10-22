@@ -392,7 +392,7 @@ describe('contributeCells through the poolCells override (seed phase only)', () 
     await runtime.reset({ poolCells: cells })
     try {
       const c = await get<LatihTubiConfig>(PELAJAR, '/api/spm/latih-tubi/MATH')
-      expect(c.difficultyByLevel['11']['4']).toBe(3)
+      expect(c.difficultyByLevel['11']?.['4']).toBe(3)
       expect(c.total).toBe(1681 - 24)
       expect(c.levelCounts['11']).toBe(705 - 24)
     } finally {

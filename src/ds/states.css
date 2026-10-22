@@ -4,12 +4,12 @@
  * and read the theme colour tokens (the `outline: none` reset lives in src/theme/tokens.css). T-H0 / T-H1 may move them into `ui.config` / `tokens.css`.
  */
 :is(
-    [data-ds='stat-tile'],
-    [data-ds='pill-nav'] a,
-    [data-ds='pill-nav'] button,
-    [data-ds='native-select'],
-    [data-ds='media-card'] a
-  ):focus-visible {
+  [data-ds='stat-tile'],
+  [data-ds='pill-nav'] a,
+  [data-ds='pill-nav'] button,
+  [data-ds='native-select'],
+  [data-ds='media-card'] a
+):focus-visible {
   box-shadow: 0 0 0 2px var(--ui-primary);
 }
 

@@ -68,11 +68,11 @@ import {
 } from './bank-wire'
 import { BijakError } from './errors'
 import {
+  batchCreateToWire,
   batchFromWire,
   issuesFromWire,
   itemPatch,
   pagesFromWire,
-  paperTypeToWire,
   questionFromItem,
   stimulusFromWire,
   summaryFromWire as intakeSummaryFromWire,
@@ -467,16 +467,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   /** Declaration (POST /intake/batches); the same body for an upload and a manual batch. */
   private declare(meta: Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'>): Promise<WireBatchSummary> {
-    return this.send<WireBatchSummary>('POST', '/api/intake/batches', {
-      paperType: paperTypeToWire(meta.paperType),
-      subject: meta.subject,
-      kertas: meta.kertas,
-      year: meta.year,
-      source: meta.source,
-      copyright: meta.copyright,
-      ...(meta.notes.trim() ? { notes: meta.notes.trim() } : {}),
-      declaration: true,
-    })
+    return this.send<WireBatchSummary>('POST', '/api/intake/batches', batchCreateToWire(meta))
   }
 
   /**

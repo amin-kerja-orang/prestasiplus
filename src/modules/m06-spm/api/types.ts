@@ -6,6 +6,12 @@ export type MockStatus = 'in_progress' | 'submitted'
 export type MockGrade = 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D' | 'E' | 'G'
 export type HeroClass = 'good' | 'mid' | 'bad'
 
+/**
+ * An entity id: a number in the in-browser mock, an opaque string on the real API (BE-41, UD-1;
+ * subject ids and question ids are decimal strings, a mock exam id is a uuid). Never parse it.
+ */
+export type WireId = number | string
+
 /** #1 `GET /api/spm/overview` (S1). */
 export interface SpmOverview {
   stats: {
@@ -16,6 +22,13 @@ export interface SpmOverview {
   }
   modules: { databank: number; latihTubi: number; trackingA: number; subjektifSets: number }
   me: { sessions: number; avgAccuracy: number; coins: number; answered: number }
+}
+
+/** `GET /api/education-levels` item, the fields S4 reads (M03 owns the full shape). */
+export interface EducationLevel {
+  id: WireId
+  /** 10 = Tingkatan 4, 11 = Tingkatan 5 (SPM levels); null for levels without a grade. */
+  grade: number | null
 }
 
 /** #2 row (S2). */
@@ -45,7 +58,10 @@ export interface LatihTubiList {
   elektif: LatihTubiCard[]
 }
 
-/** #4 (S4). Level keys are the M03 ids 10 (Tingkatan 4) and 11 (Tingkatan 5). */
+/**
+ * #4 (S4). Level keys are the education level ids of Tingkatan 4 and Tingkatan 5: the M03 ids 10 and
+ * 11 in the mock, the `education_levels` id strings on the real API (BE-41 open question 7).
+ */
 export interface LatihTubiConfig {
   code: string
   name: string
@@ -54,16 +70,16 @@ export interface LatihTubiConfig {
   total: number
   targetType: TargetType | null
   targetSize: number | null
-  levelCounts: Record<'10' | '11', number>
+  levelCounts: Record<string, number>
   /** Difficulty 1-5 -> count. */
   difficultyStats: Record<'1' | '2' | '3' | '4' | '5', number>
-  difficultyByLevel: Record<'10' | '11', Record<'1' | '2' | '3' | '4' | '5', number>>
+  difficultyByLevel: Record<string, Record<'1' | '2' | '3' | '4' | '5', number>>
   countOptions: { value: number; label: string; isTarget: boolean }[]
   defaultCount: number
 }
 
 export interface OpenSubjectCard {
-  subjectId: number
+  subjectId: WireId
   code: string
   name: string
   nameEn: string
@@ -104,7 +120,16 @@ export interface TrackingAHub {
   objectiveLane: { subjects: number; sets: number; questions: number }
   bahasaLane: { subjects: 2; sets: number }
   readiness: Readiness | null
-  bahasa: { subjectId: number; code: string; name: string; nameEn: string; sets: number }[]
+  /** `icon` and `color` are sent by the mock and the real API although S5 does not use them. */
+  bahasa: {
+    subjectId: WireId
+    code: string
+    name: string
+    nameEn: string
+    sets: number
+    icon?: string | null
+    color?: string
+  }[]
   openSubjects: OpenSubjectCard[]
 }
 
@@ -140,7 +165,7 @@ export interface SubjektifOverview {
     bestSetsSaved: number
   }
   subjects: {
-    subjectId: number
+    subjectId: WireId
     name: string
     nameEn: string
     group: 'teras' | 'elektif'
@@ -153,7 +178,7 @@ export interface SubjektifOverview {
 // --- mock exams ------------------------------------------------------------------------------
 
 export interface MockListItem {
-  id: number
+  id: WireId
   subject: string
   paperNumber: 1 | 2
   status: MockStatus
@@ -166,7 +191,7 @@ export interface MockListItem {
 
 /** #14: no answer keys (provisional shape, L-8). */
 export interface MockExamView {
-  id: number
+  id: WireId
   subject: string
   paperNumber: 1 | 2
   status: MockStatus
@@ -176,7 +201,7 @@ export interface MockExamView {
 
 export interface MockItem {
   no: number
-  questionId: number
+  questionId: WireId
   text: string
   options?: string[]
   /** P1: a letter. P2: the model answer. */
@@ -190,7 +215,7 @@ export interface MockItem {
 
 /** #15 / #16. */
 export interface MockResult {
-  id: number
+  id: WireId
   subject: string
   paperNumber: 1 | 2
   score: number
