@@ -100,6 +100,7 @@ When nginx itself rejects a body over `client_max_body_size`, it answers with th
 | Route | Body |
 |---|---|
 | `/api/` (over 3m) | `{"error":{"code":"PAYLOAD_TOO_LARGE","message":"Data terlalu besar.","requestId":"<nginx request id>"}}` |
+| `/api/admin/students/import` (over 3m) | `{"error":{"code":"PAYLOAD_TOO_LARGE","message":"Fail import melebihi had yang dibenarkan.","requestId":"<nginx request id>"}}`: the route's own contract copy (`StudentImportTooLargeSchema`), chosen by a `map $uri` in nginx.conf. A new route whose contract fixes its own 413 message needs a line in that map. |
 | `/api/files` (over 22m) | `{"error":{"code":"PAYLOAD_TOO_LARGE","message":"Fail terlalu besar.","requestId":"<nginx request id>"}}` |
 
 Source: the code is the API's (`AllExceptionsFilter` maps any body-parser 413 to `PAYLOAD_TOO_LARGE`; the contract lists it for the 413 responses that "nginx may answer first"). The message for JSON bodies is the contract's `INTAKE_MESSAGES.payloadTooLarge`; the upload message is the one used by the Pages worker (`deploy/pages-direct/_worker.js`). The worker uses code `VALIDATION_ERROR` for the same condition, which differs from the API; the API's code is followed here, and the worker is left as is. The API's own generic 413 message is English ("Payload Too Large."); nginx uses BM because the message is shown to the user.
