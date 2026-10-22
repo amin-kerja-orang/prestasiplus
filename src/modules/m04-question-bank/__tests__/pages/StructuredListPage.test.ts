@@ -63,7 +63,10 @@ function result(rows: StructuredRow[], total = rows.length, page = 1) {
 let wrapper: VueWrapper | null = null
 let router: Router
 
-async function render(url = '/admin/structured-questions'): Promise<VueWrapper> {
+async function render(
+  url = '/admin/structured-questions',
+  withCreateRoute = true,
+): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -73,7 +76,9 @@ async function render(url = '/admin/structured-questions'): Promise<VueWrapper> 
         name: 'm04.structured.detail',
         component: { template: '<div />' },
       },
-      { path: '/guru/soalan-berstruktur/cipta', component: { template: '<div />' } },
+      ...(withCreateRoute
+        ? [{ path: '/guru/soalan-berstruktur/cipta', component: { template: '<div />' } }]
+        : [{ path: '/:rest(.*)*', name: 'core.not-found', component: { template: '<div />' } }]),
     ],
   })
   await router.push(url)
@@ -106,6 +111,12 @@ describe('StructuredListPage (M04 S8)', () => {
     expect(w.get('[data-testid=structured-by-subject]').text()).toContain('Agihan Mengikut Subjek')
     const pills = w.findAll('[data-testid=structured-subject-pill]').map((p) => p.text())
     expect(pills).toEqual(['Bahasa Inggeris: 774', 'Biologi: 219'])
+  })
+
+  it('hides "Tambah Soalan" while the M10 create form is not routed (D9 dead link)', async () => {
+    const w = await render('/admin/structured-questions', false)
+    expect(w.find('[data-testid=structured-add]').exists()).toBe(false)
+    expect(w.findAll('a').some((a) => (a.attributes('href') ?? '').includes('soalan-berstruktur'))).toBe(false)
   })
 
   it('offers the alphabetical subjects, the levels and the KBAT scale 2 to 5', async () => {

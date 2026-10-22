@@ -31,6 +31,7 @@ import {
   KIND_ITEMS,
   KIND_LABEL,
   STATUS_BADGE,
+  WIRE,
   ageText,
 } from './ui'
 
@@ -110,9 +111,9 @@ const stats = computed<StatItem[]>(() => [
   },
   {
     key: 'draf',
-    label: 'Pembetulan',
+    label: WIRE ? 'Diterima (Draf)' : 'Pembetulan',
     value: counts.value?.draf ?? 0,
-    icon: 'arrow-u-up-left',
+    icon: WIRE ? 'check-circle' : 'arrow-u-up-left',
     active: draft.status === 'draf',
     onClick: () => (draft.status = 'draf'),
   },
@@ -145,7 +146,11 @@ function open(row: Row): void {
   <DsPage layout="list" data-testid="review-queue-page">
     <template #subtitle>
       <p class="text-body text-muted">
-        Semak soalan yang dimuat naik: lulus untuk diterbitkan, tolak atau minta pembetulan.
+        {{
+          WIRE
+            ? 'Semak soalan yang diekstrak: terima sebagai Draf atau tolak.'
+            : 'Semak soalan yang dimuat naik: lulus untuk diterbitkan, tolak atau minta pembetulan.'
+        }}
       </p>
     </template>
 
@@ -240,7 +245,7 @@ function open(row: Row): void {
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        {{ row.original.subjectName }}<template v-if="row.original.kertas"> · K{{ row.original.kertas }}</template>
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #ageDays-cell="{ row }">{{ ageText(row.original.ageDays) }}</template>

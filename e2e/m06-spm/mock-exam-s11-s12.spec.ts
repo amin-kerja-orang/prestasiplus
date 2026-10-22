@@ -339,7 +339,7 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M06-38 Duta card has all fields and a link; bintang only; seeds differ; S12 subject-matched', async ({
+  test('E2E-M06-38 Duta card has all fields and is not a link (M24 unbuilt); bintang only; seeds differ; S12 subject-matched', async ({
     page,
     loginAs,
     mock,
@@ -355,7 +355,9 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(pills).toContainText('📚')
     await expect(pills).toContainText('📍')
     await expect(pills).toContainText(/⭐ \d\.\d{2}/)
-    await expect(card).toHaveAttribute('href', /^\/bilik-duta\/.+/)
+    // D9 dead link: the M24 page is not routed, so the card is non-navigating markup, not a link.
+    expect(await card.evaluate((el) => el.tagName)).toBe('DIV')
+    await expect(card).not.toHaveAttribute('href', /.*/)
     const names = new Set<string>()
     for (const seed of [1, 2, 3, 4, 5, 6]) {
       await mock.setRandomSeed(seed)

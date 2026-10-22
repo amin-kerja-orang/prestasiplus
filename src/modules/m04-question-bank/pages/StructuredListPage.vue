@@ -14,7 +14,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useApi } from '@/composables'
+import { useApi, useRouteExists } from '@/composables'
 import {
   DsDataTable,
   DsFilterBar,
@@ -40,6 +40,8 @@ import { LOAD_ERROR } from '../lib/ui-errors'
 
 const route = useRoute()
 const router = useRouter()
+// DV: the M10 teacher form is not routed yet, so "Tambah Soalan" is hidden until it is.
+const { routeExists } = useRouteExists()
 
 /** The applied filters, read from the URL (the source of truth, as the live GET form). */
 const applied = computed(() => ({
@@ -208,6 +210,7 @@ async function resetFilter(): Promise<void> {
   <DsPage subtitle="Semua soalan berstruktur SPM dalam sistem" data-testid="structured-page">
     <template #actions>
       <UButton
+        v-if="routeExists(STRUCTURED_CREATE_PATH)"
         :to="STRUCTURED_CREATE_PATH"
         icon="i-ph-plus"
         class="min-h-11 shrink-0"
