@@ -62,22 +62,48 @@ describe.each(FILES)('%s', (file) => {
   })
 })
 
-describe('deploy-demo.yml backup artifact', () => {
+describe('deploy-demo.yml phases and backup artifact', () => {
   const wf = parse(read('.github/workflows/deploy-demo.yml')) as Workflow
-  const up = wf.jobs.deploy.steps.find((s) => s.uses?.startsWith('actions/upload-artifact@'))
+  const steps = wf.jobs.deploy.steps
+  const idx = (pred: (s: Step) => boolean) => steps.findIndex(pred)
+  const phase = (p: string) => idx((s) => s.env?.PP_PHASE === p)
+  const upload = idx((s) => Boolean(s.uses?.startsWith('actions/upload-artifact@')))
 
-  it('uploads only the encrypted dump, kept 7 days, even after a failed step', () => {
-    expect(up?.with?.['retention-days']).toBe(7)
-    expect(String(up?.with?.path)).toBe('${{ steps.deploy.outputs.backup_file }}')
-    expect(up?.with?.['if-no-files-found']).toBe('error')
-    expect(String((up as Step & { if?: string }).if)).toContain('always()')
+  it('runs build, backup, upload, apply in that order', () => {
+    expect(phase('build')).toBeGreaterThan(-1)
+    expect(phase('build')).toBeLessThan(phase('backup'))
+    expect(phase('backup')).toBeLessThan(upload)
+    expect(upload).toBeLessThan(phase('apply'))
   })
 
-  it('the script refuses to continue without a GPG key and writes only the .gpg as the backup output', () => {
+  it('gives the build phase (npm ci, vite, wrangler install) no secret', () => {
+    const env = steps[phase('build')].env ?? {}
+    for (const v of Object.values(env)) expect(String(v)).not.toMatch(/secrets\./)
+  })
+
+  it('uploads only the out/ dir of the backup phase, kept 7 days, named per attempt', () => {
+    const up = steps[upload]
+    expect(up.with?.['retention-days']).toBe(7)
+    expect(String(up.with?.path)).toBe('${{ steps.backup.outputs.backup_dir }}')
+    expect(String(up.with?.name)).toContain('${{ github.run_attempt }}')
+    expect(up.with?.['if-no-files-found']).toBe('error')
+  })
+
+  it('the script refuses to continue without a GPG key and keeps the plain dump out of out/', () => {
     const sh = read('scripts/deploy-demo.sh')
     expect(sh).toMatch(/BACKUP_GPG_PUBLIC_KEY is not configured/)
+    expect(sh).toMatch(/DUMP="\$WORK\/private\//)
     expect(sh).toMatch(/out="\$WORK\/out\/\$\(basename "\$DUMP"\)\.gpg"/)
-    expect(sh).toMatch(/gh_output backup_file "\$out"/)
+    expect(sh).toMatch(/gh_output backup_dir "\$WORK\/out"/)
     expect(sh).not.toMatch(/^\s*set -x/m)
+  })
+})
+
+describe('rollback-demo.yml backup provenance', () => {
+  const text = read('.github/workflows/rollback-demo.yml')
+  it('accepts only a deploy-demo workflow_dispatch run of this repository', () => {
+    expect(text).toContain('.path == ".github/workflows/deploy-demo.yml"')
+    expect(text).toContain('.event == "workflow_dispatch"')
+    expect(text).toContain('.repository.full_name == $repo')
   })
 })

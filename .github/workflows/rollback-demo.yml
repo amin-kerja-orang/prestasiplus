@@ -17,7 +17,7 @@ on:
         type: string
         default: be/demo-deploy-2
       pages_deployment_id:
-        description: 'Pages deployment id to roll back to (empty = the production deployment before the current one)'
+        description: 'Pages deployment id to roll back to (empty = the one the deploy run recorded, else the previous successful production deployment)'
         required: false
         type: string
         default: ''
@@ -26,8 +26,13 @@ on:
         required: true
         type: boolean
         default: true
+      backup_run_attempt:
+        description: 'Attempt number of that run (1 unless the deploy job was re-run)'
+        required: false
+        type: string
+        default: '1'
       backup_run_id:
-        description: 'Run id of the deploy-demo run whose demo-db-backup-<run id> artifact to restore (needed when restore_db)'
+        description: 'Run id of the deploy-demo run whose backup to restore (needed when restore_db)'
         required: false
         type: string
         default: ''
@@ -49,20 +54,34 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Check inputs
+      - name: Check inputs and the backup run
         env:
           RESTORE_DB: ${{ inputs.restore_db }}
           BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+          BACKUP_RUN_ATTEMPT: ${{ inputs.backup_run_attempt }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$RESTORE_DB" = true ] && ! [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
-            echo "NO-GO: inputs: restore_db needs backup_run_id (the numeric run id of the deploy-demo run)"; exit 1
-          fi
+          set -euo pipefail
+          [ "$RESTORE_DB" = true ] || exit 0
+          [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ && "$BACKUP_RUN_ATTEMPT" =~ ^[0-9]+$ ]] \
+            || { echo "NO-GO: inputs: restore_db needs backup_run_id and backup_run_attempt (numbers)"; exit 1; }
+          # The artifact must come from a manual deploy-demo run of this repository on an allowed branch.
+          umask 077; printf 'Authorization: Bearer %s\n' "$GH_TOKEN" > "$RUNNER_TEMP/gh.h"
+          run=$(curl -sS --fail-with-body -H @"$RUNNER_TEMP/gh.h" -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID")
+          rm -f "$RUNNER_TEMP/gh.h"
+          jq -e --arg repo "$GITHUB_REPOSITORY" '.path == ".github/workflows/deploy-demo.yml" and .event == "workflow_dispatch"
+            and .repository.full_name == $repo and (.head_branch == "feature/v2-backend" or .head_branch == "ops/AZ-deploy-demo-workflow")' <<<"$run" >/dev/null \
+            || { echo "NO-GO: inputs: run $BACKUP_RUN_ID is not a deploy-demo run (workflow_dispatch, allowed branch) of this repository"; exit 1; }
+          echo "backup run $BACKUP_RUN_ID: deploy-demo on $(jq -r .head_branch <<<"$run"), $(jq -r .created_at <<<"$run"), conclusion $(jq -r '.conclusion // "running"' <<<"$run")"
       - name: Postgres 17 client
         if: inputs.restore_db
         run: |
           set -euo pipefail
           sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
           sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fpr=$(gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc | awk -F: '$1=="fpr"{print $10; exit}')
+          [ "$fpr" = B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 ] || { echo "NO-GO: setup: unexpected PGDG key fingerprint $fpr"; exit 1; }
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17 >/dev/null
@@ -71,7 +90,7 @@ jobs:
         if: inputs.restore_db
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: demo-db-backup-${{ inputs.backup_run_id }}
+          name: demo-db-backup-${{ inputs.backup_run_id }}-${{ inputs.backup_run_attempt }}
           run-id: ${{ inputs.backup_run_id }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/backup
@@ -89,12 +108,14 @@ jobs:
             mapfile -t f < <(find "$RUNNER_TEMP/backup" -type f -name '*.dump.gpg')
             [ "${#f[@]}" = 1 ] || { echo "NO-GO: inputs: expected exactly one *.dump.gpg in the artifact, found ${#f[@]}"; exit 1; }
             echo "dump=${f[0]}" >> "$GITHUB_OUTPUT"
+            p="$RUNNER_TEMP/backup/pages-previous-deployment.txt"
+            if [ -s "$p" ]; then id=$(head -1 "$p"); [[ "$id" =~ ^[A-Za-z0-9-]+$ ]] && echo "pages_prev=$id" >> "$GITHUB_OUTPUT"; fi
           fi
       - name: Roll back (scripts/deploy-demo.sh rollback)
         env:
           ROLLBACK_RENDER_SHA: ${{ inputs.render_sha }}
           ROLLBACK_RENDER_BRANCH: ${{ inputs.render_branch }}
-          ROLLBACK_PAGES_DEPLOYMENT_ID: ${{ inputs.pages_deployment_id }}
+          ROLLBACK_PAGES_DEPLOYMENT_ID: ${{ inputs.pages_deployment_id || steps.prep.outputs.pages_prev }}
           RESTORE_DB: ${{ inputs.restore_db && '1' || '0' }}
           ROLLBACK_DUMP_GPG: ${{ steps.prep.outputs.dump }}
           PP_WORK_DIR: ${{ runner.temp }}/rollback-demo

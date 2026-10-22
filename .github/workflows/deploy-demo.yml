@@ -52,6 +52,8 @@ jobs:
           set -euo pipefail
           sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
           sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          fpr=$(gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc | awk -F: '$1=="fpr"{print $10; exit}')
+          [ "$fpr" = B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 ] || { echo "NO-GO: setup: unexpected PGDG key fingerprint $fpr"; exit 1; }
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17 >/dev/null
@@ -64,20 +66,30 @@ jobs:
           [ -n "$SUPABASE_CA_CERT" ] || { echo "NO-GO: setup: variable SUPABASE_CA_CERT is not set on environment demo"; exit 1; }
           umask 077
           printf '%s\n' "$SUPABASE_CA_CERT" > "$RUNNER_TEMP/supabase-ca.crt"
-      - name: Deploy (scripts/deploy-demo.sh deploy)
-        id: deploy
+      # Phase 1: no secret in this step's environment (npm lifecycle scripts, vite config and wrangler install run here).
+      - name: Build (checkout checks, npm ci, SPA build, wrangler)
         env:
           BACKEND_SHA: ${{ inputs.backend_sha }}
           FRONTEND_SHA: ${{ inputs.frontend_sha }}
           PP_MODE: ${{ inputs.mode }}
-          KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
+          PP_PHASE: build
           PP_NO_FETCH: '1'
+          PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
+        run: bash scripts/deploy-demo.sh deploy
+      # Phase 2: read-only target checks, pg_dump, GPG encryption. Nothing is changed yet.
+      - name: Backup (target checks, pg_dump, encrypt)
+        id: backup
+        env:
+          BACKEND_SHA: ${{ inputs.backend_sha }}
+          FRONTEND_SHA: ${{ inputs.frontend_sha }}
+          PP_MODE: ${{ inputs.mode }}
+          PP_PHASE: backup
+          KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
           PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
           SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt
           DEMO_REF: ${{ vars.DEMO_REF }}
           PGURL: ${{ secrets.SUPABASE_POOLER_URL }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
           BACKUP_GPG_PUBLIC_KEY: ${{ vars.BACKUP_GPG_PUBLIC_KEY }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
@@ -88,13 +100,36 @@ jobs:
           PAGES_URL: ${{ vars.PAGES_URL }}
           PAGES_BRANCH: ${{ vars.PAGES_BRANCH }}
         run: bash scripts/deploy-demo.sh deploy
-      # The encrypted pre-deploy dump is the rollback source. Uploaded even when a later step fails; never the plain dump.
+      # The encrypted pre-deploy dump is the rollback source: it leaves the runner BEFORE any destructive step.
+      # Only out/ is uploaded (the .gpg file + the Pages rollback target id); the plain dump stays in private/.
       - name: Keep the encrypted backup (7 days)
-        if: always() && steps.deploy.outputs.backup_ready == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: demo-db-backup-${{ github.run_id }}
-          path: ${{ steps.deploy.outputs.backup_file }}
+          name: demo-db-backup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.backup.outputs.backup_dir }}
           retention-days: 7
           if-no-files-found: error
           compression-level: 0
+      # Phase 3: reset, migrate, seed, lockdown, edge secret, Render + Pages deploy, smoke and walkthrough.
+      - name: Apply (DB, secrets, deploy, smoke, walkthrough)
+        env:
+          BACKEND_SHA: ${{ inputs.backend_sha }}
+          FRONTEND_SHA: ${{ inputs.frontend_sha }}
+          PP_MODE: ${{ inputs.mode }}
+          PP_PHASE: apply
+          KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
+          PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
+          SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt
+          DEMO_REF: ${{ vars.DEMO_REF }}
+          PGURL: ${{ secrets.SUPABASE_POOLER_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_URL: ${{ vars.RENDER_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+          PAGES_BRANCH: ${{ vars.PAGES_BRANCH }}
+        run: bash scripts/deploy-demo.sh deploy
