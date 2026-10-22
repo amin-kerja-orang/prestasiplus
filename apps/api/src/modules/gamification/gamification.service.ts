@@ -19,6 +19,7 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
+import { ClassesRepository } from '../classes/classes.repository'
 import { MAX_AMOUNT_PER_CALL, WalletService, walletLockOrder } from '../wallet'
 import { titleOf } from '../wallet/rules'
 import {
@@ -30,6 +31,7 @@ import {
   REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
 import { GamificationRepository, type ChallengeRecord, type Db } from './gamification.repository'
+import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
 import { GamificationPorts } from './ports'
 import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, round, shareEncode, tierView } from './helpers'
 import { validationFailure } from './validation'
@@ -141,6 +143,7 @@ export class GamificationService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     private readonly ports: GamificationPorts,
+    @Inject(ClassesRepository) private readonly classes: ClassesRepository,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -235,29 +238,47 @@ export class GamificationService {
     return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length } }
   }
 
-  /** `GET /gamification/leaderboard` (S14): top 50 by lifetime syiling, global; rows other people may see only. */
-  async leaderboard(): Promise<GamificationLeaderboard> {
-    const ranked = (await this.repo.leaderboard(this.repo.handle(), LEADERBOARD_SIZE)).map((w, i) => ({ w, rank: i + 1 }))
+  /**
+   * `GET /gamification/leaderboard` (S14): top 50 by lifetime syiling, global; rows other people may see only.
+   * Names (#76, LEAD): the full name and the user id only within the viewer's scope (see `canSeeRankedName`); every
+   * other row shows first name + initial and the redacted id. Ranks and figures are the same for everyone.
+   */
+  async leaderboard(viewer: RankingViewer): Promise<GamificationLeaderboard> {
+    const [wallets, scope] = await Promise.all([this.repo.leaderboard(this.repo.handle(), LEADERBOARD_SIZE), this.nameScope(viewer)])
+    const ranked = wallets.map((w, i) => {
+      const visible = canSeeRankedName(viewer, scope, w.userId, w.schoolId)
+      const name = visible ? w.name : shortName(w.name)
+      return { w, rank: i + 1, userId: visible ? w.userId : RANKING_REDACTED_ID, name, initials: initialsOf(name) }
+    })
     return {
-      podium: ranked.slice(0, 3).map(({ w, rank }) => ({
+      podium: ranked.slice(0, 3).map(({ w, rank, userId, name, initials }) => ({
         rank,
-        userId: w.userId,
-        name: w.name,
-        initials: initialsOf(w.name),
+        userId,
+        name,
+        initials,
         totalSyilingEarned: w.total,
         tier: { key: w.tierKey, labelMs: w.tierLabel, icon: w.tierIcon },
       })),
-      rows: ranked.slice(3).map(({ w, rank }) => ({
+      rows: ranked.slice(3).map(({ w, rank, userId, name, initials }) => ({
         rank,
-        userId: w.userId,
-        name: w.name,
-        initials: initialsOf(w.name),
+        userId,
+        name,
+        initials,
         title: titleOf(w.total).name,
         level: w.level,
         totalSyilingEarned: w.total,
         tierIcon: w.tierIcon,
       })),
     }
+  }
+
+  /** A teacher's pupils (active, real members of the own active classes, read through the classes owner) and a school admin's school. */
+  private async nameScope(viewer: RankingViewer): Promise<NameScope> {
+    if (viewer.role === 'school_admin') return { ownPupils: new Set(), schoolId: viewer.schoolId }
+    if (viewer.role !== 'teacher') return { ownPupils: new Set(), schoolId: null }
+    const classes = (await this.classes.forTeacher(viewer.userId)).filter((c) => c.isActive)
+    const rosters = await this.classes.memberIdsOf(classes.map((c) => c.id))
+    return { ownPupils: new Set([...rosters.values()].flat()), schoolId: null }
   }
 
   /** `GET /gamification/achievements` (S15): an unknown `rarity` answers `items: []`. */

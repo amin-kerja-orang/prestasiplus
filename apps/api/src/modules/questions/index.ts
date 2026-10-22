@@ -1,6 +1,8 @@
 export { QuestionsModule } from './questions.module'
 export { QuestionsRepository } from './questions.repository'
 export { QuestionsService } from './questions.service'
+export { PkskQuestionsService, PKSK_TO_V2, pkskStatusOf } from './pksk.service'
+export type { PkskStatus, PkskListFilter, PkskQuestionWrite, PkskQuestionRecord, PkskQuestionRow, PkskServedQuestion, PkskAnswerKeyRecord } from './pksk.service'
 export { TRANSITION_CONFLICT_MESSAGE, transitionConflict, PUBLISH_TAG_MESSAGES, questionNotFound } from './errors'
 export { MOCK_STATUS_TO_V2, mockStatusToV2 } from './status'
 export * from './types'

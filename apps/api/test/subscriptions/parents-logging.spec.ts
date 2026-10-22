@@ -26,8 +26,8 @@ describe('the parent invite token never reaches the access log (security review 
   it('rewrites the token in every URL form (unit)', () => {
     const token = '0123456789abcdef'.repeat(4)
     expect(redactUrl(`/api/parent-invites/${token}`)).toBe('/api/parent-invites/[redacted]')
-    expect(redactUrl(`/api/parent-invites/${token.toUpperCase()}/accept?x=1`)).toBe('/api/parent-invites/[redacted]/accept?x=1')
-    expect(redactUrl(`https://app.test/jemput/parent-invites/${token}#frag`)).toBe('https://app.test/jemput/parent-invites/[redacted]#frag')
+    expect(redactUrl(`/api/parent-invites/${token.toUpperCase()}/accept?x=1`)).toBe('/api/parent-invites/[redacted]/accept?x=[redacted]')
+    expect(redactUrl(`https://app.test/jemput/parent-invites/${token}#frag`)).toBe('https://app.test/jemput/parent-invites/[redacted]')
     expect(redactUrl('/api/me/parent-invite')).toBe('/api/me/parent-invite')
   })
 

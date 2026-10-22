@@ -11,17 +11,21 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { inviteUrl, whatsAppHref } from '../../lib/jemput'
 import WhatsAppIcon from './WhatsAppIcon.vue'
 
-const props = defineProps<{ token: string; regenerating: boolean }>()
+const props = defineProps<{ token: string | null; regenerating: boolean }>()
 const emit = defineEmits<{ regenerate: [] }>()
 
 const COPIED_MS = 2000
 const copied = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
 
-const url = computed(() => inviteUrl(props.token, window.location.origin))
-const waHref = computed(() => whatsAppHref(url.value))
+// http mode, later visit: the server keeps only a hash, so there is no clear token to show (D58). Never
+// build a URL from an absent token: the field stays empty and Salin / WhatsApp are disabled until
+// "Jana Link Baru" issues one.
+const url = computed(() => (props.token ? inviteUrl(props.token, window.location.origin) : ''))
+const waHref = computed(() => (url.value ? whatsAppHref(url.value) : undefined))
 
 async function copy(): Promise<void> {
+  if (!url.value) return
   try {
     await navigator.clipboard.writeText(url.value)
   } catch {
@@ -66,6 +70,7 @@ onBeforeUnmount(() => {
         :color="copied ? 'success' : 'primary'"
         :icon="copied ? 'i-ph-check-bold' : 'i-ph-copy-duotone'"
         class="shrink-0 justify-center"
+        :disabled="!url"
         :data-copied="copied ? 'true' : 'false'"
         data-testid="jemput-copy"
         @click="copy"
@@ -76,6 +81,7 @@ onBeforeUnmount(() => {
     <div class="mt-3 flex flex-col gap-3 sm:flex-row">
       <UButton
         :to="waHref"
+        :disabled="!url"
         target="_blank"
         rel="noopener noreferrer"
         size="xl"

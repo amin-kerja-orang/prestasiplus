@@ -7,7 +7,7 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
-import { api, type BlobResult, type ListResult } from '@/api'
+import { api, wireId, wireIdOpt, type BlobResult, type ListResult } from '@/api'
 
 import type {
   BidangOption,
@@ -62,9 +62,19 @@ export function fetchGuruClasses(options: Signal = {}): Promise<ListResult<GuruC
   return api.list<GuruClass>('/api/guru/classes', withSignal(options))
 }
 
-/** #13 `POST /api/guru/classes` (422 with `fields`). */
+/**
+ * #13 `POST /api/guru/classes` (422 with `fields`). `subjectId` and `schoolId` go out as string ids
+ * in http mode (`ClassCreateRequestSchema`; a number is 422 "Sila pilih subjek.", D-01).
+ */
 export function createGuruClass(body: CreateClassRequest): Promise<GuruClass> {
-  return api.post<GuruClass>('/api/guru/classes', { body })
+  const { schoolId, subjectId, ...rest } = body
+  return api.post<GuruClass>('/api/guru/classes', {
+    body: {
+      ...rest,
+      ...(schoolId !== undefined ? { schoolId: wireIdOpt(schoolId) } : {}),
+      subjectId: wireId(subjectId),
+    },
+  })
 }
 
 /** #14 `GET /api/guru/classes/:id/qr-data` (404 for a class the viewer does not own). */

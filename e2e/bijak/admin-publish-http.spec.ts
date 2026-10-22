@@ -13,8 +13,8 @@
  *
  * What http mode does (code, not a run): since B3 (003cff0b) `bijakAdminServer()` returns the admin
  * http client (server/http-admin.ts, wired to BE-39: papers list/get/create/save/publish/unpublish/
- * delete, blueprints). Intake, review-queue and bank methods have no backend route and REJECT with
- * `BijakError('unavailable', 'Fungsi ini belum tersedia.')`; their pages show the generic load error.
+ * delete, blueprints). The intake, review-queue and bank methods were wired afterwards (AZ-20, see
+ * intake-review-http.spec.ts); only the bank "Sunting" versions and "Minta Pembetulan" have no route.
  * The demo path is Pembina Kertas. B4 (155cf001 on v2-backend: composite builder source) gives the
  * builder the PoC questions when the API runs with BIJAK_POC_QUESTIONS=true, so create + publish
  * works. Subject/kertas used: Matematik Kertas 1 (PoC blueprint "Objektif", take 10, 10 marks, pool
@@ -164,56 +164,44 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await expectNoHorizontalScrollHttp(page)
   })
 
-  // Out of scope for the demo (no backend route yet): the admin http client rejects with
-  // BijakError('unavailable') and each page shows a friendly state, no crash. Targets the FINAL FE
-  // (550cfec6): `DsEmptyState` data-testid="unavailable-state" titled UNAVAILABLE_TITLE
-  // ("Fungsi ini belum tersedia dalam demo", server/errors.ts). Tolerant of the previous build
-  // (38269c8e), which showed the generic load-error copy instead (OLD_COPY below).
-  test(
-    'Bank Soalan, Baris Gilir Semakan and Intake show a graceful unavailable state @bijak',
-    {
-      tag: '@provisional',
-      annotation: {
-        type: 'provisional',
-        description:
-          'known limitation, not a go/no-go blocker; post-demo follow-up (no Bijak backend route for bank, review queue, intake)',
-      },
-    },
-    async ({ page }) => {
-      const errors: string[] = []
-      page.on('pageerror', (e) => errors.push(e.message))
-      await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
-      const NEW_TITLE = 'Fungsi ini belum tersedia dalam demo'
-      // [route, page test id, previous-build copy]. File:line in 550cfec6 (unavailable-state):
-      // BankPage.vue:239, ReviewQueuePage.vue:195, ReviewItemPage.vue:118,
-      // IntakeListPage.vue:132, IntakeReviewPage.vue:265.
-      const screens = [
-        ['/admin/spm/soalan', 'bank-page', 'Tidak dapat memuatkan bank soalan.'],
-        ['/admin/spm/semakan', 'review-queue-page', 'Tidak dapat memuatkan baris gilir.'],
-        [
-          '/admin/spm/semakan/tiada-item',
-          'review-item-page',
-          'Tidak dapat memuatkan item semakan.',
-        ],
-        ['/admin/spm/soalan/ekstrak', 'intake-list-page', 'Tidak dapat memuatkan senarai ekstrak.'],
-        ['/admin/spm/soalan/ekstrak/tiada-kumpulan', 'intake-review-page', ''],
-      ] as const
-      for (const [route, testId, oldCopy] of screens) {
-        await page.goto(route)
-        await expect(page.locator('#app')).not.toBeEmpty()
-        const state = page.getByTestId('unavailable-state')
-        const seen = oldCopy ? state.or(page.getByText(oldCopy)) : state
-        await expect(seen.first(), `${route} shows its unavailable state`).toBeVisible()
-        if (await state.count()) await expect(state).toContainText(NEW_TITLE)
-        // Not blank: the page container (when it has a test id) is mounted.
-        if (testId && (await page.getByTestId(testId).count())) {
-          await expect(page.getByTestId(testId)).toBeVisible()
-        }
-        await expectNoHorizontalScrollHttp(page)
-      }
-      expect(errors).toEqual([])
-    },
-  )
+  // Wired since AZ-20 (BE-37 intake, BE-38 items, BE-09 questions): the bank, the review queue and
+  // the intake list load for real. The full flow is intake-review-http.spec.ts. An unknown id shows
+  // the page's own not-found / load-error state (never the "belum tersedia" unavailable state).
+  test('Bank Soalan, Baris Gilir Semakan and Intake load; unknown ids show their error state @bijak', async ({
+    page,
+  }) => {
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+    const loaded = [
+      ['/admin/spm/soalan', 'bank-page'],
+      ['/admin/spm/semakan', 'review-queue-page'],
+      ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
+    ] as const
+    for (const [route, testId] of loaded) {
+      await page.goto(route)
+      await expect(page.getByTestId(testId), `${route} mounts`).toBeVisible()
+      await expect(page.getByTestId('unavailable-state')).toHaveCount(0)
+      await expect(page.getByText(/^Tidak dapat memuatkan/)).toHaveCount(0)
+      await expectNoHorizontalScrollHttp(page)
+    }
+    const missing = [
+      ['/admin/spm/semakan/tiada-item', 'review-item-page', 'Tidak dapat memuatkan item semakan.'],
+      [
+        '/admin/spm/soalan/ekstrak/tiada-kumpulan',
+        'intake-review-page',
+        'Kumpulan ekstrak tidak ditemui.',
+      ],
+    ] as const
+    for (const [route, testId, copy] of missing) {
+      await page.goto(route)
+      await expect(page.getByTestId(testId), `${route} mounts`).toBeVisible()
+      await expect(page.getByText(copy).first()).toBeVisible()
+      await expect(page.getByTestId('unavailable-state')).toHaveCount(0)
+      await expectNoHorizontalScrollHttp(page)
+    }
+    expect(errors).toEqual([])
+  })
 
   test('Terbitkan on an empty draft is refused with the gap list, then cleaned up @bijak', async ({
     page,

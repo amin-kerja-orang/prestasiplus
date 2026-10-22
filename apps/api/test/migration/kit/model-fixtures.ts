@@ -63,6 +63,17 @@ async function parentClassroom(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-45: a room needs a host and a six-character A-Z0-9 code (ck_game_rooms_code). */
+async function parentRoom(query: FixtureQuery): Promise<string> {
+  const code = `FX${String((seq += 1)).padStart(4, '0')}`
+  await query(
+    `insert into game_rooms (code, game, subject, grade_level, match_mode, max_players, host_id)
+     values ($1, 'papan-bijak', 'MATEMATIK', 'DARJAH_4', 'same_grade', 4, $2)`,
+    [code, await parentUser(query)],
+  )
+  return code
+}
+
 /** BE-19: the columns a headcount config needs: its teacher, class, subject and level (the class has its own level row). */
 async function headcountConfigColumns(query: FixtureQuery): Promise<Record<string, unknown>> {
   const level = await parentLevel(query)
@@ -91,10 +102,22 @@ async function parentHeadcountConfig(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+/** BE-44: a battle needs a mode and a question type (checks). */
+async function parentBattle(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text as id`)
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // ai_usage_logs (BE-36): provider has a check.
+  ai_usage_logs: { provider: 'mock' },
   articles: async (query) => ({ author_id: await parentUser(query), category: 'UMUM' }),
   audio_kbat_sets: async (query) => ({ created_by_id: await parentUser(query), education_level_id: await parentLevel(query), subject_id: await parentSubject(query) }),
   banners: { banner_type: 'HERO' },
+  // battle_participants (BE-44): the battle and the player must exist; side has a check.
+  battle_participants: async (query) => ({ battle_id: await parentBattle(query), side: 'A', user_id: await parentUser(query) }),
+  // battles (BE-44): mode and question_type have checks.
+  battles: { mode: 'quick_match', question_type: 'biasa' },
   // coin_ledger (BE-11): type has a check and the sign of amount follows it.
   coin_ledger: async (query) => ({ user_id: await parentUser(query), type: 'earn', source: 'quiz_practice', amount: 1, balance_after: 1, description: 'Latih Tubi' }),
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
@@ -121,6 +144,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // feedback (BE-20): the user must exist; role and satisfaction have checks.
   feedback: async (query) => ({ user_id: await parentUser(query), role: 'student', month: '2026-10-01', satisfaction: 4 }),
+  // foster_applications (BE-47): the student and the applicant must exist; category has a check.
+  foster_applications: async (query) => ({ student_id: await parentUser(query), applicant_user_id: await parentUser(query), applicant_role: 'student', student_category: 'B40', reason: 'Sebab Contoh' }),
   // headcount_configs (BE-19): teacher, class, subject and level must exist; mode, OTR count and year have checks.
   headcount_configs: headcountConfigColumns,
   // headcount_entries (BE-19): the config and the pupil must exist.
@@ -134,6 +159,24 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     alert_description: 'Huraian contoh',
     action_taken: 'Tindakan contoh',
   }),
+  // game_rooms, game_room_players, game_sessions (BE-45): host / owner must exist; code, game, subject, level, mode have checks.
+  game_room_players: async (query) => ({ room_code: await parentRoom(query), user_id: await parentUser(query) }),
+  game_rooms: async (query) => ({
+    code: `FY${String((seq += 1)).padStart(4, '0')}`,
+    game: 'papan-bijak',
+    subject: 'MATEMATIK',
+    grade_level: 'DARJAH_4',
+    match_mode: 'same_grade',
+    max_players: 4,
+    host_id: await parentUser(query),
+  }),
+  game_sessions: async (query) => ({ user_id: await parentUser(query), game: 'betul-salah' }),
+  // marketplace_* (BE-46): the category and the owner must exist; the text columns have check constraints.
+  marketplace_products: async (query) => {
+    const category = await query<{ id: string }>(`insert into marketplace_categories (slug, name, icon) values ($1, 'Kategori Contoh', 'fa-book') returning id::text as id`, [next('fx-cat-')])
+    return { category_id: (category[0] as { id: string }).id, slug: next('fx-produk-'), condition: 'new', stock_status: 'available', status: 'draft', shipping_method: 'pickup', price: 1 }
+  },
+  marketplace_sellers: async (query) => ({ user_id: await parentUser(query), status: 'pending' }),
   notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
@@ -204,4 +247,10 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   missions: async (query) => ({ teacher_id: await parentUser(query), title: 'Misi Contoh', mission_type: 'latih_tubi', mission_date: '2026-10-20', subject_id: await parentSubject(query), question_count: 10 }),
   // question_sets (BE-18): teacher and class must exist.
   question_sets: async (query) => ({ teacher_id: await parentUser(query), classroom_id: await parentClassroom(query), title: 'Set Contoh' }),
+  // pksk_packages / pksk_accesses (BE-42): level is checked (T1/T4/ALL); an access needs a user and a package.
+  pksk_packages: { level: 'T1' },
+  pksk_accesses: async (query) => ({
+    user_id: await parentUser(query),
+    package_id: (await query<{ id: string }>(`insert into pksk_packages (name, level) values ('Pakej PKSK Contoh', 'T1') returning id::text as id`))[0]!.id,
+  }),
 }

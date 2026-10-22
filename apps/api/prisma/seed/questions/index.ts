@@ -24,13 +24,13 @@ import { SEED_GROUPS, SEED_QUESTIONS, SEED_STIMULI, type SeedQuestion } from './
 
 const json = (v: unknown): Prisma.InputJsonValue => v as Prisma.InputJsonValue
 
-interface Tag {
+export interface Tag {
   unitNodeId: bigint
   spNodeId: bigint
 }
 
 /** First sp node under each unit of (subject, level), unit by unit in sort order. */
-async function loadTags(tx: TxClient, subjectId: bigint, levelId: bigint): Promise<Tag[]> {
+export async function loadTags(tx: TxClient, subjectId: bigint, levelId: bigint): Promise<Tag[]> {
   const nodes = await tx.curriculumNode.findMany({
     where: { subjectId, educationLevelId: levelId, kind: { in: ['unit', 'sk', 'sp'] } },
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -51,7 +51,7 @@ async function loadTags(tx: TxClient, subjectId: bigint, levelId: bigint): Promi
   return tags
 }
 
-async function writePart(
+export async function writePart(
   tx: TxClient, versionId: bigint, part: QuestionPart, position: number, parentId: bigint | null, depth: number,
 ): Promise<void> {
   if ('children' in part) {

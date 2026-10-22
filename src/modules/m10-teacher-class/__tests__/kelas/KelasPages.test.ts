@@ -284,7 +284,7 @@ describe('S5 KelasCreatePage', () => {
     await flushPromises()
     expect(api.createGuruClass).toHaveBeenCalledWith({
       name: '5 Bestari',
-      subjectId: 4,
+      subjectId: '4',
       educationLevel: 'tingkatan-5',
       description: null,
     })

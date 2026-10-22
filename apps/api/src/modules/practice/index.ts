@@ -1,7 +1,10 @@
 export { PracticeModule } from './practice.module'
 export { PracticeRepository, queueOrder } from './practice.repository'
+export { PracticeService } from './practice.service'
 export type {
   AnswerFilter,
+  DirectCompleted,
+  DirectCompletion,
   AnswerRecord,
   HistoryStats,
   MasteryRecord,

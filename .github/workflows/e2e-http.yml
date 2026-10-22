@@ -2,8 +2,10 @@
 #   Actions -> e2e-http -> Run workflow
 # Builds compose.yaml + compose.http.yaml (as `npm run stack:up`), runs the @api specs
 # (`npm run test:e2e:http`: e2e/api/** and the Bijak *-http specs) on mobile, tablet and desktop.
-# Secret needed: E2E_DEMO_PASSWORD. It must equal the demo-seed password (the seed default, see
-# apps/api/prisma/seed/core/identity.ts) unless SEED_DEMO_PASSWORD_HASH is set in the job's .env.api.
+# Secret needed: E2E_DEMO_PASSWORD (repository Actions secret, set by the LEAD; see docs/ops/ci-secrets.md).
+# It must equal the demo-seed password (the seed default, see apps/api/prisma/seed/core/identity.ts) unless
+# SEED_DEMO_PASSWORD_HASH is set in the job's .env.api. When the secret is absent the `preflight` job posts a
+# notice and the e2e job is SKIPPED (not failed), so a manual run never goes red only for a missing secret (AZ-24).
 name: e2e-http
 
 on:
@@ -17,7 +19,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # AZ-24: secrets cannot be read in a job-level `if:`, so a tiny job reports whether the secret exists
+  # (true/false only, never the value) and the e2e job runs only when it does.
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      has_password: ${{ steps.check.outputs.has_password }}
+    steps:
+      - name: Is the E2E_DEMO_PASSWORD secret set?
+        id: check
+        shell: bash
+        env:
+          E2E_DEMO_PASSWORD: ${{ secrets.E2E_DEMO_PASSWORD }}
+        run: |
+          if [ -n "${E2E_DEMO_PASSWORD:-}" ]; then
+            echo "has_password=true" >> "$GITHUB_OUTPUT"
+            echo "E2E_DEMO_PASSWORD is set; the e2e-http job runs."
+          else
+            echo "has_password=false" >> "$GITHUB_OUTPUT"
+            msg="e2e-http skipped: the repository secret E2E_DEMO_PASSWORD is not set. The LEAD sets it under Settings > Secrets and variables > Actions (see docs/ops/ci-secrets.md)."
+            echo "::notice title=e2e-http skipped::${msg}"
+            echo "### e2e-http skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "${msg}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   e2e-http:
+    needs: preflight
+    if: needs.preflight.outputs.has_password == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -51,7 +80,7 @@ jobs:
 
       - name: Wait for the frontend health endpoint
         run: |
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl -fsS "$BASE_URL/healthz" >/dev/null; then echo "healthy"; exit 0; fi
             sleep 5
           done

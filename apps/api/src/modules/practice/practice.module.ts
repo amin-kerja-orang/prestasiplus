@@ -20,6 +20,6 @@ import { PracticeStartPlanner } from './start.planner'
   imports: [ThrottleModule, CurriculumModule, SubscriptionsModule],
   controllers: [PracticeController],
   providers: [PracticeRepository, PracticeStartPlanner, PracticeService, PracticePorts, PracticeAggregateService],
-  exports: [PracticeRepository, PracticePorts, PracticeAggregateService],
+  exports: [PracticeRepository, PracticePorts, PracticeAggregateService, PracticeService],
 })
 export class PracticeModule {}
