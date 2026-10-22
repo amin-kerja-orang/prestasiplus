@@ -91,6 +91,25 @@ describe('a failed stage stops the run', () => {
   })
 })
 
+describe('--files-dir (BE-29 AC9)', () => {
+  it('reaches the activity dry-run and its apply unchanged, so both input hashes cover the same files', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    const log = capture()
+    const code = await runCli(['migrate:all', '--apply', '--as-of=2026-06-01', '--files-dir=/srv/cloud-files'], { pool: fakePool, env, out: log.out, err: log.err })
+    expect(code).toBe(0)
+    expect(mocks.runActivity).toHaveBeenCalledTimes(2)
+    for (const [o] of mocks.runActivity.mock.calls) expect(o).toMatchObject({ filesDir: '/srv/cloud-files' })
+  })
+
+  it('is left unset without the flag (no file is migrated)', async () => {
+    mocks.runCore.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    mocks.runActivity.mockResolvedValueOnce(report('dry-run', 'succeeded')).mockResolvedValueOnce(report('apply', 'succeeded'))
+    await runAll(options('apply'))
+    for (const [o] of mocks.runActivity.mock.calls) expect((o as { filesDir?: string }).filesDir).toBeUndefined()
+  })
+})
+
 describe('a stage that throws', () => {
   it('ApplyRefusedError exits 3', async () => {
     mocks.runCore.mockRejectedValueOnce(new ApplyRefusedError('abc'))

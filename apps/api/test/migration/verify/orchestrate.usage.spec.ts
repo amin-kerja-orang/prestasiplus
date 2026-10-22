@@ -106,6 +106,8 @@ describe('usage errors exit 2', () => {
     expect((await run(['migrate:all', '--as-of=2026-6-1'])).code).toBe(2)
     expect((await run(['migrate:all', '--batch-size=0'])).code).toBe(2)
     expect((await run(['migrate:all', '--content-owner=abc'])).code).toBe(2)
+    expect((await run(['migrate:all', '--files-dir='])).code).toBe(2)
+    expect((await run(['migrate:delta', '--since=2026-06-02T00:00:00Z', '--as-of=2026-06-01', '--files-dir'])).code).toBe(2)
     expect((await run(['migrate:all', '--out-dir=/tmp/not-a-migration-folder'])).code).toBe(2)
     expect((await run(['migrate:link-questions', '--batch-size=x'])).code).toBe(2)
     expect(fakePool.query).not.toHaveBeenCalled()

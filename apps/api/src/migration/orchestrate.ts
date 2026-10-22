@@ -2,7 +2,7 @@
  * BE-30 orchestrator: the six `migrate:*` commands that drive a whole cut-over rehearsal.
  *
  *   npm run migrate:all -w @pp/api -- [--dry-run | --apply] [--as-of YYYY-MM-DD] [--batch-size N]
- *       [--content-owner <v2 user id>] [--out-dir <.migration-out path>]
+ *       [--content-owner <v2 user id>] [--files-dir <export dir outside the repo>] [--out-dir <.migration-out path>]
  *   npm run migrate:delta -w @pp/api -- --since <ISO-8601 timestamp> --as-of <first load YYYY-MM-DD> [--apply] [same flags as migrate:all]
  *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>]
  *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<database name> npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
@@ -142,6 +142,8 @@ export interface PipelineOptions {
   batchSize?: number
   /** v2 user id that owns migrated content (activity `--content-owner`). */
   contentOwner?: string
+  /** Activity `--files-dir` (BE-29 AC9): the checked .cloud storage export. Unset: no file is migrated. */
+  filesDir?: string
   /** Report directory (a `.migration-out` folder). Default `<repo>/.migration-out`. */
   outDir?: string
   gitSha?: string | null
@@ -184,7 +186,7 @@ async function runStage(name: 'core' | 'activity', mode: RunMode, o: PipelineOpt
   const common = { pool: o.pool, env: o.env, source, asOf: o.asOf, mode, batchSize: o.batchSize, gitSha: o.gitSha }
   if (name === 'core') return fromReport('core', (await runCore(common)).report)
   // Activity resolves ids from the core run that used the same as-of, so the preflight is told which one that was.
-  return fromReport('activity', (await runActivity({ ...common, coreAsOf: o.asOf, contentOwnerUserId: o.contentOwner })).report)
+  return fromReport('activity', (await runActivity({ ...common, coreAsOf: o.asOf, contentOwnerUserId: o.contentOwner, filesDir: o.filesDir })).report)
 }
 
 /** Why the activity dry-run cannot start yet, or undefined when the preflight passes. */
@@ -407,6 +409,7 @@ interface CommonFlags {
   asOf: string
   batchSize?: number
   contentOwner?: string
+  filesDir?: string
   outDir: string
 }
 
@@ -444,7 +447,9 @@ function commonFlags(args: CommandArgs, requireAsOf = false): CommonFlags {
   if (!DATE.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))) throw new ApplyGuardError('--as-of must be YYYY-MM-DD.')
   const contentOwner = flagValue(args, 'content-owner')
   if (contentOwner !== undefined && !USER_ID.test(contentOwner)) throw new ApplyGuardError('--content-owner must be a v2 user id (digits).')
-  return { asOf, batchSize: batchSizeOf(args), contentOwner, outDir: outDirOf(args) }
+  const filesDir = flagValue(args, 'files-dir')
+  if (filesDir !== undefined && filesDir.trim() === '') throw new ApplyGuardError('--files-dir needs a directory.')
+  return { asOf, batchSize: batchSizeOf(args), contentOwner, filesDir, outDir: outDirOf(args) }
 }
 
 function printRecon(ctx: CliContext, recon: readonly ReconRow[]): void {
