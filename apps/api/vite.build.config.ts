@@ -20,7 +20,7 @@ export default defineConfig({
   ],
   ssr: { noExternal: ['@pp/contract', '@pp/exam-core'] },
   build: {
-    ssr: 'src/main.ts',
+    ssr: true,
     outDir: 'dist',
     emptyOutDir: true,
     target: 'node22',
@@ -30,7 +30,9 @@ export default defineConfig({
     minify: false,
     // The banner keeps the root ESLint (which does not ignore apps/*/dist) away from the bundle.
     rollupOptions: {
-      output: { format: 'es', entryFileNames: 'main.js', banner: '/* eslint-disable */' },
+      // AZ-188: the report-only scan CLI is built next to the server (`node dist/scan-stored.cli.js`).
+      input: { main: 'src/main.ts', 'scan-stored.cli': 'src/modules/files/scan-stored.cli.ts' },
+      output: { format: 'es', entryFileNames: '[name].js', banner: '/* eslint-disable */' },
     },
   },
 })

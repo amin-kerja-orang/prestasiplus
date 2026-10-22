@@ -1,10 +1,10 @@
-import { Inject, Injectable, type OnModuleInit } from '@nestjs/common'
+import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common'
 import { IntakeFileErrorCodeSchema } from '@pp/contract'
 
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { FILE_STORAGE, FilesService, type FileStorage } from '../../files'
+import { FILE_STORAGE, FilesService, type FileStorage, isScanRefusal } from '../../files'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
 import {
   OCR_ENGINE,
@@ -26,6 +26,7 @@ import { discardStored } from './intake-storage'
 
 const ACTIVE = ['submitted', 'processing']
 const THUMB_WIDTH = 240
+const logger = new Logger('IntakeProcessing')
 /** Page codes that count towards the circuit breaker, and how many failed pages trip it. */
 const BREAKER_CODES = ['TOO_COMPLEX', 'OCR_TIMEOUT', 'RENDER_FAILED'] as const
 const BREAKER_PAGES = 2
@@ -208,7 +209,8 @@ export class IntakeProcessingService implements OnModuleInit {
         if (png) image = await this.storeImages(png.png, file.batch, stored)
       } catch (err) {
         if (signal.aborted) throw signal.reason ?? err
-        if (!(err instanceof OcrError)) throw err
+        if (isScanRefusal(err)) logger.warn('A page image was not stored: refused by the malware scan; the page text is kept')
+        else if (!(err instanceof OcrError)) throw err
       }
     }
     if (signal.aborted) {
@@ -279,11 +281,19 @@ export class IntakeProcessingService implements OnModuleInit {
     const owner = batch.ownerUserId === null ? null : idToString(batch.ownerUserId)
     const full = await this.images.encode(png, { format: 'webp' })
     const thumb = await this.images.encode(png, { format: 'webp', maxWidth: THUMB_WIDTH })
-    const a = await this.files.storeDerived({ ownerUserId: owner, purpose: 'intake_page', bytes: full.data, isTest: batch.isTest })
-    stored.push(a.id)
-    const b = await this.files.storeDerived({ ownerUserId: owner, purpose: 'intake_page', bytes: thumb.data, isTest: batch.isTest })
-    stored.push(b.id)
-    return { imageFileId: idFromString(a.id), thumbFileId: idFromString(b.id), width: full.width, height: full.height }
+    const first = stored.length
+    try {
+      const a = await this.files.storeDerived({ ownerUserId: owner, purpose: 'intake_page', bytes: full.data, isTest: batch.isTest })
+      stored.push(a.id)
+      const b = await this.files.storeDerived({ ownerUserId: owner, purpose: 'intake_page', bytes: thumb.data, isTest: batch.isTest })
+      stored.push(b.id)
+    } catch (err) {
+      // Do not leave the first object behind when the second one fails.
+      await discardStored(this.prisma, this.storage, stored.splice(first))
+      throw err
+    }
+    const [a, b] = [stored[first], stored[first + 1]] as [string, string]
+    return { imageFileId: idFromString(a), thumbFileId: idFromString(b), width: full.width, height: full.height }
   }
 
   /** Conditional write: only a still-pending page is changed, so a retry or a cancel cannot be overwritten. */

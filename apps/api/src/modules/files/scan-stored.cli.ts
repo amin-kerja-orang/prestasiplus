@@ -1,6 +1,9 @@
 /**
  * `npm run files:scan-stored -w @pp/api`: report-only malware scan of every stored file (AZ-188, for migrated data).
- * Needs MALWARE_SCAN=clamd and CLAMAV_HOST. Never deletes. Exit 0 clean, 1 any infected, 2 scanner unreachable or misconfigured.
+ * Needs MALWARE_SCAN=clamd and CLAMAV_HOST. Never deletes.
+ * Exit 0 only when every file was scanned clean; 1 when any file is infected (wins); 2 when none infected but a file is
+ * missing or unscannable, the scanner is unreachable, or the configuration is invalid.
+ * Production: `docker compose ... exec api node dist/scan-stored.cli.js` (built next to dist/main.js).
  */
 import { loadEnv } from '../../common/config/env.schema'
 import { createAdapter, PrismaClient } from '../../db/client'
@@ -10,7 +13,14 @@ import { LocalDiskStorage } from './local-disk.storage'
 import { ScannerUnavailableError } from './malware-scanner'
 
 async function main(): Promise<number> {
-  const env = loadEnv()
+  let env: ReturnType<typeof loadEnv>
+  try {
+    env = loadEnv()
+  } catch (err) {
+    // Names the offending keys only (the message of loadEnv never carries a value).
+    console.error(err instanceof Error ? err.message : 'Invalid environment configuration.')
+    return 2
+  }
   if (env.MALWARE_SCAN !== 'clamd' || !env.CLAMAV_HOST || !env.FILE_STORAGE_DIR) {
     console.error('Set MALWARE_SCAN=clamd, CLAMAV_HOST and FILE_STORAGE_DIR to run this scan.')
     return 2
@@ -68,7 +78,8 @@ async function main(): Promise<number> {
   }
   for (const line of report) console.log(line)
   console.log(JSON.stringify(counts))
-  return counts.infected > 0 ? 1 : 0
+  if (counts.infected > 0) return 1
+  return counts.unscannable > 0 || counts.missing > 0 ? 2 : 0
 }
 
 process.exitCode = await main()

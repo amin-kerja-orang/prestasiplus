@@ -5,6 +5,11 @@ import { type MalwareScanner, ScannerUnavailableError, type ScanResult } from '.
 const CHUNK = 64 * 1024
 const MAX_REPLY = 4096
 
+/** The signature comes from the network: drop control characters and cap the length before it is logged or returned. */
+export function cleanSignature(raw: string): string {
+  return raw.replace(/[\u0000-\u001f\u007f-\u009f]/g, '').slice(0, 200) || 'unknown'
+}
+
 export interface ClamdOptions {
   host: string
   port: number
@@ -58,7 +63,7 @@ export class ClamdScanner implements MalwareScanner {
         const reply = all.subarray(0, end).toString('utf8').trim()
         const found = /^stream: (.+) FOUND$/.exec(reply)
         if (reply === 'stream: OK') finish(() => resolve({ verdict: 'clean' }))
-        else if (found?.[1]) finish(() => resolve({ verdict: 'infected', signature: found[1] as string }))
+        else if (found?.[1]) finish(() => resolve({ verdict: 'infected', signature: cleanSignature(found[1] as string) }))
         else fail(reply.endsWith('ERROR') ? 'scanner error' : 'unexpected reply')
       })
     })

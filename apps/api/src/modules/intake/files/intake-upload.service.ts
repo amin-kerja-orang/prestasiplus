@@ -11,7 +11,7 @@ import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock, startOfMytDay } from '../../../db/clock'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { FILE_STORAGE, type FileStorage } from '../../files'
+import { FILE_STORAGE, type FileStorage, isScanRefusal } from '../../files'
 import { inspectUpload } from '../../files/content-inspect'
 import { FilesConfig } from '../../files/files.config'
 import { FilesService, type StoredFile } from '../../files'
@@ -120,6 +120,8 @@ export class IntakeUploadService {
       )
     } catch (err) {
       await this.discard(stored)
+      // The scan refusal is reported on this route's own field, like its other file refusals.
+      if (isScanRefusal(err)) throw invalid(err.fields?.file ?? 'The file failed the security scan.')
       throw err
     }
   }

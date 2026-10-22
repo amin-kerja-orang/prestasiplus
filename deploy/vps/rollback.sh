@@ -109,6 +109,7 @@ else
   printf '%s rollback tag=%s from=%s user=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" "${cur:-unknown}" "$(id -un)" >>"$state_dir/history.log"
   pp_alert "ROLLBACK done: production now runs $tag (was ${cur:-unknown})."
 fi
+pp_warn "MANDATORY: an api image older than AZ-188 does not scan uploads (MALWARE_SCAN is ignored). Run the EICAR check (runbook section 15) now; rolling back to such an image needs a recorded LEAD risk acceptance."
 pp_log "rollback finished. Check the database state: is a migration of the rolled-back release applied? (runbook section 8)"
 }
 main "$@"

@@ -266,6 +266,7 @@ services:
     image: ${PP_CLAMAV_IMAGE:-clamav/clamav:1.4}
     environment:
       CLAMD_CONF_ConcurrentDatabaseReload: 'no'   # a reload does not double the memory
+      CLAMD_CONF_AlertExceedsMax: 'yes'           # over-limit content returns Heuristics.Limits.Exceeded FOUND = refused (not silently passed). AlertEncrypted stays off: password-protected PDFs must keep working
       CLAMD_CONF_MaxFileSize: 32M                 # above the biggest upload (INTAKE_MAX_FILE_MB=20)
       CLAMD_CONF_StreamMaxLength: 32M
     expose:

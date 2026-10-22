@@ -41,6 +41,20 @@ describe('ClamdScanner', () => {
     expect(await scanner(f.port).scan(Buffer.from('x'))).toEqual({ verdict: 'infected', signature: 'Win.Test.EICAR_HDB-1' })
   })
 
+  it('a limit alert (AlertExceedsMax) FOUND reply is infected', async () => {
+    const f = await fake('stream: Heuristics.Limits.Exceeded.MaxFileSize FOUND')
+    expect(await scanner(f.port).scan(Buffer.from('x'))).toEqual({ verdict: 'infected', signature: 'Heuristics.Limits.Exceeded.MaxFileSize' })
+  })
+
+  it('strips control characters from a signature and caps it at 200 characters', async () => {
+    const f = await fake(`stream: Bad\u001b[31m${'A'.repeat(300)} FOUND`)
+    const r = await scanner(f.port).scan(Buffer.from('x'))
+    expect(r.verdict).toBe('infected')
+    const sig = (r as { signature: string }).signature
+    expect(sig).not.toMatch(/[\u0000-\u001f]/)
+    expect(sig.length).toBe(200)
+  })
+
   it('a size-limit ERROR reply is ScannerUnavailableError', async () => {
     const f = await fake('INSTREAM size limit exceeded. ERROR')
     await expect(scanner(f.port).scan(Buffer.from('x'))).rejects.toBeInstanceOf(ScannerUnavailableError)

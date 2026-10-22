@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 
 import { Logger } from '@nestjs/common'
 
+import { ERROR_STATUS } from '@pp/contract'
+
 import { ApiError } from '../../common/errors/api-error'
 import type { FileStorage } from './file-storage'
 import { type MalwareScanner, ScannerUnavailableError } from './malware-scanner'
@@ -13,6 +15,17 @@ export const SCAN_MESSAGES = {
 } as const
 
 const logger = new Logger('MalwareScan')
+
+/** The 422 raised when the scan refuses a file (infected, or no verdict). Lets best-effort callers tell it from other errors. */
+export class ScanRefusalError extends ApiError {
+  constructor(message: string) {
+    super({ code: 'VALIDATION_ERROR', status: ERROR_STATUS.VALIDATION_ERROR, fields: { file: message } })
+  }
+}
+
+export function isScanRefusal(err: unknown): err is ScanRefusalError {
+  return err instanceof ScanRefusalError
+}
 
 /** Decorates the real storage: `put` scans first and writes only a clean file; fails closed. */
 export class ScanningFileStorage implements FileStorage {
@@ -27,12 +40,12 @@ export class ScanningFileStorage implements FileStorage {
       verdict = await this.scanner.scan(bytes)
     } catch (err) {
       logger.error(`Malware scan unavailable: ${err instanceof ScannerUnavailableError ? err.reason : 'unexpected failure'}`)
-      throw ApiError.of('VALIDATION_ERROR', { fields: { file: SCAN_MESSAGES.unavailable } })
+      throw new ScanRefusalError(SCAN_MESSAGES.unavailable)
     }
     if (verdict.verdict === 'infected') {
       const sha256 = createHash('sha256').update(bytes).digest('hex')
       logger.warn(`Upload refused as infected: signature=${verdict.signature} bytes=${bytes.length} sha256=${sha256}`)
-      throw ApiError.of('VALIDATION_ERROR', { fields: { file: SCAN_MESSAGES.infected } })
+      throw new ScanRefusalError(SCAN_MESSAGES.infected)
     }
     await this.inner.put(key, bytes)
   }

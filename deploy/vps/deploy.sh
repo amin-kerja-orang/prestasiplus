@@ -125,6 +125,11 @@ preflight() {
   v="$(pp_env_value "$api_env" NODE_ENV)"; [ -z "$v" ] || [ "$v" = production ] || warn "NODE_ENV=$v in api.env is ignored (forced to production)"
   v="$(pp_env_value "$api_env" TRUST_PROXY_HOPS)"; [ -z "$v" ] || [ "$v" = 1 ] || warn "TRUST_PROXY_HOPS=$v in api.env is ignored (forced to 1: the edge is the only proxy)"
 
+  # clamd refuses anything above 32 MB (StreamMaxLength): larger uploads would fail closed ("try again later").
+  for k in MAX_UPLOAD_MB INTAKE_MAX_FILE_MB; do
+    v="$(pp_env_value "$api_env" "$k")"
+    if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt 32 ]; then err "$k=$v in api.env is above the clamd limit of 32 MB (uploads would fail closed); keep it at 32 or less (runbook section 15)"; fi
+  done
   # Upload malware scan is forced by compose.prod.yaml (MALWARE_SCAN=clamd, CLAMAV_HOST/PORT); api.env cannot change it.
   for k in MALWARE_SCAN CLAMAV_HOST CLAMAV_PORT; do
     [ -z "$(pp_env_value "$api_env" "$k")" ] || warn "$k in api.env: MALWARE_SCAN/CLAMAV_HOST/CLAMAV_PORT are forced by compose.prod.yaml and are ignored there (runbook section 15)"
@@ -188,17 +193,15 @@ preflight() {
   # Compose renders with the production overlay.
   if command -v docker >/dev/null && [ ${#errors[@]} -eq 0 ]; then
     cfg_err="$(mktemp)"
-    PP_IMAGE_TAG="$tag" pp_compose config -q 2>"$cfg_err" \
-      || err "docker compose config failed: $(head -c 300 "$cfg_err")"
-    rm -f "$cfg_err"
-    # The rendered config must scan: clamav service present and MALWARE_SCAN=clamd on the api (guards against a
-    # hand-edited overlay). Plain `config` output, no jq needed.
-    if [ ${#errors[@]} -eq 0 ]; then
-      cfg_txt="$(PP_IMAGE_TAG="$tag" pp_compose config 2>/dev/null || true)"
+    # One render serves the validity check and the scan greps (a render failure is ONE error). Plain output, no jq.
+    if cfg_txt="$(PP_IMAGE_TAG="$tag" pp_compose config 2>"$cfg_err")"; then
       grep -Eq '^  clamav:' <<<"$cfg_txt" || err "the rendered production config has no clamav service (upload scanning is mandatory, runbook section 15)"
       grep -Eq '^ +MALWARE_SCAN: +"?clamd"?$' <<<"$cfg_txt" || err "the rendered production config does not set MALWARE_SCAN=clamd on the api (upload scanning is mandatory, runbook section 15)"
       grep -Eq '^ +CLAMAV_HOST: +"?clamav"?$' <<<"$cfg_txt" || err "the rendered production config does not set CLAMAV_HOST=clamav on the api"
+    else
+      err "docker compose config failed: $(head -c 300 "$cfg_err")"
     fi
+    rm -f "$cfg_err"
   fi
 
   # Source tree.

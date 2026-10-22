@@ -4,4 +4,4 @@ export { DERIVED_PURPOSES, FilesService, type DerivedPurpose, type FileContent, 
 export { InMemoryStorage } from './memory.storage'
 export { ClamdScanner } from './clamd.scanner'
 export { MALWARE_SCANNER, ScannerUnavailableError, type MalwareScanner, type ScanResult } from './malware-scanner'
-export { SCAN_MESSAGES, ScanningFileStorage } from './scanning-file-storage'
+export { isScanRefusal, SCAN_MESSAGES, ScanningFileStorage } from './scanning-file-storage'

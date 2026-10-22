@@ -20,6 +20,7 @@ import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { expect } from 'vitest'
 
+import { MALWARE_SCANNER, type MalwareScanner } from '../../src/modules/files/malware-scanner'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { defineAppModule } from '../../src/app.module'
@@ -75,6 +76,7 @@ export async function bootIntakeApp(
   env: Record<string, string | undefined> = {},
   reuse?: { db: TestDatabase; dir: string },
   ocr: FakeOcrEngine = new FakeOcrEngine(),
+  scanner?: MalwareScanner,
 ): Promise<IntakeTestApp> {
   const db: TestDatabase = reuse?.db ?? (await createTestDatabase())
   if (!reuse) await runSeeds([identitySeed], { prisma: db.prisma })
@@ -119,12 +121,14 @@ export async function bootIntakeApp(
   }
 
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule, IntakeFilesModule])] })
+  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule, IntakeFilesModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .overrideProvider(OCR_ENGINE)
     .useValue(ocr)
-    .compile()
+  // AZ-188: a stub scanner switches the scanning storage on.
+  if (scanner) builder = builder.overrideProvider(MALWARE_SCANNER).useValue(scanner)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
