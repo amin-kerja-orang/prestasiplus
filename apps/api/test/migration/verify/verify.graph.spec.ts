@@ -99,7 +99,7 @@ describe('report rendering', () => {
     runIds: ['2', '4'],
     status: 'fail',
     entities: [
-      { entity: 'users', stagingTable: 'users', targetTable: 'users', sourceCount: 3, eligibleCount: 3, loaded: 2, rejected: 1, expectedDelta: 0, targetCount: 2, status: 'ok' },
+      { entity: 'users', stagingTable: 'users', targetTable: 'users', sourceCount: 3, eligibleCount: 3, loaded: 2, rejected: 1, expectedDelta: 0, targetCount: 2, deletedAtSource: 1, status: 'ok' },
       { entity: 'x', stagingTable: null, targetTable: 'x', sourceCount: 0, eligibleCount: 0, loaded: 0, rejected: 0, expectedDelta: 0, targetCount: null, status: 'not-run', note: 'a | b\nc' },
     ],
     checks: [{ name: 'a|b', kind: 'counts', expected: 1, actual: 2, status: 'mismatch' }],
@@ -107,8 +107,8 @@ describe('report rendering', () => {
 
   it('has the entity table with the card columns and keeps a pipe from breaking a row', () => {
     const md = renderVerifyMarkdown(report)
-    expect(md).toContain('| Entity | Staging table | Target | Source | Eligible | Loaded | Rejected | Expected delta | Target count | Status |')
-    expect(md).toContain('| users | users | users | 3 | 3 | 2 | 1 | 0 | 2 | ok |')
+    expect(md).toContain('| Entity | Staging table | Target | Source | Eligible | Loaded | Rejected | Expected delta | Target count | Deleted at source | Status |')
+    expect(md).toContain('| users | users | users | 3 | 3 | 2 | 1 | 0 | 2 | 1 | ok |')
     expect(md).toContain('Status: FAIL')
     expect(md).toMatch(/- x: a\s+b c/)
     expect(md).toContain('| a b | counts | 1 | 2 | mismatch |')

@@ -29,11 +29,11 @@ export function renderVerifyMarkdown(report: VerifyReport): string {
     '',
     '## Entities',
     '',
-    '| Entity | Staging table | Target | Source | Eligible | Loaded | Rejected | Expected delta | Target count | Status |',
-    '|---|---|---|---:|---:|---:|---:|---:|---:|---|',
+    '| Entity | Staging table | Target | Source | Eligible | Loaded | Rejected | Expected delta | Target count | Deleted at source | Status |',
+    '|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|',
     ...report.entities.map(
       (e) =>
-        `| ${cell(e.entity)} | ${cell(e.stagingTable)} | ${cell(e.targetTable)} | ${e.sourceCount} | ${e.eligibleCount} | ${e.loaded} | ${e.rejected} | ${e.expectedDelta} | ${cell(e.targetCount)} | ${e.status} |`,
+        `| ${cell(e.entity)} | ${cell(e.stagingTable)} | ${cell(e.targetTable)} | ${e.sourceCount} | ${e.eligibleCount} | ${e.loaded} | ${e.rejected} | ${e.expectedDelta} | ${cell(e.targetCount)} | ${cell(e.deletedAtSource)} | ${e.status} |`,
     ),
     '',
   ]

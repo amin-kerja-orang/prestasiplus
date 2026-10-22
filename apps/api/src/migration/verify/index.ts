@@ -13,8 +13,9 @@ import { sanitizeDbError } from '../kit/errors'
 import { quoteIdent } from '../kit/sql'
 import { assertLegacySource, type LegacySource } from '../kit/types'
 import { runChecks } from './checks'
+import { deletedAtSource, type DeletedAtSource } from './deleted'
 import { ENTITY_MATRIX, matrixEntry, type MatrixEntry } from './entities'
-import type { EntityCheck, VerifyOptions, VerifyReport } from './types'
+import type { EntityCheck, StatCheck, VerifyOptions, VerifyReport } from './types'
 
 export * from './types'
 export { ENTITY_MATRIX, CLAIMABLE_TABLES, ETL_DERIVED_CHILDREN, matrixEntry, type MatrixEntry } from './entities'
@@ -80,7 +81,13 @@ async function stagingCount(pool: pg.Pool, table: string): Promise<number | null
   return Number(res.rows[0]?.n ?? 0)
 }
 
-async function entityCheck(pool: pg.Pool, source: LegacySource, entry: MatrixEntry, recon: ReconRow | undefined): Promise<EntityCheck> {
+async function entityCheck(
+  pool: pg.Pool,
+  source: LegacySource,
+  entry: MatrixEntry,
+  recon: ReconRow | undefined,
+  deleted: DeletedAtSource | null,
+): Promise<EntityCheck> {
   const base = {
     entity: entry.entity,
     stagingTable: entry.stagingTable,
@@ -113,8 +120,15 @@ async function entityCheck(pool: pg.Pool, source: LegacySource, entry: MatrixEnt
   if (entry.count === 'legacy') {
     targetCount = await legacyCount(pool, entry.targetTable, source)
     if (targetCount === null) problems.push(`target table ${entry.targetTable} has no legacy_source column`)
-    // A step upserts by (legacy_source, legacy_id): every loaded row is exactly one target row, none more.
-    else if (targetCount !== recon.loaded) problems.push(`target holds ${targetCount} rows of this source, the run loaded ${recon.loaded}`)
+    // A step upserts by (legacy_source, legacy_id): every loaded row is exactly one target row. The delta never deletes, so
+    // the rows whose source row is gone are extra, and reported apart (`deleted_at_source:<entity>`).
+    else if (targetCount - (deleted?.count ?? 0) !== recon.loaded) {
+      problems.push(
+        deleted && deleted.count > 0
+          ? `target holds ${targetCount} rows of this source (${deleted.count} deleted at the source), the run loaded ${recon.loaded}`
+          : `target holds ${targetCount} rows of this source, the run loaded ${recon.loaded}`,
+      )
+    }
   } else if (entry.count === 'idmap') {
     targetCount = await idMapCount(pool, entry.entity, source)
     if (targetCount !== recon.loaded) problems.push(`etl_id_map holds ${targetCount} ids, the run loaded ${recon.loaded}`)
@@ -130,6 +144,7 @@ async function entityCheck(pool: pg.Pool, source: LegacySource, entry: MatrixEnt
     rejected: recon.rejected,
     expectedDelta: recon.expected_delta,
     targetCount,
+    ...(deleted ? { deletedAtSource: deleted.count } : {}),
     status: problems.length === 0 ? 'ok' : 'mismatch',
     ...(notes.length > 0 ? { note: notes.join('; ') } : {}),
   }
@@ -143,7 +158,26 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
     const byEntity = new Map(recon.map((r) => [r.entity, r]))
 
     const entities: EntityCheck[] = []
-    for (const entry of ENTITY_MATRIX) entities.push(await entityCheck(pool, source, entry, byEntity.get(entry.entity)))
+    const deletedIds: Record<string, string[]> = {}
+    const extra: StatCheck[] = []
+    for (const entry of ENTITY_MATRIX) {
+      const recon1 = byEntity.get(entry.entity)
+      // Only an entity that ran has a loaded count to compare; the others keep their own status.
+      const deleted = recon1 ? await deletedAtSource(pool, source, entry) : null
+      entities.push(await entityCheck(pool, source, entry, recon1, deleted))
+      if (deleted && deleted.count > 0) {
+        deletedIds[entry.entity] = deleted.ids
+        extra.push({
+          name: `deleted_at_source:${entry.entity}`,
+          kind: 'counts',
+          expected: 0,
+          actual: deleted.count,
+          status: 'reported',
+          detail:
+            'rows in v2 whose source row no longer exists; not propagated by the delta; listed for the LEAD (MIG-08 go/no-go)',
+        })
+      }
+    }
     // An entity that ran but is not in the matrix cannot be verified: a gap in this file, so it fails the gate.
     for (const r of recon) {
       if (matrixEntry(r.entity)) continue
@@ -162,7 +196,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
       })
     }
 
-    const checks = await runChecks({ pool, source, entities })
+    const checks = [...(await runChecks({ pool, source, entities })), ...extra]
 
     const used = [...new Set(recon.map((r) => r.run_id))].sort((a, b) => Number(a) - Number(b))
     const runIds = used.length > 0 ? used : [...(options.runIds ?? [])]
@@ -176,6 +210,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
       status: entitiesPass && checksPass ? 'pass' : 'fail',
       entities,
       checks,
+      ...(Object.keys(deletedIds).length > 0 ? { deletedAtSourceIds: deletedIds } : {}),
     }
   } catch (err) {
     throw sanitizeDbError(err)

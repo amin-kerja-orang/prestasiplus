@@ -25,6 +25,8 @@ export interface EntityCheck {
   targetCount: number | null
   status: 'ok' | 'mismatch' | 'not-run'
   note?: string
+  /** Optional (added by Part B): rows in `targetTable` whose source row no longer exists (null = not computable for this entity). */
+  deletedAtSource?: number | null
 }
 
 /** A semantic check of plan 14.6 (sums, distinct sets, distributions, orphans, accepted drift). */
@@ -49,6 +51,11 @@ export interface VerifyReport {
   checks: StatCheck[]
   /** Paths of the written report files (set by `writeVerifyReport`). */
   files?: { json: string; md: string }
+  /**
+   * Optional (added by Part B): per entity, the surrogate legacy ids of the rows deleted at the source (capped at 200). Json report
+   * only: the markdown and the console show counts.
+   */
+  deletedAtSourceIds?: Record<string, string[]>
 }
 
 export interface VerifyOptions {
