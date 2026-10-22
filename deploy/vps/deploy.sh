@@ -184,6 +184,16 @@ preflight() {
     PP_IMAGE_TAG="$tag" pp_compose config -q 2>"$cfg_err" \
       || err "docker compose config failed: $(head -c 300 "$cfg_err")"
     rm -f "$cfg_err"
+    # Single-instance guard (threat model row 18, runbook section 14): rate-limit counters live in process memory.
+    # Names and counts only. Rendered api block: no replicas/scale above 1; running api containers: at most 1.
+    if [ ${#errors[@]} -eq 0 ]; then
+      v="$(PP_IMAGE_TAG="$tag" pp_compose config 2>/dev/null | awk '/^[A-Za-z]/{a=0} /^  [A-Za-z0-9_-]+:/{a=($1=="api:")} a&&($1=="replicas:"||$1=="scale:")&&$2!="1"{print $2}')"
+      c="$(pp_compose ps -q api 2>/dev/null | grep -c . || true)"
+      if [ -n "$v" ] || [ "${c:-0}" -gt 1 ]; then
+        err "api must run as ONE instance (threat model row 18, runbook section 14): rendered replicas/scale other than 1='${v:-none}', running api containers=${c:-0}"
+      fi
+      is_true "$(pp_cfg PP_JOBS_WORKER_ENABLED true)" || err "PP_JOBS_WORKER_ENABLED must be true (the single api instance is the jobs worker)"
+    fi
   fi
 
   # Source tree.
