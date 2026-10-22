@@ -52,12 +52,13 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       'Soalan Berstruktur',
     )
     await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
-    const add = page.getByTestId('structured-add')
-    await expect(add).toHaveText('Tambah Soalan')
-    await expect(add).toHaveAttribute('href', '/guru/soalan-berstruktur/cipta')
+    // D9 dead link: the M10 create form is not routed, so "Tambah Soalan" is hidden (no link to a 404).
+    await expect(page.getByTestId('structured-add')).toHaveCount(0)
+    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
+    const search = page.getByTestId('structured-filter').locator('button[type=submit]')
     // Wait for the layout to settle (fonts, grid) before measuring the hit area.
-    await expect.poll(async () => (await add.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
-    await expectTouchTarget(add)
+    await expect.poll(async () => (await search.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
+    await expectTouchTarget(search)
 
     await expect(page.getByTestId('structured-stat-total')).toContainText('4,064')
     await expect(page.getByTestId('structured-stat-total')).toContainText('Jumlah Soalan')
@@ -228,10 +229,10 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
     await expect(page.getByTestId('structured-sub-label')).toHaveText(['A'])
     await expect(page.getByTestId('structured-sub-marks')).toHaveText(['8m'])
     await expect(page.getByTestId('structured-sub').first()).toContainText('Jawapan Model')
-    const edit = page.getByTestId('structured-edit')
-    await expect(edit).toHaveText('Edit Soalan')
-    await expect(edit).toHaveAttribute('href', '/guru/soalan-berstruktur/4454/edit')
-    await expectTouchTarget(edit)
+    // D9 dead link: the M10 edit form is not routed, so "Edit Soalan" is hidden.
+    await expect(page.getByTestId('structured-edit')).toHaveCount(0)
+    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
+    await expectTouchTarget(page.getByTestId('structured-back-list'))
     await expect(page.getByTestId('structured-back')).toHaveAttribute('href', LIST)
     await expectNoHorizontalScroll(page)
   })

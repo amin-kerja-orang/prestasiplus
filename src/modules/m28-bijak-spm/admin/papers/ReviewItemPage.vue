@@ -17,7 +17,7 @@ import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import QuestionPreview from './QuestionPreview.vue'
-import { ADMIN_ROUTES, CONFIDENCE_LABEL, KIND_LABEL, STATUS_BADGE, ageText } from './ui'
+import { ADMIN_ROUTES, CONFIDENCE_LABEL, KIND_LABEL, STATUS_BADGE, WIRE, ageText } from './ui'
 
 const server = bijakAdminServer()
 const route = useRoute()
@@ -75,7 +75,9 @@ async function decide(action: DecisionAction, why?: string): Promise<void> {
       type: 'success',
       message:
         action === 'terbit'
-          ? 'Soalan diluluskan dan diterbitkan.'
+          ? WIRE
+            ? 'Soalan diterima sebagai Draf.'
+            : 'Soalan diluluskan dan diterbitkan.'
           : action === 'tolak'
             ? 'Soalan ditolak.'
             : 'Pembetulan diminta daripada penghantar.',
@@ -123,7 +125,8 @@ async function resubmit(): Promise<void> {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-col gap-1">
             <h2 class="text-heading text-highlighted">
-              {{ data.item.subjectName }} · Kertas {{ data.item.kertas }} ·
+              {{ data.item.subjectName
+              }}<template v-if="data.item.kertas"> · Kertas {{ data.item.kertas }}</template> ·
               {{ KIND_LABEL[data.item.kind] }}
             </h2>
             <p class="text-caption text-muted">
@@ -225,6 +228,7 @@ async function resubmit(): Promise<void> {
             @click="ask('tolak')"
           />
           <UButton
+            v-if="!WIRE"
             color="warning"
             variant="soft"
             icon="i-ph-arrow-u-up-left"
@@ -236,7 +240,7 @@ async function resubmit(): Promise<void> {
           />
           <UButton
             icon="i-ph-seal-check"
-            label="Lulus & Terbit"
+            :label="WIRE ? 'Terima (Draf)' : 'Lulus & Terbit'"
             class="min-h-11"
             :loading="busy"
             :disabled="data.gate.length > 0"
@@ -245,7 +249,7 @@ async function resubmit(): Promise<void> {
           />
         </template>
         <UButton
-          v-else-if="data.item.status !== 'terbit'"
+          v-else-if="data.item.status !== 'terbit' && !WIRE"
           icon="i-ph-arrow-counter-clockwise"
           label="Hantar semula untuk semakan"
           class="min-h-11"

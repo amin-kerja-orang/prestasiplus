@@ -10,22 +10,28 @@ export type BattleStatus = 'active' | 'finished' | 'forfeited' | 'abandoned'
 /** `null` = seri. */
 export type Winner = 'A' | 'B' | null
 
-/** Body of #2, #3 and #8 (`receiver_id` only for #8). */
+/**
+ * A queue id: a mock number, or the opaque decimal string of the real API (`BattleStartResponseSchema`
+ * `queue_id: IdSchema`, DEMO-FIX-1 D-03).
+ */
+export type BattleQueueId = number | string
+
+/** Body of #2, #3 and #8 (`receiver_id` only for #8). Ids go out as strings in http mode. */
 export interface BattleStartBody {
   question_type: QuestionType
   open_to_all: boolean
-  subject_id?: number
-  pksk_domain_id?: number
+  subject_id?: number | string
+  pksk_domain_id?: number | string
   pksk_target_level?: PkskLevel
 }
 
 export interface BattleInviteBody extends BattleStartBody {
-  receiver_id: number
+  receiver_id: number | string
 }
 
 /** The live start answer: `{queue_id}`, or an error body (`error` / `message`; `{}` on 422 and 403). */
 export interface BattleStartResponse {
-  queue_id?: number
+  queue_id?: BattleQueueId
   matched?: boolean
   battle_uuid?: string
   error?: string
