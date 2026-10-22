@@ -30,6 +30,11 @@ describe('S3 Remedial Progress', () => {
     const r = routes.find((x) => x.path === '/guru/remedial-progress')
     expect(r).toBeTruthy()
     expect(r?.meta?.roles).toEqual(['teacher', 'admin'])
+    expect(r?.meta?.title).toBe('Remedial Progress Dashboard')
+    expect(r?.meta?.header).toEqual({
+      title: 'Remedial Progress Dashboard',
+      subtitle: 'Selamat datang kembali',
+    })
   })
 
   it('shows the empty state with the live copy', async () => {
@@ -38,6 +43,9 @@ describe('S3 Remedial Progress', () => {
       rows: [],
     })
     const w = await mountPage()
+    expect(t(w, 'remedial-progress-subtitle').text()).toBe(
+      'Jejak peningkatan pelajar melalui ujian pemulihan',
+    )
     expect(t(w, 'rp-stat-total').text()).toContain('JUMLAH SET')
     expect(t(w, 'rp-stat-improvement').text()).toContain('+0%')
     expect(t(w, 'remedial-progress-empty').text()).toContain('Belum ada ujian remedial dijana.')
@@ -77,9 +85,25 @@ describe('S3 Remedial Progress', () => {
     expect(rows[1]!.text()).toContain('30% → -')
   })
 
-  it('shows a retryable error', async () => {
-    api.fetchRemedialProgress.mockRejectedValue(new Error('x'))
+  it('shows the loading skeleton while the request is pending', async () => {
+    api.fetchRemedialProgress.mockReturnValue(new Promise(() => undefined))
+    const w = await mountPage()
+    expect(t(w, 'remedial-progress-loading').attributes('aria-busy')).toBe('true')
+    expect(t(w, 'remedial-progress-stats').exists()).toBe(false)
+  })
+
+  it('shows a retryable error and fetches again on retry', async () => {
+    api.fetchRemedialProgress.mockRejectedValueOnce(new Error('x'))
+    api.fetchRemedialProgress.mockResolvedValue({
+      stats: { total: 0, completed: 0, students: 0, avgImprovement: 0 },
+      rows: [],
+    })
     const w = await mountPage()
     expect(t(w, 'remedial-progress-error').exists()).toBe(true)
+    expect(api.fetchRemedialProgress).toHaveBeenCalledTimes(1)
+    await w.find('[data-testid="remedial-progress-error"] button').trigger('click')
+    await flushPromises()
+    expect(api.fetchRemedialProgress).toHaveBeenCalledTimes(2)
+    expect(t(w, 'remedial-progress-empty').exists()).toBe(true)
   })
 })

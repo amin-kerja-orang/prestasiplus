@@ -45,6 +45,9 @@ const pct = (n: number | null): string => (n === null ? '-' : `${String(n)}%`)
 
 <template>
   <DsPage :title="COPY.title" data-testid="remedial-progress-page">
+    <p class="-mt-2 text-body text-muted" data-testid="remedial-progress-subtitle">
+      {{ COPY.subtitle }}
+    </p>
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"

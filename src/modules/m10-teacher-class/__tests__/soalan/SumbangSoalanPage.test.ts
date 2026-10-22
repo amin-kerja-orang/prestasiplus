@@ -92,7 +92,7 @@ describe('S21 Sumbang Soalan', () => {
     )
   })
 
-  it('does not link a teacher to the missing /guru/audio-kbat* screens (DV-M10-35)', async () => {
+  it('does not link a teacher to the missing /guru/audio-kbat* screens (DV-M10-36)', async () => {
     sessionMock.role = 'teacher'
     const w = await mountPage()
     expect(t(w, 'audio-create').exists()).toBe(false)

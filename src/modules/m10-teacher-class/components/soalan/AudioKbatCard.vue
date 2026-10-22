@@ -3,7 +3,7 @@
  * S21 cards "Sumbang Set Audio KBAT / Ujian Mendengar" (FN-M10-7.1.6) and the static "AI
  * Auto-Generate Soalan" (FN-M10-7.1.7, DV-M10-10: no link, button or form, as live). The two template
  * links download a file (contract #63; live answers 200 with the file). "Cipta Set" / "Senarai Set"
- * (S26 / S25) have no teacher screen in the SPA (`/guru/audio-kbat*` is a 404, DV-M10-35): the admin
+ * (S26 / S25) have no teacher screen in the SPA (`/guru/audio-kbat*` is a 404, DV-M10-36): the admin
  * is sent to the M09 admin screens, a teacher does not see the two buttons.
  */
 import { computed } from 'vue'

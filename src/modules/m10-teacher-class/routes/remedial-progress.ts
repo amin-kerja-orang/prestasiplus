@@ -14,10 +14,8 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['teacher', 'admin'],
       title: 'Remedial Progress Dashboard',
-      header: {
-        title: 'Remedial Progress Dashboard',
-        subtitle: 'Jejak peningkatan pelajar melalui ujian pemulihan',
-      },
+      // DV-M10-01: the header subtitle stays the shell's "Selamat datang kembali"; EL-S3-006 is in the page body.
+      header: { title: 'Remedial Progress Dashboard', subtitle: 'Selamat datang kembali' },
       module: 'M10',
       v2: true,
     },
