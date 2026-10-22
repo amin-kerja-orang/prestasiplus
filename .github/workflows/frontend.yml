@@ -62,7 +62,10 @@ jobs:
             echo "::notice::scripts/check-demo-bundle.mjs is not in this tree; demo bundle check skipped."
           fi
 
+      # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
       - name: Type-check (vue-tsc)
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run typecheck
 
       - name: Unit tests (vitest, project unit)
