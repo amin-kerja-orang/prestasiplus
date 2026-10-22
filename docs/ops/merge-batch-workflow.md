@@ -1,0 +1,52 @@
+# merge-batch workflow / aliran kerja merge-batch
+
+Files: `.github/workflows/merge-batch.yml` (thin wrapper), `scripts/merge-batch.sh` (all logic, can run locally), `apps/api/test/security/merge-batch-workflow.spec.ts` (tests).
+
+## Bahasa Melayu
+
+Menggantikan skrip merge manual LEAD. Ia membaca ringkasan "Merge-ready checker summary" terbaru pada isu #67 (atau senarai manual), melangkau apa yang tidak selamat, merge setiap PR dengan head commit yang dipin, dan menyiarkan log. Pengecualian LEAD (keputusan LEAD, 23 Okt 06:54 MYT).
+
+### Persediaan (sekali sahaja)
+1. Cipta environment `merge` SEBELUM fail workflow masuk ke repo. Required reviewers = LEAD sahaja (bukan team). "Prevent self-review" DIMATIKAN (LEAD yang dispatch dan approve). Nyahtanda "Allow administrators to bypass". Deployment branches = Selected branches, `feature/v2-backend` sahaja.
+2. Pastikan TIADA secret bernama `MERGE_TOKEN` pada tahap repo atau organisasi.
+3. Cipta fine-grained PAT dengan akaun LEAD: Resource owner = pemilik repo, Only select repositories = repo ini, Contents Read and write + Pull requests Read and write, tamat tempoh 30 hari. Simpan sebagai environment secret `MERGE_TOKEN` pada `merge` (bukan repo secret). Putar setiap 30 hari; catat tarikh di luar repo.
+4. Ruleset pada `feature/v2-backend`: wajib PR (0 approval), sekat force push dan delete, tiada bypass. Ruleset yang mewajibkan approval TIDAK digunakan: setiap sesi menyiarkan melalui akaun yang sama dan tidak boleh meluluskan PR sendiri (>=1 approval menjadikan setiap PR `blocked`). Risiko baki: sesiapa yang ada akses tulis boleh mendaratkan perubahan pada `scripts/merge-batch.sh` atau workflow melalui PR. Diterima oleh keputusan LEAD 23 Okt 06:54 MYT; nilai semula dengan token GitHub App selepas go-live. Disyorkan juga CODEOWNERS untuk `.github/**` dan `scripts/merge-batch.sh`.
+5. "Run workflow" hanya muncul jika fail workflow juga ada pada branch lalai (`feature/student-prototype`). PR berkembar yang hanya menambah fail workflow di sana diperlukan (seperti #214 untuk deploy-demo), kecuali LEAD menukar branch lalai.
+6. Sekali sahaja: semak sama ada "Re-run jobs" meminta kelulusan semula.
+
+### Cara guna
+Actions, merge-batch, Run workflow, Use workflow from `feature/v2-backend` (job tidak berjalan dari branch lain), isi `source` (`checker` atau `172:<40hex>,171:<40hex>`), `exclude` (nombor PR), `summary_id`, `dry_run`, Run, kemudian Review deployments dan Approve. Job dilangkau (run hijau, tiada apa dilakukan) jika dispatch dari ref selain `feature/v2-backend`. Semakan LEAD WAJIB sebelum SETIAP Approve: buka `https://github.com/amin-kerja-orang/prestasiplus/commits/<run sha>/scripts/merge-batch.sh` dan `.../.github/workflows/merge-batch.yml` (serta paparan compare dari sha yang terakhir disemak), dan Approve hanya jika kedua-dua fail tidak berubah sejak sha itu.
+1. Run pertama: `dry_run` bertanda. Baca pelan dalam job summary; ia mencetak id ringkasan dan sha256 badannya.
+2. Run sebenar: `dry_run` tidak bertanda dan `summary_id` = id tadi. Jika ringkasan terbaru telah berubah, run ditolak.
+
+### Peraturan langkau (PR dilangkau dengan sebab)
+Dikecualikan oleh input; item ditanda "sign-off" (seluruh item bernombor, termasuk sub-bullet); tiada tajuk base; base bukan `feature/v2-backend` / `be/integration-frontend`; tidak open; draft; base berubah; head berubah daripada yang dipin; komen/review selepas ringkasan oleh OWNER/MEMBER/COLLABORATOR (termasuk komen inline, selepas ringkasan; dalam mod manual selepas `created_at` PR) yang mengandungi `void`, `changes needed`, `Blocker`/`Major` (bukan "0") atau review CHANGES_REQUESTED; konflik / blocked / mergeability tidak dikira dalam 2 minit. Satu PR yang dilangkau TIDAK menghentikan PR lain pada base yang sama; hanya merge yang GAGAL berbuat demikian. `unstable` dan `behind` dibenarkan (CI base merah di seluruh repo; checker menilai CI). Item dengan amaran atau "LEAD chooses" BUKAN sign-off: ia dilabel "summary warns" dan disenaraikan di bawah Warnings; guna `exclude` jika perlu.
+
+### Tidak pernah dilakukan
+Tiada kemas kini branch, tiada delete, tiada tutup PR, tiada force. Hanya GET; PUT hanya pada `/pulls/N/merge`; POST hanya komen pada #67, #113, #109. Ringkasan mesti daripada `azarulhakim` (id akaun tetap, jenis User) dan belum disunting; ringkasan tanpa `### SEDIA MERGE (safe order)`, dengan arahan bukan dalam backtick atau dengan komen HTML ditolak (tiada fallback ke ringkasan lama). Komen laporan datang daripada `github-actions[bot]`. Merge menggunakan PAT LEAD supaya CI push berjalan pada tip baharu.
+
+## English
+
+Replaces the LEAD's hand-run merge scripts. It reads the newest "Merge-ready checker summary" on issue #67 (or a manual list), skips whatever is unsafe, merges each PR pinned to its head commit, and posts the log. LEAD exception (LEAD decision, 23 Oct 06:54 MYT).
+
+### One-time setup
+1. Create environment `merge` BEFORE the workflow file lands in the repo. Required reviewers = the LEAD only (no teams). "Prevent self-review" OFF (the LEAD dispatches and approves). "Allow administrators to bypass" OFF. Deployment branches = Selected branches, `feature/v2-backend` only.
+2. Confirm that no repo-level or org-level secret named `MERGE_TOKEN` exists.
+3. Create a fine-grained PAT owned by the LEAD account: Resource owner = the repo owner, Only select repositories = this repo, Contents Read and write + Pull requests Read and write, expiry 30 days. Store it as environment secret `MERGE_TOKEN` on `merge` (never a repo secret). Rotate every 30 days and note the date outside the repo.
+4. Ruleset on `feature/v2-backend`: require a PR (0 approvals), block force pushes and deletions, no bypass. A required-approval ruleset is NOT used: every session posts as the same account and cannot approve its own PRs (1 or more approvals would make every PR `blocked`). Residual risk, stated plainly: anyone with write access can land a change to `scripts/merge-batch.sh` or the workflow through a PR. Accepted by the LEAD decision of 23 Oct 06:54 MYT; revisit with a GitHub App token after go-live. CODEOWNERS for `.github/**` and `scripts/merge-batch.sh` is also recommended.
+5. "Run workflow" appears only when the workflow file is also on the default branch (`feature/student-prototype`). A twin PR that adds only the workflow file there is needed (same as #214 for deploy-demo), unless the LEAD switches the default branch.
+6. Check once whether "Re-run jobs" asks for approval again.
+
+### How to run
+Actions, merge-batch, Run workflow, Use workflow from `feature/v2-backend` (the job refuses other refs), set `source` (`checker` or `172:<40hex>,171:<40hex>`), `exclude` (PR numbers), `summary_id`, `dry_run`, Run, then Review deployments and Approve. The job is skipped (green run, nothing done) when dispatched from any ref other than `feature/v2-backend`. Required LEAD check before EVERY Approve: open `https://github.com/amin-kerja-orang/prestasiplus/commits/<run sha>/scripts/merge-batch.sh` and `.../.github/workflows/merge-batch.yml` (and the compare view from the last reviewed sha), and approve only if neither file changed since the last reviewed sha. Every run, dry or not, waits for approval.
+1. First run with `dry_run` ticked. Read the plan in the job summary; it prints the summary id and the sha256 of its body.
+2. Real run: `dry_run` unticked and `summary_id` = that id. If a newer summary appeared in between, the run is refused.
+
+### Skip rules (a skipped PR always shows its reason)
+Excluded by input; the numbered item contains "sign-off" anywhere (the whole item, sub-bullets included); no base heading; base not `feature/v2-backend` / `be/integration-frontend`; not open; draft; base changed; head moved from the pinned sha; a comment (issue or inline) or review after the summary (manual mode: after the PR's `created_at`), by an OWNER, MEMBER or COLLABORATOR, containing `void`, `changes needed`, `Blocker`/`Major` (not followed by 0), or a CHANGES_REQUESTED review; conflict / blocked / mergeability not computed in 2 min. A skipped PR does not stop later PRs on the same base; only a FAILED merge does ("not attempted"). `unstable` and `behind` are allowed (CI is red repo-wide; the checker judges CI). Items with a warning sign or "LEAD chooses" are NOT sign-off: they are labelled "summary warns" and listed under Warnings; use `exclude` if needed.
+
+### What it never does
+No branch update, no delete, no closing PRs, no force. GET only, PUT only on `/pulls/N/merge`, POST only for comments on #67, #113 and #109 (the #113/#109 notes only when something merged). The summary must come from `azarulhakim` (fixed account id, type User) and be unedited; a summary with no `### SEDIA MERGE (safe order)` section, a command that is not exactly one backticked span, or an HTML comment is refused (no fallback to an older one). Report comments come from `github-actions[bot]`. The merge uses the LEAD PAT so push CI runs on the new tips. If the PUT response is lost, the PR is re-read and reported MERGED only if GitHub says so.
+
+### Local use and tests
+`DRY_RUN=1 bash scripts/merge-batch.sh run` prints the plan from the live repo (read-only, no token needed). In GitHub Actions the script ignores `GITHUB_API`, `CHECKER_*`, `NOTIFY_ISSUES`, `ALLOWED_BASES` and `POLL_*` overrides. Tests (including a fake GitHub API on loopback): `cd apps/api && npx vitest run test/security/merge-batch-workflow.spec.ts`. Exit code is 1 when a merge FAILED or a read error occurred, after the report is posted. A merge is undone with a normal revert PR.
