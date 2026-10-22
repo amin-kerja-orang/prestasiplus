@@ -3,8 +3,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useRouteExists } from '@/composables/useRouteExists'
-import { usePrototypeScope } from '@/composables/usePrototypeScope'
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { DsCharacterCard } from '@/ds'
 
 import type { TrialStatus } from '../../api/types'

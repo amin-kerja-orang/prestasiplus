@@ -18,6 +18,7 @@ const props = defineProps<{ card: DutaCard }>()
 // The M24 profile page is not routed yet: the card then stays as plain, non-navigating markup (D9).
 const { routeExists } = useRouteExists()
 const profileTo = computed(() => `/bilik-duta/${props.card.slug}`)
+const linked = computed(() => routeExists(profileTo.value))
 
 const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text-muted'
 </script>
@@ -29,10 +30,10 @@ const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text
   >
     <p class="text-overline text-muted">{{ HEATMAP_COPY.cikguHeading }}</p>
     <component
-      :is="routeExists(profileTo) ? RouterLink : 'div'"
-      v-bind="routeExists(profileTo) ? { to: profileTo } : {}"
-      class="relative flex min-w-0 items-center gap-3 rounded-chip bg-heat/15 p-4 hover:bg-elevated"
-      :class="`tier-${card.tier}`"
+      :is="linked ? RouterLink : 'div'"
+      v-bind="linked ? { to: profileTo } : {}"
+      class="relative flex min-w-0 items-center gap-3 rounded-chip bg-heat/15 p-4"
+      :class="[`tier-${card.tier}`, { 'hover:bg-elevated': linked }]"
       :data-slug="card.slug"
       data-testid="cikgu-card"
     >

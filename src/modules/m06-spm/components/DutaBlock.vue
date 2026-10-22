@@ -25,6 +25,7 @@ const card = computed(() => data.value)
 // The M24 profile page is not routed yet: the card then stays as plain, non-navigating markup (D9).
 const { routeExists } = useRouteExists()
 const profileTo = computed(() => (card.value ? `/bilik-duta/${card.value.slug}` : ''))
+const linked = computed(() => routeExists(profileTo.value))
 </script>
 
 <template>
@@ -36,8 +37,8 @@ const profileTo = computed(() => (card.value ? `/bilik-duta/${card.value.slug}` 
       </div>
       <UCard variant="subtle" :ui="{ body: 'p-3' }">
       <component
-        :is="routeExists(profileTo) ? RouterLink : 'div'"
-        v-bind="routeExists(profileTo) ? { to: profileTo } : {}"
+        :is="linked ? RouterLink : 'div'"
+        v-bind="linked ? { to: profileTo } : {}"
         class="flex min-h-11 items-start gap-3"
         data-testid="duta-card"
       >

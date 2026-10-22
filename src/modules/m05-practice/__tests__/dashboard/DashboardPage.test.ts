@@ -153,13 +153,14 @@ function stubMatchMedia(): void {
   )
 }
 
-async function render(data: Dashboard = dash()): Promise<VueWrapper> {
+async function render(data: Dashboard = dash(), pricingRouted = true): Promise<VueWrapper> {
   api.fetchDashboard.mockResolvedValue(data)
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/dashboard', component: DashboardPage },
-      { path: '/:rest(.*)*', component: { template: '<div />' } },
+      ...(pricingRouted ? [{ path: '/pricing', component: { template: '<div />' } }] : []),
+      { path: '/:rest(.*)*', name: pricingRouted ? undefined : 'core.not-found', component: { template: '<div />' } },
     ],
   })
   await router.push('/dashboard')
@@ -192,6 +193,15 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(t(w, 'dash-friend-bubble').text()).toContain('Aiman')
     expect(t(w, 'dash-trial-remaining').text()).toBe('Baki 0 / 50 soalan')
     expect(t(w, 'dash-trial').text()).toContain('Percubaan Percuma')
+  })
+
+  it('shows the "Langgan Sekarang" CTA only when /pricing is routed (D9 dead link)', async () => {
+    const w = await render()
+    expect(t(w, 'dash-trial').get('[data-ds=card-cta]').text()).toContain('Langgan Sekarang')
+    w.unmount()
+    const w2 = await render(dash(), false)
+    expect(has(w2, 'dash-trial')).toBe(true)
+    expect(t(w2, 'dash-trial').find('[data-ds=card-cta]').exists()).toBe(false)
   })
 
   it('hides the trial card for a subscriber (FR-M05-03)', async () => {

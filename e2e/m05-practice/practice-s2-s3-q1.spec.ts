@@ -277,7 +277,7 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('the admin sees the trial notice with the pricing link', async ({
+  test('the admin sees the trial notice without the (unrouted) pricing link', async ({
     page,
     loginAs,
     gotoApp,
@@ -286,9 +286,8 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/practice/MATH')
     const notice = tid(page, 'config-trial')
     await expect(notice).toContainText('Baki percubaan percuma: 0 soalan lagi.')
-    await expect(
-      notice.getByRole('link', { name: 'Langgan untuk akses tanpa had' }),
-    ).toHaveAttribute('href', '/pricing')
+    // D9 dead link: /pricing (M19) is not routed, so the subscribe link is hidden.
+    await expect(notice.getByRole('link', { name: 'Langgan untuk akses tanpa had' })).toHaveCount(0)
   })
 
   test('the subjective link needs a level with a count (fixture) and /subjektif is the 404 page', async ({
