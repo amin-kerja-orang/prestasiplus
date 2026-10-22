@@ -1,0 +1,65 @@
+# merge-batch: merges the PRs of the newest "Merge-ready checker summary" on issue #67 (or a manual list), each pinned to
+# its head commit, and posts the merge log. LEAD exception (LEAD decision, 23 Oct 06:54 MYT). Setup and usage: docs/ops/merge-batch-workflow.md.
+# Thin wrapper: all logic lives in scripts/merge-batch.sh. Every run, dry or not, waits for the LEAD's approval on environment `merge`.
+# The merge uses the LEAD's fine-grained PAT (MERGE_TOKEN, environment secret) because merges made with GITHUB_TOKEN do not
+# trigger push CI on the new tips. GITHUB_TOKEN is used only for reads and for the report comments.
+name: merge-batch
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "'checker' = newest checker summary on issue #67; or a manual list 172:<40hex>,171:<40hex>"
+        required: false
+        type: string
+        default: checker
+      exclude:
+        description: 'PR numbers to skip, comma or space separated (optional)'
+        required: false
+        type: string
+        default: ''
+      summary_id:
+        description: "Optional: id of the checker summary comment the plan must come from (digits; printed by the dry run)"
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run: print the plan, merge nothing, post nothing'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merge-batch
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: merge-batch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: merge
+    if: github.ref == 'refs/heads/feature/v2-backend'
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Plan and merge
+        env:
+          GH_REPO: ${{ github.repository }}
+          READ_TOKEN: ${{ github.token }}
+          MERGE_TOKEN: ${{ secrets.MERGE_TOKEN }}
+          MB_SOURCE: ${{ inputs.source }}
+          MB_EXCLUDE: ${{ inputs.exclude }}
+          MB_SUMMARY_ID: ${{ inputs.summary_id }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/merge-batch.sh run
