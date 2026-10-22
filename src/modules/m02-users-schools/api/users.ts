@@ -9,6 +9,7 @@
  */
 
 import { api, type ListResult } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import type { Role, UserMe } from '@/modules/m01-authentication'
 
 import type { SchoolSummary } from './schools'
@@ -327,6 +328,10 @@ export function searchStudents(
  * screens show them (§6.12), so the mock adds this one; it goes into §7 when M02 is next revised.
  */
 export function fetchAdminDefaults(options: { signal?: AbortSignal } = {}): Promise<AdminDefaults> {
+  // SWEEP-23OCT A5: the real API has no such route (and must not hand out default passwords), so http mode
+  // never fires the request; callers already treat a failure as "no defaults" (empty value / placeholder).
+  if (isHttpMode())
+    return Promise.reject(new Error('Tiada kata laluan lalai dalam mod API sebenar.'))
   return api.get<AdminDefaults>(
     '/api/admin/config/defaults',
     options.signal ? { signal: options.signal } : {},
