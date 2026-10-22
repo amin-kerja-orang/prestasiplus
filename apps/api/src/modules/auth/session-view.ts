@@ -48,13 +48,9 @@ function schoolScope(school: School): Scope {
 
 function districtScope(school: School, code: string | null): Scope | null {
   const districtCode = (code ?? school.district)?.slice(0, 32)
-  if (!districtCode) return null
-  return {
-    level: 'district',
-    districtCode,
-    ...(school.state ? { stateCode: school.state.slice(0, 16) } : {}),
-    label: districtCode,
-  }
+  // A district name is only unique inside its state: without the state there is no district scope.
+  if (!districtCode || !school.state) return null
+  return { level: 'district', districtCode, stateCode: school.state.slice(0, 16), label: districtCode }
 }
 
 /** A stored scope row, if it is valid for the role; otherwise null so the scope is derived instead. */
@@ -72,14 +68,16 @@ function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): S
     }
     case 'district': {
       const school = account.school ?? undefined
-      if (row.districtCode) {
+      // A stored row without its state never makes a state-less scope: fall back to the derived one.
+      if (row.districtCode && row.stateCode) {
         return {
           level: 'district',
           districtCode: row.districtCode.slice(0, 32),
-          ...(row.stateCode ? { stateCode: row.stateCode.slice(0, 16) } : {}),
+          stateCode: row.stateCode.slice(0, 16),
           label: row.districtCode,
         }
       }
+      if (row.districtCode) return null
       return school ? districtScope(school, null) : null
     }
     case 'state':
@@ -108,7 +106,9 @@ function derivedScope(role: RoleCode, account: AccountRecord): Scope | null {
  * The role grants of an account, in `ROLE_PRIORITY` order, each with its server-derived scope.
  * Returns null when the account cannot hold a valid session: no role, an unknown role, `student` or
  * `admin` combined with another role, or a role whose scope cannot be derived (for example a
- * teacher without a school). Failing closed means such an account is refused, never half-served.
+ * teacher without a school, or a ppd_officer whose school has no state: a district is only unique
+ * inside its state, so a district scope always carries the state). Failing closed means such an
+ * account is refused, never half-served.
  */
 export function buildGrants(account: AccountRecord): RoleGrant[] | null {
   if (account.roles.length === 0 || !account.roles.every(isRoleCode)) return null

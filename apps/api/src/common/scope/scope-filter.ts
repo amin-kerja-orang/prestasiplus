@@ -20,6 +20,9 @@ export type WhereFragment = Record<string, unknown>
 const MISSING = (what: string, level: string): Error =>
   new Error(`ScopeFilter: scope level "${level}" needs ${what} in ScopeColumns`)
 
+/** A fragment no row satisfies (`id IN ()` is false in SQL), safe inside `AND: [...]`. */
+const matchNothing = (relation: string): WhereFragment => ({ [relation]: { is: { id: { in: [] } } } })
+
 /**
  * Builds the Prisma `where` fragment of the ACTIVE scope and checks single records against it.
  * The scope comes from `AuthContext` only. Merge the fragment with the repository's own filters
@@ -43,10 +46,14 @@ export class ScopeFilter {
         return {}
       case 'state':
         if (!cols.schoolRelation) throw MISSING('schoolRelation', 'state')
+        // Fail closed: `{ state: undefined }` would mean "no filter" to Prisma, i.e. every state.
+        if (!scope.stateCode) return matchNothing(cols.schoolRelation)
         return { [cols.schoolRelation]: { is: { state: scope.stateCode } } }
       case 'district':
         if (!cols.schoolRelation) throw MISSING('schoolRelation', 'district')
-        return { [cols.schoolRelation]: { is: { district: scope.districtCode } } }
+        // A district name is only unique inside its state, so both are always matched.
+        if (!scope.stateCode || !scope.districtCode) return matchNothing(cols.schoolRelation)
+        return { [cols.schoolRelation]: { is: { state: scope.stateCode, district: scope.districtCode } } }
       case 'school':
       case 'class':
         if (!cols.schoolColumn) throw MISSING('schoolColumn', scope.level)
@@ -70,9 +77,10 @@ export class ScopeFilter {
         if (!cols.schoolRelation) throw MISSING('schoolRelation', scope.level)
         const school = row[cols.schoolRelation] as { state?: unknown; district?: unknown } | null | undefined
         if (!school) return false
-        return scope.level === 'state'
-          ? school.state === scope.stateCode
-          : school.district === scope.districtCode
+        if (!scope.stateCode) return false // fail closed, as in where()
+        if (school.state !== scope.stateCode) return false
+        if (scope.level === 'state') return true
+        return !!scope.districtCode && school.district === scope.districtCode
       }
       case 'school':
       case 'class': {
