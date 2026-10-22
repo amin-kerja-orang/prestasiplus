@@ -8,11 +8,12 @@
  *    row exist without a class (it also needs `legacy_source`, which the kit writes with `legacy_id`);
  *  - `status = 'draft'` whatever the .cloud status was: a set that must be rebuilt is never served (BE-18 never lists or
  *    resolves a set without a class either; this is the second lock);
+ *  - the source `created_at` / `updated_at` are kept (`stamps`), not replaced by the migration time;
  *  - no items (`question_set_items` are question-bound, Q4: not migrated);
  *  - `education_level_id` of the .cloud set has no v2 column, so it is not stored (the loader counts such rows).
  * Nothing is invented: the owner is the mapped teacher or the row is rejected.
  */
-import { invalid, ok, orphan, text, unsupported, type Outcome, type Staged } from './activity-common'
+import { invalid, ok, orphan, stamps, text, unsupported, type Outcome, type Staged } from './activity-common'
 
 /** The v2 `question_sets.status` of every migrated header (`draft`, `scheduled`, `published` are the allowed values). */
 export const MIGRATED_SET_STATUS = 'draft'
@@ -27,6 +28,9 @@ export interface QuestionSetValues {
   title: string
   status: typeof MIGRATED_SET_STATUS
   needs_rebuild: true
+  /** The staged source timestamps (updated falls back to created, then to the fixed stamp), kept as on .cloud. */
+  created_at: string
+  updated_at: string
 }
 
 export interface QuestionSetParents {
@@ -53,5 +57,6 @@ export function transformQuestionSet(row: Staged, parents: QuestionSetParents): 
     title,
     status: MIGRATED_SET_STATUS,
     needs_rebuild: true,
+    ...stamps(row),
   })
 }

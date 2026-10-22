@@ -12,13 +12,25 @@ describe('transformQuestionSet', () => {
   it('gives a header with no class, needs_rebuild, a draft status whatever the source status, and the mapped owner', () => {
     expect(transformQuestionSet(row, parents)).toEqual({
       ok: true,
-      value: { teacher_id: '501', classroom_id: null, subject_id: '9', title: 'Set Contoh', status: 'draft', needs_rebuild: true },
+      value: {
+        teacher_id: '501', classroom_id: null, subject_id: '9', title: 'Set Contoh', status: 'draft', needs_rebuild: true,
+        created_at: '1970-01-01T00:00:00Z', updated_at: '1970-01-01T00:00:00Z',
+      },
     })
     expect(MIGRATED_SET_STATUS).toBe('draft')
     for (const status of ['draf', 'terbit', 'published', null, 'tidak_dikenali']) {
       const out = transformQuestionSet({ ...row, status }, parents)
       expect(out.ok && out.value.status).toBe('draft')
     }
+  })
+
+  it('keeps the staged source timestamps, updated falling back to created', () => {
+    expect(transformQuestionSet({ ...row, created_at: '2025-03-04T05:06:07Z', updated_at: '2025-05-06T07:08:09Z' }, parents)).toMatchObject({
+      ok: true, value: { created_at: '2025-03-04T05:06:07Z', updated_at: '2025-05-06T07:08:09Z' },
+    })
+    expect(transformQuestionSet({ ...row, created_at: '2025-03-04T05:06:07Z' }, parents)).toMatchObject({
+      ok: true, value: { created_at: '2025-03-04T05:06:07Z', updated_at: '2025-03-04T05:06:07Z' },
+    })
   })
 
   it('trims the title and keeps a subject-less set with a null subject', () => {

@@ -7,6 +7,9 @@
  * A row whose teacher is blank, unmapped or not a teacher in v2 is rejected, never given an invented owner.
  * A header that a teacher already rebuilt in v2 (same legacy key, `needs_rebuild = false`) is left alone and counted
  * `question_sets.already_rebuilt`: a re-run must not put the class back to NULL.
+ *
+ * `question_sets.items_not_migrated` counts only the headers loaded in THIS run: a rebuilt set is filtered out first, so
+ * the counter can drop on a later run (it is not a lifetime total).
  */
 import { ARCHIVE_SCHEMA } from '../../ddl/spec'
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
@@ -63,14 +66,18 @@ export function questionSetsStep(a: ActivityContext): AnyEntityStep {
         items.push({ legacyId, values: out.value as unknown as Record<string, unknown> })
       }
 
-      // A header rebuilt in v2 since an earlier run keeps its class: it is not written again.
+      // A header rebuilt in v2 since an earlier run keeps its class: it is not written again. The kit upsert has no
+      // `needs_rebuild` predicate, so the matching rows are locked (FOR UPDATE, in the batch transaction on `ctx.db`)
+      // until the batch commits: a teacher rebuild between this read and the write cannot be reset. The planned runs
+      // happen inside the freeze, before teachers reach v2, so the lock is never contended in practice.
       let rebuilt = 0
       if (items.length > 0) {
-        const done = await ctx.db.query<{ legacy_id: string }>(
-          `SELECT legacy_id FROM question_sets WHERE legacy_source = $1 AND legacy_id = ANY($2::text[]) AND needs_rebuild = false`,
+        // Every matching row is locked (also the ones still `needs_rebuild`), so a rebuild that starts now waits for the commit.
+        const found = await ctx.db.query<{ legacy_id: string; needs_rebuild: boolean }>(
+          `SELECT legacy_id, needs_rebuild FROM question_sets WHERE legacy_source = $1 AND legacy_id = ANY($2::text[]) ORDER BY id FOR UPDATE`,
           [ctx.source, items.map((i) => i.legacyId)],
         )
-        const skip = new Set(done.rows.map((r) => r.legacy_id))
+        const skip = new Set(found.rows.filter((r) => !r.needs_rebuild).map((r) => r.legacy_id))
         if (skip.size > 0) {
           rebuilt = skip.size
           items = items.filter((i) => !skip.has(i.legacyId))
@@ -89,7 +96,7 @@ export function questionSetsStep(a: ActivityContext): AnyEntityStep {
 
       const res = await upsertAndMap(
         ctx, entity, 'question_sets',
-        ['teacher_id', 'classroom_id', 'subject_id', 'title', 'status', 'needs_rebuild'],
+        ['teacher_id', 'classroom_id', 'subject_id', 'title', 'status', 'needs_rebuild', 'created_at', 'updated_at'],
         items,
       )
       return { ...res, unchanged: (res.unchanged ?? 0) + rebuilt }

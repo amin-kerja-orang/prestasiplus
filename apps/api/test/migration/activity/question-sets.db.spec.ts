@@ -36,16 +36,16 @@ beforeAll(async () => {
 
   await h.q(`delete from staging_cloud.question_sets`)
   await h.q(
-    `insert into staging_cloud.question_sets (id, teacher_id, title, subject_id, education_level_id, status) values
-      (1, ${teacher}, '  Set Satu  ', ${subject}, 1, 'terbit'),
-      (2, ${teacher}, 'Set Dua', null, null, null),
-      (3, null, 'Tanpa guru', null, null, 'draf'),
-      (4, 99999, 'Guru tiada', null, null, 'draf'),
-      (5, ${student}, 'Pemilik murid', null, null, 'draf'),
-      (6, ${teacher}, '   ', null, null, 'draf'),
-      (7, ${teacher}, $1, null, null, 'draf'),
-      (8, ${teacher}, 'Subjek tiada', 99999, null, 'draf'),
-      (9, ${teacher}, 'Set Sembilan', ${subject}, 1, 'diterbitkan')`,
+    `insert into staging_cloud.question_sets (id, teacher_id, title, subject_id, education_level_id, status, created_at, updated_at) values
+      (1, ${teacher}, '  Set Satu  ', ${subject}, 1, 'terbit', '2024-02-03T04:05:06Z', '2024-06-07T08:09:10Z'),
+      (2, ${teacher}, 'Set Dua', null, null, null, '2024-02-03T04:05:06Z', null),
+      (3, null, 'Tanpa guru', null, null, 'draf', null, null),
+      (4, 99999, 'Guru tiada', null, null, 'draf', null, null),
+      (5, ${student}, 'Pemilik murid', null, null, 'draf', null, null),
+      (6, ${teacher}, '   ', null, null, 'draf', null, null),
+      (7, ${teacher}, $1, null, null, 'draf', null, null),
+      (8, ${teacher}, 'Subjek tiada', 99999, null, 'draf', null, null),
+      (9, ${teacher}, 'Set Sembilan', ${subject}, 1, 'diterbitkan', null, null)`,
     ['t'.repeat(256)],
   )
   await h.q(
@@ -83,6 +83,19 @@ describe('question-set headers (Q4 A)', () => {
     expect(rows.every((r) => r.teacher_id === v2Teacher)).toBe(true)
     expect(rows[0]?.subject_id).toBe(v2Subject)
     expect(applied.report.recon.find((r) => r.entity === 'question_sets')).toMatchObject({ sourceCount: 9, loaded: 3, rejected: 6 })
+  })
+
+  it('keeps the staged created_at / updated_at (updated falls back to created, then to the fixed stamp)', async () => {
+    const rows = await h.q<{ legacy_id: string; created_at: string; updated_at: string }>(
+      `select legacy_id, to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') created_at,
+              to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') updated_at
+       from question_sets order by legacy_id::bigint`,
+    )
+    expect(rows).toEqual([
+      { legacy_id: '1', created_at: '2024-02-03T04:05:06Z', updated_at: '2024-06-07T08:09:10Z' },
+      { legacy_id: '2', created_at: '2024-02-03T04:05:06Z', updated_at: '2024-02-03T04:05:06Z' },
+      { legacy_id: '9', created_at: '1970-01-01T00:00:00Z', updated_at: '1970-01-01T00:00:00Z' },
+    ])
   })
 
   it('rejects a blank, unmapped or non-teacher owner, a bad title and an unmapped subject, with counts', () => {
