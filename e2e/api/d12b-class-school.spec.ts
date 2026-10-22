@@ -11,6 +11,9 @@
  *
  * Env: E2E_DEMO_PASSWORD (or the BIJAK_<ROLE>_PASS variables). Seed: PoC (teacher and school admin of
  * "SMK Demo Satu").
+ *
+ * Data: each run creates 2 classes per project ("D12b …", unique names) and cannot remove them (the teacher
+ * API has no class delete). It relies on the periodic reseed: run it only against a local or seed stack.
  */
 
 import type { Page } from '@playwright/test'
@@ -20,7 +23,11 @@ import { account, expectNoHScroll, newPeerContext } from './helpers'
 
 const SCHOOL = 'SMK Demo Satu'
 
-async function createClass(page: Page, name: string, pickSchool: boolean): Promise<Record<string, unknown>> {
+async function createClass(
+  page: Page,
+  name: string,
+  pickSchool: boolean,
+): Promise<Record<string, unknown>> {
   await page.goto('/guru/kelas/cipta')
   await expect(page.getByTestId('kelas-create-page')).toBeVisible()
   if (pickSchool) {
