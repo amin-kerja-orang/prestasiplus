@@ -103,6 +103,8 @@ jobs:
       COOKIE_SECURE: 'false'
       THROTTLE_LOGIN_PER_MINUTE: '200'
       THROTTLE_GLOBAL_PER_MINUTE: '3000'
+      # Run the job worker in this API process so queued intake jobs (extract-start) complete; AI_PROVIDER defaults to mock.
+      JOBS_WORKER_ENABLED: 'true'
       FRONTEND_PORT: '5192'
       BASE_URL: http://localhost:5192
     steps:
