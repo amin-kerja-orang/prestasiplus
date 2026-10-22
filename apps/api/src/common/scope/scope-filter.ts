@@ -20,7 +20,10 @@ export type WhereFragment = Record<string, unknown>
 const MISSING = (what: string, level: string): Error =>
   new Error(`ScopeFilter: scope level "${level}" needs ${what} in ScopeColumns`)
 
-/** A fragment no row satisfies (`id IN ()` is false in SQL), safe inside `AND: [...]`. */
+/**
+ * A fragment no row satisfies (`id IN ()` is false in SQL), safe inside `AND: [...]`. Never place a
+ * scope fragment under `NOT`: this one would then match every row.
+ */
 const matchNothing = (relation: string): WhereFragment => ({ [relation]: { is: { id: { in: [] } } } })
 
 /**

@@ -77,6 +77,7 @@ function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): S
           label: row.districtCode,
         }
       }
+      // The derived scope then uses the school's own state AND district, never the stored district.
       if (row.districtCode) return null
       return school ? districtScope(school, null) : null
     }
