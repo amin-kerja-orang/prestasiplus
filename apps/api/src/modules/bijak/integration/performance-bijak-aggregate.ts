@@ -28,6 +28,13 @@ const isLetter = (v: unknown): v is OptionLetter => typeof v === 'string' && LET
 
 /** Whole seconds between start and submit (same expression in `sittings` and `totals`, so the sums agree). */
 const DURATION = Prisma.sql`GREATEST(0, ROUND(EXTRACT(EPOCH FROM (a.submitted_at - a.started_at))))::int`
+/**
+ * Questions the pupil answered in a sitting: the graded question rows with `attempted` true (a non-blank
+ * response). Same expression in `sittings` and `totals`, so the sums agree. Not `max_score` (the paper's marks).
+ */
+const ANSWERED = Prisma.sql`CASE WHEN jsonb_typeof(r.graded->'questions') = 'array'
+  THEN (SELECT COUNT(*) FROM jsonb_array_elements(r.graded->'questions') AS gq(q) WHERE COALESCE((gq.q->>'attempted')::boolean, false))::int
+  ELSE 0 END`
 /** Malaysian calendar day of the submit time (the contract's `mytDay`). */
 const DAY = Prisma.sql`to_char(a.submitted_at AT TIME ZONE 'Asia/Kuala_Lumpur', 'YYYY-MM-DD')`
 
@@ -57,6 +64,7 @@ interface SittingRow {
   status: 'submitted' | 'auto_submitted'
   score: number
   max_score: number
+  answered_count: number
   provisional: boolean
   pending_review: number
   duration_seconds: number
@@ -73,6 +81,7 @@ interface TotalsRow {
   sittings: number
   score: number
   max: number
+  answered: number
   seconds: number
   graded_score: number
   graded_max: number
@@ -134,7 +143,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
       const rows = await this.prisma.client.$queryRaw<SittingRow[]>`
         SELECT a.id::text AS attempt_id, a.user_id::text AS user_id, u.school_id::text AS school_id,
                a.subject, a.subject_name, a.paper_kind, a.mode, a.status,
-               r.score::float8 AS score, r.max_score::float8 AS max_score, r.provisional, r.pending_review,
+               r.score::float8 AS score, r.max_score::float8 AS max_score, ${ANSWERED} AS answered_count, r.provisional, r.pending_review,
                ${DURATION} AS duration_seconds, a.started_at, a.submitted_at
         ${FROM}
         WHERE ${where}
@@ -152,6 +161,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
           status: r.status,
           score: r.score,
           maxScore: r.max_score,
+          answeredCount: r.answered_count,
           provisional: r.provisional,
           pendingReview: r.pending_review,
           durationSeconds: r.duration_seconds,
@@ -175,6 +185,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
                COUNT(*)::int AS sittings,
                COALESCE(SUM(r.score), 0)::float8 AS score,
                COALESCE(SUM(r.max_score), 0)::float8 AS max,
+               COALESCE(SUM(${ANSWERED}), 0)::float8 AS answered,
                COALESCE(SUM(${DURATION}), 0)::float8 AS seconds,
                COALESCE(SUM(r.score) FILTER (WHERE NOT r.provisional), 0)::float8 AS graded_score,
                COALESCE(SUM(r.max_score) FILTER (WHERE NOT r.provisional), 0)::float8 AS graded_max,
@@ -193,6 +204,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
           sittings: r.sittings,
           score: r.score,
           max: r.max,
+          answered: r.answered,
           seconds: r.seconds,
           gradedScore: r.graded_score,
           gradedMax: r.graded_max,
@@ -209,6 +221,7 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
         have.sittings += row.sittings
         have.score += row.score
         have.max += row.max
+        have.answered += row.answered
         have.seconds += row.seconds
         have.gradedScore += row.gradedScore
         have.gradedMax += row.gradedMax

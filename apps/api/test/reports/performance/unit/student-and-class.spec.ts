@@ -295,3 +295,41 @@ describe('Analitik', () => {
     })
   })
 })
+
+describe('Soalan Dijawab counts answered questions, not the paper marks (issue 61 m1)', () => {
+  // Three 10-mark papers; the pupil answered 3, 0 and 2 questions (marks per question are not 1).
+  beforeEach(() => {
+    w.bijak
+      .addSitting(sitting({ userId: '1', score: 6, maxScore: 10, answeredCount: 3, submittedAt: d('2026-09-24T10:00:00+08:00') }))
+      .addSitting(sitting({ userId: '1', score: 0, maxScore: 10, answeredCount: 0, submittedAt: d('2026-09-24T11:00:00+08:00') }))
+      .addSitting(sitting({ userId: '1', score: 4, maxScore: 10, answeredCount: 2, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', submittedAt: d('2026-09-25T09:00:00+08:00') }))
+  })
+
+  it('student: stats.answered and mastery.answered are the answered questions', async () => {
+    const r = await w.student.student(ctxOf('student', '1'), '1')
+    expect(r.stats.answered).toBe(5)
+    expect(r.mastery.map((m) => [m.subjectCode, m.answered])).toEqual([
+      ['BM', 3],
+      ['MT', 2],
+    ])
+  })
+
+  it('class dashboard: stats.answered and the ranking rows', async () => {
+    const r = await w.klass.classDashboard(ctxOf('teacher', 't1'), '10')
+    expect(r.stats.answered).toBe(3)
+    expect(r.ranking.find((x) => x.userId === '1')?.answered).toBe(3)
+  })
+
+  it('school dashboard: stats.answered', async () => {
+    const r = await w.school.school(ctxOf('school_admin', 'sa1'))
+    expect(r.stats.answered).toBe(5)
+  })
+
+  it('analytics: per-subject answered', async () => {
+    const r = await w.analytics.me(ctxOf('student', '1'))
+    expect(r.subjects.map((s) => [s.code, s.answered])).toEqual([
+      ['BM', 3],
+      ['MT', 2],
+    ])
+  })
+})

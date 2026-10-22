@@ -100,6 +100,11 @@ async function translating(seed: BijakSeed): Promise<BijakAggregatePort> {
         },
       ],
     }))
+    // Answered questions beyond the item rows: parts-less filler questions (never an item fact) reach `answeredCount`.
+    const attemptedItems = questions.filter((qq) => qq.attempted).length
+    for (let n = attemptedItems; n < fact.answeredCount; n++) {
+      questions.push({ questionId: `filler-${String(n)}`, number: questions.length + 1, sectionId: 's', marks: 1, awarded: 0, counted: true, attempted: true, parts: [] } as never)
+    }
     if (status === 'submitted' || status === 'auto_submitted' || state === 'abandoned' || isTest === true) {
       await t.db.query(
         `insert into attempt_results (attempt_id, score, max_score, provisional, pending_review, graded) values ($1::uuid, $2, $3, $4, $5, $6::jsonb)`,

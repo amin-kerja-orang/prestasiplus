@@ -111,17 +111,30 @@ describe('reduceFacts', () => {
     sitting({ userId: '2', score: 5, maxScore: 5, durationSeconds: 25 }),
   ]
   it('matches hand sums; provisional sittings count everywhere but the graded base', () => {
-    expect(figuresOf(facts)).toEqual({ sittings: 3, score: 15, max: 25, seconds: 175, gradedScore: 13, gradedMax: 15 })
+    expect(figuresOf(facts)).toEqual({ sittings: 3, score: 15, max: 25, answered: 25, seconds: 175, gradedScore: 13, gradedMax: 15 })
     const rows = reduceFacts(facts, 'user')
     expect(rows).toHaveLength(2)
     expect(rows[0]).toMatchObject({ userId: '1', sittings: 2, score: 10, max: 20, seconds: 150, gradedScore: 8, gradedMax: 10, pupils: 1 })
+  })
+  it('answered sums the answered questions, not the marks (issue 61 m1)', () => {
+    const f = [
+      sitting({ userId: '1', score: 8, maxScore: 10, answeredCount: 3 }),
+      sitting({ userId: '1', score: 2, maxScore: 10, answeredCount: 0, provisional: true }),
+      sitting({ userId: '2', score: 5, maxScore: 5, answeredCount: 2 }),
+    ]
+    expect(figuresOf(f)).toMatchObject({ max: 25, answered: 5 })
+    expect(reduceFacts(f, 'user').map((r) => [r.userId, r.max, r.answered])).toEqual([
+      ['1', 20, 3],
+      ['2', 5, 2],
+    ])
+    expect(reduceFacts(f, 'school')[0]).toMatchObject({ max: 25, answered: 5 })
   })
   it('one row for the school, with the pupil count', () => {
     expect(reduceFacts(facts, 'school')).toEqual([expect.objectContaining({ schoolId: 's1', sittings: 3, pupils: 2 })])
   })
   it('empty input reduces to nothing', () => {
     expect(reduceFacts([], 'user')).toEqual([])
-    expect(figuresOf([])).toEqual({ sittings: 0, score: 0, max: 0, seconds: 0, gradedScore: 0, gradedMax: 0 })
+    expect(figuresOf([])).toEqual({ sittings: 0, score: 0, max: 0, answered: 0, seconds: 0, gradedScore: 0, gradedMax: 0 })
   })
 })
 
