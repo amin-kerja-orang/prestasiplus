@@ -121,12 +121,12 @@ describe('QuestionsService (real database)', () => {
     it('bulkAction counts each existing id once and skips unknown ids and refused transitions', async () => {
       const a = (await svc.create(mcqInput(tag), admin)).id
       const b = (await svc.create(mcqInput(tag), admin)).id
-      expect(await svc.bulkAction('review', [a, b, a, '999999999', 'zz'], admin)).toEqual({ affected: 2, ids: expect.any(Array) })
+      expect(await svc.bulkAction('review', [a, b, a, '999999999', 'zz'], admin)).toEqual({ affected: 2, ids: [a, b], failed: [expect.objectContaining({ id: '999999999', code: 'NOT_FOUND' }), expect.objectContaining({ id: 'zz', code: 'NOT_FOUND' })] })
       // draft -> approved is outside the table: nothing changes.
       const c = (await svc.create(mcqInput(tag), admin)).id
-      expect(await svc.bulkAction('approved', [c], admin)).toEqual({ affected: 0, ids: expect.any(Array) })
+      expect(await svc.bulkAction('approved', [c], admin)).toEqual({ affected: 0, ids: [], failed: [expect.objectContaining({ id: c, code: 'CONFLICT' })] })
       expect((await svc.getStatus(c)).status).toBe('draft')
-      expect(await svc.bulkAction('approved', [a, b], admin)).toEqual({ affected: 2, ids: expect.any(Array) })
+      expect(await svc.bulkAction('approved', [a, b], admin)).toEqual({ affected: 2, ids: [a, b], failed: [] })
       expect((await svc.getStatus(a)).status).toBe('approved')
     })
 
@@ -135,14 +135,14 @@ describe('QuestionsService (real database)', () => {
       const tagged = (await svc.create(mcqInput(tag, { tag: tagBody(tag, 3) }), admin)).id
       await svc.bulkAction('review', [untagged, tagged], admin)
       await svc.bulkAction('approved', [untagged, tagged], admin)
-      expect(await svc.bulkAction('published', [untagged, tagged], admin)).toEqual({ affected: 1, ids: expect.any(Array) })
+      expect(await svc.bulkAction('published', [untagged, tagged], admin)).toEqual({ affected: 1, ids: [tagged], failed: [expect.objectContaining({ id: untagged, code: 'VALIDATION_ERROR' })] })
       expect((await svc.getStatus(untagged)).status).toBe('approved')
       expect((await svc.getStatus(tagged)).status).toBe('published')
     })
 
     it('bulk delete removes existing ids only', async () => {
       const a = (await svc.create(mcqInput(tag), admin)).id
-      expect(await svc.bulkAction('delete', [a, a, '999999999'], admin)).toEqual({ affected: 1, ids: expect.any(Array) })
+      expect(await svc.bulkAction('delete', [a, a, '999999999'], admin)).toEqual({ affected: 1, ids: [a], failed: [expect.objectContaining({ id: '999999999', code: 'NOT_FOUND' })] })
       expect(await repo.get(a, 'latest')).toBeNull()
     })
   })

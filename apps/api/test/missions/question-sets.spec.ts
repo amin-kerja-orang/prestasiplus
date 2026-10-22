@@ -2,6 +2,7 @@ import { QuestionSetStudentListSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionSetAssignments } from '../../src/modules/classes/question-sets'
+import { QuestionSetsRepository } from '../../src/modules/classes/question-sets/question-sets.repository'
 import {
   STUDENT_1,
   STUDENT_2,
@@ -170,6 +171,51 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
     it('a migrated set resolves with no questions', async () => {
       const set = await insertSet(t, { teacherId, classroomId: cls.id, needsRebuild: true, questionIds: [qs[0] as string] })
       expect(await t.get(QuestionSetAssignments).resolve({ userId: s1Id, id: set, at })).toMatchObject({ status: 'ok', questionIds: [] })
+    })
+  })
+
+  describe('a migrated header without a class (AZ-31, Q4 A, migration 0042)', () => {
+    const at = new Date(NOW)
+    let n = 0
+    const header = (over: Partial<Parameters<typeof insertSet>[1]> = {}) =>
+      insertSet(t, { teacherId, classroomId: null, title: 'Set Migrasi Tanpa Kelas', status: 'draft', needsRebuild: true, legacy: { source: 'cloud', id: `qs-${String(++n)}` }, ...over })
+
+    it('the database accepts a NULL class only for a migrated header that needs a rebuild', async () => {
+      const ok = await header()
+      expect((await t.db.query<{ classroom_id: string | null }>(`select classroom_id from question_sets where id = $1`, [ok]))[0]?.classroom_id).toBeNull()
+      const rejected = /ck_question_sets_classroom_or_migrated/
+      await expect(insertSet(t, { teacherId, classroomId: null, title: 'Tanpa kelas v2' })).rejects.toThrow(rejected)
+      await expect(header({ needsRebuild: false })).rejects.toThrow(rejected)
+      await expect(insertSet(t, { teacherId, classroomId: null, needsRebuild: true })).rejects.toThrow(rejected)
+      // removing the class of a v2 set is refused too
+      const v2 = await insertSet(t, { teacherId, classroomId: cls.id })
+      await expect(t.db.query(`update question_sets set classroom_id = null where id = $1`, [v2])).rejects.toThrow(rejected)
+      // rebuilt into a class: the check holds whatever the flags
+      await t.db.query(`update question_sets set classroom_id = $2, needs_rebuild = false where id = $1`, [ok, cls.id])
+    })
+
+    it('the repository maps the missing class to null', async () => {
+      const id = await header()
+      expect(await t.get(QuestionSetsRepository).get(id)).toMatchObject({ id, teacherId, classroomId: null, needsRebuild: true, status: 'draft' })
+    })
+
+    it('is never listed to a student or the teacher on /set-soalan-saya, whatever its status', async () => {
+      const draft = await header()
+      const published = await header({ status: 'published' })
+      for (const c of [s1, s2, teacher]) {
+        const ids = (await list(c)).map((r) => r.id)
+        expect(ids).not.toContain(draft)
+        expect(ids).not.toContain(published)
+      }
+    })
+
+    it('never resolves for practice (not_found), even published and with items, until it is rebuilt into a class', async () => {
+      const id = await header({ status: 'published', questionIds: [qs[0] as string] })
+      const a = t.get(QuestionSetAssignments)
+      for (const userId of [s1Id, s2Id, teacherId]) expect(await a.resolve({ userId, id, at })).toEqual({ status: 'not_found' })
+      // a rebuild gives it a class: from then on the normal rules apply
+      await t.db.query(`update question_sets set classroom_id = $2, needs_rebuild = false where id = $1`, [id, cls.id])
+      expect(await a.resolve({ userId: s1Id, id, at })).toMatchObject({ status: 'ok', questionIds: [qs[0]] })
     })
   })
 

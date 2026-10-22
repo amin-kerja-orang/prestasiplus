@@ -122,6 +122,8 @@ model PracticeAnswer {
   @@index([sessionId], map: "ix_practice_answers_session_id")
   @@index([userId, questionId], map: "ix_practice_answers_user_id_question_id")
   @@index([subjectId, chapterId], map: "ix_practice_answers_subject_id_chapter_id")
+  // Partial index (answered_at DESC, id DESC) WHERE NOT is_test, "ix_practice_answers_answered_at_id", is hand-written
+  // in 0040 (Command Center platform reads, AZ-13); Prisma cannot express the WHERE clause.
   @@map("practice_answers")
 }
 
