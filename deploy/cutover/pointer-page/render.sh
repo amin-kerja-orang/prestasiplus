@@ -6,7 +6,7 @@
 #
 # Fills the three placeholders of index.template.html, checks each value, refuses a value that could break out of
 # the HTML (only plain URL, mailbox and digit characters are accepted), refuses to leave a placeholder, writes the
-# page and prints its sha256. Hand the file and the sha256 to Amin, who places it on .cloud. Nothing here touches
+# page and prints its sha256. Hand the file and the sha256 to the `.cloud` operator (half AM), who places it on .cloud. Nothing here touches
 # .cloud, prestasiplus.my or any server.
 set -euo pipefail
 umask 022

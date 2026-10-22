@@ -17,7 +17,7 @@
 | MIG-08 item | Decision | What half AZ does |
 |---|---|---|
 | 7 Who types `migrate:*` | The half-AM operator, with AZ-DevOps on the host | AZ runs `slot.sh` (stage, restore points, PITR). The half-AM operator types the `slot.sh etl ...` lines. Credentials stay on the host (`/etc/pretasiplus/*.env`); no agent holds them |
-| 8 Switch | **A**: v2 on its own address, and a pointer page on `.cloud` | Half AZ prepares the static page (section 5). Amin places it on `.cloud`. Nothing on `.cloud` is changed by the team |
+| 8 Switch | **A**: v2 on its own address, and a pointer page on `.cloud` | Half AZ prepares the static page (section 5). The `.cloud` operator (half AM) places it on `.cloud`. Nothing on `.cloud` is changed by the team |
 | 9 Load strategy | **A**: full load on 29 Oct, then the delta inside the freeze | Phase A and Phase B below |
 | 10 Platform | VPS, restore points `pre_etl`, `pre_delta` and `post_switch` (`pg_dump -Fc`), plus PITR | Sections 3 and 4 |
 | 14 Where the raw dump is staged | **A**: a throwaway cluster | Section 2 |
@@ -199,9 +199,9 @@ deploy/cutover/pointer-page/render.sh --url https://<v2 host>/ --support-email <
 
 - **The LEAD** approves the BM text, together with the notice to schools, and supplies the address and contact
   values.
-- **Half AZ** renders the page at T-1 d and hands the file and its sha256 to Amin (the custody of a public page; no
-  secret).
-- **Amin** places it on `.cloud` at B11, as the operational switch. The team changes no `.cloud` code or data. He
+- **Half AZ** renders the page at T-1 d and hands the file and its sha256 to the `.cloud` operator (half AM).
+  This hands over custody of a public page; it holds no secret.
+- **The `.cloud` operator (half AM)** places it on `.cloud` at B11, as the operational switch. The team changes no `.cloud` code or data. The operator
   removes it again on a rollback after the switch (6.3), when `.cloud` is unfrozen.
 - **Smoke check:** at B12, the pointer page loads on the `.cloud` address and its button opens the v2 login.
 
@@ -220,9 +220,9 @@ deploy/cutover/pointer-page/render.sh --url https://<v2 host>/ --support-email <
 | B3-B5 | receive, decrypt, `slot.sh load`, `copy`, `throwaway-down`, `wipe-dump` | B4 freeze proof |
 | B6-B8 | watches | `slot.sh etl migrate:delta` dry-run, then `--apply`, then `migrate:verify` |
 | B9 | `slot.sh gonogo` output pasted (as text) for the LEAD | verify counts as text |
-| B11 | the v2 address goes live (it already serves; announce it); pointer page handed to Amin | |
+| B11 | the v2 address goes live (it already serves; announce it); pointer page handed to the `.cloud` operator (half AM) | |
 | B12-B13 | smoke with v2-born accounts; timers started again; one `backup.sh` | SQL checks |
-| Rollback after the switch | maintenance (stop api), `restore-point.sh take post_switch`, then the plan's switch-back | `.cloud` unfreeze (owner), pointer page removed (Amin) |
+| Rollback after the switch | maintenance (stop api), `restore-point.sh take post_switch`, then the plan's switch-back | `.cloud` unfreeze (owner), pointer page removed (the `.cloud` operator) |
 | By 6 Nov | `drop schema staging_cloud cascade` (with the LEAD), `restore-point.sh take post_drop`, `pitr.sh base --label post_drop`, `restore-point.sh purge-raw --after post_drop`, `pitr.sh cleanup --keep-from <post_drop base>` | report files deleted |
 
 ## 7. Timings (fill from MIG-07, P6, A11 and the night)
@@ -314,7 +314,7 @@ replaced by a stand-in that maps `docker compose exec db` and `docker exec <thro
 ## 10. Open points
 
 1. **D1 to D3** (section 1) are half AM's. The slot cannot run without #122, #123 and #125 in the release.
-2. **Who freezes `.cloud`.** The LEAD DECISION text names Amin. The cutover plan's default 5 A names the `.cloud`
+2. **Who freezes `.cloud`.** The LEAD DECISION text names the half-AM `.cloud` operator. The cutover plan's default 5 A names the `.cloud`
    owner. AM1-3 raised this on #124; half AM aligns it.
 3. **v2 is reachable before the switch.** Under option A the v2 address serves from the first deploy, and the migrated
    data is there from A9 (29 Oct). Sign-in still needs a password, and the address is not announced until the pointer
