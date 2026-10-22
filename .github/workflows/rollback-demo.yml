@@ -70,7 +70,7 @@ jobs:
           run=$(curl -sS --fail-with-body -H @"$RUNNER_TEMP/gh.h" -H 'Accept: application/vnd.github+json' \
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID")
           rm -f "$RUNNER_TEMP/gh.h"
-          jq -e --arg repo "$GITHUB_REPOSITORY" '.path == ".github/workflows/deploy-demo.yml" and .event == "workflow_dispatch"
+          jq -e --arg repo "$GITHUB_REPOSITORY" '(.path | startswith(".github/workflows/deploy-demo.yml")) and .event == "workflow_dispatch"
             and .repository.full_name == $repo and (.head_branch == "feature/v2-backend" or .head_branch == "ops/AZ-deploy-demo-workflow")' <<<"$run" >/dev/null \
             || { echo "NO-GO: inputs: run $BACKUP_RUN_ID is not a deploy-demo run (workflow_dispatch, allowed branch) of this repository"; exit 1; }
           echo "backup run $BACKUP_RUN_ID: deploy-demo on $(jq -r .head_branch <<<"$run"), $(jq -r .created_at <<<"$run"), conclusion $(jq -r '.conclusion // "running"' <<<"$run")"

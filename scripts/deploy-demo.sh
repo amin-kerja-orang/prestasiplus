@@ -133,6 +133,8 @@ setup_work() {
 }
 
 setup_targets() {
+  # Steps after the build phase use the PATH recorded before any repository code ran (see the workflow).
+  if [ -n "${PP_TRUSTED_PATH:-}" ]; then PATH="$PP_TRUSTED_PATH"; export PATH; hash -r; fi
   need DEMO_REF PGURL PGPASSWORD
   mask "$PGPASSWORD"
   for t in psql pg_dump pg_restore; do command -v "$t" >/dev/null || usage_err "$t is required"; done
@@ -167,16 +169,20 @@ setup_targets() {
 }
 
 save_state() {
-  { printf 'EXP_MIG=%q\nEXP_NEWEST=%q\nEXP_Q=%q\n' "$EXP_MIG" "$EXP_NEWEST" "$EXP_Q"
-    printf 'STATE_BE=%q\nSTATE_FE=%q\n' "$BACKEND_SHA" "$FRONTEND_SHA"
-    [ -n "${DUMP:-}" ] && printf 'DUMP=%q\n' "$DUMP"
-    [ -n "${PAGES_PREV:-}" ] && printf 'PAGES_PREV=%q\n' "$PAGES_PREV"
+  { printf 'EXP_MIG=%s\nEXP_NEWEST=%s\nEXP_Q=%s\n' "$EXP_MIG" "$EXP_NEWEST" "$EXP_Q"
+    printf 'STATE_BE=%s\nSTATE_FE=%s\n' "$BACKEND_SHA" "$FRONTEND_SHA"
+    [ -n "${DUMP:-}" ] && printf 'DUMP=%s\n' "$DUMP"
+    [ -n "${PAGES_PREV:-}" ] && printf 'PAGES_PREV=%s\n' "$PAGES_PREV"
     true; } >"$WORK/state.env"
 }
 load_state() {
   [ -f "$WORK/state.env" ] || nogo "no state from the earlier phase in $WORK (run PP_PHASE=build first)"
-  # shellcheck disable=SC1091
-  . "$WORK/state.env"
+  # Read as data, never sourced: only NAME=value lines with plain characters are accepted.
+  local line k v
+  while IFS= read -r line; do
+    [[ "$line" =~ ^(EXP_MIG|EXP_NEWEST|EXP_Q|STATE_BE|STATE_FE|DUMP|PAGES_PREV)=([A-Za-z0-9._/:@+-]*)$ ]] || nogo "unexpected line in $WORK/state.env"
+    k="${BASH_REMATCH[1]}"; v="${BASH_REMATCH[2]}"; printf -v "$k" '%s' "$v"
+  done <"$WORK/state.env"
   [ "$STATE_BE" = "$BACKEND_SHA" ] && [ "$STATE_FE" = "$FRONTEND_SHA" ] || nogo "the earlier phase ran for other SHAs"
   BE_DIR="$WORK/be"; SPA_DIR="$WORK/spa"
   expect_eq "$(git -C "$BE_DIR" rev-parse HEAD)" "$BACKEND_SHA" "checkout be"
@@ -324,14 +330,14 @@ step_checkout() {
     if [ ! -e "$dir/.git" ]; then git -C "$REPO_ROOT" worktree add -q --detach "$dir" "$sha"; fi
     expect_eq "$(git -C "$dir" rev-parse HEAD)" "$sha" "checkout $(basename "$dir")"
   done
-  if [ "${PP_SKIP_NPM_CI:-0}" != 1 ]; then (cd "$BE_DIR" && with_only -- npm ci --no-audit --no-fund); fi
+  if [ "${PP_SKIP_NPM_CI:-0}" != 1 ]; then (cd "$BE_DIR" && with_only -- npm ci --ignore-scripts --no-audit --no-fund); fi
   (cd "$BE_DIR" && with_only -- npm run -s db:generate -w @pp/api >/dev/null)
   summary "- step 1 checkout: SHAs OK, SPA synced; expect $EXP_MIG migrations ($EXP_NEWEST), $EXP_Q questions"
 }
 
 step_spa_build() {
   hdr "spa-build (step 7, before any DB change)"
-  if [ "${PP_SKIP_NPM_CI:-0}" != 1 ]; then (cd "$SPA_DIR" && with_only -- npm ci --no-audit --no-fund); fi
+  if [ "${PP_SKIP_NPM_CI:-0}" != 1 ]; then (cd "$SPA_DIR" && with_only -- npm ci --ignore-scripts --no-audit --no-fund); fi
   rm -rf "$SPA_DIR/dist"
   (cd "$SPA_DIR" && VITE_API_MODE=http with_only -- npx --no-install vite build --mode demo)
   local out
@@ -349,7 +355,7 @@ step_wrangler_install() {
   hdr "wrangler-install"
   if [ "$STUB" = 1 ]; then log "STUB: wrangler not installed"; return; fi
   mkdir -p "$WORK/wrangler"
-  (cd "$WORK/wrangler" && printf '{"private":true}\n' >package.json && with_only -- npm install --no-audit --no-fund --save-exact "wrangler@$WRANGLER_VERSION" >/dev/null)
+  (cd "$WORK/wrangler" && printf '{"private":true}\n' >package.json && with_only -- npm install --ignore-scripts --no-audit --no-fund --save-exact "wrangler@$WRANGLER_VERSION" >/dev/null)
   log "OK  $(cd "$WORK/wrangler" && ./node_modules/.bin/wrangler --version 2>/dev/null | tail -1)"
 }
 
@@ -618,8 +624,13 @@ cmd_rollback() {
     local dep="${ROLLBACK_PAGES_DEPLOYMENT_ID:-}"
     [ -n "$dep" ] || dep=$(pages_prod_deployments | sed -n 2p | cut -d' ' -f1) || true
     [[ "$dep" =~ ^[A-Za-z0-9-]+$ ]] || nogo "no previous Pages deployment found (set pages_deployment_id)"
+    local live; live=$(pages_prod_deployments | head -1 | cut -d' ' -f1) || true
+    if [ "$live" = "$dep" ]; then
+      log "OK  Pages deployment $dep is already live (the deploy never reached pages-deploy): nothing to roll back"
+    else
     cf POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments/$dep/rollback" | jq -e '.success == true' >/dev/null || nogo "Pages rollback to $dep refused"
     log "OK  Pages rolled back to deployment $dep"; summary "- Pages rolled back to \`$dep\`"
+    fi
   fi
 
   hdr "render-env (#112 6: remove CLIENT_IP_HEADER with the edge rollback)"

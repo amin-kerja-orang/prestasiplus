@@ -76,6 +76,15 @@ describe('deploy-demo.yml phases and backup artifact', () => {
     expect(upload).toBeLessThan(phase('apply'))
   })
 
+  it('creates the CA file and runs backup/apply only after the build, with the trusted PATH', () => {
+    const ca = idx((s) => s.name === 'Supabase CA certificate')
+    expect(ca).toBeGreaterThan(phase('build'))
+    for (const p of ['backup', 'apply']) {
+      expect(steps[phase(p)].env?.PP_TRUSTED_PATH).toBe('${{ steps.trust.outputs.path }}')
+      expect(String((steps[phase(p)] as Step & { shell?: string }).shell)).toContain('-u BASH_ENV')
+    }
+  })
+
   it('gives the build phase (npm ci, vite, wrangler install) no secret', () => {
     const env = steps[phase('build')].env ?? {}
     for (const v of Object.values(env)) expect(String(v)).not.toMatch(/secrets\./)
@@ -102,7 +111,7 @@ describe('deploy-demo.yml phases and backup artifact', () => {
 describe('rollback-demo.yml backup provenance', () => {
   const text = read('.github/workflows/rollback-demo.yml')
   it('accepts only a deploy-demo workflow_dispatch run of this repository', () => {
-    expect(text).toContain('.path == ".github/workflows/deploy-demo.yml"')
+    expect(text).toContain('(.path | startswith(".github/workflows/deploy-demo.yml"))')
     expect(text).toContain('.event == "workflow_dispatch"')
     expect(text).toContain('.repository.full_name == $repo')
   })

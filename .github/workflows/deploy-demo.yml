@@ -58,14 +58,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17 >/dev/null
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
-      - name: Supabase CA certificate
-        env:
-          SUPABASE_CA_CERT: ${{ vars.SUPABASE_CA_CERT }}
-        run: |
-          set -euo pipefail
-          [ -n "$SUPABASE_CA_CERT" ] || { echo "NO-GO: setup: variable SUPABASE_CA_CERT is not set on environment demo"; exit 1; }
-          umask 077
-          printf '%s\n' "$SUPABASE_CA_CERT" > "$RUNNER_TEMP/supabase-ca.crt"
+      # PATH as it is before any repository or dependency code runs; the later steps use exactly this PATH.
+      - name: Record the trusted PATH
+        id: trust
+        run: echo "path=$PATH" >> "$GITHUB_OUTPUT"
       # Phase 1: no secret in this step's environment (npm lifecycle scripts, vite config and wrangler install run here).
       - name: Build (checkout checks, npm ci, SPA build, wrangler)
         env:
@@ -76,14 +72,25 @@ jobs:
           PP_NO_FETCH: '1'
           PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
         run: bash scripts/deploy-demo.sh deploy
+      - name: Supabase CA certificate
+        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
+        env:
+          SUPABASE_CA_CERT: ${{ vars.SUPABASE_CA_CERT }}
+        run: |
+          set -euo pipefail
+          [ -n "$SUPABASE_CA_CERT" ] || { echo "NO-GO: setup: variable SUPABASE_CA_CERT is not set on environment demo"; exit 1; }
+          umask 077
+          printf '%s\n' "$SUPABASE_CA_CERT" > "$RUNNER_TEMP/supabase-ca.crt"
       # Phase 2: read-only target checks, pg_dump, GPG encryption. Nothing is changed yet.
       - name: Backup (target checks, pg_dump, encrypt)
         id: backup
+        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
         env:
           BACKEND_SHA: ${{ inputs.backend_sha }}
           FRONTEND_SHA: ${{ inputs.frontend_sha }}
           PP_MODE: ${{ inputs.mode }}
           PP_PHASE: backup
+          PP_TRUSTED_PATH: ${{ steps.trust.outputs.path }}
           KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
           PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
           SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt
@@ -112,11 +119,13 @@ jobs:
           compression-level: 0
       # Phase 3: reset, migrate, seed, lockdown, edge secret, Render + Pages deploy, smoke and walkthrough.
       - name: Apply (DB, secrets, deploy, smoke, walkthrough)
+        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
         env:
           BACKEND_SHA: ${{ inputs.backend_sha }}
           FRONTEND_SHA: ${{ inputs.frontend_sha }}
           PP_MODE: ${{ inputs.mode }}
           PP_PHASE: apply
+          PP_TRUSTED_PATH: ${{ steps.trust.outputs.path }}
           KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
           PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
           SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt

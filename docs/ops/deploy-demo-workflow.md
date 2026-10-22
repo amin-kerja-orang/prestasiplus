@@ -145,6 +145,19 @@ deploy of `render_sha`, then `pp_gate` → `DROP SCHEMA public CASCADE` → `pg_
   in 0600 header files (`curl -H @file`), never in argv. Inputs reach the script as environment variables, never
   interpolated into shell code.
 - Every destructive DB command is behind `pp_gate` (#112 §1.0).
+- Build hardening: `npm ci --ignore-scripts` / `npm install --ignore-scripts` (no dependency lifecycle scripts run),
+  the Supabase CA file is written after the build, the backup and apply steps use the PATH recorded before any
+  repository code ran and a shell without `BASH_ENV`, and the hand-over file between phases is parsed as data, never
+  sourced.
+- **What this does NOT isolate:** the repository code itself. After the build, `demo-db-delta.mjs`, the seed, the
+  smoke/walkthrough scripts and wrangler run with the secret each needs. Whoever can push to `feature/v2-backend`
+  controls that code; branch protection (2.1 step 5) is the real control. Remove `ops/AZ-deploy-demo-workflow` from the
+  environment branch list and from the rollback's allowed branches after the merge.
+
+**Deviations from the run sheet (deliberate):** the SPA build runs before the backup and the reset (a build failure
+changes nothing); the lockdown also runs right after the reset (step 6 still runs and checks it); the write
+walkthrough runs with `CONFIRM_DELAY=0`; Render auto-deploy must be off; a Pages rollback is skipped when the target
+is already live.
 - Only the GPG-encrypted dump leaves the runner, and it does so before the first destructive step.
 - The Pages secret takes effect on the next upload (run sheet step 8). After a Pages rollback, test `/api/health` on Pages: if the edge secret no longer matches, run deploy again (the rollback health check catches it).
 
