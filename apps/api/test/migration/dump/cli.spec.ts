@@ -157,7 +157,7 @@ describe('dump:check roles and engines', () => {
     const r = await check('check-57', { version: '5.7.44', currentRole: '`would_fail`@`%`' })
     expect(r.code, r.text).toBe(DUMP_EXIT.ok)
     expect(fx.calls().some((c) => c.sql.includes('CURRENT_ROLE'))).toBe(false)
-    expect(fx.calls().every((c) => !c.sql.includes('mandatory_roles') || c.sql.includes('SHOW GLOBAL VARIABLES'))).toBe(true)
+    expect(fx.calls().some((c) => c.sql.includes('SHOW GLOBAL VARIABLES') && c.sql.includes('mandatory_roles'))).toBe(true)
   })
 
   it('MariaDB reads CURRENT_ROLE(): NULL is accepted, a role is refused', async () => {

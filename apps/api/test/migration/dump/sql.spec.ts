@@ -154,7 +154,7 @@ describe('SQL generation', () => {
     expect(buildMetaSql()).toContain("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('mandatory_roles');")
     expect(buildMetaSql()).not.toMatch(/@@global\.mandatory_roles|CURRENT_ROLE/)
     expect(buildRoleSql()).toContain('SELECT CURRENT_ROLE();')
-    expect([supportsRoles({ flavor: 'mysql', version: '5.7.44' }), supportsRoles({ flavor: 'mysql', version: '8.0.36' }), supportsRoles({ flavor: 'mariadb', version: '10.6.12-MariaDB' })]).toEqual([false, true, true])
+    expect([supportsRoles({ flavor: 'mysql', version: '5.7.44' }), supportsRoles({ flavor: 'mysql', version: '8.0.36' }), supportsRoles({ flavor: 'mariadb', version: '10.6.12-MariaDB' }), supportsRoles({ flavor: 'mysql', version: '5.5.5-10.11.6' })]).toEqual([false, true, true, true])
     expect(parseRoleActive(['#PP-ROLE', 'NONE', '#PP-END'])).toBe(false)
     expect(parseRoleActive(['#PP-ROLE', 'NULL', '#PP-END'])).toBe(false)
     expect(parseRoleActive(['#PP-ROLE', '`r`@`%`', '#PP-END'])).toBe(true)

@@ -86,9 +86,12 @@ export function buildRoleSql(): string {
   return [`SELECT '${M.role}';`, 'SELECT CURRENT_ROLE();', `SELECT '${M.end}';`, ''].join('\n')
 }
 
-/** True when `CURRENT_ROLE()` exists. An unparsable MySQL version counts as yes: a failure is then loud (fail closed). */
+/**
+ * True when `CURRENT_ROLE()` exists. An unparsable MySQL version counts as yes: a failure is then loud (fail closed). A
+ * `5.5.5-` prefix is the MariaDB 10+ protocol version, so it counts as MariaDB even when the rest omits the name.
+ */
 export function supportsRoles(schema: Pick<SchemaInfo, 'flavor' | 'version'>): boolean {
-  if (schema.flavor === 'mariadb') return true
+  if (schema.flavor === 'mariadb' || schema.version.trim().startsWith('5.5.5-')) return true
   const m = /^(\d+)\./.exec(schema.version.trim())
   return m === null || Number(m[1]) >= 8
 }
