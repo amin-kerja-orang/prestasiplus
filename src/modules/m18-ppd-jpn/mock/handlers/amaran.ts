@@ -108,17 +108,12 @@ export const amaranRoutes: RouteDef[] = [
       if (!Number.isInteger(id)) return validationError({ schoolId: 'The school id is required.' })
       scope = { kind: 'school', schoolId: id }
     } else if (kind === 'district') {
-      const own = defaultScope(viewer)
-      const d = district ?? (own?.kind === 'district' ? own.district : undefined)
-      const s = state ?? (own?.kind === 'district' ? own.state : undefined)
-      if (d === undefined || s === undefined)
+      if (district === undefined || state === undefined)
         return validationError({ district: 'The district and state are required.' })
-      scope = { kind: 'district', district: d, state: s }
+      scope = { kind: 'district', district, state }
     } else if (kind === 'state') {
-      const own = defaultScope(viewer)
-      const s = state ?? (own?.kind === 'state' ? own.state : undefined)
-      if (s === undefined) return validationError({ state: 'The state is required.' })
-      scope = { kind: 'state', state: s }
+      if (state === undefined) return validationError({ state: 'The state is required.' })
+      scope = { kind: 'state', state }
     } else {
       return validationError({ scope: 'The scope must be school, district or state.' })
     }

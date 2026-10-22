@@ -284,6 +284,39 @@ describe('toolbar and print', () => {
   })
 })
 
+describe('query changes', () => {
+  async function mountWithRouter(url: string) {
+    api.fetchAmaranSummary.mockResolvedValue(summary())
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push(url)
+    await router.isReady()
+    mount(RingkasanEksekutifPage, { global: { plugins: [router] } })
+    await flushPromises()
+    return router
+  }
+
+  it('admin: a new ?scope= on the same route fetches again with the new params', async () => {
+    session.role = 'admin'
+    const router = await mountWithRouter('/amaran/ringkasan-eksekutif?scope=state&state=Perak')
+    await router.push('/amaran/ringkasan-eksekutif?scope=state&state=Johor')
+    await flushPromises()
+    expect(api.fetchAmaranSummary).toHaveBeenCalledTimes(2)
+    expect(api.fetchAmaranSummary.mock.calls[1]?.[0]).toMatchObject({ scope: 'state', state: 'Johor' })
+  })
+
+  it.each(['school_admin', 'teacher'])('%s: no params ever, no refetch on a query change', async (role) => {
+    session.role = role
+    const router = await mountWithRouter('/amaran/ringkasan-eksekutif?scope=state&state=Perak')
+    await router.push('/amaran/ringkasan-eksekutif?scope=state&state=Johor')
+    await flushPromises()
+    expect(api.fetchAmaranSummary).toHaveBeenCalledTimes(1)
+    expect(Object.keys(api.fetchAmaranSummary.mock.calls[0]?.[0] as object)).toEqual(['signal'])
+  })
+})
+
 describe('roles', () => {
   const schoolRows = [
     { schoolId: '7', school: 'SMK Contoh B', pupils: 17, avgScore: 97.6, green: 0, yellow: 0, red: 17 },

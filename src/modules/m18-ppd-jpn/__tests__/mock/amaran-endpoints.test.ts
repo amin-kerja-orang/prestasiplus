@@ -259,6 +259,14 @@ describe('#22 GET /api/amaran/summary', () => {
     expect(d.schools?.some((s) => s.schoolId === 8880)).toBe(true)
   })
 
+  it('scope=district without district or state, scope=state without state: 422 (no fallback to the viewer scope)', async () => {
+    for (const who of [admin.id, ppdSelangor.id, jpnJohor.id]) {
+      for (const q of ['scope=district', 'scope=district&district=PPD%20KLUANG', 'scope=district&state=Johor', 'scope=state']) {
+        expect((await getAs(runtime, who, `/api/amaran/summary?${q}`)).status).toBe(422)
+      }
+    }
+  })
+
   it('admin with scope=state and no state: 422', async () => {
     expect((await getAs(runtime, admin.id, '/api/amaran/summary?scope=state')).status).toBe(422)
   })

@@ -50,9 +50,14 @@ const pageMeta = usePageMeta()
 
 const route = useRoute()
 const { isAdmin, backPath } = useReportViewer()
-const query = isAdmin.value ? adminSummaryQuery(route.query) : {}
+// Reactive: moving between `?scope=` values on this route reuses the component and must refetch.
+const query = computed(() => (isAdmin.value ? adminSummaryQuery(route.query) : {}))
+const queryKey = computed(() => JSON.stringify(query.value))
 
-const { data, error, loading, reload } = useApi((signal) => fetchAmaranSummary({ ...query, signal }))
+const { data, error, loading, reload } = useApi(
+  (signal) => fetchAmaranSummary({ ...query.value, signal }),
+  queryKey,
+)
 
 const status = computed(() => (isApiError(error.value) ? error.value.status : null))
 const refused = computed(() => status.value === 403 || status.value === 404)
