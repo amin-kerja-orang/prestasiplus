@@ -21,7 +21,7 @@ import type { TxClient } from '../../../db/client'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { maskEchoes, redactExtractRequest, scrubContactDetails, type MaskedSpan } from '../../ai-extraction'
+import { scrubContactDetails } from '../../ai-extraction'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
 import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFiguresService, type AiExtractor } from '../files'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
@@ -102,7 +102,7 @@ const STATE_FOR_DRAFT = (d: { lowFields: string[]; needsManual?: boolean }, dups
 /**
  * Extraction orchestration (BE-38, plan 15 "Workflow" and "Jobs"): `request` enqueues a run for a batch (idempotent, refused
  * for an already imported file hash before any provider call), the job handler reads the stored pages, hands the
- * provider-neutral request (redacted, AC-8) to the `AI_EXTRACTOR` port, maps the answer to items with confidence and region,
+ * provider-neutral, text-only request to the `AI_EXTRACTOR` port (BE-36 redacts it, AC-8), maps the answer to items with confidence and region,
  * runs the duplicate check and closes the run. The AI can only produce `generated` or `needs_review` items; nothing here
  * accepts, rejects or confirms anything (AC-2).
  *
@@ -275,18 +275,16 @@ export class IntakeExtractionService implements OnModuleInit {
 
     let paper: AiExtractedPaper | null
     let pageMap: PageRef[]
-    let spans: MaskedSpan[]
     try {
       const prepared = await this.prepare(batch.id, batch.subject)
       pageMap = prepared.pageMap
-      spans = prepared.spans
       paper = prepared.request.pages.length === 0 ? null : await this.call(prepared.request, signal)
     } catch (err) {
       await this.onAttemptFailed(run.id, batch.id, job, wait, err)
       return
     }
     try {
-      await this.persist(run.id, batch.id, batch.subject, paper === null ? null : maskEchoes(paper, spans), pageMap, signal)
+      await this.persist(run.id, batch.id, batch.subject, paper, pageMap, signal)
     } catch (err) {
       if (err instanceof JobError) throw err
       await this.prisma.client.intakeExtractionRun.update({ where: { id: run.id }, data: { state: 'queued' } })
@@ -295,12 +293,14 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /**
-   * Builds the redacted request (AC-8) and the page map. The request goes through BE-36's request builder and redactor
-   * (`redactExtractRequest`), the one redactor of the system (LEAD decision (c), 2026-10-21): page text and taxonomy
-   * labels are masked and page images are dropped, so the provider receives redacted OCR text only (v2-threat-model rows
-   * 46 and 50). The masked values come back in memory only, to mask a provider that echoes one of them.
+   * Builds the text-only request and the page map. Nothing is redacted here: the request goes to the `AI_EXTRACTOR`
+   * port, whose implementation (BE-36's `AiExtractorAdapter`) hands it to `AiExtractionService`, which redacts it once
+   * with BE-36's redactor right before the provider and masks a provider that echoes a masked value (#189, LEAD
+   * decision (c), 2026-10-21). The request carries no page image, not even a reference: the provider receives
+   * local-OCR text only (v2-threat-model rows 46 and 50). `images` is left out explicitly so that no later change to
+   * `IntakeExtractionInput` can bring it back.
    */
-  private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[]; spans: MaskedSpan[] }> {
+  private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[] }> {
     const built = await this.input.build(idToString(batchId))
     const files = await this.prisma.client.intakeFile.findMany({
       where: { batchId, status: 'done' },
@@ -315,13 +315,13 @@ export class IntakeExtractionService implements OnModuleInit {
       }
     }
     const taxonomy = await this.curriculum.taxonomy(subject)
-    const { request, spans } = redactExtractRequest({
+    const request: AiExtractRequest = {
       pages: built.pages,
       subject: built.subject,
       kertas: built.kertas,
       ...(taxonomy.length > 0 ? { taxonomy } : {}),
-    })
-    return { request, pageMap, spans }
+    }
+    return { request, pageMap }
   }
 
   /** Calls the port and validates the answer. Anything that is not a valid result is a failure of the run. */

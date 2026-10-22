@@ -118,15 +118,14 @@ describe('AI hand-off (no route)', () => {
     const total = req.pages.reduce((n, p) => n + p.text.length, 0)
     expect(total).toBeLessThanOrEqual(AI_MAX_TEXT_CHARS)
     expect(total).toBe(AI_MAX_TEXT_CHARS)
-    // Page images by internal file id, numbered like the text pages.
-    expect(req.images?.map((i) => i.page)).toEqual([1, 2, 3])
-    expect(req.images!.every((i) => /^\d+$/.test(i.fileId) && i.width > 0 && i.height > 0)).toBe(true)
+    // Text only (#189): no page image is referenced, not even by internal file id.
+    expect(req.images).toBeUndefined()
 
     const wire = JSON.stringify(req)
     for (const canary of ['CANARY-SOURCE', 'CANARY-NOTE', 'CANARY-ADMIN', 'CANARY-NAME', 'Sumber ujian', 'Nota penghantar']) expect(wire).not.toContain(canary)
     // No control, zero-width or bidi character survives anywhere.
     expect(wire).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/)
-    expect(Object.keys(req).sort()).toEqual(['images', 'kertas', 'pages', 'subject'])
+    expect(Object.keys(req).sort()).toEqual(['kertas', 'pages', 'subject'])
   })
 
   it('leaves out files that are not done and fails cleanly for an unknown batch', async () => {
