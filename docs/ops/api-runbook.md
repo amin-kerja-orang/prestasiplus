@@ -154,7 +154,21 @@ Drill executed for BE-33 (acceptance criterion 7), 2026-10-20, with the same too
 4. Exact `count(*)` of every table, source against restored: 141 tables, 9876 rows in total in 65 non-empty tables, 0 mismatches, 5 of 5 sequences present. Result `ROW-COUNT COMPARISON PASSED`.
 5. Both scratch databases and the dump file were deleted.
 
-The full output is attached to the PR. The same drill with `npm run db:backup` and `npm run db:restore-check` on the real `db` container, and the first production backup, still need the lead or the operator (see section 15).
+The full output is attached to the PR. The compose drill on the real `db` container is recorded below; the first production backup still needs the lead or the operator (see section 15).
+
+Compose drill evidence (AC7), 2026-10-22, commit `23c98226`, Compose project `pp-ac7`, `postgres:16-alpine`, Docker on a private cloud VM, throwaway random secrets in git-ignored `.env.db` and `.env.api`:
+
+| Step | Result |
+|---|---|
+| Schema | 33 migrations applied, `_prisma_migrations` 33 rows |
+| Seed | `poc` profile, exit 0; `users` 51 |
+| `npm run db:backup` | `pp-backup-20261022T015028Z.dump`, 1037293 bytes (1013.0 KiB), sha256 `5a759050...771d3475`, 1 s |
+| `npm run db:restore-check` | exit 0, 12 s, into `prestasiplus_restorecheck`, dropped afterwards |
+| Counts | users 51, schools 4, sessions 0, audit_events 0, questions 503 |
+| Comparison | `row-count comparison: 197 source tables, 197 restored tables, 15734 rows restored, 0 mismatches`, then `ROW-COUNT COMPARISON PASSED` and `RESTORE CHECK PASSED` |
+| Cleanup | `docker compose -p pp-ac7 down -v`; dump, sidecar and env files deleted (backup folder empty); no `pp-ac7` project or volume left |
+
+Deviation from the written steps: the `migrate` image build failed in this VM (`npm ci` in the `build` stage ended with `npm error Exit handler never called!` twice, after about 75 s, so the in-container network is not usable for npm). Step 2 was done from the host instead: the `db` port was published on a free loopback port with a throwaway Compose override kept outside the repo, `node scripts/demo-db-delta.mjs` applied the 33 `migration.sql` files in order (it writes the same `_prisma_migrations` rows as `prisma migrate deploy`), and `npm run be:db:seed` ran the `poc` seed with `ALLOW_DEMO_SEED=true`. Steps 3 and 4 (backup, restore-check, cleanup) ran exactly as written and operate on the container only. The `migrate` job itself (`prisma migrate deploy` plus seed in the image) was not exercised here and stays covered by the CI `docker` job.
 
 ### AC7 rehearsal (run once in the cloud session)
 
@@ -221,7 +235,7 @@ unset COMPOSE_PROJECT_NAME BACKUP_DIR
 docker compose ls                                            # pp-ac7 must be gone
 ```
 
-If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting. The `ROW-COUNT COMPARISON` lines need the comparison added to `scripts/db-restore-check.mjs` (BE-33 close-out); without it the script prints only the core-table counts and `RESTORE CHECK PASSED`, which is not enough for AC7.
+If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting.
 
 ## 11. Logs
 
@@ -301,7 +315,7 @@ Test files are under `apps/api/test/security/` unless a full path is given; scen
 | AC6a | CI fails on high or critical production dependencies, with allow-list | `deps-audit` job, `scripts/npm-audit-gate.mjs`, `npm-audit-gate.spec.ts`, allow-list file; local run on the repo and on a fake critical advisory (exit 1) are in the PR | done locally |
 | AC6b | CI fails on image vulnerabilities | Trivy step, `ci-workflow.spec.ts` | first real scan: needs LEAD/ops |
 | AC6c | A deliberately vulnerable dev branch shows the failure in CI | not run (cannot push a throw-away branch and watch CI from here) | needs LEAD/ops (steps: branch, `npm install --save-prod <package with a known high advisory>`, open a PR, expect `deps-audit` and `dependency-review` red; delete the branch; paste the run link in the PR) |
-| AC7 | Backup restored into a fresh database, row-count comparison | section 10 and the pasted output (141 tables, 0 mismatches) | done on local Postgres; on the compose `db` and in production: needs LEAD/ops |
+| AC7 | Backup restored into a fresh database, row-count comparison | section 10: host drill (141 tables, 0 mismatches) and compose drill (197 tables, 0 mismatches) | done on local Postgres and on the compose `db` (2026-10-22, 197 tables, 15734 rows, 0 mismatches; evidence in section 10); first production backup: needs LEAD/ops |
 | AC8 | Secret scan green; log-capture over login, reset, upload | `secret-scan` job, `log-capture.spec.ts` (and `apps/api/test/logging-pii.spec.ts`) | tests in the PR; the CI job runs on the PR |
 | AC9 | D52 review items each have a threat-model row and a named test | threat-model table in the PR description | in the PR |
 | P10-1 | Contract committed first, `contract:check` | `npm run contract:check` | run before merge |
