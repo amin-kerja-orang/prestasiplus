@@ -524,9 +524,8 @@ export class GamificationRepository {
 
   // --- rankings and national figures (rows other people may see) -----------------------------------
 
-  /** Top `limit` visible wallets by lifetime syiling (ties: oldest wallet, then id), BR-M14-17. */
   /**
-   * The pupil board (also S1 "Top 10 Pelajar"): wallets whose owner holds the role `student` only (FIX-3 D-08; staff
+   * Top `limit` visible wallets by lifetime syiling, BR-M14-17. The pupil board (also S1 "Top 10 Pelajar"): wallets whose owner holds the role `student` only (FIX-3 D-08; staff
    * never enter pupil leaderboards, a user with several roles still counts). Order BR-M14-17: shown total desc, wallet
    * creation asc, id asc.
    */
