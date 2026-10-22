@@ -262,7 +262,7 @@ Rotate on a schedule agreed with the lead (suggested every 90 days) and immediat
 | Secret | Effect of rotating | Notes |
 |---|---|---|
 | `SESSION_SECRET` | Every signed-in session and CSRF token becomes invalid; all users must log in again. Login-throttle counters and reset hashes keyed with it restart. | Announce it; do it off-peak. |
-| `IC_HASH_KEY` | IC lookups (reset by IC, IC search) stop matching until every `ic_hash` is recomputed with the new key. | Do not rotate without a recompute plan from the backend developers. Never reuse `SESSION_SECRET`. |
+| `IC_HASH_KEY` | IC lookups (reset by IC, IC search) stop matching: every stored `ic_hash` was made with the old key, and v2 keeps no plaintext IC, so the hashes cannot be recomputed from the database. | **Not rotated on a schedule** (LEAD decision, 22 Oct 2026, AM-06 option 1). Rotate only after a suspected leak of the key, and then only together with a re-import of the IC numbers from the source system, under a separate LEAD decision (until then affected users reset through their school admin). Never reuse `SESSION_SECRET`. A lazy dual-key re-hash on reset-ic is a post-go-live ticket. |
 | `DATABASE_URL` password | The API cannot connect until it is redeployed with the new value. | Change the role password in Postgres and the secret in the same maintenance window; for compose also `.env.db` (`POSTGRES_PASSWORD` only applies at first init: run `ALTER ROLE` in the running database). |
 | `POSTGRES_PASSWORD` (`.env.db`) | As above for the `db` service. | |
 | Backup passphrases | Old encrypted copies need the old passphrase. | Keep the old one until those copies expire. |
