@@ -174,6 +174,7 @@ describe('preconditions and flags', () => {
     expect(text).toContain('delta since 2026-06-02T00:00:00.000Z (apply)')
     expect(text).toContain('practice_sessions | 1')
     expect(text).toContain('stage | entity | read | inserted | updated | unchanged')
+    expect(text).toContain('warning: cannot verify --as-of against the first load; make sure it is the same value')
     expect(text).toMatch(/delta report: .*\.migration-out.*delta-.*\.json/)
     expect(text).not.toMatch(/@/)
   }, 300_000)

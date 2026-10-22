@@ -3,14 +3,18 @@
  * applies, and the rollback / link-questions commands hand the right options to Parts B and C (their modules are
  * mocked here; their own specs cover the behaviour).
  */
+import { readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import type pg from 'pg'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runCli } from '../../../src/migration/cli'
 import { findMigrateCommand } from '../../../src/migration/kit'
 import { RollbackRefusedError } from '../../../src/migration/verify/rollback'
-import { malaysiaDate, parseSince } from '../../../src/migration/orchestrate'
+import { AS_OF_UNVERIFIED, malaysiaDate, parseSince, writeDeltaReport, type DeltaReport } from '../../../src/migration/orchestrate'
 import { capture } from '../staging/helpers'
+import { tempOutDir } from './helpers-verify'
 
 const mocks = vi.hoisted(() => ({
   runVerify: vi.fn(),
@@ -221,5 +225,35 @@ describe('migrate:verify', () => {
     expect(ok.text).toMatch(/recon\.json/)
     mocks.runVerify.mockResolvedValue(report('fail'))
     expect((await run(['migrate:verify'])).code).toBe(1)
+  })
+})
+
+describe('writeDeltaReport', () => {
+  const delta: DeltaReport = {
+    source: 'cloud', mode: 'apply', generatedAt: '2026-06-03T01:02:03.456Z', since: '2026-06-02T00:00:00.000Z',
+    staged: [{ table: 'users', changedRows: 1 }], entities: [], warnings: [AS_OF_UNVERIFIED],
+  }
+
+  it('creates a new file each time (random suffix) and never replaces an existing one', () => {
+    const out = tempOutDir()
+    try {
+      const a = writeDeltaReport(delta, out.path)
+      const b = writeDeltaReport(delta, out.path)
+      expect(a).not.toBe(b)
+      expect(JSON.parse(readFileSync(a, 'utf8')).warnings).toEqual([AS_OF_UNVERIFIED])
+
+      const fixed = writeDeltaReport(delta, out.path, 'fixed1')
+      writeFileSync(fixed, 'keep me')
+      expect(() => writeDeltaReport(delta, out.path, 'fixed1')).toThrow(/EEXIST/)
+      expect(readFileSync(fixed, 'utf8')).toBe('keep me')
+      // A symbolic link at the target is not written through either.
+      const target = join(out.path, 'elsewhere.txt')
+      writeFileSync(target, 'untouched')
+      symlinkSync(target, join(out.path, 'delta-20260603T010203Z-link01.json'))
+      expect(() => writeDeltaReport(delta, out.path, 'link01')).toThrow(/EEXIST/)
+      expect(readFileSync(target, 'utf8')).toBe('untouched')
+    } finally {
+      out.cleanup()
+    }
   })
 })
