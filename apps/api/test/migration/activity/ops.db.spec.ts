@@ -215,3 +215,40 @@ describe('feedback of a user deleted at the source (delta, staging has no cascad
     }
   })
 })
+
+describe('feedback already held by a v2-born row for the same (user, month, is_test)', () => {
+  it('rejects the legacy row DUPLICATE_KEY on month, leaves the v2 row untouched, and neither run aborts', async () => {
+    const user = u[1] as string
+    const v2User = (await h.q<{ new_id: string }>(
+      `select new_id::text from etl_id_map where legacy_source = 'cloud' and entity = 'users' and legacy_id = $1`, [user],
+    ))[0]?.new_id
+    expect(v2User).toBeDefined()
+    // 2026-09: a Malaysia month no other fixture row uses. The v2-born row has no legacy pair.
+    await h.q(`insert into staging_cloud.feedback (id, user_id, score, satisfaction, usability, relevance, comment, created_at) values
+      (9, ${user}, 4, 4, 4, 4, 'Komen sembilan', '2026-09-10T10:00:00Z')`)
+    await h.q(
+      `insert into feedback (user_id, role, month, satisfaction, comment, is_test) values ($1::bigint, 'student', '2026-09-01', 2, 'Komen v2', false)`,
+      [v2User],
+    )
+    const snapshot = () => h.q(`select id::text, user_id::text, role, month::text, satisfaction, comment, legacy_source, legacy_id, updated_at::text from feedback where month = '2026-09-01'`)
+    try {
+      const v2Before = await snapshot()
+      expect(v2Before.length).toBe(1)
+      const dry = await h.run('dry-run', { groups })
+      expect(dry.report.status).toBe('succeeded')
+      const a = await h.run('apply', { groups })
+      expect(a.report.status).toBe('succeeded')
+      const r = await reasonsOf(a.report.runId)
+      // The two superseded rows of the base fixture (still DUPLICATE_KEY on a re-run) plus the one held by the v2-born row.
+      expect(n(r, 'feedback', 'DUPLICATE_KEY', 'month')).toBe(n(r1, 'feedback', 'DUPLICATE_KEY', 'month') + 1)
+      expect(await snapshot()).toEqual(v2Before)
+      expect(await h.count('feedback', `t.legacy_source = 'cloud' and t.legacy_id = '9'`)).toBe(0)
+      const recon = a.report.recon.find((x) => x.entity === 'feedback')
+      expect(recon?.status).toBe('ok')
+      expect(recon).toMatchObject({ sourceCount: 9, eligibleCount: 9, loaded: 3, rejected: 6 })
+    } finally {
+      await h.q(`delete from feedback where month = '2026-09-01'`)
+      await h.q(`delete from staging_cloud.feedback where id = 9`)
+    }
+  })
+})

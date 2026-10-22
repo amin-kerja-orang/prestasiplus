@@ -13,6 +13,7 @@ import { assertSurrogateLegacyId } from '../../kit/sql'
 import type { LegacyRow } from '../../kit/upsert'
 import { klDateSql } from '../../transform/activity-common'
 import { transformFeedback, transformTicket, transformTimeline } from '../../transform/support'
+import { dropConflicts } from '../claim'
 import { rejectRow, upsertAndMap } from '../helpers'
 import { distinctValues, readById, type StagedRow } from '../source'
 import { lookup } from './catalogue-steps'
@@ -176,10 +177,17 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push(toRow(legacyId, out.value))
       }
+      // A v2-born feedback row (no legacy pair) for the same (user, month, is_test) wins: the legacy row is rejected
+      // DUPLICATE_KEY (month) instead of the unique violation aborting the batch (and the required dry-run).
+      const keyOf = (i: LegacyRow): string => `${String(i.values.user_id)}|${String(i.values.month)}|${String(i.values.is_test)}`
+      const kept = await dropConflicts(ctx.db, items, {
+        entity, table: 'feedback', column: 'month', expr: `user_id::text || '|' || month::text || '|' || is_test::text`,
+        source: ctx.source, rejects: ctx.rejects, legacyIdOf: (i) => i.legacyId, valueOf: keyOf,
+      })
       return upsertAndMap(
         ctx, entity, 'feedback',
         ['user_id', 'role', 'school_id', 'month', 'nps', 'satisfaction', 'usability', 'relevance', 'score', 'comment', 'is_test', 'created_at', 'updated_at'],
-        items, { register: false },
+        kept, { register: false },
       )
     },
   }
