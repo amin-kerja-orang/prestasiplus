@@ -3,7 +3,7 @@
  * M05-T1). UI tasks import these and do not change this file (build-plan §S.3 rule 5).
  */
 
-import { api, isHttpMode, type ListResult } from '@/api'
+import { api, isHttpMode, wireId, wireIdOpt, type ListResult } from '@/api'
 
 import type {
   ChapterSubject,
@@ -54,32 +54,26 @@ export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
   return isHttpMode() ? normaliseDashboard(body) : body
 }
 
-/** v2 wire ids are opaque strings (bigint as text); the page keeps the numeric `id` fields of the mock. */
-function wireId<T extends string | number>(id: T): number {
-  const n = Number(id)
-  return Number.isFinite(n) ? n : (id as unknown as number)
-}
-
 /**
- * http mode only: maps the `PracticeReadDashboard` wire body (`GET /api/dashboard`, packages/contract
- * practice/reads) to the page's `Dashboard`. The shapes agree except that every entity id is an
- * opaque string on the wire; list sections the server returns empty (or omits) become `[]` so the
- * page shows its existing empty state.
+ * http mode only: the `PracticeReadDashboard` wire body (`GET /api/dashboard`, packages/contract
+ * practice/reads) already has the page's `Dashboard` shape. Ids stay as sent (opaque strings, the
+ * `EntityId` of the dashboard types; the page uses them only as list keys and never posts them back).
+ * List sections the server returns empty (or omits) become `[]` so the page shows its existing empty
+ * state.
  */
 export function normaliseDashboard(wire: Dashboard): Dashboard {
   const list = <T>(rows: readonly T[] | null | undefined): T[] => (Array.isArray(rows) ? [...rows] : [])
   return {
     ...wire,
-    user: { ...wire.user, id: wireId(wire.user.id) },
     banners: list(wire.banners),
     quests: list(wire.quests),
-    badges: list(wire.badges).map((b) => ({ ...b, id: wireId(b.id) })),
+    badges: list(wire.badges),
     articles: list(wire.articles),
-    subjects: list(wire.subjects).map((s) => ({ ...s, id: wireId(s.id) })),
+    subjects: list(wire.subjects),
     levelPills: list(wire.levelPills),
-    recentQuestions: list(wire.recentQuestions).map((q) => ({ ...q, id: wireId(q.id) })),
+    recentQuestions: list(wire.recentQuestions),
     difficultyChart: list(wire.difficultyChart),
-    subjectStats: list(wire.subjectStats).map((s) => ({ ...s, id: wireId(s.id) })),
+    subjectStats: list(wire.subjectStats),
   }
 }
 
@@ -98,8 +92,36 @@ export function fetchSubjectConfig(code: string, options: Signal = {}): Promise<
 
 /** #4 `POST /api/practice/sessions` (402 `TRIAL_EXHAUSTED`, 409 `CHAPTER_LOCKED`, 404, 422). */
 export function startSession(body: StartSessionRequest): Promise<StartSessionResponse> {
-  return api.post<StartSessionResponse>('/api/practice/sessions', { body })
+  return api.post<StartSessionResponse>('/api/practice/sessions', { body: startWireBody(body) })
 }
+
+/** Id fields of the start body that the contract types as `IdSchema` (string). */
+const START_ID_FIELDS = [
+  'levelId',
+  'chapterId',
+  'targetQuestionId',
+  'missionId',
+  'remedialTestId',
+  'questionSetId',
+] as const satisfies readonly (keyof StartSessionRequest)[]
+
+/**
+ * The start body as the active transport expects it: in http mode every id field is a string
+ * (`StartSessionRequestSchema`; a numeric `levelId` is 422 "Nilai tidak sah.", D-02). Absent fields
+ * stay absent and `null` stays `null`.
+ */
+function startWireBody(body: StartSessionRequest): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...body }
+  for (const key of START_ID_FIELDS) {
+    if (key in out) out[key] = wireIdOpt(body[key])
+  }
+  return out
+}
+
+const wireAnswer = (a: { questionId: number; selectedOptionId: number }) => ({
+  questionId: wireId(a.questionId),
+  selectedOptionId: a.selectedOptionId,
+})
 
 /** #5 `POST /api/practice/sessions/:id/check-answer`. */
 export function checkAnswer(
@@ -108,7 +130,7 @@ export function checkAnswer(
 ): Promise<CheckAnswerResponse> {
   return api.post<CheckAnswerResponse>(
     `/api/practice/sessions/${encodeURIComponent(sessionId)}/check-answer`,
-    { body },
+    { body: wireAnswer(body) },
   )
 }
 
@@ -122,7 +144,7 @@ export function submitSession(
 ): Promise<SubmitSessionResponse> {
   return api.post<SubmitSessionResponse>(
     `/api/practice/sessions/${encodeURIComponent(sessionId)}/submit`,
-    { body },
+    { body: body.answers ? { ...body, answers: body.answers.map(wireAnswer) } : body },
   )
 }
 

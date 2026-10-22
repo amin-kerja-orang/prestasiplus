@@ -132,19 +132,19 @@ async function render(): Promise<VueWrapper> {
 }
 
 describe('fetchDashboard / normaliseDashboard (http mode)', () => {
-  it('calls GET /api/dashboard and maps the opaque string ids to the numeric ids of the page', async () => {
+  it('calls GET /api/dashboard and keeps the opaque string ids as sent (never converted to numbers)', async () => {
     get.mockResolvedValue(wireBody())
     const d = await fetchDashboard()
     expect(get).toHaveBeenCalledWith('/api/dashboard', {})
-    expect(d.user).toEqual({ id: 1, name: 'Murid Demo', role: 'student' })
-    expect(d.subjects[0]?.id).toBe(1)
-    expect(d.recentQuestions[0]?.id).toBe(1271)
-    expect(d.subjectStats[0]?.id).toBe(1)
+    expect(d.user).toEqual({ id: '1', name: 'Murid Demo', role: 'student' })
+    expect(d.subjects[0]?.id).toBe('1')
+    expect(d.recentQuestions[0]?.id).toBe('1271')
+    expect(d.subjectStats[0]?.id).toBe('1')
     expect(d.articles[0]?.publishedAt).toBe('2026-09-24T15:40:00.000+08:00')
     expect(d.wallet.coins).toBe(370)
   })
 
-  it('maps badge ids and keeps non-numeric ids unchanged', () => {
+  it('keeps badge and question ids unchanged, numeric-looking or not', () => {
     const d = normaliseDashboard(
       wireBody({
         badges: [
@@ -162,7 +162,7 @@ describe('fetchDashboard / normaliseDashboard (http mode)', () => {
         ],
       }) as unknown as Dashboard,
     )
-    expect(d.badges[0]?.id).toBe(12)
+    expect(d.badges[0]?.id).toBe('12')
     expect(d.recentQuestions[0]?.id).toBe('q-abc')
   })
 
