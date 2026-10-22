@@ -17,6 +17,11 @@ import type { AmaranEffectivenessResponse } from '../../api/amaran'
 import KeberkesananPage from '../../pages/KeberkesananPage.vue'
 
 const api = vi.hoisted(() => ({ fetchAmaranEffectiveness: vi.fn() }))
+const session = vi.hoisted(() => ({ role: null as string | null }))
+vi.mock('@/composables/useSession', async () => {
+  const { computed } = await import('vue')
+  return { useSession: () => ({ role: computed(() => session.role) }) }
+})
 vi.mock('../../api/amaran', () => ({ fetchAmaranEffectiveness: api.fetchAmaranEffectiveness }))
 
 const TRENDS = ['Mei 2026', 'Jun 2026', 'Jul 2026', 'Ogo 2026', 'Sep 2026', 'Okt 2026']
@@ -117,6 +122,7 @@ const has = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`).exist
 beforeEach(() => {
   setActivePinia(createPinia())
   api.fetchAmaranEffectiveness.mockReset()
+  session.role = null
   setRouteOutcome(null)
   usePageMeta().reset()
   stubMedia(true)
@@ -332,5 +338,22 @@ describe('loading, error and 403', () => {
     expect(useRouteOutcome().value).toBe(403)
     expect(has(w, 'kb-error')).toBe(false)
     expect(has(w, 'kb-tiles')).toBe(false)
+  })
+})
+
+describe('roles', () => {
+  it('school admin: back to /amaran/sekolah and "Lihat Senarai Risiko" in the zero card', async () => {
+    session.role = 'school_admin'
+    const w = await mountPage(zero())
+    expect(w.get('[data-testid="kb-back"]').attributes('href')).toBe('/amaran/sekolah')
+    expect(w.get('[data-testid="kb-none-link"]').attributes('href')).toBe('/amaran/sekolah')
+  })
+
+  it('teacher: back to /guru and no "Lihat Senarai Risiko" (dead link for the teacher)', async () => {
+    session.role = 'teacher'
+    const w = await mountPage(zero())
+    expect(w.get('[data-testid="kb-back"]').attributes('href')).toBe('/guru')
+    expect(has(w, 'kb-none')).toBe(true)
+    expect(has(w, 'kb-none-link')).toBe(false)
   })
 })

@@ -19,6 +19,11 @@ import RingkasanEksekutifPage from '../../pages/RingkasanEksekutifPage.vue'
 import routes from '../../routes'
 
 const api = vi.hoisted(() => ({ fetchAmaranSummary: vi.fn() }))
+const session = vi.hoisted(() => ({ role: null as string | null }))
+vi.mock('@/composables/useSession', async () => {
+  const { computed } = await import('vue')
+  return { useSession: () => ({ role: computed(() => session.role) }) }
+})
 vi.mock('../../api/amaran', async (importActual) => ({
   ...(await importActual<typeof import('../../api/amaran')>()),
   fetchAmaranSummary: api.fetchAmaranSummary,
@@ -69,6 +74,7 @@ const has = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`).exist
 beforeEach(() => {
   setActivePinia(createPinia())
   api.fetchAmaranSummary.mockReset()
+  session.role = null
   setRouteOutcome(null)
   usePageMeta().reset()
 })
@@ -77,17 +83,17 @@ afterEach(() => {
 })
 
 describe('routes', () => {
-  it('declares S23 and S21 in the user shell for school_admin only, with in-place 403', () => {
-    for (const [path, name, title] of [
-      ['/amaran/ringkasan-eksekutif', 'm18.amaran-ringkasan', 'Ringkasan Eksekutif'],
-      ['/amaran/keberkesanan', 'm18.amaran-keberkesanan', 'Keberkesanan Intervensi'],
+  it('declares S23 (school_admin, teacher, admin) and S21 (school_admin, teacher) in the user shell, in-place 403', () => {
+    for (const [path, name, title, roles] of [
+      ['/amaran/ringkasan-eksekutif', 'm18.amaran-ringkasan', 'Ringkasan Eksekutif', ['school_admin', 'teacher', 'admin']],
+      ['/amaran/keberkesanan', 'm18.amaran-keberkesanan', 'Keberkesanan Intervensi', ['school_admin', 'teacher']],
     ] as const) {
       const r = routes.find((x) => x.path === path)
       expect(r?.name).toBe(name)
       expect(r?.meta).toMatchObject({
         layout: 'user',
         access: 'auth',
-        roles: ['school_admin'],
+        roles,
         onForbidden: '403',
         header: { title },
       })
@@ -275,5 +281,74 @@ describe('toolbar and print', () => {
     await btn.trigger('click')
     expect(print).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
+  })
+})
+
+describe('roles', () => {
+  const schoolRows = [
+    { schoolId: '7', school: 'SMK Contoh B', pupils: 17, avgScore: 97.6, green: 0, yellow: 0, red: 17 },
+    { schoolId: '1', school: 'SMK Contoh A', pupils: 16, avgScore: 97.5, green: 1, yellow: 2, red: 13 },
+  ]
+
+  it('school admin: URL query is ignored (only the signal is sent); back to S4', async () => {
+    session.role = 'school_admin'
+    const w = await mountPage(summary(), '/amaran/ringkasan-eksekutif?scope=state&state=Perak')
+    expect(Object.keys(api.fetchAmaranSummary.mock.calls[0]?.[0] as object)).toEqual(['signal'])
+    expect(w.get('[data-testid="rk-back"]').attributes('href')).toBe('/amaran/sekolah')
+  })
+
+  it('teacher: no query sent; back to /guru', async () => {
+    session.role = 'teacher'
+    const w = await mountPage(summary(), '/amaran/ringkasan-eksekutif?scope=district&district=X&state=Y')
+    expect(Object.keys(api.fetchAmaranSummary.mock.calls[0]?.[0] as object)).toEqual(['signal'])
+    expect(w.get('[data-testid="rk-back"]').attributes('href')).toBe('/guru')
+  })
+
+  it('admin: scope, district, state and school_id / schoolId are passed; back to /admin', async () => {
+    session.role = 'admin'
+    const w = await mountPage(
+      summary({ scope: 'district', schools: schoolRows }),
+      '/amaran/ringkasan-eksekutif?scope=district&district=PPD%20X&state=Perak&other=1',
+    )
+    const { signal, ...rest } = api.fetchAmaranSummary.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(signal).toBeDefined()
+    expect(rest).toEqual({ scope: 'district', district: 'PPD X', state: 'Perak' })
+    expect(w.get('[data-testid="rk-back"]').attributes('href')).toBe('/admin')
+
+    await mountPage(summary(), '/amaran/ringkasan-eksekutif?scope=school&school_id=8880')
+    expect(api.fetchAmaranSummary.mock.calls[1]?.[0]).toMatchObject({ scope: 'school', schoolId: '8880' })
+    await mountPage(summary(), '/amaran/ringkasan-eksekutif?scope=school&schoolId=7780')
+    expect(api.fetchAmaranSummary.mock.calls[2]?.[0]).toMatchObject({ scope: 'school', schoolId: '7780' })
+    await mountPage(summary(), '/amaran/ringkasan-eksekutif')
+    expect(Object.keys(api.fetchAmaranSummary.mock.calls[3]?.[0] as object)).toEqual(['signal'])
+  })
+
+  it('admin district / state: "Pecahan Mengikut Sekolah" in returned order instead of the subject card; pupils line hidden when null', async () => {
+    session.role = 'admin'
+    window.matchMedia = ((q: string) => ({ matches: true, media: q, addEventListener: () => undefined, removeEventListener: () => undefined })) as unknown as typeof window.matchMedia
+    const w = await mountPage(
+      summary({ scope: 'state', title: 'Negeri Perak', pupilsLine: null, schools: schoolRows }),
+      '/amaran/ringkasan-eksekutif?scope=state&state=Perak',
+    )
+    expect(text(w, 'rk-schools')).toContain('Pecahan Mengikut Sekolah')
+    expect(has(w, 'rk-subjects')).toBe(false)
+    expect(has(w, 'rk-pupils')).toBe(false)
+    const head = w.findAll('[data-testid="rk-schools"] th').map((e) => e.text())
+    expect(head).toEqual(['#', 'Sekolah', 'Pelajar', 'Hijau', 'Kuning', 'Merah', 'Prt. Skor'])
+    const rows = w.findAll('[data-testid="rk-schools"] tbody tr').map((r) => r.findAll('td').map((c) => c.text()))
+    expect(rows).toEqual([
+      ['1', 'SMK Contoh B', '17', '0', '0', '17', '97.6'],
+      ['2', 'SMK Contoh A', '16', '1', '2', '13', '97.5'],
+    ])
+  })
+
+  it('admin: 403 and 404 render the global pages in place, 422 the load error with the server message', async () => {
+    session.role = 'admin'
+    await mountPage(apiError(403, 'FORBIDDEN', 'x'))
+    expect(useRouteOutcome().value).toBe(403)
+    setRouteOutcome(null)
+    const w = await mountPage(apiError(422, 'VALIDATION_ERROR', 'The state is required.'), '/amaran/ringkasan-eksekutif?scope=state')
+    expect(text(w, 'rk-error')).toContain('The state is required.')
+    expect(useRouteOutcome().value).toBeNull()
   })
 })

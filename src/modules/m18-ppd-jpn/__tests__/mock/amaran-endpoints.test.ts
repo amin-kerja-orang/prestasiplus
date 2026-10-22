@@ -201,8 +201,16 @@ describe('#22 GET /api/amaran/summary', () => {
     ).toBe(404)
   })
 
-  it('admin without scope: the preview district PPD BATANG PADANG (33 pupils, both schools once)', async () => {
-    const d = await dataAs<SummaryData>(runtime, admin.id, '/api/amaran/summary')
+  it('admin without scope: 403 (v2 has no admin default scope, DV-M18-49)', async () => {
+    expect((await getAs(runtime, admin.id, '/api/amaran/summary')).status).toBe(403)
+  })
+
+  it('admin scope=district: the PPD BATANG PADANG schools (33 pupils, both once, avgScore descending)', async () => {
+    const d = await dataAs<SummaryData>(
+      runtime,
+      admin.id,
+      '/api/amaran/summary?scope=district&district=PPD%20BATANG%20PADANG&state=Perak',
+    )
     expect(d.scope).toBe('district')
     expect(d.title).toBe('PPD BATANG PADANG')
     expect(d.tally).toMatchObject({ green: 0, yellow: 0, red: 33, total: 33 })
@@ -213,6 +221,15 @@ describe('#22 GET /api/amaran/summary', () => {
     expect(d.schools?.map((s) => s.avgScore)).toEqual([97.6, 97.5])
     expect(d.kombo.pupils).toBe(33)
     expect(d.generatedAt).toBeGreaterThan(0)
+  })
+
+  it('teacher: own school without scope; district / state 403', async () => {
+    const d = await dataAs<SummaryData>(runtime, teacher8880.id, '/api/amaran/summary')
+    expect(d.scope).toBe('school')
+    expect(d.schools).toBeUndefined()
+    for (const q of ['scope=state&state=Johor', 'scope=district&district=PPD%20KLUANG&state=Johor']) {
+      expect((await getAs(runtime, teacher8880.id, `/api/amaran/summary?${q}`)).status).toBe(403)
+    }
   })
 
   it('scope=school (school_id alias too): tally, weakness and kombo of 8880', async () => {
@@ -242,12 +259,15 @@ describe('#22 GET /api/amaran/summary', () => {
     expect(d.schools?.some((s) => s.schoolId === 8880)).toBe(true)
   })
 
-  it('admin with scope=state and no state: the admin preview state (Perak, DATA-M18-05)', async () => {
-    const res = await getAs(runtime, admin.id, '/api/amaran/summary?scope=state')
-    expect(res.status).toBe(200)
-    const d = (res.body as { data: SummaryData }).data ?? (res.body as SummaryData)
+  it('admin with scope=state and no state: 422', async () => {
+    expect((await getAs(runtime, admin.id, '/api/amaran/summary?scope=state')).status).toBe(422)
+  })
+
+  it('admin scope=state: Negeri Perak with its schools', async () => {
+    const d = await dataAs<SummaryData>(runtime, admin.id, '/api/amaran/summary?scope=state&state=Perak')
     expect(d.scope).toBe('state')
     expect(d.title).toBe('Negeri Perak')
+    expect(d.schools?.length).toBeGreaterThan(0)
   })
 
   it('403 out of scope: PPD officer for another district or a state; school admin for district / state', async () => {
@@ -325,14 +345,8 @@ describe('#24 GET /api/amaran/effectiveness', () => {
     expect(d.report.trend.data).toEqual([2, 0, 0, 0, 0, 0])
   })
 
-  it('admin: school 127 (S21), which has no records yet', async () => {
-    const d = await dataAs<{ school: { id: number }; report: EffectivenessReport }>(
-      runtime,
-      admin.id,
-      '/api/amaran/effectiveness',
-    )
-    expect(d.school.id).toBe(127)
-    expect(d.report.cards).toMatchObject({ total: 0, rate: 0, needsAction: 0, notEvaluated: 0 })
+  it('admin: 403 (v2 has no admin school, DV-M18-48)', async () => {
+    expect((await getAs(runtime, admin.id, '/api/amaran/effectiveness')).status).toBe(403)
   })
 
   it('school admin: the own school', async () => {

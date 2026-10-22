@@ -2,7 +2,6 @@
 
 import { formatMyt } from '@/lib/time'
 
-export const BACK_PATH = '/amaran/sekolah'
 export const TITLE = 'Ringkasan Eksekutif'
 export const EMPTY_DISTRIBUTION = 'Tiada data pelajar lagi.'
 export const FOOTER_LINE_2 = 'Untuk maklumat lanjut, hubungi pentadbir sistem.'

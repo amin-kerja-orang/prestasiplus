@@ -104,7 +104,7 @@ test.describe('S23 Ringkasan Eksekutif', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  for (const email of ['guru@demo.test', 'pelajar@demo.test']) {
+  for (const email of ['pelajar@demo.test']) {
     test(`${email} gets the 403 page on S23`, async ({ page, loginAs, gotoApp }) => {
       await loginAs(email)
       await gotoApp(S23)
@@ -164,11 +164,84 @@ test.describe('S21 Keberkesanan Intervensi', MODULE, () => {
     await expect(page).toHaveURL(new RegExp(`${S4}$`))
   })
 
-  for (const email of ['guru@demo.test', 'pelajar@demo.test']) {
+  for (const email of ['pelajar@demo.test']) {
     test(`${email} gets the 403 page on S21`, async ({ page, loginAs, gotoApp }) => {
       await loginAs(email)
       await gotoApp(S21)
       await expectForbidden(page, S21)
     })
   }
+})
+
+test.describe('Teacher on S23 / S21', MODULE, () => {
+  test('S23: own school sheet, URL query ignored, Kembali points to /guru, no h-scroll', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('guru@demo.test')
+    await gotoApp(`${S23}?scope=state&state=Perak`)
+    await expect(page.getByTestId('rk-sheet')).toBeVisible(SLOW)
+    await expect(page.getByTestId('rk-schools')).toHaveCount(0)
+    await expect(page.getByTestId('rk-back')).toHaveAttribute('href', '/guru')
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('S21: loads, Kembali points to /guru, no "Lihat Senarai Risiko", no h-scroll', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('guru@demo.test')
+    await gotoApp(S21)
+    await expect(page.getByTestId('kb-tiles')).toBeVisible(SLOW)
+    await expect(page.getByTestId('kb-back')).toHaveAttribute('href', '/guru')
+    await expect(page.getByTestId('kb-none-link')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+  })
+})
+
+test.describe('Admin on S23 / S21', MODULE, () => {
+  for (const [label, query, title] of [
+    ['district', 'scope=district&district=PPD%20BATANG%20PADANG&state=Perak', 'PPD BATANG PADANG'],
+    ['state', 'scope=state&state=Perak', 'Negeri Perak'],
+  ] as const) {
+    test(`S23 scope=${label}: schools card (table from md, cards below), no h-scroll`, async ({
+      page,
+      loginAs,
+      gotoApp,
+    }) => {
+      await loginAs('admin@demo.test')
+      await gotoApp(`${S23}?${query}`)
+      await expect(page.getByTestId('rk-sheet')).toBeVisible(SLOW)
+      await expect(page.getByTestId('rk-title')).toHaveText(title)
+      await expect(page.getByTestId('rk-schools')).toContainText('Pecahan Mengikut Sekolah')
+      await expect(page.getByTestId('rk-subjects')).toHaveCount(0)
+      await expect(page.getByTestId('rk-back')).toHaveAttribute('href', '/admin')
+      const table = page.getByTestId('rk-schools').locator('table')
+      if (viewportWidth(page) < 768) {
+        await expect(table).toBeHidden()
+        await expect(page.getByTestId('rk-school-name').first()).toBeVisible()
+      } else {
+        await expect(table.first()).toBeVisible()
+        await expect(table.first().locator('th')).toHaveText([
+          '#', 'Sekolah', 'Pelajar', 'Hijau', 'Kuning', 'Merah', 'Prt. Skor',
+        ])
+      }
+      if (label === 'state') await expect(page.getByTestId('rk-pupils')).toHaveCount(0)
+      await expectNoHorizontalScroll(page)
+    })
+  }
+
+  test('S23 without scope gives the 403 page (no default scope in v2)', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('admin@demo.test')
+    await gotoApp(S23)
+    await expectForbidden(page, S23)
+  })
+
+  test('S21 gives the 403 page (the admin has no school)', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('admin@demo.test')
+    await gotoApp(S21)
+    await expectForbidden(page, S21)
+  })
 })
