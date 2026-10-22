@@ -1,13 +1,13 @@
-# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (pass 1 and pass 2)
+# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–3)
 
-- **Item:** MIG-07 (#109, P0), passes 1 and 2. Date of the runs: 2026-10-21.
+- **Item:** MIG-07 (#109, P0), passes 1–3. Date of the runs: 2026-10-21 (passes 1 and 2), 2026-10-22 (pass 3).
 - **Data:** synthetic only (`fixtures:generate --size medium --seed 7`, BE-35). Amin's anonymised real dump (AM-10) does not exist yet, so nothing here proves behaviour on real data volumes or real value shapes.
 - **Code under test:** branch `be/AM-MIG-07-rehearsal` = `feature/v2-backend` + AM-08 (`migrate:activity`, PR #122) + AZ-30 (rehearsal environment, PR #117). One run also used `origin/be/AM-09-migrate-orchestration` (`migrate:verify`, `migrate:delta`) from a temporary detached worktree.
 - **Passes:** pass 1 ran on the code before the paging fix; pass 2 (same day) re-ran everything on the fixed branch (`f8c519fe`). Pass 1 is kept below unchanged, except that its sections are demoted one heading level.
 
 # Pass 3 (orchestrator, AM-09)
 
-Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this branch (`b73d0dc2`) and AM-09 `be/AM-09-migrate-orchestration` `1c6da999` (not pushed). Same separate Postgres 16 cluster (port 55433), AZ-30 host mode, explicit `--as-of=2026-10-22`. A container restart stopped the run during the second delta apply; every step up to the first delta apply completed and is recorded below (logs: counts only, in the author's scratch folder).
+Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this branch (`b73d0dc2`) and AM-09 `be/AM-09-migrate-orchestration` `1c6da999` (not pushed). Same separate Postgres 16 cluster (port 55433), AZ-30 host mode, explicit `--as-of=2026-10-22`. The first attempt (pass 3a) stopped at the delta verify, and its second delta apply was cut by a container restart. The delta phase was then re-run on 2026-10-22 (pass 3b, section P3.3) after the AM-09 fixes for problems D and E, on a local merge of this branch (`21413f4e`) and `be/AM-09-migrate-orchestration` `cdb2f0f2` (not pushed), starting from the `after_full` snapshot; the re-run completed every step (logs: counts only, in the author's scratch folder).
 
 ## P3.1 Verdict
 
@@ -18,17 +18,69 @@ Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this
 | `migrate:verify` on the full state | **pass** (3.4 s) |
 | AC9 `--files-dir` (banner images, synthetic export with `SHA256SUMS`) | **ok**: copied 2, rejected 1 (`unlisted`, planted), second apply copied nothing |
 | Rollback | **ok**: AM-09 `migrate:rollback --apply` succeeded (19 s); AZ-30 `restore-snapshot` to `pre_etl` and `after_full`: `ROLLBACK VERIFIED`, `MIGRATION CHECK PASSED` 33/33 |
-| Source lock during `migrate:delta --apply` | **ok**: standalone `migrate:activity` and `migrate:core` refused (exit 2, about 3 s); a second `migrate:delta` refused (exit 4) |
-| `migrate:delta` dry-run / apply | dry-run ok (5.8 s); apply: ETL done in 378 s, then **stopped at its verify step** (problems D and E) |
+| Source lock during `migrate:delta --apply` | **ok**, confirmed again in pass 3b (same exits: 2, 2, 4): standalone `migrate:activity` and `migrate:core` refused (exit 2, about 3 s); a second `migrate:delta` refused (exit 4) |
+| `migrate:delta` dry-run / apply / second apply | **green** (pass 3b): dry-run 12.3 s; apply 513.4 s with its verify step passed (`37 entities, 20 checks`); second apply 514.9 s, **0 inserted / 0 updated** on every entity (idempotent). Pass 3a: apply stopped at verify (problems D and E). |
+| `migrate:verify` after the delta | **pass** (4.8 s; `37 entities, 20 checks`) |
 
 ## P3.2 New problems
 
 | # | Problem | Owner | Status |
 |---|---|---|---|
-| D | `feedback` after the delta: target 1520, loaded 1517. The 3 extra v2 rows belong to 3 users deleted at the source; their feedback rows are still staged (no cascade), BE-29 now rejects them, and verify's deleted-at-source key for `feedback` (`verify/deleted.ts:102`) checks only the feedback row, so it counts 0 deleted. Fix: the key also requires the parent user. BE-29 also changes its reject reason to `ORPHAN_PARENT user_id` (was `UNKNOWN_ENUM role`) in #122. | AM1-2 (#123) | requested on #109 |
-| E | Answers per subject after the delta: subject 14 staged 10,415 vs v2 10,416; "none" 1 vs 0 (totals equal). Answer legacy 39986 belongs to a session deleted at the source and its question is not in the archive; BE-29 kept it with the v2 session's subject; verify (`verify/checks.ts:121,127`) falls back to the staged session, which is gone. Fix: fall back to the v2 session's subject. | AM1-2 (#123) | requested on #109 |
+| D | `feedback` after the delta: target 1520, loaded 1517. The 3 extra v2 rows belong to 3 users deleted at the source; their feedback rows are still staged (no cascade), BE-29 now rejects them, and verify's deleted-at-source key for `feedback` (`verify/deleted.ts:102`) checks only the feedback row, so it counts 0 deleted. Fix: the key also requires the parent user. BE-29 also changes its reject reason to `ORPHAN_PARENT user_id` (was `UNKNOWN_ENUM role`) in #122. | AM1-2 (#123) | **fixed** in #123 `cdb2f0f2`; delta re-run green (pass 3b) |
+| E | Answers per subject after the delta: subject 14 staged 10,415 vs v2 10,416; "none" 1 vs 0 (totals equal). Answer legacy 39986 belongs to a session deleted at the source and its question is not in the archive; BE-29 kept it with the v2 session's subject; verify (`verify/checks.ts:121,127`) falls back to the staged session, which is gone. Fix: fall back to the v2 session's subject. | AM1-2 (#123) | **fixed** in #123 `cdb2f0f2`; delta re-run green (pass 3b) |
 
-Still open from passes 1–2: OD-24 (`battle`/`spm` modes rejected by design), the real-data pass (AM-10 dump with the storage export and `SHA256SUMS`), VPS sizing (#116). After D and E are fixed, only the delta phase is re-run.
+D and E are fixed; the delta phase was re-run (P3.3).
+
+## P3.3 Delta re-run (pass 3b)
+
+Run 2026-10-22 from the `after_full` snapshot, with the code described in the Pass 3 intro.
+
+| Step | Seconds | Result |
+|---|---:|---|
+| Restore `after_full` | 16.7 | `ROLLBACK VERIFIED`, 33/33 migrations |
+| Load delta dump | 19.5 | |
+| Stage | 3.8 | |
+| `migrate:delta` dry-run | 12.3 | |
+| `migrate:delta` apply | 513.4 | verify step passed |
+| `migrate:delta` second apply | 514.9 | 0 inserted / 0 updated |
+| `migrate:verify` | 4.8 | pass, `37 entities, 20 checks` |
+| `status` | 0.9 | |
+
+Delta input (dry-run, changed staging rows): users 300, schools 15, practice_sessions 800, coin_transactions 300, question_attempts 70,217, mood_checkins 14,653.
+
+First delta apply, inserted / updated / unchanged:
+
+| Stage | Entity | Inserted | Updated | Unchanged |
+|---|---|---:|---:|---:|
+| core | schools | 5 | 10 | 390 |
+| core | users | 100 | 197 | 19,354 |
+| core | classrooms | 2 | 0 | 280 |
+| core | enrolments | 37 | 0 | 5,319 |
+| core | other entities | 0 | 0 | |
+| activity | coin_ledger | 238 | 0 | 45,337 |
+| activity | practice_sessions | 492 | 176 | 23,318 |
+| activity | streaks | 0 | 384 | 14,795 |
+| activity | referral_codes | 100 | 197 | 19,354 |
+| activity | referrals | 0 | 1 | 935 |
+| activity | other entities | 0 | 0 | |
+
+Deleted at source (reported; the delta never deletes v2 rows): users 49, practice_sessions 120, referral_codes 49, feedback 3.
+
+- **Problem D closed.** Feedback after the fix: eligible 1,538, loaded 1,517, rejected 21, v2 target 1,520 = 1,517 + 3 deleted at source.
+- **Problem E closed.** Answers per subject: ok.
+
+Reported checks (reported, not failures; identical before and after the second apply; synthetic-data artefacts of the generator, to re-read on the real dump):
+
+- Wallet balance against ledger sum differs for 15,096 users.
+- Sum of `practice_sessions.correct` is 143,228 against 22,509 correct answer rows.
+- Stored `streak_days` against recomputed differs for 14,674 users (accepted drift).
+
+Notes:
+
+- (a) Each delta run prints "warning: cannot verify --as-of against the first load".
+- (b) **The second, no-op delta apply takes as long as the first (515 s vs 513 s on 20k users).** The run time does not depend on the number of changed rows (the delta re-reads every staged row), so on the real volume the delta window in the cutover plan (MIG-08) must be sized from the full-volume time, not from the number of changed rows. Owner of the cutover sizing: MIG-08.
+
+Still open: OD-24 (`battle`/`spm` modes rejected by design), the real-data pass (AM-10 dump with the storage export and `SHA256SUMS`), VPS sizing (#116), and delta time scales with total rows, not changed rows (P3.3 note b).
 
 # Pass 2 (fixed code)
 
