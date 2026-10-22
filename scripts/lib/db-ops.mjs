@@ -2,7 +2,7 @@
 // No secrets pass through here: the database user, password and name are read INSIDE the db
 // container from its own environment (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB).
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, realpathSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, parse, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -12,6 +12,9 @@ export const DEFAULT_BACKUP_DIR = join(homedir(), 'pp-backups');
 export const FILE_PREFIX = 'pp-backup-';
 export const FILE_SUFFIX = '.dump';
 export const RESTORE_SUFFIX = '_restorecheck';
+/** Backups hold personal data of minors: owner-only directory and files. */
+export const DIR_MODE = 0o700;
+export const FILE_MODE = 0o600;
 
 export class OpsError extends Error {
   constructor(message, code = 1) {
@@ -61,6 +64,39 @@ export function assertOutsideRepo(p) {
     );
   }
   return target;
+}
+
+/** Create the (already outside-repo-checked) backup directory, owner-only. */
+export function ensureBackupDir(dir) {
+  mkdirSync(dir, { recursive: true, mode: DIR_MODE });
+}
+
+/** Open the partial dump file for writing, owner-only. */
+export function openPartialDump(path) {
+  return createWriteStream(path, { mode: FILE_MODE });
+}
+
+/** Write the `<sha>  <name>` checksum sidecar next to the dump, owner-only. */
+export function writeShaFile(finalPath, sha, name) {
+  writeFileSync(`${finalPath}.sha256`, `${sha}  ${name}\n`, { mode: FILE_MODE });
+}
+
+export function applyRetention(dir, keep, maxAgeDays) {
+  const files = readdirSync(dir)
+    .filter((f) => f.startsWith(FILE_PREFIX) && f.endsWith(FILE_SUFFIX))
+    .map((f) => ({ f, t: statSync(join(dir, f)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  const cutoff = maxAgeDays > 0 ? Date.now() - maxAgeDays * 86400000 : -Infinity;
+  const removed = [];
+  files.forEach(({ f, t }, i) => {
+    // Index 0 is the backup just made: never deleted.
+    if (i > 0 && (i >= keep || t < cutoff)) {
+      rmSync(join(dir, f), { force: true });
+      rmSync(join(dir, `${f}.sha256`), { force: true });
+      removed.push(f);
+    }
+  });
+  return { kept: files.length - removed.length, removed };
 }
 
 /**
