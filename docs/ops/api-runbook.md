@@ -8,6 +8,8 @@ Operations guide for the `api` (NestJS) and `db` (PostgreSQL 16) services. It li
 | Backup, restore check, monthly drill | [db-backup.md](db-backup.md) |
 | Staging deploy (Cloudflare Pages + Render + Supabase, or one VPS) | [deploy-staging.md](deploy-staging.md), [deploy-execution.md](deploy-execution.md) |
 | Demo data reseed | [demo-reseed.md](demo-reseed.md) |
+| Platform settings checklist (demo and production, edge secret, throttles) | [platform-settings.md](platform-settings.md) |
+| Database password rotation (demo Supabase + Render, production compose) | [db-password-rotation.md](db-password-rotation.md) |
 
 Rule for every action on a shared or production environment (deploy, restore, secret rotation, seed): get the lead's explicit confirmation first.
 
@@ -253,6 +255,8 @@ Rotate on a schedule agreed with the lead (suggested every 90 days) and immediat
 | `POSTGRES_PASSWORD` (`.env.db`) | As above for the `db` service. | |
 | Backup passphrases | Old encrypted copies need the old passphrase. | Keep the old one until those copies expire. |
 | CI tokens | The workflows use only the default `GITHUB_TOKEN` (`contents: read`; the openapi job adds `pull-requests: read`); no stored secret. | |
+
+Detailed rotation procedures: database password, `SESSION_SECRET` and `IC_HASH_KEY` in [db-password-rotation.md](db-password-rotation.md); the edge secret pair (the API accepts one value, so a brief window applies) in [platform-settings.md](platform-settings.md) section 3.
 
 ## 14. CI security gates and allow-list process
 
