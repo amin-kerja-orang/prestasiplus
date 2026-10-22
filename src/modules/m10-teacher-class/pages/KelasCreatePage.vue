@@ -48,7 +48,8 @@ async function submit(): Promise<void> {
     await createGuruClass({
       ...(school.value ? { schoolId: school.value.id } : {}),
       name: name.value.trim(),
-      subjectId: Number(subjectId.value),
+      // The option value as chosen: an opaque id string on the real API (D-01).
+      subjectId: subjectId.value,
       educationLevel: level.value as EducationLevelSlug,
       description: description.value.trim() === '' ? null : description.value.trim(),
     })

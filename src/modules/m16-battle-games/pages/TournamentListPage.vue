@@ -12,7 +12,7 @@
  */
 import { computed } from 'vue'
 
-import { useApi, useSession } from '@/composables'
+import { useApi, useRouteExists, useSession } from '@/composables'
 import { DsArt3D, DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchTournaments } from '../api'
@@ -22,6 +22,7 @@ import { LOAD_COPY } from '../components/competition/copy'
 
 const { role } = useSession()
 const isAdmin = computed(() => role.value === 'admin')
+const { routeExists } = useRouteExists()
 const view = useApi((signal) => fetchTournaments({ signal }))
 </script>
 
@@ -38,12 +39,12 @@ const view = useApi((signal) => fetchTournaments({ signal }))
     </UCard>
 
     <!--
-      Known dead link until S24 lands: `/tournament/admin/create` is the T6 remainder and is not
-      routed yet, so the admin sees the global 404 page there (XR-M16-11: S24 admin is deferred,
-      outside the 1.0 student scope; recorded in TRACKER).
+      `/tournament/admin/create` (S24) is the T6 remainder and is not routed yet (XR-M16-11: S24 admin
+      is deferred, outside the 1.0 student scope). The button is hidden until the route exists (D9,
+      dead link; DV-M16-40).
     -->
     <UButton
-      v-if="isAdmin"
+      v-if="isAdmin && routeExists(COPY.createTo)"
       :to="COPY.createTo"
       size="xl"
       color="primary"
