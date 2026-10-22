@@ -111,6 +111,19 @@ describe('input hash', () => {
     expect(await hashOf(' 7 ')).toBe(a)
   })
 
+  it('depends on the sanitiser origins (PUBLIC_ORIGINS): other origins differ, the same set in another order or form does not', async () => {
+    const withOrigins = (publicOrigins?: string) =>
+      activityInputHash({ pool: h.env.pool, source: 'cloud', asOf: '2026-06-01', stepNames: ['tiers'], publicOrigins })
+    const none = await withOrigins()
+    expect(await withOrigins('')).toBe(none)
+    expect(await withOrigins(' , ')).toBe(none)
+    const ab = await withOrigins('https://a.example.test,https://b.example.test')
+    expect(ab).not.toBe(none)
+    expect(await withOrigins('https://a.example.test')).not.toBe(ab)
+    expect(await withOrigins('https://c.example.test,https://b.example.test')).not.toBe(ab)
+    expect(await withOrigins(' https://b.example.test/path , https://a.example.test,https://a.example.test ')).toBe(ab)
+  })
+
   it('fingerprints a table in constant memory: count plus a digest that is deterministic and order independent', async () => {
     const first = await tableFingerprints(h.env.pool, ['users', 'archive_cloud.questions'])
     expect(await tableFingerprints(h.env.pool, ['archive_cloud.questions', 'users', 'users'])).toEqual(first)

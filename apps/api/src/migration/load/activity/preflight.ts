@@ -15,6 +15,7 @@ import { ARCHIVE_SCHEMA, STAGING_SCHEMA, findTable } from '../../ddl/spec'
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { hashInput, tableDigest } from '../../kit/sql'
 import type { LegacySource } from '../../kit/types'
+import { originsOf } from '../../../modules/content/shared/sanitize-html.sanitizer'
 import { parseDefaultHashes } from '../../transform/secrets'
 import { stagingFingerprint } from '../index'
 
@@ -88,11 +89,18 @@ export interface ActivityHashInput {
   extraTables?: readonly string[]
   /** `--content-owner` (a v2 user id): the owner of the content rows is part of what an apply writes. */
   contentOwnerUserId?: string
+  /** The run's raw `PUBLIC_ORIGINS`: it decides which absolute image URLs survive HTML sanitising, so it is part of what an apply writes. */
+  publicOrigins?: string
   /** SHA-256 of the `SHA256SUMS` of `--files-dir` (absent without the flag): the files an apply copies are part of its input. */
   filesManifestHash?: string
 }
 
-/** The input hash of a run: staged fingerprints, as-of, source, step list, the BE-28 id-map counts and the content owner. */
+/** The sanitiser configuration as it is hashed: the normalised origins, sorted and de-duplicated, or `none`. */
+export function sanitizerConfigOf(publicOrigins: string | undefined): string {
+  return [...new Set(originsOf(publicOrigins))].sort().join(',') || 'none'
+}
+
+/** The input hash of a run: staged fingerprints, as-of, source, step list, the BE-28 id-map counts, the content owner and the sanitiser origins. */
 export async function activityInputHash(input: ActivityHashInput): Promise<string> {
   const tables = [...ACTIVITY_READ_TABLES, ...(input.extraTables ?? [])]
   return hashInput([
@@ -102,6 +110,7 @@ export async function activityInputHash(input: ActivityHashInput): Promise<strin
     `steps=${input.stepNames.join(',')}`,
     `core-map=${await coreMapCounts(input.pool, input.source)}`,
     `content-owner=${input.contentOwnerUserId?.trim() || 'none'}`,
+    `sanitizer-origins=${sanitizerConfigOf(input.publicOrigins)}`,
     `files-manifest=${input.filesManifestHash ?? 'none'}`,
   ])
 }
