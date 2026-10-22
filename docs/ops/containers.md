@@ -11,6 +11,7 @@ The v2 frontend ships as a container image. This is release prep (G6); nothing i
 | `compose.yaml` | `frontend` service (active) and commented `api` / `db` placeholders. |
 | `functions/api/[[path]].ts`, `render.yaml` | Cloudflare Pages proxy and Render blueprint (primary staging path). See `docs/ops/deploy-staging.md`. |
 | `compose.staging.yaml` | Staging overlay (http build, Secure cookie, loopback port). See `docs/ops/deploy-staging.md`. |
+| `deploy/vps/`, `docs/ops/production-vps.md` | Production VPS pack (AZ-09): overlay `deploy/vps/compose.prod.yaml` (TLS edge, limits, backups, monitoring), deploy and rollback scripts. Runbook: [production-vps.md](production-vps.md). |
 | `.env.example` | Compose/build defaults. Copy to `.env` (git-ignored) to override. No secrets. |
 | `.dockerignore` | Keeps `node_modules`, `.git`, `.claude`, test output, `dist*`, docs and e2e out of the build context. |
 | `docker-compose.preview.yml` | Older local preview (host-built `dist-preview`, port 5191). Unchanged and still works. |
