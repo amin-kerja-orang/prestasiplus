@@ -314,6 +314,66 @@ describe('linkQuestions: safety', () => {
     }
   })
 
+  it('stops cleanly between batches when an apply run starts meanwhile, and keeps the batches already committed', async () => {
+    const k = key()
+    const paper = await h.addPaper(k)
+    const q1 = await h.addQuestion({ paperId: paper, numberLabel: '1' })
+    await h.addQuestion({ paperId: paper, numberLabel: '2' })
+    const a1 = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const a2 = await h.addAnswer({ naturalKey: k, numberLabel: '2' })
+    let id = ''
+    let calls = 0
+    const err = await run('apply', {
+      batchSize: 1,
+      onBeforeUpdate: async () => {
+        calls += 1
+        if (calls === 1) {
+          const rows = await h.q<{ id: string }>(
+            `insert into etl_runs (mode, sources, status) values ('apply', ARRAY['cloud'], 'running') returning id::text as id`,
+          )
+          id = rows[0]?.id as string
+        }
+      },
+    }).catch((e: unknown) => e)
+    try {
+      expect(err).toBeInstanceOf(LinkQuestionsBusyError)
+      // Batches of one: earlier tests leave unmatched rows, each its own committed batch before a1's.
+      expect((err as LinkQuestionsBusyError).committedBatches).toBeGreaterThanOrEqual(1)
+      expect((err as LinkQuestionsBusyError).linked).toBe(1)
+      const links = await h.links()
+      expect(links[a1]).toBe(q1)
+      expect(links[a2]).toBeNull()
+      expect(calls).toBe(1)
+    } finally {
+      await h.q(`delete from etl_runs where id = $1`, [id])
+    }
+    // The source lock is released after the stop: a later run finishes the job.
+    await run('apply')
+    expect((await h.links())[a2]).not.toBeNull()
+  })
+
+  it('apply also holds the source-level lock etl:source:<source> and refuses when another session has it', async () => {
+    const k = key()
+    const paper = await h.addPaper(k)
+    await h.addQuestion({ paperId: paper, numberLabel: '1' })
+    const a = await h.addAnswer({ naturalKey: k, numberLabel: '1' })
+    const other = await h.pool.connect()
+    try {
+      await other.query(`select pg_advisory_lock(hashtextextended('etl:source:cloud', 0))`)
+      await expect(run('apply')).rejects.toBeInstanceOf(LinkQuestionsBusyError)
+      expect((await h.links())[a]).toBeNull()
+      await other.query(`select pg_advisory_unlock(hashtextextended('etl:source:cloud', 0))`)
+    } finally {
+      other.release()
+    }
+    // The own-key lock taken first was released again on the refusal.
+    await run('apply')
+    expect((await h.links())[a]).not.toBeNull()
+    const probe = await h.q<{ ok: boolean }>(`select pg_try_advisory_lock(hashtextextended('etl:source:cloud', 0)) as ok`)
+    expect(probe[0]?.ok).toBe(true)
+    await h.q(`select pg_advisory_unlock_all()`)
+  })
+
   it('caps the listed ids but keeps the counts', async () => {
     const before = (await run('dry-run')).unmatched
     for (let i = 0; i < 3; i += 1) await h.addAnswer({ naturalKey: key(), numberLabel: String(i) })
