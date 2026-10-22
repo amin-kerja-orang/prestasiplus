@@ -80,6 +80,22 @@ interface ParentInviteWire {
   parents: LinkedParent[]
 }
 
+/** In-flight auto-issue, shared by concurrent loads in this tab so they cause one POST. */
+let issuing: Promise<GeneratedParentInvite> | null = null
+
+function issueFirstToken(signal?: AbortSignal): Promise<GeneratedParentInvite> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'))
+  if (!issuing) {
+    const request = api
+      .post<GeneratedParentInvite>('/api/me/parent-invite/generate', signal ? { signal } : {})
+      .finally(() => {
+        if (issuing === request) issuing = null
+      })
+    issuing = request
+  }
+  return issuing
+}
+
 /**
  * #1 `GET /api/me/parent-invite` (student only). Mock: returns the token (created the first time).
  * v2 http: status only; when `hasToken=false` the first visit issues a token (#2) so the page can show a
@@ -96,7 +112,7 @@ export async function fetchParentInvite(
     return { token: wire.token, createdAt: wire.createdAt ?? '', parents: wire.parents }
   }
   if (wire.hasToken === false) {
-    const issued = await generateParentInvite()
+    const issued = await issueFirstToken(options.signal)
     return { token: issued.token, createdAt: issued.createdAt, parents: wire.parents }
   }
   return { token: null, createdAt: wire.createdAt ?? '', parents: wire.parents }

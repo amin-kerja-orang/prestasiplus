@@ -18,7 +18,7 @@ describe('fetchParentInvite (D58 wire)', () => {
     api.get.mockResolvedValue({ hasToken: false, createdAt: null, expiresAt: null, parents: [] })
     api.post.mockResolvedValue({ token: TOKEN, createdAt: AT, expiresAt: AT, status: 'x' })
     const view = await fetchParentInvite()
-    expect(api.post).toHaveBeenCalledWith('/api/me/parent-invite/generate')
+    expect(api.post).toHaveBeenCalledWith('/api/me/parent-invite/generate', {})
     expect(view).toEqual({ token: TOKEN, createdAt: AT, parents: [] })
   })
 
@@ -40,5 +40,32 @@ describe('fetchParentInvite (D58 wire)', () => {
     api.get.mockResolvedValue({ hasToken: false, createdAt: null, expiresAt: null, parents: [] })
     api.post.mockRejectedValue(new Error('429'))
     await expect(fetchParentInvite()).rejects.toThrow('429')
+  })
+
+  it('concurrent loads with hasToken=false share one POST and the same token', async () => {
+    api.get.mockResolvedValue({ hasToken: false, createdAt: null, expiresAt: null, parents: [] })
+    api.post.mockResolvedValue({ token: TOKEN, createdAt: AT, expiresAt: AT, status: 'x' })
+    const [a, b] = await Promise.all([fetchParentInvite(), fetchParentInvite()])
+    expect(api.post).toHaveBeenCalledTimes(1)
+    expect(a.token).toBe(TOKEN)
+    expect(b.token).toBe(TOKEN)
+  })
+
+  it('passes the abort signal to the POST', async () => {
+    const ctl = new AbortController()
+    api.get.mockResolvedValue({ hasToken: false, createdAt: null, expiresAt: null, parents: [] })
+    api.post.mockResolvedValue({ token: TOKEN, createdAt: AT, expiresAt: AT, status: 'x' })
+    await fetchParentInvite({ signal: ctl.signal })
+    expect(api.post).toHaveBeenCalledWith('/api/me/parent-invite/generate', { signal: ctl.signal })
+  })
+
+  it('aborted before the POST: no POST', async () => {
+    const ctl = new AbortController()
+    api.get.mockImplementation(() => {
+      ctl.abort()
+      return Promise.resolve({ hasToken: false, createdAt: null, expiresAt: null, parents: [] })
+    })
+    await expect(fetchParentInvite({ signal: ctl.signal })).rejects.toBeDefined()
+    expect(api.post).not.toHaveBeenCalled()
   })
 })

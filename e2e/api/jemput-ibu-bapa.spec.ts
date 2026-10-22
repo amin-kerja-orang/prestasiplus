@@ -3,7 +3,11 @@
  * token, never `undefined` (GET /api/me/parent-invite returns status only, D58; the adapter issues a
  * token on the first visit). A later visit (a live token exists, but its clear value is never
  * returned) shows an empty field with Salin disabled until "Jana Link Baru"; either way no href or
- * value may carry `undefined`. Issues a token for the seed student.
+ * value may carry `undefined`.
+ *
+ * WARNING: this spec issues and then ROTATES the seed student's invite token (first visit auto-issues,
+ * then "Jana Link Baru"). Do NOT run it against the demo DB right before the demo: any invite link
+ * already shared or noted down stops working.
  */
 
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
