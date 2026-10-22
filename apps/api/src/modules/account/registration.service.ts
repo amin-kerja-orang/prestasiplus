@@ -10,13 +10,20 @@ import { SchoolsRepository } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersRepository, uniqueField } from '../users'
 import { ApiError } from '../../common/errors/api-error'
+import { setFieldOnce, strictFieldsOf } from '../../common/validation/strict-body'
 import { ACCOUNT_AUDIT, ACCOUNT_TX } from './account.constants'
 import { overloadTo429 } from './helpers'
-import { fieldsOf, invalid } from './account.errors'
+import { invalid } from './account.errors'
 import { SessionIssuer } from './session-issuer.service'
 
 const FIELD_ORDER = ['name', 'email', 'phone', 'role', 'grade', 'icNumber', 'schoolId', 'password', 'passwordConfirmation', 'referralCode']
 const IC_FORMAT = 'The ic number field format is invalid.'
+
+/**
+ * The register body in STRICT mode (BE-33 AC1c, #99): an unknown key such as `isAdmin` or `status` is a 422 naming it,
+ * listed with the other field errors, never bound. The contract refinements (confirmation, student grade) still apply.
+ */
+const StrictAccountRegisterRequestSchema = AccountRegisterRequestSchema.strict()
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null)
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
@@ -48,8 +55,8 @@ export class RegistrationService {
   }
 
   private async create(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
-    const parsed = AccountRegisterRequestSchema.safeParse(raw)
-    const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
+    const parsed = StrictAccountRegisterRequestSchema.safeParse(raw)
+    const fields: Record<string, string> = parsed.success ? {} : strictFieldsOf(parsed.error.issues)
     const body = asRecord(raw)
     const roleText = parsed.success ? (parsed.data.role ?? 'student') : (text(body.role) ?? 'student')
     const isStudent = roleText === 'student'
@@ -75,8 +82,8 @@ export class RegistrationService {
     if (Object.keys(fields).length > 0 || !parsed.success) {
       const ordered: Record<string, string> = {}
       for (const key of [...FIELD_ORDER, ...Object.keys(fields)]) {
-        const message = fields[key]
-        if (message !== undefined) ordered[key] = message
+        const message = Object.prototype.hasOwnProperty.call(fields, key) ? fields[key] : undefined
+        if (message !== undefined) setFieldOnce(ordered, key, message)
       }
       throw invalid(ordered)
     }

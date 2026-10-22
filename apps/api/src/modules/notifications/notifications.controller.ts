@@ -7,6 +7,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { NoStoreInterceptor, ok } from '../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
+import { StrictZodValidationPipe } from '../../common/validation/strict-body'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { NOTIFICATION_LIMITS_RATE as LIMITS } from './notifications.constants'
 import { NotificationsService } from './notifications.service'
@@ -30,6 +31,10 @@ const listQueryOf = (raw: Record<string, unknown>): z.infer<typeof NotificationL
   new ZodValidationPipe(NotificationListQuerySchema).transform({ filter: first(raw.filter), type: first(raw.type), page: first(raw.page) })
 
 const bulkIds = (raw: unknown): string[] => new ZodValidationPipe(NotificationBulkRequestSchema).transform(raw ?? {}).ids
+
+/** `bulk-read` in STRICT mode (BE-33 AC1c, #99): an unknown key such as `userId` is a 422 naming it. The owner is always the session user. */
+const strictBulkRead = new StrictZodValidationPipe(NotificationBulkRequestSchema)
+const bulkReadIds = (raw: unknown): string[] => strictBulkRead.transform(raw ?? {}).ids
 
 /** The signed-in user's inbox (any role, own items only). Every answer is `no-store`. */
 @Controller('me/notifications')
@@ -61,7 +66,7 @@ export class NotificationsController {
   @HttpCode(200)
   @RateLimit(LIMITS.write)
   async bulkRead(@Req() req: Req, @Body() raw: unknown) {
-    return ok(await this.notifications.bulkRead(me(req), bulkIds(raw)))
+    return ok(await this.notifications.bulkRead(me(req), bulkReadIds(raw)))
   }
 
   @Post('bulk-delete')
