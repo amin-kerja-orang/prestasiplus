@@ -10,10 +10,8 @@ import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type { RiskScope } from './types'
 
-/** DATA-M18-05: the admin's own-school page family (S21) shows school 127. */
-export const ADMIN_OWN_SCHOOL = 127
-/** DATA-M18-05: admin preview scope of the officer Amaran pages (S18, S19, S23 without `scope`). */
-export const ADMIN_PREVIEW_SCOPE = { district: 'PPD BATANG PADANG', state: 'Perak' } as const
+// v2 (DV-M18-48 / DV-M18-49): the API has no admin school and no admin default scope, so the live fixed
+// admin previews (school 127 on S21, PPD BATANG PADANG on S23) are not mirrored: admin must pass `scope`.
 
 /** May `viewer` open the Amaran data of `schoolId`? (the school exists) */
 export function mayOpenSchool(viewer: UserRow, schoolId: number): boolean {
@@ -51,9 +49,8 @@ export function mayExportSchool(viewer: UserRow, schoolId: number): boolean {
   return viewer.role !== 'teacher' && mayOpenSchool(viewer, schoolId)
 }
 
-/** S21 / #24: the school of the viewer (admin: 127); officers have none (403, INFERRED). */
+/** S21 / #24: the school of the viewer; admin and officers have none (403). */
 export function ownSchoolOf(viewer: UserRow): number | null {
-  if (viewer.role === 'admin') return ADMIN_OWN_SCHOOL
   if (viewer.role === 'school_admin' || viewer.role === 'teacher') return viewer.schoolId
   return null
 }
@@ -77,7 +74,7 @@ export function mayOpenScope(viewer: UserRow, scope: RiskScope): boolean {
   }
 }
 
-/** The default scope of #22 without `scope`: the officer's own, the admin's preview, else the own school. */
+/** The default scope of #22 without `scope`: the officer's own, else the own school; none for the admin (403). */
 export function defaultScope(viewer: UserRow): RiskScope | null {
   switch (viewer.role) {
     case 'ppd_officer':
@@ -86,8 +83,6 @@ export function defaultScope(viewer: UserRow): RiskScope | null {
         : null
     case 'jpn_officer':
       return viewer.ppdState !== null ? { kind: 'state', state: viewer.ppdState } : null
-    case 'admin':
-      return { kind: 'district', ...ADMIN_PREVIEW_SCOPE }
     case 'school_admin':
     case 'teacher':
       return viewer.schoolId !== null ? { kind: 'school', schoolId: viewer.schoolId } : null

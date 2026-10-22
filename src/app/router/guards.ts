@@ -29,7 +29,6 @@ import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
 import {
-  effectiveLandingPath,
   isPathAllowed,
   isPrototypeRole,
   isPrototypeScopeOn,
@@ -202,7 +201,7 @@ export function resolvePostLoginTarget(
   redirect: unknown,
   session: GuardSession,
 ): string {
-  const landing = effectiveLandingPath(session.role, session.landingPath) ?? '/'
+  const landing = session.landingPath ?? '/'
   if (!isSafeRedirect(redirect)) return landing
   const resolved = router.resolve(redirect)
   if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing
