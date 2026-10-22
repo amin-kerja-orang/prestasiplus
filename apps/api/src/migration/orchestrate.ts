@@ -526,16 +526,19 @@ export const migrateLinkQuestions: MigrateCommand = {
 
 export const migrateExportQuestionReports: MigrateCommand = {
   name: 'migrate:export-question-reports',
-  summary: 'export the open question reports to a CSV for the content team (read-only; personal-data-bearing file)',
+  summary: 'export the open question reports (and submission metadata) to CSV files for the content team (read-only; personal-data-bearing file)',
   async run(args, ctx) {
     // Reads only: there is nothing to apply, so --apply is a usage error rather than something silently ignored.
     if (args.mode === 'apply') throw new ApplyGuardError('migrate:export-question-reports is a read-only command: it has no --apply.')
     const outDir = outDirOf(args)
     const r = await exportOpenQuestionReports({ pool: ctx.pool, source: 'cloud', outDir })
-    ctx.out(`migrate:export-question-reports: ${r.exported} open report(s) exported of ${r.total} (working assumption for "open": see the summary file)`)
-    ctx.out('status | reports | exported')
-    for (const s of r.byStatus) ctx.out(`${s.status} | ${s.count} | ${s.exported ? 'yes' : 'no'}`)
-    ctx.out(`csv: ${r.csv}`)
+    ctx.out(`migrate:export-question-reports: ${r.exported} open report(s) exported of ${r.total}; ${r.submissions.exported} open submission(s) of ${r.submissions.total} (working assumption for "open": see the summary file)`)
+    for (const [label, t] of [['reports', r], ['submissions', r.submissions]] as const) {
+      ctx.out(`${label}: status | rows | exported`)
+      for (const s of t.byStatus) ctx.out(`${s.status} | ${s.count} | ${s.exported ? 'yes' : 'no'}`)
+    }
+    ctx.out(`reports csv: ${r.csv}`)
+    ctx.out(`submissions csv (metadata only): ${r.submissions.csv}`)
     ctx.out(`summary: ${r.summary}`)
     ctx.out('The CSV holds reporter free text: hand it over to the content team and delete it at hand-over, 7 days at most (runbook sections 17a, 18).')
     return 0

@@ -9,6 +9,14 @@
  * plus the legacy question id and the curriculum codes (subject code, chapter number, topic id). A question that is not
  * in the archive, or has no canonical bridge, gives empty identifier cells (the legacy question id is always there).
  *
+ * Q9 A also covers `question_submissions` (teacher submissions). The staged spec holds only `user_id`, `status` and the
+ * timestamps for them (no content, v2-data-migration.md 3.3), so the content team gets METADATA only in a second file,
+ * `question-submissions-open-<stamp>.csv`: legacy submission id, status, Malaysia date. Never `user_id`. Open submissions
+ * are those in the same open set, counted in the same summary. (Deviation row in v2-backend-deviations.md: LEAD to confirm.)
+ *
+ * Files are created with `wx` and are never replaced: a second run in the same second fails ("already exists") instead
+ * of overwriting, and only files this run created are removed on failure.
+ *
  * WORKING ASSUMPTION ("open"): the enum values of `question_reports.status` are not profiled yet. The live site shows
  * `baru` / `selesai` (docs/discovery/L06), the v2 prototype uses `pending`. A report is open when its status, trimmed and
  * lower-cased, is in `OPEN_REPORT_STATUSES`. The summary lists the count of EVERY status with `exported` true or false,
@@ -48,6 +56,11 @@ export const CSV_COLUMNS = [
   'created_date',
 ] as const
 
+export const SUBMISSION_COLUMNS = ['legacy_submission_id', 'status', 'created_date'] as const
+
+/** The statuses the summary may name (documented known set); any other value is shown as `(other)`. */
+export const KNOWN_STATUSES: readonly string[] = ['baru', 'menunggu', 'pending', 'open', 'new', 'selesai', 'closed', 'resolved', 'rejected']
+
 export interface ExportOptions {
   pool: pg.Pool
   source?: 'cloud'
@@ -59,7 +72,7 @@ export interface ExportOptions {
 }
 
 export interface StatusCount {
-  /** Normalised status; `(null)` for no status, `(other)` for a value that does not look like an enum code. */
+  /** Normalised status if it is in `KNOWN_STATUSES`; `(null)` for no status; `(other)` for anything else. */
   status: string
   count: number
   exported: boolean
@@ -74,14 +87,20 @@ export interface ExportSummary {
   exported: number
   byStatus: StatusCount[]
   csvFile: string
+  /** Teacher submissions: metadata only (id, status, date). */
+  submissions: { total: number; exported: number; byStatus: StatusCount[]; csvFile: string }
 }
 
-export interface ExportResult {
+export interface TableExportResult {
   csv: string
-  summary: string
   total: number
   exported: number
   byStatus: StatusCount[]
+}
+
+export interface ExportResult extends TableExportResult {
+  summary: string
+  submissions: TableExportResult
 }
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
@@ -114,6 +133,16 @@ LEFT JOIN LATERAL (
 WHERE lower(btrim(r.status::text)) = ANY($1::text[]) AND ($2::bigint IS NULL OR r.id > $2::bigint)
 ORDER BY r.id
 LIMIT $3`
+
+const SUBMISSION_PAGE_SQL = `
+SELECT s.id::text AS legacy_submission_id, s.status::text AS status,
+       to_char(s.created_at AT TIME ZONE 'Asia/Kuala_Lumpur', 'YYYY-MM-DD') AS created_date
+FROM ${A}."question_submissions" s
+WHERE lower(btrim(s.status::text)) = ANY($1::text[]) AND ($2::bigint IS NULL OR s.id > $2::bigint)
+ORDER BY s.id
+LIMIT $3`
+
+const SUBMISSION_STATUS_SQL = `SELECT lower(btrim(status::text)) AS status, count(*)::text AS n FROM ${A}."question_submissions" GROUP BY 1 ORDER BY 1`
 
 const STATUS_SQL = `SELECT lower(btrim(status::text)) AS status, count(*)::text AS n FROM ${A}."question_reports" GROUP BY 1 ORDER BY 1`
 
@@ -152,10 +181,10 @@ export function csvCell(value: Cell): string {
 
 export const csvLine = (cells: readonly Cell[]): string => `${cells.map(csvCell).join(',')}\r\n`
 
-/** A status value is named in the summary only when it looks like an enum code (never free text). */
+/** A status value is named in the summary only when it is in the documented known set (never data-derived text). */
 function statusLabel(raw: string | null): string {
   if (raw === null) return '(null)'
-  return /^[a-z0-9_\- ]{1,40}$/.test(raw) ? raw : '(other)'
+  return KNOWN_STATUSES.includes(raw) ? raw : '(other)'
 }
 
 function isLink(path: string): boolean {
@@ -181,12 +210,10 @@ function removeQuietly(path: string): void {
   })
 }
 
-/** Replaces an existing file (never through a symbolic link) and creates it with `wx`, mode 0600. */
+/** Creates a new file with `wx`, mode 0600. Never replaces an existing file and never writes through a symbolic link. */
 function openNew(file: string): number {
-  if (existsSync(file) || isLink(file)) {
-    if (lstatSync(file).isSymbolicLink()) throw new RangeError('An export file is a symbolic link; refusing to write through it.')
-    unlinkSync(file)
-  }
+  if (isLink(file)) throw new RangeError('An export file path is a symbolic link; refusing to write through it.')
+  if (existsSync(file)) throw new RangeError('An export file already exists (a second run in the same second?); refusing to replace it. Wait a second, or move the old file.')
   return openSync(file, 'wx', 0o600)
 }
 
@@ -205,9 +232,46 @@ async function withReadOnly<T>(pool: pg.Pool, fn: (c: pg.PoolClient) => Promise<
   }
 }
 
+interface PagedTable {
+  columns: readonly string[]
+  statusSql: string
+  pageSql: string
+  idColumn: string
+  /** Per-column transform (the reporter's free text is minimised here). */
+  cell?: (column: string, value: Cell) => Cell
+}
+
+/** Counts every status, then writes the rows whose status is open, keyset-paged by id. */
+async function exportTable(c: pg.PoolClient, fd: number, t: PagedTable, pageSize: number): Promise<{ exported: number; byStatus: StatusCount[] }> {
+  const counts = await c.query<{ status: string | null; n: string }>(t.statusSql)
+  const open = new Set(OPEN_REPORT_STATUSES)
+  const merged = new Map<string, StatusCount>()
+  for (const row of counts.rows) {
+    const label = statusLabel(row.status)
+    const isOpen = row.status !== null && open.has(row.status)
+    const prev = merged.get(label)
+    merged.set(label, { status: label, count: (prev?.count ?? 0) + Number(row.n), exported: (prev?.exported ?? false) || isOpen })
+  }
+  const byStatus = [...merged.values()].sort((x, y) => (x.status < y.status ? -1 : x.status > y.status ? 1 : 0))
+  let exported = 0
+  let after: string | null = null
+  for (;;) {
+    const res: pg.QueryResult<Record<string, Cell>> = await c.query(t.pageSql, [[...OPEN_REPORT_STATUSES], after, pageSize])
+    if (res.rows.length > 0) {
+      writeSync(fd, res.rows.map((r) => csvLine(t.columns.map((k) => (t.cell ? t.cell(k, r[k] ?? null) : (r[k] ?? null))))).join(''))
+      exported += res.rows.length
+    }
+    if (res.rows.length < pageSize) break
+    after = (res.rows[res.rows.length - 1] as Record<string, string>)[t.idColumn] ?? null
+  }
+  return { exported, byStatus }
+}
+
+const sumCounts = (b: readonly StatusCount[]): number => b.reduce((n, s) => n + s.count, 0)
+
 /**
- * Writes `question-reports-open-<stamp>.csv` and `.summary.json` (mode 0600) under a `.migration-out` folder and returns
- * the paths and the counts. Reads only; no table is written.
+ * Writes `question-reports-open-<stamp>.csv`, `question-submissions-open-<stamp>.csv` and `question-reports-open-<stamp>.summary.json`
+ * (mode 0600, `wx`) under a `.migration-out` folder and returns the paths and the counts. Reads only; no table is written.
  */
 export async function exportOpenQuestionReports(options: ExportOptions): Promise<ExportResult> {
   const now = (options.now ?? (() => new Date()))()
@@ -215,67 +279,72 @@ export async function exportOpenQuestionReports(options: ExportOptions): Promise
   const stamp = generatedAt.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
   const dir = prepareOutputDir(options.outDir)
   const csv = join(dir, `question-reports-open-${stamp}.csv`)
+  const submissionsCsv = join(dir, `question-submissions-open-${stamp}.csv`)
   const summaryFile = join(dir, `question-reports-open-${stamp}.summary.json`)
   const pageSize = options.pageSize ?? 500
 
-  let fd: number | undefined
-  let exported = 0
-  let byStatus: StatusCount[] = []
-  try {
-    fd = openNew(csv)
-    writeSync(fd, csvLine(CSV_COLUMNS))
-    await withReadOnly(options.pool, async (c) => {
-      const counts = await c.query<{ status: string | null; n: string }>(STATUS_SQL)
-      const open = new Set(OPEN_REPORT_STATUSES)
-      const merged = new Map<string, StatusCount>()
-      for (const row of counts.rows) {
-        const label = statusLabel(row.status)
-        const isOpen = row.status !== null && open.has(row.status)
-        const prev = merged.get(label)
-        merged.set(label, { status: label, count: (prev?.count ?? 0) + Number(row.n), exported: (prev?.exported ?? false) || isOpen })
-      }
-      byStatus = [...merged.values()].sort((x, y) => (x.status < y.status ? -1 : x.status > y.status ? 1 : 0))
-      let after: string | null = null
-      for (;;) {
-        const res: pg.QueryResult<Record<(typeof CSV_COLUMNS)[number], Cell>> = await c.query(PAGE_SQL, [[...OPEN_REPORT_STATUSES], after, pageSize])
-        if (res.rows.length > 0) {
-          writeSync(fd as number, res.rows.map((r) => csvLine(CSV_COLUMNS.map((k) => (k === 'reason' ? redactReason(r[k]) : r[k])))).join(''))
-          exported += res.rows.length
-        }
-        if (res.rows.length < pageSize) break
-        after = (res.rows[res.rows.length - 1] as { legacy_report_id: string }).legacy_report_id
-      }
-    })
+  // Only files this run created are removed on failure (never a pre-existing file); a failing cleanup never hides the error.
+  const created: string[] = []
+  const open = new Set<number>()
+  const create = (file: string): number => {
+    const fd = openNew(file)
+    created.push(file)
+    open.add(fd)
+    return fd
+  }
+  const close = (fd: number): void => {
+    open.delete(fd)
     closeSync(fd)
-    fd = undefined
-  } catch (e) {
-    // A half-written export must not stay behind; a failing cleanup must not hide the original error.
-    if (fd !== undefined) quietly(() => closeSync(fd as number))
-    removeQuietly(csv)
-    throw e
   }
 
-  const total = byStatus.reduce((n, s) => n + s.count, 0)
-  const summary: ExportSummary = {
-    generatedAt,
-    source: 'cloud',
-    openStatuses: OPEN_REPORT_STATUSES,
-    total,
-    exported,
-    byStatus,
-    csvFile: basename(csv),
-  }
-  let sfd: number | undefined
+  let reports: { exported: number; byStatus: StatusCount[] } = { exported: 0, byStatus: [] }
+  let subs: { exported: number; byStatus: StatusCount[] } = { exported: 0, byStatus: [] }
   try {
-    sfd = openNew(summaryFile)
-    writeSync(sfd, `${JSON.stringify(summary, null, 2)}\n`)
-    closeSync(sfd)
+    const rfd = create(csv)
+    writeSync(rfd, csvLine(CSV_COLUMNS))
+    const sfd = create(submissionsCsv)
+    writeSync(sfd, csvLine(SUBMISSION_COLUMNS))
+    await withReadOnly(options.pool, async (c) => {
+      reports = await exportTable(
+        c,
+        rfd,
+        { columns: CSV_COLUMNS, statusSql: STATUS_SQL, pageSql: PAGE_SQL, idColumn: 'legacy_report_id', cell: (k, v) => (k === 'reason' ? redactReason(v) : v) },
+        pageSize,
+      )
+      subs = await exportTable(
+        c,
+        sfd,
+        { columns: SUBMISSION_COLUMNS, statusSql: SUBMISSION_STATUS_SQL, pageSql: SUBMISSION_PAGE_SQL, idColumn: 'legacy_submission_id' },
+        pageSize,
+      )
+    })
+    close(rfd)
+    close(sfd)
+
+    const summary: ExportSummary = {
+      generatedAt,
+      source: 'cloud',
+      openStatuses: OPEN_REPORT_STATUSES,
+      total: sumCounts(reports.byStatus),
+      exported: reports.exported,
+      byStatus: reports.byStatus,
+      csvFile: basename(csv),
+      submissions: { total: sumCounts(subs.byStatus), exported: subs.exported, byStatus: subs.byStatus, csvFile: basename(submissionsCsv) },
+    }
+    const jfd = create(summaryFile)
+    writeSync(jfd, `${JSON.stringify(summary, null, 2)}\n`)
+    close(jfd)
   } catch (e) {
-    // No summary means no export: neither file stays behind.
-    if (sfd !== undefined) quietly(() => closeSync(sfd as number))
-    removeQuietly(summaryFile)
-    removeQuietly(csv)
+    for (const fd of open) quietly(() => closeSync(fd))
+    for (const f of created) removeQuietly(f)
     throw e
   }
-  return { csv, summary: summaryFile, total, exported, byStatus }
+  return {
+    csv,
+    summary: summaryFile,
+    total: sumCounts(reports.byStatus),
+    exported: reports.exported,
+    byStatus: reports.byStatus,
+    submissions: { csv: submissionsCsv, total: sumCounts(subs.byStatus), exported: subs.exported, byStatus: subs.byStatus },
+  }
 }
