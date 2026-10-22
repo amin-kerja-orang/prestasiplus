@@ -150,7 +150,7 @@ async function entityCheck(
   }
 }
 
-/** Proposed defaults of the deleted-at-source ceiling; the LEAD confirms them in MIG-08 section 8 item 4. */
+/** Defaults of the deleted-at-source ceiling (5 % AND 100 rows); decided: LEAD 22 Oct (MIG-08 4b). */
 export const DEFAULT_MAX_DELETED_RATIO = 0.05
 export const DEFAULT_MAX_DELETED_ROWS = 100
 
@@ -180,7 +180,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
             expected: `<= ${Math.max(maxRows, Math.floor(maxRatio * target))}`,
             actual: deleted.count,
             status: 'mismatch',
-            detail: `more than ${maxRatio * 100}% of the ${target} target rows and more than ${maxRows} rows have no source row now: check that the re-staged dump is complete (proposed ceiling; the LEAD confirms it in MIG-08 section 8 item 4)`,
+            detail: `more than ${maxRatio * 100}% of the ${target} target rows and more than ${maxRows} rows have no source row now: check that the re-staged dump is complete (ceiling decided: LEAD 22 Oct (MIG-08 4b))`,
           })
         }
         deletedIds[entry.entity] = deleted.ids

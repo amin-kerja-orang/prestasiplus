@@ -72,8 +72,8 @@ export interface VerifyOptions {
   /**
    * Ceiling for rows deleted at the source (optional, added by Part B). Above BOTH `maxDeletedRatio` of an entity's target rows
    * and `maxDeletedRows` rows the entity gets a failing `deleted_at_source_ratio:<entity>` check: a truncated or wrong re-stage
-   * would otherwise turn everything into "deleted at source". Proposed defaults 0.05 and 100; the LEAD confirms them in
-   * MIG-08 section 8 item 4.
+   * would otherwise turn everything into "deleted at source". Defaults 0.05 and 100 (AND rule); decided: LEAD 22 Oct
+   * (MIG-08 4b).
    */
   maxDeletedRatio?: number
   maxDeletedRows?: number

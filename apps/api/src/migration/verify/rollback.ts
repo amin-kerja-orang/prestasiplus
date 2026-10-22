@@ -107,17 +107,26 @@ export async function rollbackLegacy(options: RollbackOptions): Promise<Rollback
   const { pool, env, source, confirmDb } = options
   const dryRun = options.dryRun ?? false
   assertLegacySource(source)
-  await assertApplyAllowed(pool, env)
+  const mode = dryRun ? 'migrate:rollback (dry-run)' : 'rollback'
+  try {
+    await assertApplyAllowed(pool, env)
+  } catch (e) {
+    // The shared guard words its refusal for --apply; a dry-run of the rollback is gated the same way, so name the real mode.
+    if (dryRun && e instanceof ApplyGuardError && !(e instanceof RollbackRefusedError)) {
+      throw new ApplyGuardError(e.message.replace(/^Refusing --apply\b/, 'Refusing migrate:rollback (dry-run)'))
+    }
+    throw e
+  }
   if (env.PP_ALLOW_MIGRATE_ROLLBACK !== '1') {
-    throw new RollbackRefusedError('Refusing rollback: set PP_ALLOW_MIGRATE_ROLLBACK=1 to allow it (never after go-live without a LEAD decision). Nothing was changed.')
+    throw new RollbackRefusedError(`Refusing ${mode}: set PP_ALLOW_MIGRATE_ROLLBACK=1 to allow it (never after go-live without a LEAD decision). Nothing was changed.`)
   }
   const current = (await pool.query<{ db: string }>('SELECT current_database() AS db')).rows[0]?.db ?? ''
   // Stricter than the apply guard (which asks for it in production only): a rollback names its database in EVERY environment.
   if (env.PP_MIGRATE_TARGET_DB !== current) {
-    throw new RollbackRefusedError(`Refusing rollback: PP_MIGRATE_TARGET_DB must equal the connected database name ("${current}") in every environment. Nothing was changed.`)
+    throw new RollbackRefusedError(`Refusing ${mode}: PP_MIGRATE_TARGET_DB must equal the connected database name ("${current}") in every environment. Nothing was changed.`)
   }
   if (confirmDb !== current) {
-    throw new ApplyGuardError(`Refusing rollback: the confirmed database name does not match the connected database "${current}". Nothing was changed.`)
+    throw new ApplyGuardError(`Refusing ${mode}: the confirmed database name does not match the connected database "${current}". Nothing was changed.`)
   }
 
   const client = await pool.connect()

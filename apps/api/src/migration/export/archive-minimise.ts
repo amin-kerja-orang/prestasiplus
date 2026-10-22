@@ -4,6 +4,7 @@
  *   - `user_id` -> NULL in `question_reports`, `question_submissions`, `question_imports`, `spm_sets`,
  *     `teacher_reference_documents` (where the column exists);
  *   - `reason` (reporter free text) -> NULL in `question_reports`.
+ * `_row_hash` (the loader's hash of the whole row, which holds those values) is set to NULL on every row that is touched.
  * No other column is written (not `updated_at`, not `title`, not `path`). Rows are never deleted.
  *
  * Gates (the same family as `rollbackLegacy`, a destructive data change), for the dry-run AND the apply:
@@ -70,6 +71,8 @@ interface SummaryCounts {
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
 const q = quoteIdent
+/** Loader column: a hash of the whole row. Emptied on every row the command touches. */
+const HASH_COLUMN = '_row_hash'
 const SUMMARY_NAME = /^question-reports-open-.+\.summary\.json$/
 const MAX_SUMMARY_BYTES = 1_000_000
 
@@ -160,7 +163,7 @@ export async function minimiseArchive(options: MinimiseOptions): Promise<Minimis
     const missing = MINIMISE_PLAN.filter((p) => !cols.rows.some((c) => c.table_name === p.table)).map((p) => p.table)
     if (missing.length > 0) throw new ArchiveMinimiseRefusedError(`Refusing: ${ARCHIVE_SCHEMA} table(s) missing: ${missing.join(', ')}. Nothing was changed.`)
     for (const p of MINIMISE_PLAN) {
-      for (const c of p.columns) {
+      for (const c of [...p.columns, HASH_COLUMN]) {
         if (have.get(`${p.table}.${c}`) === false) {
           throw new ArchiveMinimiseRefusedError(`Refusing: ${ARCHIVE_SCHEMA}.${p.table}.${c} is NOT NULL and cannot be emptied. Nothing was changed.`)
         }
@@ -180,13 +183,23 @@ export async function minimiseArchive(options: MinimiseOptions): Promise<Minimis
       )
     }
 
+    // One statement per table: each row is rewritten once. A row is touched when at least one listed column is non-null; the
+    // loader's `_row_hash` (an unkeyed SHA-256 of the whole row, user_id and reason included) is emptied on those rows, or it
+    // would let the reporter be re-identified by guessing. The per-column counts are taken from the rows' values before the change.
     const changes: MinimiseReport['changes'] = []
     for (const p of MINIMISE_PLAN) {
-      for (const c of p.columns) {
-        if (!have.has(`${p.table}.${c}`)) continue
-        const res = await client.query(`UPDATE ${A}.${q(p.table)} SET ${q(c)} = NULL WHERE ${q(c)} IS NOT NULL`)
-        changes.push({ table: p.table, column: c, rows: res.rowCount ?? 0 })
-      }
+      const cols = p.columns.filter((c) => have.has(`${p.table}.${c}`))
+      if (cols.length === 0) continue
+      const flags = cols.map((_, i) => `${q(cols[i] as string)} IS NOT NULL AS f${i}`).join(', ')
+      const any = cols.map((c) => `${q(c)} IS NOT NULL`).join(' OR ')
+      const sets = [...cols.map((c) => `${q(c)} = NULL`), ...(have.has(`${p.table}.${HASH_COLUMN}`) ? [`${q(HASH_COLUMN)} = NULL`] : [])].join(', ')
+      const sums = cols.map((_, i) => `count(*) FILTER (WHERE f${i})::text AS n${i}`).join(', ')
+      const res = await client.query<Record<string, string>>(
+        `WITH hit AS (SELECT ctid AS c, ${flags} FROM ${A}.${q(p.table)} WHERE ${any}), ` +
+          `upd AS (UPDATE ${A}.${q(p.table)} AS t SET ${sets} FROM hit WHERE t.ctid = hit.c RETURNING ${cols.map((_, i) => `hit.f${i}`).join(', ')}) ` +
+          `SELECT ${sums} FROM upd`,
+      )
+      cols.forEach((c, i) => changes.push({ table: p.table, column: c, rows: Number(res.rows[0]?.[`n${i}`] ?? 0) }))
     }
     await client.query(dryRun ? 'ROLLBACK' : 'COMMIT')
     return { database, dryRun, changes, total: changes.reduce((n, c) => n + c.rows, 0) }

@@ -61,6 +61,7 @@ describe('guards', () => {
         const env = { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1', ...(target === undefined ? {} : { PP_MIGRATE_TARGET_DB: target }) }
         await expect(call({ env, dryRun })).rejects.toBeInstanceOf(RollbackRefusedError)
         await expect(call({ env, dryRun })).rejects.toThrow(/PP_MIGRATE_TARGET_DB must equal the connected database/)
+        await expect(call({ env, dryRun })).rejects.toThrow(dryRun ? /^Refusing migrate:rollback \(dry-run\):/ : /^Refusing rollback:/)
       }
     }
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
@@ -70,6 +71,14 @@ describe('guards', () => {
     await expect(call({ confirmDb: 'some_other_db' })).rejects.toThrow(/does not match the connected database/)
     await expect(call({ confirmDb: '' })).rejects.toBeInstanceOf(ApplyGuardError)
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
+  })
+
+  it('a dry-run refused by the shared apply guard names the real mode, not --apply', async () => {
+    const prod = { ...h.runEnv, NODE_ENV: 'production', PP_ALLOW_MIGRATE_ROLLBACK: '1' }
+    const dry = call({ env: prod, dryRun: true })
+    await expect(dry).rejects.toThrow(/^Refusing migrate:rollback \(dry-run\) in production: PP_MIGRATE_TARGET_DB/)
+    await expect(call({ env: { NODE_ENV: 'test' }, dryRun: true })).rejects.toThrow(/^Refusing migrate:rollback \(dry-run\): set PP_ALLOW_MIGRATE_APPLY=1/)
+    await expect(call({ env: { NODE_ENV: 'test' }, dryRun: false })).rejects.toThrow(/^Refusing --apply: set PP_ALLOW_MIGRATE_APPLY=1/)
   })
 
   it('refuses in production unless PP_MIGRATE_TARGET_DB names the database', async () => {
