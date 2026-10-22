@@ -12,6 +12,7 @@
 #
 # Order (a failed step stops the run; there is NO automatic rollback because migrations are forward-only):
 #   1 preflight   2 pre-deploy backup   3 build or pull images tagged with the git sha   4 db up
+#   (4 also starts clamd for the upload scan, without waiting for its health)
 #   5 migrate (one-shot, `prisma migrate deploy` only, never a seed)   6 api + frontend up (wait healthy)
 #   7 edge (re)created   8 health checks through the edge: /api/health, /api/ready, /, /api/metrics (404), http->https
 #   9 record current and previous image tag for rollback.sh
@@ -77,7 +78,7 @@ urldecode() {
 
 # ------------------------------------------------------------------------------------------------------------
 preflight() {
-  local f k v c m cfg_err pem
+  local f k v c m cfg_err cfg_txt pem
   for c in docker git curl sha256sum openssl flock; do command -v "$c" >/dev/null || err "missing command: $c"; done
   if command -v docker >/dev/null; then
     v="$(docker compose version --short 2>/dev/null || true)"; v="${v#v}"
@@ -123,6 +124,17 @@ preflight() {
   v="$(pp_env_value "$api_env" COOKIE_SECURE)"; [ "${v,,}" != false ] || warn "COOKIE_SECURE=false in api.env is ignored (compose.prod.yaml forces true)"
   v="$(pp_env_value "$api_env" NODE_ENV)"; [ -z "$v" ] || [ "$v" = production ] || warn "NODE_ENV=$v in api.env is ignored (forced to production)"
   v="$(pp_env_value "$api_env" TRUST_PROXY_HOPS)"; [ -z "$v" ] || [ "$v" = 1 ] || warn "TRUST_PROXY_HOPS=$v in api.env is ignored (forced to 1: the edge is the only proxy)"
+
+  # clamd refuses anything above 32 MB (StreamMaxLength): larger uploads would fail closed ("try again later").
+  for k in MAX_UPLOAD_MB INTAKE_MAX_FILE_MB; do
+    v="$(pp_env_value "$api_env" "$k")"
+    if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt 32 ]; then err "$k=$v in api.env is above the clamd limit of 32 MB (uploads would fail closed); keep it at 32 or less (runbook section 15)"; fi
+  done
+  # Upload malware scan is forced by compose.prod.yaml (MALWARE_SCAN=clamd, CLAMAV_HOST/PORT); api.env cannot change it.
+  for k in MALWARE_SCAN CLAMAV_HOST CLAMAV_PORT; do
+    [ -z "$(pp_env_value "$api_env" "$k")" ] || warn "$k in api.env: MALWARE_SCAN/CLAMAV_HOST/CLAMAV_PORT are forced by compose.prod.yaml and are ignored there (runbook section 15)"
+  done
+  case ",$(pp_cfg PP_PROFILES '')," in *,clamav,*) warn "PP_PROFILES contains 'clamav': obsolete, clamav always runs now; remove it from prod.env" ;; esac
 
   # Required values (mirrors loadEnv in env.schema.ts, with the stricter team policy of 32 characters).
   local ss ic dburl pguser pgdb pgpw
@@ -181,8 +193,14 @@ preflight() {
   # Compose renders with the production overlay.
   if command -v docker >/dev/null && [ ${#errors[@]} -eq 0 ]; then
     cfg_err="$(mktemp)"
-    PP_IMAGE_TAG="$tag" pp_compose config -q 2>"$cfg_err" \
-      || err "docker compose config failed: $(head -c 300 "$cfg_err")"
+    # One render serves the validity check and the scan greps (a render failure is ONE error). Plain output, no jq.
+    if cfg_txt="$(PP_IMAGE_TAG="$tag" pp_compose config 2>"$cfg_err")"; then
+      grep -Eq '^  clamav:' <<<"$cfg_txt" || err "the rendered production config has no clamav service (upload scanning is mandatory, runbook section 15)"
+      grep -Eq '^ +MALWARE_SCAN: +"?clamd"?$' <<<"$cfg_txt" || err "the rendered production config does not set MALWARE_SCAN=clamd on the api (upload scanning is mandatory, runbook section 15)"
+      grep -Eq '^ +CLAMAV_HOST: +"?clamav"?$' <<<"$cfg_txt" || err "the rendered production config does not set CLAMAV_HOST=clamav on the api"
+    else
+      err "docker compose config failed: $(head -c 300 "$cfg_err")"
+    fi
     rm -f "$cfg_err"
   fi
 
@@ -269,6 +287,10 @@ run pp_compose up -d --wait --no-deps db
 # failure message use it to tell "new release started but not recorded" from "nothing started".
 [ "$dry" = 1 ] || { mkdir -p "$state_dir"; printf '%s\n' "$tag" >"$state_dir/deploying.tag"; }
 
+# clamd for the upload scan. --no-deps elsewhere skips depends_on, so it is started here; NO --wait: the first start
+# downloads signatures for up to 5 minutes and uploads fail closed (422 "try again later") until it is healthy.
+run pp_compose up -d --no-deps clamav
+
 step "5/9 migrate (prisma migrate deploy only)"
 run pp_compose run --rm --no-deps migrate
 
@@ -284,6 +306,13 @@ if [ "$dry" = 1 ]; then
 else
   # pp_die would exit without the ERR trap: call the failure handler explicitly so the alert and guidance are printed.
   pp_health_checks || fail_deploy 1 "health checks through the edge (logs: docker compose logs --since 10m api edge)"
+fi
+
+# Non-fatal: a clamd that is not healthy yet must not fail the deploy (uploads fail closed meanwhile).
+if [ "$dry" = 0 ]; then
+  clam_state="$(pp_compose ps clamav --format '{{.Health}}' 2>/dev/null || true)"
+  if [ "$clam_state" = healthy ]; then pp_log "clamav is healthy: upload scanning active"
+  else pp_warn "clamav is '${clam_state:-not running}', not healthy: uploads fail closed until it is (first start: up to 5 minutes). Check: docker compose ... ps clamav / logs clamav (runbook section 15)"; fi
 fi
 
 step "9/9 record the release"

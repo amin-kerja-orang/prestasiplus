@@ -4,6 +4,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { UsersRepository } from '../../src/modules/users'
 import { inspectAttachment, sanitizeGif } from '../../src/modules/content/perutusan/perutusan.files'
 import { makeJpeg, makePng, makeWebp } from '../files/fixtures'
+import { SCAN_MESSAGES } from '../../src/modules/files/scanning-file-storage'
+import { EICAR, StubScanner } from '../files/scan-stub'
 import { ADMIN, JPG, PDF, PNG, STUDENT, bootVp, errorOf, expectError, fieldsOf, login, makeGif, postPerutusan, type LoggedIn, type VpApp } from './vp-helpers'
 
 const text = (over: Record<string, string> = {}) => ({ title: 'Dengan lampiran', body: '<p>Lihat lampiran.</p>', status: 'published', ...over })
@@ -257,5 +259,27 @@ describe('GIF rebuild (unit)', () => {
     huge.writeUInt16LE(65535, 6)
     huge.writeUInt16LE(65535, 8)
     expect(sanitizeGif(huge)).toBeNull()
+  })
+})
+
+describe('perutusan attachments with the malware scan on (AZ-188)', () => {
+  it('an infected document is refused as 422 (not 500); nothing is stored; a clean one still posts', async () => {
+    const scanner = new StubScanner()
+    const t = await bootVp({}, scanner)
+    try {
+      const admin = await login(t, ADMIN)
+      const infected = Buffer.concat([PDF(), Buffer.from(`\n%${EICAR}\n`)])
+      const res = await postPerutusan(admin, text(), { documents: [{ bytes: infected }] })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(fieldsOf(res).file).toBe(SCAN_MESSAGES.infected)
+      expect(t.storage.keys()).toHaveLength(0)
+      expect(await t.db.query(`select 1 from perutusan`)).toHaveLength(0)
+      expect(await t.db.query(`select 1 from files`)).toHaveLength(0)
+
+      const ok = await postPerutusan(admin, text(), { documents: [{ bytes: PDF() }] })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    } finally {
+      await t.close()
+    }
   })
 })

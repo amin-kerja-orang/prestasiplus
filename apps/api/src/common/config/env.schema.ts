@@ -119,6 +119,12 @@ export const EnvSchema = z.object({
   UPLOAD_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
   /** Downloads per user per minute (anonymous cms_image reads: per address) before 429. */
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
+  /** AZ-188: off (default) stores uploads unscanned; clamd scans every stored file with ClamAV and refuses infected or unscannable ones. */
+  MALWARE_SCAN: z.enum(['off', 'clamd']).default('off'),
+  /** Host of clamd (required when MALWARE_SCAN=clamd). */
+  CLAMAV_HOST: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().trim().optional()),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+  CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(30_000),
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
   // BE-33: global per-address ceiling on every /api route except /api/health (default 300 per minute, per process).
   THROTTLE_GLOBAL_PER_MINUTE: z.coerce.number().int().min(1).optional(),
@@ -250,6 +256,9 @@ export const EnvSchema = z.object({
 }).superRefine((env, ctx) => {
   if (env.CLIENT_IP_HEADER && !env.EDGE_PROXY_SECRET) {
     ctx.addIssue({ code: 'custom', path: ['EDGE_PROXY_SECRET'], message: 'required when CLIENT_IP_HEADER is set' })
+  }
+  if (env.MALWARE_SCAN === 'clamd' && !env.CLAMAV_HOST) {
+    ctx.addIssue({ code: 'custom', path: ['CLAMAV_HOST'], message: 'required when MALWARE_SCAN=clamd' })
   }
 })
 export type Env = z.infer<typeof EnvSchema>

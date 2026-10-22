@@ -51,11 +51,16 @@ Optional keys (defaults in brackets):
 | Runtime (BE-33) | `REQUEST_TIMEOUT_MS` [120000], `HEADERS_TIMEOUT_MS` [60000], `KEEP_ALIVE_TIMEOUT_MS` [65000], `SHUTDOWN_GRACE_MS` [25000], `METRICS_ENABLED` [true; `false` makes `/api/metrics` 404], `METRICS_INTERNAL_CIDRS` [unset; comma list of IPv4/IPv6 CIDRs, invalid value fails the boot] |
 | Files | `MAX_UPLOAD_MB` [10], `INTAKE_MAX_FILE_MB` [20], `UPLOAD_RATE_PER_MINUTE` [30], `FILE_READS_PER_MINUTE` [120] |
 | Jobs and OCR | `JOBS_WORKER_ENABLED` [false], `JOBS_POLL_MS`, `JOBS_CONCURRENCY`, `JOBS_LOCK_TIMEOUT_MS`, `JOBS_BACKOFF_BASE_MS`, `OCR_ENGINE` [none; tesseract needs `OCR_LANG_DIR`], `OCR_LANG_DIR`, `OCR_WORKERS`, `OCR_PAGE_TIMEOUT_MS`, `OCR_INSPECT_TIMEOUT_MS`, `OCR_MAX_PAGES`, `OCR_MIN_TEXT_CHARS`, `OCR_RENDER_DPI`, `OCR_MAX_PIXELS`, `OCR_WORKER_MEMORY_MB`, `OCR_WORKER_RSS_LIMIT_MB` |
-| Intake | `INTAKE_TEACHER_ENABLED` [false; AZ-35: off = intake files and review routes are Admin Pusat only, a teacher gets 403; keep off until ClamAV scans uploads (#78)], `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
+| Intake | `INTAKE_TEACHER_ENABLED` [false; AZ-35: off = intake files and review routes are Admin Pusat only, a teacher gets 403; ClamAV now scans every upload in production (AZ-188); the flag stays a LEAD decision], `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
+| Malware scan | `MALWARE_SCAN` [off; `off` or `clamd`. Production compose forces `clamd`; every file write is then scanned and a scan failure is a 422], `CLAMAV_HOST` [required when `clamd`; compose forces `clamav`], `CLAMAV_PORT` [3310], `CLAMAV_TIMEOUT_MS` [30000]. Do not set them in the production `api.env` (forced). See "Malware scan" below |
 | Misc | `BIJAK_SWEEP_INTERVAL_SECONDS`, `MAIL_LOG_RESET_LINKS` (development only) |
 | Rate limits | every `THROTTLE_*` key; see section 9 and `.env.api.example` (each line states the unit and the key: user or address). All optional. |
 
 Every value is an integer unless stated. Timeout notes: `REQUEST_TIMEOUT_MS` and `HEADERS_TIMEOUT_MS` must be at least 1000 (0 is refused, it would disable slowloris protection). nginx `proxy_read_timeout` is 120 s on `/api/` and 300 s on `/api/files`; keep `REQUEST_TIMEOUT_MS` at or below the matching nginx value, and `HEADERS_TIMEOUT_MS` at or below `REQUEST_TIMEOUT_MS`. Tuning point: one process timeout covers every route, so the 120 s default also caps uploads on `/api/files` (a 22 MB body needs about 1.5 Mbit/s to arrive in time); where users upload over slow links, raise `REQUEST_TIMEOUT_MS` up to 300000 (the `/api/files` nginx value) (nginx still ends other `/api/` requests at 120 s, so the process value above it only matters for direct callers).
+
+### Malware scan
+
+`MALWARE_SCAN=clamd` streams every file write (POST /files, Bijak photos, avatars, perutusan attachments, intake originals and derived pages) to clamd before it is stored. Infected gives 422 `fields.file` "The file failed the security scan." and nothing is stored; clamd unreachable or timed out fails closed for every caller, admin included (422 "The file could not be checked right now. Please try again later."). Default `off` keeps dev, test and the Render demo unchanged. In production compose forces it on and starts the `clamav` service: operations, EICAR check, signatures, troubleshooting and rollback are in [production-vps.md](production-vps.md) section 15.
 
 ## 3. Start and stop
 
@@ -333,5 +338,5 @@ Test files are under `apps/api/test/security/` unless a full path is given; scen
 | P10-9 | PR description from the template | `.github/pull_request_template.md` | lead |
 | P10-10 | Lead approval, `security-review` label | | lead |
 | Ops | Production backup scheduled, restore drill monthly, uptime check on `/api/ready`, alert contact | db-backup.md, section 11 | needs LEAD/ops (accounts, schedule, encrypted volume) |
-| Ops | No malware scan on stored uploads: accepted for demo/staging (admin-only uploads, magic-byte checks); ClamAV or equivalent required before production go-live (backlog #78) | threat model row 43 | needs LEAD/ops before go-live |
+| Ops | Malware scan: production forces `MALWARE_SCAN=clamd` with the `clamav` service (AZ-188); demo/staging stay off (accepted). EICAR check after deploy | threat model row 43, production-vps.md section 15 | verify on the first VPS deploy |
 | Ops | nginx does not proxy `/api/metrics`; `stop_grace_period: 30s` on `api` | sections 3 and 5 | needs lead (files outside this card) |

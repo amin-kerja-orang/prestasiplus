@@ -2,11 +2,14 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { AuthModule } from '../auth/auth.module'
-import { FILE_STORAGE } from './file-storage'
+import { ClamdScanner } from './clamd.scanner'
+import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { DeleteGuard, FilesController, UploadGuard, UploadInterceptor } from './files.controller'
 import { FilesConfig } from './files.config'
 import { FilesService } from './files.service'
 import { LocalDiskStorage } from './local-disk.storage'
+import { MALWARE_SCANNER, type MalwareScanner } from './malware-scanner'
+import { ScanningFileStorage } from './scanning-file-storage'
 import { DownloadThrottle, UploadThrottle } from './upload-throttle'
 
 /**
@@ -28,8 +31,22 @@ import { DownloadThrottle, UploadThrottle } from './upload-throttle'
     DeleteGuard,
     UploadInterceptor,
     FilesService,
-    { provide: FILE_STORAGE, inject: [FilesConfig], useFactory: (config: FilesConfig) => new LocalDiskStorage(config.storageDir) },
+    {
+      // AZ-188: MALWARE_SCAN=off gives no scanner (null); clamd gives the INSTREAM client.
+      provide: MALWARE_SCANNER,
+      inject: [FilesConfig],
+      useFactory: (config: FilesConfig): MalwareScanner | null =>
+        config.malwareScan === 'clamd' ? new ClamdScanner({ host: config.clamavHost, port: config.clamavPort, timeoutMs: config.clamavTimeoutMs }) : null,
+    },
+    {
+      provide: FILE_STORAGE,
+      inject: [FilesConfig, MALWARE_SCANNER],
+      useFactory: (config: FilesConfig, scanner: MalwareScanner | null): FileStorage => {
+        const disk = new LocalDiskStorage(config.storageDir)
+        return scanner ? new ScanningFileStorage(disk, scanner) : disk
+      },
+    },
   ],
-  exports: [FilesService, FILE_STORAGE],
+  exports: [FilesService, FILE_STORAGE, MALWARE_SCANNER],
 })
 export class FilesModule {}
