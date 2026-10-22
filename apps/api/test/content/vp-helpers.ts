@@ -24,6 +24,9 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 export { START, expectError, schoolIdOf, userIdOf, type LoggedIn } from '../auth/helpers'
 export { ADMIN, SCHOOL_ADMIN, STUDENT, TEACHER, apiOf, type Api } from '../users/helpers'
 
+import type { MalwareScanner } from '../../src/modules/files/malware-scanner'
+import { ScanningFileStorage } from '../../src/modules/files/scanning-file-storage'
+
 export interface VpApp {
   app: INestApplication
   db: TestDatabase
@@ -35,7 +38,7 @@ export interface VpApp {
 }
 
 /** Auth, files (in-memory storage), videos and perutusan on a private migrated database with the identity seed. Volume throttles are raised. */
-export async function bootVp(env: Record<string, string | undefined> = {}): Promise<VpApp> {
+export async function bootVp(env: Record<string, string | undefined> = {}, scanner?: MalwareScanner): Promise<VpApp> {
   const db = await createTestDatabase()
   await runSeeds([identitySeed], { prisma: db.prisma })
   const all: Record<string, string | undefined> = {
@@ -65,7 +68,7 @@ export async function bootVp(env: Record<string, string | undefined> = {}): Prom
     .overrideProvider(CLOCK)
     .useValue(clock)
     .overrideProvider(FILE_STORAGE)
-    .useValue(storage)
+    .useValue(scanner ? new ScanningFileStorage(storage, scanner) : storage)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

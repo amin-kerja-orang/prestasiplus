@@ -20,6 +20,7 @@
     "staging:profile": "tsx src/migration/staging/cli.ts staging:profile",
     "anonymise:run": "tsx src/migration/anonymise/cli.ts anonymise:run",
     "anonymise:scan": "tsx src/migration/anonymise/cli.ts anonymise:scan",
+    "files:scan-stored": "tsx src/modules/files/scan-stored.cli.ts",
     "fixtures:generate": "tsx src/migration/fixtures/cli.ts",
     "typecheck": "tsc --noEmit",
     "pretypecheck": "npm run db:generate",

@@ -25,7 +25,7 @@ Internet --80/443--> edge (nginx:1.27-alpine, TLS, Let's Encrypt certificate)
                        |-- everything else   --> frontend:8080  (the SPA image: static files, no host port)
                        '-- /api/metrics      --> 404 (never leaves the host)
 api --> db:5432 (postgres:16-alpine, volume pgdata, no host port)
-profiles: clamav (clamd :3310), monitoring (Uptime Kuma on 127.0.0.1:3001), tls (certbot, on demand)
+clamav (clamd :3310, always on, no profile), profiles: monitoring (Uptime Kuma on 127.0.0.1:3001), tls (certbot, on demand)
 ```
 
 Files:
@@ -141,7 +141,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_IMAGE_TAG` | `prod` (scripts set the git sha) | script | Image tag |
 | `PP_IMAGE_PREFIX` | empty | LEAD | Registry prefix with trailing slash, e.g. `ghcr.io/ORG/`; empty = build on the VPS |
 | `PP_BUILD_MODE` | `local` | OPS | `local` builds on the VPS (needs ~2 GB free RAM); `pull` pulls from `PP_IMAGE_PREFIX` |
-| `PP_PROFILES` | empty | LEAD | Compose profiles to run: `clamav`, `monitoring` (comma list) |
+| `PP_PROFILES` | empty | LEAD | Compose profiles to run: `monitoring` (comma list; `clamav` is no longer a profile, a leftover value only gives a preflight warning) |
 | `PP_HTTP_BIND` | `0.0.0.0` | OPS | IPv4 address for ports 80/443. The edge publishes **IPv4 only**: create an A record, no AAAA record |
 | `PP_EDGE_AUTH_RATE` | `60r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address. A huge value (`100000r/m`) makes it a no-op |
 | `PP_EDGE_AUTH_BURST` | `60` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
@@ -194,7 +194,7 @@ Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`
 `COOKIE_SECURE=true`, `ALLOW_DEMO_SEED=false`, `BIJAK_POC_QUESTIONS=false`, `JOBS_WORKER_ENABLED` (= `PP_JOBS_WORKER_ENABLED`),
 `PUBLIC_BASE_URL=https://$PP_DOMAIN`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `NODE_OPTIONS=--max-old-space-size=$PP_API_HEAP_MB`.
 
-Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15).
+Also forced: `MALWARE_SCAN=clamd`, `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15). Do NOT put them in `api.env`: they are ignored there and `deploy.sh` warns. `CLAMAV_TIMEOUT_MS` [30000] may be set in `api.env`.
 
 ---
 
@@ -312,7 +312,7 @@ Never run the demo seed or `--force-demo` in production (it needs two keys on pu
 
 **Smoke test after the first deploy** (the checklist of [go-live-bijak-spm.md](go-live-bijak-spm.md) section 4.2; `scripts/demo-smoke.sh` with `EXPECT_SECURE=1` needs accounts; `LEAD:` production smoke accounts are still to be created):
 SPA and a deep link load; login sets `pp_session` `HttpOnly; Secure; SameSite=Lax`; CSRF 403 without the header; one Bijak attempt end to end; an upload under 22 MB works and an oversize one is
-refused cleanly; an audio KBAT set create (up to 80 MB) and an intake batch upload pass the edge; the sixth failed login from one client gets 429 and a second network is not locked out
+refused cleanly; `clamav` is `healthy` and the EICAR check of section 15 returns 422; an audio KBAT set create (up to 80 MB) and an intake batch upload pass the edge; the sixth failed login from one client gets 429 and a second network is not locked out
 (proves `TRUST_PROXY_HOPS`/XFF); `docker compose ... logs api` shows structured lines without stack traces.
 
 ---
@@ -548,17 +548,39 @@ The API keeps its rate-limit counters (and the AI provider limits) in process me
 
 ## 15. ClamAV
 
-State: threat model rows 43 and 18, SH-02, backlog #78. **ClamAV or an equivalent is required before production go-live** (the LEAD accepted "no scan" for demo and staging only). The scan code in the API is half AM's;
-**the API does not read any scan setting yet.**
+State: threat model row 43, backlog #78, issue #188 (slug `AZ-188-malware-scan`). **Production always scans uploads.** `compose.prod.yaml` runs the `clamav` service without a profile and forces `MALWARE_SCAN=clamd`, `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` in the `api` `environment:` block, so `api.env` cannot switch it off. Demo and staging keep `MALWARE_SCAN=off` (accepted risk, row 43).
 
-This pack provides the environment:
-- Compose profile `clamav`: service `clamav` (`clamav/clamav:1.4`, pinned by `PP_CLAMAV_IMAGE`), clamd on the internal network at `clamav:3310`, signature volume `clamdb`, health check `clamdcheck.sh` (first start downloads and loads the signatures: up to 5 minutes),
-  `CLAMD_CONF_ConcurrentDatabaseReload=no`, `MaxFileSize`/`StreamMaxLength` 32 MB (above the 20 MB intake ceiling), memory limit `PP_CLAMAV_MEM` (2g), CPU `PP_CLAMAV_CPUS` (1).
-- Enable with `PP_PROFILES=clamav` in `prod.env`, then `deploy.sh`.
-- **Reserved env names, read once the half-AM card lands:** `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`. They are only comments in `.env.prod.example`. Do not add them to `api.env` before the card: `env.schema.ts` does not know them and a test keeps `.env.api.example` equal to the schema.
-- Until the card lands, clamd runs but nothing calls it. Check it is alive: `docker compose ... ps clamav` shows `healthy` (the image's `clamdcheck.sh` health check asks clamd to answer).
-- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
-- ClamAV needs outbound HTTPS to the ClamAV mirrors for signature updates (freshclam). Cost: 1 to 1.5 GB RAM (section 13).
+**What is scanned.** Every write to file storage is streamed to clamd (INSTREAM) before it is stored: `POST /api/files`, Bijak photos, avatars, perutusan attachments, intake originals and the derived pages.
+
+**Behaviour.**
+- Infected: HTTP 422, `fields.file` = "The file failed the security scan.", nothing is stored. The API logs a `warn` line with the signature name and the sha256 of the file.
+- clamd unreachable, timed out or in error: **fails closed** for every caller, admin included. HTTP 422, `fields.file` = "The file could not be checked right now. Please try again later." The API logs an `error` line. Nothing else in the API is affected.
+- `CLAMAV_TIMEOUT_MS` [30000] bounds one scan. `CLAMAV_PORT` and `CLAMAV_HOST` are forced by compose.
+
+**Wiring.** Service `clamav` (`clamav/clamav:1.4`, pinned by `PP_CLAMAV_IMAGE`) on the internal network `scan` only (not on `default`); the `api` is on `default` and `scan`. Signature volume `clamdb`, health check `clamdcheck.sh`, `CLAMD_CONF_ConcurrentDatabaseReload=no`, `MaxFileSize`/`StreamMaxLength` 32 MB (above the 20 MB intake ceiling), limits `PP_CLAMAV_MEM` (2g) and `PP_CLAMAV_CPUS` (1), `cap_drop: ALL` plus the few capabilities its entrypoint needs.
+- `api` has `depends_on: clamav` with `condition: service_started`, not `service_healthy`: the first start downloads and loads the signatures (up to 5 minutes, `start_period: 300s`) and `deploy.sh` must not wait that long. **Until clamd is healthy, uploads fail with the "try again later" 422**; reads and logins work. A first install should wait for `healthy` before the EICAR check.
+- `deploy.sh` preflight refuses to run unless the rendered config has the `clamav` service and `MALWARE_SCAN=clamd` on the api. It starts `clamav` in step 4 (`up -d --no-deps clamav`, no wait) and, after the health checks, prints a non-fatal warning if clamav is not `healthy`.
+- A leftover `PP_PROFILES=clamav` is harmless (preflight warns; remove it). `MALWARE_SCAN` / `CLAMAV_*` in `api.env` are ignored (preflight warns).
+
+**Verify after every deploy (go/no-go item).**
+1. `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env ps clamav` shows `healthy`.
+2. EICAR check. On your own machine create the standard antivirus test file from the official eicar.org page (https://www.eicar.org/download-anti-malware-testfile/; save it as `eicar-test.pdf`). It is harmless, but never commit it and never write its string into the repo or docs. Some laptop antivirus will quarantine it: use a throwaway folder. Then, logged in as an admin, upload it through the UI to a screen that accepts PDFs, or with curl against the real name: `POST /api/files?purpose=<a purpose that accepts PDF>` (multipart field `file`, session cookie and CSRF header as for any admin write). **Expect HTTP 422 with `fields.file` "The file failed the security scan."** and `docker compose ... logs --since 5m api` showing a `warn` line with the signature (EICAR is reported as `Eicar-Signature`; the sha256 is logged, the content is not).
+3. A normal small PDF uploaded the same way returns 2xx. Delete that test upload if it is not wanted.
+If step 2 returns 2xx, **scanning is NOT active: no-go**. If it returns "try again later", clamd is not healthy (see Troubleshooting).
+
+**Signature updates.** The image runs `freshclam` in the container (several checks per day) and clamd reloads the database; the signatures persist in the `clamdb` volume. It needs outbound HTTPS (443) to the ClamAV mirrors (`database.clamav.net` and the CDN hosts behind it). A blocked egress leaves the old signatures in use: check `docker compose ... logs clamav | grep -i freshclam` at least monthly, and alert if the newest "database updated" line is older than 7 days. Image tag updates are in the monthly security review (section 2, image pinning).
+
+**Memory.** clamd holds the signatures in memory: 1 to 1.5 GB resident, 2 GB limit so a reload survives (section 13, A8 and the "with ClamAV" sizing columns). It is now part of the core stack: size the VPS with the ClamAV figures, not the plain ones.
+
+**Troubleshooting.**
+- Users see "The file could not be checked right now. Please try again later.": `ps clamav` (is it `healthy`, restarting, or `unhealthy`?), `docker compose ... logs --since 30m clamav` (signature download failed, out-of-memory kill: `docker inspect` shows `OOMKilled`), `docker compose ... logs --since 30m api | grep -i clam` (error lines show the cause: connection refused, timeout). First start: wait up to 5 minutes. Out of memory: raise `PP_CLAMAV_MEM`, then `up -d --no-deps clamav`.
+- Restart: `docker compose ... restart clamav`. The api needs no restart; its next upload reconnects.
+- Large files timing out: raise `CLAMAV_TIMEOUT_MS` in `api.env` (and check the CPU limit), then recreate the api.
+- Possible false positive: the file is refused and not stored. Do not bypass; ask the developer roles to check the signature name from the log, and re-test with a fresh signature update.
+
+**Migrated data at cutover (scan-stored CLI, if present).** Files that arrive through the half-AM migration do not pass through the upload path. When the CLI exists in the release (`npm run files:scan-stored -w @pp/api`), run it inside the api container once at T-1 d, and again after the half-AM data slot: `docker compose ... exec api npm run files:scan-stored -w @pp/api`. It is report-only (never deletes). Exit 0 = clean, 1 = infected files found (listed with signature and sha256: quarantine them by hand with the LEAD), 2 = clamd unreachable (fix clamd, run again). Record the result in the cutover log.
+
+**Rollback / emergency.** Switching the scan off from `api.env` is **not possible by design**. If clamd cannot be restored and uploads are needed, the only way is a reviewed change of `compose.prod.yaml` (`MALWARE_SCAN: off`) plus a **recorded LEAD risk acceptance** (dated line in the cutover log), reverted as soon as clamd is healthy. Prefer leaving uploads failing closed. Rolling the api back to an older image (`rollback.sh`) keeps the forced env, but an image older than AZ-188 does not read it and scans nothing: treat that as scan off and record it.
 
 ---
 
@@ -587,7 +609,7 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 | T0 + 30 min to +4 h | **Monitoring watch**: the operator watches the uptime checker, the probe, `logs api | grep '"level":50'`, 429 rates, CPU and memory against the 70% / 80% lines, p95 from the edge log (`rt=`), disk growth. First 4 hours continuous, then the normal alerts | AZ | no trigger hit |
 | T0 + 1 d | Nightly backup + off-site verified; certificate renewal dry run (`certbot renew --dry-run`); capacity review against the sizing table; post-cutover drill after the first full backup | AZ | recorded |
 
-**Go / no-go (infrastructure part)** - go only if all hold: **uploads gate: no pupil/teacher uploads are enabled in production until the #78 ClamAV wiring has landed, or the LEAD has recorded a risk acceptance in the cutover log**; `/api/ready` 200 and the smoke test 100% on the real name; backup taken within the last hour and its sha256 recorded, off-site copy present, last restore drill PASS; certificate valid > 60 days;
+**Go / no-go (infrastructure part)** - go only if all hold: **uploads gate: `clamav` is `healthy` and the EICAR check of section 15 returns 422 (a recorded LEAD risk acceptance in the cutover log is the only alternative)**; `/api/ready` 200 and the smoke test 100% on the real name; backup taken within the last hour and its sha256 recorded, off-site copy present, last restore drill PASS; certificate valid > 60 days;
 external checker, probe, dead-man's switches and the alert channel proven by a test alert; no Critical/High open from QA or security; migrated-data reconciliation green (AM) when D-3 = yes; disk > 30% free; the operator and the LEAD reachable for the next 4 hours.
 No-go on any failure. The application-side go/no-go list is in [go-live-bijak-spm.md](go-live-bijak-spm.md) section 4.3.
 
@@ -609,7 +631,7 @@ Found while building this pack; AZ does not change application code.
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
 | F5 | The API buffers multipart bodies in memory (multer memory storage): 220 MB x `INTAKE_UPLOAD_CONCURRENCY`=2 means API memory spikes of about 450 MB (included in the sizing) | backend-developer | Info |
 | F6 | `apifiles` (uploads) is not in the database dump. This pack archives it weekly; pupil photos grow it. A plan for object storage or incremental backup is a later improvement | devops | Info |
-| F7 | ClamAV: the scan code is not in the API yet (half AM). Reserved env names `CLAMAV_HOST` / `CLAMAV_PORT` | half AM (backlog #78) | High before go-live per row 43 |
+| F7 | ClamAV: wired by AZ-188 (API scan, compose forces `MALWARE_SCAN=clamd`). Open until the EICAR check passes on the real box (section 15) | devops, qa-engineer | High before go-live per row 43 |
 | F8 | No error tracking in the API (section 10 DECISION NEEDED) | LEAD | Decision |
 | F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16) | LEAD, frontend-developer (verify the policy in a browser) | Decision |
 
@@ -617,7 +639,7 @@ Found while building this pack; AZ does not change application code.
 
 ## 18. Not rehearsed here
 
-The build environment has **no Docker daemon, no k6, no ClamAV, no public network path** and may not touch any real server or the cloud demo. Rehearsed for real: compose rendering (`docker compose config -q`, with and without each profile),
+The build environment has **no Docker daemon, no k6, no ClamAV, no public network path** and may not touch any real server or the cloud demo. Rehearsed for real: compose rendering (`docker compose config -q`, with and without each profile; clamav has no profile now),
 the edge nginx config (`nginx -t` and a live behaviour test against stub upstreams), the backup, retention and restore-drill scripts against a local PostgreSQL 16.15 (through a stand-in for `docker exec`), the deploy dry run and its guards, the health probe, `shellcheck` on all scripts, and the k6 script logic against a stub API (with a stand-in `k6` module).
 
 **Not run, so unproven until the first real run:**
@@ -627,7 +649,7 @@ the edge nginx config (`nginx -t` and a live behaviour test against stub upstrea
 - `deploy.sh` and `rollback.sh` beyond `--dry-run` (builds, migrate, recreate, health checks through a real edge, the typed confirmation).
 - The restore drill with the real `docker compose exec` path and with the api stop/start (rehearsed with stand-ins), and the uploads archive through the api container (`tar` inside the read-only image, rehearsed locally only).
 - Off-site copy (`aws s3 cp`, `rsync`, `gpg`), healthchecks pings, webhook alerts, Uptime Kuma, the systemd timers' actual firing (units were syntax-checked with `systemd-analyze`), logrotate.
-- ClamAV container start, signature download, memory use, and any scan (the API does not call it yet).
+- ClamAV container start, signature download, memory use, and any real scan, including the EICAR check (rendered by `config` only; run on the first VPS rehearsal).
 - k6: the real `k6 run`, the thresholds against real numbers, and the sizing table.
 - The 30 Oct cutover itself, the half-AM migration slot (not built), and DNS.
 - The sizing assumptions A1-A10.

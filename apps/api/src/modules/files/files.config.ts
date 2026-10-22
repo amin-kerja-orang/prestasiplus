@@ -26,6 +26,11 @@ export class FilesConfig {
   readonly intakeMaxBytes: number
   readonly ratePerMinute: number
   readonly readsPerMinute: number
+  /** AZ-188: `clamd` scans every stored file; `off` (default) stores as before. */
+  readonly malwareScan: 'off' | 'clamd'
+  readonly clamavHost: string
+  readonly clamavPort: number
+  readonly clamavTimeoutMs: number
 
   constructor(@Inject(ConfigService) config: ConfigService<Env, true>) {
     // Required and absolute in production: loadEnv has already refused anything else at start-up.
@@ -35,5 +40,9 @@ export class FilesConfig {
     this.intakeMaxBytes = numberOr(config.get('INTAKE_MAX_FILE_MB', { infer: true }), 20) * MB
     this.ratePerMinute = numberOr(config.get('UPLOAD_RATE_PER_MINUTE', { infer: true }), 30)
     this.readsPerMinute = numberOr(config.get('FILE_READS_PER_MINUTE', { infer: true }), 120)
+    this.malwareScan = config.get('MALWARE_SCAN', { infer: true }) === 'clamd' ? 'clamd' : 'off'
+    this.clamavHost = config.get('CLAMAV_HOST', { infer: true }) ?? ''
+    this.clamavPort = numberOr(config.get('CLAMAV_PORT', { infer: true }), 3310)
+    this.clamavTimeoutMs = numberOr(config.get('CLAMAV_TIMEOUT_MS', { infer: true }), 30_000)
   }
 }

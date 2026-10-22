@@ -18,6 +18,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { FilesModule } from '../../src/modules/files'
+import { MALWARE_SCANNER, type MalwareScanner } from '../../src/modules/files/malware-scanner'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { type AuthTestApp, START } from '../auth/helpers'
 
@@ -34,6 +35,7 @@ export interface FilesTestApp extends AuthTestApp {
 export async function bootFilesApp(
   env: Record<string, string | undefined> = {},
   reuse?: { db: TestDatabase; dir: string },
+  scanner?: MalwareScanner,
 ): Promise<FilesTestApp> {
   // `reuse` boots a SECOND app on an existing database and storage folder (a restart); it drops neither on close.
   const db: TestDatabase = reuse?.db ?? (await createTestDatabase())
@@ -66,10 +68,12 @@ export async function bootFilesApp(
   }
 
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule])] })
+  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .compile()
+  // AZ-188: a stub scanner switches the scanning storage on without a clamd server.
+  if (scanner) builder = builder.overrideProvider(MALWARE_SCANNER).useValue(scanner)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()

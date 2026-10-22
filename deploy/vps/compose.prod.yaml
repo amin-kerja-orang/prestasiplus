@@ -16,7 +16,8 @@
 #   api       production env forced (see "forced" below), limits, graceful stop, rotated logs
 #   db        production Postgres settings from env, 60 s graceful stop, limits
 #   certbot   (profile `tls`)        run by deploy/vps/tls/*.sh, never long-running
-#   clamav    (profile `clamav`)     clamd for upload scanning, reserved until the API reads CLAMAV_* (backlog #78)
+#   clamav    NEW. clamd, ALWAYS part of production (no profile). The api is forced to MALWARE_SCAN=clamd and scans
+#             every stored file through it, failing closed (threat model row 43, backlog #78; runbook section 15)
 #   kuma      (profile `monitoring`) Uptime Kuma on 127.0.0.1 only
 #
 # Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db}.env (owner root, group ppdeploy, mode 640) hold them.
@@ -78,6 +79,22 @@ services:
       PUBLIC_BASE_URL: https://${PP_DOMAIN:?set PP_DOMAIN in prod.env}
       FILE_STORAGE_DIR: /var/lib/pretasiplus/files
       NODE_OPTIONS: --max-old-space-size=${PP_API_HEAP_MB:-1536}
+      # Upload malware scan: forced on, so no api.env can switch it off (switching it off needs a reviewed change
+      # of THIS file plus a recorded LEAD risk acceptance, runbook section 15). Fails closed: clamd down = uploads 422.
+      MALWARE_SCAN: clamd
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+    # `scan` reaches clamd; `default` keeps db, frontend and the edge reachable. Listing `networks:` removes the
+    # implicit `default`, so both must be named.
+    networks:
+      - default
+      - scan
+    # service_started, not service_healthy: clamd needs up to 5 minutes (start_period) to download and load the
+    # signatures on first start and deploy.sh must not wait for that. Until clamd is healthy every upload fails
+    # closed with the "try again later" 422; the rest of the API is unaffected.
+    depends_on:
+      clamav:
+        condition: service_started
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1']
       interval: 30s
@@ -243,11 +260,9 @@ services:
     logging: *logging
 
   # ---- ClamAV daemon for upload scanning (threat model row 43, backlog #78). ----
-  # The environment provides clamd on the internal network (clamav:3310). The API does NOT read it yet: the scan
-  # code is half AM's. Reserved env names for that card (do not add to api.env until it lands):
-  # CLAMAV_HOST=clamav, CLAMAV_PORT=3310.
+  # Always runs in production (no profile). The api streams every stored file to clamd at clamav:3310 (INSTREAM)
+  # and the values are forced in the api `environment:` above. deploy.sh starts it (without waiting for health).
   clamav:
-    profiles: ['clamav']
     image: ${PP_CLAMAV_IMAGE:-clamav/clamav:1.4}
     environment:
       CLAMD_CONF_ConcurrentDatabaseReload: 'no'   # a reload does not double the memory
@@ -313,8 +328,8 @@ volumes:
   kumadata:
 
 # frontend, api, db and the edge share `default`. kuma is on `monitor` and clamav on `scan` only, so a compromised
-# kuma/clamav container cannot reach api or db directly. Kuma probes the public name through the edge. When the
-# half-AM scan card lands, add `scan` to the api service's networks (and keep clamav off `default`).
+# kuma/clamav container cannot reach db or the edge directly. The api is on `default` AND `scan` (the only bridge to
+# clamd); clamav stays off `default`. Kuma probes the public name through the edge.
 networks:
   monitor:
   scan:
