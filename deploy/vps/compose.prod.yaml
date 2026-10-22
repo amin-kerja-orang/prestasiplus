@@ -147,6 +147,16 @@ services:
       - log_checkpoints=on
       - -c
       - log_temp_files=10MB
+      # PITR (MIG08-PREP, docs/ops/production-migration-slot.md section 4): every finished WAL segment is gzipped into
+      # /walarchive/wal (host PP_WAL_ARCHIVE_DIR, owner uid 70, mode 700). Changing archive_mode needs a db restart.
+      - -c
+      - archive_mode=${PP_PG_ARCHIVE_MODE:-off}
+      - -c
+      - archive_command=test ! -f /walarchive/wal/%f.gz && gzip -c %p > /walarchive/wal/%f.gz.tmp && mv /walarchive/wal/%f.gz.tmp /walarchive/wal/%f.gz
+      - -c
+      - archive_timeout=${PP_PG_ARCHIVE_TIMEOUT:-1800}
+    volumes:
+      - ${PP_WAL_ARCHIVE_DIR:-/var/backups/pretasiplus/wal}:/walarchive
     shm_size: ${PP_DB_SHM:-256m}
     restart: unless-stopped
     stop_grace_period: 60s

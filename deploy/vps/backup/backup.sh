@@ -84,8 +84,15 @@ pp_log "backup start: tag=$tag dir=$dir"
 
 # ---- 1. dump ----
 # Credentials come from the container environment; nothing secret is interpolated here.
+# Schemas left out of every routine dump (PP_BACKUP_EXCLUDE_SCHEMAS, default staging_cloud): the raw .cloud copy that
+# exists only during the migration slot must not spread into nightly, weekly and off-site copies (cutover plan
+# section 7). The named restore points of deploy/vps/migration/restore-point.sh keep it on purpose, locally only.
+excl="$(pp_cfg PP_BACKUP_EXCLUDE_SCHEMAS staging_cloud)"
+[[ "$excl" =~ ^([a-z_][a-z0-9_]*(,[a-z_][a-z0-9_]*)*)?$|^-$ ]] || pp_die "PP_BACKUP_EXCLUDE_SCHEMAS: comma-separated lowercase schema names, or - for none" 2
+[ "$excl" != - ] || excl=""
 # shellcheck disable=SC2016  # the variables must expand INSIDE the container
-pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner' \
+pp_db_exec sh -c 'set -f; IFS=,; x=""; for s in $1; do x="$x --exclude-schema=$s"; done; unset IFS
+  PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner $x' sh "$excl" \
   >"$partial"
 size="$(stat -c %s "$partial")"
 magic="$(head -c 5 "$partial" | tr -d '\0')"
@@ -100,7 +107,7 @@ toc="$(pp_db_exec pg_restore --list <"$partial" | grep -c ' TABLE DATA ' || true
 mv "$partial" "$final"
 sha="$(sha256sum "$final" | cut -d' ' -f1)"
 printf '%s  %s\n' "$sha" "$name" >"$final.sha256"
-pp_log "dump ok: $name  $size bytes  sha256 $sha  ($toc tables with data)"
+pp_log "dump ok: $name  $size bytes  sha256 $sha  ($toc tables with data; schemas left out: ${excl:-none})"
 
 # ---- 3. uploads ----
 produced=("$final" "$final.sha256")
