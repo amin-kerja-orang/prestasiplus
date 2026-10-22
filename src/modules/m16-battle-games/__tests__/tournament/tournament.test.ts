@@ -22,12 +22,18 @@ vi.mock('../../api', () => api)
 
 let wrapper: VueWrapper | undefined
 
-async function mountPage(component: Component, path: string, routePath: string, props = {}) {
+async function mountPage(
+  component: Component,
+  path: string,
+  routePath: string,
+  props = {},
+  catchAll: object = {},
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: routePath, component },
-      { path: '/:rest(.*)*', component: { template: '<i />' } },
+      { path: '/:rest(.*)*', component: { template: '<i />' }, ...catchAll },
     ],
   })
   await router.push(path)
@@ -112,6 +118,13 @@ describe('S23 TournamentListPage', () => {
     expect(w.get('[data-testid="tournament-empty"]').text()).toBe(
       'Tiada tournament aktif buat masa ini.',
     )
+  })
+
+  it('hides "Cipta Tournament Baru" while /tournament/admin/create is not routed (D9 dead link)', async () => {
+    loginAs('admin')
+    const w = await mountPage(TournamentListPage, '/tournament', '/tournament', {}, { name: 'core.not-found' })
+    expect(w.find('[data-testid="tournament-create"]').exists()).toBe(false)
+    expect(w.findAll('a').some((a) => a.attributes('href') === '/tournament/admin/create')).toBe(false)
   })
 
   it('shows "Cipta Tournament Baru" for the admin only', async () => {

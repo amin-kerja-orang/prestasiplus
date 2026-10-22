@@ -28,6 +28,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run --project unit",
+    "test:edge": "node --experimental-strip-types --test scripts/edge-worker.test.mjs",
     "test:perf": "vitest run --project perf",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

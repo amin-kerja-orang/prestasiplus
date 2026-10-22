@@ -13,6 +13,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
+      - 'scripts/**'
+      - '.github/security/**'
+      - '.trivyignore'
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
@@ -25,6 +28,12 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
+      - 'scripts/**'
+      - '.github/security/**'
+      - '.trivyignore'
+  # BE-33 (G4 minor 4): new advisories are caught weekly even when no PR touches the API (Monday 02:17 UTC).
+  schedule:
+    - cron: '17 2 * * 1'
 
 permissions:
   contents: read
@@ -119,9 +128,55 @@ jobs:
           fi
           exit "$code"
 
+  # BE-33 (AC6): production dependencies. Fails on any high or critical advisory that is not in the allow-list
+  # (.github/security/npm-audit-allowlist.json: id, package, reason, expires; an expired entry fails too).
+  deps-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: npm audit gate (production dependencies, high and critical)
+        run: |
+          # npm audit exits 1 when it finds anything; the gate decides, so ignore that status here.
+          npm audit --omit=dev --json > audit.json || true
+          node scripts/npm-audit-gate.mjs --file audit.json
+
+  # BE-33 (AC6): new or changed dependencies in a pull request (license-neutral; vulnerabilities only).
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/dependency-review-action@v4.7.3
+        with:
+          fail-on-severity: high
+
   docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    # Throw-away Postgres for the boot smoke below (CI-only credentials).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prestasiplus_smoke
+          POSTGRES_USER: pp
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pp -d prestasiplus_smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Validate compose file
@@ -133,6 +188,57 @@ jobs:
           uid="$(docker run --rm --entrypoint id pretasiplus-api:ci -u)"
           echo "uid=$uid"
           test "$uid" != "0"
+      # BE-33 (AC5): read-only root filesystem, /tmp as tmpfs, non-root user.
+      - name: Read-only run (node -v)
+        run: docker run --rm --read-only --tmpfs /tmp --user node pretasiplus-api:ci node -v
+      # BE-33 (AC5): migrate (build stage, as the compose migrate job does), then boot the runtime image read-only
+      # against the service Postgres. Proves: the process starts as node with a read-only rootfs and only /tmp and
+      # FILE_STORAGE_DIR writable, /api/health answers (liveness), /api/ready answers 200 (database up, migrations
+      # applied), and SIGTERM ends the process with exit code 0. It does not prove a slow in-flight request finishes
+      # (that is apps/api/test/security/shutdown.spec.ts).
+      - name: Migrate (build stage image, read-only)
+        run: |
+          docker build -f docker/api/Dockerfile --target build -t pretasiplus-api-migrate:ci .
+          docker run --rm --read-only --tmpfs /tmp --user node --network host \
+            -e NODE_ENV=production -e HOME=/tmp -e npm_config_cache=/tmp/.npm -e npm_config_update_notifier=false \
+            -e DATABASE_URL=postgresql://pp:ci-throwaway-not-a-secret@127.0.0.1:5432/prestasiplus_smoke \
+            -w /app pretasiplus-api-migrate:ci npm run be:db:migrate
+      - name: Boot smoke (read-only, tmpfs, SIGTERM)
+        run: |
+          set -u
+          docker run -d --name api-smoke --read-only --tmpfs /tmp --tmpfs /var/lib/pretasiplus/files:uid=1000,gid=1000,mode=0700 \
+            --user node --cap-drop ALL --security-opt no-new-privileges:true --network host \
+            -e NODE_ENV=production -e PORT=3000 \
+            -e DATABASE_URL=postgresql://pp:ci-throwaway-not-a-secret@127.0.0.1:5432/prestasiplus_smoke \
+            -e "SESSION_SECRET=$(head -c 24 /dev/urandom | base64)" \
+            -e "IC_HASH_KEY=$(head -c 36 /dev/urandom | base64)" \
+            pretasiplus-api:ci
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health > /dev/null; then ok=1; break; fi
+            sleep 1
+          done
+          if [ "$ok" -ne 1 ]; then echo "health never answered"; docker logs api-smoke; exit 1; fi
+          curl -fsS http://127.0.0.1:3000/api/ready
+          echo
+          docker stop --time 30 api-smoke
+          code="$(docker inspect -f '{{.State.ExitCode}}' api-smoke)"
+          echo "exit code after SIGTERM: $code"
+          docker logs api-smoke | tail -n 20
+          docker rm -f api-smoke > /dev/null
+          test "$code" = "0"
+      # BE-33 (AC6): image scan. HIGH and CRITICAL with a fix available fail the job. Exceptions: .trivyignore
+      # (one id per line with a reason comment and `exp:YYYY-MM-DD`; Trivy ignores an expired line, so it fails again).
+      # NOTE: pinned by version tag; replace by the full commit SHA of that tag when the action is next reviewed.
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: pretasiplus-api:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          trivyignores: .trivyignore
 
   secret-scan:
     runs-on: ubuntu-latest

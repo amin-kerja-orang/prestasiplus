@@ -59,7 +59,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   }
   if (row.stimulusId !== null) candidate.stimulusId = idToString(row.stimulusId)
   if (row.reveal === 'never') candidate.reveal = 'never'
-  if (row.mode === 'mcq') {
+  if (row.mode === 'mcq' || row.mode === 'pksk_choice') {
     candidate.options = options.map((o) => ({
       label: o.label,
       body: rich(o.bodyMs, o.bodyEn),
@@ -136,7 +136,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       stimulusId: part.stimulusId === undefined ? null : idFromString(part.stimulusId),
       reveal: part.reveal ?? 'after_submit',
       options:
-        part.mode === 'mcq'
+        part.mode === 'mcq' || part.mode === 'pksk_choice'
           ? part.options.map((o, j) => ({
               label: o.label,
               bodyMs: o.body.ms,
@@ -162,7 +162,7 @@ export function referencedIds(parts: readonly QuestionPart[]): { imageIds: strin
         continue
       }
       if (part.stimulusId !== undefined) stimulusIds.push(part.stimulusId)
-      if (part.mode === 'mcq') for (const o of part.options) if (o.imageId != null) imageIds.push(o.imageId)
+      if (part.mode === 'mcq' || part.mode === 'pksk_choice') for (const o of part.options) if (o.imageId != null) imageIds.push(o.imageId)
     }
   }
   walk(parts)
@@ -180,6 +180,7 @@ export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' |
   if (parts.length !== 1 || only === undefined || !isLeaf(only)) return 'structured'
   switch (only.mode) {
     case 'mcq':
+    case 'pksk_choice':
       return 'mcq'
     case 'match_letter':
       return 'match'

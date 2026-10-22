@@ -1,0 +1,131 @@
+// SPM hub tables (BE-41, owner module M06). Conventions: docs/architecture/v2-backend-plan.md section 14.2,
+// data model 3.13 (the mock stores `m06.trackingSets` and `m06.mockExams`, promoted to B1 by D53).
+// Not expressible in Prisma and written by hand in migration 0025_spm_hub: identity columns (GENERATED ALWAYS),
+// CHECK constraints (enums are text + check), the foreign keys to tables owned by other modules
+// (subjects, users, questions).
+//
+// Foreign keys to subjects, users and questions exist in the database but are NOT declared as Prisma relations
+// here: a relation needs a back-relation field in the other owner's schema file, which this card must not edit.
+// The repository reads those tables only through the owners' services (ADR-0014), never with `include`.
+//
+// None of these tables is migratable: .cloud has no source for them (v2-data-migration 4.5), so no `legacy_*`
+// columns and nothing in migratable-models.json.
+
+/// The 19 SPM subjects with their group, list positions and Latih Tubi target (reference data, mock `SPM_SUBJECTS`).
+model SpmSubjectConfig {
+  id           BigInt   @id @default(autoincrement())
+  subjectId    BigInt   @map("subject_id")
+  /// teras, elektif (check).
+  grp          String
+  displayOrder Int      @map("display_order")
+  /// Position on the Tahun Lepas list; null = not listed.
+  databankOrder Int?    @map("databank_order")
+  /// spm, custom, latihan (check); null together with `target_size`.
+  targetType   String?  @map("target_type")
+  targetSize   Int?     @map("target_size")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([subjectId], map: "uq_spm_subject_configs_subject_id")
+  @@map("spm_subject_configs")
+}
+
+/// One Tracking A set (subject, year, set number). Status, ready count and bank size are computed on read (G-15).
+model SpmTrackingSet {
+  id         BigInt   @id @default(autoincrement())
+  subjectId  BigInt   @map("subject_id")
+  year       Int
+  setNo      Int      @map("set_no")
+  dskpTagged Int      @default(0) @map("dskp_tagged")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questions SpmTrackingSetQuestion[]
+
+  @@unique([subjectId, year, setNo], map: "uq_spm_tracking_sets_subject_id_year_set_no")
+  @@index([subjectId, year], map: "ix_spm_tracking_sets_subject_id_year")
+  @@map("spm_tracking_sets")
+}
+
+/// The questions of a set in set order (`position` from 1).
+model SpmTrackingSetQuestion {
+  setId      BigInt @map("set_id")
+  questionId BigInt @map("question_id")
+  position   Int
+
+  set SpmTrackingSet @relation(fields: [setId], references: [id], onDelete: Cascade, map: "fk_spm_tracking_set_questions_set_id")
+
+  @@id([setId, position])
+  @@unique([setId, questionId], map: "uq_spm_tracking_set_questions_set_id_question_id")
+  @@index([questionId], map: "ix_spm_tracking_set_questions_question_id")
+  @@map("spm_tracking_set_questions")
+}
+
+/// A mock exam ("Jana Mock SPM"). Not `exam_attempts` (BE-16). `is_test` is stamped from Mod Pelajar (G-07).
+model SpmMockExam {
+  /// uuid, also the id on the wire (SEC-M06-08: no enumeration).
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       BigInt    @map("user_id")
+  subjectId    BigInt    @map("subject_id")
+  /// The S11 option text, snapshot.
+  subjectLabel String    @map("subject_label")
+  paperNumber  Int       @map("paper_number") @db.SmallInt
+  /// in_progress, submitted (check).
+  status       String    @default("in_progress")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  submittedAt  DateTime? @map("submitted_at") @db.Timestamptz(6)
+  score        Int?
+  maxScore     Int       @map("max_score")
+  percent      Decimal?  @db.Decimal(5, 2)
+  /// A+, A, B+, B, C, D, E, G (check).
+  grade        String?
+  isTest       Boolean   @default(false) @map("is_test")
+
+  items SpmMockExamItem[]
+
+  @@index([userId, createdAt(sort: Desc)], map: "ix_spm_mock_exams_user_id_created_at")
+  @@map("spm_mock_exams")
+}
+
+/// A snapshot of the question as served, so a later edit of the bank cannot change a sat mock (G-18).
+model SpmMockExamItem {
+  id            BigInt   @id @default(autoincrement())
+  mockExamId    String   @map("mock_exam_id") @db.Uuid
+  itemNo        Int      @map("item_no")
+  /// FK questions.id, ON DELETE SET NULL (the snapshot survives).
+  questionId    BigInt?  @map("question_id")
+  questionText  String   @map("question_text")
+  /// Paper 1 only (empty for Paper 2; the card says `text[] null`, Prisma lists cannot be null).
+  options       String[]
+  modelAnswer   String   @map("model_answer")
+  studentAnswer String?  @map("student_answer")
+  marks         Int?
+  maxMarks      Int      @map("max_marks")
+  feedback      String?
+  topic         String
+
+  mockExam SpmMockExam @relation(fields: [mockExamId], references: [id], onDelete: Cascade, map: "fk_spm_mock_exam_items_mock_exam_id")
+
+  @@unique([mockExamId, itemNo], map: "uq_spm_mock_exam_items_mock_exam_id_item_no")
+  @@map("spm_mock_exam_items")
+}
+
+/// Duta (ambassador) cards. PROVISIONAL owner: M24 is not built; it takes the table over. Seeds are fictitious.
+model DutaProfile {
+  id        BigInt   @id @default(autoincrement())
+  slug      String
+  name      String
+  initials  String
+  /// bintang, inspirasi, tetamu (check).
+  tier      String
+  tagline   String
+  subject   String
+  state     String
+  rating    Decimal  @db.Decimal(3, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([slug], map: "uq_duta_profiles_slug")
+  @@map("duta_profiles")
+}

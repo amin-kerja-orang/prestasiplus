@@ -96,6 +96,18 @@ export function fallBaseSeconds(level: number): number {
   return Math.max(5, 15 - (level - 1) * 0.7)
 }
 
+/**
+ * A number for the tile hashes below: the id itself in mock mode; in http mode ids are opaque strings, so a
+ * decimal string becomes its number (the same tiles as the mock for the same id) and any other string a hash.
+ */
+export function numericId(id: number | string): number {
+  if (typeof id === 'number') return id
+  if (/^\d{1,15}$/.test(id)) return Number(id)
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) >>> 0
+  return h
+}
+
 /** Deterministic 0-1 jitter of a tile (the live page uses `Math.random()`; the rebuild is reproducible). */
 export function tileJitter(questionId: number, optionIndex: number): number {
   const h = Math.imul(questionId + 1, 2654435761) ^ Math.imul(optionIndex + 7, 40503)

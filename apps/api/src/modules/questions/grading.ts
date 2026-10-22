@@ -36,6 +36,11 @@ export function gradeMcq(key: KeyOf<'mcq'>, label: string, marks: number): Grade
   return verdict(label.trim().toUpperCase() === key.correct, marks)
 }
 
+/** BE-42: the chosen label must be one of the labels flagged correct (several or none may be). */
+export function gradePkskChoice(key: KeyOf<'pksk_choice'>, label: string, marks: number): GradeResult {
+  return verdict(key.correct.includes(label.trim().toUpperCase()), marks)
+}
+
 export function gradeShortText(key: KeyOf<'short_text'>, text: string, marks: number): GradeResult {
   const cs = key.caseSensitive === true
   const accepted = key.values.map((v) => fold(v, cs))
@@ -90,6 +95,10 @@ export function gradeLeaf(leaf: QuestionLeaf, answer: PartAnswerValue): GradeRes
   switch (leaf.mode) {
     case 'mcq':
       return answer.kind === 'option' ? gradeMcq(leaf.key, answer.label, m) : verdict(false, m)
+    case 'pksk_choice':
+      // No options: an essay, marked by the simulated marker outside this function.
+      if (leaf.options.length === 0) return { kind: 'needs_review', maxMarks: m }
+      return answer.kind === 'option' ? gradePkskChoice(leaf.key, answer.label, m) : verdict(false, m)
     case 'short_text':
       return answer.kind === 'text' ? gradeShortText(leaf.key, answer.text, m) : verdict(false, m)
     case 'numeric':

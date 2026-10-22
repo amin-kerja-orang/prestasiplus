@@ -9,6 +9,8 @@ import type { QuestionActor } from '../types'
 export interface HttpActor extends QuestionActor {
   /** Active role code of the session (`admin` or `teacher` on these routes). */
   roleCode: string
+  /** Scope level of the active role (audit `scope_level`). */
+  scopeLevel?: string
   requestId: string | null
   ip: string | null
   isTest: boolean
@@ -20,6 +22,7 @@ export function actorOf(req: Request & RequestWithAuth): HttpActor {
     userId: scope.userId,
     role: scope.role === 'admin' ? 'admin' : 'teacher',
     roleCode: scope.role,
+    scopeLevel: scope.scope.level,
     requestId: requestIdOf(req) ?? null,
     ip: req.ip ?? req.socket.remoteAddress ?? null,
     isTest: scope.isTest,

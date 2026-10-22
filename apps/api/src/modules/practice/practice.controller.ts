@@ -29,15 +29,30 @@ function callerOf(req: Req): Caller {
 
 /**
  * Parses a body with a contract schema; a failure is 422 `VALIDATION_ERROR` with the module's BM message
- * on the message and on every offending field (first issue per path).
+ * on the message and on every offending field (first issue per path). An unknown key of a strict schema
+ * is named in `fields` itself (BE-NFR-05), never bound and never ignored.
  */
 function parseBody<S extends z.ZodType>(schema: S, value: unknown, message: string): z.output<S> {
   const result = schema.safeParse(value ?? {})
   if (result.success) return result.data
-  const fields: Record<string, string> = {}
-  for (const issue of result.error.issues) fields[issue.path.length ? issue.path.map(String).join('.') : '_'] ??= message
+  // Null prototype: an unknown key such as `__proto__` or `constructor` is reported like any other key.
+  const fields: Record<string, string> = Object.create(null) as Record<string, string>
+  for (const issue of result.error.issues) {
+    if (issue.code === 'unrecognized_keys') {
+      for (const key of issue.keys) fields[[...issue.path.map(String), key].join('.')] ??= message
+      continue
+    }
+    fields[issue.path.length ? issue.path.map(String).join('.') : '_'] ??= message
+  }
   throw ApiError.of('VALIDATION_ERROR', { message, fields })
 }
+
+/**
+ * The start body in STRICT mode (BE-33 AC1c, #100): an unknown field (e.g. `ownerId`) is a 422, not silently
+ * dropped. Local until the contract schema itself is `.strict()` (LEAD-owned `packages/contract`); then this
+ * becomes a plain alias.
+ */
+const StrictStartSessionRequestSchema = StartSessionRequestSchema.strict()
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
@@ -55,7 +70,7 @@ export class PracticeController {
   @Post()
   @RateLimit(PRACTICE_LIMITS.write)
   async start(@Body() body: unknown, @Req() req: Req) {
-    return ok(await this.practice.start(callerOf(req), parseBody(StartSessionRequestSchema, body, PRACTICE_MESSAGES.invalidValue)))
+    return ok(await this.practice.start(callerOf(req), parseBody(StrictStartSessionRequestSchema, body, PRACTICE_MESSAGES.invalidValue)))
   }
 
   @Post(':id/check-answer')
