@@ -6,10 +6,10 @@
 export interface CcPaths {
   /** The S2 board of the same scope ("Command Center", "← Kembali ke Overview"). */
   overview: string
-  school: (schoolId: number) => string
-  teacher: (schoolId: number, userId: number) => string
-  classroom: (classroomId: number) => string
-  student: (userId: number) => string
+  school: (schoolId: number | string) => string
+  teacher: (schoolId: number | string, userId: number | string) => string
+  classroom: (classroomId: number | string) => string
+  student: (userId: number | string) => string
 }
 
 export function ccPaths(basePath: string): CcPaths {

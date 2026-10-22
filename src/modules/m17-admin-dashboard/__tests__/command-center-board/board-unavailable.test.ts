@@ -30,6 +30,15 @@ async function mountBoard(): Promise<VueWrapper> {
   return wrapper
 }
 
+const LIVE = {
+  generatedAt: '2026-10-21T00:00:00Z', scope: 'platform', school: null, totalSchools: 1, totalStudents: 1,
+  activeStudents: 1, totalAnswered: 1, answeredToday: 1, answeredWeek: 1, answeredLastWeek: 1, weekChange: 0,
+  accuracy: 50, topSchools: [], topStudents: [], gpsOverall: 0,
+  kirk: { t1: { value: 0, scale: 5, count: 0 }, t2Accuracy: 0, t3Active: 0, t4Gps: 0 },
+  engagement: { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 }, dailyTrend: [],
+  mood: { happy: 0, okay: 0, sad: 0, stressed: 0 }, recentFeed: [],
+  correction: { total: 0, avgImprovement: 0, improvedCount: 0, topImprovers: [] },
+}
 const err = (status: number) => new ApiError({ status, code: 'X', message: 'x' })
 
 beforeEach(() => {
@@ -51,6 +60,15 @@ describe('S2 live-data unavailable (http mode)', () => {
     )
     await vi.advanceTimersByTimeAsync(60_000)
     expect(api.fetchCcLiveData).toHaveBeenCalledTimes(1)
+    w.unmount()
+  })
+
+  it('keeps polling with no banner while live-data answers 200 (BE-22)', async () => {
+    api.fetchCcLiveData.mockResolvedValue(LIVE)
+    const w = await mountBoard()
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(api.fetchCcLiveData).toHaveBeenCalledTimes(3)
+    expect(w.find('[data-testid="cc-unavailable"]').exists()).toBe(false)
     w.unmount()
   })
 

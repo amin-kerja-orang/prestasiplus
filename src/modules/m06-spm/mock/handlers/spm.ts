@@ -230,7 +230,7 @@ function trackingHub(req: MockRequest): TrackingAHub {
         (a, c) =>
           a +
           spmRepo
-            .setsOf(c.subjectId)
+            .setsOf(c.subjectId as number) // mock ids are numbers
             .filter((s) => isStartable(s.status))
             .reduce((n, s) => n + (s.bankSource ?? s.readyCount), 0),
         0,
