@@ -31,7 +31,7 @@ Set `SEED_DEMO_PASSWORD_HASH` BEFORE the first seed (an account that already has
 
 ```bash
 npm run be:db:migrate        # prisma migrate deploy; safe to re-run
-if [ -z "$SEED_DEMO_PASSWORD_HASH" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set: the seed would use the published dev password'; else
+if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
   ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
 ```
 
@@ -68,7 +68,7 @@ Never widen the predicate: no account outside these patterns may be touched.
 Then re-run the seed (same env as Path A):
 
 ```bash
-if [ -z "$SEED_DEMO_PASSWORD_HASH" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set: the seed would use the published dev password'; else
+if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
   ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
 ```
 
