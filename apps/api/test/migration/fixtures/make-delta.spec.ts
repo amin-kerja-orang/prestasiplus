@@ -17,6 +17,11 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }))
 const run = (src: string, dst: string, ...extra: string[]) => spawnSync(process.execPath, [SCRIPT, src, dst, ...extra], { encoding: 'utf8' })
 const ndjson = (dir: string, t: string) => readFileSync(join(dir, `${t}.ndjson`), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>)
 const manifestOf = (dir: string) => JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as { tables: Record<string, { rows: number; file: string }> }
+const rowsOf = (m: ReturnType<typeof manifestOf>, table: string): number => {
+  const entry = m.tables[table]
+  if (!entry) throw new Error(`manifest has no table ${table}`)
+  return entry.rows
+}
 
 describe('mig07-make-delta.mjs', () => {
   it('writes a fresh SHA256SUMS (sha256sum format, sorted, every file but itself), mode 0700 dir and 0600 files', () => {
@@ -41,11 +46,11 @@ describe('mig07-make-delta.mjs', () => {
     const m = manifestOf(dst)
     const before = manifestOf(TINY_DIR)
     for (const [t, e] of Object.entries(m.tables)) if (existsSync(join(dst, `${t}.ndjson`))) expect(ndjson(dst, t).length, t).toBe(e.rows) // a table with no file keeps the source's entry
-    expect(m.tables.users.rows).toBe(before.tables.users.rows + 100) // +100 added, none of the ids 17000-17049 exists in tiny
-    expect(m.tables.schools.rows).toBe(before.tables.schools.rows + 5)
-    expect(m.tables.practice_sessions.rows).toBe(before.tables.practice_sessions.rows + 500)
-    expect(m.tables.coin_transactions.rows).toBe(before.tables.coin_transactions.rows + 300)
-    expect(m.tables.questions.rows).toBe(before.tables.questions.rows) // untouched
+    expect(rowsOf(m, 'users')).toBe(rowsOf(before, 'users') + 100) // +100 added, none of the ids 17000-17049 exists in tiny
+    expect(rowsOf(m, 'schools')).toBe(rowsOf(before, 'schools') + 5)
+    expect(rowsOf(m, 'practice_sessions')).toBe(rowsOf(before, 'practice_sessions') + 500)
+    expect(rowsOf(m, 'coin_transactions')).toBe(rowsOf(before, 'coin_transactions') + 300)
+    expect(rowsOf(m, 'questions')).toBe(rowsOf(before, 'questions')) // untouched
     // Not the source's checksum file (the delta changes data, so the hashes of the changed tables differ).
     expect(readFileSync(join(dst, 'SHA256SUMS'), 'utf8')).not.toBe(readFileSync(join(TINY_DIR, 'SHA256SUMS'), 'utf8'))
     if (process.platform !== 'win32') {
@@ -101,11 +106,11 @@ describe('mig07-make-delta.mjs', () => {
     expect(users.some((u) => u.role === 'admin')).toBe(true)
     expect(gone.every((u) => u.role !== 'admin')).toBe(true)
     const m = manifestOf(dst)
-    expect(m.tables.users.rows).toBe(users.length)
-    expect(m.tables.coin_transactions.rows).toBe(ndjson(base, 'coin_transactions').length - 5)
+    expect(rowsOf(m, 'users')).toBe(users.length)
+    expect(rowsOf(m, 'coin_transactions')).toBe(ndjson(base, 'coin_transactions').length - 5)
     const summary = JSON.parse(r.stdout) as Record<string, { extraDeleted?: number; after: number }>
-    expect(summary.users.extraDeleted).toBe(40)
-    expect(summary.users.after).toBe(users.length)
+    expect(summary.users?.extraDeleted).toBe(40)
+    expect(summary.users?.after).toBe(users.length)
     // SHA256SUMS is written after the deletion, so it matches the files.
     for (const l of readFileSync(join(dst, 'SHA256SUMS'), 'utf8').split('\n').filter(Boolean)) {
       const [hash, name] = l.split('  ') as [string, string]
