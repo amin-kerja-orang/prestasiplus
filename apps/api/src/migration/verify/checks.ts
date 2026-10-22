@@ -18,6 +18,7 @@ import { quoteIdent } from '../kit/sql'
 import type { LegacySource } from '../kit/types'
 import { ROLE_MAP } from '../transform/enums'
 import { buildGeo } from '../transform/reference'
+import { survivorSql } from './deleted'
 import { existingLegacyTables, loadForeignKeys, readMigratableList, type ForeignKey } from './fk-graph'
 import type { EntityCheck, StatCheck } from './types'
 
@@ -82,11 +83,13 @@ async function usersPerRolePerSchool({ pool, source }: CheckContext): Promise<St
      GROUP BY 1, 2`,
     [source],
   )
+  // Users whose source row was deleted after the load are still in v2 (the delta never deletes): leave them out here.
+  const alive = await survivorSql(pool, 'users', 'x')
   const loaded = await pool.query<{ role: string; school: string | null; n: number }>(
     `SELECT r.role, s.legacy_id AS school, count(*)::int AS n
      FROM users x JOIN user_roles r ON r.user_id = x.id
      LEFT JOIN schools s ON s.id = x.school_id AND s.legacy_source = $1
-     WHERE x.legacy_source = $1 GROUP BY 1, 2`,
+     WHERE x.legacy_source = $1${alive} GROUP BY 1, 2`,
     [source],
   )
   // A staged role word is printed only through the allow-list of mapped roles; anything else is `unmapped(other)`.
@@ -126,8 +129,9 @@ async function answersPerSubject({ pool, source }: CheckContext): Promise<StatCh
      WHERE pa.legacy_source = $1 GROUP BY 1`,
     [source],
   )
+  const alive = await survivorSql(pool, 'practice_answers', 'pa')
   const loaded = await pool.query<{ k: string | null; n: number }>(
-    `SELECT subject_id::text AS k, count(*)::int AS n FROM practice_answers WHERE legacy_source = $1 GROUP BY 1`,
+    `SELECT pa.subject_id::text AS k, count(*)::int AS n FROM practice_answers pa WHERE pa.legacy_source = $1${alive} GROUP BY 1`,
     [source],
   )
   const expected = countMap(staged.rows.map((r) => ({ k: `subject ${r.k ?? 'none'}`, n: r.n })))
@@ -180,7 +184,11 @@ async function ledger({ pool, source }: CheckContext): Promise<StatCheck[]> {
        WHERE EXISTS (SELECT 1 FROM coin_ledger l WHERE l.legacy_source = $1 AND l.legacy_id = t.id::text)`,
       [source],
     )
-    const loaded = await pool.query<{ s: string }>(`SELECT coalesce(sum(amount), 0)::text AS s FROM coin_ledger WHERE legacy_source = $1`, [source])
+    const alive = await survivorSql(pool, 'coin_ledger', 'l')
+    const loaded = await pool.query<{ s: string }>(
+      `SELECT coalesce(sum(l.amount), 0)::text AS s FROM coin_ledger l WHERE l.legacy_source = $1${alive}`,
+      [source],
+    )
     const expected = staged.rows[0]?.s ?? '0'
     const actual = loaded.rows[0]?.s ?? '0'
     out.push({
@@ -197,12 +205,14 @@ async function ledger({ pool, source }: CheckContext): Promise<StatCheck[]> {
 // ---------------------------------------------------------------- (d) correct answers
 
 async function correctAnswers({ pool, source }: CheckContext): Promise<StatCheck[]> {
+  const aliveSessions = await survivorSql(pool, 'practice_sessions', 'ps')
+  const aliveAnswers = await survivorSql(pool, 'practice_answers', 'pa')
   const sessions = await pool.query<{ s: string }>(
-    `SELECT coalesce(sum(correct_count), 0)::text AS s FROM practice_sessions WHERE legacy_source = $1`,
+    `SELECT coalesce(sum(ps.correct_count), 0)::text AS s FROM practice_sessions ps WHERE ps.legacy_source = $1${aliveSessions}`,
     [source],
   )
   const answers = await pool.query<{ n: string }>(
-    `SELECT count(*)::text AS n FROM practice_answers WHERE legacy_source = $1 AND is_correct`,
+    `SELECT count(*)::text AS n FROM practice_answers pa WHERE pa.legacy_source = $1 AND pa.is_correct${aliveAnswers}`,
     [source],
   )
   return [
@@ -304,20 +314,24 @@ async function orphans({ pool, source }: CheckContext): Promise<StatCheck[]> {
 
 async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[]> {
   const n = async (sql: string): Promise<number> => (await pool.query<{ n: number }>(sql, [source])).rows[0]?.n ?? 0
-  const users = await n(`SELECT count(*)::int AS n FROM users WHERE legacy_source = $1`)
-  const roles = await n(`SELECT count(*)::int AS n FROM user_roles WHERE legacy_source = $1`)
-  const scopes = await n(`SELECT count(*)::int AS n FROM user_scopes WHERE legacy_source = $1`)
-  const teachers = await n(`SELECT count(*)::int AS n FROM teacher_profiles WHERE legacy_source = $1`)
+  // Children of a parent whose source row was deleted stay in v2 with it (the delta never deletes): both sides of every
+  // comparison below leave them out. A role, scope or profile has the legacy id of its user, a result that of its attempt.
+  const user = (alias: string): Promise<string> => survivorSql(pool, 'users', alias)
+  const users = await n(`SELECT count(*)::int AS n FROM users u WHERE u.legacy_source = $1${await user('u')}`)
+  const roles = await n(`SELECT count(*)::int AS n FROM user_roles u WHERE u.legacy_source = $1${await user('u')}`)
+  const scopes = await n(`SELECT count(*)::int AS n FROM user_scopes u WHERE u.legacy_source = $1${await user('u')}`)
+  const teachers = await n(`SELECT count(*)::int AS n FROM teacher_profiles u WHERE u.legacy_source = $1${await user('u')}`)
   const results = await n(
-    `SELECT count(*)::int AS n FROM attempt_results r JOIN exam_attempts a ON a.id = r.attempt_id WHERE a.legacy_source = $1`,
+    `SELECT count(*)::int AS n FROM attempt_results r JOIN exam_attempts a ON a.id = r.attempt_id
+     WHERE a.legacy_source = $1${await survivorSql(pool, 'exam_attempts', 'a')}`,
   )
-  const attempts = await n(`SELECT count(*)::int AS n FROM exam_attempts WHERE legacy_source = $1`)
+  const attempts = await n(`SELECT count(*)::int AS n FROM exam_attempts a WHERE a.legacy_source = $1${await survivorSql(pool, 'exam_attempts', 'a')}`)
 
   // Exact rules of the transform: a national scope for every admin, a district scope for a ppd_officer whose school has a
   // state and a district (`transformUser`). The inputs are the loaded rows themselves, so deleting scope rows is caught.
   const scopeRule = await n(
     `SELECT count(*)::int AS n FROM users x JOIN user_roles r ON r.user_id = x.id LEFT JOIN schools s ON s.id = x.school_id
-     WHERE x.legacy_source = $1 AND (r.role = 'admin' OR (r.role = 'ppd_officer' AND s.state IS NOT NULL AND s.district IS NOT NULL))`,
+     WHERE x.legacy_source = $1${await user('x')} AND (r.role = 'admin' OR (r.role = 'ppd_officer' AND s.state IS NOT NULL AND s.district IS NOT NULL))`,
   )
   const out: StatCheck[] = [
     {
