@@ -1,0 +1,114 @@
+# Demo rollback (run sheet #170 step 11 / #112 section 6). LEAD exception, 22 Oct 2026. Setup: docs/ops/deploy-demo-workflow.md.
+# Pages rollback to the previous deployment, Render deploy of a given commit, then (optional) the DB restore from the
+# encrypted dump of a deploy-demo run, with the lockdown re-checked. Each run waits for the LEAD's approval on `demo`.
+name: rollback-demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      render_sha:
+        description: 'Render commit to deploy (full 40-hex); default adcaad0c = the pre-22-Oct demo'
+        required: true
+        type: string
+        default: adcaad0ce444bab734d43a3939e511fd7d8493fb
+      render_branch:
+        description: 'Render branch that holds render_sha'
+        required: true
+        type: string
+        default: be/demo-deploy-2
+      pages_deployment_id:
+        description: 'Pages deployment id to roll back to (empty = the production deployment before the current one)'
+        required: false
+        type: string
+        default: ''
+      restore_db:
+        description: 'Restore the database from the encrypted dump (only together with the API rollback)'
+        required: true
+        type: boolean
+        default: true
+      backup_run_id:
+        description: 'Run id of the deploy-demo run whose demo-db-backup-<run id> artifact to restore (needed when restore_db)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read   # download the backup artifact of an earlier deploy-demo run
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: demo
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check inputs
+        env:
+          RESTORE_DB: ${{ inputs.restore_db }}
+          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+        run: |
+          if [ "$RESTORE_DB" = true ] && ! [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "NO-GO: inputs: restore_db needs backup_run_id (the numeric run id of the deploy-demo run)"; exit 1
+          fi
+      - name: Postgres 17 client
+        if: inputs.restore_db
+        run: |
+          set -euo pipefail
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Download the encrypted backup
+        if: inputs.restore_db
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: demo-db-backup-${{ inputs.backup_run_id }}
+          run-id: ${{ inputs.backup_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/backup
+      - name: Locate the dump and the CA certificate
+        id: prep
+        env:
+          SUPABASE_CA_CERT: ${{ vars.SUPABASE_CA_CERT }}
+          RESTORE_DB: ${{ inputs.restore_db }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [ -n "$SUPABASE_CA_CERT" ] || { echo "NO-GO: setup: variable SUPABASE_CA_CERT is not set on environment demo"; exit 1; }
+          printf '%s\n' "$SUPABASE_CA_CERT" > "$RUNNER_TEMP/supabase-ca.crt"
+          if [ "$RESTORE_DB" = true ]; then
+            mapfile -t f < <(find "$RUNNER_TEMP/backup" -type f -name '*.dump.gpg')
+            [ "${#f[@]}" = 1 ] || { echo "NO-GO: inputs: expected exactly one *.dump.gpg in the artifact, found ${#f[@]}"; exit 1; }
+            echo "dump=${f[0]}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Roll back (scripts/deploy-demo.sh rollback)
+        env:
+          ROLLBACK_RENDER_SHA: ${{ inputs.render_sha }}
+          ROLLBACK_RENDER_BRANCH: ${{ inputs.render_branch }}
+          ROLLBACK_PAGES_DEPLOYMENT_ID: ${{ inputs.pages_deployment_id }}
+          RESTORE_DB: ${{ inputs.restore_db && '1' || '0' }}
+          ROLLBACK_DUMP_GPG: ${{ steps.prep.outputs.dump }}
+          PP_WORK_DIR: ${{ runner.temp }}/rollback-demo
+          SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt
+          DEMO_REF: ${{ vars.DEMO_REF }}
+          PGURL: ${{ secrets.SUPABASE_POOLER_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          BACKUP_GPG_PRIVATE_KEY: ${{ secrets.BACKUP_GPG_PRIVATE_KEY }}
+          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_URL: ${{ vars.RENDER_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+        run: bash scripts/deploy-demo.sh rollback

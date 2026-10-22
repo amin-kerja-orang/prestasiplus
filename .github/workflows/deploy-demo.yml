@@ -1,0 +1,100 @@
+# Demo deploy (run sheet #170 end to end). LEAD exception, 22 Oct 2026. Setup and usage: docs/ops/deploy-demo-workflow.md.
+# Thin wrapper: every check lives in scripts/deploy-demo.sh. Each run waits for the LEAD's approval on environment `demo`,
+# and every secret is read from that environment only.
+name: deploy-demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_sha:
+        description: 'BACKEND_SHA: full 40-hex commit on feature/v2-backend (Render, migrations, seed, scripts)'
+        required: true
+        type: string
+      frontend_sha:
+        description: 'FRONTEND_SHA: full 40-hex commit on be/integration-frontend (Pages SPA)'
+        required: true
+        type: string
+      mode:
+        description: 'reset = Path A (drop public, migrate, seed); redeploy = no DB reset (pending migrations only)'
+        required: true
+        type: choice
+        options: [reset, redeploy]
+        default: reset
+      keep_edge_secret:
+        description: 'Keep the current EDGE_PROXY_SECRET (default: a fresh random value on Pages and Render)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy (${{ inputs.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: demo
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Postgres 17 client (run sheet step 2)
+        run: |
+          set -euo pipefail
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Supabase CA certificate
+        env:
+          SUPABASE_CA_CERT: ${{ vars.SUPABASE_CA_CERT }}
+        run: |
+          set -euo pipefail
+          [ -n "$SUPABASE_CA_CERT" ] || { echo "NO-GO: setup: variable SUPABASE_CA_CERT is not set on environment demo"; exit 1; }
+          umask 077
+          printf '%s\n' "$SUPABASE_CA_CERT" > "$RUNNER_TEMP/supabase-ca.crt"
+      - name: Deploy (scripts/deploy-demo.sh deploy)
+        id: deploy
+        env:
+          BACKEND_SHA: ${{ inputs.backend_sha }}
+          FRONTEND_SHA: ${{ inputs.frontend_sha }}
+          PP_MODE: ${{ inputs.mode }}
+          KEEP_EDGE_SECRET: ${{ inputs.keep_edge_secret && '1' || '0' }}
+          PP_NO_FETCH: '1'
+          PP_WORK_DIR: ${{ runner.temp }}/deploy-demo
+          SUPABASE_CA_FILE: ${{ runner.temp }}/supabase-ca.crt
+          DEMO_REF: ${{ vars.DEMO_REF }}
+          PGURL: ${{ secrets.SUPABASE_POOLER_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          BACKUP_GPG_PUBLIC_KEY: ${{ vars.BACKUP_GPG_PUBLIC_KEY }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_URL: ${{ vars.RENDER_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+          PAGES_BRANCH: ${{ vars.PAGES_BRANCH }}
+        run: bash scripts/deploy-demo.sh deploy
+      # The encrypted pre-deploy dump is the rollback source. Uploaded even when a later step fails; never the plain dump.
+      - name: Keep the encrypted backup (7 days)
+        if: always() && steps.deploy.outputs.backup_ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: demo-db-backup-${{ github.run_id }}
+          path: ${{ steps.deploy.outputs.backup_file }}
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 0

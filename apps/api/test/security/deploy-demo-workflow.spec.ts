@@ -1,0 +1,83 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+import { parse } from 'yaml'
+import { describe, expect, it } from 'vitest'
+
+/** DEPLOY-WF: the demo deploy/rollback workflows keep their approval gate, pins and secret hygiene (shape only). */
+const REPO = fileURLToPath(new URL('../../../../', import.meta.url))
+const read = (p: string) => readFileSync(new URL(p, `file://${REPO}`), 'utf8')
+
+interface Step { name?: string; uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> }
+interface Job { environment?: string; 'timeout-minutes'?: number; steps: Step[] }
+interface Workflow {
+  on: Record<string, unknown>
+  permissions: Record<string, string>
+  concurrency: { group: string; 'cancel-in-progress': boolean }
+  jobs: Record<string, Job>
+}
+
+const FILES = ['.github/workflows/deploy-demo.yml', '.github/workflows/rollback-demo.yml']
+
+describe.each(FILES)('%s', (file) => {
+  const text = read(file)
+  const wf = parse(text) as Workflow
+  const jobs = Object.values(wf.jobs)
+  const steps = jobs.flatMap((j) => j.steps)
+
+  it('runs only on manual dispatch', () => {
+    expect(Object.keys(wf.on)).toEqual(['workflow_dispatch'])
+  })
+
+  it('every job waits for approval on environment demo and has a timeout', () => {
+    for (const j of jobs) {
+      expect(j.environment).toBe('demo')
+      expect(j['timeout-minutes']).toBeGreaterThan(0)
+    }
+  })
+
+  it('shares one non-cancelling concurrency group with the other demo workflow', () => {
+    expect(wf.concurrency).toEqual({ group: 'deploy-demo', 'cancel-in-progress': false })
+  })
+
+  it('has least-privilege token permissions', () => {
+    expect(wf.permissions.contents).toBe('read')
+    for (const [k, v] of Object.entries(wf.permissions)) expect(`${k}:${v}`).toMatch(/^(contents|actions):read$/)
+  })
+
+  it('pins every action by full commit SHA', () => {
+    for (const s of steps.filter((x) => x.uses)) expect(s.uses).toMatch(/^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/)
+  })
+
+  it('never interpolates expressions into shell code and never traces it', () => {
+    for (const s of steps.filter((x) => x.run)) {
+      expect(s.run).not.toMatch(/\$\{\{/)
+      expect(s.run).not.toMatch(/set -x|set -o xtrace/)
+    }
+  })
+
+  it('checks out without persisting the token', () => {
+    const co = steps.find((s) => s.uses?.startsWith('actions/checkout@'))
+    expect(co?.with?.['persist-credentials']).toBe(false)
+  })
+})
+
+describe('deploy-demo.yml backup artifact', () => {
+  const wf = parse(read('.github/workflows/deploy-demo.yml')) as Workflow
+  const up = wf.jobs.deploy.steps.find((s) => s.uses?.startsWith('actions/upload-artifact@'))
+
+  it('uploads only the encrypted dump, kept 7 days, even after a failed step', () => {
+    expect(up?.with?.['retention-days']).toBe(7)
+    expect(String(up?.with?.path)).toBe('${{ steps.deploy.outputs.backup_file }}')
+    expect(up?.with?.['if-no-files-found']).toBe('error')
+    expect(String((up as Step & { if?: string }).if)).toContain('always()')
+  })
+
+  it('the script refuses to continue without a GPG key and writes only the .gpg as the backup output', () => {
+    const sh = read('scripts/deploy-demo.sh')
+    expect(sh).toMatch(/BACKUP_GPG_PUBLIC_KEY is not configured/)
+    expect(sh).toMatch(/out="\$WORK\/out\/\$\(basename "\$DUMP"\)\.gpg"/)
+    expect(sh).toMatch(/gh_output backup_file "\$out"/)
+    expect(sh).not.toMatch(/^\s*set -x/m)
+  })
+})
