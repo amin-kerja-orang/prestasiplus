@@ -155,10 +155,11 @@ async function resetFilter(): Promise<void> {
 <template>
   <DsPage data-testid="submissions-page">
     <!-- Counters: 2 per row, 4 from xl. -->
-    <DsStatRow :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
+    <DsStatRow v-if="!unavailable" :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
+      v-if="!unavailable"
       :active-count="applied !== '' ? 1 : 0"
       apply-label="Tapis"
       reset-label="Reset"

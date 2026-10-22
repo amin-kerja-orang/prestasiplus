@@ -263,5 +263,14 @@ describe('SubmissionListPage (M04 S10)', () => {
     )
     expect(w.find('[data-testid=submissions-error]').exists()).toBe(false)
     expect(w.find('[data-testid=submissions-table]').exists()).toBe(false)
+    expect(w.find('[data-ds="stat-row"]').exists()).toBe(false)
+    expect(w.find('[data-testid=submissions-filter]').exists()).toBe(false)
+  })
+
+  it('keeps the stat row and filter bar in normal mode', async () => {
+    const w = await render()
+    expect(w.find('[data-ds="stat-row"]').exists()).toBe(true)
+    expect(w.find('[data-testid=submissions-filter]').exists()).toBe(true)
+    expect(w.find('[data-testid=unavailable-state]').exists()).toBe(false)
   })
 })
