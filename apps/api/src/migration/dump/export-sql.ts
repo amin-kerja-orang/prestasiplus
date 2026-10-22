@@ -12,7 +12,8 @@
  *       DATE       'YYYY-MM-DD'
  *       JSON       the JSON value itself (jsonb); a text column that the spec calls j is parsed, invalid text becomes NULL
  *       tinyint    a JSON number (the spec says `t`; Postgres turns 1 into the text '1')
- *       bigint     a JSON number, written verbatim by the splitter, so ids above 2^53 stay exact
+ *       bigint     a JSON number, written verbatim by the splitter, so it is exact in the raw file; an integer of 2^53 or more is
+ *                  reported by the splitter and stops dump:produce (later JSON.parse readers would round it)
  *       binary     base64 without line breaks (flagged in the report)
  *   - zero or partial dates (0000-00-00, 2024-00-10) become NULL: Postgres cannot store them.
  */

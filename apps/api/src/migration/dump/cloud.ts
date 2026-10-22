@@ -113,6 +113,8 @@ export interface DumpResult {
   totalRows: number
   manifestSha256: string
   report: SchemaReport
+  /** table -> column -> count of integers of 2^53 or more in the raw file. */
+  largeIntegers: Record<string, Record<string, number>>
 }
 
 export async function dumpCloud(options: CommonOptions & { outDir: string }): Promise<DumpResult> {
@@ -155,11 +157,12 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
       specTableNames: plans.map((p) => p.name),
       counts,
       invalidJson: split.invalidJson,
+      largeIntegers: split.largeIntegers,
       datetimeOffset: offset,
     })
     const manifest: Record<string, { rows: number; file?: string }> = {}
     for (const t of split.tables) manifest[t.table] = t.rows > 0 ? { rows: t.rows, file: t.file } : { rows: 0 }
-    const manifestText = `${JSON.stringify({ format: DUMP_FORMAT, source: 'cloud', raw: true, exported_at: now().toISOString(), datetime_offset: offset, tables: manifest }, null, 2)}\n`
+    const manifestText = `${JSON.stringify({ format: DUMP_FORMAT, source: 'cloud', raw: true, exported_at: now().toISOString(), datetime_offset: offset, ...(Object.keys(split.largeIntegers).length > 0 ? { large_integers: split.largeIntegers } : {}), tables: manifest }, null, 2)}\n`
     await writeFile(join(partial, 'manifest.json'), manifestText, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
     await writeReport(partial, report)
     // Not atomic when the target exists as an empty directory; a failure deletes the partial output (see anonymise/run.ts).
@@ -167,8 +170,11 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
     renameSync(partial, finalDir)
     const totalRows = split.tables.reduce((sum, t) => sum + t.rows, 0)
     for (const t of split.tables) log.info(`Exported ${t.table}: ${t.rows} rows.`)
+    for (const [table, columns] of Object.entries(split.largeIntegers)) {
+      log.warn(`Table ${table}: integer value(s) of 2^53 or more in ${Object.keys(columns).join(', ')}. They are exact in the raw file, but a reader that uses JSON.parse rounds them; dump:produce refuses such a dump.`)
+    }
     log.info(`Done: ${split.tables.length} tables, ${totalRows} rows. This directory is RAW personal data: run dump:wipe on it the same day.`)
-    return { outDir: finalDir, tables: split.tables, totalRows, manifestSha256: createHash('sha256').update(manifestText).digest('hex'), report }
+    return { outDir: finalDir, tables: split.tables, totalRows, manifestSha256: createHash('sha256').update(manifestText).digest('hex'), report, largeIntegers: split.largeIntegers }
   } catch (e) {
     // Raw personal data may be in there: zero it, then make sure nothing is left whatever the wipe did.
     await wipeDir(partial, { missingOk: true }).catch(() => undefined)

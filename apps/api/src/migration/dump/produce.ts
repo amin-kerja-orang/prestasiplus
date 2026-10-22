@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { AnonymiseAbortedError } from '../anonymise/errors'
 import { runAnonymise as defaultRunAnonymise, type AnonymiseResult } from '../anonymise/run'
 import { checkCoverage, type AnonConfig } from '../anonymise/rules'
 import { TABLES } from '../ddl/spec'
@@ -20,7 +21,7 @@ import { silentLogger } from '../staging/log'
 import { DirReader } from '../staging/readers'
 import { dumpCloud, type CommonOptions } from './cloud'
 import { registerSensitive } from './cleanup'
-import { DumpAbortedError, DumpError, DumpUsageError } from './errors'
+import { DumpAbortedError, DumpError, DumpUsageError, ExportStreamError } from './errors'
 import { writeReport } from './report'
 import { wipeDir } from './wipe'
 
@@ -76,18 +77,22 @@ export async function produceDump(options: ProduceOptions): Promise<ProduceResul
   try {
     const dump = await dumpCloud({ ...options, outDir: raw })
     await writeReport(work, dump.report)
+    const large = Object.keys(dump.largeIntegers)
+    if (large.length > 0) {
+      throw new ExportStreamError(`ids above 2^53 would lose precision in the anonymiser; table ${large.join(', ')}. The raw dump is wiped; nothing was anonymised.`)
+    }
     stopIfAborted()
     const reader = new DirReader(raw)
     try {
-      result = await anonymise({ reader, outDir: anon, config: options.config, key: options.key, sourceDir: raw, tables: specs, log })
+      result = await anonymise({ reader, outDir: anon, config: options.config, key: options.key, sourceDir: raw, tables: specs, log, signal })
     } finally {
       await reader.close().catch(() => undefined)
     }
     // An interrupt is never a success: the anonymised output is removed too and the exit code is 1.
     stopIfAborted()
   } catch (e) {
-    failure = e
-    if (e instanceof DumpAbortedError) rmSync(anon, { recursive: true, force: true })
+    failure = e instanceof AnonymiseAbortedError ? new DumpAbortedError('Interrupted.') : e
+    if (failure instanceof DumpAbortedError) rmSync(anon, { recursive: true, force: true })
   }
 
   // ALWAYS: the raw data goes, whatever happened above. A failed zero-overwrite falls back to a plain removal.

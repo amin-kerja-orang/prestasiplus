@@ -12,12 +12,12 @@
 
 | Role | Who | Does what |
 |---|---|---|
-| Operator | Amin (`aminfaudzi`), the human who holds read-only .cloud access (issue #109, AM-10) | Runs every command in this document, on the operator PC |
-| Approver | the LEAD (`azarulhakim`) | Approves the sitting, does or accepts the kept free-text review (step 4), receives incident reports, signs the deletion |
+| Operator | the half-AM operator: the one human who holds read-only .cloud access (OD-18 A, LEAD decision 21 Oct; issue #109, AM-10) | Runs every command in this document, on the operator PC |
+| Approver | the LEAD | Approves the sitting, does or accepts the kept free-text review (step 4), receives incident reports, signs the deletion |
 | Data owner | whoever administers the .cloud database | Creates and later drops the read-only MySQL account |
 | Receiver | the owner of the rehearsal host (the VPS prepared for MIG-07) | Receives the encrypted file, loads it, confirms deletion |
 
-Note on the owner: OD-18 names "the lead" as the person who runs the anonymiser. **LEAD decision 21 Oct, OD-18 A:** Amin is the operator (holds the read-only .cloud access) and the LEAD approves. This replaces the OD-18 default and the runbook wording where "the lead" runs the anonymiser.
+Note on the owner: OD-18 names "the lead" as the person who runs the anonymiser. **LEAD decision 21 Oct, OD-18 A:** the operator (the human who holds the read-only .cloud access) runs the anonymiser and the LEAD approves. This replaces the OD-18 default and the runbook wording where "the lead" runs the anonymiser.
 
 **Hard rules.**
 
@@ -60,9 +60,10 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    -- preferred: column-level grants, only the spec columns, one statement per table
    GRANT SELECT (<col1>, <col2>, ...) ON <db>.<table> TO 'pp_dump_ro'@'<operator IP or %>';
    ```
-   - **Column-level grants are preferred** (data minimisation: the account cannot even read a column that is not in the spec). The spec columns are in `apps/api/src/migration/ddl/spec.ts`, and the `dump:check` report lists the selected columns per table, so the data owner can check the grants against it. The statements are generated, without any connection, by `npm run dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<operator IP>'"` (spec columns minus the redacted ones; the password stays a placeholder for the data owner). With column-level grants the account cannot see columns outside the spec, so the `dump:check` report lists them as "missing or not granted" and cannot answer column-name questions; for those, the data owner runs the metadata-only `information_schema.columns` query printed at the end of the `dump:grants` output with their own access and posts only the names.
+   - **Column-level grants are preferred** (data minimisation: the account cannot even read a column that is not in the spec). The spec columns are in `apps/api/src/migration/ddl/spec.ts`, and the `dump:check` report lists the selected columns per table, so the data owner can check the grants against it. The statements are generated, without any connection, by `npm run dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<operator IP>'"` (spec columns minus the redacted ones). The output holds the password placeholder `<<SET-A-STRONG-PASSWORD>>`, which is deliberately not valid SQL: the data owner **must replace it** with a generated password before running the statements. With column-level grants the account cannot see columns outside the spec, so the `dump:check` report lists them as "missing or not granted" and cannot answer column-name questions; for those, the data owner runs the metadata-only `information_schema.columns` query printed at the end of the `dump:grants` output with their own access and posts only the names.
    - Fallback: `GRANT SELECT, SHOW VIEW ON <db>.* TO 'pp_dump_ro'@'<operator IP or %>';` (table-level on the whole database). It is accepted by the tools but gives access to columns that are not needed. **Open LEAD item (not decided here):** whether the table-level fallback is allowed at all; the LEAD decides with the data owner.
-   - Prefer the operator's fixed IP over `%`; if `%` is unavoidable, the data owner restricts access by firewall.
+   - Use the operator's fixed IP as the account host. If `%` cannot be avoided, the data owner **must** restrict access to the operator's address by firewall (a MUST, not advice).
+   - **The data owner confirms that no MySQL 8 `mandatory_roles` apply to the account** (a mandatory role would add privileges the tools refuse, exit 3), for example by checking `SELECT @@global.mandatory_roles;` and `SHOW GRANTS FOR 'pp_dump_ro'@'<operator IP or %>';`.
    - **Keep the account locked between sittings.** The data owner runs `ALTER USER 'pp_dump_ro'@'<operator IP or %>' ACCOUNT UNLOCK;` for the sitting and `ALTER USER 'pp_dump_ro'@'<operator IP or %>' ACCOUNT LOCK;` straight after (or creates a new account for each sitting and drops it afterwards).
    - **Load on the source.** One long consistent snapshot can strain a production database. Run the sitting off-peak, or against a read replica if the data owner has one (**Perlu pengesahan:** whether a replica exists and is current enough).
    - The data owner drops the account after the last rehearsal (`DROP USER 'pp_dump_ro'@'<operator IP or %>';`).
@@ -86,7 +87,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    ${EDITOR:-nano} ~/pp-cloud-ro.cnf
    export CLOUD_MYSQL_DEFAULTS_FILE=~/pp-cloud-ro.cnf
    ```
-   The file must contain **only the `[client]` group**. Any other group (`[client-server]`, `[client-mariadb]`, `[mariadb-client]`, `[mariadb]`, `[mysqldump]`, ...), `!include` or `!includedir` is refused (exit 2). The client is started with `--defaults-file`, so no other option file on the machine is read.
+   Only the groups `[client]` and `[mysql]` are accepted, and `[mysql]` overrides `[client]`. Any other group (`[client-server]`, `[client-mariadb]`, `[mariadb-client]`, `[mariadb]`, `[mysqldump]`, ...), `!include` or `!includedir` is refused (exit 2). **Only these keys are accepted:** `host`, `port`, `user`, `password`, `database`, `socket`, `protocol`, `ssl-mode`, `ssl`, `ssl-ca`, `ssl-capath`, `ssl-cert`, `ssl-key`, `ssl-verify-server-cert`, `skip-ssl`, `default-character-set`. Any other key is refused with exit 2, including `init-command`, `execute`, `pager`, `tee`, `plugin-dir`, any key with a `loose-` prefix, and abbreviated key names; write each key out in full. The client is started with `--defaults-file`, so no other option file on the machine is read.
    Content for a **direct connection to a remote host** (placeholders):
    ```ini
    [client]
@@ -203,9 +204,11 @@ npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +08:00
 npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +08:00
 ```
 
-Use the offset agreed in section 2, item 9 (leave the flag out for the `+08:00` default). What the tool does: checks the key first; exports a consistent read-only snapshot (only the columns in the spec, secrets NULL at source) through `<work>/raw.partial` to `<work>/raw`; anonymises through `<work>/anon.partial` to `<work>/anon`; leak-scans; writes `<work>/schema-report.json` and `<work>/schema-report.md`; and then **always** wipes the raw export, whether the run succeeded or not. It prints row counts, sizes, the sha256 of `anon/manifest.json` and the elapsed time. Keep the terminal open: you need these numbers in steps 3 and 9.
+**Time zone rule (LEAD decision 21 Oct, DT-1 A; also section 2, item 9).** `--datetime-offset` is `+08:00` and must not be changed. The export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. Leave the flag out, or pass `+08:00` as above.
 
-**Interrupting the run.** Ctrl+C, or closing the terminal, aborts the run and the raw data is wiped. A second Ctrl+C forces a synchronous wipe (wait for the prompt to come back). If the process is killed hard (Task Manager, `kill -9`, a power cut), run `dump:wipe --dir "$work"` **before anything else**, then destroy the key (section 6).
+What the tool does: checks the key first; exports a consistent read-only snapshot (only the columns in the spec, secrets NULL at source) through `<work>/raw.partial` to `<work>/raw`; anonymises through `<work>/anon.partial` to `<work>/anon`; leak-scans; writes `<work>/schema-report.json` and `<work>/schema-report.md`; and then **always** wipes the raw export, whether the run succeeded or not. It prints row counts, sizes, the sha256 of `anon/manifest.json` and the elapsed time. Keep the terminal open: you need these numbers in steps 3 and 9.
+
+**Interrupting the run.** A first Ctrl+C (or closing the terminal) stops the run promptly, in the export and in the anonymiser phase as well, and the raw data is wiped. A second Ctrl+C forces a synchronous wipe (wait for the prompt to come back). If the process is killed hard (Task Manager, `kill -9`, a power cut), run `dump:wipe --dir "$work"` **before anything else**, then destroy the key (section 6).
 
 If the exit code is not 0, go to section 6 now.
 
@@ -391,7 +394,7 @@ npm run dump:wipe -w @pp/api -- --dir "$work"
 | 3 | Account not read-only | Nothing was read. Destroy the unused key (step 5). Do not try to fix the grants yourself. Tell the data owner to remove every privilege except `USAGE`, `SELECT` (table or column level), `SHOW VIEW` and `SHOW DATABASES` (section 2, item 5), then run `dump:check` again |
 | 4 | An anonymiser rule is missing for a column | The rules are checked before the tool connects, so no data was fetched. Destroy the unused key (step 5). Post the column names (names only) on #109. A developer adds the rules and the LEAD approves them; run `dump:check` again, wait for "rules OK", and sit again with a new key |
 | 5 | Leak scan hit | The output was deleted. **Stop and tell the LEAD at once**; do not rerun elsewhere. The log names the `table.column` and the kind of hit, not the value. The LEAD decides the rule change (runbook section 8, step 4); a developer applies it; sit again with a new key |
-| 6 | Row-count mismatch or bad stream | The source changed during the export or the connection broke (tunnel dropped?). Raw is wiped. Check the tunnel and the network, wipe, destroy the key, and run again with a new key and a new work dir. Repeated failures: post the table names on #109 |
+| 6 | Row-count mismatch or bad stream | The source changed during the export or the connection broke (tunnel dropped?). Raw is wiped. Check the tunnel and the network, wipe, destroy the key, and run again with a new key and a new work dir. Repeated failures: post the table names on #109. **Also exit 6:** the export contains an integer of 2^53 or larger (a BIGINT the anonymiser cannot keep exact). The run is refused; post only the table name on #109 (no value), and a developer fixes it before the next sitting |
 | 130 | Interrupted twice (Ctrl+C, closed terminal, shutdown) | The raw and partial directories were force-deleted, so nothing raw is left, but the run is dead. Destroy the key (step 5), check that `<work>` holds no `raw` and no `.partial`, and start again from step 1 with a new key and a new work dir. A single interrupt exits 1 instead (the tool cleans up by itself; see exit 1) |
 | Review failed (step 4) | A real name is in a kept column | Do not hand over. Wipe, destroy the key, the LEAD changes the rule, a developer applies it, sit again with a new key |
 

@@ -154,6 +154,32 @@ describe('dump:cloud', () => {
     expect(JSON.parse(readFileSync(join(out, 'schema-report.json'), 'utf8')).datetime_offset).toBe('+07:30')
   })
 
+  it('DT-1: DATETIME is written with the explicit default offset +08:00, TIMESTAMP with Z', async () => {
+    fx.setScenario(scenario())
+    const out = work.out('cloud-dt1')
+    const r = await cli(['dump:cloud', '--out', out, '--tables', 'schools,users'])
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    const sql = (fx.calls()[1] as { sql: string }).sql
+    // schools.created_at/updated_at are DATETIME in the scenario, users.* are TIMESTAMP
+    expect(sql).toContain("DATE_FORMAT(`created_at`, '%Y-%m-%dT%H:%i:%s.%f+08:00')")
+    expect(sql).toContain("DATE_FORMAT(`last_login_at`, '%Y-%m-%dT%H:%i:%s.%fZ')")
+    expect(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')).datetime_offset).toBe('+08:00')
+  })
+
+  it('keeps integers of 2^53 or more verbatim, warns, and records them in the manifest and the report', async () => {
+    const big = '{"id":9007199254740993,"name":"x","created_at":null}'
+    fx.setScenario(scenario({ tables: { schools: sourceTable('schools', [big, '{"id":2,"name":"y"}']) } }))
+    const out = work.out('cloud-bigint')
+    const r = await cli(['dump:cloud', '--out', out, '--tables', 'schools'])
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    expect(r.text).toMatch(/Table schools: integer value\(s\) of 2\^53 or more in id/)
+    expect(readFileSync(join(out, 'schools.ndjson'), 'utf8')).toContain('"id":9007199254740993')
+    expect(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')).large_integers).toEqual({ schools: { id: 1 } })
+    const report = JSON.parse(readFileSync(join(out, 'schema-report.json'), 'utf8')) as { tables: { table: string; large_integers?: Record<string, number> }[] }
+    expect(report.tables.find((t) => t.table === 'schools')?.large_integers).toEqual({ id: 1 })
+    expect(new DirReader(out).expectedRows('schools')).toBe(2)
+  })
+
   it('exits 3 when the account can write: nothing is read and nothing is written', async () => {
     fx.setScenario(scenario({ grants: ['GRANT ALL PRIVILEGES ON `pp`.* TO `u`@`%`'] }))
     const out = work.out('cloud-rw')
@@ -290,7 +316,7 @@ describe('dump:grants', () => {
   it('prints the script with no option file, no client and no connection', async () => {
     const r = await cli(['dump:grants', '--database', 'pp_cloud', '--account', "'pp_dump'@'127.0.0.1'"], {}, {})
     expect(r.code, r.text).toBe(DUMP_EXIT.ok)
-    expect(r.text).toContain("CREATE USER IF NOT EXISTS 'pp_dump'@'127.0.0.1' IDENTIFIED BY '<generate-a-password>' REQUIRE SSL;")
+    expect(r.text).toContain("CREATE USER IF NOT EXISTS 'pp_dump'@'127.0.0.1' IDENTIFIED BY <<SET-A-STRONG-PASSWORD>> REQUIRE SSL;")
     expect(r.text).toContain("GRANT SELECT (`id`, `name`, `email`")
     expect(r.text).toMatch(/-- SELECT table_name, column_name, data_type FROM information_schema\.columns WHERE table_schema = 'pp_cloud'/)
     expect(r.text).not.toContain('remember_token')
@@ -472,26 +498,60 @@ describe('dump:produce', () => {
     expect(readdirSync(w)).toEqual([])
   })
 
-  it('an interrupt that arrives while the anonymiser runs is never exit 0: anon is removed, raw is wiped', async () => {
+  it('an interrupt that arrives while the anonymiser runs stops it early (signal passed down), wipes raw, removes anon and exits 1', async () => {
     fx.setScenario(scenario())
     const w = work.out('produce-abort-anon')
     const abort = new AbortController()
     const real = (await import('../../../src/migration/anonymise/run')).runAnonymise
+    let opened: string[] = []
+    let sawSignal = false
     const r = await cli(
       ['dump:produce', '--work', w, '--tables', 'users,schools'],
       {
         signal: abort.signal,
         runAnonymise: async (opts) => {
-          const done = await real(opts)
-          abort.abort() // the signal lands just after the anonymiser finished
-          return done
+          sawSignal = opts.signal === abort.signal
+          opened = []
+          const inner = opts.reader
+          const reader = {
+            kind: inner.kind,
+            expectedRows: (t: string) => inner.expectedRows(t),
+            has: (t: string) => inner.has(t),
+            inputHash: () => inner.inputHash(),
+            close: () => inner.close(),
+            read: async function* (table: string, size: number) {
+              opened.push(table)
+              for await (const batch of inner.read(table, size)) {
+                yield batch
+                abort.abort() // the signal lands in the middle of the first table
+              }
+            },
+          }
+          return real({ ...opts, reader })
         },
       },
       produceEnv(),
     )
     expect(r.code, r.text).toBe(DUMP_EXIT.failed)
+    expect(sawSignal).toBe(true)
+    expect(opened).toEqual(['users']) // schools was never read: the run stopped early
     expect(existsSync(join(w, 'anon'))).toBe(false)
+    expect(existsSync(join(w, 'anon.partial'))).toBe(false)
     expect(existsSync(join(w, 'raw'))).toBe(false)
+    expect(r.text).toMatch(/Raw dump deleted/)
+  })
+
+  it('refuses to anonymise a dump with integers of 2^53 or more (exit 6), names the table and still wipes raw', async () => {
+    const big = JSON.stringify({ id: 1, name: 'x' }).replace('"id":1', '"id":9007199254740993')
+    fx.setScenario(scenario({ tables: { schools: { ...sourceTable('schools', [big]) } } }))
+    const w = work.out('produce-bigint')
+    let ran = false
+    const r = await cli(['dump:produce', '--work', w, '--tables', 'schools'], { runAnonymise: async () => { ran = true; throw new Error('must not run') } }, produceEnv())
+    expect(r.code, r.text).toBe(DUMP_EXIT.stream)
+    expect(r.text).toContain('ids above 2^53 would lose precision in the anonymiser; table schools')
+    expect(ran).toBe(false)
+    expect(existsSync(join(w, 'raw'))).toBe(false)
+    expect(existsSync(join(w, 'anon'))).toBe(false)
   })
 
   it('an interrupt that arrives right after the dump skips the anonymiser', async () => {

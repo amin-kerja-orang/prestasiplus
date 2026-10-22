@@ -2,8 +2,10 @@
  * The export stream splitter (AM-10). Consumes the stdout lines of the one-session export (export-sql.ts
  * `buildDumpSql`) and writes `<table>.ndjson` files. Memory use is one line plus a 1 MiB write buffer.
  *
- * Every data line is checked to parse as a JSON object, but it is written VERBATIM (never re-serialised), so a bigint
- * above 2^53 keeps every digit. Files are created with mode 0600 and never overwritten (`wx`).
+ * Every data line is checked to parse as a JSON object, but it is written VERBATIM (never re-serialised), so an integer
+ * of 2^53 or more keeps every digit IN THE RAW FILE. Everything that reads the file later (`JSON.parse` in DirReader and the
+ * anonymiser) rounds such an integer, so the splitter reports each one (`largeIntegers`, per table and column) and
+ * `dump:produce` refuses to anonymise a dump that has any. Files are created with mode 0600 and never overwritten (`wx`).
  *
  * The row count of each table is compared with the COUNT(*) taken in the same snapshot; a mismatch, a line that is not a
  * JSON object, an unexpected marker or a truncated stream (no end marker) raises `ExportStreamError` (exit 6). Messages
@@ -23,7 +25,36 @@ export interface SplitTable {
   bytes: number
 }
 
+const TWO_POW_53 = 9007199254740992n
+const TOKEN = /"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g
+
+/**
+ * Integer literals of 2^53 or more in one JSON line, counted per key (the key in front of the value; for a value inside a
+ * JSON column that is the nested key). A cheap prefilter (16 digits in a row) keeps the common line off the slow path.
+ */
+export function findLargeIntegers(line: string): Map<string, number> | undefined {
+  if (!/\d{16}/.test(line)) return undefined
+  let found: Map<string, number> | undefined
+  let key = ''
+  for (const m of line.matchAll(TOKEN)) {
+    const token = m[0]
+    if (token.startsWith('"')) {
+      if (line[(m.index as number) + token.length] === ':') key = token.slice(1, -1)
+      continue
+    }
+    if (token.length < 16 || !/^-?\d+$/.test(token)) continue
+    const n = BigInt(token)
+    if ((n < 0n ? -n : n) >= TWO_POW_53) {
+      found ??= new Map()
+      found.set(key, (found.get(key) ?? 0) + 1)
+    }
+  }
+  return found
+}
+
 export interface SplitResult {
+  /** table -> column -> number of integer literals with an absolute value of 2^53 or more. */
+  largeIntegers: Record<string, Record<string, number>>
   tables: SplitTable[]
   /** table -> column -> number of non-NULL values that were not valid JSON (spec `j` on a text column). */
   invalidJson: Record<string, Record<string, number>>
@@ -71,6 +102,7 @@ export async function splitExport(lines: AsyncIterable<string>, plans: readonly 
   const expected = plans.filter((p) => p.present)
   const tables: SplitTable[] = []
   const invalidJson: Record<string, Record<string, number>> = {}
+  const largeIntegers: Record<string, Record<string, number>> = {}
   let next = 0
   let stage: Stage = 'idle'
   let current: { name: string; promised: number; rows: number; file: TableFile; fileName: string } | undefined
@@ -132,12 +164,17 @@ export async function splitExport(lines: AsyncIterable<string>, plans: readonly 
       if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new ExportStreamError(`Table ${current.name}: row ${current.rows + 1} is not a JSON object.`)
       }
+      const large = findLargeIntegers(line)
+      if (large) {
+        const perColumn = (largeIntegers[current.name] ??= {})
+        for (const [column, n] of large) perColumn[column] = (perColumn[column] ?? 0) + n
+      }
       await current.file.write(line)
       current.rows++
     }
     if (!ended) throw new ExportStreamError('The export stream ended before its end marker (the client was cut off).')
     if (next !== expected.length) throw new ExportStreamError(`The export stream covered ${next} of ${expected.length} tables.`)
-    return { tables, invalidJson }
+    return { tables, invalidJson, largeIntegers }
   } finally {
     await (current as { file: TableFile } | undefined)?.file.close().catch(() => undefined)
   }

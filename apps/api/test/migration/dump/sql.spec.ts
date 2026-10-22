@@ -24,7 +24,7 @@ import { emergencyWipeSync, installSignalHandlers, installStdioGuards, registerS
 import { evaluateGrants } from '../../../src/migration/dump/grants'
 import { buildGrantScript } from '../../../src/migration/dump/grants-sql'
 import { loadOptionFile, parseOptionText } from '../../../src/migration/dump/option-file'
-import { splitExport } from '../../../src/migration/dump/split'
+import { findLargeIntegers, splitExport } from '../../../src/migration/dump/split'
 import { wipeDir } from '../../../src/migration/dump/wipe'
 import { PASSWORD, scratch } from './helpers'
 
@@ -261,6 +261,51 @@ describe('option file', () => {
     expect(() => loadOptionFile(env(write(work.outside('incdir.cnf'), `${GOOD}!includedir /etc/mysql/conf.d\n`)), 'linux')).toThrow(/!include or !includedir/)
     expect(() => loadOptionFile(env(write(work.outside('nogroup.cnf'), `user=x\n${GOOD}`)), 'linux')).toThrow(/outside any \[group\]/)
     expect(() => loadOptionFile(env(write(work.outside('only-client.cnf'), GOOD)), 'linux')).not.toThrow()
+  })
+
+  it.each([
+    ['init-command', 'init-command=SET GLOBAL x=1'],
+    ['init-command', 'init_command=SET GLOBAL x=1'],
+    ['execute', 'execute=select 1'],
+    ['plugin-dir', 'plugin-dir=/tmp/plugins'],
+    ['default-auth', 'default-auth=mysql_clear_password'],
+    ['tee', 'tee=/tmp/out.log'],
+    ['pager', 'pager=/tmp/x.sh'],
+    ['loose-init-command', 'loose-init-command=select 1'],
+    ['hos', 'hos=db.example.test'],
+    ['ssl-mod', 'ssl-mod=DISABLED'],
+    ['ssl-cipher', 'ssl-cipher=ALL'],
+  ])('refuses the key %s (%s) and names the key only', (key, line) => {
+    const f = write(work.outside(`key-${Math.random().toString(16).slice(2)}.cnf`), `[client]\nhost=127.0.0.1\nuser=u\npassword=${PASSWORD}\n${line}\n`)
+    let message = ''
+    try {
+      loadOptionFile(env(f), 'linux')
+    } catch (e) {
+      message = (e as Error).message
+    }
+    expect(message).toContain(`the key "${key}"`)
+    expect(message).not.toContain(PASSWORD)
+    expect(message).not.toContain('SET GLOBAL')
+  })
+
+  it('treats ssl_mode as ssl-mode, and refuses the key in [mysql] too', () => {
+    const remote = (body: string) => loadOptionFile(env(write(work.outside(`ssl-${Math.random().toString(16).slice(2)}.cnf`), body)), 'linux')
+    expect(() => remote('[client]\nhost=db.example.test\nssl_mode=VERIFY_IDENTITY\n')).not.toThrow()
+    expect(() => remote('[client]\nhost=db.example.test\nssl_mode=REQUIRED\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
+    expect(() => remote('[client]\nhost=127.0.0.1\n[mysql]\ninit-command=select 1\n')).toThrow(/the key "init-command"/)
+  })
+
+  it('applies the client precedence: [mysql] overrides [client], whatever the order in the file', () => {
+    const remote = (body: string) => loadOptionFile(env(write(work.outside(`prec-${Math.random().toString(16).slice(2)}.cnf`), body)), 'linux')
+    // [mysql] first in the file, [client] below it: the TLS check still uses the [mysql] value
+    expect(() => remote('[mysql]\nssl-mode=DISABLED\n[client]\nhost=db.example.test\nssl-mode=VERIFY_IDENTITY\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
+    expect(() => remote('[client]\nhost=db.example.test\nssl-mode=VERIFY_IDENTITY\n[mysql]\nssl-mode=DISABLED\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
+    // and the other way round: a [mysql] override that makes it safe is honoured
+    expect(() => remote('[client]\nhost=db.example.test\nssl-mode=REQUIRED\n[mysql]\nssl-mode=VERIFY_CA\n')).not.toThrow()
+    // a [mysql] host override to a remote host is checked too
+    expect(() => remote('[client]\nhost=127.0.0.1\n[mysql]\nhost=db.example.test\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
+    expect(parseOptionText('[client]\nuser=a\npassword=p1\n[mysql]\nuser=b\n').values.get('user')).toBe('b')
+    expect(parseOptionText('[client]\nuser=a\n[mysql]\nuser=b\n[client]\nuser=c\n').values.get('user')).toBe('b')
   })
 
   describe('TLS rule', () => {
@@ -562,7 +607,7 @@ describe('dump:grants script', () => {
 
   it('prints the CREATE USER placeholder, one column-level GRANT per table without the redacted columns, and the metadata query', () => {
     const lines = buildGrantScript('pp_cloud', ACCOUNT, small)
-    expect(lines).toContain(`CREATE USER IF NOT EXISTS ${ACCOUNT} IDENTIFIED BY '<generate-a-password>' REQUIRE SSL;`)
+    expect(lines).toContain(`CREATE USER IF NOT EXISTS ${ACCOUNT} IDENTIFIED BY <<SET-A-STRONG-PASSWORD>> REQUIRE SSL;`)
     expect(lines).toContain(`GRANT SELECT (\`id\`, \`name\`) ON \`pp_cloud\`.\`things\` TO ${ACCOUNT};`)
     expect(lines.filter((l) => l.startsWith('GRANT '))).toHaveLength(1) // a redact-only table gets no grant
     expect(lines.join('\n')).not.toContain('secret')
@@ -585,5 +630,19 @@ describe('dump:grants script', () => {
       expect(() => buildGrantScript('pp', bad, small), bad).toThrow(DumpUsageError)
     }
     for (const ok of ["'pp_dump'@'localhost'", "'pp-dump.ro'@'127.0.0.1'", "'u'@'%'", "'u'@'db-1.example.test'", "'u'@'::1'"]) expect(() => buildGrantScript('pp', ok, small), ok).not.toThrow()
+  })
+})
+
+describe('large integer detection', () => {
+  it('finds integer literals of 2^53 or more per key, outside strings only', () => {
+    expect(findLargeIntegers('{"id": 9007199254740993, "n": 1}')).toEqual(new Map([['id', 1]]))
+    expect(findLargeIntegers('{"id":9007199254740992,"x":-9007199254740993}')).toEqual(new Map([['id', 1], ['x', 1]]))
+    expect(findLargeIntegers('{"a":{"b":12345678901234567890,"c":12345678901234567890}}')).toEqual(new Map([['b', 1], ['c', 1]]))
+    // below 2^53, in a string, a decimal fraction or an exponent: not reported
+    expect(findLargeIntegers('{"id":9007199254740991}')).toBeUndefined()
+    expect(findLargeIntegers('{"s":"9007199254740993","t":"x 12345678901234567890 y"}')).toBeUndefined()
+    expect(findLargeIntegers('{"d":1234567890123456789.5,"e":12345678901234567e3}')).toBeUndefined()
+    expect(findLargeIntegers('{"id":1,"name":"a\\"b 12345678901234567890"}')).toBeUndefined()
+    expect(findLargeIntegers('{"id":1}')).toBeUndefined()
   })
 })

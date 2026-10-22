@@ -52,10 +52,46 @@ function unquote(value: string): string {
   return v
 }
 
+/**
+ * The only keys the export needs. Anything else is refused (exit 2) by `loadOptionFile`: `init-command`, `execute`,
+ * `plugin-dir`, `default-auth`, `tee`, `pager`, `loose-*` and every abbreviation (`hos=`, `ssl-mod=`) could make the client run
+ * something or hide a setting from the checks below. `_` and `-` are the same character in a key.
+ */
+export const ALLOWED_OPTION_KEYS: readonly string[] = [
+  'host',
+  'port',
+  'user',
+  'password',
+  'database',
+  'socket',
+  'protocol',
+  'ssl-mode',
+  'ssl',
+  'ssl-ca',
+  'ssl-capath',
+  'ssl-cert',
+  'ssl-key',
+  'ssl-verify-server-cert',
+  'skip-ssl',
+  'default-character-set',
+]
+
+export interface ParsedOptions {
+  /** Effective values: [client] first, [mysql] over it (the client reads the groups in that order, the later one wins). */
+  values: Map<string, string>
+  /** The same without removing a trailing ` # comment` from the value. */
+  raw: Map<string, string>
+  /** Every key seen in the [client] and [mysql] groups (normalised: lower case, `_` as `-`). */
+  keys: string[]
+  hasInclude: boolean
+  groups: string[]
+  outsideGroup: boolean
+}
+
 /** Reads `key=value` pairs of the `[client]` and `[mysql]` groups. Pure; exported for tests. */
-export function parseOptionText(text: string): { values: Map<string, string>; raw: Map<string, string>; hasInclude: boolean; groups: string[]; outsideGroup: boolean } {
-  const values = new Map<string, string>()
-  const raw = new Map<string, string>()
+export function parseOptionText(text: string): ParsedOptions {
+  const perGroup = new Map<string, { values: Map<string, string>; raw: Map<string, string> }>()
+  const keys = new Set<string>()
   let hasInclude = false
   let outsideGroup = false
   const groups = new Set<string>()
@@ -77,15 +113,20 @@ export function parseOptionText(text: string): { values: Map<string, string>; ra
     if (group !== 'client' && group !== 'mysql') continue
     const eq = line.indexOf('=')
     const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
+    keys.add(key)
+    const bucket = perGroup.get(group) ?? { values: new Map<string, string>(), raw: new Map<string, string>() }
+    perGroup.set(group, bucket)
     if (eq === -1) {
-      values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
-      raw.set(key, '')
+      bucket.values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
+      bucket.raw.set(key, '')
       continue
     }
-    raw.set(key, unquote(line.slice(eq + 1)))
-    values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
+    bucket.raw.set(key, unquote(line.slice(eq + 1)))
+    bucket.values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
   }
-  return { values, raw, hasInclude, groups: [...groups], outsideGroup }
+  const merge = (pick: 'values' | 'raw'): Map<string, string> =>
+    new Map([...(perGroup.get('client')?.[pick] ?? []), ...(perGroup.get('mysql')?.[pick] ?? [])])
+  return { values: merge('values'), raw: merge('raw'), keys: [...keys], hasInclude, groups: [...groups], outsideGroup }
 }
 
 const OFF = new Set(['0', 'false', 'off', 'no'])
@@ -109,7 +150,7 @@ export function assertTransportSafe(values: ReadonlyMap<string, string>): void {
     throw new DumpUsageError(TLS_REFUSED)
   }
   // MariaDB client style: ssl on AND the server certificate verified.
-  if (!values.has('skip-ssl') && !values.has('disable-ssl') && flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
+  if (!values.has('skip-ssl') && flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
   throw new DumpUsageError(TLS_REFUSED)
 }
 
@@ -131,7 +172,7 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
   else if ((statSync(path).mode & 0o077) !== 0) {
     throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE must not be readable by group or others (chmod 600).')
   }
-  const { values, raw, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
+  const { values, raw, keys, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
   if (hasInclude) throw new DumpUsageError('The option file uses !include or !includedir; put all settings in the one file.')
   if (outsideGroup) throw new DumpUsageError('The option file has settings outside any [group]; put them under [client].')
   for (const g of groups) {
@@ -140,6 +181,12 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
     if (g !== 'client' && g !== 'mysql') {
       const shown = /^[a-z0-9_.-]{1,40}$/.test(g) ? g : '(unprintable name)'
       throw new DumpUsageError(`The option file has a [${shown}] group. Only [client] is accepted; remove the other groups.`)
+    }
+  }
+  for (const k of keys) {
+    if (!ALLOWED_OPTION_KEYS.includes(k)) {
+      const shown = /^[a-z0-9-]{1,40}$/.test(k) ? k : '(unprintable key)'
+      throw new DumpUsageError(`The option file uses the key "${shown}", which is not accepted. Allowed keys: ${ALLOWED_OPTION_KEYS.join(', ')}.`)
     }
   }
 

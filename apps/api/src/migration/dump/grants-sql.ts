@@ -29,10 +29,10 @@ export function buildGrantScript(database: string, account: string, specs: reado
   assertDatabaseName(database)
   assertAccount(account)
   const lines: string[] = [
-    '-- Read-only account for the .cloud export (AM-10). Run as the data owner. Replace the password placeholder first.',
+    '-- Read-only account for the .cloud export (AM-10). Run as the data owner. Replace the password placeholder (including the < >) with a quoted strong password first; run unedited it is a syntax error.',
     '-- Column-level SELECT only: the spec columns minus the redacted ones (those are exported as NULL).',
     '-- A GRANT for a table that does not exist in your database fails: skip that line.',
-    `CREATE USER IF NOT EXISTS ${account} IDENTIFIED BY '<generate-a-password>' REQUIRE SSL;`,
+    `CREATE USER IF NOT EXISTS ${account} IDENTIFIED BY <<SET-A-STRONG-PASSWORD>> REQUIRE SSL;`,
   ]
   for (const t of specs) {
     const cols = t.columns.filter((c) => !c.redact).map((c) => quoteIdent(c.name))

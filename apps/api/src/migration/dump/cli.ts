@@ -34,8 +34,16 @@
  *                              or the working directory is refused.
  *   ANON_HMAC_KEY_FILE / ANON_HMAC_KEY   the pseudonymisation key, dump:produce only (use a FRESH key per run).
  * The client gets `--defaults-file=<file>` as its first argument (no other option file is read); SQL goes in on stdin. Its
- * environment is an allow-list (PATH, LANG, LC_ALL, TZ, MYSQL_UNIX_PORT, MYSQL_TEST_LOGIN_FILE pointing nowhere; no HOME; on Windows also SystemRoot, TEMP, TMP, USERPROFILE, APPDATA,
+ * environment is an allow-list (PATH, LANG, LC_ALL, TZ, MYSQL_UNIX_PORT, MYSQL_TEST_LOGIN_FILE pointing nowhere; no HOME; on Windows also SystemRoot, TEMP, TMP, USERPROFILE,
  * PATHEXT, ComSpec): the key and every other variable stay out of the child.
+ *
+ * Option file keys: only host, port, user, password, database, socket, protocol, ssl-mode, ssl, ssl-ca, ssl-capath, ssl-cert, ssl-key,
+ * ssl-verify-server-cert, skip-ssl, default-character-set (`_` = `-`). Any other key (init-command, execute, plugin-dir, tee, pager,
+ * loose-*, abbreviations such as hos=) is refused with exit 2, naming the key. [mysql] overrides [client]; the checks use the
+ * effective values.
+ *
+ * Integers of 2^53 or more: the raw files keep them exactly, but the anonymiser and the loader read JSON with JSON.parse and would
+ * round them. dump:cloud warns and records them (manifest large_integers, report); dump:produce refuses (exit 6, raw wiped).
  *
  * TLS: a remote host in the option file is refused (exit 2) unless it sets ssl-mode=VERIFY_IDENTITY or VERIFY_CA (MariaDB
  * client: ssl plus ssl-verify-server-cert). REQUIRED, PREFERRED, DISABLED, ssl=0 or no setting are refused: use
