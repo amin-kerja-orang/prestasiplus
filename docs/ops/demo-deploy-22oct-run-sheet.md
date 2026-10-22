@@ -13,6 +13,8 @@ It is pinned to the commits of the LEAD merge batch (#67 "LEAD merge log 22 Oct"
 | `<FRONTEND_SHA>` (Pages SPA) | `<FRONTEND_SHA>` (`be/integration-frontend` after the merge batch) |
 | Merged PRs this sheet assumes | `<MERGED_PRS>` |
 
+**Before you paste anything, replace every `<...>` placeholder in this file.** The placeholders are filled from the merge log; `<service>` and `<project>` are your Render and Pages names.
+
 **Different from #112.** #112 pins `23c98226` with 33 migrations. If you change nothing else, change these:
 1. **Commits.** Use `<BACKEND_SHA>` and `<FRONTEND_SHA>` everywhere #112 says `23c98226`.
 2. **Migrations.** The count and the newest name are read from `<BACKEND_SHA>` in step 1. With #127, #132 and #135 merged, that is 36 migrations, up to `0042_question_sets_nullable_classroom`.
@@ -36,7 +38,9 @@ echo "expect $EXP_MIG migrations, newest $EXP_NEWEST, questions $EXP_Q"
 git checkout $BE && npm ci && npm run db:generate -w @pp/api
 ```
 
-All three echo lines must print. If either SHA check fails, stop: the SHA is not on its branch.
+All three echo lines must print. Stop if any of them is missing:
+- **No `SHAs OK`:** a SHA is not on its branch.
+- **No `SPA branch is synced`:** #120 has not merged into `$FE`.
 
 ## 2. Backup (5 min; #112 §1)
 
@@ -45,7 +49,7 @@ You need the Postgres **17** client tools and the Supabase CA file saved as `~/p
 ```bash
 umask 077
 read -rp  'Project ref of prestasiplus-demo: ' DEMO_REF
-read -rsp 'Session pooler URL WITHOUT password: ' PGURL && export PGURL; echo
+read -rsp 'Session pooler URL WITHOUT password: ' PGURL && export PGURL; echo   # postgresql://postgres.<ref>@<pooler-host>:5432/postgres, no password in it
 read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
 CA="$(cygpath -m "$HOME" 2>/dev/null || printf %s "$HOME")/prod-ca-2021.crt"
 export SSLQ="sslmode=verify-full&sslrootcert=$CA"
@@ -147,6 +151,7 @@ If the `worker + demo scripts` line does not print, stop and ask DevOps. The `gi
 | `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL*`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | unset |
 | `INTAKE_TEACHER_ENABLED` (new with #167) | unset (Admin Pusat only) |
 | `MAIL_LOG_RESET_LINKS` | unset (it is refused in production) |
+| `MARKETPLACE_PLATFORM_WHATSAPP`, `PORT`, `COOKIE_DOMAIN` | unset (the defaults are right for the demo) |
 | `JOBS_*`, `OCR_*`, `INTAKE_*`, `THROTTLE_*`, `METRICS_*`, `*_TIMEOUT_MS` | unset (code defaults, as rehearsed) |
 
 New names on `<BACKEND_SHA>` since #112: `<NEW_ENV_NAMES>`.
@@ -206,7 +211,17 @@ Other checks:
 Otherwise roll back (#112 §6):
 - **Pages:** roll back to the previous deployment.
 - **Render:** branch `be/demo-deploy-2`, commit `adcaad0c`.
-- **Database:** `pp_gate`, then drop and `pg_restore "$DUMP"`, then lockdown.
+- **Database:** only together with the API rollback. Run it from the step-1 checkout, in the same shell. In a new shell, set `DEMO_REF`, `PGURL`, `SSLQ` and `DUMP=<the name noted in step 2>` again, and paste `pp_gate` again. Then:
+
+```bash
+read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
+pp_gate && psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; COMMIT;"   # do NOT re-create public: the dump does
+pp_gate && pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP"
+psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -f scripts/supabase/lockdown-data-api.sql
+unset PGPASSWORD
+```
+
+After the restore, run the two lockdown checks from step 6.
 
 ## 12. Clean up, and rotate after the demo (#112 §6–7)
 
