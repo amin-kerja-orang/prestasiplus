@@ -1,0 +1,6 @@
+export { SpmModule } from './spm.module'
+export { SpmPorts, NoStructuredAttempts } from './ports'
+export type { SpmStructuredAttemptSource, SpmStructuredStats } from './ports'
+export { SpmTrackingService } from './tracking.service'
+export type { SetView } from './tracking.service'
+export { setStatus, isStartable, gradeOf, heroClassOf, markPaper2, weakTopicsOf } from './rules'

@@ -27,7 +27,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** Tables that must also carry `legacy_hash` (big activity tables, plan 14.2). Extend when a card adds one. */
-export const HASH_REQUIRED_TABLES: ReadonlySet<string> = new Set(['coin_ledger', 'practice_answers'])
+export const HASH_REQUIRED_TABLES: ReadonlySet<string> = new Set(['battles', 'coin_ledger', 'practice_answers'])
 
 /** Control and platform models that never receive legacy rows (no warning when unlisted). */
 const CONTROL_MODEL = /^(Etl[A-Z]|_)/

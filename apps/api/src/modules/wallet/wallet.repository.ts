@@ -175,6 +175,15 @@ export class WalletRepository {
     return r ? toWallet(r) : null
   }
 
+  /** Set-based read of the current syiling balance of many users (no wallet row: absent from the map). One query per call. */
+  async balancesOf(db: Db, userIds: readonly string[]): Promise<Map<string, number>> {
+    const rows = await db.wallet.findMany({
+      where: { userId: { in: userIds.map((u) => idFromString(u)) } },
+      select: { userId: true, currentSyiling: true },
+    })
+    return new Map(rows.map((r) => [idToString(r.userId), r.currentSyiling]))
+  }
+
   /** Creates the wallet when it does not exist (BR-M14-02: the first credit creates it). Safe under a race. */
   async ensureWallet(db: Db, userId: string, tierId: string | null, at: Date): Promise<void> {
     await db.$executeRaw`

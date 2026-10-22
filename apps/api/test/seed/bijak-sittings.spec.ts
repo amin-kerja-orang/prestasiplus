@@ -58,11 +58,12 @@ describe('PoC Bijak sittings seed', () => {
     await t.close()
   })
 
-  it('is registered after exam and classes, before practice (which stays last)', () => {
+  it('is registered after exam and classes, before practice', () => {
     const names = seedModules.map((m) => m.name)
     expect(names.indexOf('poc-bijak-sittings')).toBeGreaterThan(names.indexOf('exam'))
     expect(names.indexOf('poc-bijak-sittings')).toBeGreaterThan(names.indexOf('poc-classes'))
-    expect(names.indexOf('practice')).toBe(names.length - 1)
+    // The seed registry is append-only: later cards (BE-23 gamification) append after practice.
+    expect(names.indexOf('practice')).toBeGreaterThan(names.indexOf('poc-bijak-sittings'))
     expect(bijakSittingsSeed.kind).toBe('demo')
   })
 

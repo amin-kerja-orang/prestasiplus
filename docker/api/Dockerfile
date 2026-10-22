@@ -23,6 +23,9 @@ COPY apps/api/package.json apps/api/
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY packages ./packages
 COPY apps/api ./apps/api
+# DSKP extracts read by the seed (curriculum.ts: ../../../../docs/reference/dskp = /app/docs/reference/dskp).
+# Build stage only (the migrate job); the runtime image does not read them.
+COPY docs/reference/dskp ./docs/reference/dskp
 # Lint, type-check and tests run in CI, not here.
 RUN npm run be:build
 
@@ -38,13 +41,22 @@ COPY --chown=node:node packages/contract ./packages/contract
 COPY --chown=node:node packages/exam-core ./packages/exam-core
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
+# Migration folder names only matter to GET /api/ready (shipped migrations must be applied); the SQL is not executed here.
+COPY --from=build --chown=node:node /app/apps/api/prisma/migrations ./apps/api/prisma/migrations
 WORKDIR /app/apps/api
 # Non-root (uid 1000 from the base image). Nothing writes outside /tmp (tmpfs) and the uploads folder.
 # The uploads folder is owned by node in the image, so a new named volume (apifiles) inherits that owner.
 ENV FILE_STORAGE_DIR=/var/lib/pretasiplus/files
 RUN mkdir -p /var/lib/pretasiplus/files && chown -R node:node /var/lib/pretasiplus
+# Read-only rootfs (docker run --read-only --tmpfs /tmp): at runtime the API writes only to FILE_STORAGE_DIR
+# (uploads) and os.tmpdir() (/tmp: PDF/OCR scratch, tesseract cache). Prisma 7 uses the pg driver adapter, so no
+# query engine is unpacked into node_modules at start, and nothing runs npm. CI proves it (api.yml, docker job).
 USER node
 EXPOSE 3000
+# SIGTERM starts the graceful shutdown (common/health/graceful-shutdown.ts, SHUTDOWN_GRACE_MS, default 25 s). Give the container
+# a stop timeout above that (compose: stop_grace_period 30s), otherwise Docker sends SIGKILL after 10 s.
+STOPSIGNAL SIGTERM
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT:-3000}/api/health" || exit 1
+# Exec form with node directly (not npm/sh): node is PID 1 and receives SIGTERM itself.
 CMD ["node", "dist/main.js"]

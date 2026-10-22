@@ -28,7 +28,7 @@ import {
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
-import { isLeaf } from './grading'
+import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
   AdminListResult,
@@ -44,6 +44,7 @@ import type {
   QuestionGrade,
   QuestionGuruCreateInput,
   QuestionGuruUpdateInput,
+  QuestionProvenance,
   QuestionRecord,
   QuestionStatus,
   QuestionStatusInfo,
@@ -99,6 +100,9 @@ function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIss
   }
   return { path, message: issue.message }
 }
+
+/** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
+export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
@@ -208,7 +212,7 @@ export class QuestionsService {
     return this.detail(record)
   }
 
-  async create(input: QuestionCreateInput, actor: QuestionActor): Promise<QuestionView> {
+  async create(input: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const flat: FlatSource = {
       questionType: input.questionType,
       questionText: input.questionText,
@@ -239,7 +243,17 @@ export class QuestionsService {
       },
       status,
       actor,
+      provenance,
     )
+  }
+
+  /**
+   * Creates a question like `create` and records its provenance (BE-38: an accepted intake item becomes a Draf question with
+   * its source paper, file, page, region, number label, source type, run id and model). `status` is the one in `input`
+   * (default `draft`); the intake never asks for more.
+   */
+  async createFromIntake(input: QuestionCreateInput, actor: QuestionActor, provenance: QuestionProvenance): Promise<QuestionView> {
+    return this.create(input, actor, provenance)
   }
 
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
@@ -264,7 +278,8 @@ export class QuestionsService {
             done.push(id)
           }
         } else {
-          await this.setStatus(id, action, actor.userId)
+          const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
+          await this.setStatus(id, action, actor.userId, { event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
@@ -287,6 +302,11 @@ export class QuestionsService {
       if (!record) throw questionNotFound()
       const v = record.version
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
+      if (options.event) {
+        await this.prisma.client.questionStatusEvent.create({
+          data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
+        })
+      }
       if (status === 'published') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
         Object.assign(fields, checkKeysGate(v.parts))
@@ -488,7 +508,11 @@ export class QuestionsService {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
     const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
-    if (res.success) return res.data
+    if (res.success) {
+      // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
+      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
+      return res.data
+    }
     const issue = res.error.issues[0]
     const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
@@ -503,8 +527,12 @@ export class QuestionsService {
     return 'questionText'
   }
 
-  private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor): Promise<QuestionView> {
+  private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const draft = await this.draftOf(n, status, null)
+    if (provenance) {
+      draft.numberLabel = provenance.numberLabel
+      draft.sourcePage = provenance.sourcePage
+    }
     if (status === 'published') {
       const fields = checkTagGate({
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
@@ -521,13 +549,25 @@ export class QuestionsService {
     const id = await this.prisma.transaction(async () => {
       const groupId = n.stimulusGroupId ? n.stimulusGroupId : null
       const created = await this.repo.create({
-        sourceType: 'manual',
+        sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
         spmPool: false,
         now: this.clock.now(),
         version: draft,
+        ...(provenance
+          ? {
+              provenance: {
+                sourceRegion: provenance.sourceRegion,
+                sourcePaperId: parse(provenance.sourcePaperId ?? ''),
+                intakeItemId: parse(provenance.intakeItemId ?? ''),
+                sourceFileId: parse(provenance.sourceFileId ?? ''),
+                aiRunId: parse(provenance.aiRunId ?? ''),
+                aiModel: provenance.aiModel,
+              },
+            }
+          : {}),
       })
       return created
     }, TX)

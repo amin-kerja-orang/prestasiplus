@@ -211,7 +211,7 @@ export const BattlePollChallengerResponseSchema = z
 
 /** Query of M16-07. Fewer than 2 trimmed characters answers `{ users: [] }`. */
 export const BattleSearchQuerySchema = z
-  .object({ q: z.string().optional().meta({ description: 'Name fragment, case-insensitive; from 2 trimmed characters.' }) })
+  .object({ q: z.string().max(100).optional().meta({ description: 'Name fragment, case-insensitive; from 2 trimmed characters. Longer than 100 characters answers `{ users: [] }` (the server does not reject).' }) })
   .meta({ id: 'BattleSearchQuery' })
 
 /** One search hit: display name and school of a student (D54(d): replicate the mock; no other personal field). */
@@ -400,7 +400,7 @@ const nn = z.number().int().min(0)
 export const BattleStudentStandingSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema,
+    userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }),
     name: z.string(),
     school: z.string(),
     menang: nn,
@@ -452,10 +452,10 @@ export const BattleSchoolStandingsResultSchema = z
 export const BattleListRowSchema = z
   .strictObject({
     uuid: IdSchema,
-    playerA: z.strictObject({ id: IdSchema, name: z.string(), homeHere: z.boolean() }),
+    playerA: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), homeHere: z.boolean() }),
     scoreA: nn,
     scoreB: nn,
-    playerB: z.strictObject({ id: IdSchema, name: z.string() }),
+    playerB: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string() }),
     winner: BattleWinnerSchema,
     createdAt: TimestampSchema,
   })
@@ -472,7 +472,7 @@ export const BattleSchoolDetailSchema = z
     allTime: z.strictObject({ battles: nn, menang: nn, ketepatan: z.number().int().min(0).max(100), pelajar: nn }),
     week: BattleStandingBoxSchema.nullable(),
     month: BattleStandingBoxSchema.nullable(),
-    fighters: z.array(z.strictObject({ userId: IdSchema, name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
+    fighters: z.array(z.strictObject({ userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
     recent: z.array(BattleListRowSchema).max(BATTLE_RULES.recentShown),
   })
   .meta({ id: 'BattleSchoolDetail' })
@@ -529,13 +529,13 @@ const rangeInt = (lo: number, hi: number) => z.number().int().min(lo).max(hi)
 /**
  * Body of M16-44 (admin). Cross-field rules of the mock: `groups_count` is required for `league` and
  * `hybrid`; `subject` mode needs `subject_id`; `random_mix` needs a non-empty `mixed_subject_ids`;
- * `exam_paper` is always refused (no exam paper exists); close date not before open date. The server
+ * `exam_paper` is always refused (no exam paper exists); close date strictly after the open date (table CHECK). The server
  * answers 422 with every failing field in `fields` and the first message at the top level.
  */
 export const BattleTournamentCreateRequestSchema = z
   .object({
     title: z.string().trim().min(1).max(255),
-    description: z.string().optional(),
+    description: z.string().max(5000).optional(),
     education_level_id: z.enum(BATTLE_TOURNAMENT_LEVELS),
     format: z.enum(BATTLE_TOURNAMENT_FORMATS),
     groups_count: rangeInt(2, 8).optional(),
@@ -563,7 +563,7 @@ export const BattleTournamentCreateRequestSchema = z
     }
     const opens = v.registration_opens_at ? battleLocalDateTimeKey(v.registration_opens_at) : Number.NaN
     const closes = v.registration_closes_at ? battleLocalDateTimeKey(v.registration_closes_at) : Number.NaN
-    if (!Number.isNaN(opens) && !Number.isNaN(closes) && closes < opens) {
+    if (!Number.isNaN(opens) && !Number.isNaN(closes) && closes <= opens) {
       bad('registration_closes_at', BATTLE_MESSAGES.closeBeforeOpen)
     }
   })

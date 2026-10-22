@@ -1,0 +1,126 @@
+// PKSK tables (BE-42, owner module M07). Conventions: docs/architecture/v2-backend-plan.md section 14.2, data model
+// 3.13 (D53 promotes the backlog rows to B1). PKSK questions are NOT here: they are tags (`pksk_domain`, `pksk_level`)
+// on the single question bank (BE-09), reached only through the questions port.
+// Written by hand in migration 0028_pksk: identity columns (GENERATED ALWAYS), CHECK constraints (enums are text + check),
+// the reference rows of `pksk_domains` and `pksk_packages`, and the foreign keys to `users` (other owner, so not Prisma
+// relations: a relation needs a back-relation field in identity.prisma, which this card must not edit).
+
+/// One of the 15 fixed PKSK domains (reference data, inserted by the migration; `display_order` is the list position).
+model PkskDomain {
+  id           BigInt   @id @default(autoincrement())
+  /// A, B, C (check constraint).
+  bahagian     String
+  name         String
+  nameEn       String   @map("name_en")
+  code         String
+  icon         String
+  color        String
+  displayOrder Int      @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  mastery       PkskMastery[]
+  practiceLoads PkskPracticeLoad[]
+
+  @@unique([code], map: "uq_pksk_domains_code")
+  @@index([bahagian, displayOrder], map: "ix_pksk_domains_bahagian_display_order")
+  @@map("pksk_domains")
+}
+
+/// A sellable PKSK package (reference data, 3 rows). Provisional owner: M19 has no card.
+model PkskPackage {
+  id           BigInt   @id @default(autoincrement())
+  name         String
+  /// T1, T4, ALL (check constraint).
+  level        String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  accesses PkskAccess[]
+
+  @@unique([legacySource, legacyId], map: "uq_pksk_packages_legacy")
+  @@map("pksk_packages")
+}
+
+/// A grant of a PKSK package to a user (BR-M07-14: several rows per user are allowed). The display status
+/// (`active`, `expired`, `revoked`) is computed, never stored.
+model PkskAccess {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @map("user_id")
+  packageId    BigInt    @map("package_id")
+  grantedById  BigInt?   @map("granted_by_id")
+  grantedAt    DateTime  @default(now()) @map("granted_at") @db.Timestamptz(6)
+  /// Valid through the end of that day (Malaysia).
+  expiresAt    DateTime? @map("expires_at") @db.Date
+  /// active, revoked (check constraint).
+  status       String    @default("active")
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  package PkskPackage @relation(fields: [packageId], references: [id], onDelete: Restrict, map: "fk_pksk_accesses_package_id")
+
+  @@unique([legacySource, legacyId], map: "uq_pksk_accesses_legacy")
+  @@index([userId], map: "ix_pksk_accesses_user_id")
+  @@index([grantedAt(sort: Desc), id(sort: Desc)], map: "ix_pksk_accesses_granted_at_id")
+  @@map("pksk_accesses")
+}
+
+/// A completed full exam (not an M05 session; credits no syiling, SQ-M07-03). Only completed attempts are stored.
+model PkskExamAttempt {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  /// T1, T4 (check constraint).
+  level        String
+  completedAt  DateTime @map("completed_at") @db.Timestamptz(6)
+  scorePct     Decimal  @map("score_pct") @db.Decimal(5, 1)
+  bahagianAPct Decimal  @map("bahagian_a_pct") @db.Decimal(5, 1)
+  bahagianBPct Decimal  @map("bahagian_b_pct") @db.Decimal(5, 1)
+  bahagianCPct Decimal  @map("bahagian_c_pct") @db.Decimal(5, 1)
+  /// A, B, C, D, E (check constraint).
+  grade        String
+  /// Written under Mod Pelajar: never counted or shown to another user.
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, level, completedAt(sort: Desc)], map: "ix_pksk_exam_attempts_user_id_level_completed_at")
+  @@map("pksk_exam_attempts")
+}
+
+/// Latest practice mastery of one user, level and domain (absent row means 0).
+model PkskMastery {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  /// T1, T4 (check constraint).
+  level      String
+  domainId   BigInt   @map("domain_id")
+  masteryPct Int      @map("mastery_pct") @db.SmallInt
+  isTest     Boolean  @default(false) @map("is_test")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  domain PkskDomain @relation(fields: [domainId], references: [id], onDelete: Restrict, map: "fk_pksk_mastery_domain_id")
+
+  @@unique([userId, level, domainId], map: "uq_pksk_mastery_user_id_level_domain_id")
+  @@map("pksk_mastery")
+}
+
+/// When a practice set was served (upserted on serve, deleted on submit); only supplies the M05 session start time (BR-M07-26 (1)).
+model PkskPracticeLoad {
+  id       BigInt   @id @default(autoincrement())
+  userId   BigInt   @map("user_id")
+  /// T1, T4 (check constraint).
+  level    String
+  domainId BigInt   @map("domain_id")
+  loadedAt DateTime @map("loaded_at") @db.Timestamptz(6)
+
+  domain PkskDomain @relation(fields: [domainId], references: [id], onDelete: Restrict, map: "fk_pksk_practice_loads_domain_id")
+
+  @@unique([userId, level, domainId], map: "uq_pksk_practice_loads_user_id_level_domain_id")
+  @@map("pksk_practice_loads")
+}

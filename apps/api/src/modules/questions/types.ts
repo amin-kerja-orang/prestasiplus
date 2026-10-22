@@ -39,6 +39,23 @@ export type StoreQuestionType = (typeof STORE_QUESTION_TYPES)[number]
 
 export type ViewMode = 'live' | 'latest'
 
+/**
+ * Where a question came from, handed to `QuestionsService.createFromIntake` (BE-38 accept-to-Draf; US-16). Ids are decimal
+ * strings. `sourceType` goes on the question; the others on its first version.
+ */
+export interface QuestionProvenance {
+  sourceType: StoreSourceType
+  numberLabel: string | null
+  sourcePage: number | null
+  /** `{ page, x, y, w, h }` of the question on the source page. */
+  sourceRegion: unknown
+  sourcePaperId: string | null
+  intakeItemId: string | null
+  sourceFileId: string | null
+  aiRunId: string | null
+  aiModel: string | null
+}
+
 /** Who performs a write. `role` is the ACTIVE role of the session. */
 export interface QuestionActor {
   userId: string
@@ -117,6 +134,8 @@ export interface QuestionRecord {
   groupPosition: number | null
   /** `question_tags` kind `pool` present (flat `spmPool`). */
   spmPool: boolean
+  /** BE-42: the PKSK tags (`pksk_domain` code, `pksk_level`) when the question is a PKSK question, else null. */
+  pksk?: { domainCode: string; level: 'T1' | 'T4' } | null
   createdAt: Date
   updatedAt: Date
   version: QuestionVersionRecord
@@ -157,6 +176,8 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
+  idBelow?: string
 }
 
 /** Admin list page plus `meta.counts` (rows per status over the whole filter, status keys of the contract). */
@@ -173,16 +194,24 @@ export interface QuestionSummaryView {
 export interface QuestionFilter {
   subjectId?: string
   educationLevelId?: string
+  /** Any of these levels (ANDed with `educationLevelId` when both are set); `[]` matches nothing. */
+  educationLevelIds?: readonly string[]
   unitId?: string
+  /** Curriculum chapter of the version (`question_versions.chapter_id`). */
+  chapterId?: string
   spId?: string
   tp?: number
   difficultyTp?: number
+  /** Any of these TPs (ANDed with `tp` / `difficultyTp` when both are set); `[]` matches nothing. */
+  difficultyTps?: readonly number[]
   /** Status of the LIVE version when set; counts of `published` use the live version. */
   status?: QuestionStatus
   /** `true` keeps only questions with `is_active`; `eligibleIds` / `sample` always force it. */
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
+  /** `true`: only questions with a `pool` tag (flat `spmPool`); `false`: only questions without one. */
+  spmPool?: boolean
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit'
@@ -228,6 +257,8 @@ export interface SetStatusOptions {
   actor?: 'admin' | 'owner_teacher'
   /** Stored by BE-10 in `question_status_events`; BE-09 ignores it. */
   reason?: string | null
+  /** Set by paths that bypass the BE-10 lifecycle (bulk-action): `setStatus` then writes the status event itself. */
+  event?: { actorUserId: string; actorRole: string; requestId: string | null }
 }
 
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
