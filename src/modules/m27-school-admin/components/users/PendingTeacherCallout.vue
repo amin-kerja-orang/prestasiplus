@@ -37,7 +37,8 @@ onMounted(async () => {
         :to="PENDING_PATH"
         size="lg"
         icon="i-ph-user-check"
-        class="min-h-11"
+        block
+        class="min-h-11 sm:w-auto"
         data-testid="pt-callout-link"
         >Semak</UButton
       >
