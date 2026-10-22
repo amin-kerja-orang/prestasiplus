@@ -13,7 +13,8 @@ seed) needs the LEAD's explicit confirmation first; the scripts ask for it (type
 Contents: 1 Design | 2 Server prerequisites | 3 Parameters | 4 First install | 5 Edge nginx | 6 TLS | 7 Deploy |
 8 Rollback | 9 Backups and restore drill | 10 Monitoring and alerts | 11 Logs | 12 Secrets | 13 Sizing and load test |
 14 Single-instance rule | 15 ClamAV | 16 Cutover 30 Oct (AZ side) | 17 Findings for the developer roles |
-18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto)
+18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto) |
+21 Account recovery and support contact at go-live (AM-18)
 
 ---
 
@@ -677,3 +678,78 @@ Also folded in here (optional G4 minors of the #116 review): the HSTS ramp now l
 `platform-settings.md`; `deploy.sh` refuses a `PP_HSTS` value that is not empty, `max-age=N` or
 `max-age=N; includeSubDomains`; and a failed deploy with no api container running now prints the rollback command
 instead of "nothing to roll back".
+
+---
+
+## 21. Account recovery and support contact at go-live (AM-18)
+
+**Decision AM-18 A** (LEAD DECISION of 22 Oct 2026, 10:30 MYT, on #109): go live **without password-reset e-mail**.
+The "Lupa Kata Laluan" page shows its own BM text, links to **Reset Melalui No IC**, and tells users to ask their
+teacher or school admin (half AM builds that copy change). Real e-mail is a post-go-live card. On this stack nothing
+sends mail: the API binds only the logging mail port, and `deploy.sh` refuses `MAIL_LOG_RESET_LINKS=true`.
+
+### Support contact
+
+- **Who:** the role **"Meja Bantuan PrestasiPlus"**, staffed by the Admin Pusat team. It is printed in the school guide
+  as a role with its channels, never as a person's name or private number.
+- **Channels:** the support mailbox and the platform WhatsApp number. The mailbox only receives mail; it never sends
+  reset links. `LEAD:` both values. The WhatsApp number is the same one as AM-16 S3, due by 29 Oct.
+- **Hours:** during hypercare (30 Oct to 6 Nov), every school day from 07:00 to 18:00 MYT, plus the cutover night. After
+  that, office hours. Expect a spike in reset requests after the cutover: migrated accounts whose old password could
+  not be carried have no usable password and must reset (cutover plan, section 4.5).
+- **Gap (finding F10 below):** the in-app help box (`GET /api/config/support`) reads the `support_config` row. Only the
+  demo seed writes that row. There is no admin screen for it and the migration does not load it, so on production the
+  help box returns `NOT_FOUND` until a reference path exists. Until then the contact appears in the school guide
+  only. Do not insert the row with raw SQL.
+
+### "Lupa Kata Laluan": who resets whom (no e-mail)
+
+| Locked out | 1. Self-service | 2. Within the school | 3. Meja Bantuan |
+|---|---|---|---|
+| Pupil | **Reset Melalui No IC** (e-mail and IC on record; 5 tries per 15 min) | The **teacher** asks the **school admin**, who sets a new password (school-admin pupil list, reset password; `POST /api/admin-sekolah/pelajar/:id/reset-password`): forced change at the next sign-in, other sessions ended, audited | Only through the school admin, never with the pupil directly (minors) |
+| Teacher | Reset Melalui No IC | The **school admin** resets it (teacher list, reset password; `POST /api/admin-sekolah/guru/:id/reset-password`) | If the school has no active school admin: Admin Pusat resets it after the school confirms who the teacher is |
+| School admin | Reset Melalui No IC | A second school admin of the same school, if there is one | **Admin Pusat** issues a one-time password (admin user screen, "reset password"; `PUT /api/admin/users/:id` with `resetPassword`) after an identity check through the school's official channel |
+| Admin Pusat | Reset Melalui No IC | Another **active Admin Pusat** issues a one-time password (same screen) | The LEAD: see "Locked-out last Admin Pusat" below |
+
+Rules for the Meja Bantuan:
+
+- **Identity check:** call back on the school's official number, or have the school admin confirm in writing. Never
+  ask for a full IC number, a password or a screenshot of one in chat or e-mail.
+- **One-time passwords:** a one-time password goes only to the account holder, or to the school admin for a pupil,
+  and over a different channel from the request. It is never written in a ticket, log or issue.
+- **Records:** each request becomes one support ticket line: date, role, school, which path was used and who did it.
+  No IC, no password and no pupil name in GitHub.
+- **Abuse:** many requests for one account, or a caller who cannot be checked, means no reset. Tell the LEAD.
+
+### Locked-out last Admin Pusat
+
+**Prevention (F1, section 20):** keep **at least two active Admin Pusat accounts** from the T-1 check on. Never
+deactivate the second one.
+
+**If no Admin Pusat can sign in:**
+
+1. **Reset Melalui No IC**, if that admin account has an e-mail and IC on record.
+2. **Otherwise, the LEAD on the host uses the documented admin bootstrap or reset path.** This is a one-off, audited
+   command in the `migrate` image, run as `ppdeploy` with the LEAD's confirmation:
+   - `docker compose ... run --rm --no-deps migrate npm run <command> -w @pp/api`;
+   - it reads the e-mail and the new password from a root-only (mode 600) file, never from the command line or chat;
+   - it stores an argon2id hash, sets "must change password", ends that account's sessions and writes an `audit_events`
+     row;
+   - delete the file right after the run.
+
+   **Status: this command does not exist yet.** It is the same backend card as the F1 fallback (section 20), and the
+   LEAD assigns it. Until it lands, prevention is the only safe path.
+3. **Never**, not even in an emergency:
+   - a raw SQL write of `password_hash` (or any other column of `users`);
+   - copying a hash from another account;
+   - the demo seed or `ALLOW_DEMO_SEED`;
+   - `MAIL_LOG_RESET_LINKS`;
+   - restoring a backup to get an old password back.
+
+   Each of these skips the audit trail and the password policy. A backup restore would also lose live data.
+4. Record it in the ops log: date, which path, who confirmed. Tell the LEAD.
+
+| # | Finding | For | Severity |
+|---|---|---|---|
+| F10 | `support_config` (help-box e-mail and WhatsApp) has no production write path: it is written by the demo seed only, there is no admin endpoint, and the ETL does not load it. On production `GET /api/config/support` is `NOT_FOUND`. It needs a reference seed reading two non-secret env values, or an admin write endpoint (a contract change, so a LEAD decision) | backend-developer (BE-24 owner), LEAD | Medium (go-live: the contact is only in the school guide) |
+| F11 | No admin bootstrap or reset command (F1 fallback, locked-out last Admin Pusat) | backend-developer, LEAD assigns | High (until two active Admin Pusat accounts are confirmed) |
