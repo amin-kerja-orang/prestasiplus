@@ -219,7 +219,7 @@ SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin)
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && git fetch -q origin feature/v2-backend && git cat-file -e origin/feature/v2-backend:scripts/cloud-install.sh && git show origin/feature/v2-backend:scripts/cloud-install.sh | bash"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && git fetch -q origin feature/v2-backend && want=PINNED_BLOB_SHA && got=$(git rev-parse origin/feature/v2-backend:scripts/cloud-install.sh) && { [ \"$got\" = \"$want\" ] || { echo \"cloud-install.sh pin mismatch: got $got want $want\" >&2; exit 1; }; } && git cat-file -p \"$got\" | bash"
           }
         ]
       }
@@ -228,7 +228,7 @@ SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin)
 }
 ```
 
-Security: the script runs with the environment's variables and secrets, so any change to `scripts/cloud-install.sh` or `.claude/settings.json` needs a LEAD review before merge. Never put a secret value into the script or the hook.
+Security: the script runs with the environment's variables and secrets. The hook runs only the reviewed blob pinned as `PINNED_BLOB_SHA` (get it with `git rev-parse origin/feature/v2-backend:scripts/cloud-install.sh` after reading the script); a different blob on the tip prints a mismatch and exits 1. The LEAD bumps the pin in `.claude/settings.json` in a reviewed PR. LEAD review is a convention, not a technical block (this repo has no branch protection and no CODEOWNERS), so the pin is the control. `npm ci` and `npm run db:generate` also run lifecycle scripts from the working tree with the same secrets: changes to `package.json` and the lockfile need a LEAD review, and secret-grade variables stay out of environments used by general lanes. Never put a secret value into the script or the hook.
 
 Checks in a cloud session (Perlu pengesahan until run once in a fresh VM):
 
