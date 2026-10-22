@@ -19,7 +19,7 @@ The commits and PR lists are filled in from the merge log. **Before you paste an
 1. **Commits.** Use `20d201c5` (backend) and `9a5b0680` (SPA) everywhere #112 says `23c98226`.
 2. **Migrations.** The count and the newest name are read from `$BE` in step 1. #127, #132 and #135 are merged, so that is 36 migrations, up to `0042_question_sets_nullable_classroom`.
 3. **Questions.** #129 (the D1–D4 pool) is merged, so the questions count is **1271**. Every other count in #112 §2.6 is unchanged (rehearsed in step 13).
-4. **SPA diff check (#112 §4.2).** Only the worker and the demo scripts must match `$BE`. `apps/api` on the SPA branch is older by design: `be/integration-frontend` is synced to `23c98226`, not to the later backend merges.
+4. **SPA diff check (#112 §4.2).** Only the worker and the demo scripts must match `$BE`. `apps/api` on the SPA branch is older by design: `be/integration-frontend` is synced to `23c98226`, not yet to the later backend merges (the next FE sync is AZ-Dev5's).
 5. **New env name.** #167 is merged, so the one new name is `INTAKE_TEACHER_ENABLED`. Leave it unset: intake is Admin Pusat only, and the demo has no teacher intake step.
 6. **Go/no-go.** Step 11 is new and comes from AZ-32 (#144).
 
@@ -259,4 +259,6 @@ Local only: nothing ran against Render, Supabase or Cloudflare. Run on 22 Oct at
 - **Smoke:** `Result: 29 passed, 0 failed`. Straight at the API with no edge, it is 25 passed with the 3 proxy-only failures, as in #112.
 - **Walkthrough:** read-only gave `102 passed, 0 failed, 5 skipped`, exit 3. With writes it gave `116 passed, 0 failed, 0 skipped`, `GO`, exit 0.
 - **Rollback (§11 block):** `TABLE DATA` 197 and `SCHEMA - public` 1. The drop, then the restore `&&` lockdown, gives exit 0. After it: 1271 questions, 51 users, 36 migrations, 0 grants, `f`.
-- **Not rehearsed:** the browser go/no-go (step 11) and the two-network login check. These need the real deploy.
+- **Earlier run at `8008b88a`** (session `014qZoig`, commit `e5cf65ab`): the same code, since #187 is docs only. It gave the same counts and walkthrough results, and a second seed run was idempotent.
+- **In the browser (AZ-38, on the #176/#178 trees, now merged):** D-01, D-02 and D-03 pass at 375/768/1280, and the 5 solo games pass 15/15.
+- **Not rehearsed at these SHAs:** the browser go/no-go (step 11) and the two-network login check. These need the real deploy.
