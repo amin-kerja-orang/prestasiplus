@@ -119,7 +119,7 @@ const RESULT: MockResult = {
 let router: Router
 let wrapper: VueWrapper | null = null
 
-async function render(component: unknown, url: string) {
+async function render(component: unknown, url: string, catchAll: object = {}) {
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -127,7 +127,7 @@ async function render(component: unknown, url: string) {
       { path: '/spm-mock/:id(\\d+)', component: MockRunPage },
       { path: '/spm-mock/:id(\\d+)/result', component: MockResultPage },
       { path: '/pusat-ai/spm', component: WalkthroughPage },
-      { path: '/:rest(.*)*', component: { template: '<div />' } },
+      { path: '/:rest(.*)*', component: { template: '<div />' }, ...catchAll },
     ],
   })
   await router.push(url)
@@ -151,6 +151,20 @@ afterEach(() => {
 })
 
 describe('S11 MockExamPage', () => {
+  it('links the Duta card to /bilik-duta/{slug} only when that route exists (D9 dead link)', async () => {
+    // Catch-all registered as the global 404 (the real app): the M24 page is unbuilt, so no link.
+    const w = await render(MockExamPage, '/spm-mock', { name: 'core.not-found' })
+    const card = t(w, 'duta-card')
+    expect(card.element.tagName).toBe('DIV')
+    expect(card.attributes('href')).toBeUndefined()
+    expect(t(w, 'duta-name').text()).toBe('Cikgu Ujian')
+  })
+
+  it('keeps the Duta card a link when the route exists', async () => {
+    const w = await render(MockExamPage, '/spm-mock')
+    expect(t(w, 'duta-card').attributes('href')).toBe('/bilik-duta/maestro-matematik')
+  })
+
   it('renders the hero, warning, form and the list with chips and links', async () => {
     const w = await render(MockExamPage, '/spm-mock')
     expect(t(w, 'mock-title').text()).toContain('📝 SPM Mock Exam')

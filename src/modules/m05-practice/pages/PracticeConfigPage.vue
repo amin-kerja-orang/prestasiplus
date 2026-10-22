@@ -14,7 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
-import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
+import { useApi, usePageMeta, usePrototypeScope, useRouteExists } from '@/composables'
 import { DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 
@@ -38,6 +38,8 @@ const route = useRoute()
 const router = useRouter()
 // Prototype scope (D43): "Langgan" (/pricing) is outside the matrix.
 const { allows } = usePrototypeScope()
+// DV: `/pricing` (M19) is not routed yet, so the subscribe link is hidden until it is.
+const { routeExists } = useRouteExists()
 const pageMeta = usePageMeta()
 
 const code = computed(() => String(route.params.code ?? ''))
@@ -139,7 +141,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
       >
         <template #description>
           Baki percubaan percuma: <strong>{{ config.trial.remaining }}</strong> soalan lagi.
-          <ULink v-if="allows('/pricing')" to="/pricing" class="text-highlighted"
+          <ULink v-if="allows('/pricing') && routeExists('/pricing')" to="/pricing" class="text-highlighted"
             >Langgan untuk akses tanpa had</ULink
           >
         </template>

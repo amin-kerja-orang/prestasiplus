@@ -101,7 +101,7 @@ describe('intake wire mappers', () => {
       { page: 2, text: '', source: 'text-layer' },
     ])
   })
-  it('maps a batch with no questions and flags the items step', () => {
+  it('maps a batch whose items could not be read and flags the items step', () => {
     const b = batchFromWire(detail, [])
     expect(b).toMatchObject({
       fileName: 'k2.pdf',
@@ -203,12 +203,7 @@ describe('intake client', () => {
 
   it('keeps the routes without a controller unavailable', async () => {
     const { server } = setup({})
-    await expect(server.saveExtracted('b1', {} as never)).rejects.toMatchObject({
-      code: 'unavailable',
-    })
-    await expect(server.submitForReview('b1')).rejects.toMatchObject({ code: 'unavailable' })
-    await expect(server.createManualBatch(1, {} as never)).rejects.toMatchObject({
-      code: 'unavailable',
-    })
+    await expect(server.resubmit('k')).rejects.toMatchObject({ code: 'unavailable' })
+    await expect(server.getBankEditable('q')).rejects.toMatchObject({ code: 'unavailable' })
   })
 })

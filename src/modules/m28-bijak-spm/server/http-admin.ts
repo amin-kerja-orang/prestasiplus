@@ -3,10 +3,12 @@
  * list (`/api/admin/papers*`, `/api/admin/blueprints*`, BE-39). It extends the student client so
  * `bijakAdminServer()` is one object with both surfaces, sharing its CSRF and error handling.
  *
- * The intake list, detail and upload call the BE-37 routes (`/api/intake/*`, see ./intake-wire). The
- * extracted-question, review-queue and question-bank screens have no Bijak backend route yet: those
- * methods REJECT (never throw synchronously) with `BijakError('unavailable')`, so each page shows
- * its own load/save error state instead of crashing.
+ * The intake list, detail and upload call the BE-37 routes (`/api/intake/*`, see ./intake-wire); the
+ * extracted-question editor, the extraction step and the review queue call the BE-38 routes
+ * (`/api/intake/items*`, `/stimuli`, `/extract`, `/review`; ./intake-wire, ./review-wire); the bank
+ * list, stats and preview read the BE-09 admin questions (`/api/questions*`; ./bank-wire). The few
+ * methods with no route (the bank "Sunting" versions, "Minta Pembetulan") REJECT (never throw
+ * synchronously) with `BijakError('unavailable')`, so each page shows its own state, not a crash.
  *
  * Like `./http` this must never import `store.ts` or the seed registry (type imports only).
  */
@@ -32,17 +34,64 @@ import type {
   ReviewQuestion,
 } from '../domain/admin-types'
 import type { StimulusDef, Subject, SubjectCode } from '../domain/types'
-import type { IntakeBatch, IntakeSummary, IntakeMeta, ExtractedPaper, PageText, IntakeStatus } from '../admin/intake/types'
+import type {
+  BankDetail,
+  BankFilter,
+  BankRow,
+  BankStats,
+  DecisionAction,
+  DecisionResult,
+  QueueFilter,
+  QueueItem,
+  QuestionStatus as BankStatus,
+  ReviewDetail,
+} from '../domain/admin-types'
+import type {
+  IntakeBatch,
+  IntakeIssue,
+  IntakeQuestion,
+  IntakeStimulus,
+  IntakeSummary,
+  IntakeMeta,
+  ExtractedPaper,
+  ManualMeta,
+  PageText,
+  IntakeStatus,
+  SaveExtractedPayload,
+} from '../admin/intake/types'
+import {
+  bankDetailFrom,
+  bankRowFrom,
+  wireStatusesOf,
+  type WireBankDetail,
+  type WireBankRow,
+} from './bank-wire'
 import { BijakError } from './errors'
 import {
   batchFromWire,
+  issuesFromWire,
+  itemPatch,
   pagesFromWire,
   paperTypeToWire,
+  questionFromItem,
+  stimulusFromWire,
   summaryFromWire as intakeSummaryFromWire,
+  type SaveIdMap,
   type WireBatchDetail,
   type WireBatchSummary,
+  type WireItem,
   type WirePage,
+  type WireReview,
+  type WireStimulus,
 } from './intake-wire'
+import {
+  countsFromWire,
+  queueItemFromRow,
+  reviewDetailFromItem,
+  statesOfStatus,
+  type QueueContext,
+} from './review-wire'
+import type { IntakeItemRow, IntakeItemStateCounts } from '@pp/contract'
 import { ApiError } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
@@ -86,6 +135,8 @@ export type BijakAdminMethods = Omit<
     pages: PageText[],
     file?: File,
   ): Promise<IntakeBatch>
+  /** http mode only: asks the server to extract the questions of an uploaded batch (BE-38). */
+  extractBatch?(batchId: string): Promise<void>
 }
 
 export const UNAVAILABLE_MESSAGE = 'Fungsi ini belum tersedia.'
@@ -163,6 +214,46 @@ const enc = encodeURIComponent
 const PAGE_SIZE = 100
 const MAX_PAGES = 50
 
+const BANK_PAGE = 50
+const REMOVED_REASON = 'Dibuang oleh penyemak.'
+const REJECT_REASON_REQUIRED = 'Sebab penolakan diperlukan.'
+
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
+
+/** Runs `fn` over `items` with at most `limit` in flight; results keep the input order. */
+async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array<R>(items.length)
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const i = next++
+      out[i] = await fn(items[i] as T)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return out
+}
+
+/** PATCH body of a stimulus, or null when nothing changed. */
+function stimulusPatch(prev: IntakeStimulus, next: IntakeStimulus): Record<string, unknown> | null {
+  const out: Record<string, unknown> = {}
+  if (prev.label !== next.label) out.label = next.label
+  if ((prev.caption ?? '') !== (next.caption ?? '')) out.caption = next.caption || null
+  if (prev.alt !== next.alt) out.alt = next.alt
+  if ((prev.text ?? '') !== (next.text ?? '')) out.text = next.text || null
+  if (JSON.stringify(prev.table ?? null) !== JSON.stringify(next.table ?? null)) out.table = next.table ?? null
+  return Object.keys(out).length > 0 ? out : null
+}
+
+/** BM messages of a refused accept / reject: the gate issues, else the field messages, else the message. */
+export function decisionErrors(e: ApiError): string[] {
+  const body = e.body as { error?: { details?: { issues?: { where: string; message: string }[] } } } | null
+  const issues = body?.error?.details?.issues
+  if (issues && issues.length > 0) return issues.map((i) => `${i.where}: ${i.message}`)
+  if (e.fields && Object.keys(e.fields).length > 0) return Object.values(e.fields)
+  return [e.message]
+}
+
 function unavailable<T>(): Promise<T> {
   return Promise.reject(new BijakError('unavailable', UNAVAILABLE_MESSAGE))
 }
@@ -178,7 +269,20 @@ export function uploadError(e: unknown): unknown {
   return toBijakError(e)
 }
 
+interface Snapshot {
+  /** Open items and stimuli as the server last returned them (the base of the next diff). */
+  questions: Map<string, IntakeQuestion>
+  stimuli: Map<string, IntakeStimulus>
+  /** Local id (a row the editor added) to the server id it got. */
+  alias: Map<string, string>
+  base: IntakeBatch
+}
+
 export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminMethods {
+  private readonly snapshots = new Map<string, Snapshot>()
+  private readonly batchInfo = new Map<string, WireBatchDetail>()
+  private subjectsReady: Promise<readonly Subject[]> | null = null
+
   constructor(options: HttpBijakOptions = {}) {
     super(options)
   }
@@ -294,6 +398,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   async getIntakeBatch(id: string): Promise<IntakeBatch> {
     const detail = await this.send<WireBatchDetail>('GET', `/api/intake/batches/${enc(id)}`)
+    this.batchInfo.set(id, detail)
     const lists: { pages: WirePage[] }[] = []
     for (const f of detail.files) {
       if (f.status !== 'done') {
@@ -308,22 +413,61 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
         lists.push({ pages: [] }) // the text is a convenience; the batch still opens
       }
     }
-    return batchFromWire(detail, pagesFromWire(lists))
+    // The extracted items are what the screen edits; if they cannot be read the batch still opens
+    // with the "unavailable" note (itemsUnavailable) instead of failing.
+    let extras: { items?: WireItem[]; review?: WireReview } = {}
+    try {
+      const review = await this.send<WireReview>('GET', `/api/intake/batches/${enc(id)}/review`)
+      extras = { review, items: await this.loadOpenItems(id) }
+    } catch {
+      extras = {}
+    }
+    const batch = batchFromWire(detail, pagesFromWire(lists), extras)
+    this.snapshots.set(id, {
+      questions: new Map(batch.questions.map((q) => [q.id, clone(q)])),
+      stimuli: new Map(batch.stimuli.map((x) => [x.id, clone(x)])),
+      alias: this.snapshots.get(id)?.alias ?? new Map(),
+      base: clone(batch),
+    })
+    return batch
   }
 
-  /**
-   * Declaration (POST /intake/batches) then the PDF (multipart `files` part, POST
-   * /intake/batches/{id}/files). The browser extraction (`extracted`, `pages`) is not sent: the
-   * server reads the file itself. A failed upload cancels the new batch (best effort).
-   */
-  async createIntakeBatch(
-    _userId: number,
-    meta: IntakeMeta,
-    _extracted: ExtractedPaper,
-    _pages: PageText[],
-    file?: File,
-  ): Promise<IntakeBatch> {
-    const created = await this.send<WireBatchSummary>('POST', '/api/intake/batches', {
+  /** Items still to decide (generated, needs_review, duplicate), in paper order, with full content. */
+  private async loadOpenItems(batchId: string): Promise<WireItem[]> {
+    const { rows } = await this.pagedAll<IntakeItemRow>(`/api/intake/items?batchId=${enc(batchId)}`)
+    const open = rows.filter((r) => r.state !== 'accepted' && r.state !== 'rejected')
+    const items = await mapLimit(open, 6, (r) =>
+      this.send<WireItem>('GET', `/api/intake/items/${enc(r.id)}`),
+    )
+    return items.sort((a, b) => a.position - b.position)
+  }
+
+  /** Every page of a paged list (page size 100) with the `meta` of the first page. */
+  private async pagedAll<T, M = Record<string, unknown>>(
+    url: string,
+  ): Promise<{ rows: T[]; meta: M | undefined }> {
+    const rows: T[] = []
+    let first: M | undefined
+    try {
+      for (let page = 1; page <= MAX_PAGES; page += 1) {
+        const sep = url.includes('?') ? '&' : '?'
+        const body = await this.client.request<{
+          data: T[]
+          meta?: M & { totalPages?: number }
+        }>('GET', `${url}${sep}page=${page}&pageSize=${PAGE_SIZE}`, { raw: true })
+        rows.push(...(body?.data ?? []))
+        if (page === 1) first = body?.meta
+        if (page >= (body?.meta?.totalPages ?? 1)) break
+      }
+    } catch (e) {
+      throw toBijakError(e)
+    }
+    return { rows, meta: first }
+  }
+
+  /** Declaration (POST /intake/batches); the same body for an upload and a manual batch. */
+  private declare(meta: Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'>): Promise<WireBatchSummary> {
+    return this.send<WireBatchSummary>('POST', '/api/intake/batches', {
       paperType: paperTypeToWire(meta.paperType),
       subject: meta.subject,
       kertas: meta.kertas,
@@ -333,6 +477,22 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       ...(meta.notes.trim() ? { notes: meta.notes.trim() } : {}),
       declaration: true,
     })
+  }
+
+  /**
+   * Declaration (POST /intake/batches) then the PDF (multipart `files` part, POST
+   * /intake/batches/{id}/files). The browser extraction (`extracted`, `pages`) is not sent: the
+   * server reads the file itself and extracts on request (`extractBatch`). A failed upload cancels
+   * the new batch (best effort).
+   */
+  async createIntakeBatch(
+    _userId: number,
+    meta: IntakeMeta,
+    _extracted: ExtractedPaper,
+    _pages: PageText[],
+    file?: File,
+  ): Promise<IntakeBatch> {
+    const created = await this.declare(meta)
     if (file) {
       const form = new FormData()
       form.append('files', file, file.name)
@@ -346,21 +506,340 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return this.getIntakeBatch(created.id)
   }
 
-  /* ---------------------------------------------------- no backend route yet: not available */
+  /** "Tulis Soalan Manual": a declaration without a file plus one blank item (POST .../items). */
+  async createManualBatch(_userId: number, meta: ManualMeta): Promise<IntakeBatch> {
+    // `forPaperId` (return to the paper builder) has no wire field: the link back is not kept.
+    const created = await this.declare(meta)
+    await this.send<WireItem>('POST', `/api/intake/batches/${enc(created.id)}/items`, { page: 1 })
+    return this.getIntakeBatch(created.id)
+  }
 
-  createManualBatch: BijakAdminMethods['createManualBatch'] = () => unavailable()
-  saveExtracted: BijakAdminMethods['saveExtracted'] = () => unavailable()
-  submitForReview: BijakAdminMethods['submitForReview'] = () => unavailable()
-  listReviewQueue: BijakAdminMethods['listReviewQueue'] = () => unavailable()
-  getReviewItem: BijakAdminMethods['getReviewItem'] = () => unavailable()
-  reviewDecision: BijakAdminMethods['reviewDecision'] = () => unavailable()
-  resubmit: BijakAdminMethods['resubmit'] = () => unavailable()
+  /** POST /intake/batches/{id}/extract: 202 (queued or running) or 200 (already done); the page polls. */
+  async extractBatch(batchId: string): Promise<void> {
+    await this.send<unknown>('POST', `/api/intake/batches/${enc(batchId)}/extract`, {})
+  }
+
+  /* --------------------------------------------------- items: save the editor (BE-38) */
+
+  /** Saves are serialised: an autosave and the "Simpan draf" button must not interleave. */
+  private saveChain: Promise<unknown> = Promise.resolve()
+
+  saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
+    const run = this.saveChain.then(() => this.persistExtracted(id, payload))
+    this.saveChain = run.catch(() => {})
+    return run
+  }
+
+  /**
+   * Sends only what changed since the last read: new stimuli (POST), edited ones (PATCH), removed
+   * ones (DELETE), new items (POST then PATCH), edited items (PATCH), removed items (reject with a
+   * fixed reason, the item is kept with it). The page keeps its local ids for new rows until the
+   * result's `idMap` is applied; progress made before a failure is remembered so a retry does not
+   * create a second copy.
+   */
+  private async persistExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
+    if (!this.snapshots.has(id)) await this.getIntakeBatch(id)
+    const snap = this.snapshots.get(id)!
+    const stimOf = (sid: string): string => snap.alias.get(sid) ?? sid
+
+    // 1. stimuli, so that items can point at their server ids
+    const keepStimuli = new Set<string>()
+    for (const st of payload.stimuli) {
+      const sid = stimOf(st.id)
+      keepStimuli.add(sid)
+      const prev = snap.stimuli.get(sid)
+      if (!prev) {
+        const created = await this.send<WireStimulus>('POST', `/api/intake/batches/${enc(id)}/stimuli`, {
+          kind: st.kind,
+          label: st.label,
+          ...(st.page ? { page: st.page } : {}),
+          ...(st.caption ? { caption: st.caption } : {}),
+          ...(st.alt ? { alt: st.alt } : {}),
+          ...(st.text ? { text: st.text } : {}),
+          ...(st.table ? { table: st.table } : {}),
+        })
+        snap.alias.set(st.id, created.id)
+        snap.stimuli.set(created.id, stimulusFromWire(created))
+        keepStimuli.add(created.id)
+        continue
+      }
+      const patch = stimulusPatch(prev, st)
+      if (patch) {
+        const updated = await this.send<WireStimulus>('PATCH', `/api/intake/stimuli/${enc(sid)}`, patch)
+        snap.stimuli.set(sid, stimulusFromWire(updated))
+      }
+    }
+    // (removal of a stimulus waits until the items stopped using it, below)
+
+    // 2. items
+    const keepItems = new Set<string>()
+    for (const q of payload.questions) {
+      let qid = snap.alias.get(q.id) ?? q.id
+      let prev = snap.questions.get(qid)
+      if (!prev) {
+        const created = await this.send<WireItem>('POST', `/api/intake/batches/${enc(id)}/items`, {
+          page: q.page,
+        })
+        qid = created.id
+        snap.alias.set(q.id, qid)
+        prev = questionFromItem(created)
+        snap.questions.set(qid, clone(prev))
+      }
+      keepItems.add(qid)
+      const next: IntakeQuestion = {
+        ...q,
+        id: qid,
+        ...(q.stimulusId ? { stimulusId: stimOf(q.stimulusId) } : {}),
+      }
+      if (!q.stimulusId) delete next.stimulusId
+      const patch = itemPatch(prev, next)
+      if (patch) {
+        const updated = await this.send<WireItem>('PATCH', `/api/intake/items/${enc(qid)}`, patch)
+        snap.questions.set(qid, questionFromItem(updated))
+      }
+    }
+    for (const [qid] of [...snap.questions]) {
+      if (keepItems.has(qid)) continue
+      await this.send<unknown>('POST', `/api/intake/items/${enc(qid)}/reject`, {
+        reason: REMOVED_REASON,
+      })
+      snap.questions.delete(qid)
+    }
+
+    // 3. stimuli the editor dropped (their items were detached above or by the server)
+    for (const [sid] of [...snap.stimuli]) {
+      if (keepStimuli.has(sid)) continue
+      await this.send<unknown>('DELETE', `/api/intake/stimuli/${enc(sid)}`)
+      snap.stimuli.delete(sid)
+      for (const [k, v] of snap.questions) if (v.stimulusId === sid) snap.questions.set(k, { ...v, stimulusId: undefined })
+    }
+
+    const idMap: SaveIdMap = { items: {}, stimuli: {} }
+    for (const [local, server] of snap.alias) {
+      if (snap.questions.has(server)) idMap.items[local] = server
+      else if (snap.stimuli.has(server)) idMap.stimuli[local] = server
+    }
+    return {
+      ...clone(snap.base),
+      questions: payload.questions.map((q) => clone(snap.questions.get(snap.alias.get(q.id) ?? q.id) ?? q)),
+      stimuli: payload.stimuli.map((x) => clone(snap.stimuli.get(snap.alias.get(x.id) ?? x.id) ?? x)),
+      idMap,
+    }
+  }
+
+  /**
+   * The batch moves nothing server-side (the items are in the review queue since extraction); this
+   * runs the batch gate (`GET .../review`, which also lists the batch-level rules) and shows the
+   * Semakan state for the session.
+   */
+  async submitForReview(
+    id: string,
+  ): Promise<{ ok: true; batch: IntakeBatch } | { ok: false; issues: IntakeIssue[] }> {
+    const review = await this.send<WireReview>('GET', `/api/intake/batches/${enc(id)}/review`)
+    if (review.issues.length > 0) return { ok: false, issues: issuesFromWire(review.issues) }
+    const batch = await this.getIntakeBatch(id)
+    const at = Date.now()
+    return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
+  }
+
+  /* ----------------------------------------------------- review queue (BE-38 items) */
+
+  private async queueContext(batchIds: readonly string[]): Promise<QueueContext> {
+    const subjects = await this.ensureSubjects()
+    await mapLimit(
+      batchIds.filter((b) => !this.batchInfo.has(b)),
+      6,
+      async (b) => {
+        try {
+          this.batchInfo.set(b, await this.send<WireBatchDetail>('GET', `/api/intake/batches/${enc(b)}`))
+        } catch {
+          /* the row still lists; kertas and source stay blank */
+        }
+      },
+    )
+    return {
+      subjectName: (code) => subjects.find((s) => s.code === code)?.name ?? code,
+      batch: undefined,
+      now: Date.now(),
+    }
+  }
+
+  private ctxFor(base: QueueContext, batchId: string): QueueContext {
+    const b = this.batchInfo.get(batchId)
+    return { ...base, batch: b ? { kertas: b.kertas, source: b.source } : undefined }
+  }
+
+  async listReviewQueue(f: QueueFilter = {}): Promise<{
+    items: QueueItem[]
+    counts: Record<BankStatus, number>
+  }> {
+    const status = f.status ?? 'semakan'
+    const states = statesOfStatus(status)
+    const params = new URLSearchParams()
+    if (f.subject) params.set('subject', f.subject)
+    if (states && states.length === 1) params.set('state', states[0]!)
+    const { rows, meta } = await this.pagedAll<IntakeItemRow, { counts?: IntakeItemStateCounts }>(
+      `/api/intake/items${params.size ? `?${params}` : ''}`,
+    )
+    const counts = countsFromWire(
+      meta?.counts ?? { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 },
+    )
+    const wanted = states === null ? rows : rows.filter((r) => states.includes(r.state))
+    const base = await this.queueContext([...new Set(wanted.map((r) => r.batchId))])
+    const items = wanted
+      .map((r) => queueItemFromRow(r, this.ctxFor(base, r.batchId)))
+      .filter((i) => (!f.kertas || i.kertas === f.kertas) && (!f.kind || i.kind === f.kind))
+    return { items, counts }
+  }
+
+  async getReviewItem(key: string): Promise<ReviewDetail> {
+    const item = await this.send<WireItem>('GET', `/api/intake/items/${enc(key)}`)
+    const base = await this.queueContext([item.batchId])
+    return reviewDetailFromItem(item, this.ctxFor(base, item.batchId))
+  }
+
+  /**
+   * Lulus = accept (creates a Draf question, never publishes); Tolak = reject with the mandatory
+   * reason. A gate failure (422 `details.issues`) or a locked item (409) comes back as `errors`, the
+   * way the page shows them. "Minta Pembetulan" has no route (the page hides it in http mode).
+   */
+  async reviewDecision(
+    key: string,
+    d: { action: DecisionAction; reason?: string; by?: string },
+  ): Promise<DecisionResult> {
+    if (d.action === 'betulkan') return unavailable()
+    const reason = d.reason?.trim() ?? ''
+    if (d.action === 'tolak' && !reason) return { ok: false, errors: [REJECT_REASON_REQUIRED] }
+    try {
+      if (d.action === 'terbit') await this.exec('POST', `/api/intake/items/${enc(key)}/accept`, {})
+      else await this.exec('POST', `/api/intake/items/${enc(key)}/reject`, { reason })
+      return { ok: true, errors: [] }
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        return { ok: false, errors: decisionErrors(e) }
+      }
+      throw toBijakError(e)
+    }
+  }
+
+  /* ---------------------------------------------------------- bank (BE-09 admin questions) */
+
+  /** Bijak subjects (code and name) from the admin blueprints, loaded once. */
+  private ensureSubjects(): Promise<readonly Subject[]> {
+    this.subjectsReady ??= this.listBlueprints().then(
+      (rows) => {
+        const seen = new Map<string, Subject>()
+        for (const b of rows) if (!seen.has(b.subject)) seen.set(b.subject, { code: b.subject, name: b.subjectName })
+        this.subjectList.splice(0, this.subjectList.length, ...seen.values())
+        this.subjectsRequested = true
+        return this.subjectList
+      },
+      (e) => {
+        this.subjectsReady = null
+        throw e
+      },
+    )
+    return this.subjectsReady
+  }
+
+  /** Subject id (BE-09 `subject.id`) of each Bijak subject, matched by name. */
+  private async bankSubjects(): Promise<{ code: string; name: string; id: string; total: number; published: number }[]> {
+    const subjects = await this.ensureSubjects()
+    const summary = await this.send<{ subjects: { id: string; name: string; total: number; approved: number }[] }>(
+      'GET',
+      '/api/questions/summary',
+    )
+    const out: { code: string; name: string; id: string; total: number; published: number }[] = []
+    for (const s of subjects) {
+      const hit = summary.subjects.find((x) => x.name.trim().toLowerCase() === s.name.trim().toLowerCase())
+      if (hit) out.push({ code: s.code, name: s.name, id: hit.id, total: hit.total, published: hit.approved })
+    }
+    return out
+  }
+
+  private async questionList<T>(
+    params: Record<string, string>,
+  ): Promise<{ data: T[]; meta: { totalItems?: number } | undefined }> {
+    try {
+      const body = await this.client.request<{ data: T[]; meta?: { totalItems?: number } }>(
+        'GET',
+        `/api/questions?${new URLSearchParams(params)}`,
+        { raw: true },
+      )
+      return { data: body?.data ?? [], meta: body?.meta }
+    } catch (e) {
+      throw toBijakError(e)
+    }
+  }
+
+  async listBank(f: BankFilter = {}): Promise<BankRow[]> {
+    const subjects = (await this.bankSubjects()).filter((s) => !f.subject || s.code === f.subject)
+    const wire = wireStatusesOf(f.status ?? 'terbit')
+    const combos = subjects.flatMap((s) => (wire ?? [undefined]).map((st) => ({ s, st })))
+    const lists = await mapLimit(combos, 4, async ({ s, st }) => {
+      const res = await this.questionList<WireBankRow>({
+        subjectId: s.id,
+        pageSize: String(BANK_PAGE),
+        ...(st ? { status: st } : {}),
+        ...(f.q?.trim() ? { search: f.q.trim() } : {}),
+      })
+      return res.data.map((r) => ({ r, s }))
+    })
+    const found = lists.flat()
+    // The row has no question type or marks: one read per row (at most BANK_PAGE per subject).
+    const rows = await mapLimit(found, 6, async ({ r, s }) => {
+      const d = await this.send<WireBankDetail>('GET', `/api/questions/${enc(r.id)}`)
+      return bankRowFrom(r, d, s)
+    })
+    return rows
+      .filter((r) => !f.kind || r.kind === f.kind)
+      .sort((a, b) => a.subject.localeCompare(b.subject))
+  }
+
+  async bankStats(): Promise<BankStats> {
+    const subjects = await this.bankSubjects()
+    const count = async (id: string, status: string): Promise<number> =>
+      (await this.questionList({ subjectId: id, status, pageSize: '1' })).meta?.totalItems ?? 0
+    const by = await mapLimit(subjects, 2, async (s) => {
+      const [review, approved, draft, archived] = await Promise.all(
+        ['review', 'approved', 'draft', 'archived'].map((st) => count(s.id, st)),
+      )
+      return {
+        code: s.code,
+        name: s.name,
+        terbit: s.published,
+        semakan: (review ?? 0) + (approved ?? 0),
+        draf: draft ?? 0,
+        ditolak: archived ?? 0,
+      }
+    })
+    return {
+      total: subjects.reduce((n, s) => n + s.total, 0),
+      bySubject: by,
+    }
+  }
+
+  async getBankDetail(qid: string): Promise<BankDetail> {
+    const d = await this.send<WireBankDetail>('GET', `/api/questions/${enc(qid)}`)
+    const subjects = await this.ensureSubjects()
+    const name = d.subject?.name ?? ''
+    const subject = subjects.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? {
+      code: name,
+      name,
+    }
+    return bankDetailFrom(d, subject, bankRowFrom(d, d, subject))
+  }
+
+  /* ------------------------------------------------ no backend route: not available */
+
+  // The bank "Sunting" makes version n+1 of a published question; BE-09 edits a question in place
+  // (PUT /questions/{id}) and has no version or revision queue, and the flat BE-09 shape cannot be
+  // round-tripped into the intake editor without losing the mark scheme.
+  getBankEditable: BijakAdminMethods['getBankEditable'] = () => unavailable()
   reviseQuestion: BijakAdminMethods['reviseQuestion'] = () => unavailable()
   reviseQuestionFull: BijakAdminMethods['reviseQuestionFull'] = () => unavailable()
-  getBankEditable: BijakAdminMethods['getBankEditable'] = () => unavailable()
-  listBank: BijakAdminMethods['listBank'] = () => unavailable()
-  bankStats: BijakAdminMethods['bankStats'] = () => unavailable()
-  getBankDetail: BijakAdminMethods['getBankDetail'] = () => unavailable()
+  // An accepted or rejected item is final (409); the queue has no correction or resubmit step.
+  resubmit: BijakAdminMethods['resubmit'] = () => unavailable()
 }
 
 export function createHttpBijakAdminServer(options: HttpBijakOptions = {}): HttpBijakAdminServer {
