@@ -7,6 +7,7 @@
  *   RunLedger        etl_runs / etl_recon access
  *   loadCheckpoint / saveCheckpoint, batches
  *   resolveSelfReferences   pass 2 of the two-pass self-reference load
+ *   withSourceLock   per-source advisory lock for the standalone commands (same key as the orchestrator)
  *   Runner           dry-run (default) and apply with the dry-run gate
  *   registerMigrateCommand  how a `migrate:*` CLI command self-registers
  */
@@ -58,4 +59,5 @@ export {
   type RunStatus,
   type SqlExecutor,
 } from './types'
+export { sourceLockKey, SourceLockBusyError, withSourceLock } from './source-lock'
 export { upsertByLegacy, type LegacyRow, type UpsertResult, type UpsertSpec } from './upsert'
