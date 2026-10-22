@@ -65,7 +65,7 @@ Env variable names only are documented here; values live in `.env.api`, `.env.db
 `compose.http.yaml` is an overlay for DEV and E2E. It changes three services compared with `compose.yaml`:
 
 - `frontend`: built with `BUILD_MODE=production`, `VITE_API_MODE=http`, `VITE_TEST_HOOKS=false`, empty `VITE_API_BASE_URL` (same origin, so the session cookie is same-site and no CORS is configured). Image tag `pretasiplus-frontend:http`.
-- `migrate`: runs `npm run be:db:migrate && npm run be:db:seed` with `ALLOW_DEMO_SEED=true`, so the demo accounts (published password) exist. Re-running is idempotent (`migrate deploy` plus upserting seeds). Production and staging never set this variable; staging seeds only by an explicit command (`docs/ops/deploy-staging.md`).
+- `migrate`: runs `npm run be:db:migrate && npm run be:db:seed` with `ALLOW_DEMO_SEED=true`, so the demo accounts (published password) exist. Re-running is idempotent (`migrate deploy` plus upserting seeds). Production never sets this variable; staging sets it only for the explicit one-off seed command (`docs/ops/deploy-staging.md`, `docs/ops/demo-reseed.md`).
 - `api`: `COOKIE_SECURE` (default `false`, plain http on localhost), `THROTTLE_LOGIN_PER_MINUTE` from `E2E_THROTTLE_LOGIN_PER_MINUTE` (default 200, because e2e logs in many times from one address) and `BIJAK_POC_QUESTIONS=true`.
 
 ```
@@ -77,7 +77,7 @@ Ports: only the frontend is published (`FRONTEND_PORT`, default 5192). `api` and
 Do not combine this overlay with `compose.staging.yaml`.
 
 E2E against this stack lives in `playwright.http.config.ts` (`npm run test:e2e:http -- --grep @api`). Base URL is `BASE_URL`, else `http://localhost:${FRONTEND_PORT:-5192}`. With `E2E_HTTP_START_STACK=1` Playwright starts the stack itself (`docker compose -f compose.yaml -f compose.http.yaml up --build`).
-The `@api` tests that need the SPA's HTTP transport (hybrid mode) are not covered by this file yet (tracked in `docs/plan/backend-tracker.md`, BE-32 and V2-T31).
+The `@api` tests that need the SPA's HTTP transport (hybrid mode) are not covered by this file yet (BE-32 AC3, tracked in `docs/plan/backend-tracker.md` row BE-32 and requested from half AZ on #109).
 
 ## nginx /api proxy
 
@@ -90,7 +90,7 @@ The `@api` tests that need the SPA's HTTP transport (hybrid mode) are not covere
 | Timeouts | `/api/`: connect 5s, send 60s, read 120s. `/api/files`: send and read 300s. |
 | Forwarded headers | `Host`, `X-Real-IP`, `X-Forwarded-For` (appended), `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Request-Id` (nginx `$request_id`). `Connection` is cleared for upstream keep-alive. |
 | `TRUST_PROXY_HOPS=1` | Matches this single proxy hop: the API reads the last `X-Forwarded-For` entry (the address nginx saw), which a client cannot choose. Behind a further load balancer set 2 and add real_ip handling in nginx.conf (`docs/ops/deploy-staging.md`). |
-| Log redaction | The access log writes `$log_request`, where any 64-hex path segment (a parent invite token, 256 bit) becomes `[redacted]`. The `Referer` is not logged at all, because an SPA page URL can carry the same token. The API redacts the same pattern in its own logs. |
+| Log redaction | The access log writes `$log_request`, where any 64-hex path segment (a parent invite token, 256 bit) becomes `[redacted]`. The `Referer` is not logged at all, because an SPA page URL can carry the same token. The API's own logs redact the token after `parent-invites/` (`apps/api/src/common/logging/logging.ts`). |
 | Caching | None: no `proxy_cache`; the API sends `no-store` on session and CSRF responses. |
 
 ### 413 JSON envelope
