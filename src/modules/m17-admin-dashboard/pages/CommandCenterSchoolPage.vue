@@ -20,7 +20,7 @@ import { useCcPage } from '../components/command-center/use-cc-page'
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcSchoolTeacher]: CcSchoolTeacher[K] }
 
-const props = withDefaults(defineProps<{ schoolId: number; basePath?: string }>(), {
+const props = withDefaults(defineProps<{ schoolId: number | string; basePath?: string }>(), {
   basePath: '/admin/command-center',
 })
 
@@ -61,7 +61,7 @@ const columns: TableColumn<Row>[] = [
   { id: 'active', header: 'Aktif (30h)' },
 ]
 
-function open(userId: number) {
+function open(userId: number | string) {
   void router.push(paths.value.teacher(props.schoolId, userId))
 }
 </script>

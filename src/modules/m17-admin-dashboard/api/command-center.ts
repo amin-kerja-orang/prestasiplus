@@ -11,6 +11,8 @@
  */
 
 import { api } from '@/api'
+import { isHttpMode } from '@/api/mode'
+import { addDays, formatDateKey } from '@/lib/time'
 
 import type {
   CcClass,
@@ -32,38 +34,52 @@ const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 /** "Semua Sesi Latihan": the range the page sends (FR-M17-56). */
 export const ALL_SESSIONS_RANGE = { start: '2020-01-01', end: '2030-12-31' } as const
 
+/** BE-22 refuses a span over 366 days (422 "Julat tarikh tidak sah."): http mode asks for the last 366 days. */
+export const ALL_SESSIONS_MAX_DAYS = 366
+
+/** The range of the "Semua Sesi Latihan" modal: fixed in mock mode, the last year (MYT dates) in http mode. */
+export function allSessionsRange(now: number = Date.now()): { start: string; end: string } {
+  if (!isHttpMode()) return { ...ALL_SESSIONS_RANGE }
+  return {
+    start: formatDateKey(addDays(now, -(ALL_SESSIONS_MAX_DAYS - 1))),
+    end: formatDateKey(now),
+  }
+}
+
 /** #6 `GET /api/command-center/school/{id}` (S4). */
-export const fetchCcSchool = (schoolId: number, o: Signal = {}) =>
+export const fetchCcSchool = (schoolId: number | string, o: Signal = {}) =>
   api.get<CcSchool>(`/api/command-center/school/${String(schoolId)}`, withSignal(o))
 
 /** #7 `GET /api/command-center/school/{sid}/teacher/{uid}` (S5). */
-export const fetchCcTeacher = (schoolId: number, userId: number, o: Signal = {}) =>
+export const fetchCcTeacher = (schoolId: number | string, userId: number | string, o: Signal = {}) =>
   api.get<CcTeacher>(
     `/api/command-center/school/${String(schoolId)}/teacher/${String(userId)}`,
     withSignal(o),
   )
 
 /** #8 `GET /api/command-center/classroom/{id}` (S6). */
-export const fetchCcClass = (classroomId: number, o: Signal = {}) =>
+export const fetchCcClass = (classroomId: number | string, o: Signal = {}) =>
   api.get<CcClass>(`/api/command-center/classroom/${String(classroomId)}`, withSignal(o))
 
 /** #9 `GET /api/command-center/student/{id}` (S7). */
-export const fetchCcStudent = (userId: number, o: Signal = {}) =>
+export const fetchCcStudent = (userId: number | string, o: Signal = {}) =>
   api.get<CcStudent>(`/api/command-center/student/${String(userId)}`, withSignal(o))
 
 /** #10 `GET /api/command-center/student/{id}/week?start=&end=` (week and all-sessions modals). */
-export const fetchCcStudentWeek = (userId: number, start: string, end: string, o: Signal = {}) =>
+export const fetchCcStudentWeek = (userId: number | string, start: string, end: string, o: Signal = {}) =>
   api.get<CcSessionList>(`/api/command-center/student/${String(userId)}/week`, {
     ...withSignal(o),
     query: { start, end },
   })
 
 /** #10 with the all-time range: the "Semua Sesi Latihan" modal. */
-export const fetchCcStudentAllSessions = (userId: number, o: Signal = {}) =>
-  fetchCcStudentWeek(userId, ALL_SESSIONS_RANGE.start, ALL_SESSIONS_RANGE.end, o)
+export const fetchCcStudentAllSessions = (userId: number | string, o: Signal = {}) => {
+  const range = allSessionsRange()
+  return fetchCcStudentWeek(userId, range.start, range.end, o)
+}
 
 /** #11 `GET /api/command-center/student/{id}/subject?code=` (subject modal; `UMUM` = free practice). */
-export const fetchCcStudentSubject = (userId: number, code: string, o: Signal = {}) =>
+export const fetchCcStudentSubject = (userId: number | string, code: string, o: Signal = {}) =>
   api.get<CcSessionList>(`/api/command-center/student/${String(userId)}/subject`, {
     ...withSignal(o),
     query: { code },
@@ -77,5 +93,5 @@ export const fetchCcSession = (sessionId: string, o: Signal = {}) =>
   )
 
 /** #13 `GET /api/command-center/headcount/{configId}` (headcount modal). */
-export const fetchCcHeadcount = (configId: number, o: Signal = {}) =>
+export const fetchCcHeadcount = (configId: number | string, o: Signal = {}) =>
   api.get<CcHeadcountDetail>(`/api/command-center/headcount/${String(configId)}`, withSignal(o))
