@@ -11,7 +11,7 @@ Slug: `uat-demo-23oct`. Tugasan: AZ-10b (separuh AZ, aliran S4 QA). Skrip ini di
 | Tarikh skrip | 21 Okt 2026 |
 | URL demo | `<URL demo daripada LEAD>` |
 | Mod bina SPA | `VITE_API_MODE=http` (SPA bercakap dengan API sebenar melalui `/api`; bukan data tiruan dalam pelayar). Sumber: `docs/ops/demo-cloudflare-supabase.md` jadual pembolehubah Pages. |
-| Sumber SPA | Frontend demo = cabang `be/integration-frontend` selepas gabungan 22 Okt (membawa #120, #154, #105, #131, #149, #150 dan #153 melalui #178). #126 dan #128 belum digabung; laluan demo berfungsi tanpanya. Skrin, label dan laluan dalam skrip ini dibaca terhadap sumber itu dan disahkan pada raptai bersepadu #144 (22 Okt 2026). SHA tepat: lembaran larian demo #170. |
+| Sumber SPA | Frontend demo = cabang `be/integration-frontend` selepas gabungan 22–23 Okt (membawa #120, #154, #105, #131, #149, #150 dan #153 melalui #178, serta #126 dan #128). Skrin, label dan laluan dalam skrip ini dibaca terhadap sumber itu dan disahkan pada raptai bersepadu #144 (22 Okt 2026). SHA tepat: lembaran larian demo #170. |
 | Sumber API dan seed | `feature/v2-backend` @ `23c98226` (seed profil `poc`; `apps/api/prisma/seed/**`). |
 | Nota penyegerakan | Cabang `be/integration-frontend` akan dikemas kini oleh penyegerakan Pembangun 5. Selepas itu, semak semula bahagian "Jurang diketahui" (terutama J-02 dan J-03) dan label skrin sebelum 23 Okt. Pada `feature/v2-backend` `src/` ialah frontend yang berbeza daripada `d909e1e0` (247 fail berbeza dalam `src` dan `e2e`), jadi jangan guna tip itu untuk menyemak skrin demo. |
 | Akaun | Semua akaun ialah akaun demo rekaan (`@demo.test`). Kata laluan demo (daripada LEAD). Jangan tulis kata laluan dalam borang ini, tangkapan skrin atau tiket. |
@@ -267,6 +267,6 @@ Demo 23 Okt boleh diteruskan apabila semua syarat berikut dipenuhi:
 
 ## Sejarah semakan
 
-- 23 Okt 2026 (awal pagi): #178 sudah digabung, jadi J-17..J-20 ditanda ditutup (sahkan pada build demo) dan cara demo menjadi sandaran; rujukan baris `useBattleSearch.ts:203` dibuang; sumber SPA dikemas kini (#126 dan #128 belum digabung).
+- 23 Okt 2026 (awal pagi): #178 sudah digabung, jadi J-17..J-20 ditanda ditutup (sahkan pada build demo) dan cara demo menjadi sandaran; rujukan baris `useBattleSearch.ts:203` dibuang; sumber SPA dikemas kini (#126 dan #128 sudah digabung pada 23 Okt).
 - 22 Okt 2026 (petang): UAT-GUR-04 pilih "SMK Demo Satu" dalam "Pilih Sekolah" (#183 D-12b); status J-17..J-20 dikemas kini (dibaiki dalam #154 dan #153, dibawa oleh #178).
 - 22 Okt 2026: dikemas kini mengikut raptai bersepadu #144 (D-04, D-15, J-17..J-21).
