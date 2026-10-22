@@ -449,10 +449,15 @@ export class LevelsService {
 
   // --- #14 Filter options -----------------------------------------------------------------------------------
 
-  /** The S1 / S4 selects: schools with at least one user, A to Z, and their states. school_admin sees the own school only. */
+  /**
+   * The S1 / S4 selects: schools with at least one user, A to Z, and their states. The school-forced roles (teacher and
+   * school_admin) see the own session school only, and nothing without one (SEC-M12-01/02, TRIAGE-1): the list never
+   * comes from the query.
+   */
   async filterOptions(ctx: Ctx): Promise<KirkpatrickFilterOptions> {
-    if (ctx.role === 'school_admin' && ctx.schoolId === null) return { schools: [], states: [] }
-    const rows = await this.repo.schoolsWithUsers(ctx.role === 'school_admin' ? ctx.schoolId : null)
+    const forced = isSchoolForced(ctx.role)
+    if (forced && ctx.schoolId === null) return { schools: [], states: [] }
+    const rows = await this.repo.schoolsWithUsers(forced ? ctx.schoolId : null)
     const states = [...new Set(rows.map((r) => r.state).filter((x): x is string => x !== null && x !== ''))].sort((a, b) => a.localeCompare(b, 'ms'))
     return { schools: rows.map((r) => ({ id: r.id, name: r.name })), states }
   }

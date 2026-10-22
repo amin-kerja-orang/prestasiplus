@@ -76,6 +76,51 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
   })
 })
 
+describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M27-50, D-14)', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+  let s1: string
+
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp()
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+    s1 = await schoolIdOf(t.db, 'DEMO001')
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  const countRole = async (role: string, extra = ''): Promise<number> =>
+    Number(
+      (await t.db.query<{ n: string }>(
+        `select count(*)::text as n from users u where u.school_id = $1::bigint
+           and exists (select 1 from user_roles r where r.user_id = u.id and r.role = $2) ${extra}`,
+        [s1, role],
+      ))[0]?.n,
+    )
+
+  it('JUMLAH GURU and JUMLAH PELAJAR equal the unfiltered S7 / S6 totals; a peer school_admin teacher is not counted', async () => {
+    // The seed holds both a plain teacher and a teacher who is also a school_admin (guruadmin@demo.test) in DEMO001.
+    const peers = await countRole('teacher', `and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
+    const plain = await countRole('teacher', `and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
+    // Every teacher holding a role a school admin may not see (school_admin or any other), as managedBase drops them.
+    const hidden = await countRole('teacher', `and exists (select 1 from user_roles r where r.user_id = u.id and r.role not in ('student', 'teacher'))`)
+    expect(peers).toBeGreaterThanOrEqual(1)
+    expect(plain).toBeGreaterThanOrEqual(1)
+
+    const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
+    const guru = await admin.get('/admin-sekolah/guru')
+    const pelajar = await admin.get('/admin-sekolah/pelajar')
+    expect(guru.status, JSON.stringify(guru.body)).toBe(200)
+    expect(pelajar.status, JSON.stringify(pelajar.body)).toBe(200)
+
+    expect(d.cards.teachers).toBe(guru.body.meta.counts.total)
+    expect(d.cards.pupils).toBe(pelajar.body.meta.counts.total)
+    // The raw teacher count includes the peers; the card must not.
+    expect(d.cards.teachers).toBe((await countRole('teacher')) - hidden)
+  })
+})
+
 describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
   let t: SchoolAdminTestApp
   let admin: Api

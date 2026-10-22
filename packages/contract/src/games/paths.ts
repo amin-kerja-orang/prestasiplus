@@ -495,15 +495,15 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]',
     description:
-      'The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 "Kad sudah dipadankan." [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.',
+      'The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked). Revealing the card that is already open is idempotent: 200 with the same face, nothing changes (a client that lost the first response can reveal it again). Revealing a different card while one is open is 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 "Kad sudah dipadankan." [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.',
     request: { headers: [csrf], body: body(GamesKadMemoriRevealRequestSchema) },
     responses: {
       429: RATE_LIMITED,
-      200: noStore(envelopeOf(GamesKadMemoriFaceSchema), 'The face of the card; Cache-Control: no-store.'),
+      200: noStore(envelopeOf(GamesKadMemoriFaceSchema), 'The face of the card (also for a repeat reveal of the card already open); Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err('NOT_FOUND "Sesi tidak dijumpai." [PROPOSED] (unknown or foreign session) or "Soalan tidak dijumpai." [PROPOSED] (card not in the session).'),
-      409: err('CONFLICT "Keputusan sudah dihantar.", "Kad sudah dipadankan." [PROPOSED] or "Sila padankan kad yang dibuka dahulu." [PROPOSED].'),
+      409: err('CONFLICT "Keputusan sudah dihantar.", "Kad sudah dipadankan." [PROPOSED] or "Sila padankan kad yang dibuka dahulu." [PROPOSED] (a different card is open).'),
       422: err('VALIDATION_ERROR "Jawapan tidak sah." [PROPOSED] (card id).'),
     },
   })
