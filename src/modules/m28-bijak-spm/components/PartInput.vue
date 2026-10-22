@@ -4,6 +4,9 @@
  *  - working: "Jalan kerja" step lines + "Jawapan akhir" (+ unit) + optional photo of the working;
  *  - numeric: "Jawapan akhir" (+ unit);
  *  - short_text: a text area.
+ * `table_fill`, and any kind outside the contract's `BijakAttemptLeafKind` (e.g. the BE-42 PKSK leaf
+ * `pksk_choice`, which the server never serves to Bijak, #78 78-09), shows the "not yet available" notice
+ * instead of falling into the working/numeric inputs.
  * Every change emits a whole new answer; the page autosaves it.
  */
 import { computed, ref } from 'vue'
@@ -139,11 +142,12 @@ async function dropPhoto(key: string): Promise<void> {
       </p>
     </template>
 
-    <template v-else-if="leaf.kind === 'table_fill'">
+    <template v-else-if="leaf.kind !== 'working' && leaf.kind !== 'numeric'">
       <UAlert
         color="info"
         variant="soft"
         title="Jenis jawapan ini akan tersedia tidak lama lagi."
+        data-testid="kind-unavailable"
       />
     </template>
 

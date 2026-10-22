@@ -155,7 +155,7 @@ describe('BR-29: recent questions are approved objective questions', () => {
     const d = await data<Dashboard>(GURU, '/api/dashboard')
     expect(d.recentQuestions).toHaveLength(5)
     for (const r of d.recentQuestions) {
-      const q = questions.get(r.id)
+      const q = questions.get(Number(r.id)) // the mock sends numeric ids (EntityId)
       expect(q?.status).toBe('approved')
       expect(q?.pkskDomainId).toBeNull()
     }
