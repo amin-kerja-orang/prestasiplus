@@ -262,7 +262,7 @@ Decisions and assumptions:
 
 **Follow-up (recorded, LEAD approved keeping both for now):** BE-27's `test/migration/fixtures/generate-tiny.ts` and `cloud-tiny/` duplicate the BE-35 generator's `tiny` size. Retire them once the BE-27 tests are moved to `tiny/`. The extraction of `prepareOutputDir` in `profile/render.ts` stays.
 
-## 12. `migrate:activity` (BE-29): operator notes
+## 19. `migrate:activity` (BE-29): operator notes
 
 - **Always pass `--as-of` (and `--core-as-of`) explicitly.** The input hash that links a dry-run to its `--apply` (and a resume to the interrupted run) includes `--as-of`. When the flag is left out, the default is today's Kuala Lumpur calendar day, so a dry-run on one day and an apply after midnight (or a resume that crosses midnight) hash differently and `--apply` is refused ("no passing dry-run found for input hash ..."). Give the same `--as-of=YYYY-MM-DD` to the dry-run, the apply and every resume. Pass `--core-as-of` with the date `migrate:core` ran with when it differs.
 - **Runs made before MIG-07 must be re-run.** The staged-table digest in the input hash changed from `md5(string_agg(...))` to a constant-memory form (row count plus a sum of 60-bit slices of `md5(_row_hash)`, shared by `migrate:core` and `migrate:activity`; it stays within memory and Postgres's 1 GB text limit at real volume). A hash stored by an earlier run no longer matches, so redo `migrate:core` dry-run, then `--apply` (there were no production runs).
@@ -270,7 +270,7 @@ Decisions and assumptions:
 - **`blocked by spec: <entity> 0/<n>`** in the report means the entity has `n` source rows and none was loaded because the staging spec still lacks a column its v2 table needs (articles, notes, videos, audio sets, support tickets). A green run does not mean those tables are filled; the line and the `note blocked_by_spec.<entity>` counter go away once the spec carries the column and rows load.
 - **Rejected rows:** an exam attempt whose score is above its maximum (or whose maximum is not above 0) is rejected `INVALID_VALUE` on `score`; a ledger row with a negative `balance_after` is rejected `INVALID_VALUE` on `balance_after`. Nothing is clamped.
 
-### 12.1 Content files: `--files-dir` (BE-29 AC9, BE-MIG-09)
+### 19.1 Content files: `--files-dir` (BE-29 AC9, BE-MIG-09)
 
 `migrate:activity` never reads the .cloud storage. File migration is on only when you pass `--files-dir=<dir>`:
 
