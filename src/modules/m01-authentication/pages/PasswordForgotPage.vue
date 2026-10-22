@@ -3,7 +3,8 @@
  * S3 `/password/reset` "Lupa Kata Laluan - PRESTASIPLUS" (M01-T4; FR-M01-27..29, BR-10).
  * Native validation only. Submit calls `POST /api/auth/password/email`: success shows the green
  * status box above the form, a failure the red alert; the email is kept either way (FR-M01-29).
- * There is no link to the IC reset here (FR-M01-27).
+ * There is no link to the IC reset here (FR-M01-27). In http mode (AM-18, URS DV-20) the form is replaced by a
+ * notice, a link to the IC reset and the back link: the v2 API sends no e-mail.
  */
 import { onMounted, ref } from 'vue'
 
