@@ -3,6 +3,13 @@ import type { DsStatus } from '@/ds'
 
 import type { Confidence, QuestionKind, QuestionStatus } from '../../domain/admin-types'
 
+/**
+ * http mode: the review queue is the BE-38 extracted items. Accepting creates a Draf question (it
+ * never publishes) and a decision is final, so the screens say "Terima (Draf)", have no "Minta
+ * Pembetulan" / "Hantar semula", and the bank has no kertas (BE-09 questions carry none).
+ */
+export const WIRE = import.meta.env.VITE_API_MODE === 'http'
+
 export const ADMIN_ROUTES = {
   review: 'm28.admin.review',
   reviewItem: 'm28.admin.review.item',
