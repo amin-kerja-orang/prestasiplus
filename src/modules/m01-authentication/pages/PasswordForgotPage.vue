@@ -9,11 +9,19 @@ import { onMounted, ref } from 'vue'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 
+import { isHttpMode } from '@/api/mode'
 import { DsFormField } from '@/ds'
 
 import { sendPasswordResetLink } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import { errorLines } from '../lib/error-lines'
+
+// AM-18: the real API has no mail provider, so in http mode the e-mail form is replaced by a
+// notice pointing to the working paths (IC reset, teacher / school admin). Mock mode is unchanged.
+const httpMode = isHttpMode()
+const HTTP_INTRO = 'Pilih cara lain untuk menetapkan semula kata laluan anda.'
+const HTTP_NOTICE =
+  'Pautan reset melalui e-mel belum tersedia. Guna Reset Melalui No IC, atau minta guru / admin sekolah anda menetapkan semula kata laluan.'
 
 const email = ref('')
 const loading = ref(false)
@@ -22,7 +30,9 @@ const status = ref('')
 const emailInput = ref<{ inputRef: HTMLInputElement | null } | null>(null)
 
 // `autofocus` (FR-M01-27): the attribute only acts on a full page load, so focus on mount too.
-onMounted(() => emailInput.value?.inputRef?.focus())
+onMounted(() => {
+  if (!httpMode) emailInput.value?.inputRef?.focus()
+})
 
 async function submit(): Promise<void> {
   loading.value = true
@@ -41,11 +51,42 @@ async function submit(): Promise<void> {
 <template>
   <PasswordCard
     heading="Lupa Kata Laluan?"
-    intro="Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan."
+    :intro="
+      httpMode
+        ? HTTP_INTRO
+        : 'Masukkan email anda dan kami akan hantar pautan untuk reset kata laluan.'
+    "
   >
     <template #icon>🔑</template>
 
-    <form data-testid="forgot-form" class="flex flex-col gap-4" @submit.prevent="submit">
+    <div v-if="httpMode" class="flex flex-col gap-4" data-testid="forgot-http-notice">
+      <UAlert
+        color="warning"
+        variant="soft"
+        icon="i-ph-info-duotone"
+        :description="HTTP_NOTICE"
+        data-testid="forgot-http-alert"
+      />
+      <UButton
+        to="/password/reset-ic"
+        block
+        size="xl"
+        variant="solid"
+        icon="i-ph-identification-card-duotone"
+        data-testid="forgot-http-ic"
+        >Reset Melalui No IC</UButton
+      >
+      <UButton
+        to="/login"
+        variant="link"
+        color="neutral"
+        icon="i-ph-arrow-left"
+        class="min-h-11 justify-center"
+        >Kembali ke Log Masuk</UButton
+      >
+    </div>
+
+    <form v-else data-testid="forgot-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert variant="success" :messages="status" data-testid="forgot-status" />
       <AuthAlert :messages="errors" data-testid="forgot-alert" />
 
