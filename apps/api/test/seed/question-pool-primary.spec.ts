@@ -98,6 +98,12 @@ describe('PoC question pool at Darjah 1 to 4 (pure)', () => {
       { ask: 'Perbuatan menjaga adik yang sakit menunjukkan nilai', key: 'kasih sayang', banned: ['baik hati'], why: 'also fits baik hati' },
       { ask: 'bagi aktiviti gosokan', key: 'permukaan bertekstur', banned: ['krayon', 'krayon minyak'], why: 'gosokan shares crayon with resis' },
       { ask: 'bagi aktiviti resis', key: 'krayon minyak', banned: ['krayon'], why: 'gosokan must not be the crayon activity' },
+      { ask: 'bagi aktiviti gosokan', key: 'permukaan bertekstur', banned: ['pensel', 'blok cetakan'], why: 'gosokan is done with pensel; a print block is textured' },
+      { ask: 'bagi aktiviti lukisan', key: 'pensel', banned: ['krayon minyak', 'kertas'], why: 'drawing also uses crayons and paper' },
+      { ask: 'menggunakan krayon minyak dan cat air', key: 'resis', banned: ['gosokan', 'lukisan'], why: 'both also use crayons' },
+      { ask: 'menggunakan pensel untuk melakar', key: 'lukisan', banned: ['gosokan'], why: 'gosokan also uses pensel' },
+      { ask: 'Bagaimanakah ular bergerak', key: 'menjalar', banned: ['merayap'], why: 'merayap also fits a snake' },
+      { ask: 'Apakah fungsi batang bagi tumbuhan', key: 'mengangkut air ke daun', banned: ['menyokong tumbuhan'], why: 'roots also anchor the plant' },
     ]
     for (const b of BANNED) {
       const rows = primarySpecs().filter((x) => x.text.includes(b.ask))

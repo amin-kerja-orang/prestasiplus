@@ -194,10 +194,13 @@ function sciD1(): PoolItem[] {
   const out: PoolItem[] = []
   const senses: [string, string][] = [['mata', 'melihat'], ['telinga', 'mendengar'], ['hidung', 'menghidu'], ['lidah', 'merasa'], ['kulit', 'menyentuh']]
   out.push(...table(senses, (a) => `Apakah fungsi deria '${a}'?`, (b) => `Organ deria yang digunakan untuk ${b} ialah`))
-  const moves: [string, string][] = [['ikan', 'berenang'], ['burung', 'terbang'], ['ular', 'menjalar'], ['arnab', 'melompat'], ['siput', 'merayap'], ['kucing', 'berjalan']]
+  // No 'siput merayap' row: 'merayap' is also a fair answer for how a snake moves (G4 re-review of #129).
+  const moves: [string, string][] = [['ikan', 'berenang'], ['burung', 'terbang'], ['ular', 'menjalar'], ['arnab', 'melompat'], ['kucing', 'berjalan']]
   out.push(...table(moves, (a) => `Bagaimanakah ${a} bergerak?`, (b) => `Haiwan manakah yang bergerak dengan cara ${b}?`, 1))
   out.push(item('Haiwan manakah yang bertelur?', 'ayam', ['kucing', 'lembu', 'kambing'], 2))
   out.push(item('Apakah yang diperlukan oleh tumbuhan untuk hidup?', 'air', ['plastik', 'besi', 'kaca'], 3))
+  out.push(item('Haiwan manakah yang menyusukan anaknya?', 'lembu', ['ayam', 'ikan', 'katak'], 0))
+  out.push(item('Apakah yang diperlukan oleh tumbuhan hijau untuk membuat makanan?', 'cahaya matahari', ['pasir', 'plastik', 'batu'], 1))
   return out
 }
 
@@ -208,7 +211,7 @@ function sciD2(): PoolItem[] {
     ['singa', 'karnivor'], ['beruang', 'omnivor'], ['arnab', 'herbivor'], ['helang', 'karnivor'],
   ]
   out.push(...oneWay(diets, (a) => `Berdasarkan jenis makanannya, ${a} ialah haiwan`, ['herbivor', 'karnivor', 'omnivor', 'insektivor']))
-  const parts: [string, string][] = [['akar', 'menyerap air'], ['daun', 'membuat makanan'], ['batang', 'menyokong tumbuhan'], ['bunga', 'menghasilkan buah']]
+  const parts: [string, string][] = [['akar', 'menyerap air'], ['daun', 'membuat makanan'], ['batang', 'mengangkut air ke daun'], ['bunga', 'menghasilkan buah']]
   out.push(...table(parts, (a) => `Apakah fungsi ${a} bagi tumbuhan?`, (b) => `Bahagian tumbuhan yang berfungsi ${b} ialah`, 1))
   const states: [string, string][] = [
     ['ais', 'pepejal'], ['air sirap', 'cecair'], ['wap air', 'gas'], ['batu', 'pepejal'], ['susu', 'cecair'], ['udara', 'gas'], ['minyak masak', 'cecair'], ['kayu', 'pepejal'],
@@ -410,11 +413,30 @@ function psvD1(): PoolItem[] {
 
 function psvD2(): PoolItem[] {
   const out: PoolItem[] = []
-  const media: [string, string][] = [
-    ['catan', 'cat air'], ['kolaj', 'gam'], ['lukisan', 'pensel'], ['cetakan', 'blok cetakan'],
-    ['resis', 'krayon minyak'], ['origami', 'kertas'], ['arca', 'tanah liat'], ['gosokan', 'permukaan bertekstur'],
+  // Techniques share materials (pensel or krayon for gosokan and lukisan, kertas for most), so each item has a fixed
+  // list of distractors that cannot also be right, not the other rows of a table (G4 re-review of #129).
+  const media: [string, string, [string, string, string]][] = [
+    ['catan', 'cat air', ['gam', 'tanah liat', 'blok cetakan']],
+    ['kolaj', 'gam', ['cat air', 'tanah liat', 'blok cetakan']],
+    ['lukisan', 'pensel', ['gam', 'tanah liat', 'blok cetakan']],
+    ['cetakan', 'blok cetakan', ['gam', 'tanah liat', 'benang']],
+    ['resis', 'krayon minyak', ['gam', 'tanah liat', 'blok cetakan']],
+    ['origami', 'kertas', ['tanah liat', 'blok cetakan', 'cat air']],
+    ['arca', 'tanah liat', ['pensel', 'blok cetakan', 'gam']],
+    ['gosokan', 'permukaan bertekstur', ['gam', 'tanah liat', 'cat air']],
   ]
-  out.push(...table(media, (a) => `Bahan atau alat utama bagi aktiviti ${a} ialah`, (b) => `Aktiviti seni yang menggunakan ${b} sebagai bahan utama ialah`))
+  media.forEach(([a, m, wrong], i) => out.push(item(`Bahan atau alat utama bagi aktiviti ${a} ialah`, m, wrong, i)))
+  const byMaterial: [string, string, [string, string, string]][] = [
+    ['Aktiviti seni yang menggunakan cat air sebagai bahan utama ialah', 'catan', ['arca', 'origami', 'gosokan']],
+    ['Aktiviti seni yang menggunakan gam untuk menampal kepingan bahan ialah', 'kolaj', ['lukisan', 'gosokan', 'arca']],
+    ['Aktiviti seni yang menggunakan pensel untuk melakar objek ialah', 'lukisan', ['arca', 'catan', 'origami']],
+    ['Aktiviti seni yang menggunakan blok cetakan sebagai bahan utama ialah', 'cetakan', ['arca', 'origami', 'lukisan']],
+    ['Aktiviti seni yang menggunakan krayon minyak dan cat air yang ditolak oleh lilin krayon ialah', 'resis', ['arca', 'origami', 'kolaj']],
+    ['Seni melipat kertas tanpa gunting dan gam dikenali sebagai', 'origami', ['arca', 'catan', 'gosokan']],
+    ['Aktiviti seni yang membentuk objek tiga dimensi daripada tanah liat ialah', 'arca', ['catan', 'origami', 'gosokan']],
+    ['Aktiviti seni yang memindahkan corak permukaan bertekstur ke atas kertas ialah', 'gosokan', ['catan', 'origami', 'arca']],
+  ]
+  byMaterial.forEach(([text, key, wrong], i) => out.push(item(text, key, wrong, i + 2)))
   const elements: [string, string][] = [['garisan', 'titik yang bersambung'], ['rupa', 'kawasan tertutup'], ['jalinan', 'kesan permukaan'], ['ruang', 'kawasan sekitar objek']]
   out.push(...table(elements, (a) => `Unsur seni '${a}' terhasil daripada`, (b) => `Unsur seni yang terhasil daripada ${b} ialah`, 1))
   return out
