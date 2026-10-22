@@ -116,16 +116,18 @@ async function answersPerSubject({ pool, source }: CheckContext): Promise<StatCh
   if (!(await exists(pool, STAGING_SCHEMA, 'question_attempts'))) {
     return [reported(name, 'distribution', 'staging_cloud.question_attempts is not available; not compared')]
   }
-  // The subject of an answer is the archived question's subject, else the session's (snapshot join, BE-29).
+  // The subject of an answer is the archived question's subject, else the session's (snapshot join, BE-29); when the staged
+  // session is gone too (deleted at source) the loaded answer keeps the v2 session's subject, so that is the last fallback.
   const archive = await exists(pool, ARCHIVE_SCHEMA, 'questions')
   const subjectExpr = archive ? 'coalesce(q.subject_id, ps.subject_id)' : 'ps.subject_id'
   const staged = await pool.query<{ k: string | null; n: number }>(
-    `SELECT m.new_id AS k, count(*)::int AS n
+    `SELECT CASE WHEN ${subjectExpr} IS NOT NULL THEN m.new_id::text ELSE vs.subject_id::text END AS k, count(*)::int AS n
      FROM practice_answers pa
      JOIN ${S}."question_attempts" qa ON qa.id::text = pa.legacy_id
      ${archive ? `LEFT JOIN ${A}."questions" q ON q.id = qa.question_id` : ''}
      LEFT JOIN ${S}."practice_sessions" ps ON ps.id = qa.practice_session_id
      LEFT JOIN etl_id_map m ON m.legacy_source = $1 AND m.entity = 'subjects' AND m.legacy_id = ${subjectExpr}::text
+     LEFT JOIN practice_sessions vs ON vs.id = pa.session_id
      WHERE pa.legacy_source = $1 GROUP BY 1`,
     [source],
   )

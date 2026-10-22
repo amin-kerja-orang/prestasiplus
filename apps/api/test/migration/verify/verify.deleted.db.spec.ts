@@ -17,6 +17,7 @@ import { bootActivity, PROBE_GROUP, tempOutDir } from './helpers-verify'
 let h: ActivityHarness
 const out = tempOutDir()
 let goneUser = ''
+let feedbackOfGone = 0
 let report: VerifyReport
 
 const opts = () => ({ pool: h.env.pool, env: h.runEnv, mode: 'apply' as const, asOf: AS_OF, batchSize: 2, outDir: out.path })
@@ -39,6 +40,12 @@ beforeAll(async () => {
     `update staging_cloud.users set spm_targets = $1 where id in (select user_id from staging_cloud.question_attempts)`,
     [JSON.stringify({ [subject]: 'A' })],
   )
+  // A feedback row for every pupil with answers (synthetic): the one of the pupil deleted below is left in staging.
+  await h.q(
+    `insert into staging_cloud.feedback (id, user_id, score, satisfaction, usability, relevance, comment, created_at, updated_at)
+     select 9000 + row_number() over (order by user_id), user_id, 5, 4, 4, 4, 'Komen ujian.', now(), now()
+     from (select distinct user_id from staging_cloud.question_attempts) d`,
+  )
   const first = await runAll(opts())
   expect(first.verify?.status, 'the baseline load must verify').toBe('pass')
 
@@ -56,8 +63,10 @@ beforeAll(async () => {
     `select table_name, column_name from information_schema.columns
      where table_schema = 'staging_cloud' and column_name in ('user_id', 'student_id', 'parent_id')`,
   )
-  for (const c of cols) await h.q(`delete from staging_cloud."${c.table_name}" where "${c.column_name}" = $1`, [goneUser])
+  // `feedback` is left out: staging has no cascade, so those rows stay behind (BE-29 rejects them as orphans).
+  for (const c of cols.filter((x) => x.table_name !== 'feedback')) await h.q(`delete from staging_cloud."${c.table_name}" where "${c.column_name}" = $1`, [goneUser])
   await h.q(`delete from staging_cloud.users where id = $1`, [goneUser])
+  feedbackOfGone = await h.count('feedback', `legacy_source = 'cloud' and user_id = (select id from users where legacy_source = 'cloud' and legacy_id = '${goneUser}')`)
 
   const delta = await runDelta({ ...opts(), since: '2026-01-01T00:00:00Z' })
   expect(delta.stages.slice(0, 4).map((s) => [s.name, s.mode, s.status])).toEqual([
@@ -93,6 +102,12 @@ describe('after a delta in which source rows were deleted', () => {
       expect(e?.deletedAtSource, entity).toBe(1)
       expect(report.checks.find((x) => x.name === `deleted_at_source:${entity}`)?.status).toBe('reported')
     }
+
+    // A feedback row of a user deleted at source is deleted at source too, although its own staging row remains.
+    expect(feedbackOfGone, 'the deleted pupil must have loaded feedback').toBeGreaterThan(0)
+    const fb = report.entities.find((x) => x.entity === 'feedback')
+    expect({ status: fb?.status, deleted: fb?.deletedAtSource }).toEqual({ status: 'ok', deleted: feedbackOfGone })
+    expect(report.checks.find((x) => x.name === 'deleted_at_source:feedback')?.actual).toBe(feedbackOfGone)
 
     const c = report.checks.find((x) => x.name === 'deleted_at_source:users')
     expect({ kind: c?.kind, status: c?.status, actual: c?.actual }).toEqual({ kind: 'counts', status: 'reported', actual: 1 })
@@ -143,6 +158,28 @@ describe('after a delta in which source rows were deleted', () => {
     const again = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
     expect(again.status).toBe('pass')
     expect(again.entities.find((e) => e.entity === 'users')?.deletedAtSource).toBe(1)
+  })
+
+  it('an answer whose session is deleted at source and whose question is not in the archive keeps its subject in the distribution', async () => {
+    const name = 'practice answers per subject (loaded answers)'
+    const pick = (await h.q<{ id: string; session: string; subject: string }>(
+      `select qa.id::text as id, qa.practice_session_id::text as session, pa.subject_id::text as subject
+       from staging_cloud.question_attempts qa join practice_answers pa on pa.legacy_source = 'cloud' and pa.legacy_id = qa.id::text
+       where pa.subject_id is not null order by qa.id limit 1`,
+    ))[0]
+    expect(pick, 'the fixture must give a loaded answer').toBeTruthy()
+    const qid = (await h.q<{ q: string }>(`select question_id::text as q from staging_cloud.question_attempts where id = $1`, [pick?.id]))[0]?.q
+    await h.q(`delete from archive_cloud.questions where id = $1`, [qid])
+    await h.q(`delete from staging_cloud.practice_sessions where id = $1`, [pick?.session])
+    const ok = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
+    expect(ok.checks.find((c) => c.name === name)?.status).toBe('ok')
+    // A genuinely wrong subject on the loaded answer still fails.
+    const other = (await h.q<{ id: string }>(`select id::text from subjects where id <> $1 order by id limit 1`, [pick?.subject]))[0]?.id
+    expect(other, 'a second subject must exist').toBeTruthy()
+    await h.q(`update practice_answers set subject_id = $2 where legacy_source = 'cloud' and legacy_id = $1`, [pick?.id, other])
+    const bad = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
+    expect(bad.checks.find((c) => c.name === name)?.status).toBe('mismatch')
+    await h.q(`update practice_answers set subject_id = $2 where legacy_source = 'cloud' and legacy_id = $1`, [pick?.id, pick?.subject])
   })
 
   it('a v2 row whose source row still exists and goes missing still fails', async () => {

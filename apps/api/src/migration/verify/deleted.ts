@@ -99,7 +99,13 @@ export const STAGING_KEYS: Readonly<Record<string, StagingKey>> = {
   audio_kbat_sets: byId('audio_kbat'),
   support_tickets: byId('support_tickets'),
   timeline_posts: byId('timeline_entries'),
-  feedback: byId('feedback'),
+  // A feedback row also counts as deleted at the source when its user is gone (staging has no cascade, BE-29 rejects it as an orphan).
+  feedback: {
+    tables: ['feedback', 'users'],
+    exists: (alias) =>
+      `EXISTS (SELECT 1 FROM ${from('feedback')} s WHERE s.id::text = ${alias}.legacy_id
+         AND EXISTS (SELECT 1 FROM ${from('users')} u WHERE u.id = s.user_id))`,
+  },
 }
 
 const stagingTablesExist = async (pool: pg.Pool, tables: readonly string[]): Promise<boolean> => {
