@@ -49,7 +49,7 @@ Optional keys (defaults in brackets):
 | Runtime (BE-33) | `REQUEST_TIMEOUT_MS` [120000], `HEADERS_TIMEOUT_MS` [60000], `KEEP_ALIVE_TIMEOUT_MS` [65000], `SHUTDOWN_GRACE_MS` [25000], `METRICS_ENABLED` [true; `false` makes `/api/metrics` 404], `METRICS_INTERNAL_CIDRS` [unset; comma list of IPv4/IPv6 CIDRs, invalid value fails the boot] |
 | Files | `MAX_UPLOAD_MB` [10], `INTAKE_MAX_FILE_MB` [20], `UPLOAD_RATE_PER_MINUTE` [30], `FILE_READS_PER_MINUTE` [120] |
 | Jobs and OCR | `JOBS_WORKER_ENABLED` [false], `JOBS_POLL_MS`, `JOBS_CONCURRENCY`, `JOBS_LOCK_TIMEOUT_MS`, `JOBS_BACKOFF_BASE_MS`, `OCR_ENGINE` [none; tesseract needs `OCR_LANG_DIR`], `OCR_LANG_DIR`, `OCR_WORKERS`, `OCR_PAGE_TIMEOUT_MS`, `OCR_INSPECT_TIMEOUT_MS`, `OCR_MAX_PAGES`, `OCR_MIN_TEXT_CHARS`, `OCR_RENDER_DPI`, `OCR_MAX_PIXELS`, `OCR_WORKER_MEMORY_MB`, `OCR_WORKER_RSS_LIMIT_MB` |
-| Intake | `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
+| Intake | `INTAKE_TEACHER_ENABLED` [false; AZ-35: off = intake files and review routes are Admin Pusat only, a teacher gets 403; keep off until ClamAV scans uploads (#78)], `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
 | Misc | `BIJAK_SWEEP_INTERVAL_SECONDS`, `MAIL_LOG_RESET_LINKS` (development only) |
 | Rate limits | every `THROTTLE_*` key; see section 9 and `.env.api.example` (each line states the unit and the key: user or address). All optional. |
 
