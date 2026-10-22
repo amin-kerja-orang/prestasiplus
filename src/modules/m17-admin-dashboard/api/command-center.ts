@@ -11,6 +11,8 @@
  */
 
 import { api } from '@/api'
+import { isHttpMode } from '@/api/mode'
+import { addDays, formatDateKey } from '@/lib/time'
 
 import type {
   CcClass,
@@ -31,6 +33,18 @@ const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 
 /** "Semua Sesi Latihan": the range the page sends (FR-M17-56). */
 export const ALL_SESSIONS_RANGE = { start: '2020-01-01', end: '2030-12-31' } as const
+
+/** BE-22 refuses a span over 366 days (422 "Julat tarikh tidak sah."): http mode asks for the last 366 days. */
+export const ALL_SESSIONS_MAX_DAYS = 366
+
+/** The range of the "Semua Sesi Latihan" modal: fixed in mock mode, the last year (MYT dates) in http mode. */
+export function allSessionsRange(now: number = Date.now()): { start: string; end: string } {
+  if (!isHttpMode()) return { ...ALL_SESSIONS_RANGE }
+  return {
+    start: formatDateKey(addDays(now, -(ALL_SESSIONS_MAX_DAYS - 1))),
+    end: formatDateKey(now),
+  }
+}
 
 /** #6 `GET /api/command-center/school/{id}` (S4). */
 export const fetchCcSchool = (schoolId: number | string, o: Signal = {}) =>
@@ -59,8 +73,10 @@ export const fetchCcStudentWeek = (userId: number | string, start: string, end: 
   })
 
 /** #10 with the all-time range: the "Semua Sesi Latihan" modal. */
-export const fetchCcStudentAllSessions = (userId: number | string, o: Signal = {}) =>
-  fetchCcStudentWeek(userId, ALL_SESSIONS_RANGE.start, ALL_SESSIONS_RANGE.end, o)
+export const fetchCcStudentAllSessions = (userId: number | string, o: Signal = {}) => {
+  const range = allSessionsRange()
+  return fetchCcStudentWeek(userId, range.start, range.end, o)
+}
 
 /** #11 `GET /api/command-center/student/{id}/subject?code=` (subject modal; `UMUM` = free practice). */
 export const fetchCcStudentSubject = (userId: number | string, code: string, o: Signal = {}) =>

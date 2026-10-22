@@ -205,6 +205,3 @@ export const levelText = (level: string): string =>
     : /^TINGKATAN_\d$/.test(level)
       ? `tingkatan-${level.slice(-1)}`
       : level
-
-/** http mode only: a route BE-22 does not provide (Smart Remedial) answers 404. */
-export const REMEDIAL_UNAVAILABLE = 'Fungsi ini belum tersedia dalam demo'
