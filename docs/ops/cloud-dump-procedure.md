@@ -8,7 +8,7 @@
 
 **Purpose.** Produce one pseudonymised copy of the .cloud MySQL database (a `pp-staging-dump/1` directory) for the migration rehearsals (MIG-07: staging load, profile, ETL, reconciliation), without any developer, agent or CI job ever touching real data (OD-2, OD-18).
 
-**Scope.** This document covers the human procedure on the operator PC: preflight, the one sitting, hand-over, deletion and incident handling. The tools are `dump:check`, `dump:produce`, `dump:cloud`, `dump:wipe` (this item) and the existing `anonymise:run`, `anonymise:scan`, `staging:load` (see the runbook). It does not cover loading on the rehearsal host beyond the hand-over (see runbook section 2). Section 8 adds the production (cutover, MIG-08) flow, which uses the raw export instead of the anonymised one.
+**Scope.** This document covers the human procedure on the operator PC: preflight, the one sitting, hand-over, deletion and incident handling. The tools are `dump:check`, `dump:produce`, `dump:cloud`, `dump:wipe` (this item) and the existing `anonymise:run`, `anonymise:scan`, `staging:load` (see the runbook). It does not cover loading on the rehearsal host beyond the hand-over (see runbook section 2). Section 8 adds the production (cutover, MIG-08) flow, which uses the raw export instead of the anonymised one, and the banner image files that go with it (section 8.1).
 
 | Role | Who | Does what |
 |---|---|---|
@@ -470,10 +470,39 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
 
 **Retention.** The same deadlines as section 4 apply: the operator wipes in step 9; the receiver deletes right after `staging:load` succeeds, and in any case within 7 days (runbook section 0, rule 4). The option file and the account follow section 4.
 
-### 8.1 Content files (AC9, LEAD decision 22 Oct: A without ticket attachments)
+### 8.1 Content files (AC9, `--files-dir`; LEAD decision 22 Oct: A without ticket attachments)
 
-Scope: article and banner images, note files and video files from the .cloud storage. **Support-ticket attachments are never exported.**
+`migrate:activity` never reads the .cloud storage. It migrates files only when the receiver passes `--files-dir=<dir>` (runbook section 19.1 on the AM-08 branch). The operator exports the files in the same sitting as the raw dump.
 
-- They are exported **in the same sitting**, into a separate directory `"$work/files"`. They are kept outside GitHub like the dump (never in git, an issue, a PR, chat or any Claude/AI session), **encrypted and handed over together with the dump** (step 7 above, with `files` in the archive), and **wiped with it** (step 9) under the same deadlines.
-- The operator uses the same read-only access. **Perlu pengesahan:** how the files are read from the .cloud storage is not decided; the method is to be confirmed with the data owner. No access method is assumed in this document.
-- **Perlu pengesahan:** the exact layout of `"$work/files"` and the commands are pending the `--files-dir` input format from #122. AM-10 will update this step when it lands.
+**What is exported.** Only the files the staged rows point to, and today `migrate:activity` copies only `banners.image_path`. So the operator **exports the banner image files only**, i.e. the files named by `image_path` in the raw `banners` export (`<work>/raw`). Article images and note and video files are not staged, so they are not migrated and are **not exported**; `audio_kbat.audio_path` is counted, not copied, so it is not exported either. **Support-ticket attachments are never exported** (LEAD decision 22 Oct). A wider export needs a spec change first.
+
+**Access (Perlu pengesahan: confirm with the data owner/LEAD).** The operator uses read-only access to the .cloud storage, which is **more than the MySQL account**: it needs read-only shell access to the storage. The method, the host and who provides the access are not decided, and this document assumes none. No command that writes to the .cloud server is ever used.
+
+**`SHA256SUMS`.**
+- It is generated **on the .cloud server at export time**, from the live storage, read-only, by the operator. A manifest made from the exported copy proves nothing about tampering or damage in transit.
+- Format: `sha256sum` output, with paths relative to the export directory, in exactly the same text the staged `image_path` column holds. Example, run from the storage root (restricted to the banner files; `<banner dir>` is a placeholder):
+  ```bash
+  find <banner dir> -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+  ```
+  `find .` prints a leading `./` on every path; `migrate:activity` strips leading `./` when it reads the manifest (`load/activity/files.ts`, #122), so that prefix is harmless. Beyond it, the path text in each line must equal the `image_path` text exactly. Remove the line for `SHA256SUMS` itself if it lists itself.
+- No file name may need `sha256sum` escaping (a line starting with `\`). The export must avoid such names; otherwise the run fails closed with the manifest line number.
+- A directory without a valid `SHA256SUMS` is refused (fail closed). The manifest is part of the input hash, so a dry-run does not authorise an apply on a changed manifest.
+
+**Layout and hand-over.** The banner files go into `"$work/files"`, with `SHA256SUMS` at the **root** of that directory and the other files at the relative paths the manifest lists. Symbolic links are not allowed. The directory is kept outside GitHub like the dump (never in git, an issue, a PR, chat or any Claude/AI session), and is encrypted and handed over **in the same archive as the raw dump**: step 7 above with `raw files`.
+```powershell
+Push-Location $work
+cmd /c "tar -czf - raw files | gpg --symmetric --cipher-algo AES256 -o $name"
+```
+```bash
+( set -o pipefail; tar -C "$work" -czf - raw files | gpg --symmetric --cipher-algo AES256 -o "$out" ); echo "exit $?"   # must be 0
+```
+The mandatory listing check of step 7 stays, and its entry count now includes the files directory (everything in `raw` and `files`, plus the two directory entries).
+
+**Receiver.**
+- Decrypts and extracts **outside any repository working tree**, on the encrypted disk. `migrate:activity` refuses a `--files-dir` inside the working tree (or one that contains it).
+- Runs `migrate:activity ... --files-dir=<that dir>` with the **same flag on the dry-run and on the apply**. The apply also needs `FILE_STORAGE_DIR` (the absolute path of the v2 file storage, separate from the export). The dry-run verifies every file and writes nothing.
+- Deletes the files directory together with the dump (step 9 for the operator; the receiver's deadline in section 8, "Retention").
+
+**Exit and abort.** A missing, unlisted, mismatched, oversized, wrongly typed or unsafe file is an `INVALID_VALUE` reject on that banner's `image_path`; it is not an exit code of the dump tools. The banner row is not loaded. The fix is a **new export** (a new sitting with the same rules: account unlocked and locked, `dump:wipe` first after a failure).
+
+**Rehearsal (anonymised flow).** Files do **not** go with the anonymised dump by default, because `dump:produce` does not handle files. Rehearsals run `migrate:activity` without `--files-dir` (the report then prints `files: not migrated`), unless the LEAD allows real banner images in a rehearsal. **Perlu pengesahan:** banner images are public marketing images, but that is for the LEAD to confirm.
