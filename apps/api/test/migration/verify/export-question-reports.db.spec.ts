@@ -37,6 +37,15 @@ const REPORTS: [id: number, question: number, user: number, status: string | nul
   [6, 2, 3, 'ditolak', 'ditolak sebab lain'],
   [7, 1, 2, 'pending', '+60 salah; -ulang; @sebut'],
   [8, 3, 4, 'selesai', null],
+  [10, 2, 5, 'ali_baba', 'status that is not in the known set'],
+]
+
+/** Teacher submissions: metadata only exists in the staged spec. */
+const SUBMISSIONS: [id: number, user: number, status: string | null][] = [
+  [1, 1, 'menunggu'],
+  [2, 2, 'diluluskan'],
+  [3, 3, ' Baru'],
+  [4, 4, null],
 ]
 
 const fresh = (): string => join(outRoot, `run-${++n}`)
@@ -97,6 +106,13 @@ beforeAll(async () => {
       [id, q, u, status, reason],
     )
   }
+  for (const [id, u, status] of SUBMISSIONS) {
+    await env.pool.query(
+      `insert into archive_cloud.question_submissions (id, user_id, status, created_at, updated_at)
+       values ($1, $2, $3, '2026-03-01T17:15:00Z', '2026-03-02T00:00:00Z')`,
+      [id, u, status],
+    )
+  }
 }, 300_000)
 afterAll(async () => {
   await env?.close()
@@ -129,7 +145,7 @@ describe('exportOpenQuestionReports', () => {
     expect(r.csv).toBe(join(dir, `question-reports-open-${STAMP}.csv`))
     expect(r.summary).toBe(join(dir, `question-reports-open-${STAMP}.summary.json`))
     expect(r.exported).toBe(5)
-    expect(r.total).toBe(9)
+    expect(r.total).toBe(10)
 
     const rows = parseCsv(readFileSync(r.csv, 'utf8'))
     expect(rows[0]).toEqual([...CSV_COLUMNS])
@@ -165,7 +181,7 @@ describe('exportOpenQuestionReports', () => {
 
   it('never writes the reporter: no user value appears in the files', async () => {
     const r = await exportOpenQuestionReports({ pool: env.pool, outDir: fresh(), now: () => NOW })
-    const text = `${readFileSync(r.csv, 'utf8')}\n${readFileSync(r.summary, 'utf8')}`
+    const text = `${readFileSync(r.csv, 'utf8')}\n${readFileSync(r.submissions.csv, 'utf8')}\n${readFileSync(r.summary, 'utf8')}`
     const users = await env.pool.query<Record<string, string | null>>(
       `select name, email, phone, ic, username from staging_cloud.users where id <= 5`,
     )
@@ -179,23 +195,42 @@ describe('exportOpenQuestionReports', () => {
     const dir = fresh()
     const r = await exportOpenQuestionReports({ pool: env.pool, outDir: dir, now: () => NOW })
     for (const f of [r.csv, r.summary]) expect(statSync(f).mode & 0o777, f).toBe(0o600)
-    expect(readdirSync(dir).sort()).toEqual([`question-reports-open-${STAMP}.csv`, `question-reports-open-${STAMP}.summary.json`])
+    expect(readdirSync(dir).sort()).toEqual([
+      `question-reports-open-${STAMP}.csv`,
+      `question-reports-open-${STAMP}.summary.json`,
+      `question-submissions-open-${STAMP}.csv`,
+    ])
+    expect(statSync(r.submissions.csv).mode & 0o777).toBe(0o600)
     const s = JSON.parse(readFileSync(r.summary, 'utf8')) as {
       total: number
       exported: number
       byStatus: { status: string; count: number; exported: boolean }[]
       openStatuses: string[]
+      submissions: unknown
     }
-    expect(s.total).toBe(9)
+    expect(s.total).toBe(10)
     expect(s.exported).toBe(5)
+    // Only the documented known statuses are named; every other value (also a code-shaped one) is "(other)".
     expect(s.byStatus).toEqual([
       { status: '(null)', count: 1, exported: false },
+      { status: '(other)', count: 2, exported: false },
       { status: 'baru', count: 3, exported: true },
-      { status: 'ditolak', count: 1, exported: false },
       { status: 'menunggu', count: 1, exported: true },
       { status: 'pending', count: 1, exported: true },
       { status: 'selesai', count: 2, exported: false },
     ])
+    expect(s.submissions).toEqual({
+      total: 4,
+      exported: 2,
+      csvFile: `question-submissions-open-${STAMP}.csv`,
+      byStatus: [
+        { status: '(null)', count: 1, exported: false },
+        { status: '(other)', count: 1, exported: false },
+        { status: 'baru', count: 1, exported: true },
+        { status: 'menunggu', count: 1, exported: true },
+      ],
+    })
+    expect(JSON.stringify(s)).not.toMatch(/ali_baba|diluluskan|ditolak/)
     expect(s.openStatuses).toContain('baru')
     expect(JSON.stringify(s)).not.toMatch(/Jawapan|HYPERLINK/)
   })
@@ -229,12 +264,43 @@ describe('exportOpenQuestionReports', () => {
     expect(readdirSync(dir3).sort()).toEqual([`question-reports-open-${STAMP}.summary.json`, 'victim3.txt'])
     expect(readFileSync(victim3, 'utf8')).toBe('keep')
 
+    // An existing file with the same stamp is never replaced: the run fails and leaves it as it was.
     const dir2 = fresh()
     mkdirSync(dir2, { recursive: true })
-    writeFileSync(join(dir2, `question-reports-open-${STAMP}.csv`), 'old', { mode: 0o644 })
-    const r = await exportOpenQuestionReports({ pool: env.pool, outDir: dir2, now: () => NOW })
-    expect(readFileSync(r.csv, 'utf8')).toContain('legacy_report_id')
-    expect(statSync(r.csv).mode & 0o777).toBe(0o600)
+    const old = join(dir2, `question-reports-open-${STAMP}.csv`)
+    writeFileSync(old, 'old', { mode: 0o644 })
+    await expect(exportOpenQuestionReports({ pool: env.pool, outDir: dir2, now: () => NOW })).rejects.toThrow(/already exists/)
+    expect(readFileSync(old, 'utf8')).toBe('old')
+    expect(readdirSync(dir2)).toEqual([`question-reports-open-${STAMP}.csv`])
+
+    // The second CSV exists already: the reports CSV this run created is removed, the old file stays.
+    const dir4 = fresh()
+    mkdirSync(dir4, { recursive: true })
+    const oldSub = join(dir4, `question-submissions-open-${STAMP}.csv`)
+    writeFileSync(oldSub, 'old-sub')
+    await expect(exportOpenQuestionReports({ pool: env.pool, outDir: dir4, now: () => NOW })).rejects.toThrow(/already exists/)
+    expect(readdirSync(dir4)).toEqual([`question-submissions-open-${STAMP}.csv`])
+    expect(readFileSync(oldSub, 'utf8')).toBe('old-sub')
+
+    // A second run in a later second works and leaves the first pair alone.
+    const dir5 = fresh()
+    await exportOpenQuestionReports({ pool: env.pool, outDir: dir5, now: () => NOW })
+    await exportOpenQuestionReports({ pool: env.pool, outDir: dir5, now: () => new Date(NOW.getTime() + 1000) })
+    expect(readdirSync(dir5)).toHaveLength(6)
+  })
+
+  it('exports open submissions as metadata only (id, status, Malaysia date), never the user', async () => {
+    const r = await exportOpenQuestionReports({ pool: env.pool, outDir: fresh(), now: () => NOW })
+    expect(r.submissions.csv).toMatch(/question-submissions-open-20261029T173000Z\.csv$/)
+    expect(r.submissions.exported).toBe(2)
+    expect(r.submissions.total).toBe(4)
+    const rows = parseCsv(readFileSync(r.submissions.csv, 'utf8'))
+    expect(rows).toEqual([
+      ['legacy_submission_id', 'status', 'created_date'],
+      ['1', 'menunggu', '2026-03-02'],
+      ['3', ' Baru', '2026-03-02'],
+    ])
+    expect(statSync(r.submissions.csv).mode & 0o777).toBe(0o600)
   })
 
   it('only reads: every statement is a read and no table changes', async () => {
@@ -284,12 +350,15 @@ describe('migrate:export-question-reports (CLI)', () => {
     const dir = fresh()
     const r = await run(['migrate:export-question-reports', `--out-dir=${dir}`])
     expect(r.code).toBe(0)
-    expect(r.text).toMatch(/5 open report\(s\) exported of 9/)
+    expect(r.text).toMatch(/5 open report\(s\) exported of 10; 2 open submission\(s\) of 4/)
     expect(r.text).toMatch(/baru \| 3 \| yes/)
     expect(r.text).toMatch(/selesai \| 2 \| no/)
+    expect(r.text).toMatch(/\(other\) \| 2 \| no/)
+    expect(r.text).not.toMatch(/ali_baba|diluluskan|ditolak/)
+    expect(r.text).toContain('submissions csv (metadata only)')
     expect(r.text).toContain(dir)
     expect(r.text).not.toMatch(/Jawapan|HYPERLINK|Soalan "tiada"|contoh\.invalid/)
-    expect(readdirSync(dir)).toHaveLength(2)
+    expect(readdirSync(dir)).toHaveLength(3)
   })
 
   it('refuses --apply (read-only command) and an out-dir outside .migration-out', async () => {
