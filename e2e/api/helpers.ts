@@ -110,7 +110,10 @@ export async function logoutViaMenu(
     await page.getByTestId('pembelajaran-account-top').click()
   } else {
     const account = page.locator('[data-testid=pentadbiran-account]:visible')
-    if ((await account.count()) === 0) await page.getByTestId('pentadbiran-menu-button').click()
+    const menuButton = page.getByTestId('pentadbiran-menu-button')
+    // Wait for the shell to render one of the two entry points before deciding which one to use.
+    await expect(account.or(menuButton).first()).toBeVisible()
+    if ((await account.count()) === 0) await menuButton.click()
     await account.first().click()
   }
   await page.getByRole('menuitem', { name: 'Log Keluar' }).click()

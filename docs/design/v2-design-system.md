@@ -368,6 +368,7 @@ Colour from text tokens only. Running copy `max-w-prose` (≤ 65ch).
 | `floatup` | +n pill rises 54px and fades, 1s | "+10" on correct |
 | `confetti` | ~28 particles, 9×14px rounded 2px, A1/A2/A3/A4, 1.5–2.2s | Win screen, level-up |
 | `sticker-stamp` | scale 2.2→1 and rotate −14°→−4°, 700ms ease-pop, delays 0.9s/1.15s | Win stickers |
+| `sticker-stamp`, `contained` (AZ-21a, D9 fix) | below `sm` (40rem): fade only, from the resting scale and rotation (no 2.2× overshoot); `sm` and up unchanged | `/login` stat chips (`DsSticker contained`), which overshot the viewport by up to 50 px at 375 |
 | `live-pulse` | opacity 1→.45, 1.6s loop | LIVE badge/dot (red) |
 
 **Reduced motion** (`prefers-reduced-motion: reduce`): durations → 1ms; `rise`, `bob`, `hop`, `party`, `flicker`, `nudge`, `sheet`, `floatup`, `confetti`, `sticker-stamp`, `live-pulse`, skeleton pulse and press-scale are disabled; `count-up` jumps to the final value; stickers appear in place; the friend shows a static mood badge; win highlight = a static lime ring. State is still conveyed by icon, text and colour. Page fade ≤ 100ms opacity only.
