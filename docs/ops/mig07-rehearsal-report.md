@@ -5,6 +5,31 @@
 - **Code under test:** branch `be/AM-MIG-07-rehearsal` = `feature/v2-backend` + AM-08 (`migrate:activity`, PR #122) + AZ-30 (rehearsal environment, PR #117). One run also used `origin/be/AM-09-migrate-orchestration` (`migrate:verify`, `migrate:delta`) from a temporary detached worktree.
 - **Passes:** pass 1 ran on the code before the paging fix; pass 2 (same day) re-ran everything on the fixed branch (`f8c519fe`). Pass 1 is kept below unchanged, except that its sections are demoted one heading level.
 
+# Pass 3 (orchestrator, AM-09)
+
+Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this branch (`b73d0dc2`) and AM-09 `be/AM-09-migrate-orchestration` `1c6da999` (not pushed). Same separate Postgres 16 cluster (port 55433), AZ-30 host mode, explicit `--as-of=2026-10-22`. A container restart stopped the run during the second delta apply; every step up to the first delta apply completed and is recorded below (logs: counts only, in the author's scratch folder).
+
+## P3.1 Verdict
+
+| Part | Result |
+|---|---|
+| Reference seed, load, stage, snapshot | ok (seed 3.4 s, load-dump 11.7 s, stage 3.3 s) |
+| `migrate:all` dry-run / apply | **green**, 8.1 s / **526.7 s**; WAL about 492 MB |
+| `migrate:verify` on the full state | **pass** (3.4 s) |
+| AC9 `--files-dir` (banner images, synthetic export with `SHA256SUMS`) | **ok**: copied 2, rejected 1 (`unlisted`, planted), second apply copied nothing |
+| Rollback | **ok**: AM-09 `migrate:rollback --apply` succeeded (19 s); AZ-30 `restore-snapshot` to `pre_etl` and `after_full`: `ROLLBACK VERIFIED`, `MIGRATION CHECK PASSED` 33/33 |
+| Source lock during `migrate:delta --apply` | **ok**: standalone `migrate:activity` and `migrate:core` refused (exit 2, about 3 s); a second `migrate:delta` refused (exit 4) |
+| `migrate:delta` dry-run / apply | dry-run ok (5.8 s); apply: ETL done in 378 s, then **stopped at its verify step** (problems D and E) |
+
+## P3.2 New problems
+
+| # | Problem | Owner | Status |
+|---|---|---|---|
+| D | `feedback` after the delta: target 1520, loaded 1517. The 3 extra v2 rows belong to 3 users deleted at the source; their feedback rows are still staged (no cascade), BE-29 now rejects them, and verify's deleted-at-source key for `feedback` (`verify/deleted.ts:102`) checks only the feedback row, so it counts 0 deleted. Fix: the key also requires the parent user. BE-29 also changes its reject reason to `ORPHAN_PARENT user_id` (was `UNKNOWN_ENUM role`) in #122. | AM1-2 (#123) | requested on #109 |
+| E | Answers per subject after the delta: subject 14 staged 10,415 vs v2 10,416; "none" 1 vs 0 (totals equal). Answer legacy 39986 belongs to a session deleted at the source and its question is not in the archive; BE-29 kept it with the v2 session's subject; verify (`verify/checks.ts:121,127`) falls back to the staged session, which is gone. Fix: fall back to the v2 session's subject. | AM1-2 (#123) | requested on #109 |
+
+Still open from passes 1–2: OD-24 (`battle`/`spm` modes rejected by design), the real-data pass (AM-10 dump with the storage export and `SHA256SUMS`), VPS sizing (#116). After D and E are fixed, only the delta phase is re-run.
+
 # Pass 2 (fixed code)
 
 ## P2.1 Verdict
