@@ -103,6 +103,8 @@ describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M2
     // The seed holds both a plain teacher and a teacher who is also a school_admin (guruadmin@demo.test) in DEMO001.
     const peers = await countRole('teacher', `and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
     const plain = await countRole('teacher', `and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
+    // Every teacher holding a role a school admin may not see (school_admin or any other), as managedBase drops them.
+    const hidden = await countRole('teacher', `and exists (select 1 from user_roles r where r.user_id = u.id and r.role not in ('student', 'teacher'))`)
     expect(peers).toBeGreaterThanOrEqual(1)
     expect(plain).toBeGreaterThanOrEqual(1)
 
@@ -115,7 +117,7 @@ describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M2
     expect(d.cards.teachers).toBe(guru.body.meta.counts.total)
     expect(d.cards.pupils).toBe(pelajar.body.meta.counts.total)
     // The raw teacher count includes the peers; the card must not.
-    expect(d.cards.teachers).toBe((await countRole('teacher')) - peers)
+    expect(d.cards.teachers).toBe((await countRole('teacher')) - hidden)
   })
 })
 
