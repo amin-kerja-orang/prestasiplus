@@ -775,20 +775,34 @@ above stays true until then.
   - an inactive or suspended target, unless `--reactivate` is given.
 - **When it stops (exit 2):** `--confirm` is missing or does not repeat `--email` exactly; any password-like argument
   (none is echoed); a weak password (under 12 characters, leading or trailing spaces, or it contains the e-mail name).
-- **Run it (as `ppdeploy`, with the LEAD's confirmation).** Use the prod overlay command from section 1. Write the new
-  password on one line in a root-only file (mode 600) and delete the file right after the run:
+- **Run it (as `ppdeploy`, with the LEAD's confirmation).** Use the prod overlay command from section 1. The default is
+  the **hidden prompt**: the password is typed twice and never touches the disk. Start the line with a space so that
+  `HISTCONTROL=ignorespace` keeps it out of the history (or run `history -d` on it afterwards):
 
   ```
-  docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
+    run --rm --no-deps migrate npm run admin:bootstrap -w @pp/api -- \
+    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail>
+  ```
+
+  Only when no terminal is available, use a file. The redirect is read by the calling shell, so the file must belong
+  to `ppdeploy` (a root-only file fails with "Permission denied" before compose starts). It must hold the password on
+  **one line only**; a second line is refused with exit 2. Add `-T` and `--password-stdin`, then remove the file
+  with `shred -u` right after the run:
+
+  ```
+  install -m 600 -o ppdeploy /dev/null ~ppdeploy/pp-admin-pass   # then write the one-line password into it
+   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env \
     run --rm --no-deps -T migrate npm run admin:bootstrap -w @pp/api -- \
-    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < /root/pp-admin-pass
+    --mode=reset --email=<admin e-mail> --confirm=<admin e-mail> --password-stdin < ~ppdeploy/pp-admin-pass
+  shred -u ~ppdeploy/pp-admin-pass
   ```
 
-  Without `--password-stdin` (and without `-T`), the command asks for the password twice on a hidden prompt instead.
-  Exit 0 prints the user id, the database name, and the number of sessions and reset links ended.
+  Exit 0 prints the user id, the database name, and the number of sessions and reset links ended. The e-mail is
+  stored in lower case.
 - **Known limits:**
-  - The e-mail is a command-line argument, so it appears in shell history and `ps`. It is not a secret, but run the
-    command from a shell whose history you clear.
+  - The e-mail is a command-line argument, so it appears in `ps` while the command runs (and in the history unless
+    the leading space or `history -d` above is used). It is not a secret.
   - The login throttle row is not cleared: right after a recovery, the admin may wait up to 60 s before the first login.
   - The audit row names the OS user only (often the shared `ppdeploy`), so also write the support ticket line from the
     "Records" rule above.
