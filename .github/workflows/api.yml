@@ -150,9 +150,10 @@ jobs:
           node scripts/npm-audit-gate.mjs --file audit.json
 
   # BE-33 (AC6): new or changed dependencies in a pull request (license-neutral; vulnerabilities only).
-  # Dependency review needs the repository's dependency graph (a repository setting). While the repository does
-  # not support it, the action fails with "not supported on this repository"; the job then passes with a warning
-  # (the npm audit gate above still runs). Any other failure, e.g. a high-severity finding, still fails the job.
+  # Dependency review needs the repository's dependency graph (a repository setting). A probe step asks the
+  # dependency-graph compare API first. Only when it answers "not supported" is the review step skipped, with a
+  # warning (the npm audit gate above still runs). Any other probe error fails the job, and a high-severity finding
+  # fails the review step as before. No continue-on-error (ci-workflow.spec.ts).
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -161,13 +162,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4.2.2
-      - id: review
-        uses: actions/dependency-review-action@v4.7.3
-        continue-on-error: true
-        with:
-          fail-on-severity: high
-      - name: Fail unless dependency review is unsupported here
-        if: steps.review.outcome == 'failure'
+      - name: Is dependency review supported here
+        id: probe
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -176,13 +172,17 @@ jobs:
         run: |
           set -u
           if out="$(gh api "repos/$REPO/dependency-graph/compare/$BASE_SHA...$HEAD_SHA" 2>&1)"; then
-            echo "Dependency review is supported here, so its failure is real."; exit 1
-          fi
-          if printf '%s' "$out" | grep -qi 'not supported'; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$out" | grep -qi 'not supported'; then
             echo "::warning::Dependency review is not supported on this repository (enable the dependency graph in the repository settings). Skipped."
-            exit 0
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "The dependency-graph support check gave an unexpected answer:"; printf '%s\n' "$out" | head -n 5; exit 1
           fi
-          echo "Dependency review failed and the support check gave an unexpected answer:"; printf '%s\n' "$out" | head -n 5; exit 1
+      - if: steps.probe.outputs.supported == 'true'
+        uses: actions/dependency-review-action@v4.7.3
+        with:
+          fail-on-severity: high
 
   docker:
     runs-on: ubuntu-latest
