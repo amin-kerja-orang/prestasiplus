@@ -1,4 +1,4 @@
-import { QUESTION_WORKFLOW_STATUS_LABELS, type QuestionStatus } from '@pp/contract'
+import { QUESTION_MESSAGES, QUESTION_WORKFLOW_STATUS_LABELS, type QuestionBulkFailure, type QuestionStatus } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 
@@ -23,3 +23,25 @@ export const PUBLISH_TAG_MESSAGES = {
   spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
   tp: 'Sila pilih tahap penguasaan (TP).',
 } as const
+
+/** BM copy of a skipped id in `POST /questions/bulk-action` when the question does not exist (contract copy). */
+export const QUESTION_NOT_FOUND_MESSAGE = QUESTION_MESSAGES.notFound
+
+/** One question the bulk action did not apply, with the text the admin sees for it (contract `QuestionBulkFailure`). */
+export type BulkFailure = QuestionBulkFailure
+
+/** The `failed` entry of an id that does not exist. */
+export const notFoundFailure = (id: string): BulkFailure => ({ id, code: 'NOT_FOUND', message: QUESTION_NOT_FOUND_MESSAGE, fields: {} })
+
+/** Maps a per-id error of the bulk action to its `failed` entry; `null` means the error is not a skip (re-throw it). */
+export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
+  if (!(e instanceof ApiError)) return null
+  if (e.code === 'NOT_FOUND') return notFoundFailure(id)
+  if (e.code === 'CONFLICT') return { id, code: 'CONFLICT', message: e.message, fields: {} }
+  if (e.code === 'VALIDATION_ERROR') {
+    const fields = e.fields ?? {}
+    const distinct = [...new Set(Object.values(fields))]
+    return { id, code: 'VALIDATION_ERROR', message: distinct.length > 0 ? distinct.join(' ') : e.message, fields }
+  }
+  return null
+}

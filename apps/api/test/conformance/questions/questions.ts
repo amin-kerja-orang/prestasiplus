@@ -108,6 +108,8 @@ export const questionsScenarios: Scenario[] = [
       const review = await admin.request('POST', '/questions/bulk-action', { body: { action: 'review', ids: [id, id, '999999999'] } })
       ctx.expectStatus(review, 200)
       ctx.check((dataOf(review).affected as number) === 1, `bulk review affected ${String(dataOf(review).affected)}, expected 1`)
+      const reviewFailed = dataOf(review).failed as Array<{ id: string; code: string; message: string }> | undefined
+      ctx.check(reviewFailed?.length === 1 && reviewFailed[0]?.id === '999999999' && reviewFailed[0].code === 'NOT_FOUND' && reviewFailed[0].message === 'Soalan tidak dijumpai.', `bulk review failed was ${JSON.stringify(reviewFailed)}`)
       ctx.check(flashOf(review) === '1 soalan berjaya dikemaskini.', `bulk flash was ${String(flashOf(review))}`)
       const approved = await admin.request('POST', '/questions/bulk-action', { body: { action: 'approved', ids: [id] } })
       ctx.check((dataOf(approved).affected as number) === 1, 'bulk approved did not affect the question')

@@ -3,7 +3,7 @@
  * dashboard (BE-21) and the BE-19 performance reports show real aggregate data (their privacy gate needs
  * MIN_COHORT = 5 contributing pupils).
  *
- * What it writes (all fictitious, `@demo.test` accounts, password hash copied from `pelajar@demo.test`):
+ * What it writes (all fictitious, `@demo.test` accounts, password hash from the shared `demoPasswordHash()`; a NULL hash on an existing row is refilled):
  * - 5 extra Form 4 pupils (`murid4` to `murid8@demo.test`, grade 10) at DEMO001, enrolled in "Kelas Demo Tingkatan 4"
  *   (join code `DEMO4S`) of `guru@demo.test`. With `pelajar` and `pelajar2` the class has 7 pupils.
  * - Submitted, non-test sittings on the PoC paper "Percubaan SPM Matematik Kertas 1 Set A" (10 MCQ) for `pelajar`
@@ -41,6 +41,7 @@ import { bijakCodeOf } from '../../../src/modules/bijak/papers/subject-codes'
 import { CurriculumRepository } from '../../../src/modules/curriculum'
 import { QuestionsRepository } from '../../../src/modules/questions'
 import { PracticeAggregateService } from '../../../src/modules/practice/aggregate/aggregate.service'
+import { demoPasswordHash } from '../core/demo-password'
 import { assertSeedAllowed } from '../guard'
 import type { SeedContext, SeedModule } from '../index'
 
@@ -101,17 +102,21 @@ async function ensurePupils(prisma: PrismaClient, ctx: SeedContext): Promise<Map
   const createdAt = ctx.clock.now()
   const school = await prisma.school.findUnique({ where: { code: SCHOOL_CODE }, select: { id: true } })
   if (!school) throw new Error(`Bijak sittings seed needs school ${SCHOOL_CODE}; run the identity seed first.`)
-  const template = await prisma.user.findFirst({ where: { email: { equals: TEMPLATE_EMAIL, mode: 'insensitive' } }, select: { passwordHash: true } })
-  if (!template?.passwordHash) throw new Error(`Bijak sittings seed needs ${TEMPLATE_EMAIL} (identity seed).`)
+  const template = await prisma.user.findFirst({ where: { email: { equals: TEMPLATE_EMAIL, mode: 'insensitive' } }, select: { id: true } })
+  if (!template) throw new Error(`Bijak sittings seed needs ${TEMPLATE_EMAIL} (identity seed).`)
 
   const ids = new Map<string, bigint>()
   for (const p of BIJAK_DEMO_PUPILS) {
-    const existing = await prisma.user.findFirst({ where: { email: { equals: p.email, mode: 'insensitive' } }, select: { id: true } })
+    const existing = await prisma.user.findFirst({ where: { email: { equals: p.email, mode: 'insensitive' } }, select: { id: true, passwordHash: true } })
+    if (existing && existing.passwordHash === null) {
+      // Re-seed after a reset (password_hash = NULL): refill, same rule as identity.ts. A non-NULL hash is kept.
+      await prisma.user.update({ where: { id: existing.id }, data: { passwordHash: await demoPasswordHash() } })
+    }
     const id =
       existing?.id ??
       (
         await prisma.user.create({
-          data: { name: p.name, email: p.email, username: p.username, schoolId: school.id, grade: 10, classLabel: p.classLabel, isActive: true, isSuspended: false, passwordHash: template.passwordHash, createdAt },
+          data: { name: p.name, email: p.email, username: p.username, schoolId: school.id, grade: 10, classLabel: p.classLabel, isActive: true, isSuspended: false, passwordHash: await demoPasswordHash(), createdAt },
           select: { id: true },
         })
       ).id
