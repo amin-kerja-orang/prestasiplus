@@ -24,6 +24,8 @@ const USER_ID = /^[1-9]\d{0,17}$/
 /** Flags that would switch file migration on; it is off until the lead decides (Q2). */
 const FILE_FLAGS = ['storage-dir', 'storage', 'files', 'copy-files']
 const MAX_IDS_PRINTED = 200
+/** Every flag this command reads (besides `--dry-run` / `--apply`, which the kit parses); anything else is a usage error. */
+const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'content-owner', 'report-file', 'group', 'table'])
 
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
@@ -55,6 +57,11 @@ export const migrateActivity: MigrateCommand = {
     for (const f of FILE_FLAGS) {
       if (args.flags.has(f)) throw new ApplyGuardError('file migration is off (Q2): the storage flags are not available; content image paths stay unset.')
     }
+    // A typo such as --talbe=wallets must not silently select the full entity set.
+    for (const name of args.flags.keys()) {
+      if (!KNOWN_FLAGS.has(name)) throw new ApplyGuardError(`unknown flag --${name}.`)
+    }
+    if (args.positional.length > 0) throw new ApplyGuardError('unexpected argument: this command takes flags only (--name=value).')
     const asOf = date('as-of', flagValue(args, 'as-of')) ?? defaultAsOf()
     const coreAsOf = date('core-as-of', flagValue(args, 'core-as-of'))
     const sizeText = flagValue(args, 'batch-size')
@@ -94,13 +101,15 @@ export const migrateActivity: MigrateCommand = {
       }
       throw e
     }
-    const { report, activity, notMigrated } = result
+    const { report, activity, notMigrated, blockedBySpec } = result
 
     emit(`migrate:activity ${report.mode}: run ${report.runId} ${report.status}`)
     emit('entity | source | eligible | loaded | rejected | status')
     for (const r of report.recon) {
       emit(`${r.entity} | ${r.sourceCount} | ${r.eligibleCount} | ${r.loaded} | ${r.rejected} | ${r.status}`)
     }
+    // A green run can still leave a table empty when the staging spec lacks a column: say so (counts only).
+    for (const b of blockedBySpec) emit(`blocked by spec: ${b.entity} 0/${b.sourceCount}`)
     // Counts and surrogate ids only: no name, e-mail, IC, phone, free text or hash is ever printed.
     for (const [name, n] of [...activity.notes.counters].sort(([a], [b]) => (a < b ? -1 : 1))) emit(`note ${name}: ${n}`)
     for (const [name, ids] of [...activity.notes.ids].sort(([a], [b]) => (a < b ? -1 : 1))) {

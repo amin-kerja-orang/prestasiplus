@@ -46,6 +46,9 @@ export function hashValue(value: unknown, key: Uint8Array): string {
 
 const PERSONAL_ID = /@|\d{10,}/
 
+/** An IC (yymmdd-pb-nnnn) or a phone number (nnn-nnn-nnnn) with ":" in place of the usual separator. */
+const SPLIT_PERSONAL_SHAPES: readonly RegExp[] = [/^\d{6}:\d{2}:\d{4}$/, /^\d{3}:\d{3}:\d{4}$/]
+
 /** True when one segment of a legacy id looks like an e-mail address, an IC number or a phone number. */
 function segmentLooksPersonal(segment: string): boolean {
   // Digits split by spaces or dashes (900101-14-5678, 012-345 6789) are an IC or phone number too.
@@ -59,7 +62,12 @@ function segmentLooksPersonal(segment: string): boolean {
  * keys never add up to a false positive. The message never repeats the value.
  */
 export function assertSurrogateLegacyId(legacyId: string, where: string): void {
-  if (legacyId.split(':').some(segmentLooksPersonal)) {
+  // A non-composite id is checked as a whole. A composite id is checked per segment, and a composite that is only an
+  // IC (yymmdd:pb:nnnn) or a phone number (nnn:nnn:nnnn) split by ":" is refused by its shape.
+  const personal = legacyId.includes(':')
+    ? legacyId.split(':').some(segmentLooksPersonal) || SPLIT_PERSONAL_SHAPES.some((re) => re.test(legacyId))
+    : segmentLooksPersonal(legacyId)
+  if (personal) {
     throw new RangeError(
       `${where}: legacyId looks like personal data (contains "@" or 10 or more digits); use the surrogate primary key of the source row.`,
     )

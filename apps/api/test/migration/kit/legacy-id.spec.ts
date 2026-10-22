@@ -14,6 +14,15 @@ describe('assertSurrogateLegacyId', () => {
     expect(() => assertSurrogateLegacyId('1234:56789:1', 'test')).not.toThrow()
   })
 
+  it('refuses an IC or phone number written with ":" as the separator, but not other short groupings', () => {
+    for (const id of ['012:345:6789', '900101:14:5678', '0123456789:1']) {
+      expect(() => assertSurrogateLegacyId(id, 'test'), id).toThrow(RangeError)
+    }
+    for (const id of ['12:345:6789', '012:345:678', '9001:14:5678', '5:7:9', '1234567:1:1']) {
+      expect(() => assertSurrogateLegacyId(id, 'test'), id).not.toThrow()
+    }
+  })
+
   it('still refuses an IC or phone number, alone or as a segment', () => {
     for (const id of ['0123456789', '900101145678', '1:900101-14-5678', '1:0123456789', '012-345 6789:1', '7:012 345 6789']) {
       expect(() => assertSurrogateLegacyId(id, 'test'), id).toThrow(RangeError)

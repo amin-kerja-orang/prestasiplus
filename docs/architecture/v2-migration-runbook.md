@@ -261,3 +261,10 @@ Decisions and assumptions:
 8. The column lists come from `ddl/spec.ts`, which will be completed against the first real schema export (section 7, item 4): re-check the config then (the tool refuses until every new column has a rule).
 
 **Follow-up (recorded, LEAD approved keeping both for now):** BE-27's `test/migration/fixtures/generate-tiny.ts` and `cloud-tiny/` duplicate the BE-35 generator's `tiny` size. Retire them once the BE-27 tests are moved to `tiny/`. The extraction of `prepareOutputDir` in `profile/render.ts` stays.
+
+## 12. `migrate:activity` (BE-29): operator notes
+
+- **Always pass `--as-of` (and `--core-as-of`) explicitly.** The input hash that links a dry-run to its `--apply` (and a resume to the interrupted run) includes `--as-of`. When the flag is left out, the default is today's Kuala Lumpur calendar day, so a dry-run on one day and an apply after midnight (or a resume that crosses midnight) hash differently and `--apply` is refused ("no passing dry-run found for input hash ..."). Give the same `--as-of=YYYY-MM-DD` to the dry-run, the apply and every resume. Pass `--core-as-of` with the date `migrate:core` ran with when it differs.
+- **Unknown flags and positional arguments are refused** (exit 2, the message names the flag): a typo such as `--talbe=wallets` never silently selects the full entity set.
+- **`blocked by spec: <entity> 0/<n>`** in the report means the entity has `n` source rows and none was loaded because the staging spec still lacks a column its v2 table needs (articles, notes, videos, audio sets, support tickets). A green run does not mean those tables are filled; the line and the `note blocked_by_spec.<entity>` counter go away once the spec carries the column and rows load.
+- **Rejected rows:** an exam attempt whose score is above its maximum (or whose maximum is not above 0) is rejected `INVALID_VALUE` on `score`; a ledger row with a negative `balance_after` is rejected `INVALID_VALUE` on `balance_after`. Nothing is clamped.

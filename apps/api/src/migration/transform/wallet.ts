@@ -176,7 +176,7 @@ export function transformLedger(row: Staged, refs: LedgerRefs): Outcome<LedgerVa
   const amount = signedInt(row.amount)
   if (amount === null || amount === 'invalid') return invalid('amount')
   const after = signedInt(row.balance_after)
-  if (after === null || after === 'invalid') return invalid('balance_after')
+  if (after === null || after === 'invalid' || after < 0) return invalid('balance_after')
   if (type.value === null || source.value === null) return invalid('type')
   // Never flip a sign: a row that contradicts its own type is rejected and reported.
   if (!ledgerSignOk(type.value, amount)) return invalid('amount')

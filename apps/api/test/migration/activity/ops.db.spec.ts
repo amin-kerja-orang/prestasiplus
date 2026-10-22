@@ -8,9 +8,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { migrateActivity } from '../../../src/migration/load/activity/command'
 import { opsGroup } from '../../../src/migration/load/activity/part-b'
 import { ROLE_MAP } from '../../../src/migration/transform/enums'
-import { bootActivity, type ActivityHarness } from './helpers'
+import { AS_OF, bootActivity, type ActivityHarness } from './helpers'
 
 let h: ActivityHarness
 let u: string[] = []
@@ -44,6 +45,9 @@ const inject =
 
 let r1: Reasons
 let r2: Reasons
+let r1Blocked: unknown = null
+let r1BlockedNote: number | undefined
+let r2Blocked: unknown = null
 let r1Recon: Record<string, { source: number; eligible: number; loaded: number; rejected: number }> = {}
 
 beforeAll(async () => {
@@ -86,12 +90,15 @@ beforeAll(async () => {
   const a1 = await h.run('apply', { groups })
   expect(a1.report.status).toBe('succeeded')
   r1 = await reasonsOf(a1.report.runId)
+  r1Blocked = a1.blockedBySpec
+  r1BlockedNote = a1.activity.notes.counters.get('blocked_by_spec.support_tickets')
   r1Recon = Object.fromEntries(a1.report.recon.map((r) => [r.entity, { source: r.sourceCount, eligible: r.eligibleCount, loaded: r.loaded, rejected: r.rejected }]))
 
   const bodies = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => [String(i), { body: 'Mesej contoh' }]))
   const a2 = await h.run('apply', { groups, transformSteps: inject({ support_tickets: bodies }) })
   expect(a2.report.status).toBe('succeeded')
   r2 = await reasonsOf(a2.report.runId)
+  r2Blocked = a2.blockedBySpec
 }, 600_000)
 afterAll(async () => {
   await h?.close()
@@ -105,6 +112,21 @@ describe('support_tickets', () => {
     expect(n(r1, 'support_tickets', 'UNKNOWN_ENUM', 'status')).toBe(1)
     expect(n(r1, 'support_tickets', 'ORPHAN_PARENT', 'user_id')).toBe(1)
     expect(r1Recon.support_tickets).toEqual({ source: 9, eligible: 9, loaded: 0, rejected: 9 })
+  })
+
+  it('R1: the green run is flagged "blocked by spec" (counts only), with a note counter; R2 loads rows and is not flagged', async () => {
+    expect(r1Blocked).toEqual([{ entity: 'support_tickets', sourceCount: 9 }])
+    expect(r1BlockedNote).toBe(9)
+    expect(r2Blocked).toEqual([])
+    const lines: string[] = []
+    const code = await migrateActivity.run(
+      { mode: 'dry-run', flags: new Map<string, string | true>([['as-of', AS_OF], ['core-as-of', AS_OF], ['group', 'ops'], ['table', 'support_tickets']]), positional: [] },
+      { pool: h.env.pool, env: h.runEnv, out: (l) => lines.push(l), err: (l) => lines.push(l) },
+    )
+    expect(code).toBe(0)
+    // No body is injected here, so the dry-run loads nothing of the 9 staged tickets and the spec gap is reported.
+    expect(lines).toContain('blocked by spec: support_tickets 0/9')
+    expect(lines).toContain('note blocked_by_spec.support_tickets: 9')
   })
 
   it('R2: with a body, the status is mapped onto the BM codes and a subject of 256 characters is rejected, not cut', async () => {
