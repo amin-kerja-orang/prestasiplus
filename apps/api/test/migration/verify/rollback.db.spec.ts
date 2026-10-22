@@ -18,8 +18,9 @@ let stagingBefore: Record<string, number> = {}
 let v2School = ''
 let v2User = ''
 
+const allowed = () => ({ ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1' })
 const call = (extra: object = {}) =>
-  rollbackLegacy({ pool: h.env.pool, env: h.runEnv, source: 'cloud', confirmDb: db, ...extra })
+  rollbackLegacy({ pool: h.env.pool, env: allowed(), source: 'cloud', confirmDb: db, ...extra })
 
 beforeAll(async () => {
   h = await bootActivity({ core: false })
@@ -46,6 +47,14 @@ describe('guards', () => {
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
   })
 
+  it('refuses without PP_ALLOW_MIGRATE_ROLLBACK=1, a dry-run too', async () => {
+    for (const dryRun of [false, true]) {
+      await expect(call({ env: h.runEnv, dryRun })).rejects.toBeInstanceOf(RollbackRefusedError)
+      await expect(call({ env: { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: 'yes' }, dryRun })).rejects.toThrow(/PP_ALLOW_MIGRATE_ROLLBACK=1/)
+    }
+    expect(await legacyTableCounts(h)).toEqual(afterLoad)
+  })
+
   it('refuses a confirmation that is not the connected database', async () => {
     await expect(call({ confirmDb: 'some_other_db' })).rejects.toThrow(/does not match the connected database/)
     await expect(call({ confirmDb: '' })).rejects.toBeInstanceOf(ApplyGuardError)
@@ -53,7 +62,7 @@ describe('guards', () => {
   })
 
   it('refuses in production unless PP_MIGRATE_TARGET_DB names the database', async () => {
-    await expect(call({ env: { ...h.runEnv, NODE_ENV: 'production' } })).rejects.toBeInstanceOf(ApplyGuardError)
+    await expect(call({ env: { ...allowed(), NODE_ENV: 'production' } })).rejects.toBeInstanceOf(ApplyGuardError)
   })
 })
 
@@ -100,7 +109,10 @@ describe('concurrent work', () => {
     const other = await h.env.pool.connect()
     try {
       await other.query(`SELECT pg_advisory_lock(hashtextextended('etl:rollback:cloud', 0))`)
-      await expect(call()).rejects.toThrow(/another rollback/)
+      await expect(call()).rejects.toThrow(/etl:rollback:cloud.*held by another session/)
+      await other.query(`SELECT pg_advisory_unlock_all()`)
+      await other.query(`SELECT pg_advisory_lock(hashtextextended('etl:source:cloud', 0))`)
+      await expect(call()).rejects.toThrow(/etl:source:cloud.*held by another session/)
       expect(await legacyTableCounts(h)).toEqual(afterLoad)
     } finally {
       await other.query(`SELECT pg_advisory_unlock_all()`)

@@ -89,8 +89,8 @@ async function usersPerRolePerSchool({ pool, source }: CheckContext): Promise<St
      WHERE x.legacy_source = $1 GROUP BY 1, 2`,
     [source],
   )
-  // A staged role word is printed only when it looks like a code; free text never reaches the report.
-  const roleLabel = (raw: string | null): string => ROLE_MAP[raw ?? ''] ?? `unmapped(${/^[a-z_]{1,30}$/.test(raw ?? '') ? raw : 'other'})`
+  // A staged role word is printed only through the allow-list of mapped roles; anything else is `unmapped(other)`.
+  const roleLabel = (raw: string | null): string => (raw !== null && Object.hasOwn(ROLE_MAP, raw) ? (ROLE_MAP[raw] as string) : 'unmapped(other)')
   const expected = countMap(staged.rows.map((r) => ({ k: `${roleLabel(r.role)} | school ${r.school ?? 'none'}`, n: r.n })))
   const actual = countMap(loaded.rows.map((r) => ({ k: `${r.role} | school ${r.school ?? 'none'}`, n: r.n })))
   const diff = diffMaps(expected, actual)
