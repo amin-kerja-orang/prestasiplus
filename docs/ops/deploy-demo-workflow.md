@@ -43,7 +43,7 @@ merging this PR into `feature/v2-backend` alone is **not enough**. Use either op
 
 - **Option A (preferred):** Settings → General → **Default branch** → switch to `feature/v2-backend` (a UI step for the
   LEAD). The files arrive there when this PR merges.
-- **Option B:** merge the twin PR to `feature/student-prototype`, which adds only `.github/workflows/deploy-demo.yml`
+- **Option B:** merge the twin PR #214 to `feature/student-prototype`, which adds only `.github/workflows/deploy-demo.yml`
   and `.github/workflows/rollback-demo.yml`, byte-identical to this PR. It adds no script: the workflows check out and
   run `scripts/deploy-demo.sh` from the branch you pick in **Run workflow** (`feature/v2-backend`).
 
