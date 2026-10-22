@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import type { ForbiddenOutcome } from '@/app/router/meta'
 import type { Role } from '@/stores/session-types'
 
@@ -21,7 +22,8 @@ export interface CommandCenterDrillRouteOptions {
   shell?: boolean
 }
 
-const id = (value: unknown) => Number(value)
+// http mode: ids are digit strings (BE-22, matched by `\d+`), kept as-is; mock mode keeps numbers
+const id = (value: unknown): number | string => (isHttpMode() ? String(value) : Number(value))
 
 /**
  * The four routes (standalone `bare` pages that draw their own staff frame, or in the staff shell with `shell`) S4-S7 under `prefix`: `school/:schoolId`, `school/:schoolId/teacher/:userId`,
