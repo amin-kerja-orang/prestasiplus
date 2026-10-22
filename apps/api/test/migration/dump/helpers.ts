@@ -36,7 +36,7 @@ export interface Scenario {
   currentRole?: string
   tables: Record<string, FakeTable>
   /** Print stderr and exit with this code after the output. */
-  fail?: { code: number; stderr: string; onlyDump?: boolean }
+  fail?: { code: number; stderr: string; onlyDump?: boolean; onlyRole?: boolean }
   /** Cut the dump output after this many lines (a dying client that exits 0). */
   truncateDumpAt?: number
   /** Extra line inserted after the first data line of the dump (to test a bad stream). */
@@ -91,7 +91,7 @@ process.stdin.on('end', () => {
   const lines = isDump && sc.truncateDumpAt !== undefined ? out.slice(0, sc.truncateDumpAt) : out
   const finish = () => {
     process.stdout.write(lines.join('\\n') + '\\n')
-    if (sc.fail && (!sc.fail.onlyDump || isDump)) {
+    if (sc.fail && (!sc.fail.onlyDump || isDump) && (!sc.fail.onlyRole || sql.includes('CURRENT_ROLE'))) {
       process.stderr.write(sc.fail.stderr)
       process.exitCode = sc.fail.code
     }

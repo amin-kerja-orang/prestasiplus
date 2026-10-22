@@ -264,6 +264,31 @@ describe('dump:cloud', () => {
     expect(existsSync(`${out}.partial`)).toBe(false)
   })
 
+  it.each([
+    ['an active role', { currentRole: '`secret_role`@`%`' }],
+    ['a mandatory role', { mandatoryRoles: '`secret_role`@`%`' }],
+  ])('exits 3 with %s: no data SQL, no output and no .partial', async (_n, extra) => {
+    fx.setScenario(scenario(extra))
+    const out = work.out(`cloud-role-${_n.replace(/ /g, '-')}`)
+    const r = await cli(['dump:cloud', '--out', out])
+    expect(r.code, r.text).toBe(DUMP_EXIT.notReadOnly)
+    expect(r.text).toMatch(/mandatory or active role/)
+    expect(r.text).not.toContain('secret_role')
+    expect(fx.calls().some((c) => c.sql.includes('JSON_OBJECT') || c.sql.includes('START TRANSACTION') || c.sql.includes('COUNT(*)'))).toBe(false)
+    expect(existsSync(out)).toBe(false)
+    expect(existsSync(`${out}.partial`)).toBe(false)
+  })
+
+  it('fails closed (exit 1) when the CURRENT_ROLE() query itself fails: nothing read, no output', async () => {
+    fx.setScenario(scenario({ fail: { code: 1, onlyRole: true, stderr: 'ERROR 1305 (42000): FUNCTION CURRENT_ROLE does not exist\n' } }))
+    const out = work.out('cloud-role-fails')
+    const r = await cli(['dump:cloud', '--out', out])
+    expect(r.code, r.text).toBe(DUMP_EXIT.failed)
+    expect(fx.calls().some((c) => c.sql.includes('JSON_OBJECT') || c.sql.includes('START TRANSACTION') || c.sql.includes('COUNT(*)'))).toBe(false)
+    expect(existsSync(out)).toBe(false)
+    expect(existsSync(`${out}.partial`)).toBe(false)
+  })
+
   it('exits 6 on a row-count mismatch and deletes the partial output', async () => {
     fx.setScenario(scenario({ tables: { schools: { ...sourceTable('schools', SCHOOL_ROWS), countOverride: 5 } } }))
     const out = work.out('cloud-mismatch')
