@@ -162,7 +162,9 @@ export function feedbackStep(a: ActivityContext): AnyEntityStep {
       for (const row of rows) {
         const legacyId = idOf(row)
         const userKey = row.user_id?.trim() ?? null
-        const userId = userKey === null ? undefined : users.get(userKey)
+        // A user that is no longer staged (deleted at the source, delta run: staging has no cascade) is an orphan even
+        // when the id map still knows it, the same as on a first load; checked before the role is evaluated.
+        const userId = userKey === null || !roles.has(userKey) ? undefined : users.get(userKey)
         const m = info.get(legacyId)
         const out = transformFeedback(row, {
           userId,

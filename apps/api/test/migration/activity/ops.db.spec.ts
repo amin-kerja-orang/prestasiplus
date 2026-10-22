@@ -8,6 +8,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { runCore } from '../../../src/migration/load'
 import { migrateActivity } from '../../../src/migration/load/activity/command'
 import { opsGroup } from '../../../src/migration/load/activity/part-b'
 import { ROLE_MAP } from '../../../src/migration/transform/enums'
@@ -179,5 +180,38 @@ describe('feedback', () => {
     expect(n(r1, 'feedback', 'INVALID_VALUE', 'score')).toBe(1)
     expect(n(r1, 'feedback', 'ORPHAN_PARENT', 'user_id')).toBe(1)
     expect(r1Recon.feedback).toEqual({ source: 8, eligible: 8, loaded: 3, rejected: 5 })
+  })
+})
+
+describe('feedback of a user deleted at the source (delta, staging has no cascade)', () => {
+  it('is rejected ORPHAN_PARENT on user_id, not UNKNOWN_ENUM on role, although the id map knows the user; loaded v2 rows stay', async () => {
+    const keep = u[0] as string
+    const v2Before = await h.q(`select legacy_id, user_id::text, role, month::text, satisfaction, comment from feedback order by legacy_id::bigint`)
+    expect(v2Before.length).toBe(3)
+    const mapped = await h.count('etl_id_map', `t.legacy_source = 'cloud' and t.entity = 'users' and t.legacy_id = '${keep}'`)
+    expect(mapped).toBe(1)
+    await h.q(`create table staging_cloud._user_bak as select * from staging_cloud.users where id = $1::bigint`, [keep])
+    try {
+      await h.q(`delete from staging_cloud.users where id = $1::bigint`, [keep])
+      const sourceBefore = await h.count('staging_cloud.feedback')
+      // The delta: BE-28 is re-run on the changed staging (it never deletes a mapped user), so the preflight passes.
+      for (const mode of ['dry-run', 'apply'] as const) {
+        const core = await runCore({ pool: h.env.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, mode, batchSize: 2 })
+        expect(core.report.status).toBe('succeeded')
+      }
+      expect((await h.run('dry-run', { groups })).report.status).toBe('succeeded')
+      const a = await h.run('apply', { groups })
+      expect(a.report.status).toBe('succeeded')
+      const r = await reasonsOf(a.report.runId)
+      // Feedback 1, 2 and 3 belong to the removed user; 7 is the unknown user 99999 (both ORPHAN_PARENT now).
+      expect(n(r, 'feedback', 'UNKNOWN_ENUM', 'role')).toBe(0)
+      expect(n(r, 'feedback', 'ORPHAN_PARENT', 'user_id')).toBe(4)
+      expect(a.report.recon.find((x) => x.entity === 'feedback')?.sourceCount).toBe(sourceBefore)
+      const v2After = await h.q(`select legacy_id, user_id::text, role, month::text, satisfaction, comment from feedback order by legacy_id::bigint`)
+      expect(v2After).toEqual(v2Before)
+    } finally {
+      await h.q(`insert into staging_cloud.users select * from staging_cloud._user_bak`)
+      await h.q(`drop table staging_cloud._user_bak`)
+    }
   })
 })
