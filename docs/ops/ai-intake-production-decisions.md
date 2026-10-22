@@ -1,7 +1,9 @@
 # AI intake in production: decisions for the 30 Oct go-live (AZ-29)
 
-Status: **proposal, waiting for the LEAD** (`DECISION NEEDED AZ-29` on #113). Each item below can be answered with
-one word. If an item gets no answer, its **default** applies. No secret values are in this file; env names only.
+Status: **decided** by the LEAD DECISION on #113 of 22 Oct 2026, 10:30 MYT (the LEAD may override any line):
+`AZ-29: 1 MOCK, 2 -, 3 -, 4 OFF, 5 KEEP, 6 LATER, 7 ADMIN`. The record, the production values and the follow-ups are
+in the [decision record](#decision-record-22-oct-2026) below; the option tables after it are kept as the reasoning.
+No secret values are in this file; env names only.
 
 Scope: the PC-5 lane (BE-36 AI extraction, BE-37 files/OCR/jobs, BE-38 intake workflow, BE-40 dashboard and budget),
 running on the production VPS from the AZ-09 pack (#116). Sources: `docs/architecture/v2-backend-plan.md` OD-14..OD-16
@@ -13,6 +15,25 @@ on `feature/v2-backend` @ `23c98226`.
 > questions"**: OD-14 (provider, region, cap; go-live D-5) plus the intake gaps below. OD-15 is the OCR engine and
 > OD-16 the intake limits and retention, as defined in the backend plan. If the LEAD's DEC-07 means something else,
 > the answers below still stand on their own; only the label changes.
+
+## Decision record (22 Oct 2026)
+
+| # | Item | Answer | Production value (`/etc/pretasiplus/api.env`; names and non-secret values only) | Follow-up |
+|---|---|---|---|---|
+| 1 | AI provider (OD-14, D-5) | **MOCK** | `AI_PROVIDER=mock`; `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` stay **unset** | Revisit in week 2 with real papers. A paid provider needs a new LEAD decision and the gates of items 2 and 3 |
+| 2 | Monthly AI cap | **n/a** (item 1 is MOCK) | none | Decided together with any future provider |
+| 3 | Region of the redacted text | **n/a** (item 1 is MOCK) | none | Before any real provider: a PDPA cross-border check, a vendor DPA (no training, no retention) and BE-38 switched to the BE-36 redactor (#85/#78) |
+| 4 | OCR engine (OD-15) | **OFF** | `OCR_ENGINE=none`; `OCR_LANG_DIR` unset; no tessdata volume in the compose overlay | Scanned pages show `OCR_UNAVAILABLE` and are typed in by hand. TJS only after one timed run of 20 real scans on the VPS (week 2), by a new decision |
+| 5 | Intake limits (OD-16) | **KEEP** | no keys set, so the schema defaults apply (`INTAKE_MAX_FILE_MB` 20, `OCR_MAX_PAGES` 200, `INTAKE_MAX_FILES_PER_BATCH` 10, `INTAKE_DAILY_PAGE_QUOTA` 500, `INTAKE_MAX_ACTIVE_BATCHES` 5, `INTAKE_MAX_ITEMS_PER_BATCH` 500); edge `PP_UPLOAD_FILES_MB=22`, `PP_UPLOAD_BIG_MB=256` in `prod.env` | `LEAD: confirm` with one real scanned paper that it fits 20 MB / 200 pages |
+| 6 | Retention of intake files (BE-NFR-14) | **LATER** | none (`INTAKE_RETENTION_MONTHS` does not exist yet) | PC-5 card by the end of Q1 2027 (env key and daily purge job). Until then intake files and page images are kept with no purge, also in backups; the production runbook (#116 follow-up) has a manual step for an erasure request |
+| 7 | Who may use intake | **ADMIN** | the flag that card AZ-35 adds (admin-only is its default) | **AZ-35** (AZ-Dev1, claimed on #113): intake upload and processing routes for `admin` only, behind a flag; a teacher gets 403. **Go-live blocker:** without it, teachers can upload unscanned files on 30 Oct. ALL would need ClamAV (#78) or a recorded LEAD risk acceptance |
+
+Effect at go-live: intake has **no external AI, no OCR and no teacher access**, and no intake data leaves the server.
+Revisit items 1, 4 and 7 in week 2.
+
+Where the values live: `deploy/vps/api.env.example` and `docs/ops/production-vps.md` section 3 (the #116 follow-up
+F-DEFAULTS). `docs/ops/go-live-bijak-spm.md` D-5 is marked answered by whoever next edits that file; it is not edited
+here.
 
 ## What is true on the tip today
 
@@ -30,7 +51,8 @@ on `feature/v2-backend` @ `23c98226`.
 ## The decisions
 
 Answer format on #113: `AZ-29: 1 MOCK, 2 -, 3 -, 4 OFF, 5 KEEP, 6 LATER, 7 ADMIN` (one word per item; `-` = not
-applicable or "use the default").
+applicable or "use the default"; items 2 and 3 are not applicable while item 1 is MOCK). This is the answer the
+LEAD gave on 22 Oct.
 
 ### 1. AI provider for production intake (OD-14, go-live D-5)
 
@@ -119,10 +141,15 @@ Env: `MAX_UPLOAD_MB`, `INTAKE_MAX_FILE_MB`, `OCR_MAX_PAGES`, `INTAKE_MAX_FILES_P
 | **ADMIN** | Admin Pusat only until ClamAV (#78) scans uploads. Needs one small PC-5 change (intake upload and batch routes `@Roles('admin')` behind a flag, for example `INTAKE_TEACHER_ENABLED=false`) or, at least, the teacher menu entry hidden. | Teachers cannot upload their own papers on launch day. |
 | ALL | Teachers and Admin Pusat, as the code allows today. | Teacher uploads are parsed by pdfjs in bounded workers (BE-NFR-30: scripting off, page and size caps, timeouts) but **not virus-scanned**; a recorded LEAD risk acceptance is needed (as #116 decision 6 says). |
 
-**Default: ADMIN**, matching the go-live doc (intake is listed as an Admin Pusat screen) and #116 decision 6. If the
-LEAD answers ADMIN, half AZ opens the small PC-5 card; if ALL, the LEAD writes the risk acceptance on #113.
+**Default: ADMIN**, consistent with #116 decision 6. The go-live doc lists intake as an Admin Pusat screen, but it
+does not exclude teachers, so it is not cited as a rule here. If the LEAD answers ADMIN, half AZ opens the small PC-5
+card (a code change, needed before 30 Oct); if ALL, the LEAD writes the risk acceptance on #113.
 
 ## After the answers
+
+State for the 22 Oct answer: step 1 is done (LEAD DECISION on #113); step 2 is the #116 follow-up F-DEFAULTS (no TJS
+volume, because item 4 is OFF); step 3 is AZ-35 for item 7, the retention card stays planned for Q1 2027, and the
+redactor follow-up is not needed while item 1 is MOCK; step 4 is open.
 
 1. LEAD posts the one-line answer on #113.
 2. AZ-DevOps writes the chosen values into `deploy/vps/.env.prod.example` / `api.env.example` comments and the
