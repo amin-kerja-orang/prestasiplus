@@ -32,7 +32,10 @@ const listQueryOf = (raw: Record<string, unknown>): z.infer<typeof NotificationL
 
 const bulkIds = (raw: unknown): string[] => new ZodValidationPipe(NotificationBulkRequestSchema).transform(raw ?? {}).ids
 
-/** `bulk-read` in STRICT mode (BE-33 AC1c, #99): an unknown key such as `userId` is a 422 naming it. The owner is always the session user. */
+/**
+ * `bulk-read` in STRICT mode (BE-33 AC1c, #99): an unknown key such as `userId` is a 422 naming it. The owner is always the session user.
+ * `bulk-delete` deliberately keeps the lenient `bulkIds` above: the LEAD decision of 22 Oct covers bulk-read only.
+ */
 const strictBulkRead = new StrictZodValidationPipe(NotificationBulkRequestSchema)
 const bulkReadIds = (raw: unknown): string[] => strictBulkRead.transform(raw ?? {}).ids
 
