@@ -1,8 +1,9 @@
 // Intake files and processing (BE-37): the question-paper submission (batch), its stored PDFs, pages,
 // figure crops, and the platform job table. Hand-written in migration 0020_ai_intake (identity columns,
-// text + CHECK enums, named constraints). BE-38 appends the item/workflow tables to this file.
-// NOT migratable: no .cloud data lands here, so there are no legacy_* columns and no entry in
-// migratable-models.json. `jobs` is a platform table and carries no migration state.
+// text + CHECK enums, named constraints). BE-38 appends the item/workflow tables to this file
+// (migration 0038_intake_workflow).
+// NOT migratable: no .cloud data lands here (pipeline tables are archived), so there are no legacy_* columns and no
+// entry in migratable-models.json. `jobs` is a platform table and carries no migration state.
 
 model IntakeBatch {
   id           BigInt    @id @default(autoincrement())
@@ -26,6 +27,8 @@ model IntakeBatch {
   /// Edited by Admin Pusat (max 1000; OQ3).
   adminNotes   String?   @map("admin_notes")
   statusReason String?   @map("status_reason")
+  /// BE-38: pointer to the paper identity and rights register (BE-10 `source_papers`). FK in the migration SQL only.
+  sourcePaperId BigInt?  @map("source_paper_id")
   /// Written while an admin is in Mod Pelajar (G-07).
   isTest       Boolean   @default(false) @map("is_test")
   submittedAt  DateTime? @map("submitted_at") @db.Timestamptz(6)
@@ -34,6 +37,9 @@ model IntakeBatch {
 
   owner User?        @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, map: "fk_intake_batches_owner_user_id")
   files IntakeFile[]
+  items   IntakeItem[]
+  stimuli IntakeStimulus[]
+  runs    IntakeExtractionRun[]
 
   @@index([ownerUserId, status], map: "ix_intake_batches_owner_user_id_status")
   @@index([status, createdAt], map: "ix_intake_batches_status_created_at")
@@ -139,4 +145,170 @@ model Job {
   @@index([entityType, entityId], map: "ix_jobs_entity_type_entity_id")
   // The partial index ix_jobs_queued (run_after) WHERE state = 'queued' exists only in the migration.
   @@map("jobs")
+}
+
+// ---- BE-38 intake workflow (migration 0038_intake_workflow) ------------------------------------------------
+// Hand-written SQL: identity columns, text + CHECK enums (English codes), named constraints. Foreign keys to tables
+// of other owners (users, questions, intake_files, intake_pages, jobs) are in the migration SQL only. Partial indexes
+// (one active run per batch, duplicate pair uniqueness) exist only in the migration.
+
+/// One extraction run of a batch. BE-36 owns `ai_extraction_runs` (cost log side); this row is the BE-38 workflow
+/// state of the run the contract exposes (`IntakeExtractionRun`). `job_id` is the durable job that executes it.
+model IntakeExtractionRun {
+  id            BigInt    @id @default(autoincrement())
+  batchId       BigInt    @map("batch_id")
+  jobId         BigInt?   @map("job_id")
+  /// queued, running, succeeded, failed (check constraint).
+  state         String    @default("queued")
+  /// AI_BUDGET_EXHAUSTED, AI_UNAVAILABLE, EXTRACTION_FAILED (check constraint); the visible reason of a queued or failed run.
+  reasonCode    String?   @map("reason_code")
+  itemCount     Int?      @map("item_count")
+  provider      String?
+  model         String?
+  attempts      Int       @default(0)
+  requestedById BigInt?   @map("requested_by_id")
+  /// Paper-level BM warnings of the provider result (no content of the paper beyond the warning text).
+  warnings      Json      @default("[]") @db.JsonB
+  /// Scheme entries whose question number was not found (AC-04.2).
+  unmatched     Json      @default("[]") @db.JsonB
+  queuedAt      DateTime  @default(now()) @map("queued_at") @db.Timestamptz(6)
+  startedAt     DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime? @map("finished_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batch IntakeBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "fk_intake_extraction_runs_batch_id")
+  items IntakeItem[]
+
+  @@index([batchId, createdAt], map: "ix_intake_extraction_runs_batch_id_created_at")
+  @@map("intake_extraction_runs")
+}
+
+/// Shared figure, passage or table of a batch, staged before accept (data model 3.5 `intake_stimuli`).
+model IntakeStimulus {
+  id        BigInt   @id @default(autoincrement())
+  batchId   BigInt   @map("batch_id")
+  /// Local key inside the batch (the extractor's id, or `manual-n`); unique per batch.
+  ref       String
+  /// diagram, passage, table (check constraint).
+  kind      String
+  label     String   @default("")
+  caption   String?
+  altText   String   @default("") @map("alt_text")
+  body      String?
+  tableData Json?    @map("table_data") @db.JsonB
+  /// BE-37 figure crop. FK intake_figures ON DELETE SET NULL (migration SQL).
+  figureId  BigInt?  @map("figure_id")
+  pageNo    Int?     @map("page_no")
+  /// { page, x, y, w, h } of the crop.
+  region    Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batch IntakeBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "fk_intake_stimuli_batch_id")
+  items IntakeItem[]
+
+  @@unique([batchId, ref], map: "uq_intake_stimuli_batch_id_ref")
+  @@map("intake_stimuli")
+}
+
+/// One reviewable draft (a detected or hand-added question). Accepted = a Draf question exists (`question_id`).
+model IntakeItem {
+  id               BigInt    @id @default(autoincrement())
+  batchId          BigInt    @map("batch_id")
+  /// FK intake_files / intake_pages ON DELETE SET NULL (migration SQL). Null for a manual item.
+  intakeFileId     BigInt?   @map("intake_file_id")
+  intakePageId     BigInt?   @map("intake_page_id")
+  aiRunId          BigInt?   @map("ai_run_id")
+  stimulusId       BigInt?   @map("stimulus_id")
+  /// Order of the item in the paper.
+  position         Int
+  /// pdf, manual (check constraint).
+  sourceType       String    @default("pdf") @map("source_type")
+  numberLabel      String    @default("") @map("number_label")
+  /// mcq, structured, short, essay (check constraint).
+  itemType         String    @map("item_type")
+  /// stem, options, marks, mode, unit, wordRange, parts, scheme, tag (the prototype IntakeQuestion content).
+  payload          Json      @db.JsonB
+  pageNo           Int       @default(1) @map("page_no")
+  region           Json?     @db.JsonB
+  lowFields        String[]  @default([]) @map("low_fields")
+  confirmedFields  String[]  @default([]) @map("confirmed_fields")
+  needsManual      Boolean   @default(false) @map("needs_manual")
+  fieldConfidence  Json      @default("{}") @map("field_confidence") @db.JsonB
+  lowestConfidence Decimal?  @map("lowest_confidence") @db.Decimal(4, 3)
+  /// Fields a person edited ("Disunting oleh manusia").
+  humanEdited      String[]  @default([]) @map("human_edited")
+  /// generated, needs_review, accepted, rejected, duplicate (check constraint).
+  reviewState      String    @default("generated") @map("review_state")
+  rejectReason     String?   @map("reject_reason")
+  decidedById      BigInt?   @map("decided_by_id")
+  decidedAt        DateTime? @map("decided_at") @db.Timestamptz(6)
+  /// Set on accept. FK questions ON DELETE SET NULL (migration SQL); the question is owned by M04.
+  questionId       BigInt?   @map("question_id")
+  questionVersionNo Int?     @map("question_version_no")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batch     IntakeBatch          @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "fk_intake_items_batch_id")
+  run       IntakeExtractionRun? @relation(fields: [aiRunId], references: [id], onDelete: SetNull, map: "fk_intake_items_ai_run_id")
+  stimulus  IntakeStimulus?      @relation(fields: [stimulusId], references: [id], onDelete: SetNull, map: "fk_intake_items_stimulus_id")
+  events    IntakeItemEvent[]
+  duplicates DuplicateLink[]     @relation("ItemDuplicates")
+
+  @@index([batchId, reviewState], map: "ix_intake_items_batch_id_review_state")
+  @@index([reviewState, lowestConfidence], map: "ix_intake_items_review_state_lowest_confidence")
+  @@index([batchId, position], map: "ix_intake_items_batch_id_position")
+  @@index([stimulusId], map: "ix_intake_items_stimulus_id")
+  @@index([questionId], map: "ix_intake_items_question_id")
+  @@map("intake_items")
+}
+
+/// Append-only (G-17): rows are inserted, never updated or deleted by code. Who, when, from, to, reason; the previous
+/// value of an edited field is kept in `before_value` (AC-08.2).
+model IntakeItemEvent {
+  id          BigInt   @id @default(autoincrement())
+  itemId      BigInt   @map("item_id")
+  /// FK users ON DELETE SET NULL (migration SQL); null = the extraction worker.
+  actorUserId BigInt?  @map("actor_user_id")
+  actorRole   String?  @map("actor_role")
+  /// extracted, added, edited, confirmed, accepted, rejected, marked_duplicate, cleared_duplicate, linked_variant (check constraint).
+  event       String
+  fromState   String?  @map("from_state")
+  toState     String?  @map("to_state")
+  field       String?
+  beforeValue Json?    @map("before_value") @db.JsonB
+  afterValue  Json?    @map("after_value") @db.JsonB
+  reason      String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  item IntakeItem @relation(fields: [itemId], references: [id], onDelete: Cascade, map: "fk_intake_item_events_item_id")
+
+  @@index([itemId, createdAt], map: "ix_intake_item_events_item_id_created_at")
+  @@map("intake_item_events")
+}
+
+/// A duplicate finding or decision of an item: a bank question, or another item of the same batch (exactly one).
+model DuplicateLink {
+  id                BigInt    @id @default(autoincrement())
+  itemId            BigInt    @map("item_id")
+  /// FK questions ON DELETE CASCADE (migration SQL).
+  matchedQuestionId BigInt?   @map("matched_question_id")
+  matchedItemId     BigInt?   @map("matched_item_id")
+  /// exact, near, variant (check constraint). The data model writes `possible` for `near`; the contract code is used.
+  kind              String
+  similarity        Decimal?  @db.Decimal(4, 3)
+  /// pending, not_duplicate, merged, linked_variant (check constraint).
+  decision          String    @default("pending")
+  decidedById       BigInt?   @map("decided_by_id")
+  decidedAt         DateTime? @map("decided_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  item IntakeItem @relation("ItemDuplicates", fields: [itemId], references: [id], onDelete: Cascade, map: "fk_duplicate_links_item_id")
+
+  @@index([itemId], map: "ix_duplicate_links_item_id")
+  @@index([matchedItemId], map: "ix_duplicate_links_matched_item_id")
+  @@index([matchedQuestionId], map: "ix_duplicate_links_matched_question_id")
+  @@map("duplicate_links")
 }

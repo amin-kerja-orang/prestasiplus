@@ -1,0 +1,93 @@
+// AI extraction service tables (BE-36, owner module ai-extraction): runs, the cost log and the budget settings.
+// Hand-written in migration 0037_ai_extraction (identity columns, text + CHECK enums, named constraints).
+// Foreign keys to users, intake_batches, intake_files and jobs exist in the database but are NOT declared as Prisma
+// relations here: a relation needs a back-relation field in the other owner's schema file (identity.prisma,
+// intake.prisma), which this card must not edit. The service reads those tables through their owners.
+// MIGRATABLE: only ai_usage_logs (legacy_source / legacy_id; BE-29 may load the .cloud cost log). ai_extraction_runs
+// and ai_settings have no .cloud source.
+// No document text, prompt, page content or credential is ever stored in any of these tables (BE-NFR-32, BE-NFR-33).
+
+/// One extraction (or tag-suggestion) run. Provider codes are the database form (`openai_compatible`).
+model AiExtractionRun {
+  id            BigInt    @id @default(autoincrement())
+  batchId       BigInt?   @map("batch_id")
+  intakeFileId  BigInt?   @map("intake_file_id")
+  jobId         BigInt?   @map("job_id")
+  /// extract_paper, suggest_tags (check constraint).
+  kind          String    @default("extract_paper")
+  /// mock, anthropic, openai, gemini, openai_compatible (check constraint).
+  provider      String
+  /// Model identifier only.
+  model         String
+  /// queued, running, succeeded, failed, cancelled (check constraint).
+  status        String    @default("queued")
+  requestedById BigInt?   @map("requested_by_id")
+  startedAt     DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime? @map("finished_at") @db.Timestamptz(6)
+  pages         Int?
+  tokensIn      Int?      @map("tokens_in")
+  tokensOut     Int?      @map("tokens_out")
+  costSen       Int?      @map("cost_sen")
+  /// AI_* code of a failed run (never a message, never content).
+  errorCode     String?   @map("error_code")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([batchId], map: "ix_ai_extraction_runs_batch_id")
+  @@index([intakeFileId], map: "ix_ai_extraction_runs_intake_file_id")
+  @@index([jobId], map: "ix_ai_extraction_runs_job_id")
+  @@index([requestedById], map: "ix_ai_extraction_runs_requested_by_id")
+  @@index([status], map: "ix_ai_extraction_runs_status")
+  @@map("ai_extraction_runs")
+}
+
+/// One row per provider call. Append-only (G-17): only created_at, no UPDATE or DELETE path. NO content.
+model AiUsageLog {
+  id           BigInt   @id @default(autoincrement())
+  runId        BigInt?  @map("run_id")
+  batchId      BigInt?  @map("batch_id")
+  actorUserId  BigInt?  @map("actor_user_id")
+  /// mock, anthropic, openai, gemini, openai_compatible (check constraint).
+  provider     String
+  model        String
+  /// extract_paper, suggest_tags, generate_text, health_check (check constraint).
+  purpose      String   @default("generate_text")
+  pages        Int      @default(0)
+  tokensIn     Int      @default(0) @map("tokens_in")
+  tokensOut    Int      @default(0) @map("tokens_out")
+  costSen      Int      @default(0) @map("cost_sen")
+  /// .cloud `event` of a migrated row; null for rows written by this service.
+  event        String?
+  /// .cloud `tool` of a migrated row; null for rows written by this service.
+  tool         String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_ai_usage_logs_legacy")
+  @@index([createdAt], map: "ix_ai_usage_logs_created_at")
+  @@index([batchId], map: "ix_ai_usage_logs_batch_id")
+  @@index([runId], map: "ix_ai_usage_logs_run_id")
+  @@index([actorUserId], map: "ix_ai_usage_logs_actor_user_id")
+  @@map("ai_usage_logs")
+}
+
+/// Singleton (check id = 1): monthly budget and notification flags. Provider, model and key are environment
+/// configuration, never stored here. `updated_by_id` is null until the first PUT /ai/settings.
+model AiSettings {
+  id               Int       @id @db.SmallInt
+  monthlyBudgetSen Int       @map("monthly_budget_sen")
+  warnPercent      Int       @default(80) @map("warn_percent") @db.SmallInt
+  notifyAt80       Boolean   @default(true) @map("notify_at_80")
+  notifyAt100      Boolean   @default(true) @map("notify_at_100")
+  /// First day of the Malaysia month for which the 80% warning was sent.
+  lastWarnedMonth  DateTime? @map("last_warned_month") @db.Date
+  /// First day of the Malaysia month for which the 100% notice was sent.
+  lastCappedMonth  DateTime? @map("last_capped_month") @db.Date
+  updatedById      BigInt?   @map("updated_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([updatedById], map: "ix_ai_settings_updated_by_id")
+  @@map("ai_settings")
+}

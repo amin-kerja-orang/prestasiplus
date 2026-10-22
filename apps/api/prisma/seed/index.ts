@@ -15,14 +15,17 @@ import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
 import { populationSeed } from './core/population'
 import { schoolPackagesSeed } from './core/school-packages'
+import { marketplaceCategoriesSeed } from './core/marketplace-categories'
 import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
 import { examDemoBlueprintsSeed } from './exam-demo-blueprints'
 import { practiceSeed } from './practice'
 import { questionsSeed } from './questions'
+import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
+import { marketplaceSeed } from './marketplace'
 import { assertSeedAllowed } from './guard'
 import { walletSeed } from './wallet'
 import { contentSeed } from './content'
@@ -34,6 +37,7 @@ import { battleSeed } from './battle'
 import { spmSeed } from './spm'
 import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
+import { pkskSeed } from './pksk'
 
 export { assertSeedAllowed }
 
@@ -65,15 +69,17 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`) and the
+ * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the marketplace categories
+ * (`core-marketplace-categories`, BE-46) and the
  * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
  * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
+ * ORDER NOTE: `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, performanceSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */

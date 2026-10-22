@@ -15,6 +15,7 @@ import { filesScenarios } from './files/files'
 import { intakeScenarios } from './intake/intake'
 import { missionsScenarios } from './missions/missions'
 import { questionSetsScenarios } from './missions/question-sets'
+import { marketplaceScenarios } from './marketplace/marketplace'
 import { notificationsScenarios } from './notifications/notifications'
 import { practiceScenarios } from './practice/practice'
 import { questionsScenarios } from './questions/questions'
@@ -32,7 +33,9 @@ import { practiceReadsScenarios } from './practice-reads'
 import { kirkpatrickScenarios } from './analytics/kirkpatrick'
 import { analyticsScenarios } from './analytics/analytics'
 import { heatmapScenarios } from './heatmap/heatmap'
+import { aiScenarios } from './ai/ai'
 import { intakeDashboardScenarios } from './intake/dashboard'
+import { intakeWorkflowScenarios } from './intake/workflow'
 import { cikguScenarios } from './cikgu/cikgu'
 import { commandCenterScenarios } from './command-center/command-center'
 import { spmScenarios } from './spm/spm'
@@ -79,7 +82,9 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...kirkpatrickScenarios,
     ...analyticsScenarios,
     ...heatmapScenarios,
+    ...aiScenarios,
     ...intakeDashboardScenarios,
+    ...intakeWorkflowScenarios,
     ...cikguScenarios,
     ...commandCenterScenarios,
     ...battleScenarios,
@@ -87,5 +92,6 @@ export function apiScenarios(contract: ContractIndex): Scenario[] {
     ...gamesScenarios,
     ...fosterApplicationScenarios,
     ...securityScenarios,
+    ...marketplaceScenarios,
   ]
 }

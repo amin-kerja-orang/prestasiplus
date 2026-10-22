@@ -22,12 +22,16 @@
  *  13. battle                 battle arena demo rows (BE-44)
  *  14. games                  Permainan rooms, solo sessions, leagues, Sekolah Bersaing (BE-45)
  *  15. poc-cikgu              Cikgu Alesa demo rows
- *  16. poc-performance        headcount configs and entries, timeline posts (BE-19)
- *  17. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
- *  18. spm                    SPM hub demo rows (BE-41)
- *  19. practice               practice sessions and answers of the demo accounts
- *  20. gamification           achievements, challenges, rewards, draws
- *  21. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
+ *  16. pksk                   PKSK demo rows (BE-42)
+ *  17. poc-performance        headcount configs and entries, timeline posts (BE-19)
+ *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path); BEFORE the spm seeds, which read the bank
+ *  19. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
+ *  20. spm                    SPM hub demo rows (BE-41)
+ *  21. practice               practice sessions and answers of the demo accounts
+ *  22. core-marketplace-categories  REFERENCE: the 6 marketplace categories (BE-46; also runs in production)
+ *  23. marketplace            demo seller, products and images (BE-46)
+ *  24. gamification           achievements, challenges, rewards, draws
+ *  25. poc-profile            THIS module: runs the consistency checks and fails the run when one is violated
  *
  * Production: refused unless the operator opts in with ALLOW_DEMO_SEED=true; the `--force-demo` flag of the seed
  * command is accepted there only together with it (two keys, see `applyForceDemo` in ../index.ts). The runner skips demo modules in production without the opt-in and
@@ -54,10 +58,14 @@ export const POC_PROFILE_ORDER = [
   'battle',
   'games',
   'poc-cikgu',
+  'pksk',
   'poc-performance',
+  'questions-pool',
   'spm-subject-configs',
   'spm',
   'practice',
+  'core-marketplace-categories',
+  'marketplace',
   'gamification',
   'poc-profile',
 ] as const
