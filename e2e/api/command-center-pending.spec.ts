@@ -8,14 +8,14 @@
  *   public sign-up (BE-06: created pending for the school), then verifies it and sees it leave the list.
  *
  * Sources: src/modules/m17-admin-dashboard (BoardKpis, CommandCenter*Page), src/modules/m10-teacher-class/pages/CommandCenterPage.vue,
- * src/modules/m27-school-admin/pages/GuruMenungguPage.vue. Seed: BE-07 poc profile, password Demo1234 (e2e/api/helpers.ts).
+ * src/modules/m27-school-admin/pages/GuruMenungguPage.vue. Seed: BE-07 poc profile, the shared seed password (API_PASSWORD, e2e/fixtures/api.ts).
  * Every project (375 / 768 / 1280) runs the same flows; the spec registers its own uniquely named teacher.
  */
 
 import type { Page } from '@playwright/test'
 
-import { expect, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll } from './helpers'
+import { API_PASSWORD, expect, loginViaUi, test } from '../fixtures/api'
+import { account, expectNoHScroll, newPeerContext } from './helpers'
 
 const NOT_AVAILABLE = 'Belum tersedia dalam prototaip'
 
@@ -50,13 +50,17 @@ const MAX_CHAIN_READS = 12
  * school -> teacher (with a class) -> classroom -> a pupil, by the admin drill-down API. Stops at the first class
  * that has a pupil with answers; else falls back to the first pupil seen. Bounded by `MAX_CHAIN_READS`.
  */
-async function findChain(page: Page): Promise<Chain> {
+async function findChain(page: Page): Promise<Chain>
+async function findChain(page: Page, notSchoolId: string): Promise<Chain | null>
+async function findChain(page: Page, notSchoolId?: string): Promise<Chain | null> {
   const live = await getData<{ topSchools: { schoolId: string }[] }>(
     page,
     '/api/admin/command-center/live-data',
   )
   expect(live.topSchools.length, 'the seed has a school with answers').toBeGreaterThan(0)
-  const schoolId = live.topSchools[0]!.schoolId
+  const picked = live.topSchools.find((x) => x.schoolId !== notSchoolId)
+  if (!picked) return null
+  const schoolId = picked.schoolId
   const school = await getData<{ teachers: { userId: string; classes: number }[] }>(
     page,
     `/api/command-center/school/${schoolId}`,
@@ -271,8 +275,8 @@ test.describe('command center and pending teachers @api', () => {
           email: `guru.menunggu.${stamp}@demo.test`,
           role: 'teacher',
           schoolId,
-          password: 'Demo1234',
-          passwordConfirmation: 'Demo1234',
+          password: API_PASSWORD,
+          passwordConfirmation: API_PASSWORD,
         },
       })
       expect(res.status(), `POST /api/auth/register: ${await res.text()}`).toBe(201)
@@ -308,5 +312,39 @@ test.describe('command center and pending teachers @api', () => {
       timeout: 15_000,
     })
     await expectNoHScroll(page)
+  })
+
+  test('Admin Sekolah: another school student and classroom answer 404 (never data) @api', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const sk = account('adminSekolah')
+    await loginViaUi(page, sk.user, sk.pass)
+    const own = (
+      await getData<{ school: { id: string } | null }>(page, '/api/admin/command-center/live-data')
+    ).school?.id
+    expect(own, 'the school admin has a school').toBeTruthy()
+
+    // An id that exists but belongs to another school, found as Admin Pusat in an isolated context.
+    const peer = await newPeerContext(browser, testInfo)
+    let foreign: Chain | null
+    try {
+      const adminPage = await peer.newPage()
+      const admin = account('adminPusat')
+      await loginViaUi(adminPage, admin.user, admin.pass)
+      foreign = await findChain(adminPage, own!)
+    } finally {
+      await peer.close()
+    }
+    test.skip(foreign === null, 'the seed has no other school with answers')
+
+    for (const path of [
+      `/api/command-center/student/${foreign!.studentId}`,
+      `/api/command-center/classroom/${foreign!.classId}`,
+    ]) {
+      const res = await page.request.get(path)
+      // Contract (admin-paths.ts): out of scope answers 404 so ids cannot be probed; 403 would also deny.
+      expect([403, 404], `GET ${path}`).toContain(res.status())
+    }
   })
 })

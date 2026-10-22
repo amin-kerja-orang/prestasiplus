@@ -22,7 +22,7 @@ export interface CommandCenterDrillRouteOptions {
   shell?: boolean
 }
 
-// http mode: ids are opaque strings (BE-22), kept as-is; mock mode keeps numbers
+// http mode: ids are digit strings (BE-22, matched by `\d+`), kept as-is; mock mode keeps numbers
 const id = (value: unknown): number | string => (isHttpMode() ? String(value) : Number(value))
 
 /**
