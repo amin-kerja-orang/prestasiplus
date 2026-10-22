@@ -213,6 +213,12 @@ describe('transformLedger', () => {
     expect(out.ok && out.value).toMatchObject({ type: 'earn', source: 'quiz_practice', amount: 5, balance_after: 5, source_id: null, description: '' })
   })
 
+  it('rejects a negative balance_after as INVALID_VALUE on balance_after, and keeps zero', () => {
+    expect(transformLedger(tx({ balance_after: '-1' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'balance_after' } })
+    expect(transformLedger(tx({ type: 'spend', amount: '-5', balance_after: '-5' }), refs)).toMatchObject({ ok: false, reject: { column: 'balance_after' } })
+    expect(transformLedger(tx({ balance_after: '0' }), refs)).toMatchObject({ ok: true, value: { balance_after: 0 } })
+  })
+
   it('rejects a wrong sign and never flips it', () => {
     expect(transformLedger(tx({ type: 'spend', amount: '5' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'amount' } })
     expect(transformLedger(tx({ type: 'earn', amount: '-5' }), refs)).toMatchObject({ ok: false, reject: { column: 'amount' } })
@@ -254,6 +260,17 @@ describe('transformExamAttempt', () => {
       submitted_at: '2026-01-01 01:00:00+00',
     })
     expect(out.ok && out.value.result).toEqual({ score: '20.00', max_score: '40.00', section_scores: { a: 10, b: 10 } })
+  })
+
+  it('rejects a score above its maximum, a negative score and a zero or negative maximum as INVALID_VALUE on score', () => {
+    const bad = { ok: false, reject: { reason: 'INVALID_VALUE', column: 'score' } }
+    expect(transformExamAttempt(attempt({ score: '41', max_score: '40' }), refs)).toMatchObject(bad)
+    expect(transformExamAttempt(attempt({ score: '5', max_score: '0' }), refs)).toMatchObject(bad)
+    expect(transformExamAttempt(attempt({ score: '0', max_score: '0' }), refs)).toMatchObject(bad)
+    expect(transformExamAttempt(attempt({ score: '-1', max_score: '40' }), refs)).toMatchObject({ ok: false })
+    // The boundaries stay valid: score equal to the maximum, and zero.
+    expect(transformExamAttempt(attempt({ score: '40', max_score: '40' }), refs)).toMatchObject({ ok: true })
+    expect(transformExamAttempt(attempt({ score: '0', max_score: '40' }), refs)).toMatchObject({ ok: true })
   })
 
   it('keeps only numeric leaves of section_scores and drops text (AC2)', () => {

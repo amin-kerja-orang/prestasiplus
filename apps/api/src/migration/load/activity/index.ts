@@ -14,6 +14,8 @@ import { Runner, type AnyEntityStep, type RunReport } from '../../kit/runner'
 import type { RunMode } from '../../kit/types'
 import { assertNotSyntheticInProduction } from '../index'
 import { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
+import { assertContentOwner } from './content-steps'
+import { openMigrationFiles } from './files'
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 import { activityInputHash, assertCorePreflight } from './preflight'
@@ -21,6 +23,7 @@ import { rebuildAfterResume } from './resume-report'
 
 export { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
 export { DriftCollector, writeReportFile } from './drift'
+export { MigrationFiles, openMigrationFiles, normaliseRelativePath, parseManifest } from './files'
 export { ACTIVITY_GROUPS } from './groups'
 export { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 export { assertCorePreflight, PreflightError, ACTIVITY_READ_TABLES } from './preflight'
@@ -103,8 +106,15 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
   await assertNotSyntheticInProduction(options.pool, options.env)
   await assertCorePreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
+  // Child safety: migrated videos are `global`, so a configured content owner must be an active admin. Checked once,
+  // before any group runs (dry-run and apply), so a refused owner writes nothing at all.
+  await assertContentOwner(options.pool, options.contentOwnerUserId)
 
   const activity = new ActivityContext(activityOptions)
+  // `--files-dir`: the directory, its SHA256SUMS and the storage are checked before any group runs (nothing is copied here).
+  if (options.filesDir !== undefined) {
+    activity.files = await openMigrationFiles({ dir: options.filesDir, env: options.env, mode, source: options.source })
+  }
   const wanted = groupNames === undefined || groupNames.length === 0 ? undefined : groupNames
   if (wanted) {
     const bad = wanted.filter((n) => !(ACTIVITY_GROUP_NAMES as readonly string[]).includes(n))
@@ -124,14 +134,36 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
     stepNames: steps.map((s) => s.entity),
     extraTables,
     contentOwnerUserId: options.contentOwnerUserId,
+    filesManifestHash: activity.files?.manifestHash,
   })
   return { activity, steps, inputHash, notMigrated: notMigratedOf(chosen) }
+}
+
+/**
+ * Entities whose v2 target needs a column the staging spec does not carry yet (articles, notes, videos, audio sets:
+ * content columns; support tickets: the message body). With source rows and nothing loaded they are "blocked by
+ * spec": the run can be green while the v2 table stays empty, so the report says so.
+ */
+export const SPEC_GAP_ENTITIES: readonly string[] = ['articles', 'notes', 'videos', 'audio_kbat_sets', 'support_tickets']
+
+export interface BlockedBySpec {
+  entity: string
+  /** Source rows of the entity; nothing of them was loaded. */
+  sourceCount: number
+}
+
+/** The spec-gap entities that have source rows but loaded none (counts only). */
+export function blockedBySpec(recon: readonly { entity: string; sourceCount: number; loaded: number }[]): BlockedBySpec[] {
+  return recon
+    .filter((r) => SPEC_GAP_ENTITIES.includes(r.entity) && r.sourceCount > 0 && r.loaded === 0)
+    .map((r) => ({ entity: r.entity, sourceCount: r.sourceCount }))
 }
 
 export interface ActivityRunResult {
   report: RunReport
   activity: ActivityContext
   notMigrated: NotMigrated[]
+  blockedBySpec: BlockedBySpec[]
 }
 
 /** Runs the whole command through the kit runner (dry-run by default; apply needs a passing dry-run on the same input). */
@@ -149,5 +181,7 @@ export async function runActivity(options: ActivityRunOptions): Promise<Activity
   if (report.mode === 'apply' && report.resumedBatches > 0) {
     await rebuildAfterResume(plan.activity, options.pool, report.runId, plan.steps.map((s) => s.entity))
   }
-  return { report, activity: plan.activity, notMigrated: plan.notMigrated }
+  const blocked = blockedBySpec(report.recon)
+  for (const b of blocked) plan.activity.notes.count(`blocked_by_spec.${b.entity}`, b.sourceCount)
+  return { report, activity: plan.activity, notMigrated: plan.notMigrated, blockedBySpec: blocked }
 }

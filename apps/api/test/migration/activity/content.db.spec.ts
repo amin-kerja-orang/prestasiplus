@@ -6,10 +6,12 @@
  *   R1  no content owner:      owner-bound rows are ORPHAN_PARENT;
  *   R2  owner, spec as it is:  the unsourced NOT NULL columns reject the row INVALID_VALUE, never invented;
  *   R3  owner + the missing columns injected into the extract (what the steps do once the spec has them): rows load.
- * Only the content group runs. Staged values are synthetic.
+ * Only the content group runs. Staged values are synthetic. The content owner is an ACTIVE admin (child-safety rule, LEAD
+ * 2026-10-20): the migrated videos are `global`; other owners are refused (see "content owner" below).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { SanitizeHtmlSanitizer } from '../../../src/modules/content/shared/sanitize-html.sanitizer'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
 import { contentGroup } from '../../../src/migration/load/activity/part-b'
 import { bootActivity, type ActivityHarness } from './helpers'
@@ -75,6 +77,9 @@ beforeAll(async () => {
   level = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'education_levels' order by legacy_id::bigint limit 1`))[0]?.legacy_id ?? ''
   subject = (await h.q<{ legacy_id: string }>(`select legacy_id from etl_id_map where legacy_source = 'cloud' and entity = 'subjects' order by legacy_id::bigint limit 1`))[0]?.legacy_id ?? ''
   expect([u.length, ownerV2 !== '', level !== '', subject !== '']).toEqual([2, true, true, true])
+  // The owner of migrated content must be an active admin; the staged user is made one here (the fixture has none for this id).
+  await q(`insert into user_roles (user_id, role) values (${ownerV2}, 'admin') on conflict do nothing`)
+  await q(`update users set is_active = true, is_suspended = false where id = ${ownerV2}`)
 
   for (const t of ['articles', 'banners', 'notes', 'videos', 'audio_kbat']) await q(`delete from staging_cloud.${t}`)
   await q(`insert into staging_cloud.articles (id, slug, category, title, views, is_published, author_id) values
@@ -88,11 +93,14 @@ beforeAll(async () => {
     (3, 'Sepanduk C', 'event', null, null, '2026-03-10T00:00:00Z', '2026-03-01T00:00:00Z', 0, '1'),
     (4, 'Sepanduk D', 'xyz', null, null, null, null, 0, '1')`)
   await q(`insert into staging_cloud.notes (id, title, note_type, body, views, is_published) values
-    (1, 'Nota A', 'formula', 'Isi nota A', 3, '1'), (2, 'Nota B', 'tidak_ada', 'Isi nota B', 0, '0')`)
+    (1, 'Nota A', 'formula', '<p>Isi nota A</p><img src=x onerror=alert(1)><script>alert(2)</script>', 3, '1'), (2, 'Nota B', 'tidak_ada', 'Isi nota B', 0, '0')`)
   await q(`insert into staging_cloud.videos (id, title, url, duration_seconds, is_published) values
-    (1, 'Video A', 'https://www.youtube.com/watch?v=abc123', 60, '1'),
+    (1, 'Video A', 'https://www.youtube.com/watch?v=abcdefghijk', 60, '1'),
     (2, 'Video B', 'https://vimeo.com/123456', null, '0'),
-    (3, 'Video C', 'ftp://contoh.invalid/c', null, '1')`)
+    (3, 'Video C', 'ftp://contoh.invalid/c', null, '1'),
+    (4, 'Video D', 'http://www.youtube.com/watch?v=abcdefghijk', null, '1'),
+    (5, 'Video E', 'https://contoh.invalid/video/5', null, '1'),
+    (6, 'Video F', 'https://www.youtube.com.contoh.invalid/watch?v=abcdefghijk', null, '1')`)
   await q(`insert into staging_cloud.audio_kbat (id, title, audio_path, status) values
     (1, 'Audio A', 'audio/a.mp3', 'draft'), (2, 'Audio B', null, 'tidak_dikenali')`)
 
@@ -101,9 +109,9 @@ beforeAll(async () => {
   r3 = await runApply({
     contentOwnerUserId: ownerV2,
     transformSteps: inject({
-      articles: { '1': { content: '<p>Isi</p>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
+      articles: { '1': { content: '<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
       notes: { '1': { subject: 'matematik', grade: 'Tingkatan 4' }, '2': { subject: 'matematik', grade: 'Tingkatan 4' } },
-      videos: { '1': { category: 'tutorial' }, '2': { category: 'tutorial' }, '3': { category: 'tutorial' } },
+      videos: Object.fromEntries(['1', '2', '3', '4', '5', '6'].map((id) => [id, { category: 'tutorial' }])),
       audio_kbat_sets: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
     }),
   })
@@ -116,7 +124,7 @@ describe('R1: no content owner', () => {
   it('rejects notes, videos and audio sets ORPHAN_PARENT (the owner column), and loads nothing for them', async () => {
     expect(r1.status).toBe('succeeded')
     expect(n(r1, 'notes', 'ORPHAN_PARENT', 'author_id')).toBe(2)
-    expect(n(r1, 'videos', 'ORPHAN_PARENT', 'uploader_id')).toBe(3)
+    expect(n(r1, 'videos', 'ORPHAN_PARENT', 'uploader_id')).toBe(6)
     expect(n(r1, 'audio_kbat_sets', 'ORPHAN_PARENT', 'created_by_id')).toBe(2)
   })
 
@@ -148,7 +156,8 @@ describe('R3: owner and the missing columns present', () => {
     const videos = await h.q<{ legacy_id: string; platform: string; uploader_id: string }>(`select legacy_id, platform, uploader_id::text from videos`)
     expect(videos).toEqual([{ legacy_id: '1', platform: 'Youtube', uploader_id: ownerV2 }])
     expect(n(r3, 'videos', 'UNSUPPORTED', 'is_published')).toBe(1) // v2 videos have no draft state
-    expect(n(r3, 'videos', 'INVALID_VALUE', 'url')).toBe(1)
+    expect(n(r3, 'videos', 'INVALID_VALUE', 'url')).toBe(1) // id 3: not http(s)
+    expect(n(r3, 'videos', 'UNSUPPORTED', 'url')).toBe(3) // id 4 http, id 5 and 6 not an allow-listed host
     const sets = await h.q<{ legacy_id: string; created_by_id: string; status: string }>(`select legacy_id, created_by_id::text, status from audio_kbat_sets`)
     expect(sets).toEqual([{ legacy_id: '1', created_by_id: ownerV2, status: 'draft' }])
     expect(n(r3, 'audio_kbat_sets', 'UNKNOWN_ENUM', 'status')).toBe(1)
@@ -162,6 +171,70 @@ describe('R3: owner and the missing columns present', () => {
     expect(n(r3, 'articles', 'DUPLICATE_KEY', 'slug')).toBe(1)
     expect(n(r3, 'articles', 'UNKNOWN_ENUM', 'category')).toBe(1)
     expect(n(r3, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1)
+  })
+})
+
+describe('child safety: sanitised HTML, allow-listed video hosts, admin owner', () => {
+  it('stores the article content sanitised like the API would (script, javascript: href removed, formatting kept)', async () => {
+    const [row] = await h.q<{ content: string }>(`select content from articles where legacy_id = '1'`)
+    expect(row?.content).toBe(new SanitizeHtmlSanitizer([]).sanitize('<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>'))
+    expect(row?.content).toContain('<p>Isi <b>tebal</b></p>')
+    expect(row?.content).not.toMatch(/script|javascript|alert/i)
+  })
+
+  it('stores the note content sanitised (onerror and script removed)', async () => {
+    const [row] = await h.q<{ content: string }>(`select content from notes where legacy_id = '1'`)
+    expect(row?.content).toContain('<p>Isi nota A</p>')
+    expect(row?.content).not.toMatch(/script|onerror|alert/i)
+  })
+
+  it('loads only the https YouTube video; an http YouTube address and other hosts are UNSUPPORTED url', async () => {
+    const rows = await h.q<{ legacy_id: string; visibility: string; video_url: string }>(`select legacy_id, visibility, video_url from videos order by legacy_id::bigint`)
+    expect(rows).toEqual([{ legacy_id: '1', visibility: 'global', video_url: 'https://www.youtube.com/watch?v=abcdefghijk' }])
+  })
+
+  async function ownerRefused(userId: string): Promise<string> {
+    await expect(h.run('dry-run', { groups, contentOwnerUserId: userId })).rejects.toThrow(/--content-owner .* active user with role admin/)
+    return userId
+  }
+
+  it('refuses a content owner that is not an admin, before any content row is read or written', async () => {
+    const before = await h.count('videos')
+    const pupil = await v2User(u[0] as string)
+    expect(await h.count('user_roles', `t.user_id = ${pupil} and t.role = 'admin'`)).toBe(0)
+    await ownerRefused(pupil)
+    expect(await h.count('videos')).toBe(before)
+  })
+
+  it('an apply of ALL groups with a non-admin owner writes nothing (no wallet, practice or content row, no run)', async () => {
+    const pupil = await v2User(u[0] as string)
+    const hashes = await h.contentHashes()
+    const runs = await h.count('etl_runs')
+    const tables = ['wallets', 'coin_ledger', 'practice_sessions', 'practice_answers']
+    const counts = await Promise.all(tables.map((t) => h.count(t)))
+    // No `groups`: the registered groups (catalogue, wallet, activity, content, ops) all stay unstarted.
+    await expect(h.run('apply', { contentOwnerUserId: pupil })).rejects.toThrow(/--content-owner .* active user with role admin/)
+    await expect(h.run('dry-run', { contentOwnerUserId: pupil })).rejects.toThrow(/--content-owner .* active user with role admin/)
+    expect(await h.contentHashes()).toEqual(hashes)
+    expect(await h.count('etl_runs')).toBe(runs)
+    expect(await Promise.all(tables.map((t) => h.count(t)))).toEqual(counts)
+  })
+
+  it('refuses an inactive or suspended admin owner', async () => {
+    try {
+      await h.q(`update users set is_active = false where id = ${ownerV2}`)
+      await ownerRefused(ownerV2)
+      await h.q(`update users set is_active = true, is_suspended = true where id = ${ownerV2}`)
+      await ownerRefused(ownerV2)
+    } finally {
+      await h.q(`update users set is_active = true, is_suspended = false where id = ${ownerV2}`)
+    }
+  })
+
+  it('never puts personal data in the refusal message', async () => {
+    const e = await h.run('dry-run', { groups, contentOwnerUserId: await v2User(u[0] as string) }).catch((err: Error) => err)
+    expect(e).toBeInstanceOf(Error)
+    expect((e as Error).message).not.toMatch(/@|\bname\b/i)
   })
 })
 

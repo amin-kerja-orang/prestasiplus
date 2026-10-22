@@ -1,11 +1,19 @@
 /**
  * Content group of `migrate:activity` (BE-29 Part B): articles, banners, notes, videos and Audio KBAT sets.
  *
- * File migration is OFF (LEAD Q2): no file is read or copied, every `*_file_id` stays null, and the rows that had
- * a source path are only counted in the report notes (`file_migration_off.*`). Notes, videos and audio sets need an
+ * Files (AC9): with `--files-dir` a banner image is verified against the SHA256SUMS manifest, copied to the file storage and
+ * only then referenced (`banners.image_file_id`); a failure rejects the row INVALID_VALUE on `image_path`. Without the flag no
+ * file is read or copied, every `*_file_id` stays null, and the rows that had a source path are only counted in the report
+ * notes (`file_migration_off.*`). Audio KBAT `audio_path` is never migrated: the v2 set keeps its audio inside authored
+ * `sections` (title, transcript, question range) that the staging spec does not carry, so there is no single target. Notes, videos and audio sets need an
  * owner user in v2 that the staged tables do not carry; it comes from `--content-owner` (`contentOwnerUserId`),
  * and without it (or with an id that is not a v2 user) those rows are rejected ORPHAN_PARENT (LEAD Q7).
  * A v2 NOT NULL column with no staged source rejects the row INVALID_VALUE naming the column (see transform/content.ts).
+ *
+ * Child safety (LEAD 2026-10-20, D9): migrated videos are `global`, which the API allows only for admin or teacher, so the
+ * `--content-owner` must be an ACTIVE user with role `admin`; any other existing user fails the run before a content row is
+ * written (`assertContentOwner`, called once by `planActivity`, so a dry-run and an apply both fail before any group runs). Article and note
+ * HTML is sanitised in the transform with the API's own sanitiser, configured with the run's `PUBLIC_ORIGINS`.
  */
 import type pg from 'pg'
 
@@ -21,6 +29,8 @@ import {
   transformVideo,
   type ArticleValues,
 } from '../../transform/content'
+import { ApplyGuardError } from '../../kit/apply-guard'
+import { originsOf, SanitizeHtmlSanitizer } from '../../../modules/content/shared/sanitize-html.sanitizer'
 import { dropConflicts } from '../claim'
 import { rejectRow, upsertAndMap } from '../helpers'
 import { distinctValues, readById, type StagedRow } from '../source'
@@ -41,6 +51,28 @@ async function contentOwner(a: ActivityContext, db: Pick<pg.PoolClient, 'query'>
   return res.rowCount === 1 ? id : undefined
 }
 
+/**
+ * Refuses a `--content-owner` that is an existing v2 user but not an ACTIVE (active, not suspended) `admin`: such a user
+ * could not publish a `global` video through the API. An id that is not a v2 user stays "no owner" (ORPHAN_PARENT rows,
+ * nothing is written for them). Called once by `planActivity` (dry-run and apply) before any group runs. The message
+ * carries no personal data; the id is a surrogate id.
+ */
+export async function assertContentOwner(pool: pg.Pool, ownerId: string | undefined): Promise<void> {
+  const id = ownerId?.trim()
+  if (id === undefined || !/^\d{1,18}$/.test(id)) return
+  const res = await pool.query<{ ok: boolean }>(
+    `SELECT (u.is_active AND NOT u.is_suspended AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'admin')) AS ok
+       FROM users u WHERE u.id = $1::bigint`,
+    [id],
+  )
+  if (res.rowCount === 1 && res.rows[0]?.ok !== true) {
+    throw new ApplyGuardError(`--content-owner ${id} must be an active user with role admin (migrated videos are published for everyone). Nothing was written.`)
+  }
+}
+
+/** The sanitiser the API binds to `HTML_SANITIZER`, with this run's `PUBLIC_ORIGINS`. */
+const sanitizerOf = (a: ActivityContext): SanitizeHtmlSanitizer => new SanitizeHtmlSanitizer(originsOf(a.env.PUBLIC_ORIGINS))
+
 /** Malaysia calendar dates (`YYYY-MM-DD`) of some timestamps, computed in SQL (T-05): `text -> date text`. */
 async function klDates(db: Pick<pg.PoolClient, 'query'>, values: readonly (string | null)[]): Promise<Map<string, string>> {
   const distinct = [...new Set(values.filter((v): v is string => v !== null && v.trim() !== ''))]
@@ -60,6 +92,7 @@ const toRow = (legacyId: string, values: object): LegacyRow => ({ legacyId, valu
 
 export function articlesStep(a: ActivityContext): AnyEntityStep {
   const entity = 'articles'
+  const sanitizer = sanitizerOf(a)
   return {
     entity,
     source: a.source,
@@ -71,7 +104,7 @@ export function articlesStep(a: ActivityContext): AnyEntityStep {
       for (const row of rows) {
         const legacyId = idOf(row)
         const authorId = lookup(authors, row.author_id)
-        const out = transformArticle(row, { authorId })
+        const out = transformArticle(row, { authorId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push({ legacyId, values: out.value })
       }
@@ -110,10 +143,24 @@ export function bannersStep(a: ActivityContext): AnyEntityStep {
         })
         if (o.hadImage) images++
         if (o.droppedTarget) dropped++
-        if (!o.out.ok) rejectRow(ctx, entity, legacyId, o.out.reject)
-        else items.push(toRow(legacyId, o.out.value))
+        if (!o.out.ok) {
+          rejectRow(ctx, entity, legacyId, o.out.reject)
+          continue
+        }
+        if (o.hadImage && a.files !== undefined) {
+          // The reference is set only after the copy and the checksum succeeded; otherwise the row is rejected (not loaded).
+          const f = await a.files.migrate(ctx, { table: 'banners', column: 'image_path', legacyId, rawPath: row.image_path ?? '', purpose: 'cms_image' })
+          if (!f.ok) {
+            a.notes.count(`files.banners.image_path.rejected.${f.cause}`)
+            ctx.rejects.add({ entity, legacyId, reason: 'INVALID_VALUE', column: 'image_path' })
+            continue
+          }
+          a.notes.count(`files.banners.image_path.${f.outcome}`)
+          o.out.value.image_file_id = f.fileId
+        }
+        items.push(toRow(legacyId, o.out.value))
       }
-      a.notes.count('file_migration_off.banners.image_path', images)
+      if (a.files === undefined) a.notes.count('file_migration_off.banners.image_path', images)
       a.notes.count('banners.target_not_a_link', dropped)
       return upsertAndMap(
         ctx, entity, 'banners',
@@ -128,6 +175,7 @@ export function bannersStep(a: ActivityContext): AnyEntityStep {
 
 export function notesStep(a: ActivityContext): AnyEntityStep {
   const entity = 'notes'
+  const sanitizer = sanitizerOf(a)
   return {
     entity,
     source: a.source,
@@ -138,7 +186,7 @@ export function notesStep(a: ActivityContext): AnyEntityStep {
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
-        const out = transformNote(row, { ownerId })
+        const out = transformNote(row, { ownerId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push(toRow(legacyId, out.value))
       }
