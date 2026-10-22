@@ -85,6 +85,42 @@ describe('start (#2 / #3)', () => {
     expect(s.errorMsg.value).toBe('Ralat sistem: ID giliran tidak sah. Sila cuba lagi.')
   })
 
+  // DEMO-FIX-1 D-03: the real API answers `{"queue_id":"1"}` (IdSchema, a string).
+  it('a string queue id from the real API starts searching and is used for poll, accept and reject', async () => {
+    api.startBattle.mockResolvedValueOnce(res(200, { queue_id: '1' }))
+    await s.start('quick-match', PARAMS)
+    expect(s.errorMsg.value).toBe('')
+    expect(s.phase.value).toBe('searching')
+    api.pollMatch.mockResolvedValue(
+      res(200, {
+        status: 'incoming_challenge',
+        challenger: { name: 'A', grade_label: 'T4', school: 'S' },
+      }),
+    )
+    await tick()
+    expect(api.pollMatch).toHaveBeenLastCalledWith('1', expect.anything())
+    expect(s.phase.value).toBe('incoming')
+    api.rejectChallenger.mockResolvedValueOnce(res(200, { success: true }))
+    await s.respond(false)
+    expect(api.rejectChallenger).toHaveBeenCalledWith('1', expect.anything())
+    await tick()
+    expect(s.phase.value).toBe('incoming')
+    api.acceptChallenger.mockResolvedValueOnce(res(200, { matched: true, battle_uuid: 'b-9' }))
+    await s.respond(true)
+    expect(api.acceptChallenger).toHaveBeenCalledWith('1', expect.anything())
+    expect(onMatched).toHaveBeenCalledWith('b-9')
+  })
+
+  it.each([[0], [-3], [1.5], [''], ['   '], [null], [true], ['x'.repeat(65)]])(
+    'queue id %j is the system error',
+    async (queueId) => {
+      api.startBattle.mockResolvedValueOnce(res(200, { queue_id: queueId }))
+      await s.start('quick-match', PARAMS)
+      expect(s.errorMsg.value).toBe('Ralat sistem: ID giliran tidak sah. Sila cuba lagi.')
+      expect(s.phase.value).toBe('idle')
+    },
+  )
+
   it('a network failure shows the network message', async () => {
     api.startBattle.mockRejectedValueOnce(new Error('net'))
     await s.start('quick-match', PARAMS)

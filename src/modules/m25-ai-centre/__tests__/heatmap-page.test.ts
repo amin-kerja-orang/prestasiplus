@@ -54,6 +54,7 @@ let wrapper: VueWrapper | undefined
 async function mountPage(
   heat: HeatmapResponse | ApiError | 'pending',
   duta: DutaCard | null | Error = CARD,
+  extraRoutes: { path: string; component: object }[] = [],
 ) {
   if (heat === 'pending') api.getHeatmap.mockReturnValue(new Promise(() => undefined))
   else if (heat instanceof ApiError) api.getHeatmap.mockRejectedValue(heat)
@@ -62,7 +63,7 @@ async function mountPage(
   else api.getDutaRecommendation.mockResolvedValue(duta)
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div />' } }],
+    routes: [{ path: '/', component: { template: '<div />' } }, ...extraRoutes],
   })
   await router.push('/')
   await router.isReady()
@@ -152,7 +153,9 @@ describe('HeatmapTopikLemahPage', () => {
   })
 
   it('renders the Cikgu Pakar card above the hero with initials, name h4, tagline and four pills', async () => {
-    const w = await mountPage(DATA)
+    const w = await mountPage(DATA, CARD, [
+      { path: '/bilik-duta/:slug', component: { template: '<div />' } },
+    ])
     const block = w.get('[data-testid="cikgu-pakar"]')
     expect(block.text()).toContain('🌟 Cikgu Pakar Untuk Topik Lemah')
     const order = w.findAll('[data-testid="cikgu-pakar"], [data-testid="heatmap-hero"], h2')
@@ -179,6 +182,14 @@ describe('HeatmapTopikLemahPage', () => {
       '⭐ 4.90',
     ])
     for (const p of pills) expect(p.classes()).toContain('text-caption')
+  })
+
+  it('shows the Cikgu Pakar card as non-navigating markup while /bilik-duta/{slug} is not routed (D9)', async () => {
+    const w = await mountPage(DATA)
+    const card = w.get('[data-testid="cikgu-card"]')
+    expect(card.element.tagName).toBe('DIV')
+    expect(card.attributes('href')).toBeUndefined()
+    expect(w.get('h4').text()).toBe('Cikgu Demo Matematik')
   })
 
   it.each([

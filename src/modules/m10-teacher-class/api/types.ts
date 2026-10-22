@@ -97,9 +97,11 @@ export interface GuruClass {
 }
 
 export interface CreateClassRequest {
-  schoolId?: number | null
+  /** Sent as a string id in http mode (`ClassCreateRequestSchema`, DEMO-FIX-1 D-01). */
+  schoolId?: number | string | null
   name: string
-  subjectId: number
+  /** The `<select>` value or a mock number; sent as a string id in http mode. */
+  subjectId: number | string
   educationLevel: EducationLevelSlug
   description?: string | null
 }
