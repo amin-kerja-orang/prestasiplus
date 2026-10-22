@@ -74,6 +74,23 @@ export function deriveClassGrade(name: string | null, pupilGrades: readonly (num
   return best
 }
 
+/**
+ * The v2 level of a class (BE-28, v2-backend-deviations.md). The level follows the pupils in staging; the one exception is a
+ * class that is already loaded and has NO pupils in staging any more (all deleted at the source, and no grade in its name):
+ * it keeps the level of its v2 row (`kept: true`) instead of being rejected. A class that was never loaded, or whose pupils exist
+ * but give no level, gets `levelId: null` (INVALID_VALUE education_level_id) as before.
+ */
+export function resolveClassLevel(input: {
+  grade: number | null
+  pupilCount: number
+  levelByGrade: ReadonlyMap<number, string>
+  loadedLevelId: string | null | undefined
+}): { levelId: string | null; kept: boolean } {
+  if (input.grade !== null) return { levelId: input.levelByGrade.get(input.grade) ?? null, kept: false }
+  if (input.pupilCount === 0 && input.loadedLevelId) return { levelId: input.loadedLevelId, kept: true }
+  return { levelId: null, kept: false }
+}
+
 // ---------------------------------------------------------------- enrolments
 
 export interface EnrolmentValues {

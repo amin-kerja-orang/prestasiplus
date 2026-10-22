@@ -12,7 +12,7 @@
  * manifest; without it no file is migrated and file references stay unset.
  */
 import { mytDay, SystemClock, type Clock } from '../../../db/clock'
-import { registerMigrateCommand, type CliContext, type CommandArgs, type MigrateCommand } from '../../kit'
+import { registerMigrateCommand, withSourceLock, type CliContext, type CommandArgs, type MigrateCommand } from '../../kit'
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { prepareOutputDir } from '../../profile'
 import { dirname, resolve } from 'node:path'
@@ -99,7 +99,8 @@ export const migrateActivity: MigrateCommand = {
 
     let result: Awaited<ReturnType<typeof runActivity>>
     try {
-      result = await runActivity({
+      // Dry-run and apply both take the per-source lock (the orchestrator's key); runActivity itself stays lock-free for it.
+      result = await withSourceLock(ctx.pool, 'cloud', () => runActivity({
         pool: ctx.pool,
         env: ctx.env,
         source: 'cloud',
@@ -112,7 +113,7 @@ export const migrateActivity: MigrateCommand = {
         filesDir,
         groupNames: list(flagValue(args, 'group')),
         only: list(flagValue(args, 'table')),
-      })
+      }))
     } catch (e) {
       if (e instanceof NoActivityStepsError) {
         ctx.err(e.message)
