@@ -4,13 +4,20 @@
  * link to `/bilik-duta/{slug}` with a round avatar (A4 violet, A3 ring for `bintang`), the name (h4),
  * the tagline and four pills of at least 12 px. The page renders the block only when a card exists.
  */
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+
+import { useRouteExists } from '@/composables'
 
 import type { DutaCard } from '../../api'
 
 import { HEATMAP_COPY, ratingText } from './heatmap-copy'
 
-defineProps<{ card: DutaCard }>()
+const props = defineProps<{ card: DutaCard }>()
+
+// The M24 profile page is not routed yet: the card then stays as plain, non-navigating markup (D9).
+const { routeExists } = useRouteExists()
+const profileTo = computed(() => `/bilik-duta/${props.card.slug}`)
 
 const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text-muted'
 </script>
@@ -21,8 +28,9 @@ const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text
     data-testid="cikgu-pakar"
   >
     <p class="text-overline text-muted">{{ HEATMAP_COPY.cikguHeading }}</p>
-    <RouterLink
-      :to="`/bilik-duta/${card.slug}`"
+    <component
+      :is="routeExists(profileTo) ? RouterLink : 'div'"
+      v-bind="routeExists(profileTo) ? { to: profileTo } : {}"
       class="relative flex min-w-0 items-center gap-3 rounded-chip bg-heat/15 p-4 hover:bg-elevated"
       :class="`tier-${card.tier}`"
       :data-slug="card.slug"
@@ -51,6 +59,6 @@ const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text
           <span :class="PILL">⭐ {{ ratingText(card.rating) }}</span>
         </span>
       </span>
-    </RouterLink>
+    </component>
   </section>
 </template>

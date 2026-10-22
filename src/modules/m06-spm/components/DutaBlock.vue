@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { useApi } from '@/composables'
+import { useApi, useRouteExists } from '@/composables'
 
 import { fetchDutaRecommendation } from '../api'
 
@@ -22,6 +22,9 @@ const { data } = useApi((signal) =>
   fetchDutaRecommendation(props.subject ? { subject: props.subject } : {}, { signal }),
 )
 const card = computed(() => data.value)
+// The M24 profile page is not routed yet: the card then stays as plain, non-navigating markup (D9).
+const { routeExists } = useRouteExists()
+const profileTo = computed(() => (card.value ? `/bilik-duta/${card.value.slug}` : ''))
 </script>
 
 <template>
@@ -32,8 +35,9 @@ const card = computed(() => data.value)
         <p class="text-body text-muted" data-testid="duta-text">{{ text }}</p>
       </div>
       <UCard variant="subtle" :ui="{ body: 'p-3' }">
-      <RouterLink
-        :to="`/bilik-duta/${card.slug}`"
+      <component
+        :is="routeExists(profileTo) ? RouterLink : 'div'"
+        v-bind="routeExists(profileTo) ? { to: profileTo } : {}"
         class="flex min-h-11 items-start gap-3"
         data-testid="duta-card"
       >
@@ -52,7 +56,7 @@ const card = computed(() => data.value)
             <UBadge color="warning" variant="soft">⭐ {{ card.rating.toFixed(2) }}</UBadge>
           </span>
         </span>
-      </RouterLink>
+      </component>
       </UCard>
     </div>
   </UCard>
