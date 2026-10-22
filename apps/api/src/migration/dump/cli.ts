@@ -1,6 +1,6 @@
 /**
  * Dump pipeline CLI (AM-10): .cloud production MySQL -> `pp-staging-dump/1` directory, CODE part of the dump step.
- * Plain Node entry, run by AMIN (the human, OD-2 / OD-18) on a PC with full-disk encryption. Never run by an agent, never
+ * Plain Node entry, run by the operator (OD-18 A) on a PC with full-disk encryption. Never run by an agent, never
  * pointed at a cloud host from here. Live data only ever reaches `.migration-out/` (git-ignored) of that PC.
  *
  *   dump:check   --out <dir in .migration-out>
@@ -39,8 +39,8 @@
  *
  * Option file keys: only host, port, user, password, database, socket, protocol, ssl-mode, ssl, ssl-ca, ssl-capath, ssl-cert, ssl-key,
  * ssl-verify-server-cert, skip-ssl, default-character-set (`_` = `-`). Any other key (init-command, execute, plugin-dir, tee, pager,
- * loose-*, abbreviations such as hos=) is refused with exit 2, naming the key. [mysql] overrides [client]; the checks use the
- * effective values.
+ * loose-*, abbreviations such as hos=) is refused with exit 2, naming the key. Options of [client] and [mysql] are applied in
+ * file order and the last one wins; the checks use the effective values.
  *
  * Integers of 2^53 or more: the raw files keep them exactly, but the anonymiser and the loader read JSON with JSON.parse and would
  * round them. dump:cloud warns and records them (manifest large_integers, report); dump:produce refuses (exit 6, raw wiped).

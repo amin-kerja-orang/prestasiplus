@@ -79,7 +79,7 @@ export async function produceDump(options: ProduceOptions): Promise<ProduceResul
     await writeReport(work, dump.report)
     const large = Object.keys(dump.largeIntegers)
     if (large.length > 0) {
-      throw new ExportStreamError(`ids above 2^53 would lose precision in the anonymiser; table ${large.join(', ')}. The raw dump is wiped; nothing was anonymised.`)
+      throw new ExportStreamError(`integers of 2^53 or more would lose precision in the anonymiser; table ${large.join(', ')} (decimals with 16 or more integer digits are not checked). The raw dump is wiped; nothing was anonymised.`)
     }
     stopIfAborted()
     const reader = new DirReader(raw)

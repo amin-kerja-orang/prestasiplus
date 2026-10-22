@@ -295,17 +295,21 @@ describe('option file', () => {
     expect(() => remote('[client]\nhost=127.0.0.1\n[mysql]\ninit-command=select 1\n')).toThrow(/the key "init-command"/)
   })
 
-  it('applies the client precedence: [mysql] overrides [client], whatever the order in the file', () => {
+  it('applies [client] and [mysql] in FILE ORDER, the last one wins (as the real client does)', () => {
     const remote = (body: string) => loadOptionFile(env(write(work.outside(`prec-${Math.random().toString(16).slice(2)}.cnf`), body)), 'linux')
-    // [mysql] first in the file, [client] below it: the TLS check still uses the [mysql] value
-    expect(() => remote('[mysql]\nssl-mode=DISABLED\n[client]\nhost=db.example.test\nssl-mode=VERIFY_IDENTITY\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
-    expect(() => remote('[client]\nhost=db.example.test\nssl-mode=VERIFY_IDENTITY\n[mysql]\nssl-mode=DISABLED\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
-    // and the other way round: a [mysql] override that makes it safe is honoured
+    const REFUSED = /VERIFY_IDENTITY or an SSH tunnel/
+    // the failing scenario of the review: [mysql] looks safe, the later [client] lines win
+    expect(() => remote('[mysql]\nssl-mode=VERIFY_IDENTITY\n[client]\nhost=db.remote\nssl-mode=DISABLED\n')).toThrow(REFUSED)
+    // a local host in [mysql] is replaced by the later remote host in [client]
+    expect(() => remote('[mysql]\nhost=127.0.0.1\n[client]\nhost=db.remote\n')).toThrow(REFUSED)
+    // the later line wins in both directions
     expect(() => remote('[client]\nhost=db.example.test\nssl-mode=REQUIRED\n[mysql]\nssl-mode=VERIFY_CA\n')).not.toThrow()
-    // a [mysql] host override to a remote host is checked too
-    expect(() => remote('[client]\nhost=127.0.0.1\n[mysql]\nhost=db.example.test\n')).toThrow(/VERIFY_IDENTITY or an SSH tunnel/)
-    expect(parseOptionText('[client]\nuser=a\npassword=p1\n[mysql]\nuser=b\n').values.get('user')).toBe('b')
-    expect(parseOptionText('[client]\nuser=a\n[mysql]\nuser=b\n[client]\nuser=c\n').values.get('user')).toBe('b')
+    expect(() => remote('[client]\nhost=db.example.test\nssl-mode=VERIFY_CA\n[mysql]\nssl-mode=DISABLED\n')).toThrow(REFUSED)
+    expect(() => remote('[mysql]\nssl-mode=DISABLED\n[client]\nhost=db.example.test\nssl-mode=VERIFY_IDENTITY\n')).not.toThrow()
+    expect(() => remote('[client]\nhost=127.0.0.1\n[mysql]\nhost=db.example.test\n')).toThrow(REFUSED)
+    expect(parseOptionText('[client]\nuser=a\n[mysql]\nuser=b\n').values.get('user')).toBe('b')
+    expect(parseOptionText('[mysql]\nuser=b\n[client]\nuser=a\n').values.get('user')).toBe('a')
+    expect(parseOptionText('[client]\nuser=a\n[mysql]\nuser=b\n[client]\nuser=c\n').values.get('user')).toBe('c')
   })
 
   describe('TLS rule', () => {
@@ -317,6 +321,8 @@ describe('option file', () => {
       ['MariaDB bare ssl flags', 'host=db.example.test\nssl\nssl-verify-server-cert=1'],
       ['localhost without TLS (tunnel)', 'host=localhost\nssl-mode=DISABLED'],
       ['127.0.0.1 without TLS (tunnel)', 'host=127.0.0.1'],
+      ['localhost with skip-ssl and ssl=0 (tunnel)', 'host=localhost\nskip-ssl\nssl=0'],
+      ['skip-ssl=0 (explicitly off) with VERIFY_IDENTITY', 'host=db.example.test\nssl-mode=VERIFY_IDENTITY\nskip-ssl=0'],
       ['::1 without TLS', 'host=::1'],
       ['no host (socket)', 'socket=/var/run/mysqld/mysqld.sock'],
     ])('accepts %s', (_n, body) => {
@@ -332,6 +338,12 @@ describe('option file', () => {
       ['verification without ssl', 'host=db.example.test\nssl-verify-server-cert'],
       ['ssl-verify-server-cert=0', 'host=db.example.test\nssl=1\nssl-verify-server-cert=0'],
       ['ssl-mode REQUIRED even with verify flags', 'host=db.example.test\nssl-mode=REQUIRED\nssl=1\nssl-verify-server-cert'],
+      ['skip-ssl next to VERIFY_IDENTITY', 'host=db.example.test\nssl-mode=VERIFY_IDENTITY\nskip-ssl'],
+      ['skip-ssl=1 next to VERIFY_CA', 'host=db.example.test\nssl-mode=VERIFY_CA\nskip-ssl=1'],
+      ['skip-ssl next to the MariaDB flags', 'host=db.example.test\nssl=1\nssl-verify-server-cert\nskip-ssl'],
+      ['ssl=0 next to VERIFY_IDENTITY', 'host=db.example.test\nssl-mode=VERIFY_IDENTITY\nssl=0'],
+      ['ssl=false next to VERIFY_CA', 'host=db.example.test\nssl-mode=VERIFY_CA\nssl=false'],
+      ['ssl=off next to VERIFY_IDENTITY', 'host=db.example.test\nssl-mode=VERIFY_IDENTITY\nssl=off'],
       ['a remote IP', 'host=203.0.113.9\nssl-mode=REQUIRED'],
     ])('refuses %s', (_n, body) => {
       expect(() => tls(body)).toThrow(/VERIFY_IDENTITY or an SSH tunnel to 127\.0\.0\.1/)

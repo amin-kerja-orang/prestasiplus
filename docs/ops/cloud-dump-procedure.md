@@ -56,7 +56,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
 4. **gpg.** Windows: install Gpg4win (it includes `gpg` and the passphrase dialog). Linux/macOS: `gpg` from the package manager. Check `gpg --version`. Windows 10 and later has `tar` and `ssh`/`scp` built in; check `tar --version` and `ssh -V`.
 5. **A read-only MySQL account**, confirmed with the data owner. The tools accept only the privileges `USAGE`, `SELECT` (table-level or column-level), `SHOW VIEW` and `SHOW DATABASES` (`SHOW VIEW` is not needed: views are skipped); anything else is refused (exit 3). If no account exists, the data owner runs this on the .cloud database (placeholders only; the data owner generates and hands over the password through a private channel, never in the issue):
    ```sql
-   CREATE USER 'pp_dump_ro'@'<operator IP or %>' IDENTIFIED BY '<generated password>' REQUIRE SSL;
+   CREATE USER 'pp_dump_ro'@'<operator IP or %>' IDENTIFIED BY <<SET-A-STRONG-PASSWORD>> REQUIRE SSL;
    -- preferred: column-level grants, only the spec columns, one statement per table
    GRANT SELECT (<col1>, <col2>, ...) ON <db>.<table> TO 'pp_dump_ro'@'<operator IP or %>';
    ```
@@ -87,7 +87,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    ${EDITOR:-nano} ~/pp-cloud-ro.cnf
    export CLOUD_MYSQL_DEFAULTS_FILE=~/pp-cloud-ro.cnf
    ```
-   Only the groups `[client]` and `[mysql]` are accepted, and `[mysql]` overrides `[client]`. Any other group (`[client-server]`, `[client-mariadb]`, `[mariadb-client]`, `[mariadb]`, `[mysqldump]`, ...), `!include` or `!includedir` is refused (exit 2). **Only these keys are accepted:** `host`, `port`, `user`, `password`, `database`, `socket`, `protocol`, `ssl-mode`, `ssl`, `ssl-ca`, `ssl-capath`, `ssl-cert`, `ssl-key`, `ssl-verify-server-cert`, `skip-ssl`, `default-character-set`. Any other key is refused with exit 2, including `init-command`, `execute`, `pager`, `tee`, `plugin-dir`, any key with a `loose-` prefix, and abbreviated key names; write each key out in full. The client is started with `--defaults-file`, so no other option file on the machine is read.
+   Only the groups `[client]` and `[mysql]` are accepted. Options in `[client]` and `[mysql]` are applied in file order, last one wins; keep only `[client]`. Any other group (`[client-server]`, `[client-mariadb]`, `[mariadb-client]`, `[mariadb]`, `[mysqldump]`, ...), `!include` or `!includedir` is refused (exit 2). **Only these keys are accepted:** `host`, `port`, `user`, `password`, `database`, `socket`, `protocol`, `ssl-mode`, `ssl`, `ssl-ca`, `ssl-capath`, `ssl-cert`, `ssl-key`, `ssl-verify-server-cert`, `skip-ssl`, `default-character-set`. Any other key is refused with exit 2, including `init-command`, `execute`, `pager`, `tee`, `plugin-dir`, any key with a `loose-` prefix, and abbreviated key names; write each key out in full. The client is started with `--defaults-file`, so no other option file on the machine is read.
    Content for a **direct connection to a remote host** (placeholders):
    ```ini
    [client]

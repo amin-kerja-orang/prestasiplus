@@ -548,7 +548,7 @@ describe('dump:produce', () => {
     let ran = false
     const r = await cli(['dump:produce', '--work', w, '--tables', 'schools'], { runAnonymise: async () => { ran = true; throw new Error('must not run') } }, produceEnv())
     expect(r.code, r.text).toBe(DUMP_EXIT.stream)
-    expect(r.text).toContain('ids above 2^53 would lose precision in the anonymiser; table schools')
+    expect(r.text).toContain('integers of 2^53 or more would lose precision in the anonymiser; table schools')
     expect(ran).toBe(false)
     expect(existsSync(join(w, 'raw'))).toBe(false)
     expect(existsSync(join(w, 'anon'))).toBe(false)

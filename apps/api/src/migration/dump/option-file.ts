@@ -77,7 +77,7 @@ export const ALLOWED_OPTION_KEYS: readonly string[] = [
 ]
 
 export interface ParsedOptions {
-  /** Effective values: [client] first, [mysql] over it (the client reads the groups in that order, the later one wins). */
+  /** Effective values: options of [client] and [mysql] in file order, the last one wins. */
   values: Map<string, string>
   /** The same without removing a trailing ` # comment` from the value. */
   raw: Map<string, string>
@@ -90,7 +90,10 @@ export interface ParsedOptions {
 
 /** Reads `key=value` pairs of the `[client]` and `[mysql]` groups. Pure; exported for tests. */
 export function parseOptionText(text: string): ParsedOptions {
-  const perGroup = new Map<string, { values: Map<string, string>; raw: Map<string, string> }>()
+  // ONE map per reading, filled in FILE ORDER across [client] and [mysql]: the client applies the options in that order and the last
+  // one wins (checked with `mariadb --defaults-file=… --print-defaults`); [mysql] does not always override [client].
+  const values = new Map<string, string>()
+  const raw = new Map<string, string>()
   const keys = new Set<string>()
   let hasInclude = false
   let outsideGroup = false
@@ -114,19 +117,15 @@ export function parseOptionText(text: string): ParsedOptions {
     const eq = line.indexOf('=')
     const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
     keys.add(key)
-    const bucket = perGroup.get(group) ?? { values: new Map<string, string>(), raw: new Map<string, string>() }
-    perGroup.set(group, bucket)
     if (eq === -1) {
-      bucket.values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
-      bucket.raw.set(key, '')
+      values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
+      raw.set(key, '')
       continue
     }
-    bucket.raw.set(key, unquote(line.slice(eq + 1)))
-    bucket.values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
+    raw.set(key, unquote(line.slice(eq + 1)))
+    values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
   }
-  const merge = (pick: 'values' | 'raw'): Map<string, string> =>
-    new Map([...(perGroup.get('client')?.[pick] ?? []), ...(perGroup.get('mysql')?.[pick] ?? [])])
-  return { values: merge('values'), raw: merge('raw'), keys: [...keys], hasInclude, groups: [...groups], outsideGroup }
+  return { values, raw, keys: [...keys], hasInclude, groups: [...groups], outsideGroup }
 }
 
 const OFF = new Set(['0', 'false', 'off', 'no'])
@@ -144,13 +143,17 @@ const TLS_REFUSED =
 /** Exported for tests: the TLS rule on parsed option values. */
 export function assertTransportSafe(values: ReadonlyMap<string, string>): void {
   if (isLocalHost(values.get('host') ?? '')) return
+  // For a remote host TLS must not be switched off, whatever else is set (also next to ssl-mode=VERIFY_*).
+  const skipSsl = values.has('skip-ssl') && flagOn(values.get('skip-ssl'))
+  const sslOff = values.has('ssl') && !flagOn(values.get('ssl'))
+  if (skipSsl || sslOff) throw new DumpUsageError(TLS_REFUSED)
   const mode = values.get('ssl-mode')
   if (mode !== undefined) {
     if (/^VERIFY_(IDENTITY|CA)$/i.test(mode.trim())) return
     throw new DumpUsageError(TLS_REFUSED)
   }
   // MariaDB client style: ssl on AND the server certificate verified.
-  if (!values.has('skip-ssl') && flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
+  if (flagOn(values.get('ssl')) && flagOn(values.get('ssl-verify-server-cert'))) return
   throw new DumpUsageError(TLS_REFUSED)
 }
 

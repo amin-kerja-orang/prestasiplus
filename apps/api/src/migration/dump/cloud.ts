@@ -171,7 +171,7 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
     const totalRows = split.tables.reduce((sum, t) => sum + t.rows, 0)
     for (const t of split.tables) log.info(`Exported ${t.table}: ${t.rows} rows.`)
     for (const [table, columns] of Object.entries(split.largeIntegers)) {
-      log.warn(`Table ${table}: integer value(s) of 2^53 or more in ${Object.keys(columns).join(', ')}. They are exact in the raw file, but a reader that uses JSON.parse rounds them; dump:produce refuses such a dump.`)
+      log.warn(`Table ${table}: integer value(s) of 2^53 or more in ${Object.keys(columns).join(', ')}. They are exact in the raw file, but a reader that uses JSON.parse rounds them; dump:produce refuses such a dump. Decimals with 16 or more integer digits are not checked.`)
     }
     log.info(`Done: ${split.tables.length} tables, ${totalRows} rows. This directory is RAW personal data: run dump:wipe on it the same day.`)
     return { outDir: finalDir, tables: split.tables, totalRows, manifestSha256: createHash('sha256').update(manifestText).digest('hex'), report, largeIntegers: split.largeIntegers }

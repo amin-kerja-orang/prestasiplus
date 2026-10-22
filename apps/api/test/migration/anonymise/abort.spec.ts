@@ -53,10 +53,13 @@ describe('runAnonymise signal', () => {
     const abort = new AbortController()
     abort.abort()
     const opened: string[] = []
+    const out2 = work.out('abort-out2')
     await expect(
-      runAnonymise({ reader: abortingReader(new DirReader(source), abort, opened), outDir: work.out('abort-out2'), config, key: Buffer.from(TEST_KEY), sourceDir: source, signal: abort.signal }),
+      runAnonymise({ reader: abortingReader(new DirReader(source), abort, opened), outDir: out2, config, key: Buffer.from(TEST_KEY), sourceDir: source, signal: abort.signal }),
     ).rejects.toBeInstanceOf(AnonymiseAbortedError)
     expect(opened).toEqual([])
+    expect(existsSync(out2)).toBe(false)
+    expect(existsSync(`${out2}.partial`)).toBe(false)
   })
 
   it('without a signal nothing changes', async () => {
