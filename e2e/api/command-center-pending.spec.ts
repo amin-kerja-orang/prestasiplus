@@ -43,7 +43,13 @@ interface Chain {
   studentId: string
 }
 
-/** school -> teacher (with a class) -> classroom -> pupil (the one with most answers), by the admin drill-down API. */
+/** At most this many drill-down reads while looking for a pupil (the Command Center read limit is 120 per minute). */
+const MAX_CHAIN_READS = 12
+
+/**
+ * school -> teacher (with a class) -> classroom -> a pupil, by the admin drill-down API. Stops at the first class
+ * that has a pupil with answers; else falls back to the first pupil seen. Bounded by `MAX_CHAIN_READS`.
+ */
 async function findChain(page: Page): Promise<Chain> {
   const live = await getData<{ topSchools: { schoolId: string }[] }>(
     page,
@@ -55,28 +61,31 @@ async function findChain(page: Page): Promise<Chain> {
     page,
     `/api/command-center/school/${schoolId}`,
   )
-  let best: Chain | null = null
-  let bestAnswers = -1
-  for (const t of school.teachers.filter((x) => x.classes > 0)) {
+  let fallback: Chain | null = null
+  let reads = 0
+  search: for (const t of school.teachers.filter((x) => x.classes > 0)) {
+    if (reads >= MAX_CHAIN_READS) break
+    reads += 1
     const teacher = await getData<{ classes: { id: string }[] }>(
       page,
       `/api/command-center/school/${schoolId}/teacher/${t.userId}`,
     )
     for (const c of teacher.classes) {
+      if (reads >= MAX_CHAIN_READS) break search
+      reads += 1
       const cls = await getData<{ students: { userId: string; answers: number }[] }>(
         page,
         `/api/command-center/classroom/${c.id}`,
       )
       for (const s of cls.students) {
-        if (s.answers > bestAnswers) {
-          bestAnswers = s.answers
-          best = { schoolId, teacherId: t.userId, classId: c.id, studentId: s.userId }
-        }
+        const chain = { schoolId, teacherId: t.userId, classId: c.id, studentId: s.userId }
+        if (s.answers > 0) return chain
+        fallback ??= chain
       }
     }
   }
-  expect(best, 'the seed has a class with a pupil').not.toBeNull()
-  return best!
+  expect(fallback, 'the seed has a class with a pupil').not.toBeNull()
+  return fallback!
 }
 
 test.describe('command center and pending teachers @api', () => {
@@ -126,22 +135,22 @@ test.describe('command center and pending teachers @api', () => {
       {
         path: `/admin/command-center/school/${ids.schoolId}`,
         ready: 'cc-teachers-table',
-        api: /\/api\/command-center\/school\/\d+$/,
+        api: /\/api\/command-center\/school\/[^/]+$/,
       },
       {
         path: `/admin/command-center/school/${ids.schoolId}/teacher/${ids.teacherId}`,
         ready: 'cc-classes-table',
-        api: /\/api\/command-center\/school\/\d+\/teacher\/\d+$/,
+        api: /\/api\/command-center\/school\/[^/]+\/teacher\/[^/]+$/,
       },
       {
         path: `/admin/command-center/classroom/${ids.classId}`,
         ready: 'cc-students-table',
-        api: /\/api\/command-center\/classroom\/\d+$/,
+        api: /\/api\/command-center\/classroom\/[^/]+$/,
       },
       {
         path: `/admin/command-center/student/${ids.studentId}`,
         ready: 'cc-student-cards',
-        api: /\/api\/command-center\/student\/\d+$/,
+        api: /\/api\/command-center\/student\/[^/]+$/,
       },
     ]
     for (const p of pages) {
@@ -249,6 +258,8 @@ test.describe('command center and pending teachers @api', () => {
       .toBeGreaterThan(0)
     await expectNoHScroll(page)
 
+    // Note: a failed verify step below can leave a pending "Guru Menunggu <stamp>" teacher behind; the empty-or-verify
+    // poll above tolerates that on the next run.
     // A teacher signs up for this school (public sign-up, a separate cookie-less context).
     const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`
     const name = `Guru Menunggu ${stamp}`

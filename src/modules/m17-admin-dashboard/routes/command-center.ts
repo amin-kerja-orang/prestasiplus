@@ -23,7 +23,7 @@ export interface CommandCenterDrillRouteOptions {
 }
 
 // http mode: ids are opaque strings (BE-22), kept as-is; mock mode keeps numbers
-const id = (value: unknown): number => (isHttpMode() ? (String(value) as unknown as number) : Number(value))
+const id = (value: unknown): number | string => (isHttpMode() ? String(value) : Number(value))
 
 /**
  * The four routes (standalone `bare` pages that draw their own staff frame, or in the staff shell with `shell`) S4-S7 under `prefix`: `school/:schoolId`, `school/:schoolId/teacher/:userId`,
