@@ -11,7 +11,10 @@ import { csvHref, keberkesananHref, ringkasanHref } from './amaran-format'
 defineProps<{ schoolId: number; downloading: boolean }>()
 defineEmits<{ download: [] }>()
 
-// Prototype scope (D43): the two M18 pages are in the school admin's allow-list, so both buttons show.
+// Prototype scope (D43): each M18 button shows only when the school admin's scope allows its path. While the
+// scope is on, school-admin item 49 lists `/amaran/sekolah` only, so both buttons stay hidden until
+// `/amaran/ringkasan-eksekutif` and `/amaran/keberkesanan` are added to it (`src/app/prototype-scope.ts`).
+// With the scope off, both show.
 const { allows } = usePrototypeScope()
 </script>
 

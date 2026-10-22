@@ -12,7 +12,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBackLink, DsLoadError, DsPage } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsStack } from '@/ds'
 
 import { fetchAmaranEffectiveness } from '../api/amaran'
 import KbCharts from '../components/keberkesanan/KbCharts.vue'
@@ -22,6 +22,7 @@ import { KB_TITLE, tabTitle } from '../components/keberkesanan/kb-format'
 import KbTeacherTable from '../components/keberkesanan/KbTeacherTable.vue'
 import KbTiles from '../components/keberkesanan/KbTiles.vue'
 import KbTypeList from '../components/keberkesanan/KbTypeList.vue'
+import { loadErrorMessage } from '../lib/load-error'
 
 const pageMeta = usePageMeta()
 
@@ -65,14 +66,14 @@ const report = computed(() => data.value?.report ?? null)
     </template>
     <DsLoadError
       v-else-if="error && !refused"
-      :message="error.message"
+      :message="loadErrorMessage(error)"
       testid="kb-error"
       @retry="reload"
     />
-    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="kb-loading">
+    <DsStack v-else-if="loading" gap="md" aria-busy="true" data-testid="kb-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

@@ -2,9 +2,10 @@
 /** S21 four tiles (design section 5.1 item 2): Jumlah Intervensi, Kadar Berkesan, Perlu Tindakan, Belum Dinilai. */
 import { computed } from 'vue'
 
-import { DsStatRow, type StatItem } from '@/ds'
+import type { StatItem } from '@/ds'
 
 import type { AmaranEffectivenessReportView } from '../../api/amaran'
+import MetricTiles from '../MetricTiles.vue'
 import { count } from './kb-format'
 
 const props = defineProps<{ cards: AmaranEffectivenessReportView['cards'] }>()
@@ -35,5 +36,11 @@ const items = computed<StatItem[]>(() => {
 </script>
 
 <template>
-  <DsStatRow :items="items" prefix="kb-tile" part-prefix="kb-tile" data-testid="kb-tiles" :cols="4" />
+  <MetricTiles
+    :items="items"
+    :cols="{ base: 2, xl: 4 }"
+    prefix="kb-tile"
+    part-prefix="kb-tile"
+    data-testid="kb-tiles"
+  />
 </template>

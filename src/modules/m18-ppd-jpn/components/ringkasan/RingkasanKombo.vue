@@ -2,7 +2,7 @@
 /** S23 card "Penglibatan Latih Tubi (Kombo)" (design 4.1 item 4): four figures, two per row below `lg`. */
 import { computed } from 'vue'
 
-import { DsPanel } from '@/ds'
+import { DsGrid, DsGridItem, DsPanel, DsStack, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { AmaranKombo } from '../../api/amaran'
@@ -19,15 +19,14 @@ const figures = computed(() => [
 </script>
 
 <template>
-  <DsPanel class="break-inside-avoid" data-testid="rk-kombo">
-    <h2 class="text-subheading text-highlighted">Penglibatan Latih Tubi (Kombo)</h2>
-    <dl class="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <div v-for="f in figures" :key="f.key" class="flex min-w-0 flex-col gap-1">
-        <dt class="text-body text-muted">{{ f.label }}</dt>
-        <dd class="tabular text-heading text-highlighted" :data-testid="`rk-kombo-${f.key}`">
-          {{ f.value }}
-        </dd>
-      </div>
-    </dl>
+  <DsPanel title="Penglibatan Latih Tubi (Kombo)" class="break-inside-avoid" data-testid="rk-kombo">
+    <DsGrid as="ul" :cols="{ base: 2, lg: 4 }">
+      <DsGridItem v-for="f in figures" :key="f.key" as="li">
+        <DsStack gap="2xs">
+          <DsText variant="body" tone="muted">{{ f.label }}</DsText>
+          <DsText variant="heading" tabular :data-testid="`rk-kombo-${f.key}`">{{ f.value }}</DsText>
+        </DsStack>
+      </DsGridItem>
+    </DsGrid>
   </DsPanel>
 </template>

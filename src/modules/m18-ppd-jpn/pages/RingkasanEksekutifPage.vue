@@ -16,7 +16,16 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBackLink, DsLoadError, DsPage, DsPrintSheet } from '@/ds'
+import {
+  DsBackLink,
+  DsCluster,
+  DsHeading,
+  DsLoadError,
+  DsPage,
+  DsPrintSheet,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { fetchAmaranSummary } from '../api/amaran'
 import RingkasanDistribution from '../components/ringkasan/RingkasanDistribution.vue'
@@ -30,6 +39,7 @@ import {
   tabTitle,
   TITLE,
 } from '../components/ringkasan/ringkasan-format'
+import { loadErrorMessage } from '../lib/load-error'
 
 const pageMeta = usePageMeta()
 
@@ -56,12 +66,7 @@ watch(
 )
 
 const generated = computed(() => (data.value ? formatGenerated(data.value.generatedAt) : null))
-const GENERIC = 'Ralat berlaku. Sila cuba lagi.'
-const errorMessage = computed(() => {
-  const e = error.value
-  if (!e || e.message === '' || /^HTTP \d+$/.test(e.message)) return GENERIC
-  return e.message
-})
+const errorMessage = computed(() => loadErrorMessage(error.value))
 
 function print(): void {
   window.print()
@@ -71,41 +76,49 @@ function print(): void {
 <template>
   <DsPage data-testid="rk-page">
     <template v-if="!refused">
-      <div
+      <DsCluster
         v-if="!error"
-        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between print:hidden"
+        stack-below="sm"
+        justify="between"
+        gap="xs"
+        class="print:hidden"
         data-testid="rk-toolbar"
       >
         <DsBackLink :to="BACK_PATH" data-testid="rk-back" />
-        <UButton
-          type="button"
-          icon="i-ph-printer"
-          label="Cetak / PDF"
-          size="lg"
-          class="min-h-11 justify-center"
-          :disabled="loading || !data"
-          data-testid="rk-print"
-          @click="print"
-        />
-      </div>
+        <div class="w-full sm:w-auto">
+          <UButton
+            type="button"
+            icon="i-ph-printer"
+            label="Cetak / PDF"
+            size="lg"
+            block
+            class="min-h-11"
+            :disabled="loading || !data"
+            data-testid="rk-print"
+            @click="print"
+          />
+        </div>
+      </DsCluster>
 
       <DsPrintSheet v-if="data" data-testid="rk-sheet">
-        <article class="flex flex-col gap-4 p-1 text-default" aria-label="Ringkasan Eksekutif">
-          <header class="flex flex-col gap-1" data-testid="rk-head">
-            <p class="text-caption text-muted">PRESTASIPLUS · Ringkasan Eksekutif</p>
-            <h2 class="text-heading break-words text-highlighted" data-testid="rk-title">
+        <DsStack as="article" gap="md" padding="sm" aria-label="Ringkasan Eksekutif">
+          <DsStack as="header" gap="2xs" data-testid="rk-head">
+            <DsText variant="caption">PRESTASIPLUS · Ringkasan Eksekutif</DsText>
+            <DsHeading :level="2" variant="heading" wrap="anywhere" data-testid="rk-title">
               {{ data.title }}
-            </h2>
-            <div class="flex flex-col gap-1 sm:flex-row sm:justify-between">
-              <p class="text-body text-muted" data-testid="rk-subtitle">{{ data.subtitle }}</p>
-              <p v-if="data.pupilsLine" class="text-body text-muted" data-testid="rk-pupils">
+            </DsHeading>
+            <DsCluster v-if="data.subtitle || data.pupilsLine" stack-below="sm" justify="between" align="start" gap="2xs">
+              <DsText v-if="data.subtitle" variant="body" tone="muted" data-testid="rk-subtitle">{{
+                data.subtitle
+              }}</DsText>
+              <DsText v-if="data.pupilsLine" variant="body" tone="muted" data-testid="rk-pupils">
                 {{ data.pupilsLine }}
-              </p>
-            </div>
-            <p v-if="generated" class="text-body text-muted" data-testid="rk-generated">
+              </DsText>
+            </DsCluster>
+            <DsText v-if="generated" variant="body" tone="muted" data-testid="rk-generated">
               Dijana: {{ generated }}
-            </p>
-          </header>
+            </DsText>
+          </DsStack>
           <RingkasanTiles :tally="data.tally" />
           <RingkasanDistribution :tally="data.tally" />
           <RingkasanKombo :kombo="data.kombo" />
@@ -113,23 +126,23 @@ function print(): void {
             v-if="data.weakness && data.weakness.length > 0"
             :rows="data.weakness"
           />
-          <footer class="flex flex-col gap-1 text-caption text-muted" data-testid="rk-footer">
-            <p>
+          <DsStack as="footer" gap="2xs" data-testid="rk-footer">
+            <DsText variant="caption">
               Laporan ini dijana secara automatik oleh PRESTASIPLUS<template v-if="generated">
                 · {{ generated }}</template
               >
-            </p>
-            <p>{{ FOOTER_LINE_2 }}</p>
-          </footer>
-        </article>
+            </DsText>
+            <DsText variant="caption">{{ FOOTER_LINE_2 }}</DsText>
+          </DsStack>
+        </DsStack>
       </DsPrintSheet>
 
       <DsLoadError v-else-if="error" :message="errorMessage" testid="rk-error" @retry="reload" />
-      <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="rk-loading">
+      <DsStack v-else-if="loading" gap="md" aria-busy="true" data-testid="rk-loading">
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-64 w-full" />
         <USkeleton class="h-64 w-full" />
-      </div>
+      </DsStack>
     </template>
   </DsPage>
 </template>

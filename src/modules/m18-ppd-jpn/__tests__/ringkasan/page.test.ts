@@ -108,6 +108,12 @@ describe('data state', () => {
     expect(text(w, 'rk-footer')).toContain('Untuk maklumat lanjut, hubungi pentadbir sistem.')
   })
 
+  it('renders no subtitle line when the server sends an empty subtitle', async () => {
+    const w = await mountPage(summary({ subtitle: '' }))
+    expect(has(w, 'rk-subtitle')).toBe(false)
+    expect(text(w, 'rk-pupils')).toBe('59 pelajar')
+  })
+
   it('sets the shell sub-line and the tab title of the SRS', async () => {
     await mountPage(summary())
     const meta = usePageMeta().state

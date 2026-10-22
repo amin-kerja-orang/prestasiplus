@@ -6,7 +6,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsPanel, type CardField } from '@/ds'
+import { type CardField, DsDataTable, DsGrid, DsGridItem, DsPanel, DsStack, DsText } from '@/ds'
 
 import type { AmaranEffectivenessReportView } from '../../api/amaran'
 import { count, rateText } from './kb-format'
@@ -61,13 +61,15 @@ const cardFields: CardField[] = [
       data-testid="kb-teacher-table"
     >
       <template #card="{ row }">
-        <p class="text-label text-highlighted" data-testid="kb-teacher-name">{{ row.name }}</p>
-        <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-          <div v-for="f in cardFields" :key="f.key" class="min-w-0">
-            <dt class="text-caption text-muted">{{ f.label }}</dt>
-            <dd class="tabular text-body" data-testid="kb-teacher-field">{{ row[f.key] }}</dd>
-          </div>
-        </dl>
+        <DsStack gap="xs">
+          <DsText variant="label" as="p" tone="highlighted" data-testid="kb-teacher-name">{{ row.name }}</DsText>
+          <DsGrid as="ul" :cols="2" gap="xs">
+            <DsGridItem v-for="f in cardFields" :key="f.key" as="li">
+              <DsText variant="caption">{{ f.label }}</DsText>
+              <DsText variant="body" tabular data-testid="kb-teacher-field">{{ row[f.key] }}</DsText>
+            </DsGridItem>
+          </DsGrid>
+        </DsStack>
       </template>
       <template #berkesan-cell="{ row }">
         <UBadge color="success" variant="subtle">{{ row.original.berkesan }}</UBadge>

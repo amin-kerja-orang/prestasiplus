@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsEmptyState, DsPanel } from '@/ds'
+import { type DsTextTone, DsChart, DsCluster, DsEmptyState, DsPanel, DsStack, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { AmaranTally } from '../../api/amaran'
@@ -13,47 +13,52 @@ import { EMPTY_DISTRIBUTION } from './ringkasan-format'
 
 const props = defineProps<{ tally: AmaranTally }>()
 
-const segments = computed(() => [
-  { key: 'green', label: 'Hijau', count: props.tally.green, pct: props.tally.pct.green, icon: 'i-ph-check-circle', tone: 'text-success' },
-  { key: 'yellow', label: 'Kuning', count: props.tally.yellow, pct: props.tally.pct.yellow, icon: 'i-ph-warning', tone: 'text-warning' },
-  { key: 'red', label: 'Merah', count: props.tally.red, pct: props.tally.pct.red, icon: 'i-ph-warning-octagon', tone: 'text-error' },
+interface Segment {
+  key: string
+  label: string
+  count: number
+  pct: number
+  icon: string
+  tone: DsTextTone
+}
+
+const segments = computed<Segment[]>(() => [
+  { key: 'green', label: 'Hijau', count: props.tally.green, pct: props.tally.pct.green, icon: 'i-ph-check-circle', tone: 'success' },
+  { key: 'yellow', label: 'Kuning', count: props.tally.yellow, pct: props.tally.pct.yellow, icon: 'i-ph-warning', tone: 'warning' },
+  { key: 'red', label: 'Merah', count: props.tally.red, pct: props.tally.pct.red, icon: 'i-ph-warning-octagon', tone: 'error' },
 ])
 const labels = computed(() => segments.value.map((s) => `${s.label} (${String(s.pct)}%)`))
 const series = computed(() => [{ label: 'Pelajar', data: segments.value.map((s) => s.count) }])
 </script>
 
 <template>
-  <DsPanel class="break-inside-avoid" data-testid="rk-distribution">
-    <div class="flex flex-col gap-4">
-      <h2 class="text-subheading text-highlighted">Taburan Risiko</h2>
-      <DsEmptyState
-        v-if="tally.total === 0"
-        size="sm"
-        :title="EMPTY_DISTRIBUTION"
-        data-testid="rk-empty"
+  <DsPanel title="Taburan Risiko" class="break-inside-avoid" data-testid="rk-distribution">
+    <DsEmptyState
+      v-if="tally.total === 0"
+      size="sm"
+      :title="EMPTY_DISTRIBUTION"
+      data-testid="rk-empty"
+    />
+    <DsStack v-else gap="md">
+      <DsChart
+        type="bar"
+        horizontal
+        title="Pelajar mengikut tahap risiko"
+        table-label="Pelajar mengikut tahap risiko"
+        :labels="labels"
+        :series="series"
+        data-testid="rk-bar"
       />
-      <template v-else>
-        <DsChart
-          type="bar"
-          horizontal
-          title="Pelajar mengikut tahap risiko"
-          table-label="Pelajar mengikut tahap risiko"
-          :labels="labels"
-          :series="series"
-          data-testid="rk-bar"
-        />
-        <ul class="flex flex-wrap gap-x-6 gap-y-2 text-body text-default" data-testid="rk-legend">
-          <li
-            v-for="s in segments"
-            :key="s.key"
-            class="inline-flex items-center gap-2"
-            :data-testid="`rk-legend-${s.key}`"
-          >
-            <UIcon :name="s.icon" class="size-5" :class="s.tone" aria-hidden="true" />
+      <DsCluster as="ul" gap="lg" row-gap="xs" data-testid="rk-legend">
+        <DsText v-for="s in segments" :key="s.key" as="li" variant="body" :data-testid="`rk-legend-${s.key}`">
+          <DsCluster as="span" gap="xs" :wrap="false">
+            <DsText as="span" variant="body" :tone="s.tone">
+              <UIcon :name="s.icon" class="size-5" aria-hidden="true" />
+            </DsText>
             {{ s.label }}: {{ formatCount(s.count) }}
-          </li>
-        </ul>
-      </template>
-    </div>
+          </DsCluster>
+        </DsText>
+      </DsCluster>
+    </DsStack>
   </DsPanel>
 </template>

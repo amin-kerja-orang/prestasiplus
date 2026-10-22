@@ -23,7 +23,7 @@ const TRENDS = ['Mei 2026', 'Jun 2026', 'Jul 2026', 'Ogo 2026', 'Sep 2026', 'Okt
 
 function result(over: Partial<AmaranEffectivenessResponse['report']> = {}): AmaranEffectivenessResponse {
   return {
-    school: { id: 900001, name: 'SMK Demo' },
+    school: { id: '900001', name: 'SMK Demo' },
     report: {
       cards: {
         total: 8,
@@ -38,26 +38,26 @@ function result(over: Partial<AmaranEffectivenessResponse['report']> = {}): Amar
       doughnut: [2, 2, 1, 3],
       trend: { labels: TRENDS, data: [0, 1, 0, 2, 1, 4] },
       byType: [
-        { type: 'sesi_kaunseling', label: 'Sesi Kaunseling', count: 3 },
+        { type: 'kaunseling', label: 'Sesi Kaunseling', count: 3 },
         { type: 'kelas_tambahan', label: 'Kelas Tambahan', count: 1 },
       ],
       byTeacher: [
-        { teacherId: 1, name: 'Cikgu Contoh A', total: 5, berkesan: 2, notEvaluated: 1, rate: 67 },
-        { teacherId: 2, name: 'Cikgu Contoh B', total: 3, berkesan: 0, notEvaluated: 3, rate: null },
+        { teacherId: '1', name: 'Cikgu Contoh A', total: 5, berkesan: 2, notEvaluated: 1, rate: 67 },
+        { teacherId: '2', name: 'Cikgu Contoh B', total: 3, berkesan: 0, notEvaluated: 3, rate: null },
       ],
       followUps: [
         {
-          id: 11,
-          studentId: 501,
+          id: '11',
+          studentId: '501',
           studentName: 'Pelajar Contoh',
-          type: 'sesi_kaunseling',
+          type: 'kaunseling',
           label: 'Sesi Kaunseling',
           interventionDate: '2026-04-13',
           effectiveness: 'belum_dinilai',
         },
         {
-          id: 12,
-          studentId: 502,
+          id: '12',
+          studentId: '502',
           studentName: 'Pelajar Lain',
           type: 'kelas_tambahan',
           label: 'Kelas Tambahan',
@@ -66,11 +66,11 @@ function result(over: Partial<AmaranEffectivenessResponse['report']> = {}): Amar
         },
       ],
       bySchool: [
-        { schoolId: 900001, school: 'SMK Demo', total: 8, berkesan: 2, sederhana: 2, tidakBerkesan: 1, notEvaluated: 3, rate: 50 },
+        { schoolId: '900001', school: 'SMK Demo', total: 8, berkesan: 2, sederhana: 2, tidakBerkesan: 1, notEvaluated: 3, rate: 50 },
       ],
       ...over,
     },
-  } as unknown as AmaranEffectivenessResponse
+  }
 }
 
 const zero = (): AmaranEffectivenessResponse =>
@@ -317,6 +317,15 @@ describe('loading, error and 403', () => {
     expect(has(w, 'kb-tiles')).toBe(true)
     expect(has(w, 'kb-error')).toBe(false)
   })
+
+  it.each([['an empty message', ''], ['the bare client fallback', 'HTTP 500']])(
+    'replaces %s with the generic BM line',
+    async (_name, message) => {
+      const w = await mountPage(apiError(500, message))
+      expect(text(w, 'kb-error')).toContain('Ralat berlaku. Sila cuba lagi.')
+      expect(text(w, 'kb-error')).not.toContain('HTTP 500')
+    },
+  )
 
   it('sets the in-place 403 outcome on a 403 and shows no error box or data', async () => {
     const w = await mountPage(apiError(403, 'This action is unauthorized.'))

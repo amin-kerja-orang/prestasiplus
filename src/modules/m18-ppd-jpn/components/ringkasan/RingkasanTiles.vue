@@ -5,10 +5,11 @@
  */
 import { computed } from 'vue'
 
-import { DsStatRow, type StatItem } from '@/ds'
+import type { StatItem } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { AmaranTally } from '../../api/amaran'
+import MetricTiles from '../MetricTiles.vue'
 
 const props = defineProps<{ tally: AmaranTally }>()
 
@@ -48,5 +49,5 @@ const items = computed<StatItem[]>(() => [
 </script>
 
 <template>
-  <DsStatRow :items="items" prefix="rk-tile" data-testid="rk-tiles" :cols="4" />
+  <MetricTiles :items="items" :cols="{ base: 2, md: 4 }" prefix="rk-tile" data-testid="rk-tiles" />
 </template>

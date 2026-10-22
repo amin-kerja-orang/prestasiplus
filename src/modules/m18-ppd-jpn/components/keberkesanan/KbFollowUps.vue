@@ -3,7 +3,7 @@
  * S21 card "Perlu Tindakan Susulan" (copy rows 38-40): pupil name, "{jenis} · {d MMM yyyy}" and an effectiveness
  * badge. The arrow to S24 Log Intervensi is NOT rendered: S24 is not built (contract gap, design Q3).
  */
-import { DsEmptyState, DsPanel, DsStatusBadge } from '@/ds'
+import { DsCluster, DsEmptyState, DsPanel, DsStack, DsStatusBadge, DsSurface, DsText } from '@/ds'
 
 import type { AmaranEffectivenessReportView } from '../../api/amaran'
 import { followUpLine, KB_BADGE } from './kb-format'
@@ -19,26 +19,30 @@ defineProps<{ rows: AmaranEffectivenessReportView['followUps'] }>()
       title="Tiada tindakan susulan."
       data-testid="kb-followups-empty"
     />
-    <ul v-else class="flex min-w-0 flex-col divide-y divide-default">
-      <li
+    <DsStack v-else as="ul" gap="xs">
+      <DsSurface
         v-for="r in rows"
         :key="r.id"
-        class="flex min-w-0 flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+        as="li"
+        level="soft"
+        padding="sm"
         data-testid="kb-followup-row"
       >
-        <div class="min-w-0">
-          <p class="text-label text-highlighted" data-testid="kb-followup-name">{{ r.studentName }}</p>
-          <p class="text-caption text-muted" data-testid="kb-followup-line">
-            {{ followUpLine(r.label, r.interventionDate) }}
-          </p>
-        </div>
-        <DsStatusBadge
-          :status="KB_BADGE[r.effectiveness].status"
-          :label="KB_BADGE[r.effectiveness].label"
-          class="w-fit"
-          data-testid="kb-followup-badge"
-        />
-      </li>
-    </ul>
+        <DsCluster stack-below="sm" justify="between" gap="xs">
+          <DsStack gap="none">
+            <DsText variant="label" tone="highlighted" data-testid="kb-followup-name">{{ r.studentName }}</DsText>
+            <DsText variant="caption" data-testid="kb-followup-line">
+              {{ followUpLine(r.label, r.interventionDate) }}
+            </DsText>
+          </DsStack>
+          <DsStatusBadge
+            :status="KB_BADGE[r.effectiveness].status"
+            :label="KB_BADGE[r.effectiveness].label"
+            class="w-fit"
+            data-testid="kb-followup-badge"
+          />
+        </DsCluster>
+      </DsSurface>
+    </DsStack>
   </DsPanel>
 </template>

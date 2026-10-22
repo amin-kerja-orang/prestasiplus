@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsPanel } from '@/ds'
+import { DsChart, DsCluster, DsGrid, DsPanel, DsStack, DsText } from '@/ds'
 
 import type { AmaranEffectivenessReportView } from '../../api/amaran'
 import { count, KB_DOUGHNUT_LABELS } from './kb-format'
@@ -22,12 +22,9 @@ const legend = computed(() => KB_DOUGHNUT_LABELS.map((label, i) => ({ label, n: 
 </script>
 
 <template>
-  <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+  <DsGrid :cols="{ base: 1, lg: 2 }">
     <DsPanel>
-      <div
-        class="flex min-w-0 flex-col gap-3"
-        :data-testid="doughnutEmpty ? 'kb-doughnut-empty' : 'kb-doughnut'"
-      >
+      <DsStack gap="sm" :data-testid="doughnutEmpty ? 'kb-doughnut-empty' : 'kb-doughnut'">
         <DsChart
           type="doughnut"
           title="Pecahan Keberkesanan"
@@ -37,19 +34,21 @@ const legend = computed(() => KB_DOUGHNUT_LABELS.map((label, i) => ({ label, n: 
           table-label="Keberkesanan intervensi"
           empty-label="Tiada data intervensi lagi."
         />
-        <ul
-          v-if="!doughnutEmpty"
-          class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted"
-          data-testid="kb-doughnut-legend"
-        >
-          <li v-for="l in legend" :key="l.label" data-testid="kb-doughnut-legend-item">
+        <DsCluster v-if="!doughnutEmpty" as="ul" gap="md" row-gap="2xs" data-testid="kb-doughnut-legend">
+          <DsText
+            v-for="l in legend"
+            :key="l.label"
+            as="li"
+            variant="caption"
+            data-testid="kb-doughnut-legend-item"
+          >
             {{ l.label }}: {{ count(l.n) }}
-          </li>
-        </ul>
-      </div>
+          </DsText>
+        </DsCluster>
+      </DsStack>
     </DsPanel>
     <DsPanel>
-      <div class="min-w-0" :data-testid="trendEmpty ? 'kb-trend-empty' : 'kb-trend'">
+      <div :data-testid="trendEmpty ? 'kb-trend-empty' : 'kb-trend'">
         <DsChart
           type="line"
           title="Trend Bulanan (6 Bulan)"
@@ -61,5 +60,5 @@ const legend = computed(() => KB_DOUGHNUT_LABELS.map((label, i) => ({ label, n: 
         />
       </div>
     </DsPanel>
-  </div>
+  </DsGrid>
 </template>
