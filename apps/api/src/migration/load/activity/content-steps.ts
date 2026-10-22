@@ -1,8 +1,11 @@
 /**
  * Content group of `migrate:activity` (BE-29 Part B): articles, banners, notes, videos and Audio KBAT sets.
  *
- * File migration is OFF (LEAD Q2): no file is read or copied, every `*_file_id` stays null, and the rows that had
- * a source path are only counted in the report notes (`file_migration_off.*`). Notes, videos and audio sets need an
+ * Files (AC9): with `--files-dir` a banner image is verified against the SHA256SUMS manifest, copied to the file storage and
+ * only then referenced (`banners.image_file_id`); a failure rejects the row INVALID_VALUE on `image_path`. Without the flag no
+ * file is read or copied, every `*_file_id` stays null, and the rows that had a source path are only counted in the report
+ * notes (`file_migration_off.*`). Audio KBAT `audio_path` is never migrated: the v2 set keeps its audio inside authored
+ * `sections` (title, transcript, question range) that the staging spec does not carry, so there is no single target. Notes, videos and audio sets need an
  * owner user in v2 that the staged tables do not carry; it comes from `--content-owner` (`contentOwnerUserId`),
  * and without it (or with an id that is not a v2 user) those rows are rejected ORPHAN_PARENT (LEAD Q7).
  * A v2 NOT NULL column with no staged source rejects the row INVALID_VALUE naming the column (see transform/content.ts).
@@ -140,10 +143,24 @@ export function bannersStep(a: ActivityContext): AnyEntityStep {
         })
         if (o.hadImage) images++
         if (o.droppedTarget) dropped++
-        if (!o.out.ok) rejectRow(ctx, entity, legacyId, o.out.reject)
-        else items.push(toRow(legacyId, o.out.value))
+        if (!o.out.ok) {
+          rejectRow(ctx, entity, legacyId, o.out.reject)
+          continue
+        }
+        if (o.hadImage && a.files !== undefined) {
+          // The reference is set only after the copy and the checksum succeeded; otherwise the row is rejected (not loaded).
+          const f = await a.files.migrate(ctx, { table: 'banners', column: 'image_path', legacyId, rawPath: row.image_path ?? '', purpose: 'cms_image' })
+          if (!f.ok) {
+            a.notes.count(`files.banners.image_path.rejected.${f.cause}`)
+            ctx.rejects.add({ entity, legacyId, reason: 'INVALID_VALUE', column: 'image_path' })
+            continue
+          }
+          a.notes.count(`files.banners.image_path.${f.outcome}`)
+          o.out.value.image_file_id = f.fileId
+        }
+        items.push(toRow(legacyId, o.out.value))
       }
-      a.notes.count('file_migration_off.banners.image_path', images)
+      if (a.files === undefined) a.notes.count('file_migration_off.banners.image_path', images)
       a.notes.count('banners.target_not_a_link', dropped)
       return upsertAndMap(
         ctx, entity, 'banners',

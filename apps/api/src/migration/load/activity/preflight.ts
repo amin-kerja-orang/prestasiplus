@@ -92,6 +92,8 @@ export interface ActivityHashInput {
   extraTables?: readonly string[]
   /** `--content-owner` (a v2 user id): the owner of the content rows is part of what an apply writes. */
   contentOwnerUserId?: string
+  /** SHA-256 of the `SHA256SUMS` of `--files-dir` (absent without the flag): the files an apply copies are part of its input. */
+  filesManifestHash?: string
 }
 
 /** The input hash of a run: staged fingerprints, as-of, source, step list, the BE-28 id-map counts and the content owner. */
@@ -104,6 +106,7 @@ export async function activityInputHash(input: ActivityHashInput): Promise<strin
     `steps=${input.stepNames.join(',')}`,
     `core-map=${await coreMapCounts(input.pool, input.source)}`,
     `content-owner=${input.contentOwnerUserId?.trim() || 'none'}`,
+    `files-manifest=${input.filesManifestHash ?? 'none'}`,
   ])
 }
 

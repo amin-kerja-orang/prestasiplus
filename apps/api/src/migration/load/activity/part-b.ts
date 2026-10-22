@@ -26,7 +26,7 @@ export const contentGroup: ActivityGroup = {
   name: 'content',
   steps: (a) => [articlesStep(a), bannersStep(a), notesStep(a), videosStep(a), audioSetsStep(a), questionSetsStep(a)],
   notMigrated: [
-    { table: 'banner / article / audio file paths (image_path, audio_path)', reason: 'file migration is off (Q2): file ids stay null; the rows that had a path are counted in the report notes' },
+    { table: 'banner image_path / audio_kbat audio_path (files)', reason: 'banner images are copied only with --files-dir (SHA256SUMS checked), else the file id stays null and the rows are counted; audio_path is never migrated (v2 keeps audio in authored sections, no staged source); articles, notes, videos and tickets have no staged file column' },
   ],
 }
 
