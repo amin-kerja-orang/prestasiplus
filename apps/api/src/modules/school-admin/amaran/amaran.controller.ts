@@ -33,7 +33,7 @@ export class AmaranController {
 
   @Get('summary')
   @Roles(...AMARAN_ROLES)
-  @RateLimit(SCHOOL_ADMIN_LIMITS.export)
+  @RateLimit(SCHOOL_ADMIN_LIMITS.read) // a read screen (M18 S23): the contract documents no 429 here, only on the CSV export
   async summary(@Req() req: Req, @Query() query: Record<string, unknown>) {
     const text = (k: string): string | undefined => (typeof query[k] === 'string' ? (query[k] as string) : undefined)
     const q: { scope?: string; schoolId?: string; district?: string; state?: string } = {}

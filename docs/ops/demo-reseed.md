@@ -31,16 +31,17 @@ Set `SEED_DEMO_PASSWORD_HASH` BEFORE the first seed (an account that already has
 
 ```bash
 npm run be:db:migrate        # prisma migrate deploy; safe to re-run
-ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc
+if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
+  ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
 ```
 
 Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the default profile). To start from an empty database, recreate the Supabase project schema first (or restore a clean backup), then run the two commands above.
 
 ## Path B: already seeded with the published dev password (Demo1234)
 
-The seed writes the hash only when the stored `users.password_hash` is NULL (`existing.passwordHash ?? demoPasswordHash()` in `core/identity.ts` and `core/population.ts`). So the hashes of the demo accounts must be emptied first. Take a Supabase backup first (Dashboard -> Database -> Backups). Alternative: reset the database and follow Path A.
+The seed writes the hash only when the stored `users.password_hash` is NULL (`existing.passwordHash ?? demoPasswordHash()` in `core/identity.ts` and `core/population.ts`, and the same rule in `poc/bijak-sittings.ts`). So the hashes of the demo accounts must be emptied first. Take a Supabase backup first (Dashboard -> Database -> Backups). Alternative: reset the database and follow Path A.
 
-Demo accounts the seed creates: `@demo.test` (identity, population, Bijak PoC pupils murid4 to murid8), `@example.test` (population pupils/teachers/school admins, also on the dev password), and the e-mail-less roster pupil `murid01` of DEMO002. Run in the Supabase SQL editor or `psql "$DATABASE_URL"`:
+Demo accounts the seed creates: `@demo.test` (identity, population, Bijak PoC pupils murid4 to murid8), `@example.test` (population pupils/teachers/school admins, also on the dev password), and the e-mail-less roster pupil `murid01` of DEMO002. Run in the Supabase SQL editor (preferred), or with `psql` taking the password from `PGPASSWORD`/`~/.pgpass` rather than a URL on the command line (a URL in argv is visible in `ps`):
 
 ```sql
 BEGIN;
@@ -67,17 +68,18 @@ Never widen the predicate: no account outside these patterns may be touched.
 Then re-run the seed (same env as Path A):
 
 ```bash
-ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc
+if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
+  ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
 ```
 
-**Follow-up SQL (required).** The Bijak PoC seed (`poc/bijak-sittings.ts`) copies `pelajar@demo.test`'s hash into `murid4` to `murid8@demo.test` only when it CREATES them; for existing rows it does not touch the hash, so after the reset above they stay NULL and cannot log in. Fix after the seed:
+**No follow-up SQL is needed.** Every seed that writes demo accounts (`core/identity.ts`, `core/population.ts` and the Bijak PoC `poc/bijak-sittings.ts`, which owns murid4 to murid8) refills a NULL `password_hash` from the shared `demoPasswordHash()` (`core/demo-password.ts`, honours `SEED_DEMO_PASSWORD_HASH`). An existing non-NULL hash is kept. Check afterwards that no demo account is left without a hash (expect 0):
 
 ```sql
-BEGIN;
-UPDATE users SET password_hash = (SELECT password_hash FROM users WHERE lower(email) = 'pelajar@demo.test')
-WHERE lower(email) IN ('murid4@demo.test','murid5@demo.test','murid6@demo.test','murid7@demo.test','murid8@demo.test')
-  AND password_hash IS NULL;   -- expect 5 rows
-COMMIT;
+SELECT count(*) FROM users WHERE password_hash IS NULL
+  AND (lower(email) LIKE '%@demo.test'
+    OR lower(email) LIKE '%@example.test'
+    OR (email IS NULL AND username = 'murid01'
+        AND school_id = (SELECT id FROM schools WHERE code = 'DEMO002')));
 ```
 
 ## Verify after seeding
@@ -91,7 +93,7 @@ Log in at the staging site with the vault password:
 | `admin@demo.test` | Admin Pusat | Command Center loads |
 | `pelajar@demo.test` (and one of `murid4`..`murid8@demo.test`) | pupil | `/dashboard` loads |
 
-Also check that `Demo1234` is **rejected** for these accounts.
+Also check that `Demo1234` is **rejected**, for at least one account of each group the reset touched: an identity account above, one of `murid4`..`murid8@demo.test`, one `@example.test` account, and `murid01` (DEMO002). If `Demo1234` still works anywhere, the seed ran without `SEED_DEMO_PASSWORD_HASH`: repeat Path B with it set.
 
 Then check the data:
 1. School-admin dashboard (`adminsekolah@demo.test`, school DEMO001): at least 5 pupils and a non-empty practice block.

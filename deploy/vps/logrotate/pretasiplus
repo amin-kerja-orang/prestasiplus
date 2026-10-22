@@ -1,0 +1,23 @@
+# Host log files of the production VPS. Install: sudo install -m 644 deploy/vps/logrotate/pretasiplus /etc/logrotate.d/pretasiplus
+# Container logs are NOT here: Docker rotates them (json-file max-size/max-file, set in deploy/vps/compose.prod.yaml).
+# Journald (systemd timers) rotates itself: cap it with SystemMaxUse=500M in /etc/systemd/journald.conf.
+/var/log/pretasiplus/*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 ppdeploy ppdeploy
+}
+
+# certbot's own log (bind-mounted from PP_LE_LOG_DIR, default /srv/pretasiplus/letsencrypt-log)
+/srv/pretasiplus/letsencrypt-log/*.log {
+    monthly
+    rotate 6
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

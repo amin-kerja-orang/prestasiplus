@@ -137,7 +137,7 @@ Names from [plan section 11](../architecture/v2-backend-plan.md); BE-01 owns the
 
 ## 5. Docker
 
-### 5.1 Preview container `pretasiplus-preview` (exists)
+### 5.1 Preview container, compose project `pretasiplus-preview` (exists)
 
 Rule: preview the prototype **only** through this Docker container, never through a long-running background `vite`/`node` server, and never leave stray servers running. Stop what you started.
 
@@ -145,7 +145,7 @@ Rule: preview the prototype **only** through this Docker container, never throug
 # 1. build the static bundle (PowerShell: set the variables with $env:NAME='x' first)
 VITE_PROTOTYPE_SCOPE=on VITE_API_MODE=mock VITE_TEST_HOOKS=false npx vite build --mode demo --outDir dist-preview
 # 2. start
-docker compose -f docker-compose.preview.yml up -d      # container pretasiplus-preview, nginx 1.27, http://localhost:5191
+docker compose -f docker-compose.preview.yml up -d      # project pretasiplus-preview (service preview), nginx 1.27, http://localhost:5191
 # 3. after a rebuild just refresh the browser; the bundle is mounted read-only
 # 4. stop
 docker compose -f docker-compose.preview.yml down       # or Stop in Docker Desktop
