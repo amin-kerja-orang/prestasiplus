@@ -90,6 +90,9 @@ jobs:
       - run: npm run be:build
 
   # BE-31: breaking-change gate for packages/contract/openapi.json (oasdiff, pinned image).
+  # Expected on a backend sync PR into be/integration-frontend: the PR brings the newer backend contract, so the
+  # diff against the older frontend base can report "breaking" changes that are already merged on feature/v2-backend.
+  # That is not suppressed here. The LEAD checks the report and waives it with the label `contract-breaking`.
   openapi-diff:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -147,6 +150,9 @@ jobs:
           node scripts/npm-audit-gate.mjs --file audit.json
 
   # BE-33 (AC6): new or changed dependencies in a pull request (license-neutral; vulnerabilities only).
+  # Dependency review needs the repository's dependency graph (a repository setting). While the repository does
+  # not support it, the action fails with "not supported on this repository"; the job then passes with a warning
+  # (the npm audit gate above still runs). Any other failure, e.g. a high-severity finding, still fails the job.
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -155,9 +161,28 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4.2.2
-      - uses: actions/dependency-review-action@v4.7.3
+      - id: review
+        uses: actions/dependency-review-action@v4.7.3
+        continue-on-error: true
         with:
           fail-on-severity: high
+      - name: Fail unless dependency review is unsupported here
+        if: steps.review.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -u
+          if out="$(gh api "repos/$REPO/dependency-graph/compare/$BASE_SHA...$HEAD_SHA" 2>&1)"; then
+            echo "Dependency review is supported here, so its failure is real."; exit 1
+          fi
+          if printf '%s' "$out" | grep -qi 'not supported'; then
+            echo "::warning::Dependency review is not supported on this repository (enable the dependency graph in the repository settings). Skipped."
+            exit 0
+          fi
+          echo "Dependency review failed and the support check gave an unexpected answer:"; printf '%s\n' "$out" | head -n 5; exit 1
 
   docker:
     runs-on: ubuntu-latest
@@ -229,9 +254,10 @@ jobs:
           test "$code" = "0"
       # BE-33 (AC6): image scan. HIGH and CRITICAL with a fix available fail the job. Exceptions: .trivyignore
       # (one id per line with a reason comment and `exp:YYYY-MM-DD`; Trivy ignores an expired line, so it fails again).
-      # NOTE: pinned by version tag; replace by the full commit SHA of that tag when the action is next reviewed.
+      # Pinned by the full commit SHA of the release tag `v0.33.1`. The upstream tags carry a `v` prefix, so the
+      # earlier `@0.33.1` could not be resolved and the job failed before the scan.
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
           image-ref: pretasiplus-api:ci
           format: table
