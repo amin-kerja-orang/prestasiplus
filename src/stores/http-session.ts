@@ -15,7 +15,7 @@
  */
 
 import { api, ApiError } from '@/api'
-import { scopeHomePath } from '@/app/prototype-scope'
+import { isPrototypeRole, isPrototypeScopeOn, scopeHomePath } from '@/app/prototype-scope'
 
 import { readStoredSession, useSessionStore } from './session'
 import type { ClientSession, Role, UserMe } from './session-types'
@@ -112,7 +112,20 @@ export async function restoreHttpSession(): Promise<void> {
   const store = useSessionStore()
   try {
     const body = await api.get<unknown>('/api/session')
-    if (isApiSession(body)) store.setSession(toClientSessionFromApi(body, store.remember))
+    if (isApiSession(body)) {
+      // Mirror the login-time refusal (D43): a cookie session of a role outside the prototype
+      // scope is ended instead of rebuilt.
+      if (isPrototypeScopeOn() && !isPrototypeRole(body.active.role as Role)) {
+        try {
+          await api.post<void>('/api/auth/logout')
+        } catch {
+          // best effort
+        }
+        store.clear()
+        return
+      }
+      store.setSession(toClientSessionFromApi(body, store.remember))
+    }
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) store.clear()
   }

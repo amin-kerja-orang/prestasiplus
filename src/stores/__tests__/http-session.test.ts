@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isApiSession, toClientSessionFromApi, type ApiSession } from '../http-session'
+import { api } from '@/api'
+
+import { isApiSession, restoreHttpSession, toClientSessionFromApi, type ApiSession } from '../http-session'
+import { useSessionStore } from '../session'
 
 const apiSession: ApiSession = {
   user: { id: '42', name: 'Guru Demo', email: 'guru@demo.test', username: null, avatarUrl: null, schoolId: '7' },
@@ -29,5 +33,33 @@ describe('real API session adapter (V2-T31)', () => {
       expiresAt: apiSession.expiresAt,
       user: { id: 42, name: 'Guru Demo', email: 'guru@demo.test', role: 'teacher', schoolId: 7, landingPath: '/guru' },
     })
+  })
+})
+
+describe('restoreHttpSession scope check (P4)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  it('rebuilds the session of a prototype role', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    vi.spyOn(api, 'get').mockResolvedValue(apiSession)
+    const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+    await restoreHttpSession()
+    expect(useSessionStore().user?.role).toBe('teacher')
+    expect(post).not.toHaveBeenCalled()
+  })
+
+  it('ends the session of a role outside the prototype scope: logout called, no session', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    vi.spyOn(api, 'get').mockResolvedValue({ ...apiSession, active: { role: 'parent' } })
+    const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('network'))
+    await restoreHttpSession()
+    expect(post).toHaveBeenCalledWith('/api/auth/logout')
+    expect(useSessionStore().token).toBeNull()
   })
 })

@@ -126,6 +126,7 @@ describe('isPathInScope', () => {
     for (const path of [
       '/guru',
       '/guru/command-center/classroom/3',
+      '/guru/remedial-progress',
       '/guru/kelas/cipta',
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
