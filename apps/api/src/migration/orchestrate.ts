@@ -43,9 +43,8 @@
  * Source lock: `migrate:all` and `migrate:delta` hold the session advisory lock `etl:source:cloud` (the key
  * `migrate:rollback` and `migrate:link-questions` take too) on one dedicated connection for the whole pipeline, verify
  * included, and refuse with exit 4 ("another migration, rollback or backfill holds the source lock") when it is taken.
- * OPEN POINT (kit change, outside this card): the standalone `migrate:core` and `migrate:activity` commands run through
- * the kit runner, which does not take this key. Operators must therefore use `migrate:all` / `migrate:delta`, never the
- * two standalone commands, while a rollback or a backfill can run.
+ * The standalone `migrate:core` and `migrate:activity` commands take the same key (`kit/source-lock.ts`, exit 2 when it
+ * is held); `runCore` / `runActivity` themselves stay lock-free, because this pipeline calls them while it holds the lock.
  *
  * Environment and guards are those of the kit: DATABASE_URL, `PP_ALLOW_MIGRATE_APPLY=1` for any `--apply`, and in
  * production `PP_MIGRATE_TARGET_DB` equal to the connected database. Exit codes: 0 ok, 1 failed / mismatch, 2 usage or
