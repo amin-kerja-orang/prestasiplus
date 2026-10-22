@@ -40,17 +40,17 @@ describe('Prestasi 360 (student)', () => {
 
   it('counts sittings, marks and seconds; accuracy is marks-weighted and leaves out provisional sittings', async () => {
     const r = await w.student.student(ctxOf('student', '1'), '1')
-    expect(r.stats).toEqual({ sessions: 3, accuracy: 65, answered: 30, seconds: 1000 })
+    expect(r.stats).toEqual({ sessions: 3, accuracy: 65, answered: 15, seconds: 1000 })
     expect(r.heroAccuracy).toBe(65)
     expect(r.activity.practiceDays).toBe(2)
     PerformanceStudentSchema.parse(r)
   })
 
-  it('mastery per subject, most marks first; a provisional-only subject has accuracy 0 not NaN', async () => {
+  it('mastery per subject, most answered first; a provisional-only subject has accuracy 0 not NaN', async () => {
     const r = await w.student.student(ctxOf('student', '1'), '1')
     expect(r.mastery.map((m) => [m.subjectCode, m.accuracy, m.sessions, m.answered])).toEqual([
-      ['BM', 65, 2, 20],
-      ['MT', 0, 1, 10],
+      ['BM', 65, 2, 10],
+      ['MT', 0, 1, 5],
     ])
   })
 
@@ -142,7 +142,7 @@ describe('Class dashboard', () => {
 
   it('class figures are the sum of the members and only count the class subject', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
-    expect(r.stats).toEqual({ students: 3, accuracy: 63.3, sessions: 3, answered: 30, avgMinutes: 13.3, active7d: 2 })
+    expect(r.stats).toEqual({ students: 3, accuracy: 63.3, sessions: 3, answered: 15, avgMinutes: 13.3, active7d: 2 })
     expect(r.class).toMatchObject({ id: '10', school: 'Sekolah Contoh Satu', subject: 'Bahasa Melayu' })
     expect(r.headcount).toBeNull()
     PerformanceClassDashboardSchema.parse(r)
@@ -221,7 +221,7 @@ describe('Analitik', () => {
     const r = await w.analytics.me(ctxOf('student', '1'))
     expect(r.userLevelId).toBe('10')
     expect(r.subjects).toHaveLength(1)
-    expect(r.subjects[0]).toMatchObject({ subjectId: '1', accuracy: 75, answered: 30, trend: 'up', projection: { low: 'B+', high: 'A' } })
+    expect(r.subjects[0]).toMatchObject({ subjectId: '1', accuracy: 75, answered: 15, trend: 'up', projection: { low: 'B+', high: 'A' } })
     PerformanceAnalyticsSchema.parse(r)
   })
 
@@ -293,5 +293,43 @@ describe('Analitik', () => {
       expect(r.rows).toEqual([])
       expect(r.options.subjects.map((s) => s.id)).toEqual(['1', '2'])
     })
+  })
+})
+
+describe('Soalan Dijawab counts answered questions, not the paper marks (issue 61 m1)', () => {
+  // Three 10-mark papers; the pupil answered 3, 0 and 2 questions (marks per question are not 1).
+  beforeEach(() => {
+    w.bijak
+      .addSitting(sitting({ userId: '1', score: 6, maxScore: 10, answeredCount: 3, submittedAt: d('2026-09-24T10:00:00+08:00') }))
+      .addSitting(sitting({ userId: '1', score: 0, maxScore: 10, answeredCount: 0, submittedAt: d('2026-09-24T11:00:00+08:00') }))
+      .addSitting(sitting({ userId: '1', score: 4, maxScore: 10, answeredCount: 2, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', submittedAt: d('2026-09-25T09:00:00+08:00') }))
+  })
+
+  it('student: stats.answered and mastery.answered are the answered questions', async () => {
+    const r = await w.student.student(ctxOf('student', '1'), '1')
+    expect(r.stats.answered).toBe(5)
+    expect(r.mastery.map((m) => [m.subjectCode, m.answered])).toEqual([
+      ['BM', 3],
+      ['MT', 2],
+    ])
+  })
+
+  it('class dashboard: stats.answered and the ranking rows', async () => {
+    const r = await w.klass.classDashboard(ctxOf('teacher', 't1'), '10')
+    expect(r.stats.answered).toBe(3)
+    expect(r.ranking.find((x) => x.userId === '1')?.answered).toBe(3)
+  })
+
+  it('school dashboard: stats.answered', async () => {
+    const r = await w.school.school(ctxOf('school_admin', 'sa1'))
+    expect(r.stats.answered).toBe(5)
+  })
+
+  it('analytics: per-subject answered', async () => {
+    const r = await w.analytics.me(ctxOf('student', '1'))
+    expect(r.subjects.map((s) => [s.code, s.answered])).toEqual([
+      ['BM', 3],
+      ['MT', 2],
+    ])
   })
 })
