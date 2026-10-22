@@ -48,3 +48,9 @@ playwright-report-*/
 
 # page-shots harness output (local only, D-H5)
 .page-shots/
+
+# Screenshots of live systems (may contain personal data) - never commit
+roles-matrix/**/*.jpeg
+roles-matrix/**/*.jpg
+roles-matrix/**/*.png
+WhatsApp Image *
