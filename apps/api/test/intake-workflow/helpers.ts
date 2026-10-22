@@ -82,6 +82,9 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
     FILE_READS_PER_MINUTE: '10000',
     JOBS_WORKER_ENABLED: 'false',
     JOBS_BACKOFF_BASE_MS: '100',
+    // These suites exercise the teacher paths: the AZ-35 flag is on here and its default (off) is pinned in
+    // test/intake-workflow/teacher-gate.spec.ts.
+    INTAKE_TEACHER_ENABLED: 'true',
     INTAKE_WRITES_PER_MINUTE: '1000',
     INTAKE_READS_PER_MINUTE: '10000',
     INTAKE_REVIEW_WRITES_PER_MINUTE: '10000',

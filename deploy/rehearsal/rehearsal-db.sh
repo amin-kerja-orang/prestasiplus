@@ -126,6 +126,7 @@ case "$MIGRATE_VIA" in prisma | psql) ;; *) DIE_CODE=2 die "PP_REHEARSAL_MIGRATE
 urldecode() { # percent-decoding only: backslashes and other characters stay literal
   local s=$1 out='' ch
   while [[ $s =~ ^([^%]*)%([0-9A-Fa-f]{2})(.*)$ ]]; do
+    [ "${BASH_REMATCH[2]}" != 00 ] || DIE_CODE=2 die "a %00 (NUL byte) in a connection URL is not allowed"
     printf -v ch '%b' "\\x${BASH_REMATCH[2]}"
     out+="${BASH_REMATCH[1]}${ch}"
     s=${BASH_REMATCH[3]}
@@ -569,7 +570,11 @@ cmd_snapshot() {
   local t0=$SECONDS
   table_counts "$DB" >"$STATE/snapshots/$name.counts.tmp"
   if ((DUMPMODE)); then
-    pg_dump -Fc -Z 1 -d "$DB" -f "$STATE/snapshots/$name.dump"
+    if ! pg_dump -Fc -Z 1 -d "$DB" -f "$STATE/snapshots/$name.dump"; then
+      # a partial dump would block this name for good: remove it and the counts before failing
+      rm -f "$STATE/snapshots/$name.dump" "$STATE/snapshots/$name.counts.tmp"
+      die "pg_dump of $DB failed; no snapshot '$name' was kept"
+    fi
     (cd "$STATE/snapshots" && sha256sum "$name.dump" >"$name.dump.sha256")
     info "snapshot '$name' written as a dump ($(du -h "$STATE/snapshots/$name.dump" | cut -f1))"
   else
@@ -577,7 +582,10 @@ cmd_snapshot() {
     local others
     others=$(dbq "$ADMIN_DB" "select count(*) from pg_stat_activity where datname = '$DB' and pid <> pg_backend_pid()")
     [ "$others" = 0 ] || die "$others other session(s) are connected to $DB; a template copy needs none. Stop the API/ETL and retry, or use --dump."
-    psql_db "$ADMIN_DB" -c "create database \"$snapdb\" template \"$DB\"" -c "comment on database \"$snapdb\" is '$MARK'"
+    if ! psql_db "$ADMIN_DB" -c "create database \"$snapdb\" template \"$DB\"" -c "comment on database \"$snapdb\" is '$MARK'"; then
+      rm -f "$STATE/snapshots/$name.counts.tmp"
+      die "template copy $snapdb failed; no snapshot '$name' was kept (if $snapdb exists without the marker comment, drop it by hand)"
+    fi
     info "snapshot '$name' created as database $snapdb"
   fi
   mv "$STATE/snapshots/$name.counts.tmp" "$STATE/snapshots/$name.counts"

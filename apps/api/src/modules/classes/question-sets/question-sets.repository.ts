@@ -6,7 +6,8 @@ import { PrismaService } from '../../../db/prisma.service'
 export interface QuestionSetRecord {
   id: string
   teacherId: string
-  classroomId: string
+  /** Null only for a migrated header (needs a rebuild, Q4 A): never listed to a student, never served. */
+  classroomId: string | null
   subjectId: string | null
   title: string
   timeLimitMinutes: number | null
@@ -42,7 +43,7 @@ export class QuestionSetsRepository {
 
   /**
    * The sets a student of `classroomIds` may start at `at`: published, or scheduled and due (BR-M10-18);
-   * a draft never. Oldest created first.
+   * a draft never. Oldest created first. A set without a class (migrated header) never matches.
    */
   async visibleIn(classroomIds: readonly string[], at: Date): Promise<QuestionSetRecord[]> {
     const keys = [...new Set(classroomIds)].flatMap((i) => (idOf(i) === null ? [] : [idFromString(i)]))
@@ -146,7 +147,7 @@ export class QuestionSetsRepository {
 function toRecord(row: {
   id: bigint
   teacherId: bigint
-  classroomId: bigint
+  classroomId: bigint | null
   subjectId: bigint | null
   title: string
   timeLimitMinutes: number | null
@@ -160,7 +161,7 @@ function toRecord(row: {
   return {
     id: idToString(row.id),
     teacherId: idToString(row.teacherId),
-    classroomId: idToString(row.classroomId),
+    classroomId: row.classroomId === null ? null : idToString(row.classroomId),
     subjectId: row.subjectId === null ? null : idToString(row.subjectId),
     title: row.title,
     timeLimitMinutes: row.timeLimitMinutes,

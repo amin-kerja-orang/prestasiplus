@@ -185,7 +185,9 @@ model RemedialTestItem {
 model QuestionSet {
   id               BigInt    @id @default(autoincrement())
   teacherId        BigInt    @map("teacher_id")
-  classroomId      BigInt    @map("classroom_id")
+  /// Null only for a migrated header (`legacy_source` set, `needs_rebuild` true; Q4 A, AZ-31, check
+  /// `ck_question_sets_classroom_or_migrated`). Such a set is never listed to a student or served until rebuilt.
+  classroomId      BigInt?   @map("classroom_id")
   subjectId        BigInt?   @map("subject_id")
   title            String
   description      String?
