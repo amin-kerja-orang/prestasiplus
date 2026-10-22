@@ -182,6 +182,38 @@ describe('after a delta in which source rows were deleted', () => {
     await h.q(`update practice_answers set subject_id = $2 where legacy_source = 'cloud' and legacy_id = $1`, [pick?.id, pick?.subject])
   })
 
+  it('an answer whose staged session still exists with no subject stays "none" (no v2 session fallback)', async () => {
+    const name = 'practice answers per subject (loaded answers)'
+    const pick = (await h.q<{ id: string; session: string; subject: string; question: string | null; ssubject: string | null; q: string }>(
+      `select qa.id::text as id, qa.practice_session_id::text as session, pa.subject_id::text as subject, pa.question_id::text as question,
+              ps.subject_id::text as ssubject, qa.question_id::text as q
+       from staging_cloud.question_attempts qa
+       join staging_cloud.practice_sessions ps on ps.id = qa.practice_session_id
+       join practice_answers pa on pa.legacy_source = 'cloud' and pa.legacy_id = qa.id::text
+       where pa.subject_id is not null order by qa.id desc limit 1`,
+    ))[0]
+    expect(pick, 'the fixture must give a loaded answer with a staged session').toBeTruthy()
+    const question = (await h.q<Record<string, unknown>>(`select * from archive_cloud.questions where id = $1`, [pick?.q]))[0]
+    await h.q(`delete from archive_cloud.questions where id = $1`, [pick?.q])
+    await h.q(`update staging_cloud.practice_sessions set subject_id = null where id = $1`, [pick?.session])
+    // A loaded answer without a subject must carry a question (ck_practice_answers_link): the linked-question case
+    // (migrate:link-questions). With the fallback applied wrongly the staged side would say the v2 session's subject.
+    const linked = (await h.q<{ id: string }>(`insert into questions (live_version_no, is_active) values (1, true) returning id::text as id`))[0]?.id
+    await h.q(`update practice_answers set subject_id = null, question_id = $2 where legacy_source = 'cloud' and legacy_id = $1`, [pick?.id, linked])
+    const ok = await runVerify({ pool: h.env.pool, env: h.runEnv, source: 'cloud' })
+    expect(ok.checks.find((c) => c.name === name)?.status).toBe('ok')
+    await h.q(`update practice_answers set subject_id = $2, question_id = $3 where legacy_source = 'cloud' and legacy_id = $1`, [pick?.id, pick?.subject, pick?.question])
+    await h.q(`update staging_cloud.practice_sessions set subject_id = $2 where id = $1`, [pick?.session, pick?.ssubject])
+    await h.q(`delete from questions where id = $1`, [linked])
+    if (question) {
+      const cols = Object.keys(question)
+      await h.q(
+        `insert into archive_cloud.questions (${cols.map((c) => `"${c}"`).join(', ')}) values (${cols.map((_, i) => `$${i + 1}`).join(', ')})`,
+        cols.map((c) => question[c]),
+      )
+    }
+  })
+
   it('a v2 row whose source row still exists and goes missing still fails', async () => {
     expect(await h.count('school_subscriptions', `legacy_source = 'cloud'`), 'a subscription must remain').toBeGreaterThan(0)
     await h.q(`delete from school_subscriptions where id = (select min(id) from school_subscriptions where legacy_source = 'cloud')`)

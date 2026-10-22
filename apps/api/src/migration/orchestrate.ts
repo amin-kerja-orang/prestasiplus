@@ -75,6 +75,7 @@ import {
   type RunReport,
 } from './kit'
 import { quoteIdent } from './kit/sql'
+import { sourceLockKey } from './kit/source-lock'
 import { runCore } from './load'
 import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
 import { exportOpenQuestionReports } from './export/question-reports'
@@ -270,12 +271,12 @@ async function withSourceLock<T>(pool: pg.Pool, source: string, fn: () => Promis
   const client = await pool.connect()
   let destroy = false
   try {
-    const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [`etl:source:${source}`])
+    const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [sourceLockKey(source)])
     if (!got.rows[0]?.ok) throw new SourceBusyError()
     try {
       return await fn()
     } finally {
-      await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [`etl:source:${source}`]).catch(() => {
+      await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [sourceLockKey(source)]).catch(() => {
         destroy = true
       })
     }
