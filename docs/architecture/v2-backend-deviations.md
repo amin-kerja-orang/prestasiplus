@@ -682,3 +682,31 @@ Append-only. One row per deviation: date, card, contract/mock deviation, why, wh
 | 2026-10-22 | PoC pool at Darjah 1–4 (AZ-02, #129) | Publish gate D9: a published version carries subject, level, unit, SP, TP | 768 seeded D1–D4 MCQs (demo kind, `poc` profile) carry subject, level, TP, cognitive level and `form_origin` `t1_t3`, but no unit/SP and no SPM-pool tag; an API edit + re-publish of one is refused by the tag gate | No DSKP node exists below Tingkatan 4; practice random (BR-11 D1–D4), Jutawan and the solo games need questions there for the demo | Pending LEAD (G4 of #129: Approve with minors) |
 | 2026-10-22 | TRIAGE-1 Kirkpatrick filter-options for a teacher (#155; supersedes the 2026-10-20 "BE-20 filter-options for a teacher" row) | Mock: the teacher gets the national school list | The teacher is forced to the own session school, as school_admin (empty lists without one); the query is never read | D-11 of the AZ-32 rehearsal (#144): a teacher saw every school; SEC-M12-01/02, catalogue M12-07 "A, T, SA (own school)", contract header SCOPE_NOTE | AZ-Dev1 (security, before the demo); G4 by half AM |
 | 2026-10-21 | BE-45 reveal idempotent (AZ-26, #105 G4 option c) | Contract `games/solo.ts` (reveal): a second reveal while one card is open is 409 | `POST /games/solo/kad-memori/reveal` for the card the server already holds open (`openCardId === card_id`) now answers 200 with that card's face and writes nothing (no move, no fast-move count, `openCardId` unchanged). A different card while one is open stays 409 `soloCardOpen`; a matched card stays 409 `soloCardMatched`; the session, submitted and item checks run first as before. The contract description is not changed here; proposed wording is in the PR body for the LEAD | A client whose reveal response was lost (mobile blip) can re-reveal the card it opened instead of being stuck; the face was already issued to that client, so nothing new is exposed | Done (AZ-26); contract text pending LEAD |
+
+## AZ-13 (issue #70): time index on `practice_answers` for the Command Center platform reads
+
+Migration `0040_practice_answers_answered_at_index`. Measured 2026-10-21 on a scratch Postgres 16 database with every migration applied, 100,000 generated answers (about 1 percent `is_test`), 3,000 students, 50 schools of 60 students plus one small school of 3 students whose 15 answers are 80 days old; p95 of 20 runs (one warm-up run dropped), `EXPLAIN (ANALYZE, TIMING OFF)` of the SQL in `board/reads.ts` and `shared/command-center.repository.ts`, autovacuum off on the table (no visibility map, the harder case for index-only scans). Times in ms.
+
+| Read | Baseline | #70 trial `(answered_at) INCLUDE (user_id, is_correct) WHERE NOT is_test` | Chosen `(answered_at DESC, id DESC) WHERE NOT is_test` |
+|---|---|---|---|
+| Platform newest-answers feed (all time) | 73.5 | 1.0 | 0.7 |
+| Platform feed, daily month / today | 67.9 / 26.0 | 0.9 / 0.8 | 0.9 / 0.7 |
+| Platform top students this week | 73.3 | 35.3 | 25.8 |
+| Platform daily tally today / school activity today | 52.7 / 44.6 | 12.2 / 13.4 | 10.4 / 13.1 |
+| Platform all-time tallies (`liveTallies`), top schools | 48.5, 51.9 | 53.0, 44.2 | 44.3, 45.6 |
+| Platform month tally / school activity month | 70.4 / 120.9 | 73.0 / 148.3 | 94.3 / 104.8 (re-run x3: 76-82 / 112-149, baseline 68-91 / 117-128, i.e. noise) |
+| School live tallies (school of 60) | 58.1 | 40.8 | 44.7 (noise: 41-58 across runs) |
+| School feed, school of 60, no rewrite | 7.6 | 3.7 | 2.4 |
+| School feed, small school of 3, no rewrite | 1.2 | 111.9 | 81.9 (regression) |
+| School feed, small school of 3, with the rewrite below | 1.1 | 1.1 | 1.2 |
+| School tallies / top students / daily counts (week, 30 and 90 day windows, both schools) | 0.7-7.0 | same | same |
+
+Findings:
+- `practice_answers` has no `school_id` (only `practice_attempt_aggregates` does, 0018), so a school-leading composite is not possible; the school filter is `users.school_id` through the `user_id` indexes. The school path therefore cannot be protected by index shape alone.
+- The #70 regression (school path 12 to 114 ms) is the feed query: for a school whose answers are old or few, the planner assumes it finds 10 rows after a short backward walk of any `answered_at` index, and walks most of it (1 to 100 ms for the small school). It did not reproduce on a school of 60 students, whose feed also got faster.
+- Covering columns do not pay: the INCLUDE variant is 3.9 MB against 3.1 MB for the chosen index on this data, and no faster except in noise (a variant with INCLUDE of user_id, is_correct, subject_id was 5.7 MB). `id DESC` in the key makes the platform feed match `ORDER BY answered_at DESC, a.id DESC` exactly (no incremental sort).
+- All-time aggregates (`liveTallies`, `topSchools`) read every row by nature; no index helps and none got worse.
+
+Chosen shape: one partial index, `ix_practice_answers_answered_at_id` (35 characters) `ON practice_answers (answered_at DESC, id DESC) WHERE NOT is_test`, plus a one-line query change: `CommandCenterRepository.latestAnswers` orders a scoped feed (a `schoolId` or `studentIds` filter) by `a.answered_at + interval '0 seconds' DESC, a.id DESC`. Same rows and order, but the expression is not an index key, so a scoped feed keeps the baseline plan (users by school, then the `user_id` indexes, then a top-N sort) and the small-school regression is gone (table above). The platform feed keeps the bare columns and uses the index. Covered by `apps/api/test/practice/answers-index.spec.ts` (definition, planner use with sequential scans disabled, `is_test` excluded) and the scoped feed assertions in `apps/api/test/command-center/shared.spec.ts`.
+
+Not recorded as a gain: platform month window and all-time reads, which stay at their baseline cost. Reproduce: generate the data as above, then run the queries with and without the index; the benchmark scripts are scratch files and are not part of the repository.
