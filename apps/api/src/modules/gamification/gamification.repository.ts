@@ -525,6 +525,11 @@ export class GamificationRepository {
   // --- rankings and national figures (rows other people may see) -----------------------------------
 
   /** Top `limit` visible wallets by lifetime syiling (ties: oldest wallet, then id), BR-M14-17. */
+  /**
+   * The pupil board (also S1 "Top 10 Pelajar"): wallets whose owner holds the role `student` only (FIX-3 D-08; staff
+   * never enter pupil leaderboards, a user with several roles still counts). Order BR-M14-17: shown total desc, wallet
+   * creation asc, id asc.
+   */
   async leaderboard(db: Db, limit: number): Promise<RankedWallet[]> {
     const rows = await db.$queryRaw<
       { userId: bigint; name: string; schoolId: bigint | null; tierKey: string | null; tierLabel: string | null; tierIcon: string | null; tierColor: string | null; level: number; total: bigint }[]
@@ -532,6 +537,7 @@ export class GamificationRepository {
       SELECT vw.user_id AS "userId", u.name, u.school_id AS "schoolId", t.tier_name AS "tierKey", t.label_ms AS "tierLabel", t.icon AS "tierIcon", t.color AS "tierColor",
              vw.level::int AS level, vw.shown_total AS total
         FROM vw JOIN users u ON u.id = vw.user_id LEFT JOIN tiers t ON t.id = vw.tier_id
+       WHERE EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = vw.user_id AND ur.role = 'student')
        ORDER BY vw.shown_total DESC, vw.created_at ASC, vw.id ASC
        LIMIT ${limit}`
     return rows.map((r) => ({
