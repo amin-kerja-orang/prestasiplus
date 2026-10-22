@@ -1,5 +1,5 @@
 // MIG-07: makes a SYNTHETIC "delta" dump from a synthetic pp-staging-dump/1 directory (changed, added and deleted rows).
-//   node apps/api/scripts/rehearsal/mig07-make-delta.mjs <source dump dir> <new dump dir>
+//   node apps/api/scripts/rehearsal/mig07-make-delta.mjs <source dump dir> <new dump dir> [--delete <table>=<n> ...]
 // Both directories belong OUTSIDE the repo (the rehearsal script refuses a dump inside it); this script refuses an output
 // directory inside the repo (exit 2). It writes a fresh `SHA256SUMS` (sha256sum format, bytewise order, every file but itself)
 // into the new directory; the source's file is never copied. The loader also wants the directory checksum sidecar
@@ -7,6 +7,11 @@
 //   ( cd <new dir> && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum ) | sha256sum
 //   -> put "<hex>  <name>" in <new dir>.sha256
 // Never run this on an anonymised real dump: it only edits the shapes of the BE-35 generator.
+// --delete <table>=<n> (repeatable, also --delete=<table>=<n>): after the standard edits, delete n MORE rows of <table> at the
+//   source (a "breach" dump for the stop-and-roll-back rehearsal, e.g. --delete users=1200 so that deleted_at_source is above
+//   5 % and 100 rows). Deterministic: the n rows of the source dump with the highest ids that are still there (a row this run added is never picked); in `users` a row with role
+//   'admin' is never picked (the content owner stays). Refused (exit 2) when <table> is not in the manifest, has no numeric
+//   `id`, or has fewer than n eligible rows (the output directory this run created is removed again). The rewritten manifest row count and the summary ("extraDeleted") follow.
 // What it changes (the manifest keeps "synthetic": true; no anomalies.json is copied, it would be stale):
 //   users             200 changed (name + newer updated_at), 100 added, 50 deleted
 //   schools           10 changed, 5 added
@@ -17,12 +22,35 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const [src, dst] = process.argv.slice(2)
-if (!src || !dst) {
-  console.error('usage: node mig07-make-delta.mjs <source dump dir> <new dump dir>')
+const USAGE = 'usage: node mig07-make-delta.mjs <source dump dir> <new dump dir> [--delete <table>=<n> ...]'
+const positional = []
+const extraDeletes = [] // [table, n]
+{
+  const args = process.argv.slice(2)
+  for (let i = 0; i < args.length; i++) {
+    let a = args[i]
+    if (a === '--delete' || a.startsWith('--delete=')) {
+      if (a === '--delete') a = args[++i] ?? ''
+      else a = a.slice('--delete='.length)
+      const m = /^([a-z][a-z0-9_]*)=([1-9][0-9]*)$/.exec(a)
+      if (!m) {
+        console.error(`refusing: --delete wants <table>=<n> with n a positive integer\n${USAGE}`)
+        process.exit(2)
+      }
+      extraDeletes.push([m[1], Number(m[2])])
+    } else if (a.startsWith('--')) {
+      console.error(`refusing: unknown option ${a.split('=')[0]}\n${USAGE}`)
+      process.exit(2)
+    } else positional.push(a)
+  }
+}
+const [src, dst] = positional
+if (!src || !dst || positional.length !== 2) {
+  console.error(USAGE)
   process.exit(2)
 }
-if (!JSON.parse(fs.readFileSync(path.join(src, 'manifest.json'), 'utf8')).synthetic) {
+const manifest0 = JSON.parse(fs.readFileSync(path.join(src, 'manifest.json'), 'utf8'))
+if (!manifest0.synthetic) {
   console.error('refusing: the source manifest is not marked "synthetic": true')
   process.exit(2)
 }
@@ -52,10 +80,20 @@ const realish = (p) => {
     }
   }
 }
-if (repoRoot) {
+if (!repoRoot) {
+  console.error('refusing: no .git ancestor of this script was found, so the "output directory is outside the repository" check cannot run')
+  process.exit(2)
+}
+{
   const rel = path.relative(realish(repoRoot), realish(dst))
   if (rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))) {
     console.error(`refusing: the output directory is inside the repository (${repoRoot}); use a directory outside it`)
+    process.exit(2)
+  }
+}
+for (const [t] of extraDeletes) {
+  if (!manifest0.tables?.[t]) {
+    console.error(`refusing: --delete ${t}: no such table in the manifest`)
     process.exit(2)
   }
 }
@@ -112,6 +150,32 @@ apply('coin_transactions', {
   change: () => false, del: () => false, add: 300, mutate: (r) => r,
   make: (p, id) => ({ ...p, id, user_id: 15000 + (id % 2000), created_at: NEW, updated_at: NEW }),
 })
+// --delete <table>=<n>: n more rows gone at the source, the highest ids first (never an admin user).
+for (const [t, n] of extraDeletes) {
+  const entry = manifest.tables[t]
+  if (!entry) {
+    console.error(`refusing: --delete ${t}: no such table in the manifest`)
+    process.exit(2)
+  }
+  const file = path.join(dst, `${t}.ndjson`)
+  const rows = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
+  if (rows.some((r) => !Number.isInteger(r.id))) {
+    console.error(`refusing: --delete ${t}: the table has rows without a numeric id`)
+    fs.rmSync(dst, { recursive: true, force: true }) // this run created it: leave nothing half-written
+    process.exit(2)
+  }
+  const inSource = new Set(read(t).map((r) => r.id)) // rows added by this run never existed at the source, so they are not "deleted"
+  const eligible = rows.filter((r) => inSource.has(r.id) && !(t === 'users' && r.role === 'admin')).sort((a, b) => b.id - a.id)
+  if (eligible.length < n) {
+    console.error(`refusing: --delete ${t}=${n}: only ${eligible.length} eligible rows`)
+    fs.rmSync(dst, { recursive: true, force: true }) // this run created it: leave nothing half-written
+    process.exit(2)
+  }
+  const gone = new Set(eligible.slice(0, n).map((r) => r.id))
+  const kept = rows.filter((r) => !gone.has(r.id))
+  write(t, kept)
+  summary[t] = { ...(summary[t] ?? { before: rows.length, changed: 0, added: 0, deleted: 0 }), extraDeleted: n, after: kept.length }
+}
 fs.writeFileSync(path.join(dst, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 })
 // Fresh `SHA256SUMS`, the same format as the generator: `<hex>  <file>`, bytewise order, every file but itself.
 const byName = (a, b) => (a < b ? -1 : a > b ? 1 : 0)

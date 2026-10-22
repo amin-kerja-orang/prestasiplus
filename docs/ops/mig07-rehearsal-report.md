@@ -1,4 +1,4 @@
-# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–3)
+# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–4)
 
 - **Item:** MIG-07 (#109, P0), passes 1–3. Date of the runs: 2026-10-21 (passes 1 and 2), 2026-10-22 (pass 3).
 - **Data:** synthetic only (`fixtures:generate --size medium --seed 7`, BE-35). The anonymised real dump (AM-10, made by the dump operator) does not exist yet, so nothing here proves behaviour on real data volumes or real value shapes.
@@ -107,9 +107,9 @@ PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:all -w
 <rehearsal-db.sh> exec target -- env FILE_STORAGE_DIR=<storage-dir> npm run migrate:activity -w @pp/api -- --dry-run --as-of=<as-of> --core-as-of=<as-of> --content-owner=<content-owner-id> --table=banners --files-dir=<files-export-dir>
 PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- env FILE_STORAGE_DIR=<storage-dir> npm run migrate:activity -w @pp/api -- --apply --as-of=<as-of> --core-as-of=<as-of> --content-owner=<content-owner-id> --table=banners --files-dir=<files-export-dir>
 # (the dry-run and the apply of the files step were then repeated once to prove a second apply copies nothing)
-# rollback (AM-09; the env vars are those of the AM-09 header), then the AZ-30 restores
-<rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --confirm=pp_rehearsal
-PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --confirm=pp_rehearsal --apply
+# rollback (AM-09; the three env vars are those of the AM-09 header, needed also for the dry-run; checked in pass 4), then the AZ-30 restores
+PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=pp_rehearsal <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --dry-run --confirm=pp_rehearsal
+PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=pp_rehearsal <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --apply --confirm=pp_rehearsal
 <rehearsal-db.sh> restore-snapshot after_full --yes ; <rehearsal-db.sh> restore-snapshot pre_etl --yes ; <rehearsal-db.sh> restore-snapshot after_full --yes
 # delta (second dump, same <as-of>; --since is the date before the first change)
 <rehearsal-db.sh> load-dump <delta-dump-dir> ; <rehearsal-db.sh> stage
@@ -125,7 +125,192 @@ PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:delta 
 <rehearsal-db.sh> exec target -- npm run migrate:verify -w @pp/api ; <rehearsal-db.sh> status
 ```
 
-The env vars of the `migrate:rollback` apply are taken from the AM-09 header (`orchestrate.ts`), not from a saved command line of the run; re-read that header on the merged code before reuse.
+The env vars of the `migrate:rollback` apply are taken from the AM-09 header (`orchestrate.ts`); pass 4 (P3.5) ran them on #123 `39879801` and found that `PP_MIGRATE_TARGET_DB` is required there too.
+
+# Pass 4 (stop and roll back, solo night session)
+
+## P3.5 Stop and roll back (pass 4, solo night session)
+
+Why: there is no deputy (LEAD decision, #109 item 16). The operator runs the 01:00 cutover alone, and any threshold breach or failed verify step means stop and roll back by the written MIG-08 runbook (#124). This section rehearses that path on synthetic data and records measured numbers for #124. It does not replace the runbook.
+
+- **Run:** 2026-10-22, synthetic medium seed 7 (20,000 users), same Postgres 16 cluster as pass 3 (host mode, `fsync` off, template-copy snapshots: timings are lower than on a production-like server, and a `--dump` snapshot was not timed).
+- **Code under test:** this branch `f6377a20` (#133) merged locally with `be/AM-09-migrate-orchestration` `39879801` (#123); not pushed. The tree has 36 migrations (the pass 3 snapshots hold 33; see note 1).
+- **Breach dump:** `mig07-make-delta.mjs <medium dump> <breach dump> --delete users=1200` (new option, see the script header): the normal delta (200 changed, 100 added, 50 deleted users) plus the 1,200 highest-id non-admin source users deleted. Source users 20,000 to 18,850. It is a synthetic stand-in for "a truncated or wrong re-stage".
+- **Thresholds in force (AM-09 `verify/types.ts`):** `deleted_at_source_ratio:<entity>` fails when deleted at source is more than 100 rows AND more than 5 % of the entity's target rows (`maxDeletedRows` 100, `maxDeletedRatio` 0.05).
+
+### Commands in the order an operator runs them
+
+Placeholders as in P3.4; `<breach-dump>` stands for whichever dump is being staged. `<db>` = `pp_rehearsal`. All from the repo root. Rollback of the delta by snapshot is (b); (a) is AM-09.
+
+```bash
+# 0. before the delta window: a snapshot of the migrated state (this is what (b) restores)
+<rehearsal-db.sh> snapshot pre_delta
+
+# 1. load and stage the freeze dump, then the dry-run
+<rehearsal-db.sh> load-dump <delta-dump-dir> ; <rehearsal-db.sh> stage
+DA="--since=<since> --as-of=<as-of> --content-owner=<content-owner-id>"
+<rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA
+
+# 2. optional early stop, read-only (about 5 s): grep the verify output for the ratio check
+<rehearsal-db.sh> exec target -- npm run migrate:verify -w @pp/api | grep deleted_at_source_ratio     # a hit means stop
+
+# 3. apply (its built-in verify decides the exit code)
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA --apply ; echo "exit $?"
+
+# 4. any non-zero exit or any threshold breach: stop and roll back
+#    (b) full database snapshot (recommended)
+<rehearsal-db.sh> restore-snapshot pre_delta --yes
+<rehearsal-db.sh> exec target -- npm run migrate:verify -w @pp/api ; echo "exit $?"      # must be 0
+#    (a) AM-09 rollback (deletes EVERY migrated row, not only the delta); three variables are required, also for --dry-run
+PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<db> <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --dry-run --confirm=<db>
+PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<db> <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --apply --confirm=<db>
+```
+
+### Timings (seconds, one run each; WAL in MB in brackets where it matters)
+
+| Step | Seconds | Exit |
+|---|---:|---:|
+| Restore `after_full` (with the 33-migration check failure, note 1) | 26.7 | 1 (restore done, `ROLLBACK VERIFIED`) |
+| `up` (applies the 3 new migrations) | 3 | 0 |
+| Snapshot `pre_delta` (template copy, 197 tables) | 2.4 | 0 |
+| **Scenario A** load breach dump / stage | 18.7 / 4.6 | 0 / 0 |
+| A: `migrate:delta` dry-run | 10.5 | 0 |
+| A: `migrate:delta --apply`, start to verify failure (WAL 135 MB) | **681.7** | **1** |
+| A: standalone `migrate:verify` on the post-A state | 7.6 | 1 |
+| A: early stop, `migrate:verify` after stage and before the apply (breach dump) | 5.2 | 1 |
+| A: same, normal delta dump (no breach) | 6.1 | 1 (note 4) |
+| Snapshot `post_a` (setup for (b) only) | 1.8 | 0 |
+| **(a)** `migrate:rollback --dry-run` | 36.6 | 0 |
+| **(a)** `migrate:rollback --apply` | 31.7 | 0 |
+| (a) `migrate:verify` afterwards | 4.0 | 1 (note 3) |
+| (a) `migrate:delta` dry-run afterwards | 3.2 | 2 |
+| **(b)** `restore-snapshot pre_delta` (from the post-A state; `post_a` restore 3.6 s as setup) | **2.9** | 0 |
+| (b) `migrate:verify` afterwards | 5.8 | 0 |
+| **Scenario B** load normal delta / stage / dry-run | 17.7 / 4.2 / 9.4 | 0 |
+| B: `migrate:delta --apply` (verify inside passed) | 668.0 | 0 |
+| B: `migrate:verify` before tampering | 4.8 | 0 |
+| B: `migrate:verify` after one migrated row deleted by hand | 5.4 | **1** |
+| B: `restore-snapshot pre_delta` | 3.5 | 0 |
+| B: `migrate:verify` afterwards | 5.9 | 0 |
+
+From the start of the A load to the verify failure: 18.7 + 4.6 + 10.5 + 681.7 = 715.5 s (about 12 min). Compared with the 01:00 window: a rollback by snapshot adds 3 s here; by AM-09 about 32 s plus a full re-run (about 527 s for `migrate:all`, P3.1) to return to the pre-delta state.
+
+### Scenario A: deleted-at-source breach
+
+Exit code 1. Failing lines (apply log, exact):
+
+```
+migrate:delta verify: failed
+verify fail: 37 entities, 23 checks, runs 8,10
+classrooms | 800 | 800 | 291 | 509 | 0 | 319 | mismatch
+referrals | 1132 | 1132 | 912 | 220 | 0 | 936 | mismatch
+check counts deleted_at_source_ratio:users: mismatch expected=<= 985 actual=1220
+check counts deleted_at_source:users: reported expected=0 actual=1220
+check counts deleted_at_source_ratio:referral_codes: mismatch expected=<= 985 actual=1220
+check counts deleted_at_source:referral_codes: reported expected=0 actual=1220
+migrate:delta stopped: stage verify (verify) failed.
+```
+
+Other `deleted_at_source` lines (reported only): practice_sessions 120, referrals 13, feedback 97. `expected=<= 985` is 5 % of the 19,700 target users. Two entity rows are also `mismatch` (classrooms: v2 319 against loaded 291; referrals: v2 936 against loaded 912; the cause was not analysed). The standalone `migrate:verify` on the post-A state printed the same lines and exited 1.
+
+**The apply is committed when verify fails.** The delta (core and activity) is already in v2 at that point; exit 1 means "data written, gate failed", so the operator must roll back, not just stop.
+
+**What the dry-run shows (answer to "can the operator stop before `--apply`").** The `migrate:delta` dry-run does NOT show the breach: it prints no deleted-at-source count and no comparison with the previous load; the only hint is the `source` column of `users` (18,850 instead of 20,050 in the normal delta), which an operator would have to know in advance. `migrate:verify` run after `stage` and before `--apply` does show it (`deleted_at_source_ratio:users`, 5.2 s, exit 1, no v2 write), so step 2 above is a usable early stop; it exits 1 on a normal delta too (note 4), so the operator must read the `_ratio` line, not just the exit code. Finding for #123: the dry-run could print the same deleted-at-source figures.
+
+What the operator sees and does:
+
+1. `migrate:delta --apply` runs about 11 min, then prints `migrate:delta verify: failed` and the `_ratio` lines, and exits 1.
+2. Stop. Do not re-run the delta. Note the time and the two `_ratio` lines.
+3. Roll back by (b), then confirm (criteria below). Do not wake anyone (item 16): record the result for the LEAD's morning review. The cause is either a wrong re-stage or a source that really lost 6 % of its users.
+
+### Rollback (a) AM-09 `migrate:rollback --apply` from the state after A
+
+Exit 0, `migrate:rollback apply on "pp_rehearsal": succeeded`, 31.7 s. It deletes every row loaded from the source, not only the delta: users 19,700, schools 405, classrooms 319, enrolments 6,058, practice_sessions 24,106, practice_answers 67,522, coin_ledger 45,575, wallets 15,179, referral_codes 19,700, `etl_id_map` 44,637. Eight lines warn that adopted seed rows were deleted too (`subject_levels`, `achievements`, `topics`, `chapters`, `education_levels`, `subjects`, `ppds`, `jpns`: "re-run the idempotent seeds").
+
+Row counts of the 10 main tables after (a), against the snapshots:
+
+| Table | After (a) | `pre_delta` | `pre_etl` |
+|---|---:|---:|---:|
+| users | 0 | 19,600 | 0 |
+| schools | 0 | 400 | 0 |
+| classrooms | 0 | 280 | 0 |
+| enrolments | 0 | 5,319 | 0 |
+| parent_links | 0 | 1,591 | 0 |
+| practice_sessions | 0 | 23,614 | 0 |
+| practice_answers | 0 | 67,522 | 0 |
+| coin_ledger | 0 | 45,337 | 0 |
+| wallets | 0 | 15,179 | 0 |
+| referral_codes | 0 | 19,600 | 0 |
+| `etl_id_map` | 0 | 44,001 | 0 |
+
+So (a) returns to the pre-ETL state (equal to `pre_etl` on all data tables; 33 tables differ from `pre_delta`), not to the pre-delta state. Only ETL bookkeeping stays (`etl_runs` 10, `etl_checkpoints` 62, `etl_recon` 174, `etl_rejects` 385,734) and `_prisma_migrations` (36 against 33). Confirmation by `ROLLBACK VERIFIED` does not exist for (a) (that line is printed by `restore-snapshot` only). `migrate:verify` afterwards exits 1 (every entity `mismatch`, target 0, plus `distinct states versus JPN rows` expected 3 actual 0 and `distinct (state, district) pairs versus PPD rows` expected 15 actual 0), because it rebuilds its figures from the runs that are still recorded; it is not a confirmation. `migrate:delta` afterwards is refused: `No earlier succeeded migrate:core --apply run with loaded users: run migrate:all --apply first.` (exit 2).
+
+Refusals met on the way (all exit 2, nothing changed): without `PP_ALLOW_MIGRATE_APPLY=1` even `--dry-run` prints `Refusing --apply: set PP_ALLOW_MIGRATE_APPLY=1 to allow writes by the migration kit.` (misleading for a dry-run); without `PP_ALLOW_MIGRATE_ROLLBACK=1`: `Refusing rollback: set PP_ALLOW_MIGRATE_ROLLBACK=1 ...`; without `PP_MIGRATE_TARGET_DB`: `Refusing rollback: PP_MIGRATE_TARGET_DB must equal the connected database name ("pp_rehearsal") in every environment.` The pass 3 command line in P3.4 lacked the third variable (it ran on an earlier #123 head); P3.4 is corrected.
+
+### Rollback (b) `restore-snapshot pre_delta --yes` from the state after A
+
+Exit 0, 2.9 s: `ROLLBACK VERIFIED: every table of pp_rehearsal has the snapshot's row count again (13 table(s) differed before the rollback)` and `MIGRATION CHECK PASSED: 36 of 36`. `migrate:verify` afterwards: exit 0, `verify pass: 37 entities, 16 checks`. Row counts of the 10 main tables and `etl_id_map` equal the `pre_delta` `.counts` exactly (diff 0 on all; 0 of 197 tables differ).
+
+**Recommendation for the runbook (MIG-08): use (b).** It is the full database snapshot: it returns to exactly the pre-delta state (which (a) cannot, it returns to pre-ETL and needs a full re-run of about 527 s plus the delta), it needs one command with one confirmation, and it has its own proof (`ROLLBACK VERIFIED`, counts per table). Caveats: (b) discards anything written to the database after the snapshot (at the cutover the snapshot must be taken in the freeze window, right before the apply), and the 2.9 s is a template copy on a small synthetic database with `fsync` off; a `--dump` snapshot or the real volume will be slower and was not timed. Use (a) only if no snapshot exists.
+
+### Scenario B: verify fails without a threshold
+
+From `pre_delta`: normal delta loaded, staged, applied (668.0 s, built-in verify passed, exit 0), `migrate:verify` exit 0. Then, as a realistic stand-in for a v2 row lost after the load, one migrated row was deleted by hand (`delete from banners where id = (select id from banners where legacy_source = 'cloud' order by id limit 1)`).
+
+`migrate:verify`: exit 1, 5.4 s, `verify fail: 37 entities, 20 checks, runs 8,10`, failing line:
+
+```
+banners | 3 | 3 | 3 | 0 | 0 | 2 | mismatch
+```
+
+There is no `check ...` line for it; the failure is the `mismatch` status in the entity table (target 2 against loaded 3). The operator rule is therefore "exit code 1 from `migrate:verify` means stop", not "look for a `check` line". Rollback by (b): exit 0, 3.5 s, `ROLLBACK VERIFIED` (14 tables differed before), `MIGRATION CHECK PASSED`; `migrate:verify` afterwards exit 0 (`16 checks`); the 10 main tables equal `pre_delta`, 0 of 197 tables differ.
+
+What the operator sees and does: `migrate:verify` (or the apply's built-in verify) exits 1 and prints the entity with `mismatch`; stop; roll back by (b); confirm; do not hand-fix v2 rows.
+
+### Rollback confirmed (criteria for #124)
+
+For (b), all of these:
+
+1. `restore-snapshot` exit 0 with `ROLLBACK VERIFIED` and `MIGRATION CHECK PASSED`.
+2. `migrate:verify` exit 0 (`verify pass: ...`).
+3. Row counts of the main tables (users, schools, classrooms, enrolments, parent_links, practice_sessions, practice_answers, coin_ledger, wallets, referral_codes) and `etl_id_map` equal the snapshot's `.counts` file.
+4. The log lines and times are written down.
+
+For (a), instead: rollback exit 0 `succeeded`, `etl_id_map` and the main tables 0 (equal `pre_etl`), and the operator knows the state is pre-ETL (a full `migrate:all` is needed); `migrate:verify` is NOT a criterion (it exits 1).
+
+### 4b check against pass 3b (LEAD item 4b)
+
+Threshold under test: delta inserted + updated within 5 % / 100 rows of the delta (dry-run) report. Source: P3 logs `42-delta-dry-run` and `43-delta-apply`. The delta dry-run reports inserted / updated only for the 13 core entities; the activity stage is skipped in the dry-run whenever a core table changed (always, in a real delta), so for the 24 activity entities there is no dry-run figure to compare (finding for #123: the activity part of the delta cannot be checked before `--apply`).
+
+| Entity | Dry-run ins + upd | Apply ins + upd | Diff rows | Diff % | Within 5 % / 100 |
+|---|---:|---:|---:|---:|---|
+| schools | 5 + 10 = 15 | 15 | 0 | 0 | yes |
+| users | 100 + 197 = 297 | 297 | 0 | 0 | yes |
+| classrooms | 2 + 0 = 2 | 2 | 0 | 0 | yes |
+| enrolments | 37 + 0 = 37 | 37 | 0 | 0 | yes |
+| other 9 core entities | 0 | 0 | 0 | 0 | yes |
+| activity entities (coin_ledger 238, practice_sessions 668, streaks 384, referral_codes 297, referrals 1, others 0) | not available | see left | - | - | cannot be checked |
+
+The same equality held in the pass 4 runs (scenario B, and scenario A where the breach changed classrooms to 39 + 11 and enrolments to 739 in both dry-run and apply). As an indirect bound only: the dry-run's "rows with `updated_at` > since" were users 300, schools 15, practice_sessions 800, coin_transactions 300; apply inserted + updated were users 297, schools 15, practice_sessions 668, coin_ledger 238 (rejected rows and different row grain, so not a like-for-like check).
+
+Deleted at source (pass 3b, `46-verify`) against target rows, and the two readings of "> 5 % and > 100":
+
+| Entity | Deleted at source | Target rows | % of target | "> 5 % AND > 100" (AM-09 default) | "> 5 % OR > 100" (whichever first) |
+|---|---:|---:|---:|---|---|
+| users | 49 | 19,700 | 0.25 | ok | ok |
+| referral_codes | 49 | 19,700 | 0.25 | ok | ok |
+| practice_sessions | 120 | 24,106 | 0.50 | ok | **breach** (120 > 100) |
+| feedback | 3 | 1,520 | 0.20 | ok | ok |
+
+Under the AM-09 default (AND, `verify/index.ts`: `deleted.count > maxRows && deleted.count > maxRatio * target`) no entity breaches. Under the OR reading `practice_sessions` would fail on pass 3b data with a 0.5 % deletion rate, so the LEAD should decide which reading item 4b means. With AND the effective ceiling is the larger of 100 rows and 5 % of the target (985 for 19,700 users), so a small entity never fails on percentage alone (a table of 200 rows can lose 100 rows, 50 %, and pass). Pass 4 confirms that the AND rule catches a large breach: 1,220 users deleted (6.2 %) failed it.
+
+### Notes
+
+1. **Snapshot against newer code.** The pass 3 snapshots (`pre_etl`, `after_full`) hold 33 migrations; this tree has 36 (#176). `restore-snapshot` restores the data and then prints `MIGRATION CHECK FAILED: 33 applied, 36 in apps/api/prisma/migrations` (exit 1). For this run `up` applied the 3 migrations and `pre_delta` was taken afterwards. At the cutover, take the snapshot after the schema migrations; a snapshot from before them cannot be restored without a new `migrate deploy`.
+2. A rollback needs `PP_ALLOW_MIGRATE_ROLLBACK`, `PP_ALLOW_MIGRATE_APPLY` and `PP_MIGRATE_TARGET_DB` (above).
+3. After (a), `migrate:verify` exit 1 is expected and must not be read as "rollback failed".
+4. `migrate:verify` run between `stage` and `--apply` exits 1 even for a normal delta (entities such as `schools`, `users` show `mismatch` because the staged source rows changed since the recorded runs). The only line that separates a breach is `deleted_at_source_ratio:<entity>`.
+5. The two scenarios ran once each. Times come from a local cluster with `fsync` off; the delta apply took 668 to 682 s here against 513 s in pass 3b on the same data, so expect a spread of about 30 %.
 
 # Pass 2 (fixed code)
 

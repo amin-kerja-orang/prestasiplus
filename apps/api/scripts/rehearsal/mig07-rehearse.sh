@@ -25,8 +25,8 @@
 #   MIG07_AS_OF         YYYY-MM-DD given as --as-of (and --core-as-of for activity) on every ETL call; set it for the delta
 #                       phase to the day of the first load (a different value rewrites rows)
 #   MIG07_EXTRA_STAGES  extra npm scripts to run after activity, e.g. "migrate:verify" (dry-run/apply flags are NOT added)
-# The target database (PP_REHEARSAL_DB, default pp_rehearsal) must be named pp_rehearsal*: a name outside that is refused
-# (exit 2) before anything runs.
+# The target database (PP_REHEARSAL_DB, default pp_rehearsal) must be `pp_rehearsal` or `pp_rehearsal_<a-z0-9>`: a name outside
+# that is refused (exit 2) before anything runs. `clean` only works on a log dir under PP_REHEARSAL_STATE_DIR or named mig07-logs.
 # Exit code: non-zero as soon as one step fails. On failure only the step name, the exit code and the log path are printed.
 set -euo pipefail
 umask 077
@@ -46,7 +46,7 @@ TAG=${MIG07_TAG:-$PHASE}
 # its comment marker `pp-rehearsal:v1`: this earlier check means PP_ALLOW_MIGRATE_APPLY=1 is never set for another database.
 require_rehearsal_db() {
   local db=${PP_REHEARSAL_DB:-pp_rehearsal}
-  [[ $db == pp_rehearsal* ]] || { echo "refusing: target database '$db' is not named pp_rehearsal* (PP_REHEARSAL_DB)" >&2; exit 2; }
+  [[ $db =~ ^pp_rehearsal(_[a-z0-9]+)?$ ]] || { echo "refusing: target database '$db' does not match ^pp_rehearsal(_[a-z0-9]+)?\$ (PP_REHEARSAL_DB)" >&2; exit 2; }
 }
 
 # clean: delete only this script's own files in the log dir (never recursive, never outside it), then rmdir if empty.
@@ -56,6 +56,9 @@ clean_logs() {
   dir=${dir%/}; state=${state%/}
   if [ -z "$dir" ] || [ "$dir" = / ] || [ -z "$state" ] || [ "$dir" = "$state" ] || [ "$dir" = "${HOME:-/nonexistent}" ]; then
     echo "refusing to clean: log dir '$dir' is empty, the root, the state dir or the home dir" >&2; exit 2
+  fi
+  if [[ $dir != "$state"/* && $(basename "$dir") != mig07-logs ]]; then
+    echo "refusing to clean: log dir must be under PP_REHEARSAL_STATE_DIR or be named mig07-logs" >&2; exit 2
   fi
   if [ ! -d "$dir" ] || [ -L "$dir" ]; then echo "nothing to clean: $dir is not a directory"; return 0; fi
   find "$dir" -maxdepth 1 -type f \( -name '*.log' -o -name '*.timings.tsv' \) -delete
