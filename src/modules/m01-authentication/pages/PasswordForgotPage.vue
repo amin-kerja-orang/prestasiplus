@@ -21,7 +21,7 @@ import { errorLines } from '../lib/error-lines'
 const httpMode = isHttpMode()
 const HTTP_INTRO = 'Pilih cara lain untuk menetapkan semula kata laluan anda.'
 const HTTP_NOTICE =
-  'Pautan reset melalui e-mel belum tersedia. Guna Reset Melalui No IC, atau minta guru / admin sekolah anda menetapkan semula kata laluan.'
+  'Pautan reset melalui email belum tersedia. Guna Reset Melalui No IC, atau minta guru / admin sekolah anda menetapkan semula kata laluan.'
 
 const email = ref('')
 const loading = ref(false)

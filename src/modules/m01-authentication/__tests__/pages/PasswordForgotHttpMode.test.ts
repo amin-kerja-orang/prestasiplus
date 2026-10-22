@@ -9,7 +9,7 @@ const apiMocks = vi.hoisted(() => ({ sendPasswordResetLink: vi.fn() }))
 vi.mock('../../api', () => apiMocks)
 
 const NOTICE =
-  'Pautan reset melalui e-mel belum tersedia. Guna Reset Melalui No IC, atau minta guru / admin sekolah anda menetapkan semula kata laluan.'
+  'Pautan reset melalui email belum tersedia. Guna Reset Melalui No IC, atau minta guru / admin sekolah anda menetapkan semula kata laluan.'
 
 let wrapper: VueWrapper | null = null
 
