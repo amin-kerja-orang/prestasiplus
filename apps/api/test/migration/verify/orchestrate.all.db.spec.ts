@@ -12,7 +12,7 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runCli } from '../../../src/migration/cli'
-import { runAll, type PipelineOptions } from '../../../src/migration/orchestrate'
+import { runAll, runDelta, SourceBusyError, type PipelineOptions } from '../../../src/migration/orchestrate'
 import type { VerifyOptions, VerifyReport } from '../../../src/migration/verify'
 import { AS_OF, bootActivity, type ActivityHarness } from '../activity/helpers'
 import { capture, REPO_ROOT } from '../staging/helpers'
@@ -75,6 +75,60 @@ describe('dry-run before any apply', () => {
   it('the mode defaults to dry-run', async () => {
     const r = await runAll(options({ ...fakes() }))
     expect(r.stages.every((s) => s.mode === 'dry-run')).toBe(true)
+  }, 120_000)
+})
+
+/** The same key and expression that rollbackLegacy and linkQuestions take. */
+const SOURCE_LOCK = `select pg_try_advisory_lock(hashtextextended('etl:source:cloud', 0)) as ok`
+
+describe('source lock', () => {
+  it('another session holding etl:source:cloud makes runAll, runDelta and the CLI refuse (exit 4) before writing anything', async () => {
+    const holder = await h.env.pool.connect()
+    try {
+      expect((await holder.query(SOURCE_LOCK)).rows[0]?.ok).toBe(true)
+      const before = await h.contentHashes()
+      const runsBefore = await h.count('etl_runs')
+      const f = fakes()
+      await expect(runAll(options({ mode: 'apply', ...f }))).rejects.toBeInstanceOf(SourceBusyError)
+      await expect(runDelta({ ...options({ mode: 'apply', ...f }), since: '2026-06-02T00:00:00Z' })).rejects.toBeInstanceOf(SourceBusyError)
+
+      const log = capture()
+      const code = await runCli(['migrate:all', '--apply', `--as-of=${AS_OF}`, `--out-dir=${outDir}`], { pool: h.env.pool, env: h.runEnv, out: log.out, err: log.err })
+      expect(code).toBe(4)
+      expect(log.text()).toContain('another migration, rollback or backfill holds the source lock')
+
+      expect(f.verify).not.toHaveBeenCalled()
+      expect(await h.count('etl_runs')).toBe(runsBefore)
+      expect(await h.count('etl_id_map')).toBe(0)
+      expect(await h.contentHashes()).toEqual(before)
+    } finally {
+      await holder.query(`select pg_advisory_unlock_all()`)
+      holder.release()
+    }
+  }, 120_000)
+
+  it('a normal run releases the lock, so another session (a rollback dry-run, a backfill) can take it', async () => {
+    const r = await runAll(options({ mode: 'dry-run', ...fakes() }))
+    expect(r.status).toBe('succeeded')
+    const other = await h.env.pool.connect()
+    try {
+      expect((await other.query(SOURCE_LOCK)).rows[0]?.ok).toBe(true)
+    } finally {
+      await other.query(`select pg_advisory_unlock_all()`)
+      other.release()
+    }
+  }, 120_000)
+
+  it('releases the lock when a stage throws too', async () => {
+    // A synthetic dump in production is refused by runCore; here the apply guard throws (no PP_ALLOW_MIGRATE_APPLY).
+    await expect(runAll({ ...options({ mode: 'apply', ...fakes() }), env: { NODE_ENV: 'test', IC_HASH_KEY: 'fixture-ic-key-0123456789' } })).rejects.toThrow(/PP_ALLOW_MIGRATE_APPLY/)
+    const other = await h.env.pool.connect()
+    try {
+      expect((await other.query(SOURCE_LOCK)).rows[0]?.ok).toBe(true)
+    } finally {
+      await other.query(`select pg_advisory_unlock_all()`)
+      other.release()
+    }
   }, 120_000)
 })
 

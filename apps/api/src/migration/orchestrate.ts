@@ -5,7 +5,7 @@
  *       [--content-owner <v2 user id>] [--out-dir <.migration-out path>]
  *   npm run migrate:delta -w @pp/api -- --since <ISO-8601 timestamp> --as-of <first load YYYY-MM-DD> [--apply] [same flags as migrate:all]
  *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>]
- *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
+ *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<database name> npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
  *   npm run migrate:link-questions -w @pp/api -- [--apply] [--batch-size N]
  *   npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]
  *
@@ -40,6 +40,13 @@
  * MIG-09 backfill. `migrate:export-question-reports` (Q9 A) writes the open question reports to a CSV for the content team
  * (read-only; `--apply` is refused with exit 2; see `export/question-reports.ts`). The source is always `cloud`.
  *
+ * Source lock: `migrate:all` and `migrate:delta` hold the session advisory lock `etl:source:cloud` (the key
+ * `migrate:rollback` and `migrate:link-questions` take too) on one dedicated connection for the whole pipeline, verify
+ * included, and refuse with exit 4 ("another migration, rollback or backfill holds the source lock") when it is taken.
+ * OPEN POINT (kit change, outside this card): the standalone `migrate:core` and `migrate:activity` commands run through
+ * the kit runner, which does not take this key. Operators must therefore use `migrate:all` / `migrate:delta`, never the
+ * two standalone commands, while a rollback or a backfill can run.
+ *
  * Environment and guards are those of the kit: DATABASE_URL, `PP_ALLOW_MIGRATE_APPLY=1` for any `--apply`, and in
  * production `PP_MIGRATE_TARGET_DB` equal to the connected database. Exit codes: 0 ok, 1 failed / mismatch, 2 usage or
  * guard, 3 apply refused, 4 busy. Output is counts and surrogate ids only: never a row value. Each stage is printed as
@@ -57,6 +64,7 @@ import { EXIT, runCli } from './cli'
 import { STAGING_SCHEMA } from './ddl/spec'
 import {
   ApplyGuardError,
+  RunInProgressError,
   registerMigrateCommand,
   sanitizeDbError,
   type CliContext,
@@ -244,22 +252,60 @@ async function runPipeline(o: PipelineOptions): Promise<PipelineResult> {
   return done(report)
 }
 
-/** `migrate:all`: core, then activity, then (on `--apply`) the reconciliation. */
-export function runAll(options: PipelineOptions): Promise<PipelineResult> {
-  return runPipeline(options)
+/** The source-level lock is held by another migration, rollback or backfill. The CLI maps it to exit 4 (busy). */
+export class SourceBusyError extends RunInProgressError {
+  constructor() {
+    super('apply', '')
+    this.message = 'another migration, rollback or backfill holds the source lock'
+  }
+}
+
+/**
+ * Runs `fn` while holding the session advisory lock `etl:source:<source>` (the same key and expression that
+ * `rollbackLegacy` and `linkQuestions` use) on one dedicated pool client, released in `finally`. The kit runner does not
+ * take this key, so this is what keeps a rollback or a backfill from interleaving with a pipeline run.
+ */
+async function withSourceLock<T>(pool: pg.Pool, source: string, fn: () => Promise<T>): Promise<T> {
+  const client = await pool.connect()
+  let destroy = false
+  try {
+    const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [`etl:source:${source}`])
+    if (!got.rows[0]?.ok) throw new SourceBusyError()
+    try {
+      return await fn()
+    } finally {
+      await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [`etl:source:${source}`]).catch(() => {
+        destroy = true
+      })
+    }
+  } finally {
+    client.release(destroy ? true : undefined)
+  }
+}
+
+/** `migrate:all`: core, then activity, then (on `--apply`) the reconciliation. Holds the source lock throughout. */
+export async function runAll(options: PipelineOptions): Promise<PipelineResult> {
+  return withSourceLock(options.pool, options.source ?? 'cloud', () => runPipeline(options))
 }
 
 // ---------------------------------------------------------------- delta
 
-/** A delta needs a first load to be a delta of: a succeeded core apply for the source. */
+/**
+ * A delta needs a first load to be a delta of: a succeeded core apply for the source AND migrated users still in
+ * `etl_id_map`. The run row survives a rollback, the id map does not, so an emptied database is refused instead of
+ * being filled by a "delta" that is really a full load.
+ */
 export async function assertFirstLoadExists(pool: Pick<pg.Pool, 'query'>, source: string): Promise<void> {
+  const refusal = new ApplyGuardError('No earlier succeeded migrate:core --apply run with loaded users: run migrate:all --apply first.')
   const res = await pool.query(
     `SELECT 1 FROM etl_runs
      WHERE mode = 'apply' AND status = 'succeeded' AND sources @> ARRAY[$1]::text[] AND entity_set @> ARRAY['users', 'classrooms']::text[]
      LIMIT 1`,
     [source],
   )
-  if ((res.rowCount ?? 0) === 0) throw new ApplyGuardError('No earlier succeeded migrate:core --apply run: run migrate:all --apply first.')
+  if ((res.rowCount ?? 0) === 0) throw refusal
+  const users = await pool.query(`SELECT 1 FROM etl_id_map WHERE legacy_source = $1 AND entity = 'users' LIMIT 1`, [source])
+  if ((users.rowCount ?? 0) === 0) throw refusal
 }
 
 /** Rows newer than `since` per staging table that has an `updated_at` column (counts only). */
@@ -294,6 +340,10 @@ function deltaEntities(stages: readonly StageResult[]): DeltaEntity[] {
 /** `migrate:delta`: the same sequence as `runAll` on the re-staged freeze dump, plus the delta report. */
 export async function runDelta(options: DeltaOptions): Promise<PipelineResult> {
   const since = parseSince(options.since)
+  return withSourceLock(options.pool, options.source ?? 'cloud', () => deltaPipeline(options, since))
+}
+
+async function deltaPipeline(options: DeltaOptions, since: string): Promise<PipelineResult> {
   await assertFirstLoadExists(options.pool, options.source ?? 'cloud')
   const result = await runPipeline(options)
   result.delta = {

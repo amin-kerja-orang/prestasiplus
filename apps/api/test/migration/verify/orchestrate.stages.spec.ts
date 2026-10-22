@@ -27,7 +27,9 @@ vi.mock('../../../src/migration/verify', () => ({
   rollbackLegacy: vi.fn(),
 }))
 
-const fakePool = { query: vi.fn(async () => ({ rows: [{ db: 'pp_rehearsal' }], rowCount: 1 })) } as unknown as pg.Pool
+// `query` answers the apply guard (current_database) and the source lock (ok); `connect` is the lock's dedicated client.
+const answer = async () => ({ rows: [{ db: 'pp_rehearsal', ok: true }], rowCount: 1 })
+const fakePool = { query: vi.fn(answer), connect: vi.fn(async () => ({ query: vi.fn(answer), release: vi.fn() })) } as unknown as pg.Pool
 const env = { NODE_ENV: 'test', PP_ALLOW_MIGRATE_APPLY: '1' }
 
 let nextRun = 0
