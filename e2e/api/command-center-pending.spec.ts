@@ -36,6 +36,37 @@ async function expectNoLoadError(page: Page): Promise<void> {
   await expect(page.getByTestId('cc-error')).toHaveCount(0)
 }
 
+/**
+ * A class and a pupil of a school other than `ownSchoolId` (answers not needed), as Admin Pusat can read any id.
+ * There is no school list in the contract, so school ids are probed upward from 1 until the first 404 (bounded).
+ */
+async function findForeign(
+  page: Page,
+  ownSchoolId: string,
+): Promise<{ classId: string; studentId: string } | null> {
+  for (let id = 1; id <= 12; id += 1) {
+    if (String(id) === ownSchoolId) continue
+    const res = await page.request.get(`/api/command-center/school/${id}`)
+    if (res.status() === 404) break
+    expect(res.status(), `GET school ${id}`).toBe(200)
+    const school = ((await res.json()) as { data: { teachers: { userId: string; classes: number }[] } }).data
+    for (const t of school.teachers.filter((x) => x.classes > 0)) {
+      const teacher = await getData<{ classes: { id: string }[] }>(
+        page,
+        `/api/command-center/school/${id}/teacher/${t.userId}`,
+      )
+      for (const c of teacher.classes) {
+        const cls = await getData<{ students: { userId: string }[] }>(
+          page,
+          `/api/command-center/classroom/${c.id}`,
+        )
+        if (cls.students.length > 0) return { classId: c.id, studentId: cls.students[0]!.userId }
+      }
+    }
+  }
+  return null
+}
+
 interface Chain {
   schoolId: string
   teacherId: string
@@ -50,17 +81,13 @@ const MAX_CHAIN_READS = 12
  * school -> teacher (with a class) -> classroom -> a pupil, by the admin drill-down API. Stops at the first class
  * that has a pupil with answers; else falls back to the first pupil seen. Bounded by `MAX_CHAIN_READS`.
  */
-async function findChain(page: Page): Promise<Chain>
-async function findChain(page: Page, notSchoolId: string): Promise<Chain | null>
-async function findChain(page: Page, notSchoolId?: string): Promise<Chain | null> {
+async function findChain(page: Page): Promise<Chain> {
   const live = await getData<{ topSchools: { schoolId: string }[] }>(
     page,
     '/api/admin/command-center/live-data',
   )
   expect(live.topSchools.length, 'the seed has a school with answers').toBeGreaterThan(0)
-  const picked = live.topSchools.find((x) => x.schoolId !== notSchoolId)
-  if (!picked) return null
-  const schoolId = picked.schoolId
+  const schoolId = live.topSchools[0]!.schoolId
   const school = await getData<{ teachers: { userId: string; classes: number }[] }>(
     page,
     `/api/command-center/school/${schoolId}`,
@@ -327,16 +354,16 @@ test.describe('command center and pending teachers @api', () => {
 
     // An id that exists but belongs to another school, found as Admin Pusat in an isolated context.
     const peer = await newPeerContext(browser, testInfo)
-    let foreign: Chain | null
+    let foreign: { classId: string; studentId: string } | null
     try {
       const adminPage = await peer.newPage()
       const admin = account('adminPusat')
       await loginViaUi(adminPage, admin.user, admin.pass)
-      foreign = await findChain(adminPage, own!)
+      foreign = await findForeign(adminPage, own!)
     } finally {
       await peer.close()
     }
-    test.skip(foreign === null, 'the seed has no other school with answers')
+    test.skip(foreign === null, 'the seed has no other school with a class and a pupil')
 
     for (const path of [
       `/api/command-center/student/${foreign!.studentId}`,
