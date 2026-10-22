@@ -20,7 +20,7 @@ let failedRun = ''
 const out = tempOutDir()
 
 const rollback = () =>
-  rollbackLegacy({ pool: h.env.pool, env: { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1' }, source: 'cloud', confirmDb: h.env.db.name })
+  rollbackLegacy({ pool: h.env.pool, env: { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1', PP_MIGRATE_TARGET_DB: h.env.db.name }, source: 'cloud', confirmDb: h.env.db.name })
 
 beforeAll(async () => {
   h = await bootActivity({ core: false })

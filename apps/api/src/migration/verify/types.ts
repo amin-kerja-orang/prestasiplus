@@ -50,10 +50,11 @@ export interface VerifyReport {
   entities: EntityCheck[]
   checks: StatCheck[]
   /** Paths of the written report files (set by `writeVerifyReport`). */
-  files?: { json: string; md: string }
+  files?: { json: string; md: string; deletedIds?: string }
   /**
-   * Optional (added by Part B): per entity, the surrogate legacy ids of the rows deleted at the source (capped at 200). Json report
-   * only: the markdown and the console show counts.
+   * Optional (added by Part B): per entity, the surrogate legacy ids of the rows deleted at the source (capped at 200). Held in
+   * memory for the writer only: `writeVerifyReport` moves them into the separate `deleted-at-source-*.json` file
+   * (`files.deletedIds`) and leaves them out of the recon json, the markdown and the console, which show counts.
    */
   deletedAtSourceIds?: Record<string, string[]>
 }
@@ -68,6 +69,14 @@ export interface VerifyOptions {
   runIds?: readonly string[]
   /** Test seam for `generatedAt`. */
   now?: Date
+  /**
+   * Ceiling for rows deleted at the source (optional, added by Part B). Above BOTH `maxDeletedRatio` of an entity's target rows
+   * and `maxDeletedRows` rows the entity gets a failing `deleted_at_source_ratio:<entity>` check: a truncated or wrong re-stage
+   * would otherwise turn everything into "deleted at source". Proposed defaults 0.05 and 100; the LEAD confirms them in
+   * MIG-08 section 8 item 4.
+   */
+  maxDeletedRatio?: number
+  maxDeletedRows?: number
 }
 
 export interface RollbackOptions {

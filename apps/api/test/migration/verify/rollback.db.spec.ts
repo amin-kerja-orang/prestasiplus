@@ -18,7 +18,7 @@ let stagingBefore: Record<string, number> = {}
 let v2School = ''
 let v2User = ''
 
-const allowed = () => ({ ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1' })
+const allowed = () => ({ ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1', PP_MIGRATE_TARGET_DB: db })
 const call = (extra: object = {}) =>
   rollbackLegacy({ pool: h.env.pool, env: allowed(), source: 'cloud', confirmDb: db, ...extra })
 
@@ -55,6 +55,17 @@ describe('guards', () => {
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
   })
 
+  it('names the database in every environment: PP_MIGRATE_TARGET_DB must equal current_database()', async () => {
+    for (const target of [undefined, '', 'some_other_db']) {
+      for (const dryRun of [false, true]) {
+        const env = { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1', ...(target === undefined ? {} : { PP_MIGRATE_TARGET_DB: target }) }
+        await expect(call({ env, dryRun })).rejects.toBeInstanceOf(RollbackRefusedError)
+        await expect(call({ env, dryRun })).rejects.toThrow(/PP_MIGRATE_TARGET_DB must equal the connected database/)
+      }
+    }
+    expect(await legacyTableCounts(h)).toEqual(afterLoad)
+  })
+
   it('refuses a confirmation that is not the connected database', async () => {
     await expect(call({ confirmDb: 'some_other_db' })).rejects.toThrow(/does not match the connected database/)
     await expect(call({ confirmDb: '' })).rejects.toBeInstanceOf(ApplyGuardError)
@@ -62,7 +73,7 @@ describe('guards', () => {
   })
 
   it('refuses in production unless PP_MIGRATE_TARGET_DB names the database', async () => {
-    await expect(call({ env: { ...allowed(), NODE_ENV: 'production' } })).rejects.toBeInstanceOf(ApplyGuardError)
+    await expect(call({ env: { ...allowed(), NODE_ENV: 'production', PP_MIGRATE_TARGET_DB: 'some_other_db' } })).rejects.toBeInstanceOf(ApplyGuardError)
   })
 })
 
@@ -77,6 +88,17 @@ describe('dry-run', () => {
     expect(report.idMapDeleted).toBeGreaterThan(0)
     expect(await legacyTableCounts(h)).toEqual(afterLoad)
     expect(await h.count('etl_id_map', `legacy_source = 'cloud'`)).toBe(report.idMapDeleted)
+  })
+
+  it('closes only the failed runs of this source alone and warns about a multi-source one', async () => {
+    await h.q(`insert into etl_runs (mode, sources, entity_set, input_hash, status, counters) values ('apply', array['cloud', 'my'], array['users'], 'multi-test', 'failed', '{}'::jsonb)`)
+    try {
+      const report = await call({ dryRun: true })
+      expect(report.warnings?.some((w) => /1 failed apply run\(s\) cover more than this source/.test(w))).toBe(true)
+      expect(await h.q(`select input_hash from etl_runs where input_hash like '%multi-test'`)).toEqual([{ input_hash: 'multi-test' }])
+    } finally {
+      await h.q(`delete from etl_runs where input_hash = 'multi-test'`)
+    }
   })
 
   it('lists children before their parents', async () => {
