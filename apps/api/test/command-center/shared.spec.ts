@@ -101,6 +101,15 @@ describe('repository and scope on a seeded world (is_test never counted)', () =>
     const feed = await repo.latestAnswers({ to: NOW }, 3)
     expect(feed).toHaveLength(3)
     expect(feed[0]?.answeredAt.getTime()).toBeGreaterThanOrEqual(feed[2]?.answeredAt.getTime() ?? 0)
+    // scoped feeds (AZ-13: ordered by an expression so they stay off the platform answered_at index) keep the same order and scope
+    const scoped = await repo.latestAnswers({ to: NOW, schoolId: w.school1 }, 5)
+    expect(scoped).toHaveLength(5)
+    expect(scoped.every((r) => r.schoolId === w.school1)).toBe(true)
+    expect(scoped.map((r) => r.answeredAt.getTime())).toEqual([...scoped.map((r) => r.answeredAt.getTime())].sort((a, b) => b - a))
+    expect(scoped[0]?.answeredAt.getTime()).toBe(feed[0]?.answeredAt.getTime() ?? 0)
+    const byIds = await repo.latestAnswers({ to: NOW, studentIds: [w.pupils[0] as string] }, 4)
+    expect(byIds).toHaveLength(4)
+    expect(byIds.every((r) => r.userId === w.pupils[0])).toBe(true)
     expect((await repo.pairTally({ from: TODAY, to: NOW, studentIds: w.pupils })).length).toBe(3)
   })
 

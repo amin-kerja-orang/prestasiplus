@@ -106,6 +106,9 @@ export async function bootIntakeApp(
     INTAKE_MAX_FILES_PER_BATCH: undefined,
     INTAKE_MAX_ACTIVE_BATCHES: undefined,
     INTAKE_DAILY_PAGE_QUOTA: undefined,
+    // These suites exercise the teacher paths: the AZ-35 flag is on here and its default (off) is pinned in
+    // test/intake-workflow/teacher-gate.spec.ts.
+    INTAKE_TEACHER_ENABLED: 'true',
     INTAKE_WRITES_PER_MINUTE: '1000',
     INTAKE_READS_PER_MINUTE: '10000',
     ...env,

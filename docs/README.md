@@ -45,6 +45,8 @@ Read [plan/onboarding.md](plan/onboarding.md) first on a new PC, then the guide 
 | [architecture/v2-data-model.md](architecture/v2-data-model.md) | Consolidated data model: ERD per domain, table list with store owner (D12), legacy columns, mapping-matrix gaps |
 | [plan/fullstack-integration-guide.md](plan/fullstack-integration-guide.md) | Contract → mock → http/hybrid switch (V2-T31), cookies, CSRF, 401, requestId, compose e2e, per-domain switch checklist |
 | [qa/v2-test-strategy.md](qa/v2-test-strategy.md) | Test levels (unit, Testcontainers integration, conformance, e2e, migration), gate matrix G3–G6, test data, severity |
+| [ops/platform-settings.md](ops/platform-settings.md) | Platform settings checklist per environment (Render, Supabase, Cloudflare Pages worker, production VPS): edge secret, client IP, throttles, cookies, seeds, metrics, AI |
+| [ops/db-password-rotation.md](ops/db-password-rotation.md) | Database password rotation (demo and production), SESSION_SECRET rotation, IC_HASH_KEY warning, rotation log template |
 
 Reading order for newcomers: TRACKER decisions D28–D38, then `requirements/v2-portals.md`,
 `requirements/v2-cloud-gap.md`, `architecture/overview.md`, `architecture/v2-data-migration.md`.

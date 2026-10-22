@@ -13,7 +13,7 @@ Semua kerja v2 ada dalam folder projek asal, cabang `feature/student-prototype` 
 **Cara pantas (disyorkan): Docker**
 
 1. Bina: `npx vite build --mode demo --outDir dist-preview` (dengan `VITE_PROTOTYPE_SCOPE=on VITE_API_MODE=mock VITE_TEST_HOOKS=false`).
-2. Hidupkan: `docker compose -f docker-compose.preview.yml up -d` (bekas `pretasiplus-preview`, nginx).
+2. Hidupkan: `docker compose -f docker-compose.preview.yml up -d` (projek `pretasiplus-preview`, servis `preview`, nginx).
 3. Buka alamat port yang ditetapkan dalam `docker-compose.preview.yml`, kemudian pergi ke `/login`.
 4. Selepas bina semula, muat semula pelayar sahaja; bekas tidak perlu dimulakan semula.
 5. Hentikan: `docker compose -f docker-compose.preview.yml down`, atau butang Stop dalam Docker Desktop.
