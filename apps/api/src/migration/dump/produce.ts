@@ -21,7 +21,7 @@ import { silentLogger } from '../staging/log'
 import { DirReader } from '../staging/readers'
 import { dumpCloud, type CommonOptions } from './cloud'
 import { registerSensitive } from './cleanup'
-import { DumpAbortedError, DumpError, DumpUsageError, ExportStreamError } from './errors'
+import { DumpAbortedError, DumpError, DumpUsageError } from './errors'
 import { writeReport } from './report'
 import { wipeDir } from './wipe'
 
@@ -77,10 +77,6 @@ export async function produceDump(options: ProduceOptions): Promise<ProduceResul
   try {
     const dump = await dumpCloud({ ...options, outDir: raw })
     await writeReport(work, dump.report)
-    const large = Object.keys(dump.largeIntegers)
-    if (large.length > 0) {
-      throw new ExportStreamError(`integers of 2^53 or more would lose precision in the anonymiser; table ${large.join(', ')} (decimals with 16 or more integer digits are not checked). The raw dump is wiped; nothing was anonymised.`)
-    }
     stopIfAborted()
     const reader = new DirReader(raw)
     try {

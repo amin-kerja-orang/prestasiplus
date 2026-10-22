@@ -166,18 +166,17 @@ describe('dump:cloud', () => {
     expect(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')).datetime_offset).toBe('+08:00')
   })
 
-  it('keeps integers of 2^53 or more verbatim, warns, and records them in the manifest and the report', async () => {
-    const big = '{"id":9007199254740993,"name":"x","created_at":null}'
+  it('refuses integers of 2^53 or more (exit 6): the message names the table only, the partial output is wiped, nothing else is written', async () => {
+    const big = '{"id":9007199254740993,"name":"PERSONAL-VALUE-1","created_at":null}'
     fx.setScenario(scenario({ tables: { schools: sourceTable('schools', [big, '{"id":2,"name":"y"}']) } }))
     const out = work.out('cloud-bigint')
     const r = await cli(['dump:cloud', '--out', out, '--tables', 'schools'])
-    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
-    expect(r.text).toMatch(/Table schools: integer value\(s\) of 2\^53 or more in id/)
-    expect(readFileSync(join(out, 'schools.ndjson'), 'utf8')).toContain('"id":9007199254740993')
-    expect(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')).large_integers).toEqual({ schools: { id: 1 } })
-    const report = JSON.parse(readFileSync(join(out, 'schema-report.json'), 'utf8')) as { tables: { table: string; large_integers?: Record<string, number> }[] }
-    expect(report.tables.find((t) => t.table === 'schools')?.large_integers).toEqual({ id: 1 })
-    expect(new DirReader(out).expectedRows('schools')).toBe(2)
+    expect(r.code, r.text).toBe(DUMP_EXIT.stream)
+    expect(r.text).toContain('integers of 2^53 or more would lose precision when the dump is read as JSON (staging:load, the anonymiser); table schools')
+    expect(r.text).not.toContain('9007199254740993')
+    expect(r.text).not.toContain('PERSONAL-VALUE-1')
+    expect(existsSync(out)).toBe(false)
+    expect(existsSync(`${out}.partial`)).toBe(false)
   })
 
   it('exits 3 when the account can write: nothing is read and nothing is written', async () => {
@@ -548,7 +547,7 @@ describe('dump:produce', () => {
     let ran = false
     const r = await cli(['dump:produce', '--work', w, '--tables', 'schools'], { runAnonymise: async () => { ran = true; throw new Error('must not run') } }, produceEnv())
     expect(r.code, r.text).toBe(DUMP_EXIT.stream)
-    expect(r.text).toContain('integers of 2^53 or more would lose precision in the anonymiser; table schools')
+    expect(r.text).toContain('integers of 2^53 or more would lose precision when the dump is read as JSON (staging:load, the anonymiser); table schools')
     expect(ran).toBe(false)
     expect(existsSync(join(w, 'raw'))).toBe(false)
     expect(existsSync(join(w, 'anon'))).toBe(false)

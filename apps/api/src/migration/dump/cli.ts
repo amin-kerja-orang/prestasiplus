@@ -43,7 +43,8 @@
  * file order and the last one wins; the checks use the effective values.
  *
  * Integers of 2^53 or more: the raw files keep them exactly, but the anonymiser and the loader read JSON with JSON.parse and would
- * round them. dump:cloud warns and records them (manifest large_integers, report); dump:produce refuses (exit 6, raw wiped).
+ * round them. dump:cloud and dump:produce therefore refuse a dump that has any (exit 6, the message names the tables only, the partial
+ * output / the raw directory is wiped and nothing else is written). Decimals with 16 or more integer digits are not checked.
  *
  * TLS: a remote host in the option file is refused (exit 2) unless it sets ssl-mode=VERIFY_IDENTITY or VERIFY_CA (MariaDB
  * client: ssl plus ssl-verify-server-cert). REQUIRED, PREFERRED, DISABLED, ssl=0 or no setting are refused: use

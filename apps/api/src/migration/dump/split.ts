@@ -5,7 +5,7 @@
  * Every data line is checked to parse as a JSON object, but it is written VERBATIM (never re-serialised), so an integer
  * of 2^53 or more keeps every digit IN THE RAW FILE. Everything that reads the file later (`JSON.parse` in DirReader and the
  * anonymiser) rounds such an integer, so the splitter reports each one (`largeIntegers`, per table and column) and
- * `dump:produce` refuses to anonymise a dump that has any. Files are created with mode 0600 and never overwritten (`wx`).
+ * `dump:cloud` and `dump:produce` refuse a dump that has any (exit 6). Files are created with mode 0600 and never overwritten (`wx`).
  *
  * The row count of each table is compared with the COUNT(*) taken in the same snapshot; a mismatch, a line that is not a
  * JSON object, an unexpected marker or a truncated stream (no end marker) raises `ExportStreamError` (exit 6). Messages

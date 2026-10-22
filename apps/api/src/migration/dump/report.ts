@@ -25,8 +25,6 @@ export interface TableReport {
   type_notes: string[]
   /** Spec j columns held in text: number of non-NULL values that are not valid JSON (null when not counted). */
   invalid_json: Record<string, number | null>
-  /** Integer values of 2^53 or more, per column (only when the export found any). */
-  large_integers?: Record<string, number>
 }
 
 export interface SchemaReport {
@@ -49,7 +47,6 @@ export function buildReport(input: {
   specTableNames: readonly string[]
   counts?: ReadonlyMap<string, number>
   invalidJson?: Readonly<Record<string, Record<string, number>>>
-  largeIntegers?: Readonly<Record<string, Record<string, number>>>
   datetimeOffset?: string
 }): SchemaReport {
   const { schema, plans, counts } = input
@@ -68,7 +65,6 @@ export function buildReport(input: {
       source_columns_not_in_spec: { count: p.sourceOnly.length, names: p.sourceOnly.filter((n) => PLAIN.test(n)).slice(0, 200) },
       type_notes: p.notes,
       invalid_json: Object.fromEntries(p.jsonTextColumns.map((c) => [c, input.invalidJson?.[p.name]?.[c] ?? null])),
-      ...(input.largeIntegers?.[p.name] ? { large_integers: { ...input.largeIntegers[p.name] } } : {}),
     }
   })
   const present = tables.filter((t) => t.present)
@@ -112,12 +108,11 @@ export function renderReportMarkdown(r: SchemaReport): string {
     ),
     '',
   ]
-  const notes = r.tables.filter((t) => t.type_notes.length > 0 || Object.keys(t.invalid_json).length > 0 || Object.keys(t.large_integers ?? {}).length > 0)
+  const notes = r.tables.filter((t) => t.type_notes.length > 0 || Object.keys(t.invalid_json).length > 0)
   if (notes.length > 0) {
     out.push('## Type notes', '')
     for (const t of notes) {
       for (const n of t.type_notes) out.push(`- ${t.table}.${n}`)
-      for (const [c, n] of Object.entries(t.large_integers ?? {})) out.push(`- ${t.table}.${c}: ${n} integer value(s) of 2^53 or more (exact in the raw file; dump:produce refuses)`)
       for (const [c, n] of Object.entries(t.invalid_json)) out.push(`- ${t.table}.${c}: ${n === null ? 'invalid JSON values not counted' : `${n} value(s) that are not valid JSON (exported as NULL)`}`)
     }
     out.push('')

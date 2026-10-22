@@ -8,7 +8,7 @@
 
 **Purpose.** Produce one pseudonymised copy of the .cloud MySQL database (a `pp-staging-dump/1` directory) for the migration rehearsals (MIG-07: staging load, profile, ETL, reconciliation), without any developer, agent or CI job ever touching real data (OD-2, OD-18).
 
-**Scope.** This document covers the human procedure on the operator PC: preflight, the one sitting, hand-over, deletion and incident handling. The tools are `dump:check`, `dump:produce`, `dump:cloud`, `dump:wipe` (this item) and the existing `anonymise:run`, `anonymise:scan`, `staging:load` (see the runbook). It does not cover loading on the rehearsal host beyond the hand-over (see runbook section 2).
+**Scope.** This document covers the human procedure on the operator PC: preflight, the one sitting, hand-over, deletion and incident handling. The tools are `dump:check`, `dump:produce`, `dump:cloud`, `dump:wipe` (this item) and the existing `anonymise:run`, `anonymise:scan`, `staging:load` (see the runbook). It does not cover loading on the rehearsal host beyond the hand-over (see runbook section 2). Section 8 adds the production (cutover, MIG-08) flow, which uses the raw export instead of the anonymised one.
 
 | Role | Who | Does what |
 |---|---|---|
@@ -390,15 +390,15 @@ npm run dump:wipe -w @pp/api -- --dir "$work"
 |---|---|---|
 | 0 | Success | Continue to step 3 |
 | 1 | Failed (other error) | Read the message (table and column names and counts only). Wipe the work dir, destroy the key. If the cause is not obvious, post the message text on #109 (check it holds no value or host name first) |
-| 2 | Usage or configuration error | Check: `CLOUD_MYSQL_DEFAULTS_FILE` points to an existing file with the right permissions; `ANON_HMAC_KEY_FILE` points to a file outside the repo, mode 600, at least 32 characters; `mysql --version` works or `CLOUD_MYSQL_CLIENT` is set; `--work` names a path inside a `.migration-out` folder under the repository root, and is new or empty; the option file holds only a `[client]` group; for a remote host the option file verifies the server certificate (`VERIFY_IDENTITY` or `VERIFY_CA`, or `ssl=1` plus `ssl-verify-server-cert` for MariaDB). The key is checked first, so nothing was read. Fix and run again; destroy the key you created and make a new one |
+| 2 | Usage or configuration error | Check: `CLOUD_MYSQL_DEFAULTS_FILE` points to an existing file with the right permissions; `ANON_HMAC_KEY_FILE` points to a file outside the repo, mode 600, at least 32 characters; `mysql --version` works or `CLOUD_MYSQL_CLIENT` is set; `--work` names a path inside a `.migration-out` folder under the repository root, and is new or empty; the option file holds only the `[client]` and `[mysql]` groups and only the allowed keys (item 7); for a remote host the option file verifies the server certificate (`VERIFY_IDENTITY` or `VERIFY_CA`, or `ssl=1` plus `ssl-verify-server-cert` for MariaDB). The key is checked first, so nothing was read. Fix and run again; destroy the key you created and make a new one |
 | 3 | Account not read-only | Nothing was read. Destroy the unused key (step 5). Do not try to fix the grants yourself. Tell the data owner to remove every privilege except `USAGE`, `SELECT` (table or column level), `SHOW VIEW` and `SHOW DATABASES` (section 2, item 5), then run `dump:check` again |
 | 4 | An anonymiser rule is missing for a column | The rules are checked before the tool connects, so no data was fetched. Destroy the unused key (step 5). Post the column names (names only) on #109. A developer adds the rules and the LEAD approves them; run `dump:check` again, wait for "rules OK", and sit again with a new key |
 | 5 | Leak scan hit | The output was deleted. **Stop and tell the LEAD at once**; do not rerun elsewhere. The log names the `table.column` and the kind of hit, not the value. The LEAD decides the rule change (runbook section 8, step 4); a developer applies it; sit again with a new key |
-| 6 | Row-count mismatch or bad stream | The source changed during the export or the connection broke (tunnel dropped?). Raw is wiped. Check the tunnel and the network, wipe, destroy the key, and run again with a new key and a new work dir. Repeated failures: post the table names on #109. **Also exit 6:** the export contains an integer of 2^53 or larger (a BIGINT the anonymiser cannot keep exact). The run is refused; post only the table name on #109 (no value), and a developer fixes it before the next sitting |
+| 6 | Row-count mismatch or bad stream | The source changed during the export or the connection broke (tunnel dropped?). Raw is wiped. Check the tunnel and the network, wipe, destroy the key, and run again with a new key and a new work dir. Repeated failures: post the table names on #109. **Also exit 6, for `dump:produce` and for `dump:cloud`:** the export contains an integer of 2^53 or larger (a BIGINT that cannot be kept exact). The run is refused and the partial output is deleted; post only the table name on #109 (no value), and a developer fixes it before the next sitting |
 | 130 | Interrupted twice (Ctrl+C, closed terminal, shutdown) | The raw and partial directories were force-deleted, so nothing raw is left, but the run is dead. Destroy the key (step 5), check that `<work>` holds no `raw` and no `.partial`, and start again from step 1 with a new key and a new work dir. A single interrupt exits 1 instead (the tool cleans up by itself; see exit 1) |
 | Review failed (step 4) | A real name is in a kept column | Do not hand over. Wipe, destroy the key, the LEAD changes the rule, a developer applies it, sit again with a new key |
 
-`dump:cloud` (raw export only) exists for troubleshooting a failing export. If used: `npm run dump:cloud -w @pp/api -- --out <dir>` writes raw data, so it is real personal data on disk. Then run `anonymise:run` and `anonymise:scan` as in runbook section 8, and `npm run dump:wipe -w @pp/api -- --dir <dir>` on the raw directory straight afterwards, with the same key and wipe rules as above.
+For the cutover, `dump:cloud` is the normal path and is described in section 8. Outside the cutover, `dump:cloud` (raw export only) is a troubleshooting tool for a failing export. If used: `npm run dump:cloud -w @pp/api -- --out <dir>` writes raw data, so it is real personal data on disk. Then run `anonymise:run` and `anonymise:scan` as in runbook section 8, and `npm run dump:wipe -w @pp/api -- --dir <dir>` on the raw directory straight afterwards, with the same key and wipe rules as above.
 
 ## 7. Repeat runs (rehearsals and delta runs)
 
@@ -410,3 +410,64 @@ Every run follows this document from the start of section 3:
 - a new `dump:check` when the schema may have changed or after any exit 4, with "rules OK" before the sitting.
 
 Because the key differs, the fakes differ between two dumps: each run is a complete standalone dump, and rehearsals cannot compare pseudonyms across dumps. The `--datetime-offset` stays `+08:00` (LEAD decision 21 Oct, DT-1 A).
+
+## 8. Production raw-data flow (cutover, MIG-08)
+
+Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, plan section 3.3 in the cutover plan on branch `be/AM-MIG-08-cutover-plan`, `docs/ops/v2-cutover-plan.md`) needs the **raw** `dump:cloud` output as the normal path, because the ETL refuses anonymised data in production. AM-10 confirms that addendum, and it is part of this procedure. The same hand-over and wipe rules apply, to a raw directory.
+
+**The raw export is real personal data of minors.** Encrypted disk (section 2, item 1), no screen sharing, no cloud-sync folder, and it never enters GitHub, an issue or PR, any chat, or any Claude/AI session or transcript. Everything in section 1 (hard rules) and section 5 (PDPA and incidents) applies in full.
+
+**Per sitting (the T-1 export and the final export), by the operator on the operator PC, with the data owner present for the account:**
+
+1. **No anonymiser key.** `ANON_HMAC_KEY_FILE` is not set (unset it if the terminal has it), steps 1 and 5 of the sitting (create and destroy the key) are skipped, and `dump:produce` and `anonymise:*` are not used. `IC_HASH_KEY` is a different thing (the ETL side); it is **kept** and never deleted here.
+2. The data owner unlocks the account: `ALTER USER 'pp_dump_ro'@'<operator IP or %>' ACCOUNT UNLOCK;` (section 2, item 5).
+3. Prepare the terminal as in step 0 (option file, tunnel if used, `$date`), and define the work dir as an absolute path, unique per sitting (for example `run-<date>-t1` for the T-1 export and `run-<date>-final` for the final export):
+   ```powershell
+   $work = Join-Path (Get-Location) "apps/api/.migration-out/run-$date-t1"
+   ```
+   ```bash
+   work="$PWD/apps/api/.migration-out/run-$date-t1"
+   ```
+4. Run `dump:check` as a last look (section 2, item 8; it reads no rows), then the raw export. `--datetime-offset` stays at its `+08:00` default (DT-1 A; DATETIME with explicit `+08:00`, TIMESTAMP with `Z`).
+   ```powershell
+   npm run dump:cloud -w @pp/api -- --out "$work/raw"
+   ```
+   ```bash
+   npm run dump:cloud -w @pp/api -- --out "$work/raw"
+   ```
+   Expect exit 0. **Exit 6 means stop: it is a no-go for that sitting** (row-count mismatch or bad stream, or an integer of 2^53 or larger). Post only the table names on #109. Do not retry in the same sitting without the LEAD.
+5. **The data owner locks the account again** straight after the export has finished, **also after a failure**.
+6. Check the output: the manifest in `<work>/raw` is marked `raw: true`, no `.partial` directory is left, and the table and row counts equal the `dump:check` report (the final export is frozen, so they are equal; the T-1 export may be slightly higher).
+7. **Encrypt** with the same commands as step 6 of the sitting, with `raw` (and `files`, if section 8.1 applies) in place of `anon`; the **listing check is mandatory** and the entry count must match what is in the directory plus the directory entries. Take the sha256 of the `.gpg` file. The passphrase goes to the receiver through a different channel from the file, never with it, never in GitHub, chat or an AI session.
+   ```powershell
+   $name = "pp-cutover-dump-$date.tar.gz.gpg"
+   Push-Location $work
+   cmd /c "tar -czf - raw | gpg --symmetric --cipher-algo AES256 -o $name"
+   $LASTEXITCODE                    # must be 0
+   cmd /c "gpg --decrypt $name | tar -tzf -" | Measure-Object -Line
+   $LASTEXITCODE                    # must be 0
+   Get-FileHash -Algorithm SHA256 $name
+   Pop-Location
+   $out = Join-Path $work $name
+   ```
+   ```bash
+   name="pp-cutover-dump-$date.tar.gz.gpg"; out="$work/$name"
+   ( set -o pipefail; tar -C "$work" -czf - raw | gpg --symmetric --cipher-algo AES256 -o "$out" ); echo "exit $?"   # must be 0
+   ( set -o pipefail; gpg --decrypt "$out" | tar -tzf - | wc -l ); echo "exit $?"                                   # must be 0
+   sha256sum "$out"
+   ```
+8. **Hand over** with `scp "$out" <user>@<receiver host>:<restricted dir>/` to the receiver, who runs the throwaway staging cluster (MIG-08 plan section 3.1). The receiver runs `sha256sum` on the received file, compares it, and confirms.
+9. **As soon as the receiver confirms the checksum**, run `dump:wipe --dir "$work"`, delete the `.gpg` file if it is outside `$work`, and close the SSH tunnel. Do not wait for the verify or the load. The receiver then holds the only copy and deletes it right after `staging:load` succeeds.
+10. Report **aggregates only** on #109: date, exit code, number of tables, total rows, sha256 of the `.gpg` file, "local copies deleted". Never data, paths with personal information, the passphrase or any host name.
+
+**Abort and failure.** The abort table in section 6 applies, including exit 6 and exit 130. After a failure or an interruption run `dump:wipe --dir "$work"` **first** (also after a hard kill), make sure the data owner has locked the account, and only then repeat. There is no key to destroy in this flow. An interrupted final export inside the freeze costs the export time again (MIG-08 plan, trigger R2).
+
+**Retention.** The same deadlines as section 4 apply: the operator wipes in step 9; the receiver deletes right after `staging:load` succeeds, and in any case within 7 days (runbook section 0, rule 4). The option file and the account follow section 4.
+
+### 8.1 Content files (AC9, LEAD decision 22 Oct: A without ticket attachments)
+
+Scope: article and banner images, note files and video files from the .cloud storage. **Support-ticket attachments are never exported.**
+
+- They are exported **in the same sitting**, into a separate directory `"$work/files"`. They are kept outside GitHub like the dump (never in git, an issue, a PR, chat or any Claude/AI session), **encrypted and handed over together with the dump** (step 7 above, with `files` in the archive), and **wiped with it** (step 9) under the same deadlines.
+- The operator uses the same read-only access. **Perlu pengesahan:** how the files are read from the .cloud storage is not decided; the method is to be confirmed with the data owner. No access method is assumed in this document.
+- **Perlu pengesahan:** the exact layout of `"$work/files"` and the commands are pending the `--files-dir` input format from #122. AM-10 will update this step when it lands.
