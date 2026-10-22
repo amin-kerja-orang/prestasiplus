@@ -3,9 +3,9 @@
  *
  *   npm run migrate:all -w @pp/api -- [--dry-run | --apply] [--as-of YYYY-MM-DD] [--batch-size N]
  *       [--content-owner <v2 user id>] [--out-dir <.migration-out path>]
- *   npm run migrate:delta -w @pp/api -- --since <ISO-8601 timestamp> [--apply] [same flags as migrate:all]
+ *   npm run migrate:delta -w @pp/api -- --since <ISO-8601 timestamp> --as-of <first load YYYY-MM-DD> [--apply] [same flags as migrate:all]
  *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>]
- *   npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
+ *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
  *   npm run migrate:link-questions -w @pp/api -- [--apply] [--batch-size N]
  *   npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]
  *
