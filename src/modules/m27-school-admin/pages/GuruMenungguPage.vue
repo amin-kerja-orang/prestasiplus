@@ -120,7 +120,7 @@ function focusVerify(id: string): boolean {
   return false
 }
 
-/** The page owns the h1 (route `ownsH1`): sr-only, but it gets a tab stop so focus can land on it. */
+/** The page owns the h1 (route `ownsH1`): sr-only; programmatic focus target (tab stop -1) so focus can land on it. */
 const heading = ref<HTMLElement | null>(null)
 function focusHeading(): void {
   heading.value?.focus()
@@ -184,7 +184,7 @@ async function verify(row: Item): Promise<void> {
       <h1
         ref="heading"
         tabindex="-1"
-        class="sr-only focus:not-sr-only"
+        class="sr-only"
         data-testid="pt-heading"
       >
         {{ PENDING_TITLE }}

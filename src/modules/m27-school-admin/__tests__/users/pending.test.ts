@@ -115,6 +115,8 @@ describe('S7b list', () => {
     const h1 = w.get('h1[data-testid="pt-heading"]')
     expect(h1.text()).toBe('Guru Menunggu Pengesahan')
     expect(h1.attributes('tabindex')).toBe('-1')
+    expect(h1.classes()).toContain('sr-only')
+    expect(w.findAll('h1')).toHaveLength(1)
   })
 
   it('shows the empty state with its copy and no table', async () => {

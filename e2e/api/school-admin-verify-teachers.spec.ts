@@ -17,6 +17,9 @@
  *   same school) are verified away first so the counts are exact. The one teacher registered for another school
  *   stays pending there (it has no admin on the seed); that is the isolation check.
  *
+ * Data left behind: the verified `Cikgu Contoh` teachers stay active in school 1 and one `Cikgu Contoh Asing` stays
+ * pending in school 2, per project and run. Use a fresh DB (`stack:down -v`) between runs.
+ *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_<ROLE>_PASS; see helpers.ts). Stack: npm run stack:up.
  */
 
@@ -48,7 +51,7 @@ interface PendingRow {
 
 const found = (n: number) => `${n} guru menunggu pengesahan`
 
-/** Self-registers a teacher (public route, no session) and returns the unique e-mail used. */
+/** Self-registers a teacher through the public route (no session); asserts the pending-verification answer. */
 async function registerTeacher(
   page: Page,
   o: { name: string; email: string; phone?: string; schoolId: string },
@@ -117,6 +120,10 @@ test.describe('school admin verifies self-registered teachers @api', () => {
       expect(await verifyViaApi(page, left.id), `cleanup verify ${left.id}`).toBe(200)
     }
     const baseline = (await listPending(page)).length
+    expect(
+      baseline,
+      'school 1 must have no pending teacher besides this spec own (use a fresh DB: stack:down -v); the empty-state and focus steps need an empty list',
+    ).toBe(0)
 
     await registerTeacher(page, { name: names.satu, email: email('satu'), phone: '0123456789', schoolId: SCHOOL_ID })
     await registerTeacher(page, { name: names.dua, email: email('dua'), schoolId: SCHOOL_ID }) // no phone
@@ -167,6 +174,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
     await expect(page.getByTestId('pt-page')).toBeVisible()
     await expect(page.getByTestId('pt-heading')).toHaveText('Guru Menunggu Pengesahan')
     await expect(page.getByTestId('pt-heading')).toHaveJSProperty('tagName', 'H1')
+    await expect(page.locator('h1')).toHaveCount(1)
     await expect(page).toHaveTitle('Guru Menunggu Pengesahan - PRESTASIPLUS')
     await expect(page.getByTestId('pt-back')).toHaveText('Senarai Guru')
     await expect(page.getByTestId('pt-count-card')).toContainText(String(remaining))
@@ -286,7 +294,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
     await expect(flashText(page)).toContainText(VERIFIED_FLASH)
     remaining -= 1
     await expect(page.getByTestId('pt-found')).toHaveText(found(remaining))
-    if (remaining === 0) {
+    {
       const empty = page.getByTestId('pt-empty')
       await expect(empty).toContainText(EMPTY_TITLE)
       await expect(empty).toContainText(EMPTY_TEXT)
@@ -296,7 +304,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
 
     // --- Step 6: S7 lists the teachers as Aktif; the callout is gone when nothing is pending -----------------
     await gotoApi(page, LIST_PATH)
-    if (remaining === 0) await expect(page.getByTestId('pt-callout')).toHaveCount(0)
+    await expect(page.getByTestId('pt-callout')).toHaveCount(0)
     for (const t of [satu, dua, tiga, empat]) {
       await gotoApi(page, `${LIST_PATH}?search=${encodeURIComponent(email(t.name.split(' ').pop()!.toLowerCase()))}`)
       // The search narrows the list to this teacher; the table and the cards variants differ in test ids only.
