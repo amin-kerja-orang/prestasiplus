@@ -58,8 +58,11 @@ psql "$PGURL?$SSLQ" -At -c "select 'psql: OK'"
 psql "$PGURL?$SSLQ" -At -c "select count(*) from users where email is not null and lower(email) not like '%@demo.test' and lower(email) not like '%@example.test'"   # expect 0
 psql "$PGURL?$SSLQ" -At -c "select count(*), max(migration_name) from _prisma_migrations where finished_at is not null and rolled_back_at is null"   # note it
 pg_dump "$PGURL?$SSLQ" -n public -Fc -f "$DUMP" && pg_restore -l "$DUMP" | grep -c 'TABLE DATA'   # must be non-zero
+pg_restore -l "$DUMP" | grep -c 'SCHEMA - public'   # expect 1: the dump re-creates public on a rollback
 echo "$DUMP"   # note the name for a rollback
 ```
+
+Start this shell with history off for the session if you like (`unset HISTFILE`). Every secret goes through `read`, so none reaches the history anyway.
 
 Then paste the `pp_gate` function from #112 §1.0 once, and run `pp_gate`. If #112 is not merged, get the function with `git fetch origin +refs/heads/ops/demo-deploy-23oct:refs/remotes/origin/ops/demo-deploy-23oct && git show origin/ops/demo-deploy-23oct:docs/ops/demo-deploy-23oct.md`. It must print `GATE OK`.
 - **Non-demo user count is not 0:** stop. This is not the demo DB.
@@ -216,8 +219,8 @@ Otherwise roll back (#112 §6):
 ```bash
 read -rsp 'Supabase DB password (vault): ' PGPASSWORD && export PGPASSWORD; echo
 pp_gate && psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -c "BEGIN; DROP SCHEMA public CASCADE; COMMIT;"   # do NOT re-create public: the dump does
-pp_gate && pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP"
-psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -f scripts/supabase/lockdown-data-api.sql
+pp_gate && pg_restore --no-owner --no-privileges --exit-on-error -d "$PGURL?$SSLQ" "$DUMP" \
+  && psql "$PGURL?$SSLQ" -v ON_ERROR_STOP=1 -f scripts/supabase/lockdown-data-api.sql
 unset PGPASSWORD
 ```
 
