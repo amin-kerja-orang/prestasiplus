@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { usePrototypeScope } from '@/composables/usePrototypeScope'
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { DsCharacterCard } from '@/ds'
 
 import type { TrialStatus } from '../../api/types'
@@ -11,7 +11,8 @@ import type { TrialStatus } from '../../api/types'
 defineProps<{ trial: TrialStatus }>()
 const router = useRouter()
 const { allows } = usePrototypeScope()
-const cta = computed(() => (allows('/pricing') ? '🚀 Langgan Sekarang' : undefined))
+const { routeExists } = useRouteExists()
+const cta = computed(() => (allows('/pricing') && routeExists('/pricing') ? '🚀 Langgan Sekarang' : undefined))
 </script>
 
 <template>

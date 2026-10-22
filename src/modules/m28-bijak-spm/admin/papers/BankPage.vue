@@ -28,7 +28,7 @@ import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import QuestionPreview from './QuestionPreview.vue'
-import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE } from './ui'
+import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE, WIRE } from './ui'
 
 type Row = BankRow & Record<string, unknown>
 
@@ -207,6 +207,7 @@ const {
         <option v-for="s in subjects" :key="s.code" :value="s.code">{{ s.name }}</option>
       </DsNativeSelect>
       <DsNativeSelect
+        v-if="!WIRE"
         v-model="draft.kertas"
         aria-label="Kertas"
         class="md:w-36"
@@ -279,7 +280,8 @@ const {
         </div>
       </template>
       <template #subjectName-cell="{ row }">
-        {{ row.original.subjectName }} · K{{ row.original.kertas }}
+        {{ row.original.subjectName
+        }}<template v-if="row.original.kertas"> · K{{ row.original.kertas }}</template>
       </template>
       <template #kind-cell="{ row }">{{ KIND_LABEL[row.original.kind] }}</template>
       <template #usedIn-cell="{ row }">{{ row.original.usedIn }} kertas</template>
@@ -316,7 +318,8 @@ const {
           <div class="flex flex-wrap items-center gap-2">
             <DsStatusBadge :status="STATUS_BADGE[detail.row.status]" />
             <span class="text-caption text-muted">
-              {{ detail.row.subjectName }} · Kertas {{ detail.row.kertas }} ·
+              {{ detail.row.subjectName
+              }}<template v-if="detail.row.kertas"> · Kertas {{ detail.row.kertas }}</template> ·
               {{ KIND_LABEL[detail.row.kind] }} · {{ detail.row.marks }} markah · versi
               {{ detail.row.version }}
             </span>

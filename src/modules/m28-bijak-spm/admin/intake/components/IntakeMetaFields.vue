@@ -6,7 +6,7 @@
  */
 import { DsFormField, DsFormSection, DsNativeSelect } from '@/ds'
 
-import { bijakServer } from '../../../server/client'
+import { bijakAdminServer } from '../../../server/client'
 import { COPYRIGHT_OPTIONS, PAPER_TYPES } from '../types'
 
 export interface IntakeForm {
@@ -20,7 +20,8 @@ export interface IntakeForm {
 }
 
 const form = defineModel<IntakeForm>({ required: true })
-const subjects = bijakServer().subjects()
+// Staff pages read the subjects from the admin blueprints (the student route is 403 for staff).
+const subjects = bijakAdminServer().subjects()
 </script>
 
 <template>
