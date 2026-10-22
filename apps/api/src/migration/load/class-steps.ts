@@ -15,6 +15,7 @@ import { enumKey } from '../transform/common'
 import { SCHOOL_TYPE_MAP } from '../transform/enums'
 import {
   deriveClassGrade,
+  resolveClassLevel,
   enrolmentLegacyId,
   transformClassroom,
   transformEnrolment,
@@ -64,6 +65,17 @@ async function levelsByGrade(ctx: BatchContext): Promise<Map<number, string>> {
   return new Map(res.rows.map((r) => [r.grade, r.id]))
 }
 
+/** The level of the v2 row of each class that is already loaded (by its legacy key), for the classes that lost all their pupils. */
+async function loadedLevels(ctx: BatchContext, legacyIds: readonly string[]): Promise<Map<string, string>> {
+  if (legacyIds.length === 0) return new Map()
+  const res = await ctx.db.query<{ legacy_id: string; education_level_id: string }>(
+    `SELECT legacy_id, education_level_id::text AS education_level_id FROM classrooms
+     WHERE legacy_source = $1 AND legacy_id = ANY($2::text[]) AND education_level_id IS NOT NULL`,
+    [ctx.source, legacyIds],
+  )
+  return new Map(res.rows.map((r) => [r.legacy_id, r.education_level_id]))
+}
+
 export function classroomsStep(core: CoreContext): AnyEntityStep {
   const entity = 'classrooms'
   return {
@@ -77,24 +89,39 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       const subjects = await ctx.idMap.resolveMany('subjects', distinctValues(rows, 'subject_id'))
       const grades = await pupilGrades(core, rows.map((r) => idOf(r)))
       const levels = await levelsByGrade(ctx)
+      // Only the classes without any pupil in staging can keep their level, so look up the loaded rows for those alone.
+      const loaded = await loadedLevels(ctx, rows.map((r) => idOf(r)).filter((id) => (grades.get(id) ?? []).length === 0))
 
+      const kept = new Set<string>()
       let items: { legacyId: string; values: ClassroomValues }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
         const grade = deriveClassGrade(squash(row.name), grades.get(legacyId) ?? [])
+        const level = resolveClassLevel({
+          grade,
+          pupilCount: (grades.get(legacyId) ?? []).length,
+          levelByGrade: levels,
+          loadedLevelId: loaded.get(legacyId),
+        })
         const out = transformClassroom(row, {
           teacherId: resolveFk(row.teacher_id, teachers),
           schoolId: resolveFk(row.school_id, schools),
           subjectId: resolveFk(row.subject_id, subjects),
-          levelId: grade === null ? null : (levels.get(grade) ?? null),
+          levelId: level.levelId,
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push({ legacyId, values: out.value })
+        else {
+          items.push({ legacyId, values: out.value })
+          if (level.kept) kept.add(legacyId)
+        }
       }
       items = await dropConflicts(ctx.db, items, {
         entity, table: 'classrooms', column: 'code', expr: 'upper(join_code)', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.join_code?.toUpperCase() ?? null,
       })
+      // Counted once the class survives the join-code check: it is written with its old level.
+      const keptCount = items.filter((i) => kept.has(i.legacyId)).length
+      if (keptCount > 0) core.notes.count('classrooms.level_kept_no_pupils', keptCount)
       return upsertAndMap(ctx, entity, 'classrooms', CLASSROOM_COLUMNS, items.map((i) => ({
         legacyId: i.legacyId,
         values: i.values as unknown as Record<string, unknown>,
