@@ -1,0 +1,11 @@
+[Unit]
+Description=PrestasiPlus monthly restore drill
+
+[Timer]
+# 03:30 local on the 1st of each month (quiet window). The manual drill with a named operator stays the record
+# of authority for BE-33 AC7; this timer is the safety net that proves the backups keep restoring.
+OnCalendar=*-*-01 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

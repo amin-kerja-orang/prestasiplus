@@ -315,8 +315,9 @@ export const GAMES_SOLO_CHECK_EXAMPLES = {
 /**
  * Kad Memori only ([PROPOSED] route, D58a; LEAD decision pending: per-flip reveal vs. faces via check only).
  * Reveals the face of ONE face-down card, so the first card of a move can show its face as the mock page does.
- * At most one card may be open (revealed, not yet checked); a second reveal while one is open is 409, and the open
- * card is closed by the next check that names it. So a client cannot read the faces without making moves.
+ * At most one card may be open (revealed, not yet checked). Revealing the card that is already open is idempotent:
+ * 200 with the same face, nothing changes. Revealing a different card while one is open is 409. The open card is
+ * closed by the next check that names it. So a client cannot read the faces without making moves.
  */
 export const GamesKadMemoriRevealRequestSchema = z
   .object({ session_id: GamesSessionIdSchema, card_id: IdSchema.meta({ description: 'Opaque card id from the payload.' }) })

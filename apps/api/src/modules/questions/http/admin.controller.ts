@@ -54,9 +54,9 @@ export class AdminQuestionsController {
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async bulk(@Actor() actor: HttpActor, @Body() body: unknown) {
     const input = parseBulk(body)
-    const { affected, ids } = await this.questions.bulkAction(input.action, input.ids, actor)
+    const { affected, ids, failed } = await this.questions.bulkAction(input.action, input.ids, actor)
     await this.audit.bulk(actor, input.action, new Set(input.ids).size, affected, ids)
-    return flash({ affected }, QUESTION_MESSAGES.bulkUpdated(affected))
+    return flash({ affected, failed }, QUESTION_MESSAGES.bulkUpdated(affected))
   }
 
   @Get(':id')

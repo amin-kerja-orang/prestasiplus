@@ -7,17 +7,20 @@ export interface Figures {
   sittings: number
   score: number
   max: number
+  /** Answered questions, not marks. */
+  answered: number
   seconds: number
   gradedScore: number
   gradedMax: number
 }
 
-export const emptyFigures = (): Figures => ({ sittings: 0, score: 0, max: 0, seconds: 0, gradedScore: 0, gradedMax: 0 })
+export const emptyFigures = (): Figures => ({ sittings: 0, score: 0, max: 0, answered: 0, seconds: 0, gradedScore: 0, gradedMax: 0 })
 
 export function addFact(f: Figures, s: BijakSittingFact): Figures {
   f.sittings += 1
   f.score += s.score
   f.max += s.maxScore
+  f.answered += s.answeredCount
   f.seconds += s.durationSeconds
   if (!s.provisional) {
     f.gradedScore += s.score
