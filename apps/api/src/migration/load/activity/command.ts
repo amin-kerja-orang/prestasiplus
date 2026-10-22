@@ -15,6 +15,7 @@ import { registerMigrateCommand, type CliContext, type CommandArgs, type Migrate
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { prepareOutputDir } from '../../profile'
 import { dirname, resolve } from 'node:path'
+import { resolveGitSha } from '../git-sha'
 import { NoActivityStepsError, runActivity } from './index'
 import { writeReportFile } from './drift'
 
@@ -81,6 +82,7 @@ export const migrateActivity: MigrateCommand = {
         coreAsOf,
         mode: args.mode,
         batchSize,
+        gitSha: resolveGitSha(ctx.env),
         contentOwnerUserId: owner,
         groupNames: list(flagValue(args, 'group')),
         only: list(flagValue(args, 'table')),

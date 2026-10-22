@@ -19,15 +19,16 @@ import type { ActivityContext } from './context'
 import { idOf } from './wallet-steps'
 
 /** Pages of `exam_attempts` with only the header and score columns, ascending by id after `afterKey`. */
-async function* readExamAttempts(pool: pg.Pool, afterKey: string | null, pageSize: number): AsyncGenerator<StagedRow> {
+export async function* readExamAttempts(pool: pg.Pool, afterKey: string | null, pageSize: number): AsyncGenerator<StagedRow> {
   const from = `${quoteIdent(STAGING_SCHEMA)}.${quoteIdent('exam_attempts')}`
   let after = afterKey
   for (;;) {
     const res = await pool.query<StagedRow>(
-      `SELECT "id"::text AS "id", "user_id"::text AS "user_id", "exam_paper_id"::text AS "exam_paper_id",
-              "mode"::text AS "mode", "status"::text AS "status", "score"::text AS "score", "max_score"::text AS "max_score",
-              "section_scores"::text AS "section_scores", "created_at"::text AS "created_at", "updated_at"::text AS "updated_at"
-       FROM ${from} WHERE ($1::bigint IS NULL OR "id" > $1::bigint) ORDER BY "id" LIMIT $2`,
+      // `t."id"` is the bigint column; a bare `ORDER BY "id"` would bind to the text output alias of the same name.
+      `SELECT t."id"::text AS "id", t."user_id"::text AS "user_id", t."exam_paper_id"::text AS "exam_paper_id",
+              t."mode"::text AS "mode", t."status"::text AS "status", t."score"::text AS "score", t."max_score"::text AS "max_score",
+              t."section_scores"::text AS "section_scores", t."created_at"::text AS "created_at", t."updated_at"::text AS "updated_at"
+       FROM ${from} t WHERE ($1::bigint IS NULL OR t."id" > $1::bigint) ORDER BY t."id" LIMIT $2`,
       [after, pageSize],
     )
     for (const row of res.rows) yield row

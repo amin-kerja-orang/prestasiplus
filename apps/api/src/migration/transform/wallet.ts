@@ -94,9 +94,16 @@ export const LEDGER_TYPE_MAP = {
 } as const
 
 /**
- * `coin_transactions.source` -> the v2 ledger source key. `practice` is the value observed in the BE-35 fixture;
- * the other keys are the v2 source codes named in the data model (docs/architecture/v2-backend-deviations.md).
- * Extend only from the profile of the real dump (Perlu pengesahan).
+ * `coin_transactions.source` -> the v2 ledger source key. v2 `coin_ledger.source` is free text (1 to 100 characters,
+ * `ck_coin_ledger_source`), so a .cloud value is kept as it is unless BE-11 writes another name for the same event.
+ *  - `practice` is the value of the BE-35 fixture; BE-11 writes `quiz_practice`.
+ *  - `quiz_spm`, `quiz_pksk`, `daily_login`, `token_conversion`, `admin_award` are the BE-11 names (`practiceRewardSource`).
+ *  - `daily_challenge` (challenge completion), `mystery_box` and `hadiah_redeem` (shop `SOURCES`) are the names
+ *    BE-11 / the shop write for the same event: identical to .cloud.
+ *  - `spm` (first SPM session of the day, +7), `streak_bonus` (historical kombo bonus) and `reward_claim` (legacy
+ *    syiling reward claim, spend) are the M14 URS values (FN-M14-8.1.4, 8.1.5, 8.3.6): history only, BE-11 writes no
+ *    new row of these, so the .cloud value is kept as is.
+ * The full real value set is Perlu pengesahan (OD-2); an unlisted source stays UNKNOWN_ENUM.
  */
 export const LEDGER_SOURCE_MAP = {
   practice: 'quiz_practice',
@@ -106,7 +113,20 @@ export const LEDGER_SOURCE_MAP = {
   daily_login: 'daily_login',
   token_conversion: 'token_conversion',
   admin_award: 'admin_award',
+  daily_challenge: 'daily_challenge',
+  spm: 'spm',
+  streak_bonus: 'streak_bonus',
+  reward_claim: 'reward_claim',
+  mystery_box: 'mystery_box',
+  hadiah_redeem: 'hadiah_redeem',
 } as const
+
+/**
+ * Sources that only ever remove syiling (never a positive amount, except a refund): M14 URS FN-M14-8.3.6 "Tuntut"
+ * spend row and DV-M14-12 "Tukar N syiling" convert rows. `hadiah_redeem` is not listed: it is a token movement and the URS gives no syiling sign
+ * for its ledger row, so only its type decides (Perlu pengesahan, OD-2); the earning sources are decided by their type.
+ */
+const DEBIT_ONLY_SOURCES: ReadonlySet<string> = new Set(['reward_claim', 'token_conversion'])
 
 const mapLedgerType = enumMapper('type', LEDGER_TYPE_MAP)
 const mapLedgerSource = enumMapper('source', LEDGER_SOURCE_MAP)
@@ -136,6 +156,16 @@ export function ledgerSignOk(type: string, amount: number): boolean {
   return false
 }
 
+/**
+ * The source decides the direction for the two debit-only sources: they must not add syiling, whatever the type says
+ * (a refund of an earlier claim carries the original source, so a `refund` is decided by its type alone). Any other
+ * source is decided by its type (`ledgerSignOk`): the URS names no row of an earning source with a debit.
+ */
+export function ledgerSourceSignOk(source: string, type: string, amount: number): boolean {
+  if (type === 'refund' || !DEBIT_ONLY_SOURCES.has(source)) return true
+  return amount <= 0
+}
+
 export function transformLedger(row: Staged, refs: LedgerRefs): Outcome<LedgerValues> {
   if (refs.userId === undefined) return orphan('user_id')
   if (!refs.isStudent) return unsupported('user_id')
@@ -150,6 +180,7 @@ export function transformLedger(row: Staged, refs: LedgerRefs): Outcome<LedgerVa
   if (type.value === null || source.value === null) return invalid('type')
   // Never flip a sign: a row that contradicts its own type is rejected and reported.
   if (!ledgerSignOk(type.value, amount)) return invalid('amount')
+  if (!ledgerSourceSignOk(source.value, type.value, amount)) return invalid('amount')
   return ok({
     user_id: refs.userId,
     type: type.value,

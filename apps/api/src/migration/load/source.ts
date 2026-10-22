@@ -29,7 +29,8 @@ export async function* readById(pool: pg.Pool, table: string, afterKey: string |
   let after = afterKey
   for (;;) {
     const res = await pool.query<StagedRow>(
-      `SELECT ${selectList(table)} FROM ${from} WHERE ($1::bigint IS NULL OR "id" > $1::bigint) ORDER BY "id" LIMIT $2`,
+      // `t."id"` is the bigint column; a bare `ORDER BY "id"` would bind to the text output alias of the same name.
+      `SELECT ${selectList(table, 't')} FROM ${from} t WHERE ($1::bigint IS NULL OR t."id" > $1::bigint) ORDER BY t."id" LIMIT $2`,
       [after, pageSize],
     )
     for (const row of res.rows) yield row
