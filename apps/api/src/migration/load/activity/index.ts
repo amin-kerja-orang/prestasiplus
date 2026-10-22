@@ -15,6 +15,7 @@ import type { RunMode } from '../../kit/types'
 import { assertNotSyntheticInProduction } from '../index'
 import { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
 import { assertContentOwner } from './content-steps'
+import { openMigrationFiles } from './files'
 import { ACTIVITY_GROUPS } from './groups'
 import { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 import { activityInputHash, assertCorePreflight } from './preflight'
@@ -22,6 +23,7 @@ import { rebuildAfterResume } from './resume-report'
 
 export { ActivityContext, ACTIVITY_GROUP_NAMES, type ActivityGroup, type ActivityGroupName, type ActivityOptions } from './context'
 export { DriftCollector, writeReportFile } from './drift'
+export { MigrationFiles, openMigrationFiles, normaliseRelativePath, parseManifest } from './files'
 export { ACTIVITY_GROUPS } from './groups'
 export { NOT_MIGRATED_ACTIVITY, type NotMigrated } from './not-migrated'
 export { assertCorePreflight, PreflightError, ACTIVITY_READ_TABLES } from './preflight'
@@ -109,6 +111,10 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   await assertContentOwner(options.pool, options.contentOwnerUserId)
 
   const activity = new ActivityContext(activityOptions)
+  // `--files-dir`: the directory, its SHA256SUMS and the storage are checked before any group runs (nothing is copied here).
+  if (options.filesDir !== undefined) {
+    activity.files = await openMigrationFiles({ dir: options.filesDir, env: options.env, mode, source: options.source })
+  }
   const wanted = groupNames === undefined || groupNames.length === 0 ? undefined : groupNames
   if (wanted) {
     const bad = wanted.filter((n) => !(ACTIVITY_GROUP_NAMES as readonly string[]).includes(n))
@@ -128,6 +134,7 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
     stepNames: steps.map((s) => s.entity),
     extraTables,
     contentOwnerUserId: options.contentOwnerUserId,
+    filesManifestHash: activity.files?.manifestHash,
   })
   return { activity, steps, inputHash, notMigrated: notMigratedOf(chosen) }
 }
