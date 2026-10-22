@@ -9,7 +9,7 @@
  * Reads only the fixtures / anonymised staging copy; it never connects to a source database.
  */
 import { mytDay, SystemClock, type Clock } from '../../db/clock'
-import { registerMigrateCommand, type CliContext, type CommandArgs, type MigrateCommand } from '../kit'
+import { registerMigrateCommand, withSourceLock, type CliContext, type CommandArgs, type MigrateCommand } from '../kit'
 import { ApplyGuardError } from '../kit/apply-guard'
 import { resolveGitSha } from './git-sha'
 import { NOT_MIGRATED, runCore } from './index'
@@ -37,7 +37,10 @@ export const migrateCore: MigrateCommand = {
     const batchSize = sizeText === undefined ? undefined : Number(sizeText)
     if (batchSize !== undefined && (!Number.isInteger(batchSize) || batchSize < 1)) throw new ApplyGuardError('--batch-size must be a positive integer.')
 
-    const { report, core } = await runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env) })
+    // Dry-run and apply both take the per-source lock (the orchestrator's key); runCore itself stays lock-free for it.
+    const { report, core } = await withSourceLock(ctx.pool, 'cloud', () =>
+      runCore({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env) }),
+    )
 
     ctx.out(`migrate:core ${report.mode}: run ${report.runId} ${report.status}`)
     ctx.out('entity | source | eligible | loaded | rejected | status')
