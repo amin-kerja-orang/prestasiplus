@@ -145,6 +145,23 @@ function errorCodes(text: string): string {
 }
 
 /**
+ * Client-side failures have no `ERROR n`. Only these known messages are recognised, and only FIXED text is shown for them:
+ * the raw stderr may carry the user, host or a password fragment.
+ */
+const KNOWN_CLIENT_MESSAGES: readonly [RegExp, string][] = [
+  [/unknown variable ['"`]?ssl-mode/i, 'the client does not know the option ssl-mode (a MariaDB client: use ssl and ssl-verify-server-cert instead)'],
+  [/unknown (variable|option)/i, 'the client rejected an option in the option file'],
+  [/SSL connection error/i, 'SSL connection error'],
+  [/Unknown (MySQL|MariaDB) server host/i, 'unknown server host'],
+  [/Can't connect to/i, "can't connect to the server"],
+  [/Access denied/i, 'access denied'],
+]
+
+function knownClientMessage(text: string): string {
+  return KNOWN_CLIENT_MESSAGES.find(([re]) => re.test(text))?.[1] ?? ''
+}
+
+/**
  * Runs one client session with `sql` on stdin and yields stdout lines. Throws `DumpUsageError` when the binary cannot be
  * started, `ClientError` (scrubbed stderr) on a non-zero exit, `DumpAbortedError` after an abort. Closing the generator
  * early kills the child.
@@ -195,7 +212,7 @@ export async function* runClient(config: ClientConfig, sql: string): AsyncGenera
     if (config.signal?.aborted) throw new DumpAbortedError('Interrupted.')
     if (code !== 0) {
       const secrets = config.optionFile.secrets
-      const detail = scrub(errorCodes(stderr), secrets)
+      const detail = scrub(errorCodes(stderr) || knownClientMessage(stderr), secrets)
       throw new ClientError(`The MySQL client failed (${signal ? `signal ${signal}` : `exit ${code}`})${detail ? `: ${detail}` : '.'}`)
     }
   } finally {

@@ -14,6 +14,8 @@ export interface TableReport {
   table: string
   group: 'staging' | 'archive'
   present: boolean
+  /** Storage engine in the source (null for a view or an absent table). */
+  engine: string | null
   /** Only when not present: `absent` or `view`. */
   not_present_reason?: string
   /** Rows in the source (COUNT(*) in the snapshot / count read), null when not counted. */
@@ -31,7 +33,7 @@ export interface SchemaReport {
   generated_at: string
   server: { version: string; flavor: string }
   time_zone: { session: string; global: string; system: string }
-  grants: { read_only: boolean; privileges: string[]; refused: string[]; unverifiable: number }
+  grants: { read_only: boolean; privileges: string[]; refused: string[]; unverifiable: number; roles_active: boolean }
   datetime_offset?: string
   spec_tables_absent_in_source: string[]
   source_tables_not_in_spec: { count: number; names: string[] }
@@ -57,6 +59,7 @@ export function buildReport(input: {
       table: p.name,
       group: p.group,
       present: p.present,
+      engine: p.engine ?? null,
       ...(p.present ? {} : { not_present_reason: p.absentReason ?? 'absent' }),
       row_count: p.present ? (counts?.get(p.name) ?? null) : null,
       columns_selected: p.columns.length,
@@ -73,7 +76,7 @@ export function buildReport(input: {
     generated_at: input.now.toISOString(),
     server: { version: schema.version, flavor: schema.flavor },
     time_zone: schema.timeZone,
-    grants: { read_only: input.verdict.readOnly, privileges: input.verdict.privileges, refused: input.verdict.refused, unverifiable: input.verdict.unverifiable },
+    grants: { read_only: input.verdict.readOnly, privileges: input.verdict.privileges, refused: input.verdict.refused, unverifiable: input.verdict.unverifiable, roles_active: input.verdict.rolesActive },
     ...(input.datetimeOffset ? { datetime_offset: input.datetimeOffset } : {}),
     spec_tables_absent_in_source: tables.filter((t) => !t.present).map((t) => t.table),
     source_tables_not_in_spec: { count: sourceOnly.length + schema.unprintableTables, names: sourceOnly.slice(0, 200) },
@@ -86,6 +89,11 @@ export function buildReport(input: {
   }
 }
 
+/** Present spec tables whose engine is known and not InnoDB (the consistent snapshot holds only for InnoDB). */
+export function nonInnodbTables(plans: readonly TablePlan[]): { name: string; engine: string }[] {
+  return plans.filter((p) => p.present && p.engine !== undefined && !/^innodb$/i.test(p.engine)).map((p) => ({ name: p.name, engine: p.engine as string }))
+}
+
 const cell = (v: string): string => v.replace(/\|/g, '/')
 
 export function renderReportMarkdown(r: SchemaReport): string {
@@ -96,15 +104,15 @@ export function renderReportMarkdown(r: SchemaReport): string {
     `Time zone: session ${cell(r.time_zone.session)}, global ${cell(r.time_zone.global)}, system ${cell(r.time_zone.system)}.`,
     r.datetime_offset ? `DATETIME offset applied: ${r.datetime_offset}.` : 'DATETIME columns have no time zone: --datetime-offset decides the offset at export.',
     '',
-    `Grants: ${r.grants.read_only ? 'read-only (accepted)' : 'NOT read-only (refused)'}. Privileges seen: ${r.grants.privileges.join(', ') || 'none'}.${r.grants.refused.length > 0 ? ` Beyond read-only: ${r.grants.refused.join(', ')}.` : ''}${r.grants.unverifiable > 0 ? ` Unverifiable grant lines: ${r.grants.unverifiable}.` : ''}`,
+    `Grants: ${r.grants.read_only ? 'read-only (accepted)' : 'NOT read-only (refused)'}. Privileges seen: ${r.grants.privileges.join(', ') || 'none'}.${r.grants.refused.length > 0 ? ` Beyond read-only: ${r.grants.refused.join(', ')}.` : ''}${r.grants.unverifiable > 0 ? ` Unverifiable grant lines: ${r.grants.unverifiable}.` : ''}${r.grants.roles_active ? ' A mandatory or active role is in effect.' : ''}`,
     '',
     `Tables present: ${r.totals.tables_present} of ${r.totals.tables_expected}. Rows: ${r.totals.rows ?? 'not counted'}.`,
     '',
-    '| Table | Present | Rows | Selected | Redacted | Spec columns missing or not granted | Source columns not in spec |',
-    '|---|---|---:|---:|---|---|---|',
+    '| Table | Present | Engine | Rows | Selected | Redacted | Spec columns missing or not granted | Source columns not in spec |',
+    '|---|---|---|---:|---:|---|---|---|',
     ...r.tables.map(
       (t) =>
-        `| ${t.table} | ${t.present ? 'yes' : `no (${t.not_present_reason})`} | ${t.row_count ?? ''} | ${t.columns_selected} | ${t.columns_redacted.join(', ')} | ${t.spec_columns_missing_in_source.join(', ')} | ${t.source_columns_not_in_spec.count > 0 ? `${t.source_columns_not_in_spec.count}: ${t.source_columns_not_in_spec.names.join(', ')}` : ''} |`,
+        `| ${t.table} | ${t.present ? 'yes' : `no (${t.not_present_reason})`} | ${t.engine ?? ''}${t.engine !== null && !/^innodb$/i.test(t.engine) ? ' (not InnoDB: no consistent snapshot)' : ''} | ${t.row_count ?? ''} | ${t.columns_selected} | ${t.columns_redacted.join(', ')} | ${t.spec_columns_missing_in_source.join(', ')} | ${t.source_columns_not_in_spec.count > 0 ? `${t.source_columns_not_in_spec.count}: ${t.source_columns_not_in_spec.names.join(', ')}` : ''} |`,
     ),
     '',
   ]

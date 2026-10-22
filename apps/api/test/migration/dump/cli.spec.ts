@@ -76,7 +76,7 @@ describe('dump:check', () => {
     expect(report.tables.find((t: { table: string }) => t.table === 'payments')).toMatchObject({ present: false, not_present_reason: 'absent' })
     expect(report.spec_tables_absent_in_source).toContain('payments')
     expect(report.totals.rows).toBe(3)
-    expect(readFileSync(join(out, 'schema-report.md'), 'utf8')).toMatch(/\| users \| yes \| 2 \|/)
+    expect(readFileSync(join(out, 'schema-report.md'), 'utf8')).toMatch(/\| users \| yes \| InnoDB \| 2 \|/)
     for (const f of ['schema-report.json', 'schema-report.md']) expect(statSync(join(out, f)).mode & 0o777).toBe(0o600)
     // No row value anywhere, and no data SELECT was sent.
     const all = readFileSync(join(out, 'schema-report.json'), 'utf8') + readFileSync(join(out, 'schema-report.md'), 'utf8')
@@ -91,7 +91,8 @@ describe('dump:check', () => {
     fx.setScenario(scenario())
     await cli(['dump:check', '--out', work.out('check-args')])
     const calls = fx.calls()
-    expect(calls.length).toBe(2)
+    // meta, role (MySQL 8), counts
+    expect(calls.length).toBe(3)
     for (const c of calls) {
       expect(c.args[0]).toBe(`--defaults-file=${fx.optionFile}`)
       expect(c.args).toEqual(expect.arrayContaining(['--batch', '--raw', '--skip-column-names', '--quick', '--default-character-set=utf8mb4', '--no-auto-rehash']))
@@ -106,7 +107,7 @@ describe('dump:check', () => {
     const r = await cli(['dump:check', '--out', out])
     expect(r.code).toBe(DUMP_EXIT.notReadOnly)
     expect(r.text).toMatch(/not read-only.*INSERT, UPDATE/)
-    expect(fx.calls().length).toBe(1)
+    expect(fx.calls().length).toBe(2) // meta and role read only
     const report = JSON.parse(readFileSync(join(out, 'schema-report.json'), 'utf8'))
     expect(report.grants).toMatchObject({ read_only: false, refused: ['INSERT', 'UPDATE'] })
     expect(report.totals.rows).toBeNull()
@@ -118,6 +119,78 @@ describe('dump:check', () => {
     const r = await cli(['dump:check', '--out', work.out('check-nodb')])
     expect(r.code).toBe(DUMP_EXIT.usage)
     expect(r.text).toMatch(/DATABASE\(\) is NULL/)
+  })
+})
+
+describe('dump:check roles and engines', () => {
+  const check = async (name: string, extra: Partial<Scenario>) => {
+    fx.setScenario(scenario(extra))
+    const out = work.out(name)
+    const r = await cli(['dump:check', '--out', out])
+    return { ...r, out }
+  }
+  const NOT_RO = /not read-only.*mandatory or active role/
+
+  it('refuses (exit 3, no counts read) when mandatory_roles is non-empty, without naming the role', async () => {
+    const r = await check('check-mandatory', { mandatoryRoles: '`secret_role`@`%`' })
+    expect(r.code, r.text).toBe(DUMP_EXIT.notReadOnly)
+    expect(r.text).toMatch(NOT_RO)
+    expect(r.text).not.toContain('secret_role')
+    expect(fx.calls().some((c) => c.sql.includes('COUNT(*)'))).toBe(false)
+    expect(JSON.parse(readFileSync(join(r.out, 'schema-report.json'), 'utf8')).grants).toMatchObject({ read_only: false, roles_active: true })
+  })
+
+  it('refuses when the current role is a role, without naming it', async () => {
+    const r = await check('check-role', { mandatoryRoles: '', currentRole: '`secret_role`@`%`' })
+    expect(r.code, r.text).toBe(DUMP_EXIT.notReadOnly)
+    expect(r.text).toMatch(NOT_RO)
+    expect(r.text).not.toContain('secret_role')
+  })
+
+  it.each([['NONE'], ['NULL'], ['']])('accepts MySQL 8 with an empty mandatory_roles and CURRENT_ROLE() = %j', async (role) => {
+    const r = await check(`check-norole-${role || 'empty'}`, { mandatoryRoles: '', currentRole: role })
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    expect(JSON.parse(readFileSync(join(r.out, 'schema-report.json'), 'utf8')).grants.roles_active).toBe(false)
+  })
+
+  it('MySQL 5.7 never issues CURRENT_ROLE()', async () => {
+    const r = await check('check-57', { version: '5.7.44', currentRole: '`would_fail`@`%`' })
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    expect(fx.calls().some((c) => c.sql.includes('CURRENT_ROLE'))).toBe(false)
+    expect(fx.calls().every((c) => !c.sql.includes('mandatory_roles') || c.sql.includes('SHOW GLOBAL VARIABLES'))).toBe(true)
+  })
+
+  it('MariaDB reads CURRENT_ROLE(): NULL is accepted, a role is refused', async () => {
+    const ok = await check('check-maria-ok', { version: '10.11.6-MariaDB' })
+    expect(ok.code, ok.text).toBe(DUMP_EXIT.ok)
+    expect(fx.calls().some((c) => c.sql.includes('CURRENT_ROLE'))).toBe(true)
+    const bad = await check('check-maria-role', { version: '10.11.6-MariaDB', currentRole: 'analyst' })
+    expect(bad.code, bad.text).toBe(DUMP_EXIT.notReadOnly)
+    expect(bad.text).not.toContain('analyst')
+  })
+
+  it('shows the engine per spec table and warns (does not fail) on a non-InnoDB table', async () => {
+    const base = scenario()
+    const r = await check('check-engine', { tables: { ...base.tables, users: { ...(base.tables.users as NonNullable<Scenario['tables']['users']>), engine: 'MyISAM' } } })
+    expect(r.code, r.text).toBe(DUMP_EXIT.ok)
+    expect(r.text).toMatch(/Not InnoDB.*users \(MyISAM\)/)
+    expect(r.text).not.toMatch(/Not InnoDB.*schools/)
+    const report = JSON.parse(readFileSync(join(r.out, 'schema-report.json'), 'utf8'))
+    expect(report.tables.find((t: { table: string }) => t.table === 'users').engine).toBe('MyISAM')
+    expect(report.tables.find((t: { table: string }) => t.table === 'schools').engine).toBe('InnoDB')
+    expect(report.tables.find((t: { table: string }) => t.table === 'payments').engine).toBeNull()
+    expect(readFileSync(join(r.out, 'schema-report.md'), 'utf8')).toMatch(/\| users \| yes \| MyISAM \(not InnoDB/)
+  })
+
+  it('a client failure without ERROR n shows fixed safe text, never the raw stderr', async () => {
+    fx.setScenario(scenario({ fail: { code: 7, stderr: `mysql: [ERROR] unknown variable 'ssl-mode=VERIFY_IDENTITY' for ${DB_USER}@${DB_HOST} ${PASSWORD}\n` } }))
+    const r = await cli(['dump:check', '--out', work.out('check-ssl-mode')])
+    expect(r.code).not.toBe(DUMP_EXIT.ok)
+    expect(r.text).toMatch(/exit 7.*does not know the option ssl-mode/)
+    expectNoSecrets(r.text)
+    fx.setScenario(scenario({ fail: { code: 7, stderr: 'something odd\n' } }))
+    const odd = await cli(['dump:check', '--out', work.out('check-odd')])
+    expect(odd.text).toMatch(/client failed \(exit 7\)\./)
   })
 })
 
@@ -143,8 +216,8 @@ describe('dump:cloud', () => {
 
     // The export session: one client call after the schema read, a read-only snapshot, only spec columns.
     const calls = fx.calls()
-    expect(calls.length).toBe(2)
-    const sql = (calls[1] as { sql: string }).sql
+    expect(calls.length).toBe(3)
+    const sql = (calls[2] as { sql: string }).sql
     expect(sql).toMatch(/^SET SESSION time_zone = '\+00:00';\nSET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;\nSTART TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY;/)
     expect(sql).not.toContain('legacy_national_id')
     expect(sql).toContain("'remember_token', NULL")
@@ -159,7 +232,7 @@ describe('dump:cloud', () => {
     const out = work.out('cloud-dt1')
     const r = await cli(['dump:cloud', '--out', out, '--tables', 'schools,users'])
     expect(r.code, r.text).toBe(DUMP_EXIT.ok)
-    const sql = (fx.calls()[1] as { sql: string }).sql
+    const sql = (fx.calls()[2] as { sql: string }).sql
     // schools.created_at/updated_at are DATETIME in the scenario, users.* are TIMESTAMP
     expect(sql).toContain("DATE_FORMAT(`created_at`, '%Y-%m-%dT%H:%i:%s.%f+08:00')")
     expect(sql).toContain("DATE_FORMAT(`last_login_at`, '%Y-%m-%dT%H:%i:%s.%fZ')")
@@ -185,7 +258,7 @@ describe('dump:cloud', () => {
     const r = await cli(['dump:cloud', '--out', out])
     expect(r.code).toBe(DUMP_EXIT.notReadOnly)
     expect(r.text).toMatch(/ALL PRIVILEGES/)
-    expect(fx.calls().length).toBe(1)
+    expect(fx.calls().length).toBe(2)
     expect(fx.calls().some((c) => c.sql.includes('JSON_OBJECT'))).toBe(false)
     expect(existsSync(out)).toBe(false)
     expect(existsSync(`${out}.partial`)).toBe(false)
@@ -466,7 +539,7 @@ describe('dump:produce', () => {
     const w = work.out('produce-rw')
     const r = await cli(['dump:produce', '--work', w, '--tables', 'users'], {}, produceEnv())
     expect(r.code, r.text).toBe(DUMP_EXIT.notReadOnly)
-    expect(fx.calls().length).toBe(1)
+    expect(fx.calls().length).toBe(2)
     expect(fx.calls().some((c) => c.sql.includes('JSON_OBJECT') || c.sql.includes('COUNT(*)'))).toBe(false)
     expect(existsSync(join(w, 'raw'))).toBe(false)
     expect(existsSync(join(w, 'anon'))).toBe(false)

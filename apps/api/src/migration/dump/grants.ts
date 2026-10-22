@@ -7,7 +7,8 @@
  * Everything else is refused: ALL PRIVILEGES, INSERT/UPDATE/DELETE, any DDL, INDEX, REFERENCES, EXECUTE, TRIGGER, EVENT,
  * FILE, SUPER, GRANT OPTION, CREATE USER, RELOAD, SHUTDOWN, routines, temporary tables, PROXY, dynamic privileges (e.g.
  * BINLOG_ADMIN), LOCK TABLES (not needed for a consistent snapshot; it lets the account block writes), and also PROCESS
- * (it shows other sessions' queries and so their data), REPLICATION CLIENT and BINLOG MONITOR. A role grant
+ * (it shows other sessions' queries and so their data), REPLICATION CLIENT and BINLOG MONITOR, and a server-wide `SELECT ON *.*`
+ * (database-level and table/column SELECT stay allowed). A mandatory role or an active role (not listed by SHOW GRANTS) is refused. A role grant
  * (`GRANT role TO user`) or any line that cannot be parsed counts as unverifiable and is refused, so is an empty grant list.
  *
  * Both the MySQL 5.7/8 format (`GRANT SELECT ON `db`.* TO 'u'@'h'`) and the MariaDB format are parsed.
@@ -24,6 +25,13 @@ export interface GrantVerdict {
   refused: string[]
   /** Lines that could not be verified (role grants, unknown format) and an empty list. */
   unverifiable: number
+  /** A mandatory role or an active role is in effect (SHOW GRANTS does not list it, so its privileges are unknown). */
+  rolesActive: boolean
+}
+
+export interface RoleState {
+  mandatoryRoles?: boolean
+  currentRoleActive?: boolean
 }
 
 const GRANT_LINE = /^GRANT\s+(.+?)\s+ON\s+(.+?)\s+TO\s+(.*)$/is
@@ -32,7 +40,7 @@ const QUOTED_STRING = /'(?:[^'\\]|\\.|'')*'/g
 
 const normalise = (name: string): string => name.trim().replace(/\s+/g, ' ').toUpperCase()
 
-export function evaluateGrants(lines: readonly string[]): GrantVerdict {
+export function evaluateGrants(lines: readonly string[], roles: RoleState = {}): GrantVerdict {
   const seen = new Set<string>()
   const refused = new Set<string>()
   let unverifiable = 0
@@ -60,9 +68,12 @@ export function evaluateGrants(lines: readonly string[]): GrantVerdict {
       .split(',')
       .map(normalise)
       .filter(Boolean)
+    // `*.*` was quoted away above only for backtick names; the star form is never quoted.
+    const globalScope = /^\*\s*\.\s*\*$/.test((m[2] as string).trim())
     for (const p of privileges) {
       seen.add(p)
       if (p === 'ALL' || p === 'ALL PRIVILEGES' || !ALLOWED_PRIVILEGES.includes(p)) refused.add(p === 'ALL' ? 'ALL PRIVILEGES' : p)
+      else if (p === 'SELECT' && globalScope) refused.add('SELECT ON *.*')
     }
     const tail = (m[3] as string).replace(QUOTED_STRING, "''")
     if (/\bWITH\b(?:\s+\w+\s+\d+)*\s+GRANT\s+OPTION\b/i.test(tail) || /\bGRANT\s+OPTION\b/i.test(tail)) {
@@ -72,11 +83,13 @@ export function evaluateGrants(lines: readonly string[]): GrantVerdict {
   }
   if (grantLines === 0) unverifiable++
 
+  const rolesActive = roles.mandatoryRoles === true || roles.currentRoleActive === true
   return {
-    readOnly: refused.size === 0 && unverifiable === 0,
+    readOnly: refused.size === 0 && unverifiable === 0 && !rolesActive,
     privileges: [...seen].sort(),
     refused: [...refused].sort(),
     unverifiable,
+    rolesActive,
   }
 }
 
@@ -85,5 +98,6 @@ export function describeVerdict(v: GrantVerdict): string {
   const parts: string[] = []
   if (v.refused.length > 0) parts.push(`it holds privileges beyond read-only: ${v.refused.join(', ')}`)
   if (v.unverifiable > 0) parts.push(`${v.unverifiable} grant line(s) could not be verified (roles or an unknown format)`)
+  if (v.rolesActive) parts.push('a mandatory or active role is in effect and its privileges cannot be verified')
   return parts.join('; ')
 }

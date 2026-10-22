@@ -67,7 +67,7 @@ apps/api/src/db/generated/
 .claude/worktrees/
 
 # AM-10 dump pipeline: option files, env files and key files never enter git
-# (pp-anon*.key is already covered by *.key)
+# (*.key also covers the pp-anon*.key key files; *.cnf covers MySQL option files)
 .env.migration
 *.key
 *.cnf

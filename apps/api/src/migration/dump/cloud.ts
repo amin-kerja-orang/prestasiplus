@@ -18,9 +18,9 @@ import { silentLogger, type Logger } from '../staging/log'
 import { DUMP_FORMAT } from '../staging/readers'
 import { collectClient, runClient, type ClientConfig } from './client'
 import { DumpUsageError, ExportStreamError, ReadOnlyRequiredError } from './errors'
-import { assertDatetimeOffset, buildCountSql, buildDumpSql, buildMetaSql, buildPlan, parseCounts, parseMeta, type SchemaInfo, type TablePlan } from './export-sql'
+import { assertDatetimeOffset, buildCountSql, buildDumpSql, buildMetaSql, buildPlan, buildRoleSql, parseCounts, parseMeta, parseRoleActive, supportsRoles, type SchemaInfo, type TablePlan } from './export-sql'
 import { describeVerdict, evaluateGrants, type GrantVerdict } from './grants'
-import { buildReport, writeReport, type SchemaReport } from './report'
+import { buildReport, nonInnodbTables, writeReport, type SchemaReport } from './report'
 import { splitExport, type SplitTable } from './split'
 import { registerSensitive } from './cleanup'
 import { wipeDir } from './wipe'
@@ -57,7 +57,9 @@ export async function readSchema(client: ClientConfig): Promise<{ schema: Schema
   if (!schema.hasDatabase) {
     throw new DumpUsageError('The connection has no default database (DATABASE() is NULL). Add database=<name> under [client] in the option file.')
   }
-  return { schema, verdict: evaluateGrants(schema.grantLines) }
+  // A mandatory or active role is invisible to SHOW GRANTS. CURRENT_ROLE() exists only on MySQL 8+ and MariaDB.
+  const currentRoleActive = supportsRoles(schema) ? parseRoleActive(await collectClient(client, buildRoleSql())) : false
+  return { schema, verdict: evaluateGrants(schema.grantLines, { mandatoryRoles: schema.mandatoryRoles, currentRoleActive }) }
 }
 
 export function refusalMessage(verdict: GrantVerdict): string {
@@ -79,6 +81,11 @@ function validateTables(tables: readonly string[] | undefined, specs: readonly T
   for (const t of tables) if (!known.has(t)) throw new DumpUsageError('--tables names a table that ddl/spec.ts does not define.')
 }
 
+function warnNonInnodb(log: Logger, present: readonly TablePlan[]): void {
+  const odd = nonInnodbTables(present)
+  if (odd.length > 0) log.warn(`Not InnoDB (the consistent snapshot is not guaranteed for these tables): ${odd.map((t) => `${t.name} (${t.engine})`).join(', ')}.`)
+}
+
 export interface CheckResult {
   report: SchemaReport
   verdict: GrantVerdict
@@ -97,6 +104,7 @@ export async function runCheck(options: CommonOptions & { outDir: string }): Pro
   // Row counts are aggregates, but they are still a read: only for an account that passed the grant check.
   const counts = verdict.readOnly ? parseCounts(await collectClient(options.client, buildCountSql(plans))) : undefined
   const report = buildReport({ now: now(), schema, verdict, plans, specTableNames: plans.map((p) => p.name), counts })
+  warnNonInnodb(log, plans.filter((p) => p.present))
   const dir = prepareOutputDir(options.outDir)
   try {
     await writeReport(dir, report)
@@ -139,6 +147,7 @@ export async function dumpCloud(options: CommonOptions & { outDir: string }): Pr
   for (const p of present) {
     if (p.missingInSource.length > 0) log.warn(`Table ${p.name}: ${p.missingInSource.length} spec column(s) are missing or not granted: ${p.missingInSource.join(', ')}.`)
   }
+  warnNonInnodb(log, present)
   if (present.length === 0) throw new DumpUsageError('None of the requested spec tables exists in the source database.')
 
   const finalDir = realEvenIfMissing(options.outDir)

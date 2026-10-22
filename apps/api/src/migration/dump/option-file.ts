@@ -83,6 +83,8 @@ export interface ParsedOptions {
   raw: Map<string, string>
   /** Every key seen in the [client] and [mysql] groups (normalised: lower case, `_` as `-`). */
   keys: string[]
+  /** Lines without `=`: the key and the 1-based line number. Never printed. */
+  bareLines: { key: string; line: number }[]
   hasInclude: boolean
   groups: string[]
   outsideGroup: boolean
@@ -95,11 +97,14 @@ export function parseOptionText(text: string): ParsedOptions {
   const values = new Map<string, string>()
   const raw = new Map<string, string>()
   const keys = new Set<string>()
+  const bareLines: { key: string; line: number }[] = []
   let hasInclude = false
   let outsideGroup = false
   const groups = new Set<string>()
   let group = ''
-  for (const rawLine of text.split(/\r?\n/)) {
+  const rows = text.split(/\r?\n/)
+  for (let n = 0; n < rows.length; n++) {
+    const rawLine = rows[n] as string
     const line = rawLine.trim()
     if (line === '' || line.startsWith('#') || line.startsWith(';')) continue
     if (line.startsWith('!include')) {
@@ -118,6 +123,7 @@ export function parseOptionText(text: string): ParsedOptions {
     const key = (eq === -1 ? line : line.slice(0, eq)).trim().toLowerCase().replace(/_/g, '-')
     keys.add(key)
     if (eq === -1) {
+      bareLines.push({ key, line: n + 1 })
       values.set(key, '') // a bare flag such as `ssl-verify-server-cert`
       raw.set(key, '')
       continue
@@ -125,7 +131,7 @@ export function parseOptionText(text: string): ParsedOptions {
     raw.set(key, unquote(line.slice(eq + 1)))
     values.set(key, unquote(line.slice(eq + 1).replace(/\s+#.*$/, '')))
   }
-  return { values, raw, keys: [...keys], hasInclude, groups: [...groups], outsideGroup }
+  return { values, raw, keys: [...keys], bareLines, hasInclude, groups: [...groups], outsideGroup }
 }
 
 const OFF = new Set(['0', 'false', 'off', 'no'])
@@ -175,7 +181,7 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
   else if ((statSync(path).mode & 0o077) !== 0) {
     throw new DumpUsageError('CLOUD_MYSQL_DEFAULTS_FILE must not be readable by group or others (chmod 600).')
   }
-  const { values, raw, keys, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
+  const { values, raw, keys, bareLines, hasInclude, groups, outsideGroup } = parseOptionText(readFileSync(path, 'utf8'))
   if (hasInclude) throw new DumpUsageError('The option file uses !include or !includedir; put all settings in the one file.')
   if (outsideGroup) throw new DumpUsageError('The option file has settings outside any [group]; put them under [client].')
   for (const g of groups) {
@@ -185,6 +191,11 @@ export function loadOptionFile(env: Env, platform: string, roots: readonly strin
       const shown = /^[a-z0-9_.-]{1,40}$/.test(g) ? g : '(unprintable name)'
       throw new DumpUsageError(`The option file has a [${shown}] group. Only [client] is accepted; remove the other groups.`)
     }
+  }
+  // A line without `=` may be a pasted password: only its line number is shown, never its text.
+  if (bareLines.length > 0) {
+    const bad = bareLines.find((b) => !ALLOWED_OPTION_KEYS.includes(b.key))
+    if (bad) throw new DumpUsageError(`The option file has a line with a key that is not allowed: (key not allowed) at line ${bad.line}. Allowed keys: ${ALLOWED_OPTION_KEYS.join(', ')}.`)
   }
   for (const k of keys) {
     if (!ALLOWED_OPTION_KEYS.includes(k)) {

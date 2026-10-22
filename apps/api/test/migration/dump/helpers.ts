@@ -17,6 +17,8 @@ export interface FakeTable {
   rows: string[]
   /** Table type in information_schema (default BASE TABLE). */
   type?: string
+  /** Storage engine in information_schema (default InnoDB). */
+  engine?: string
   /** Counts printed for COUNT(*) instead of rows.length (to simulate a mismatch). */
   countOverride?: number
   /** Non-NULL values that are not valid JSON, per text column the spec calls j. */
@@ -28,6 +30,10 @@ export interface Scenario {
   /** `NULL` simulates no default database. */
   database?: string
   grants?: string[]
+  /** Value of the global variable mandatory_roles (default empty). */
+  mandatoryRoles?: string
+  /** What CURRENT_ROLE() prints (default NONE on MySQL 8, NULL on MariaDB). */
+  currentRole?: string
   tables: Record<string, FakeTable>
   /** Print stderr and exit with this code after the output. */
   fail?: { code: number; stderr: string; onlyDump?: boolean }
@@ -67,7 +73,9 @@ process.stdin.on('end', () => {
     else if (line === 'SELECT DATABASE();') out.push(sc.database || 'pp')
     else if (line.startsWith('SELECT @@session.time_zone')) out.push('SYSTEM\\tSYSTEM\\tUTC')
     else if (line === 'SHOW GRANTS FOR CURRENT_USER();') for (const g of sc.grants) out.push(g)
-    else if (line.includes('FROM information_schema.tables')) for (const [t, d] of Object.entries(sc.tables)) out.push(t + '\\t' + (d.type || 'BASE TABLE'))
+    else if (line.startsWith('SHOW GLOBAL VARIABLES')) { if (sc.mandatoryRoles !== undefined) out.push('mandatory_roles\\t' + sc.mandatoryRoles) }
+    else if (line === 'SELECT CURRENT_ROLE();') out.push(sc.currentRole !== undefined ? sc.currentRole : (/mariadb/i.test(sc.version || '') ? 'NULL' : 'NONE'))
+    else if (line.includes('FROM information_schema.tables')) for (const [t, d] of Object.entries(sc.tables)) out.push(t + '\\t' + (d.type || 'BASE TABLE') + '\\t' + (d.engine || 'InnoDB'))
     else if (line.includes('FROM information_schema.columns')) for (const [t, d] of Object.entries(sc.tables)) for (const [c, ty] of d.columns) out.push(t + '\\t' + c + '\\t' + ty)
     else if (line.startsWith('SELECT COUNT(*)')) {
       if (last === '#PP-JSONBAD') out.push(String((sc.tables[table].badJson || {})[bad] || 0))

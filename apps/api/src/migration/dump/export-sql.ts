@@ -45,6 +45,8 @@ export const M = {
   database: '#PP-DATABASE',
   timeZone: '#PP-TZ',
   grants: '#PP-GRANTS',
+  roleVars: '#PP-ROLEVARS',
+  role: '#PP-ROLE',
   tables: '#PP-TABLES',
   columns: '#PP-COLUMNS',
   counts: '#PP-COUNTS',
@@ -64,13 +66,39 @@ export function buildMetaSql(): string {
     'SELECT @@session.time_zone, @@global.time_zone, @@system_time_zone;',
     `SELECT '${M.grants}';`,
     'SHOW GRANTS FOR CURRENT_USER();',
+    // Works on MySQL 5.7/8 and MariaDB, needs no privilege, empty set when the variable does not exist.
+    `SELECT '${M.roleVars}';`,
+    "SHOW GLOBAL VARIABLES WHERE Variable_name IN ('mandatory_roles');",
     `SELECT '${M.tables}';`,
-    'SELECT table_name, table_type FROM information_schema.tables WHERE table_schema = DATABASE();',
+    'SELECT table_name, table_type, engine FROM information_schema.tables WHERE table_schema = DATABASE();',
     `SELECT '${M.columns}';`,
     'SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = DATABASE() ORDER BY table_name, ordinal_position;',
     `SELECT '${M.end}';`,
     '',
   ].join('\n')
+}
+
+/**
+ * The active role is a second metadata call, only where CURRENT_ROLE() exists (MySQL 8.0+, MariaDB): it is a syntax error on
+ * MySQL 5.7, and a failed statement would stop the whole schema read.
+ */
+export function buildRoleSql(): string {
+  return [`SELECT '${M.role}';`, 'SELECT CURRENT_ROLE();', `SELECT '${M.end}';`, ''].join('\n')
+}
+
+/** True when `CURRENT_ROLE()` exists. An unparsable MySQL version counts as yes: a failure is then loud (fail closed). */
+export function supportsRoles(schema: Pick<SchemaInfo, 'flavor' | 'version'>): boolean {
+  if (schema.flavor === 'mariadb') return true
+  const m = /^(\d+)\./.exec(schema.version.trim())
+  return m === null || Number(m[1]) >= 8
+}
+
+/** The active role from the `buildRoleSql` output: false for NONE, NULL or empty, true for any role (names are not kept). */
+export function parseRoleActive(lines: readonly string[]): boolean {
+  const start = lines.indexOf(M.role)
+  if (start === -1 || !lines.includes(M.end)) throw new DumpUsageError('The role read did not complete (the client output was cut short).')
+  const value = (lines[start + 1] ?? '').trim()
+  return !(value === '' || value === M.end || /^(NONE|NULL)$/i.test(value))
 }
 
 export type Flavor = 'mysql' | 'mariadb'
@@ -83,6 +111,8 @@ export interface SourceColumn {
 export interface SourceTable {
   /** `BASE TABLE`, `VIEW`, ... */
   type: string
+  /** Storage engine (`InnoDB`, `MyISAM`, ...); undefined for a view. */
+  engine?: string
   columns: SourceColumn[]
 }
 
@@ -93,6 +123,8 @@ export interface SchemaInfo {
   hasDatabase: boolean
   timeZone: { session: string; global: string; system: string }
   grantLines: string[]
+  /** True when `mandatory_roles` is non-empty: every account then holds roles that SHOW GRANTS does not list. */
+  mandatoryRoles: boolean
   tables: Map<string, SourceTable>
   /** Names that are not plain identifiers (never used in SQL). */
   unprintableTables: number
@@ -102,7 +134,7 @@ export function parseMeta(lines: readonly string[]): SchemaInfo {
   const sections = new Map<string, string[]>()
   let current: string[] | undefined
   let ended = false
-  const markers = new Set<string>([M.version, M.database, M.timeZone, M.grants, M.tables, M.columns])
+  const markers = new Set<string>([M.version, M.database, M.timeZone, M.grants, M.roleVars, M.tables, M.columns])
   for (const line of lines) {
     if (line === M.end) {
       ended = true
@@ -124,13 +156,13 @@ export function parseMeta(lines: readonly string[]): SchemaInfo {
   const tables = new Map<string, SourceTable>()
   let unprintableTables = 0
   for (const line of sections.get(M.tables) as string[]) {
-    const [name, type] = line.split('\t')
+    const [name, type, engine] = line.split('\t')
     if (name === undefined || type === undefined) continue
     if (!IDENT.test(name)) {
       unprintableTables++
       continue
     }
-    tables.set(name, { type: type.toUpperCase(), columns: [] })
+    tables.set(name, { type: type.toUpperCase(), ...(engine && engine !== 'NULL' ? { engine } : {}), columns: [] })
   }
   for (const line of sections.get(M.columns) as string[]) {
     const [table, name, type] = line.split('\t')
@@ -145,6 +177,10 @@ export function parseMeta(lines: readonly string[]): SchemaInfo {
     hasDatabase: dbLine !== undefined && dbLine !== 'NULL' && dbLine !== '',
     timeZone: { session: tz[0] ?? '', global: tz[1] ?? '', system: tz[2] ?? '' },
     grantLines: sections.get(M.grants) as string[],
+    mandatoryRoles: (sections.get(M.roleVars) as string[]).some((l) => {
+      const [name, value] = l.split('\t')
+      return name?.toLowerCase() === 'mandatory_roles' && (value ?? '').trim() !== '' && (value ?? '').trim() !== 'NULL'
+    }),
     tables,
     unprintableTables,
   }
@@ -177,6 +213,8 @@ export interface TablePlan {
   present: boolean
   /** Why it is not present: `absent` or `view`. */
   absentReason?: 'absent' | 'view'
+  /** Storage engine of the source table (the consistent snapshot holds only for InnoDB). */
+  engine?: string
   columns: ColumnPlan[]
   redacted: string[]
   /** Spec columns that the source does not have (omitted from the export). */
@@ -262,7 +300,7 @@ export function buildPlan(schema: SchemaInfo, specs: readonly TableSpec[], optio
     }
     const sourceByName = new Map(source.columns.map((c) => [c.name, c]))
     const specNames = new Set(columnNames(spec))
-    const plan: TablePlan = { ...empty, present: true, notes: [] }
+    const plan: TablePlan = { ...empty, present: true, notes: [], ...(source.engine ? { engine: source.engine } : {}) }
     for (const col of spec.columns) {
       assertIdentifier(col.name)
       const src = sourceByName.get(col.name)

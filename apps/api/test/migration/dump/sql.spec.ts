@@ -14,8 +14,11 @@ import {
   buildDumpSql,
   buildMetaSql,
   buildPlan,
+  buildRoleSql,
   parseCounts,
   parseMeta,
+  parseRoleActive,
+  supportsRoles,
   type SchemaInfo,
   type SourceColumn,
 } from '../../../src/migration/dump/export-sql'
@@ -41,6 +44,7 @@ function schemaOf(tables: Record<string, [string, string][]>, flavor: 'mysql' | 
     hasDatabase: true,
     timeZone: { session: 'SYSTEM', global: 'SYSTEM', system: 'UTC' },
     grantLines: [],
+    mandatoryRoles: false,
     tables: new Map(Object.entries(tables).map(([t, cols]) => [t, { type: 'BASE TABLE', columns: cols.map(([name, type]): SourceColumn => ({ name, type })) }])),
     unprintableTables: 0,
   }
@@ -134,8 +138,8 @@ describe('SQL generation', () => {
 
   it('does not select a hostile source column name (it is skipped when the metadata is parsed)', () => {
     const lines = [
-      '#PP-VERSION', '8.0.36', '#PP-DATABASE', 'pp', '#PP-TZ', 'SYSTEM\tSYSTEM\tUTC', '#PP-GRANTS', 'GRANT USAGE ON *.* TO `r`@`%`',
-      '#PP-TABLES', 'things\tBASE TABLE', 'evil`; DROP\tBASE TABLE',
+      '#PP-VERSION', '8.0.36', '#PP-DATABASE', 'pp', '#PP-TZ', 'SYSTEM\tSYSTEM\tUTC', '#PP-GRANTS', 'GRANT USAGE ON *.* TO `r`@`%`', '#PP-ROLEVARS',
+      '#PP-TABLES', 'things\tBASE TABLE\tInnoDB', 'evil`; DROP\tBASE TABLE\tInnoDB',
       '#PP-COLUMNS', 'things\tid\tbigint', 'things\tx`; DROP TABLE things; --\tvarchar', '#PP-END',
     ]
     const s = parseMeta(lines)
@@ -146,11 +150,23 @@ describe('SQL generation', () => {
 
   it('parses the metadata and counts, and refuses a cut-off stream', () => {
     expect(buildMetaSql()).toContain('SHOW GRANTS FOR CURRENT_USER();')
+    // portable on 5.7, 8 and MariaDB: no @@global.mandatory_roles and no CURRENT_ROLE() in the first call
+    expect(buildMetaSql()).toContain("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('mandatory_roles');")
+    expect(buildMetaSql()).not.toMatch(/@@global\.mandatory_roles|CURRENT_ROLE/)
+    expect(buildRoleSql()).toContain('SELECT CURRENT_ROLE();')
+    expect([supportsRoles({ flavor: 'mysql', version: '5.7.44' }), supportsRoles({ flavor: 'mysql', version: '8.0.36' }), supportsRoles({ flavor: 'mariadb', version: '10.6.12-MariaDB' })]).toEqual([false, true, true])
+    expect(parseRoleActive(['#PP-ROLE', 'NONE', '#PP-END'])).toBe(false)
+    expect(parseRoleActive(['#PP-ROLE', 'NULL', '#PP-END'])).toBe(false)
+    expect(parseRoleActive(['#PP-ROLE', '`r`@`%`', '#PP-END'])).toBe(true)
+    expect(() => parseRoleActive(['#PP-ROLE', 'NONE'])).toThrow(DumpUsageError)
     expect(buildMetaSql()).not.toMatch(/FROM `?(users|things)/)
-    const lines = ['#PP-VERSION', '10.6.12-MariaDB', '#PP-DATABASE', 'NULL', '#PP-TZ', '+00:00\tSYSTEM\tUTC', '#PP-GRANTS', '#PP-TABLES', '#PP-COLUMNS', '#PP-END']
+    const lines = ['#PP-VERSION', '10.6.12-MariaDB', '#PP-DATABASE', 'NULL', '#PP-TZ', '+00:00\tSYSTEM\tUTC', '#PP-GRANTS', '#PP-ROLEVARS', 'mandatory_roles\t`r`@`%`', '#PP-TABLES', '#PP-COLUMNS', '#PP-END']
     const s = parseMeta(lines)
     expect(s.flavor).toBe('mariadb')
     expect(s.hasDatabase).toBe(false)
+    expect(s.mandatoryRoles).toBe(true)
+    expect(parseMeta(lines.map((l) => (l.startsWith('mandatory_roles') ? 'mandatory_roles\t' : l))).mandatoryRoles).toBe(false)
+    expect(parseMeta(lines.filter((l) => !l.startsWith('mandatory_roles'))).mandatoryRoles).toBe(false)
     expect(s.timeZone).toEqual({ session: '+00:00', global: 'SYSTEM', system: 'UTC' })
     expect(() => parseMeta(lines.slice(0, -1))).toThrow(DumpUsageError)
     expect(parseCounts(['#PP-COUNTS', '#PP-TABLE a', '12', '#PP-TABLE b', '0', '#PP-END'])).toEqual(new Map([['a', 12], ['b', 0]]))
@@ -170,7 +186,7 @@ describe('grant check', () => {
     // column-level SELECT and table names that contain the word ON
     expect(ok(['GRANT SELECT (`id`, `name on x`) ON `pp`.`users` TO `reader`@`%`']).readOnly).toBe(true)
     // a partial revoke only narrows the account
-    expect(ok(['GRANT SELECT ON *.* TO `reader`@`%`', "REVOKE SELECT ON `mysql`.* FROM `reader`@`%`"]).readOnly).toBe(true)
+    expect(ok(['GRANT SELECT ON `pp`.* TO `reader`@`%`', "REVOKE SELECT ON `pp`.`secrets` FROM `reader`@`%`"]).readOnly).toBe(true)
     expect(ok(['GRANT SELECT ON `pp`.* TO `reader`@`%`']).privileges).toEqual(['SELECT'])
     // what dump:grants produces: column-level SELECT only, REQUIRE SSL on the USAGE line
     expect(ok(["GRANT USAGE ON *.* TO `c`@`127.0.0.1` IDENTIFIED BY PASSWORD '*00' REQUIRE SSL", 'GRANT SELECT (`id`, `name`) ON `pp`.`users` TO `c`@`127.0.0.1`', 'GRANT SELECT (`id`) ON `pp`.`schools` TO `c`@`127.0.0.1`'])).toMatchObject({ readOnly: true, privileges: ['SELECT', 'USAGE'] })
@@ -203,6 +219,22 @@ describe('grant check', () => {
     const v = ok(lines)
     expect(v.readOnly).toBe(false)
     expect(v.refused).toContain(privilege)
+  })
+
+  it('refuses a server-wide SELECT (MySQL and MariaDB formats), keeps database-level and table-level SELECT', () => {
+    for (const line of ['GRANT SELECT ON *.* TO `u`@`%`', "GRANT SELECT ON *.* TO 'u'@'%' IDENTIFIED BY PASSWORD '*00'", 'GRANT SELECT, SHOW VIEW ON *.* TO `u`@`%`']) {
+      expect(ok([line])).toMatchObject({ readOnly: false, refused: ['SELECT ON *.*'] })
+    }
+    expect(ok(['GRANT SELECT ON `pp`.* TO `u`@`%`']).readOnly).toBe(true)
+    expect(ok(['GRANT SELECT ON `pp`.`users` TO `u`@`%`']).readOnly).toBe(true)
+    expect(ok(['GRANT SELECT (`id`) ON `pp`.`users` TO `u`@`%`']).readOnly).toBe(true)
+  })
+
+  it('refuses a mandatory or active role that SHOW GRANTS does not list', () => {
+    const lines = ['GRANT USAGE ON *.* TO `u`@`%`', 'GRANT SELECT ON `pp`.* TO `u`@`%`']
+    expect(evaluateGrants(lines, { mandatoryRoles: true })).toMatchObject({ readOnly: false, rolesActive: true })
+    expect(evaluateGrants(lines, { currentRoleActive: true })).toMatchObject({ readOnly: false, rolesActive: true })
+    expect(evaluateGrants(lines, { mandatoryRoles: false, currentRoleActive: false })).toMatchObject({ readOnly: true, rolesActive: false })
   })
 
   it('refuses a role grant, unknown lines and an empty list (unverifiable)', () => {
@@ -255,6 +287,26 @@ describe('option file', () => {
     expect(message).toContain(`[${group.toLowerCase()}] group`)
     expect(message).not.toContain('other_secret_user')
     expect(message).not.toContain(PASSWORD)
+  })
+
+  it('shows only the line number for a bare line (a pasted password), never its text; a key=value line never shows the value', () => {
+    const run = (text: string) => {
+      try {
+        loadOptionFile(env(write(work.outside(`bare-${Math.random()}.cnf`), text)), 'linux')
+      } catch (e) {
+        return (e as Error).message
+      }
+      return ''
+    }
+    const pasted = `x${'y'.repeat(20)}`
+    const bare = run(`[client]\nhost=db.example.test\n${pasted}\n`)
+    expect(bare).toContain('(key not allowed) at line 3')
+    expect(bare).not.toContain(pasted)
+    const keyed = run(`[client]\nhost=db.example.test\nbogus-key=${PASSWORD}\n`)
+    expect(keyed).toContain('"bogus-key"')
+    expect(keyed).not.toContain(PASSWORD)
+    // a bare line that is an allowed flag stays accepted
+    expect(run('[client]\nhost=127.0.0.1\nskip-ssl\n')).toBe('')
   })
 
   it('refuses !includedir and settings outside any group; accepts [client] alone', () => {
