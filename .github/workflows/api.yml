@@ -151,9 +151,10 @@ jobs:
 
   # BE-33 (AC6): new or changed dependencies in a pull request (license-neutral; vulnerabilities only).
   # Dependency review needs the repository's dependency graph (a repository setting). A probe step asks the
-  # dependency-graph compare API first. Only when it answers "not supported" is the review step skipped, with a
-  # warning (the npm audit gate above still runs). Any other probe error fails the job, and a high-severity finding
-  # fails the review step as before. No continue-on-error (ci-workflow.spec.ts).
+  # dependency-graph compare API first, with the same read-only token the review action uses. If that API refuses
+  # (HTTP 403/404, or "not supported"), the dependency graph is off for this repository, so the review step is skipped
+  # with a warning (the npm audit gate above still runs). Any other probe error fails the job, and a high-severity
+  # finding fails the review step as before. No continue-on-error (ci-workflow.spec.ts).
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -173,8 +174,8 @@ jobs:
           set -u
           if out="$(gh api "repos/$REPO/dependency-graph/compare/$BASE_SHA...$HEAD_SHA" 2>&1)"; then
             echo "supported=true" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$out" | grep -qi 'not supported'; then
-            echo "::warning::Dependency review is not supported on this repository (enable the dependency graph in the repository settings). Skipped."
+          elif printf '%s' "$out" | grep -qiE 'not supported|HTTP 403|HTTP 404'; then
+            echo "::warning::Dependency review is not available on this repository ($(printf '%s' "$out" | grep -oE 'HTTP [0-9]+' | head -n 1)); enable the dependency graph in the repository settings. Skipped."
             echo "supported=false" >> "$GITHUB_OUTPUT"
           else
             echo "The dependency-graph support check gave an unexpected answer:"; printf '%s\n' "$out" | head -n 5; exit 1
