@@ -9,9 +9,9 @@
  *
  * API rule (apps/api/src/modules/bijak/attempts/attempts.service.ts `owned`): another user's attempt
  * is 403 FORBIDDEN "Akses ditolak" (D54b), an unknown id is 404. Controller is `@Roles('student')`.
- * UI (src/modules/m28-bijak-spm/pages/AttemptPage.vue): a failed load shows `DsLoadError`
- * ([data-ds=load-error]) "Percubaan tidak dapat dimuatkan." (only a 404 says "tidak ditemui") and no
- * attempt shell. The UI text is read from source, not yet run: that part is @provisional.
+ * UI (src/modules/m28-bijak-spm/pages/AttemptPage.vue): a 403 or a 404 sets `refused` and renders
+ * `attempt-not-found` "Percubaan ini tidak dijumpai." with no exam shell (no position, map, options or
+ * submit). Run green against a local API at 375/768/1280.
  *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_STUDENT_PASS / BIJAK_STUDENT_B_PASS; B defaults to A's password).
  */
@@ -27,7 +27,7 @@ interface PaperRow {
 test.describe('bijak attempt ownership @api', () => {
   test.setTimeout(90_000)
 
-  test('pupil B cannot read pupil A attempt: API 403, UI refusal without data @api @provisional', async ({
+  test('pupil B cannot read pupil A attempt: API 403, UI refusal without data @api', async ({
     page,
     browser,
   }, testInfo) => {
@@ -74,17 +74,15 @@ test.describe('bijak attempt ownership @api', () => {
 
       // UI: the attempt page shows the app's refusal and none of A's data.
       await pageB.goto(`/spm/bijak/percubaan/${attemptId}`)
-      await expect(pageB.locator('[data-ds=load-error]')).toBeVisible({ timeout: 20_000 })
-      await expect(pageB.getByText('Percubaan tidak dapat dimuatkan.')).toBeVisible()
-      // The load-error sits inside the attempt shell, whose chrome (footer nav, save status) still
-      // renders. Assert on A's data instead: no question count, no answer options, no way to submit.
-      for (const id of ['position', 'open-map']) {
-        for (const el of await pageB.getByTestId(id).all()) {
-          await expect(el).toHaveText(/\b0\s*\/\s*0\b/)
-        }
-      }
+      await expect(pageB.getByTestId('attempt-not-found')).toBeVisible({ timeout: 20_000 })
+      await expect(pageB.getByText('Percubaan ini tidak dijumpai.')).toBeVisible()
+      // The refused state renders no exam shell content. Assert none of A's data is shown: no
+      // question position/map, no answer options, no way to submit.
+      await expect(pageB.getByTestId('position')).toHaveCount(0)
+      await expect(pageB.getByTestId('open-map')).toHaveCount(0)
       await expect(pageB.locator('[data-testid^=option-]')).toHaveCount(0)
-      // The shell's Hantar stays enabled on the error (Low UX finding for d4); the server must refuse it.
+      await expect(pageB.getByTestId('submit')).toHaveCount(0)
+      // The server must refuse a direct submit regardless of the UI.
       const submitB = await pageB.request.post(`/api/bijak/attempts/${attemptId}/submit`, {
         headers: { 'x-csrf-token': await csrfOf(pageB) },
         data: { idempotencyKey: `s3-foreign-${Date.now()}`, changes: [] },
