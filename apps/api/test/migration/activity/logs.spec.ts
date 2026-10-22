@@ -91,6 +91,6 @@ describe('log hygiene (AC8)', () => {
     const low = everything.toLowerCase()
     for (const secret of secrets) expect(low.includes(secret), 'a personal or free-text value of the fixture is in the output').toBe(false)
     // Hex digests (input hash, keyed reject hashes) can hold a long run of decimal digits by chance: not a leak.
-    expect(patternKinds(everything.replace(/[0-9a-f]{16,}/gi, '#'), { allowedEmailDomains: [] })).toEqual([])
+    expect(patternKinds(everything.replace(/\b[0-9a-f]{16,}\b/gi, '#'), { allowedEmailDomains: [] })).toEqual([])
   }, 120_000)
 })
