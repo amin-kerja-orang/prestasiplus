@@ -43,7 +43,7 @@ describe('adopted but unreferenced seed row', () => {
   })
 
   it('is deleted by the rollback with a warning, and the seeds restore the counts', async () => {
-    const report = await rollbackLegacy({ pool: h.env.pool, env: h.runEnv, source: 'cloud', confirmDb: h.env.db.name })
+    const report = await rollbackLegacy({ pool: h.env.pool, env: { ...h.runEnv, PP_ALLOW_MIGRATE_ROLLBACK: '1' }, source: 'cloud', confirmDb: h.env.db.name })
     expect(report.warnings?.some((w) => /^subjects: \d+ rows deleted may include adopted seed rows; re-run the idempotent seeds \(npm run be:db:seed\)/.test(w))).toBe(true)
     expect((await legacyTableCounts(h)).subjects).toBe((before.subjects ?? 0) - 1)
 

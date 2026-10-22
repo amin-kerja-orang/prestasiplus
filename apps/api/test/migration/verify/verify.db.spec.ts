@@ -71,6 +71,12 @@ describe('pass on the fixture', () => {
     }
   })
 
+  it('never replaces an existing report file', () => {
+    const before = readFileSync(report.files?.json as string, 'utf8')
+    expect(() => writeVerifyReport(report, out.path)).toThrow(/already exists/)
+    expect(readFileSync(report.files?.json as string, 'utf8')).toBe(before)
+  })
+
   it('refuses a folder that is not a .migration-out folder', () => {
     expect(() => writeVerifyReport(report, '/tmp/not-allowed-out')).toThrow(/migration-out/)
   })

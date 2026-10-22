@@ -9,13 +9,18 @@
  *  - the rows the ETL wrote without a legacy pair (`ETL_DERIVED_CHILDREN`: `attempt_results`), which go with their
  *    parent through `ON DELETE CASCADE` and are counted before;
  *  - the `etl_id_map` rows of the source.
- * `etl_runs`, `etl_recon`, `etl_rejects` and `etl_checkpoints` are KEPT: they are the audit trail of what was loaded and
- * rolled back. (A checkpoint of an unfinished apply run would make a resume skip batches that no longer exist; the report
- * warns when such a run exists, and the next load must then run with resume off.)
+ * `etl_runs`, `etl_recon` and `etl_rejects` are KEPT: they are the audit trail of what was loaded and rolled back.
+ * Re-applying after a rollback must start from scratch, so every unfinished apply run of the source (`status = 'failed'`,
+ * the runs `RunLedger.findResumable` would continue) is closed: it stays `failed` (the status check allows only
+ * running / succeeded / failed) but its `input_hash` gets the prefix `rolled-back:`, so no resume matches it, and its
+ * `etl_checkpoints` are deleted (they point at batches that no longer exist). A succeeded dry-run of the same input stays valid: the next apply may reuse it.
  * Never touched: rows born in v2 (`legacy_source IS NULL`), `staging_cloud`, `archive_cloud` and the .cloud source.
  *
  * One transaction. `dryRun` does the same work and rolls it back, so the counts are exact. Before anything: the shared
- * apply guard (`PP_ALLOW_MIGRATE_APPLY=1`, and in production `PP_MIGRATE_TARGET_DB`) and `confirmDb = current_database()`.
+ * apply guard (`PP_ALLOW_MIGRATE_APPLY=1`, and in production `PP_MIGRATE_TARGET_DB`), `PP_ALLOW_MIGRATE_ROLLBACK=1` (a
+ * second, separate switch, also for a dry-run) and `confirmDb = current_database()`.
+ * NEVER AFTER GO-LIVE WITHOUT A LEAD DECISION: once v2 users work on the migrated data, a rollback deletes their accounts
+ * (it refuses while v2 rows depend on them, but that is a safety net, not a procedure).
  *
  * Rows other tables depend on ("pinned")
  *  A migrated row that a row outside the migration refers to (a v2-born row, or any table that is not an ETL table) is
@@ -36,8 +41,12 @@
  * fix is a claim marker written by `claimSeeded` (for example `etl_id_map` with an `adopted` flag); then rollback could
  * release exactly the adopted rows.
  *
- * Concurrency: the rollback takes the advisory lock `etl:rollback:<source>` for its transaction and refuses while an apply
- * run of the source is marked `running` (a crashed run must be marked failed first).
+ * Concurrency: the rollback holds two advisory locks for its transaction, `etl:rollback:<source>` (one rollback at a time)
+ * and `etl:source:<source>` (the source-level lock), and refuses while an apply run of the source is marked `running`;
+ * that check is made after both locks are held and again immediately before the first DELETE. OPEN POINT: the runner
+ * (`kit/runner.ts`) does not take `etl:source:<source>`, so an apply that starts between the second check and the commit
+ * is not blocked. Closing that needs the runner to take the lock (a kit change, outside this card); until then the
+ * operator must not start a load while a rollback runs.
  *
  * Cycles: a foreign key inside a cycle (`users.created_by_id` references `users`) is cleared first (set to NULL on the rows
  * to delete) when the column is nullable; a NOT NULL one must be deferrable (`SET CONSTRAINTS ... DEFERRED`), else refuse.
@@ -98,6 +107,9 @@ export async function rollbackLegacy(options: RollbackOptions): Promise<Rollback
   const dryRun = options.dryRun ?? false
   assertLegacySource(source)
   await assertApplyAllowed(pool, env)
+  if (env.PP_ALLOW_MIGRATE_ROLLBACK !== '1') {
+    throw new RollbackRefusedError('Refusing rollback: set PP_ALLOW_MIGRATE_ROLLBACK=1 to allow it (never after go-live without a LEAD decision). Nothing was changed.')
+  }
   const current = (await pool.query<{ db: string }>('SELECT current_database() AS db')).rows[0]?.db ?? ''
   if (confirmDb !== current) {
     throw new ApplyGuardError(`Refusing rollback: the confirmed database name does not match the connected database "${current}". Nothing was changed.`)
@@ -109,19 +121,12 @@ export async function rollbackLegacy(options: RollbackOptions): Promise<Rollback
     await client.query('BEGIN')
     // Fail fast instead of waiting behind a long transaction that holds a lock on a table we delete from.
     await client.query(`SET LOCAL lock_timeout = '30s'`)
-    // One rollback per source at a time (a second one waits on nothing: it is refused).
-    const lock = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS ok`, [`etl:rollback:${source}`])
-    if (lock.rows[0]?.ok !== true) throw new RollbackRefusedError(`Refusing rollback: another rollback of source "${source}" is running. Nothing was changed.`)
-    // A load that is still running would write rows while they are deleted.
-    const running = await client.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM etl_runs WHERE mode = 'apply' AND status = 'running' AND $1 = ANY(sources)`,
-      [source],
-    )
-    if ((running.rows[0]?.n ?? 0) > 0) {
-      throw new RollbackRefusedError(
-        `Refusing rollback: ${running.rows[0]?.n} apply run(s) of source "${source}" are marked running. Wait for them to finish; if one crashed, mark it failed in etl_runs first. Nothing was changed.`,
-      )
+    // One rollback per source at a time, and the source-level lock (see the header: the runner does not take it yet).
+    for (const name of [`etl:rollback:${source}`, `etl:source:${source}`]) {
+      const lock = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS ok`, [name])
+      if (lock.rows[0]?.ok !== true) throw new RollbackRefusedError(`Refusing rollback: the lock "${name}" is held by another session. Nothing was changed.`)
     }
+    await assertNoRunningApply(client, source)
     const report = await run(client, source, current, dryRun)
     await client.query(dryRun ? 'ROLLBACK' : 'COMMIT')
     return report
@@ -132,6 +137,19 @@ export async function rollbackLegacy(options: RollbackOptions): Promise<Rollback
     throw err instanceof RollbackRefusedError || err instanceof ApplyGuardError ? err : sanitizeDbError(err)
   } finally {
     client.release(broken ? true : undefined)
+  }
+}
+
+/** A load that is still running would write rows while they are deleted. */
+async function assertNoRunningApply(db: pg.PoolClient, source: string): Promise<void> {
+  const running = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM etl_runs WHERE mode = 'apply' AND status = 'running' AND $1 = ANY(sources)`,
+    [source],
+  )
+  if ((running.rows[0]?.n ?? 0) > 0) {
+    throw new RollbackRefusedError(
+      `Refusing rollback: ${running.rows[0]?.n} apply run(s) of source "${source}" are marked running. Wait for them to finish; if one crashed, mark it failed in etl_runs first. Nothing was changed.`,
+    )
   }
 }
 
@@ -220,7 +238,8 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
     }
   }
 
-  // ---- 4. delete, children first
+  // ---- 4. delete, children first (last look at the running loads, just before the first DELETE)
+  await assertNoRunningApply(db, source)
   const out: RollbackReport['tables'] = []
   const viaParent = new Map<string, number>()
   for (const table of order) {
@@ -246,16 +265,15 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
   // ---- 5. the id map of the source (the audit tables etl_runs / etl_recon / etl_rejects / etl_checkpoints stay)
   const idMap = await db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1`, [source])
 
-  const unfinished = await db.query<{ n: number }>(
-    `SELECT count(*)::int AS n FROM etl_runs WHERE mode = 'apply' AND status = 'failed' AND $1 = ANY(sources)`,
+  // Close the runs a resume would continue, so the next apply starts from scratch (see the header).
+  const closed = await db.query<{ id: string }>(
+    `UPDATE etl_runs SET input_hash = 'rolled-back:' || coalesce(input_hash, '')
+     WHERE mode = 'apply' AND status = 'failed' AND $1 = ANY(sources) AND coalesce(input_hash, '') NOT LIKE 'rolled-back:%'
+     RETURNING id`,
     [source],
   )
+  if (closed.rows.length > 0) await db.query(`DELETE FROM etl_checkpoints WHERE run_id = ANY($1::bigint[])`, [closed.rows.map((r) => r.id)])
   const warnings: string[] = []
-  if ((unfinished.rows[0]?.n ?? 0) > 0) {
-    warnings.push(
-      `${unfinished.rows[0]?.n} unfinished apply run(s) of this source keep their checkpoints; start the next load with resume off, or a resume would skip batches that were rolled back`,
-    )
-  }
 
   // An adopted seed row nobody uses is deleted with the rest (see the header): say so for every claimable table.
   for (const t of out) {

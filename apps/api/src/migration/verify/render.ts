@@ -3,7 +3,7 @@
  * (plan 14.6). Both files are aggregates and surrogate ids only; the folder guard and the symbolic-link refusal are the
  * ones of the profile report (`prepareOutputDir`).
  */
-import { existsSync, lstatSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -56,20 +56,28 @@ export function renderVerifyMarkdown(report: VerifyReport): string {
 export const stampOf = (iso: string): string => iso.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14)
 
 /**
- * Writes the report (mode 0600) into `outDir` (default `<repo>/.migration-out`), refusing a symbolic link at the target,
- * sets `report.files` and returns the two paths.
+ * Writes the report (mode 0600) into `outDir` (default `<repo>/.migration-out`), refusing to replace an existing file or
+ * a link at the target, sets `report.files` and returns the two paths.
  */
 export function writeVerifyReport(report: VerifyReport, outDir: string = DEFAULT_OUT_DIR): { json: string; md: string } {
   const dir = prepareOutputDir(outDir)
   const base = `recon-${report.runIds.length > 0 ? report.runIds.join('-') : 'none'}-${stampOf(report.generatedAt)}`
   const files = { json: join(dir, `${base}.json`), md: join(dir, `${base}.md`) }
+  // Never replace a file: an existing one (or a link planted at the name) is an error, not something to overwrite.
+  for (const path of [files.json, files.md]) {
+    if (existsSync(path) || isLink(path)) throw new RangeError('A report file with this name already exists; refusing to replace it.')
+  }
   report.files = files
   for (const [path, content] of [[files.json, renderVerifyJson(report)], [files.md, renderVerifyMarkdown(report)]] as const) {
-    if (existsSync(path)) {
-      if (lstatSync(path).isSymbolicLink()) throw new RangeError('A report file is a symbolic link; refusing to write through it.')
-      unlinkSync(path)
-    }
     writeFileSync(path, content, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
   }
   return files
+}
+
+function isLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
 }
