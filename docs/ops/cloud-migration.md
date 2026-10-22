@@ -132,21 +132,25 @@ Notes:
 
 ### 2.3 Postgres for the API tests
 
-Facts from [CC-ENV] "Installed tools" and "Run tests, start services": PostgreSQL 16 and Redis 7.0 are pre-installed but not running by default; start with `service postgresql start`. Docker (docker, dockerd, docker compose) is available; Docker Hub is on the Trusted allowlist. The environment cache keeps files (pulled images) but not running processes, so start the DB every session.
+Facts from [CC-ENV] "Installed tools" and "Run tests, start services": PostgreSQL 16 and Redis 7.0 are pre-installed but not running by default. In practice the VM has the PostgreSQL 16 binaries (`/usr/lib/postgresql/16/bin`) but no cluster under `/etc/postgresql`, so `service postgresql start` has nothing to start; `scripts/cloud-install.sh` (section 2.5) creates and starts a throwaway cluster instead. Docker (docker, dockerd, docker compose) is available; Docker Hub is on the Trusted allowlist. The environment cache keeps files (pulled images) but not running processes, so start the DB every session.
 
 Repo fact (`apps/api/test/support/global-setup.ts`, lines 46-52): the comment says "`TEST_DATABASE_URL` (CI service container) wins over Testcontainers", the code reads `let adminUrl = process.env.TEST_DATABASE_URL ?? ''` and creates `const template = \`pp_tpl_${randomBytes(6).toString('hex')}\``. Only when `adminUrl` is empty does it start `new PostgreSqlContainer('postgres:16-alpine')`. If neither works it fails with "Test database unavailable (start Docker or set TEST_DATABASE_URL)". Because the template DB name is random per run, a shared server is safe for sequential runs.
 
-Recommended path (no Docker-in-Docker dependency):
+Recommended path (no Docker-in-Docker dependency): run `bash scripts/cloud-install.sh` (section 2.5; the SessionStart hook does this). By hand, the same thing is:
 
 ```bash
-service postgresql start
-# Make a role the tests can use. The tests create and drop databases, so the role needs CREATEDB (superuser is simplest).
-# Placeholder form; choose your own role name and do not commit it:
-export TEST_DATABASE_URL='postgresql://<user>@localhost:5432/postgres'
+sudo mkdir -p /var/tmp/pp-pg && sudo chown postgres /var/tmp/pp-pg
+sudo -u postgres test -f /var/tmp/pp-pg/data/PG_VERSION || \
+  sudo -u postgres /usr/lib/postgresql/16/bin/initdb -D /var/tmp/pp-pg/data -U test --auth=trust
+# Only if the server is NOT running (pg_isready -h 127.0.0.1 -p 55432 fails): drop a stale pid file.
+sudo -u postgres rm -f /var/tmp/pp-pg/data/postmaster.pid
+sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pp-pg/data -l /var/tmp/pp-pg/log \
+  -o "-p 55432 -k /var/tmp/pp-pg -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700 -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300 -c timezone=UTC" start -w
+export TEST_DATABASE_URL='postgresql://test@127.0.0.1:55432/postgres'
 npm run be:test -- <path-to-one-spec>
 ```
 
-Perlu pengesahan: the default authentication (peer vs trust vs password) of the VM's PostgreSQL, the exact `sudo -u postgres createuser ...` command that works, and whether a password is needed in the URL. If a password is needed, put it in the environment's variables (section 3), never in the repo.
+The role `test` is a superuser (tests create and drop databases; migration 0001 runs `CREATE EXTENSION pgcrypto`). Authentication is trust on loopback in a throwaway VM, so the URL carries no password and nothing secret is involved. Offline Prisma also needs the schema-engine stub and two variables, which the script sets (section 2.5).
 
 Fallback: leave `TEST_DATABASE_URL` unset and let Testcontainers start `postgres:16-alpine`. Perlu pengesahan: the docs say Docker is available but do not mention Testcontainers or the Docker socket permissions.
 
@@ -181,17 +185,30 @@ Split plan when one call would hit the timeout:
 
 ### 2.5 Setup script (`scripts/cloud-install.sh`)
 
-The committed script supersedes the sketch in 2.2 and covers 2.3. It does nothing unless `CLAUDE_CODE_REMOTE=true`, so it is a no-op on local PCs. Steps, in order:
+The committed script supersedes the sketch in 2.2 and covers 2.3. It does nothing unless `CLAUDE_CODE_REMOTE=true`, so it is a no-op on local PCs. The cloud VM has the PostgreSQL 16 binaries but no cluster under `/etc/postgresql`, so the script creates a throwaway cluster itself (the recipe every cloud session already uses). Steps, in order:
+
+Before step 1 the script validates the overrides, before anything is touched (see "Refusals" below). The numbered steps match the `n/5` labels in its output:
 
 1. `npm ci` (skipped when `node_modules/.package-lock.json` is newer than `package-lock.json`).
-2. Start PostgreSQL (`service postgresql start`, else `pg_ctlcluster`) and wait for `pg_isready`.
-3. Create the test role (`LOGIN SUPERUSER`: `global-setup.ts` runs `CREATE`/`DROP DATABASE` and migration 0001 runs `CREATE EXTENSION pgcrypto`) and the database if missing.
-4. Export `TEST_DATABASE_URL=postgresql://<user>:<pass>@127.0.0.1:5432/<db>`: appended to `$CLAUDE_ENV_FILE` when set (SessionStart mechanism), else printed.
+2. PostgreSQL: if `pg_isready -h 127.0.0.1 -p 55432` already answers, leave the server untouched (detection is TCP-based, so a cluster started earlier with other options, for example a socket in `/tmp`, is accepted as is). Otherwise create `/var/tmp/pp-pg` (owned by `postgres`), `initdb -D /var/tmp/pp-pg/data -U test --auth=trust` on first use, remove a stale `postmaster.pid` only when `pg_ctl status` says the server is not running, then `pg_ctl ... start -w` with `-p 55432 -k /var/tmp/pp-pg -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700 -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300 -c timezone=UTC` (log: `/var/tmp/pp-pg/log`). Trust auth is only acceptable because the server listens on loopback only and its unix socket (kept in `/var/tmp/pp-pg`, because `/tmp` may not be writable by `postgres` after a container restart) is private to `postgres` (0700). The role is the superuser the tests need (`global-setup.ts` runs `CREATE`/`DROP DATABASE`, migration 0001 runs `CREATE EXTENSION pgcrypto`).
+3. Check that `psql` can connect, and create the database when `PP_TEST_DB_NAME` is not `postgres`.
+4. Write the Prisma schema-engine stub `~/stub/schema-engine` (engines cannot be downloaded in the cloud; the stub prints a message and exits 1, so `prisma migrate` does not work there, but the tests do not use it). Then export into `$CLAUDE_ENV_FILE` (earlier lines are replaced, so re-runs add no duplicates; the file is rewritten in place so its mode is kept, and a new file is created 0600; the variables are printed instead when `CLAUDE_ENV_FILE` is unset): `TEST_DATABASE_URL=postgresql://test@127.0.0.1:55432/postgres`, `PRISMA_SCHEMA_ENGINE_BINARY=$HOME/stub/schema-engine`, `PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1`.
 5. `npm run db:generate -w @pp/api` (Prisma client).
 
-Env overrides (all optional, non-secret local defaults): `PP_TEST_DB_USER` (`pp_test`), `PP_TEST_DB_PASS` (`pp_test_local`), `PP_TEST_DB_NAME` (`postgres`), `PP_TEST_DB_HOST` (`127.0.0.1`), `PP_TEST_DB_PORT` (`5432`). Real secrets (AI keys etc.) stay in the cloud environment settings, never in the repo. Call it from the environment Setup script too if preferred.
+The whole script is wrapped in a `main` function and every child process gets `</dev/null`, so it is safe to run piped (`... | bash`): nothing can swallow the rest of the script from stdin.
 
-Proposed SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin); not committed by this PR.** The script exits early outside cloud sessions, so the hook is safe locally:
+No secret is involved: the cluster is a throwaway test database in the session VM, reachable on loopback only with trust auth, so the URL has no password. Real secrets (AI keys etc.) stay in the cloud environment settings, never in the repo.
+
+The old Debian-cluster path (`service postgresql start`, `pg_ctlcluster`, port 5432, password role) was dropped: the VM has no such cluster. If a server is already answering on the configured host and port (for example a Debian cluster someone started), the script uses it as is, provided the role can log in and is a superuser. If nothing answers and `/usr/lib/postgresql/16/bin/initdb` is missing, the script exits with an error.
+
+Env overrides (all optional): `PP_TEST_DB_USER` (`test`), `PP_TEST_DB_NAME` (`postgres`), `PP_TEST_DB_HOST` (`127.0.0.1`), `PP_TEST_DB_PORT` (`55432`). `PP_TEST_DB_PASS` no longer exists. A pre-set `TEST_DATABASE_URL` is respected: its port decides which server is checked or started, and it is not rewritten into `$CLAUDE_ENV_FILE`.
+
+Refusals (exit non-zero, nothing is changed; a rejected pre-set `TEST_DATABASE_URL` is never echoed). When `CLAUDE_ENV_FILE` is unset, step 4 prints the generated passwordless `TEST_DATABASE_URL` (and the two `PRISMA_*` values) so you can export them by hand:
+- `PP_TEST_DB_HOST` other than `127.0.0.1` or `localhost`.
+- A pre-set `TEST_DATABASE_URL` that does not start with `postgresql://` or `postgres://`, whose host (after the single `@`, before the first `/`) is not `127.0.0.1`/`localhost`, that has more than one `@` in its authority, a non-numeric port, whitespace or a backslash, or any query string (`?`) or fragment (`#`). Queries and fragments are refused outright because libpq percent-decodes query keywords and could be made to connect elsewhere (`host=`, `hostaddr=`, `service=`).
+- User or database names with characters other than letters, digits and underscore; a non-numeric port.
+
+SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin) only after #101 is merged; not committed by this PR.** It runs the reviewed copy of the script from `origin/feature/v2-backend`, never the checked-out branch's copy, and fails visibly (non-zero) if the script is not on the tip yet. The script exits early outside cloud sessions, so the hook is safe locally, and it finds the repo through `$CLAUDE_PROJECT_DIR`, so running it from stdin works:
 
 ```json
 {
@@ -202,7 +219,7 @@ Proposed SessionStart hook for `.claude/settings.json`. **To be added by the own
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/cloud-install.sh"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && git fetch -q origin feature/v2-backend && git cat-file -e origin/feature/v2-backend:scripts/cloud-install.sh && git show origin/feature/v2-backend:scripts/cloud-install.sh | bash"
           }
         ]
       }
@@ -211,7 +228,17 @@ Proposed SessionStart hook for `.claude/settings.json`. **To be added by the own
 }
 ```
 
-Verify in a cloud session (Perlu pengesahan until run once): `echo "$TEST_DATABASE_URL"`, `psql "$TEST_DATABASE_URL" -c 'select 1'`, then `npm run be:test -- --maxWorkers=2`. Re-running `bash scripts/cloud-install.sh` must be harmless.
+Security: the script runs with the environment's variables and secrets, so any change to `scripts/cloud-install.sh` or `.claude/settings.json` needs a LEAD review before merge. Never put a secret value into the script or the hook.
+
+Checks in a cloud session (Perlu pengesahan until run once in a fresh VM):
+
+```bash
+echo "$TEST_DATABASE_URL"                       # postgresql://test@127.0.0.1:55432/postgres
+psql "$TEST_DATABASE_URL" -c 'select 1'         # returns 1
+npm run be:test -- <one spec path> --maxWorkers=2
+```
+
+Re-running `bash scripts/cloud-install.sh` must be harmless: it detects the running server, does not restart it, and adds no duplicate lines to the env file.
 
 ## 3. Secrets
 
@@ -288,8 +315,8 @@ Derived from the HANDOFF. Tick each item and post the result on the lane's PR/is
 | 1 | Sign in at https://claude.ai/code, connect GitHub, select `amin-kerja-orang/prestasiplus` (section 1) | Repo appears in the picker |
 | 2 | Create/choose the environment: Trusted, setup script and/or hook from 2.2, timeout variables from 2.4 | Session starts without "Setup script failed" |
 | 3 | Start a session on `feature/v2-backend` | `git log -1 --oneline` shows the current tip (HANDOFF said `e724b498`; `lead/merge-b5 @ 39d9e962` is the pending merge) |
-| 4 | `npm ci` finished | `ls node_modules/.cloud_install.sha256` exists (or `npm ls --depth=0` is clean) |
-| 5 | `service postgresql start`, then set `TEST_DATABASE_URL` (placeholder form, section 2.3) | `psql "$TEST_DATABASE_URL" -c 'select 1'` returns 1 |
+| 4 | `npm ci` finished | `ls node_modules/.package-lock.json` exists (or `npm ls --depth=0` is clean) |
+| 5 | `bash scripts/cloud-install.sh` has started the cluster (port 55432) and `TEST_DATABASE_URL` is set (sections 2.3, 2.5) | `psql "$TEST_DATABASE_URL" -c 'select 1'` returns 1 |
 | 6 | `npm run be:typecheck` | Exit 0 |
 | 7 | One targeted test: `npm run be:test -- <one spec path>` | Green; record the elapsed time |
 | 8 | `npm run contract:check` | Exit 0 (cheap, needs no DB) |
