@@ -1,5 +1,7 @@
 import { createHash, createHmac } from 'node:crypto'
 
+import type pg from 'pg'
+
 const IDENT = /^[a-z_][a-z0-9_]{0,62}$/
 
 /**
@@ -79,4 +81,24 @@ export function hashInput(parts: readonly string[]): string {
   const h = createHash('sha256')
   for (const part of parts) h.update(`${part.length}:${part};`)
   return h.digest('hex')
+}
+
+/**
+ * Digest SQL of a staged table, shared by BE-28 and BE-29 (MIG-07): the sum, as numeric, of a 60-bit slice of the md5 of every
+ * `_row_hash` (a NULL counts as ''). Order independent, deterministic and constant in memory, where a `string_agg` of the row
+ * hashes would pass Postgres's 1 GB text limit near 30 million rows. Any row added, deleted or changed moves the count or the sum.
+ * Input hashes stored by runs made with the earlier `md5(string_agg(...))` recipe no longer match: re-run dry-run, then apply.
+ */
+export const ROW_HASH_DIGEST_SQL = `coalesce(sum(('x' || substr(md5(coalesce("_row_hash", '')), 1, 15))::bit(60)::bigint::numeric), 0)::text`
+
+/** `{ n: row count, h: digest }` of one staged table (`schema` and `table` come from loader code, never from input). */
+export async function tableDigest(
+  pool: Pick<pg.Pool, 'query'>,
+  schema: string,
+  table: string,
+): Promise<{ n: string; h: string }> {
+  const res = await pool.query<{ n: string; h: string }>(
+    `SELECT count(*)::text AS n, ${ROW_HASH_DIGEST_SQL} AS h FROM ${quoteIdent(schema)}.${quoteIdent(table)}`,
+  )
+  return { n: res.rows[0]?.n ?? '0', h: res.rows[0]?.h ?? '0' }
 }
