@@ -32,6 +32,7 @@ import { IntakeExtractionService, type CallerInfo } from './extraction.service'
 import { IntakeReviewService } from './review.service'
 import { IntakeStimuliService } from './stimuli.service'
 import { REVIEW_LIMITS } from './workflow.constants'
+import { IntakeTeacherGate } from '../intake-teacher.gate'
 
 type Req = Request & RequestWithAuth
 
@@ -51,7 +52,7 @@ function infoOf(req: Request): CallerInfo {
  */
 @Controller('intake')
 @Roles('teacher', 'admin')
-@UseGuards(RateLimitGuard)
+@UseGuards(IntakeTeacherGate, RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 export class IntakeWorkflowController {
   constructor(
