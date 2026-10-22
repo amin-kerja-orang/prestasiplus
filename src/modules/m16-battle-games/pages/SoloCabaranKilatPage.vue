@@ -6,10 +6,8 @@
 import { computed, ref, watch } from 'vue'
 
 import { DsQuizOption, DsLoadError } from '@/ds'
-import { isHttpMode } from '@/api/mode'
 import type { QuizOptionState } from '@/ds'
 
-import SoloUnavailable from '../components/solo/SoloUnavailable.vue'
 import CountdownView from '../components/solo/CountdownView.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
@@ -23,6 +21,7 @@ import {
   ratio,
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
+import { CONFLICT, createInflight, judgeCabaranKilat, settle } from '../components/solo/solo-check'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
 
 const GAME_SECONDS = 60
@@ -31,10 +30,17 @@ const STEP_MS = 800
 
 const CHIP_COLOR = { green: 'success', amber: 'warning', red: 'error' } as const
 
-// D58 stopgap: http mode has no client-side answer key; the game is not offered (backlog #78).
-const unavailable = isHttpMode()
 const timers = useGameTimers()
+const inflight = createInflight()
 const { darjah, payload, loading, error, load } = useSoloGame('cabaran-kilat')
+
+interface ResultState {
+  newRecord: boolean
+  credited: number
+  serverScore?: number
+  serverCorrect?: number
+  serverAnswered?: number
+}
 
 type Phase = 'idle' | 'countdown' | 'playing' | 'submitting' | 'done'
 const phase = ref<Phase>('idle')
@@ -47,14 +53,19 @@ const correct = ref(0)
 const answered = ref(0)
 const timeLeft = ref(GAME_SECONDS)
 const picked = ref<number | null>(null)
-const result = ref({ newRecord: false, credited: 0 })
+const pickedCorrect = ref(false)
+const checking = ref(false)
+/** `server*`: the values the server computed (http mode); they replace the local ones on the result card. */
+const result = ref<ResultState>({ newRecord: false, credited: 0 })
 let coins = 0
+let run = 0 // incremented by reset(): a check result of an earlier run is dropped
 
 const questions = computed(() => payload.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
 const chip = computed(() => (current.value ? difficultyChip(current.value.difficulty) : null))
 
 function reset(): void {
+  run += 1
   timers.clearAll()
   phase.value = 'idle'
   count.value = 3
@@ -66,6 +77,8 @@ function reset(): void {
   answered.value = 0
   timeLeft.value = GAME_SECONDS
   picked.value = null
+  pickedCorrect.value = false
+  checking.value = false
   result.value = { newRecord: false, credited: 0 }
   coins = 0
 }
@@ -93,31 +106,42 @@ function beginPlaying(): void {
 
 function pick(optionId: number): void {
   const q = current.value
-  if (phase.value !== 'playing' || picked.value !== null || !q) return
-  const option = q.options.find((o) => o.id === optionId)
-  if (!option) return
-  picked.value = optionId
-  answered.value += 1
-  if (option.correct) {
-    correct.value += 1
-    combo.value += 1
-    maxCombo.value = Math.max(maxCombo.value, combo.value)
-    const gain = cabaranGain(combo.value)
-    score.value += gain.points
-    coins += gain.coins
-  } else {
-    combo.value = 0
-  }
-  timers.after(() => {
-    picked.value = null
-    index.value += 1
-    if (index.value >= questions.value.length) void finish()
-  }, NEXT_MS)
+  if (phase.value !== 'playing' || picked.value !== null || checking.value || !q) return
+  if (!q.options.some((o) => o.id === optionId)) return
+  const myRun = run
+  checking.value = true
+  settle(judgeCabaranKilat(payload.value?.sessionId ?? '', q, optionId, inflight), (verdict) => {
+    if (myRun !== run) return // restarted while the check was in flight
+    checking.value = false
+    // A failed check counts as wrong; a 409 (already checked) resolves the item with 0 points and is never re-posted.
+    const ok = verdict !== CONFLICT && verdict?.correct === true
+    answered.value += 1
+    if (ok) {
+      correct.value += 1
+      combo.value += 1
+      maxCombo.value = Math.max(maxCombo.value, combo.value)
+      const gain = cabaranGain(combo.value)
+      score.value += gain.points
+      coins += gain.coins
+    } else {
+      combo.value = 0
+    }
+    if (phase.value !== 'playing') return // the clock ran out meanwhile: counted, but no feedback and no advance
+    pickedCorrect.value = ok
+    picked.value = optionId
+    timers.after(() => {
+      picked.value = null
+      index.value += 1
+      if (index.value >= questions.value.length) void finish()
+    }, NEXT_MS)
+  }, () => {
+    checking.value = false // apply threw: do not leave the game locked
+  })
 }
 
-function optionState(id: number, isCorrect: boolean): QuizOptionState {
+function optionState(id: number): QuizOptionState {
   if (picked.value === null) return 'idle'
-  if (id === picked.value) return isCorrect ? 'correct' : 'wrong'
+  if (id === picked.value) return pickedCorrect.value ? 'correct' : 'wrong'
   return 'dimmed'
 }
 
@@ -132,95 +156,97 @@ async function finish(): Promise<void> {
     max_combo: maxCombo.value,
     score: score.value,
     syiling_earned: coins,
-  })
-  result.value = { newRecord: res?.is_new_record === true, credited: res?.syiling_awarded ?? 0 }
+  }, inflight)
+  result.value = {
+    newRecord: res?.is_new_record === true,
+    credited: res?.syiling_awarded ?? 0,
+    serverScore: res?.score,
+    serverCorrect: res?.correct_count,
+    serverAnswered: res?.total_answered,
+  }
   phase.value = 'done'
 }
 
+const shownScore = computed(() => result.value.serverScore ?? score.value)
 const tiles = computed(() => [
-  { label: 'Skor Total', value: String(score.value), tone: 'text-primary-t' },
-  { label: 'Betul / Jawab', value: ratio(correct.value, answered.value), tone: 'text-success' },
+  { label: 'Skor Total', value: String(shownScore.value), tone: 'text-primary-t' },
+  {
+    label: 'Betul / Jawab',
+    value: ratio(result.value.serverCorrect ?? correct.value, result.value.serverAnswered ?? answered.value),
+    tone: 'text-success',
+  },
   { label: 'Combo Max 🔥', value: `${String(maxCombo.value)}x`, tone: 'text-warning' },
   { label: 'Syiling', value: `${String(result.value.credited)} 🪙`, tone: 'text-info' },
 ])
 
-watch(
-  darjah,
-  () => {
-    if (!unavailable) void start()
-  },
-  { immediate: true },
-)
+watch(darjah, () => void start(), { immediate: true })
 </script>
 
 <template>
   <div data-testid="solo-cabaran-kilat">
-    <SoloUnavailable v-if="unavailable" />
-    <template v-else>
-      <DarjahPicker v-if="darjah === null" title="Cabaran Kilat" art="bolt" />
-      <GamePanel>
-        <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
-          <USkeleton class="h-16 w-full" />
-          <USkeleton class="h-16 w-full" />
+    <DarjahPicker v-if="darjah === null" title="Cabaran Kilat" art="bolt" />
+    <GamePanel>
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+        <USkeleton class="h-16 w-full" />
+        <USkeleton class="h-16 w-full" />
+      </div>
+      <DsLoadError v-else-if="error" :message="error" @retry="start()" />
+
+      <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
+
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+        <div v-if="combo >= 2" class="flex justify-center">
+          <UBadge
+            color="warning"
+            variant="solid"
+            size="xl"
+            :data-fire="combo >= 5"
+            data-testid="solo-combo"
+            >🔥 {{ combo }}x COMBO</UBadge
+          >
         </div>
-        <DsLoadError v-else-if="error" :message="error" @retry="load()" />
-
-        <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
-
-        <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
-          <div v-if="combo >= 2" class="flex justify-center">
-            <UBadge
-              color="warning"
-              variant="solid"
-              size="xl"
-              :data-fire="combo >= 5"
-              data-testid="solo-combo"
-              >🔥 {{ combo }}x COMBO</UBadge
-            >
-          </div>
-          <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
-          <div class="flex items-center justify-between gap-2 pt-2">
-            <p class="text-caption text-muted">Soalan {{ index + 1 }}</p>
-            <UBadge
-              v-if="chip"
-              :color="CHIP_COLOR[chip.tone]"
-              variant="soft"
-              size="lg"
-              data-testid="solo-difficulty"
-              >{{ chip.label }}</UBadge
-            >
-          </div>
-          <UCard data-testid="solo-card">
-            <p class="text-subheading break-words text-highlighted">
-              {{ current.question_text }}
-            </p>
-          </UCard>
-          <div class="grid gap-3">
-            <DsQuizOption
-              v-for="(option, i) in current.options"
-              :key="option.id"
-              :letter="OPTION_LETTERS[i] ?? ''"
-              :state="optionState(option.id, option.correct)"
-              data-testid="solo-option"
-              @select="pick(option.id)"
-            >
-              {{ option.text }}
-            </DsQuizOption>
-          </div>
+        <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
+        <div class="flex items-center justify-between gap-2 pt-2">
+          <p class="text-caption text-muted">Soalan {{ index + 1 }}</p>
+          <UBadge
+            v-if="chip"
+            :color="CHIP_COLOR[chip.tone]"
+            variant="soft"
+            size="lg"
+            data-testid="solo-difficulty"
+            >{{ chip.label }}</UBadge
+          >
         </div>
+        <UCard data-testid="solo-card">
+          <p class="text-subheading break-words text-highlighted">
+            {{ current.question_text }}
+          </p>
+        </UCard>
+        <div class="grid gap-3">
+          <DsQuizOption
+            v-for="(option, i) in current.options"
+            :key="option.id"
+            :letter="OPTION_LETTERS[i] ?? ''"
+            :state="optionState(option.id)"
+            data-testid="solo-option"
+            @select="pick(option.id)"
+          >
+            {{ option.text }}
+          </DsQuizOption>
+        </div>
+      </div>
 
-        <ResultCard
-          v-if="phase === 'done'"
-          theme="cyan"
-          :title="cabaranKilatTitle(score)"
-          subtitle="60 saat penuh aksi!"
-          :tiles="tiles"
-          :new-record="result.newRecord"
-          again-label="⚡ Main Lagi"
-          :coins-credited="result.credited"
-          @again="start"
-        />
-      </GamePanel>
-  </template>
+      <ResultCard
+        v-if="phase === 'done'"
+        theme="cyan"
+        :title="cabaranKilatTitle(score)"
+        subtitle="60 saat penuh aksi!"
+        :tiles="tiles"
+        :new-record="result.newRecord"
+        again-label="⚡ Main Lagi"
+        :coins-credited="result.credited"
+        @again="start"
+      />
+    </GamePanel>
   </div>
 </template>

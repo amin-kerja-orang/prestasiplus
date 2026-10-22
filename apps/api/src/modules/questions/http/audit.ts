@@ -19,6 +19,7 @@ export class QuestionAudit {
       action,
       actorUserId: actor.userId,
       actorRole: actor.roleCode,
+      scopeLevel: actor.scopeLevel ?? null,
       targetType: 'question',
       targetId,
       requestId: actor.requestId,

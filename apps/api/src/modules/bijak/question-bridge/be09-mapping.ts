@@ -326,6 +326,8 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
       return refuse(
         'an MCQ part inside a structured question is not supported (exam-core MCQ is question-level only)',
       )
+    case 'pksk_choice':
+      return refuse('a PKSK question is not a Bijak item')
     case 'table_fill':
       return refuse(
         "mode 'table_fill' is not supported (exam-core has no table widget or cell key)",

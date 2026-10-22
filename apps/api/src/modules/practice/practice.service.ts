@@ -23,6 +23,7 @@ import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey 
 import {
   HISTORY_MAX_ROWS,
   type CompletedSession,
+  type DirectCompletion,
   type GradedAnswer,
   PracticeRepository,
   type ServedRef,
@@ -339,6 +340,45 @@ export class PracticeService {
         questionType: q?.questionType ?? null,
       }
     })
+  }
+
+  /**
+   * BE-42 (M07-07): completes ONE scored PKSK practice set as an M05 session of mode `pksk` and credits wallet and streak
+   * through the reward port (ledger source `quiz_pksk`, the session id as the idempotency key). It joins the caller's
+   * transaction. No revision queue, subject mastery or trial counter change (M07 BR-M07-26).
+   */
+  async completePksk(input: DirectCompletion): Promise<{
+    sessionId: string
+    coinsEarned: number
+    pointsEarned: number
+    streakCount: number
+    totalBalance: number
+  }> {
+    const { done, result } = await this.repo.completeDirect(input, (completed, tx) =>
+      this.ports.reward.onSessionCompleted(
+        {
+          userId: input.userId,
+          sessionId: completed.session.id,
+          mode: 'pksk',
+          source: practiceRewardSource('pksk'),
+          correct: completed.correct,
+          total: completed.total,
+          timeSpent: completed.timeSpentSec,
+          completedAt: completed.completedAt,
+          pointsEarned: completed.pointsEarned,
+          sessionCoins: completed.coinsEarned,
+          isTest: input.isTest,
+        },
+        tx,
+      ),
+    )
+    return {
+      sessionId: done.session.id,
+      coinsEarned: result.coinsEarned,
+      pointsEarned: done.pointsEarned,
+      streakCount: result.streakCount,
+      totalBalance: result.totalBalance,
+    }
   }
 
   // --- history ----------------------------------------------------------------------------------

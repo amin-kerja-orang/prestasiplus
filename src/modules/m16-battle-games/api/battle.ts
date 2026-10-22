@@ -9,7 +9,7 @@
  * rejects with `ApiError` (404, 403, 422 with `fields`).
  */
 
-import { api, type RawResponse } from '@/api'
+import { api, wireIdOpt, type RawResponse } from '@/api'
 
 import type {
   ArenaAnswerBody,
@@ -19,6 +19,7 @@ import type {
   BattleInvitation,
   BattleListRow,
   BattleLobby,
+  BattleQueueId,
   BattleStartBody,
   BattleStartResponse,
   LeagueBody,
@@ -52,17 +53,37 @@ export function startBattle(
   body: BattleStartBody,
   options: Signal = {},
 ): Promise<RawResponse<BattleStartResponse>> {
-  return api.raw<BattleStartResponse>('POST', `/api/battle/${mode}`, body, withSignal(options))
+  return api.raw<BattleStartResponse>(
+    'POST',
+    `/api/battle/${mode}`,
+    battleWireBody(body),
+    withSignal(options),
+  )
+}
+
+/**
+ * The start / invite body as the active transport expects it: `subject_id`, `pksk_domain_id` and
+ * `receiver_id` are string ids in http mode (`BattleStartRequestSchema`, `BattleInviteRequestSchema`;
+ * a number is 422 `{}`). Absent fields stay absent.
+ */
+function battleWireBody(
+  body: BattleStartBody & { receiver_id?: number | string },
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...body }
+  for (const key of ['subject_id', 'pksk_domain_id', 'receiver_id'] as const) {
+    if (key in out) out[key] = wireIdOpt(body[key])
+  }
+  return out
 }
 
 /** #4 `GET /api/battle/poll-match/{queueId}` (every 3 s). */
 export function pollMatch(
-  queueId: number,
+  queueId: BattleQueueId,
   options: Signal = {},
 ): Promise<RawResponse<PollMatchResponse>> {
   return api.raw<PollMatchResponse>(
     'GET',
-    `/api/battle/poll-match/${String(queueId)}`,
+    `/api/battle/poll-match/${encodeURIComponent(String(queueId))}`,
     undefined,
     withSignal(options),
   )
@@ -70,12 +91,12 @@ export function pollMatch(
 
 /** #5 `POST /api/battle/accept-challenger/{queueId}`. */
 export function acceptChallenger(
-  queueId: number,
+  queueId: BattleQueueId,
   options: Signal = {},
 ): Promise<RawResponse<{ matched?: boolean; battle_uuid?: string; error?: string }>> {
   return api.raw(
     'POST',
-    `/api/battle/accept-challenger/${String(queueId)}`,
+    `/api/battle/accept-challenger/${encodeURIComponent(String(queueId))}`,
     undefined,
     withSignal(options),
   )
@@ -83,12 +104,12 @@ export function acceptChallenger(
 
 /** #6 `POST /api/battle/reject-challenger/{queueId}`. */
 export function rejectChallenger(
-  queueId: number,
+  queueId: BattleQueueId,
   options: Signal = {},
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
   return api.raw(
     'POST',
-    `/api/battle/reject-challenger/${String(queueId)}`,
+    `/api/battle/reject-challenger/${encodeURIComponent(String(queueId))}`,
     undefined,
     withSignal(options),
   )
@@ -109,7 +130,7 @@ export function searchOpponent(
 export function sendInvite(
   body: BattleInviteBody,
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
-  return api.raw('POST', '/api/battle/invite', body)
+  return api.raw('POST', '/api/battle/invite', battleWireBody(body))
 }
 
 /** #9 `GET /api/battle/invitations`. */
@@ -133,12 +154,12 @@ export function declineInvitation(
 
 /** #12 `POST /api/battle/join-queue/{queueId}` (no UI caller on live, DV-M16-06). */
 export function joinQueue(
-  queueId: number,
+  queueId: BattleQueueId,
   options: Signal = {},
 ): Promise<RawResponse<{ success?: boolean; error?: string }>> {
   return api.raw(
     'POST',
-    `/api/battle/join-queue/${String(queueId)}`,
+    `/api/battle/join-queue/${encodeURIComponent(String(queueId))}`,
     undefined,
     withSignal(options),
   )
@@ -146,12 +167,12 @@ export function joinQueue(
 
 /** #13 `GET /api/battle/poll-challenger/{queueId}` (every 3 s). */
 export function pollChallenger(
-  queueId: number,
+  queueId: BattleQueueId,
   options: Signal = {},
 ): Promise<RawResponse<PollChallengerResponse>> {
   return api.raw(
     'GET',
-    `/api/battle/poll-challenger/${String(queueId)}`,
+    `/api/battle/poll-challenger/${encodeURIComponent(String(queueId))}`,
     undefined,
     withSignal(options),
   )

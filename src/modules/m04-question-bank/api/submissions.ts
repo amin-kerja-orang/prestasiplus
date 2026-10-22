@@ -4,7 +4,9 @@
  * not change it (build-plan §S.3 rule 5).
  */
 
-import { api, type BlobResult, type ListResult } from '@/api'
+import { api, isHttpMode, type BlobResult, type ListResult } from '@/api'
+
+import { SubmissionsUnavailableError } from '../lib/submissions-unavailable'
 
 export type SubmissionStatus = 'pending' | 'processing' | 'done' | 'rejected'
 
@@ -62,6 +64,8 @@ export interface SubmissionMutation {
 export function fetchQuestionSubmissions(
   query: { status?: string | null; signal?: AbortSignal } = {},
 ): Promise<ListResult<QuestionSubmission, SubmissionListMeta>> {
+  // The real API has no admin submissions route yet: skip the request (it would only 404).
+  if (isHttpMode()) return Promise.reject(new SubmissionsUnavailableError())
   return api.list<QuestionSubmission, SubmissionListMeta>('/api/question-submissions', {
     query: { status: query.status ?? null },
     ...(query.signal ? { signal: query.signal } : {}),
