@@ -58,8 +58,21 @@ describe('restoreHttpSession scope check (P4)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     vi.spyOn(api, 'get').mockResolvedValue({ ...apiSession, active: { role: 'parent' } })
     const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('network'))
+    const store = useSessionStore()
+    store.setSession(toClientSessionFromApi(apiSession, true)) // a session left from before the reload
+    expect(store.token).not.toBeNull()
     await restoreHttpSession()
-    expect(post).toHaveBeenCalledWith('/api/auth/logout')
-    expect(useSessionStore().token).toBeNull()
+    expect(post).toHaveBeenCalledWith('/api/auth/logout', { headers: { 'x-csrf-token': 'csrf-token' } })
+    expect(store.token).toBeNull()
+    expect(store.user).toBeNull()
+  })
+
+  it('keeps the session of any role when the prototype scope is off', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
+    vi.spyOn(api, 'get').mockResolvedValue({ ...apiSession, active: { ...apiSession.active, role: 'parent' } })
+    const post = vi.spyOn(api, 'post').mockResolvedValue(undefined)
+    await restoreHttpSession()
+    expect(post).not.toHaveBeenCalled()
+    expect(useSessionStore().user?.role).toBe('parent')
   })
 })

@@ -117,7 +117,9 @@ export async function restoreHttpSession(): Promise<void> {
       // scope is ended instead of rebuilt.
       if (isPrototypeScopeOn() && !isPrototypeRole(body.active.role as Role)) {
         try {
-          await api.post<void>('/api/auth/logout')
+          // A fresh tab has no stored CSRF token yet: send the one this session just returned, so
+          // the server ends the cookie session too. `/api/auth/*` is outside the 401 policy.
+          await api.post<void>('/api/auth/logout', { headers: { 'x-csrf-token': body.csrf } })
         } catch {
           // best effort
         }
