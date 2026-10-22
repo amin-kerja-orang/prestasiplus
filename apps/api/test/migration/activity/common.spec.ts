@@ -148,6 +148,14 @@ describe('command flags', () => {
       await expect(migrateActivity.run(args({ [f]: 'x' }), fakeCtx())).rejects.toThrow(/file migration is off \(Q2\)/)
     }
   })
+  it('refuses an unknown flag (a typo must not select the full entity set) and any positional argument', async () => {
+    for (const flag of ['talbe', 'tables', 'asof', 'dry_run', 'groups']) {
+      await expect(migrateActivity.run(args({ [flag]: 'wallets' }), fakeCtx()), flag).rejects.toThrow(new RegExp(`unknown flag --${flag}\\.`))
+      await expect(migrateActivity.run(args({ [flag]: 'wallets' }), fakeCtx()), flag).rejects.toBeInstanceOf(ApplyGuardError)
+    }
+    await expect(migrateActivity.run({ ...args({}), positional: ['wallets'] }, fakeCtx())).rejects.toThrow(/unexpected argument/)
+    await expect(migrateActivity.run({ ...args({}), positional: ['wallets'] }, fakeCtx())).rejects.toBeInstanceOf(ApplyGuardError)
+  })
   it('refuses a bad date, batch size, content owner and a report file outside .migration-out', async () => {
     await expect(migrateActivity.run(args({ 'as-of': '2026-13-45' }), fakeCtx())).rejects.toBeInstanceOf(ApplyGuardError)
     await expect(migrateActivity.run(args({ 'batch-size': '0' }), fakeCtx())).rejects.toBeInstanceOf(ApplyGuardError)

@@ -506,3 +506,10 @@ Extends sections 5 and 10. Timing follows section 0, rule 4: delete as soon as t
 | `etl_id_map` | Needed by the backfill and by any later delta. Do not delete it after a successful cutover. | With the database. |
 
 **Record the deletion.** The lead writes a dated line in the issue with no data in it, for example: `<date>: raw dump, anonymised dump, key file, staging_cloud, reports, open-reports and open-submissions CSVs and summary (all runs) and the deleted-at-source ids file deleted; WAL and backups of <machine label> checked; archive_cloud kept until <date>; signed <lead>`. Each machine on the lead's list of copies (section 0, rule 4) gets a tick.
+
+## 19. `migrate:activity` (BE-29): operator notes
+
+- **Always pass `--as-of` (and `--core-as-of`) explicitly.** The input hash that links a dry-run to its `--apply` (and a resume to the interrupted run) includes `--as-of`. When the flag is left out, the default is today's Kuala Lumpur calendar day, so a dry-run on one day and an apply after midnight (or a resume that crosses midnight) hash differently and `--apply` is refused ("no passing dry-run found for input hash ..."). Give the same `--as-of=YYYY-MM-DD` to the dry-run, the apply and every resume. Pass `--core-as-of` with the date `migrate:core` ran with when it differs.
+- **Unknown flags and positional arguments are refused** (exit 2, the message names the flag): a typo such as `--talbe=wallets` never silently selects the full entity set.
+- **`blocked by spec: <entity> 0/<n>`** in the report means the entity has `n` source rows and none was loaded because the staging spec still lacks a column its v2 table needs (articles, notes, videos, audio sets, support tickets). A green run does not mean those tables are filled; the line and the `note blocked_by_spec.<entity>` counter go away once the spec carries the column and rows load.
+- **Rejected rows:** an exam attempt whose score is above its maximum (or whose maximum is not above 0) is rejected `INVALID_VALUE` on `score`; a ledger row with a negative `balance_after` is rejected `INVALID_VALUE` on `balance_after`. Nothing is clamped.

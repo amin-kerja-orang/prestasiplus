@@ -6,6 +6,11 @@
  * owner user in v2 that the staged tables do not carry; it comes from `--content-owner` (`contentOwnerUserId`),
  * and without it (or with an id that is not a v2 user) those rows are rejected ORPHAN_PARENT (LEAD Q7).
  * A v2 NOT NULL column with no staged source rejects the row INVALID_VALUE naming the column (see transform/content.ts).
+ *
+ * Child safety (LEAD 2026-10-20, D9): migrated videos are `global`, which the API allows only for admin or teacher, so the
+ * `--content-owner` must be an ACTIVE user with role `admin`; any other existing user fails the run before a content row is
+ * written (`assertContentOwner`, called once by `planActivity`, so a dry-run and an apply both fail before any group runs). Article and note
+ * HTML is sanitised in the transform with the API's own sanitiser, configured with the run's `PUBLIC_ORIGINS`.
  */
 import type pg from 'pg'
 
@@ -21,6 +26,8 @@ import {
   transformVideo,
   type ArticleValues,
 } from '../../transform/content'
+import { ApplyGuardError } from '../../kit/apply-guard'
+import { originsOf, SanitizeHtmlSanitizer } from '../../../modules/content/shared/sanitize-html.sanitizer'
 import { dropConflicts } from '../claim'
 import { rejectRow, upsertAndMap } from '../helpers'
 import { distinctValues, readById, type StagedRow } from '../source'
@@ -41,6 +48,28 @@ async function contentOwner(a: ActivityContext, db: Pick<pg.PoolClient, 'query'>
   return res.rowCount === 1 ? id : undefined
 }
 
+/**
+ * Refuses a `--content-owner` that is an existing v2 user but not an ACTIVE (active, not suspended) `admin`: such a user
+ * could not publish a `global` video through the API. An id that is not a v2 user stays "no owner" (ORPHAN_PARENT rows,
+ * nothing is written for them). Called once by `planActivity` (dry-run and apply) before any group runs. The message
+ * carries no personal data; the id is a surrogate id.
+ */
+export async function assertContentOwner(pool: pg.Pool, ownerId: string | undefined): Promise<void> {
+  const id = ownerId?.trim()
+  if (id === undefined || !/^\d{1,18}$/.test(id)) return
+  const res = await pool.query<{ ok: boolean }>(
+    `SELECT (u.is_active AND NOT u.is_suspended AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'admin')) AS ok
+       FROM users u WHERE u.id = $1::bigint`,
+    [id],
+  )
+  if (res.rowCount === 1 && res.rows[0]?.ok !== true) {
+    throw new ApplyGuardError(`--content-owner ${id} must be an active user with role admin (migrated videos are published for everyone). Nothing was written.`)
+  }
+}
+
+/** The sanitiser the API binds to `HTML_SANITIZER`, with this run's `PUBLIC_ORIGINS`. */
+const sanitizerOf = (a: ActivityContext): SanitizeHtmlSanitizer => new SanitizeHtmlSanitizer(originsOf(a.env.PUBLIC_ORIGINS))
+
 /** Malaysia calendar dates (`YYYY-MM-DD`) of some timestamps, computed in SQL (T-05): `text -> date text`. */
 async function klDates(db: Pick<pg.PoolClient, 'query'>, values: readonly (string | null)[]): Promise<Map<string, string>> {
   const distinct = [...new Set(values.filter((v): v is string => v !== null && v.trim() !== ''))]
@@ -60,6 +89,7 @@ const toRow = (legacyId: string, values: object): LegacyRow => ({ legacyId, valu
 
 export function articlesStep(a: ActivityContext): AnyEntityStep {
   const entity = 'articles'
+  const sanitizer = sanitizerOf(a)
   return {
     entity,
     source: a.source,
@@ -71,7 +101,7 @@ export function articlesStep(a: ActivityContext): AnyEntityStep {
       for (const row of rows) {
         const legacyId = idOf(row)
         const authorId = lookup(authors, row.author_id)
-        const out = transformArticle(row, { authorId })
+        const out = transformArticle(row, { authorId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push({ legacyId, values: out.value })
       }
@@ -128,6 +158,7 @@ export function bannersStep(a: ActivityContext): AnyEntityStep {
 
 export function notesStep(a: ActivityContext): AnyEntityStep {
   const entity = 'notes'
+  const sanitizer = sanitizerOf(a)
   return {
     entity,
     source: a.source,
@@ -138,7 +169,7 @@ export function notesStep(a: ActivityContext): AnyEntityStep {
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
-        const out = transformNote(row, { ownerId })
+        const out = transformNote(row, { ownerId, sanitizer })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push(toRow(legacyId, out.value))
       }

@@ -8,10 +8,21 @@
  * transforms read such a column from the staged row when the staging spec carries it (after the real export
  * completes the spec), so no code change is needed then. Nothing is invented.
  */
+import type { HtmlSanitizer } from '../../modules/content/shared/html-sanitizer'
+import { SanitizeHtmlSanitizer } from '../../modules/content/shared/sanitize-html.sanitizer'
+import { isAllowedHost } from '../../modules/content/videos/videos.service'
 import { enumMapper, flag, invalid, nonNegativeInt, orphan, unsupported } from './activity-common'
 import { ok, squash, stamps, text, type Outcome, type Staged } from './activity-common'
 
 const len = (s: string): number => Array.from(s).length
+
+/**
+ * Legacy HTML reaches pupils, so article `content` and note `body` go through the SAME sanitiser the API applies on write
+ * (`SanitizeHtmlSanitizer`, bound to `HTML_SANITIZER` in `ContentSharedModule`); the API only sanitises on write and returns
+ * the stored value on read. The default has no `PUBLIC_ORIGINS` (an image is kept only as a relative stored-file path);
+ * the loader passes the run's own origins so the result equals what the API would store. Pure and deterministic.
+ */
+const DEFAULT_SANITIZER: HtmlSanitizer = new SanitizeHtmlSanitizer([])
 
 /** An optional text column of the staged row: blank is null; absent from the spec is also null (the caller decides). */
 const optText = (row: Staged, column: string): string | null => text(row[column])
@@ -55,7 +66,10 @@ export interface ArticleValues {
   updated_at: string
 }
 
-export function transformArticle(row: Staged, parents: { authorId: string | undefined }): Outcome<ArticleValues> {
+export function transformArticle(
+  row: Staged,
+  parents: { authorId: string | undefined; sanitizer?: HtmlSanitizer },
+): Outcome<ArticleValues> {
   const title = squash(row.title)
   if (title === null) return invalid('title')
   const slug = text(row.slug)
@@ -70,8 +84,9 @@ export function transformArticle(row: Staged, parents: { authorId: string | unde
   if (published === 'invalid') return invalid('is_published')
   const views = nonNegativeInt(row.views)
   if (views === 'invalid') return invalid('views')
-  const content = optText(row, 'content')
-  if (content === null) return invalid('content')
+  const raw = optText(row, 'content')
+  if (raw === null) return invalid('content')
+  const content = (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
   const s = stamps(row)
   return ok({
     title,
@@ -192,7 +207,7 @@ export interface NoteValues {
 }
 
 /** `ownerId` is the configured content owner (LEAD Q7): undefined rejects ORPHAN_PARENT. `subject` and `grade` have no staged source. */
-export function transformNote(row: Staged, parents: { ownerId: string | undefined }): Outcome<NoteValues> {
+export function transformNote(row: Staged, parents: { ownerId: string | undefined; sanitizer?: HtmlSanitizer }): Outcome<NoteValues> {
   if (parents.ownerId === undefined) return orphan('author_id')
   const title = squash(row.title)
   if (title === null) return invalid('title')
@@ -207,8 +222,9 @@ export function transformNote(row: Staged, parents: { ownerId: string | undefine
   if (subject === null || !NOTE_SUBJECTS.includes(subject)) return invalid('subject')
   const grade = optText(row, 'grade')
   if (grade === null) return invalid('grade')
-  const content = optText(row, 'body')
-  if (content === null) return invalid('content')
+  const raw = optText(row, 'body')
+  if (raw === null) return invalid('content')
+  const content = (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
   return ok({
     title,
     summary: optText(row, 'summary'),
@@ -259,6 +275,8 @@ export interface VideoValues {
 
 /**
  * A v2 video has no draft state, so an unpublished source video is UNSUPPORTED (it must not become public).
+ * Child safety (LEAD 2026-10-20, D9): the address must pass the API's own `isAllowedHost` (https on a YouTube or Vimeo host),
+ * else UNSUPPORTED on `url`; the API holds every non-staff uploader to the same rule.
  * `category` has no staged source: INVALID_VALUE until the spec carries it.
  */
 export function transformVideo(row: Staged, parents: { ownerId: string | undefined }): Outcome<VideoValues> {
@@ -267,6 +285,7 @@ export function transformVideo(row: Staged, parents: { ownerId: string | undefin
   if (title === null) return invalid('title')
   const url = text(row.url)
   if (url === null || !HTTP_URL.test(url)) return invalid('url')
+  if (!isAllowedHost(url)) return unsupported('url')
   const published = flag(row.is_published, false)
   if (published === 'invalid') return invalid('is_published')
   if (!published) return unsupported('is_published')
@@ -278,6 +297,8 @@ export function transformVideo(row: Staged, parents: { ownerId: string | undefin
     title,
     description: optText(row, 'description'),
     category,
+    // `global` is allowed only because the owner is an ACTIVE admin: the loader refuses any other `--content-owner`
+    // (see `assertContentOwner`), and the API lets only admin or teacher publish a `global` video.
     visibility: 'global',
     uploader_id: parents.ownerId,
     views: 0,

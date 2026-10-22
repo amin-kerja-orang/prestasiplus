@@ -156,6 +156,8 @@ export function transformExamAttempt(row: Staged, refs: ExamRefs): Outcome<ExamO
   if (score === 'invalid') return invalid('score')
   const max = parseScore(row.max_score)
   if (max === 'invalid') return invalid('max_score')
+  // A score above its maximum, or a zero / negative maximum, is a contradiction: reject, never clamp.
+  if (score !== null && max !== null && (Number(max) <= 0 || Number(score) < 0 || Number(score) > Number(max))) return invalid('score')
   const { created_at, updated_at } = stamps(row)
   const submitted = status.value === 'abandoned' ? null : updated_at
   return ok({

@@ -153,9 +153,13 @@ export async function bootActivity(options: BootOptions = {}): Promise<ActivityH
 }
 
 /**
- * Content hash per table that carries `(legacy_source, legacy_id)`: the rows as JSON without the primary key,
- * the foreign keys (`*_id`, they differ when a sequence value was burned by a rolled-back batch) and the
- * timestamps; `legacy_id` stays. Two databases that hold the same migrated rows give the same hash.
+ * Content hash per table that carries `(legacy_source, legacy_id)`: the rows as JSON without the primary key, the
+ * timestamps and every target-minted `*_id` column that is not a foreign key (a sequence value differs when a
+ * rolled-back batch burned one); `legacy_id` stays. A foreign key (a single-column `FOREIGN KEY` constraint) IS
+ * compared, as the legacy id of the row it points at: through the referenced table's own `legacy_id`, else through
+ * `etl_id_map` (entity = referenced table, `new_id` = the key). A key that resolves through neither is compared as
+ * `unmapped` (null stays null), so a dropped or re-pointed key still changes the hash while a minted id never does.
+ * Two databases that hold the same migrated rows give the same hash.
  */
 export async function contentHashes(pool: pg.Pool): Promise<Record<string, string>> {
   const tables = await pool.query<{ table_name: string }>(
@@ -164,13 +168,36 @@ export async function contentHashes(pool: pg.Pool): Promise<Record<string, strin
      SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'legacy_id'
      ORDER BY 1`,
   )
+  const withLegacyId = new Set(tables.rows.map((r) => r.table_name))
   const out: Record<string, string> = {}
   for (const { table_name: t } of tables.rows) {
+    const fks = await pool.query<{ col: string; ref_table: string; ref_col: string }>(
+      `SELECT a.attname AS col, rc.relname AS ref_table, ra.attname AS ref_col
+       FROM pg_constraint c
+       JOIN pg_class tc ON tc.oid = c.conrelid JOIN pg_namespace n ON n.oid = tc.relnamespace
+       JOIN pg_class rc ON rc.oid = c.confrelid
+       JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+       JOIN pg_attribute ra ON ra.attrelid = c.confrelid AND ra.attnum = c.confkey[1]
+       WHERE c.contype = 'f' AND array_length(c.conkey, 1) = 1 AND n.nspname = 'public' AND tc.relname = $1
+       ORDER BY 1`,
+      [t],
+    )
+    const dropped = ['id', 'created_at', 'updated_at']
+    const mapped = fks.rows.map((fk) => {
+      dropped.push(fk.col)
+      const viaTable = withLegacyId.has(fk.ref_table)
+        ? `(SELECT r.legacy_id FROM "${fk.ref_table}" r WHERE r."${fk.ref_col}" = x."${fk.col}" AND r.legacy_source = 'cloud' LIMIT 1)`
+        : 'NULL'
+      const viaMap = `(SELECT m.legacy_id FROM etl_id_map m WHERE m.legacy_source = 'cloud' AND m.entity = '${fk.ref_table}' AND m.new_id = x."${fk.col}"::text LIMIT 1)`
+      return `jsonb_build_object('fk:${fk.col}', CASE WHEN x."${fk.col}" IS NULL THEN NULL ELSE coalesce(${viaTable}, ${viaMap}, 'unmapped') END)`
+    })
     const res = await pool.query<{ n: string; h: string }>(
       `SELECT count(*)::text AS n, coalesce(string_agg(j::text, '|' ORDER BY j::text), '') AS h FROM (
          SELECT (SELECT jsonb_object_agg(e.k, e.v) FROM jsonb_each(to_jsonb(x)) AS e(k, v)
-                 WHERE (e.k <> 'id' AND e.k !~ '_id$' AND e.k NOT IN ('created_at', 'updated_at')) OR e.k = 'legacy_id') AS j
+                 WHERE (e.k <> ALL ($1::text[]) AND e.k !~ '_id$') OR e.k = 'legacy_id')
+                ${mapped.map((m) => `|| ${m}`).join(' ')} AS j
          FROM "${t}" x WHERE x.legacy_source = 'cloud') s`,
+      [dropped],
     )
     const row = res.rows[0] as { n: string; h: string }
     out[t] = `${row.n}:${createHash('md5').update(row.h).digest('hex')}`
