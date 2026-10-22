@@ -13,7 +13,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -278,7 +278,7 @@ export class QuestionsService {
             affected += 1
             done.push(id)
           } else {
-            failed.push(bulkFailureOf(id, questionNotFound()) as BulkFailure)
+            failed.push(notFoundFailure(id))
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
