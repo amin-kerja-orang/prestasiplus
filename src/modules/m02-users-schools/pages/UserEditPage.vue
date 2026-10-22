@@ -18,6 +18,7 @@ import { useRouter } from 'vue-router'
 import type { Role } from '@/modules/m01-authentication'
 
 import { isApiError } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash } from '@/composables'
 import {
@@ -34,6 +35,7 @@ import {
 import type { SchoolSummary } from '../api/schools'
 import {
   fetchAdminUser,
+  rolesAfterEdit,
   updateAdminUser,
   type AdminUserDetail,
   type StudentSearchItem,
@@ -41,9 +43,11 @@ import {
   type UpdateAdminUserRequest,
 } from '../api/users'
 import AdminSchoolPicker from '../components/AdminSchoolPicker.vue'
+import GeneratedCredentials from '../components/GeneratedCredentials.vue'
 import GradeCards from '../components/GradeCards.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
+import type { CredentialRow } from '../lib/credential-row'
 import { errorLines, initialsOf, USERS_LIST_PATH } from '../lib/user-list'
 import {
   formatDate,
@@ -57,6 +61,10 @@ const props = defineProps<{ id: number }>()
 
 const router = useRouter()
 const flash = useFlash()
+
+/** http mode: no admin-chosen password (D59b); "reset" asks the server for a random one, shown once. */
+const http = isHttpMode()
+const credential = ref<CredentialRow | null>(null)
 
 const {
   data: loaded,
@@ -78,6 +86,8 @@ interface EditForm {
   hasPksk: boolean
   newPassword: string
   newPasswordConfirmation: string
+  /** http mode: ask the server for a new random password on save. */
+  resetPassword: boolean
 }
 
 const form = reactive<EditForm>({
@@ -91,6 +101,7 @@ const form = reactive<EditForm>({
   hasPksk: false,
   newPassword: '',
   newPasswordConfirmation: '',
+  resetPassword: false,
 })
 const grade = ref<number | null>(null)
 const school = ref<SchoolSummary | null>(null)
@@ -115,6 +126,7 @@ function fill(user: AdminUserDetail): void {
   linked.value = user.role === 'parent' ? [...user.linkedStudents] : []
   form.newPassword = ''
   form.newPasswordConfirmation = ''
+  form.resetPassword = false
   passwordOpen.value = false
 }
 
@@ -150,6 +162,8 @@ function buildRequest(role: Role): UpdateAdminUserRequest {
     role,
     isActive: form.isActive,
   }
+  // http mode: `roles` replaces the whole list, so a multi-role user keeps every role (D59b contract).
+  if (http) request.roles = rolesAfterEdit(loaded.value?.roles ?? [], role)
   if (role === 'student') {
     if (grade.value !== null) request.grade = grade.value
     if (form.icNumber !== loadedIc.value) request.icNumber = form.icNumber
@@ -158,7 +172,9 @@ function buildRequest(role: Role): UpdateAdminUserRequest {
   }
   if (role === 'student' || role === 'teacher') request.schoolId = school.value?.id ?? null
   if (role === 'parent') request.linkedStudentIds = linked.value.map((s) => s.id)
-  if (form.newPassword !== '' || form.newPasswordConfirmation !== '') {
+  if (http) {
+    if (form.resetPassword) request.resetPassword = true
+  } else if (form.newPassword !== '' || form.newPasswordConfirmation !== '') {
     request.newPassword = form.newPassword
     request.newPasswordConfirmation = form.newPasswordConfirmation
   }
@@ -171,6 +187,16 @@ async function submit(): Promise<void> {
   errors.value = []
   try {
     const result = await updateAdminUser(props.id, buildRequest(form.role))
+    if (http && result.data.generatedPassword) {
+      // The page stays on its route to show the one-time password, so the flash shows now.
+      flash.show({ type: 'success', message: result.status })
+      credential.value = {
+        name: result.data.name,
+        email: result.data.email,
+        password: result.data.generatedPassword,
+      }
+      return
+    }
     flash.success(result.status)
     await router.push(USERS_LIST_PATH)
   } catch (err) {
@@ -203,6 +229,19 @@ async function submit(): Promise<void> {
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
       </div>
     </DsPanel>
+
+    <template v-else-if="credential">
+      <GeneratedCredentials :rows="[credential]" />
+      <div>
+        <UButton
+          :to="USERS_LIST_PATH"
+          label="Ke Senarai Pengguna"
+          icon="i-ph-arrow-right"
+          class="min-h-11"
+          data-testid="user-credential-continue"
+        />
+      </div>
+    </template>
 
     <template v-else>
       <form
@@ -367,6 +406,7 @@ async function submit(): Promise<void> {
           </DsFormSection>
 
           <DsFormSection
+            v-if="!http"
             title="Pakej Langganan"
             description="Tukar pakej secara manual. Tarikh tamat dikira automatik mengikut jenis pakej."
             icon="crown"
@@ -454,7 +494,15 @@ async function submit(): Promise<void> {
               data-testid="user-password-panel"
             >
               <div class="flex flex-col gap-4">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <UserFormSwitch
+                  v-if="http"
+                  v-model="form.resetPassword"
+                  name="reset_password"
+                  label="Janakan kata laluan baharu"
+                  hint="Kata laluan rawak dijana oleh sistem dan dipaparkan sekali sahaja selepas disimpan."
+                  testid="user-reset-password"
+                />
+                <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <DsFormField native for="user-new-password" label="Kata Laluan Baru">
                     <UInput
                       id="user-new-password"
@@ -484,7 +532,7 @@ async function submit(): Promise<void> {
                     />
                   </DsFormField>
                 </div>
-                <p class="flex items-start gap-2 text-label text-muted">
+                <p v-if="!http" class="flex items-start gap-2 text-label text-muted">
                   <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
                   Kosongkan jika tidak mahu tukar kata laluan. Kata laluan baru akan berkuat kuasa
                   serta-merta.
