@@ -22,6 +22,7 @@
     "migrate:rollback": "tsx src/migration/orchestrate.ts migrate:rollback",
     "migrate:link-questions": "tsx src/migration/orchestrate.ts migrate:link-questions",
     "migrate:export-question-reports": "tsx src/migration/orchestrate.ts migrate:export-question-reports",
+    "migrate:archive-minimise": "tsx src/migration/orchestrate.ts migrate:archive-minimise",
     "staging:ddl": "tsx src/migration/ddl/generate.ts",
     "staging:load": "tsx src/migration/staging/cli.ts staging:load",
     "staging:profile": "tsx src/migration/staging/cli.ts staging:profile",

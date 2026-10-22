@@ -8,6 +8,7 @@
  *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<database name> npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
  *   npm run migrate:link-questions -w @pp/api -- [--apply] [--batch-size N]
  *   npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]
+ *   PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<database name> npm run migrate:archive-minimise -w @pp/api -- --confirm <database name> --export-summary <summary.json of the export> [--apply]
  *
  * `migrate:all`
  *   --dry-run (default)  core dry-run; then activity dry-run only when the activity preflight passes (a succeeded
@@ -78,6 +79,7 @@ import { quoteIdent } from './kit/sql'
 import { sourceLockKey } from './kit/source-lock'
 import { runCore } from './load'
 import { assertCorePreflight, PreflightError, runActivity } from './load/activity'
+import { assertMinimiseAllowed, minimiseArchive } from './export/archive-minimise'
 import { exportOpenQuestionReports } from './export/question-reports'
 import { prepareOutputDir, ProfileOutputError } from './profile'
 import { linkQuestions, LinkQuestionsBusyError } from './backfill/link-questions'
@@ -604,7 +606,27 @@ export const migrateExportQuestionReports: MigrateCommand = {
   },
 }
 
-for (const c of [migrateAll, migrateDelta, migrateVerify, migrateRollback, migrateLinkQuestions, migrateExportQuestionReports]) registerMigrateCommand(c)
+export const migrateArchiveMinimise: MigrateCommand = {
+  name: 'migrate:archive-minimise',
+  summary: 'after the Q9 export: set user_id (and question_reports.reason) to NULL in archive_cloud (dry-run by default; needs --confirm and --export-summary)',
+  async run(args, ctx) {
+    const confirm = flagValue(args, 'confirm')
+    const summary = flagValue(args, 'export-summary')
+    if (confirm === undefined) throw new ApplyGuardError('--confirm <database name> is required (it must equal the connected database).')
+    // Gates before the lock, so a refusal is always exit 2 and never hidden behind a busy lock.
+    await assertMinimiseAllowed(ctx.pool, ctx.env, confirm)
+    const r = await withSourceLock(ctx.pool, 'cloud', () =>
+      minimiseArchive({ pool: ctx.pool, env: ctx.env, confirmDb: confirm, exportSummaryPath: summary, dryRun: args.mode !== 'apply' }),
+    )
+    ctx.out(`migrate:archive-minimise ${r.dryRun ? 'dry-run (rolled back)' : 'apply'} on "${r.database}"`)
+    ctx.out(`table | column | ${r.dryRun ? 'rows that would be set to NULL' : 'rows set to NULL'}`)
+    for (const c of r.changes) ctx.out(`${c.table} | ${c.column} | ${c.rows}`)
+    ctx.out(`total | ${r.total}`)
+    return 0
+  },
+}
+
+for (const c of [migrateAll, migrateDelta, migrateVerify, migrateRollback, migrateLinkQuestions, migrateExportQuestionReports, migrateArchiveMinimise]) registerMigrateCommand(c)
 
 // Run the CLI only when this file is the entry (`tsx src/migration/orchestrate.ts migrate:all ...`), never on import.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
