@@ -291,12 +291,18 @@ export class CommandCenterRepository {
 
   /** The newest answers, newest first. */
   async latestAnswers(f: AnswerFilter, limit: number): Promise<FeedRow[]> {
+    // Platform feed: ORDER BY the bare columns, so ix_practice_answers_answered_at_id (0040) returns the newest rows already
+    // sorted. A scoped feed (one school / a student list) must NOT take that index: the planner cannot see that a small school's
+    // answers are old and walks the whole index (1 -> 100 ms). `+ interval '0 seconds'` keeps the same order but is not an index
+    // key, so the scoped feed reads that school's students through the user_id indexes and sorts (AZ-13).
+    const scoped = f.schoolId !== undefined || f.studentIds !== undefined
+    const order = scoped ? Prisma.sql`a.answered_at + interval '0 seconds' DESC, a.id DESC` : Prisma.sql`a.answered_at DESC, a.id DESC`
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS user_id, u.name, u.school_id::text AS school_id, sc.name AS school_name, sub.code, sub.name AS subject_name,
              a.is_correct, a.answered_at
         FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
         LEFT JOIN subjects sub ON sub.id = a.subject_id
-       WHERE ${this.answerWhere(f)} ORDER BY a.answered_at DESC, a.id DESC LIMIT ${Math.max(0, Math.trunc(limit))}`)
+       WHERE ${this.answerWhere(f)} ORDER BY ${order} LIMIT ${Math.max(0, Math.trunc(limit))}`)
     return rows.map((r) => ({
       userId: String(r.user_id),
       studentName: String(r.name),

@@ -7,14 +7,11 @@
 // environment, so no password reaches this process, a command line or the output. The dump is streamed
 // to a file OUTSIDE the repo. Prints file name, size and sha256 only; never any content.
 import { createHash } from 'node:crypto';
-import {
-  closeSync, createReadStream, createWriteStream, mkdirSync, openSync, readdirSync, readSync, renameSync, rmSync,
-  statSync, writeFileSync,
-} from 'node:fs';
+import { closeSync, createReadStream, openSync, readSync, renameSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  DEFAULT_BACKUP_DIR, FILE_PREFIX, FILE_SUFFIX, OpsError, assertOutsideRepo, captureStderr, execTarget,
-  fail, humanSize, parseArgs, spawnInDb, timestamp,
+  DEFAULT_BACKUP_DIR, FILE_PREFIX, FILE_SUFFIX, OpsError, applyRetention, assertOutsideRepo, captureStderr,
+  ensureBackupDir, execTarget, fail, humanSize, openPartialDump, parseArgs, spawnInDb, timestamp, writeShaFile,
 } from './lib/db-ops.mjs';
 
 function intOpt(value, fallback, name) {
@@ -30,24 +27,6 @@ function sha256File(path) {
   });
 }
 
-function applyRetention(dir, keep, maxAgeDays) {
-  const files = readdirSync(dir)
-    .filter((f) => f.startsWith(FILE_PREFIX) && f.endsWith(FILE_SUFFIX))
-    .map((f) => ({ f, t: statSync(join(dir, f)).mtimeMs }))
-    .sort((a, b) => b.t - a.t);
-  const cutoff = maxAgeDays > 0 ? Date.now() - maxAgeDays * 86400000 : -Infinity;
-  const removed = [];
-  files.forEach(({ f, t }, i) => {
-    // Index 0 is the backup just made: never deleted.
-    if (i > 0 && (i >= keep || t < cutoff)) {
-      rmSync(join(dir, f), { force: true });
-      rmSync(join(dir, `${f}.sha256`), { force: true });
-      removed.push(f);
-    }
-  });
-  return { kept: files.length - removed.length, removed };
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const dirArg = args.dir || process.env.BACKUP_DIR || DEFAULT_BACKUP_DIR;
@@ -56,7 +35,7 @@ async function main() {
   if (keep < 1) throw new OpsError('--keep must be at least 1', 2);
 
   const dir = assertOutsideRepo(dirArg);
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  ensureBackupDir(dir);
 
   const target = execTarget(args);
   const name = `${FILE_PREFIX}${timestamp()}${FILE_SUFFIX}`;
@@ -70,7 +49,7 @@ async function main() {
   const child = spawnInDb(target, script);
   child.stdin.end();
   const stderr = captureStderr(child);
-  const out = createWriteStream(partial, { mode: 0o600 });
+  const out = openPartialDump(partial);
   child.stdout.pipe(out);
 
   const code = await new Promise((res, rej) => {
@@ -97,7 +76,7 @@ async function main() {
   }
   renameSync(partial, finalPath);
   const sha = await sha256File(finalPath);
-  writeFileSync(`${finalPath}.sha256`, `${sha}  ${name}\n`, { mode: 0o600 });
+  writeShaFile(finalPath, sha, name);
 
   const ret = applyRetention(dir, keep, maxAge);
   console.log(`OK  file:   ${finalPath}`);

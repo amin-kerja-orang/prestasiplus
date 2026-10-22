@@ -43,7 +43,7 @@ export class StudentPerformanceService {
           color: DEFAULT_SUBJECT_COLOR,
           accuracy: accuracyOf(sf.gradedScore, sf.gradedMax),
           sessions: sf.sittings,
-          answered: sf.max,
+          answered: sf.answered,
         }
       })
       .sort((a, b) => b.answered - a.answered || a.subjectCode.localeCompare(b.subjectCode))
@@ -73,7 +73,7 @@ export class StudentPerformanceService {
       user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
       heroAccuracy: Math.round(accuracy),
       streak: profile?.streak.current ?? 0,
-      stats: { sessions: f.sittings, accuracy, answered: f.max, seconds: f.seconds },
+      stats: { sessions: f.sittings, accuracy, answered: f.answered, seconds: f.seconds },
       headcount,
       mastery,
       activity: {

@@ -8,6 +8,8 @@ Operations guide for the `api` (NestJS) and `db` (PostgreSQL 16) services. It li
 | Backup, restore check, monthly drill | [db-backup.md](db-backup.md) |
 | Staging deploy (Cloudflare Pages + Render + Supabase, or one VPS) | [deploy-staging.md](deploy-staging.md), [deploy-execution.md](deploy-execution.md) |
 | Demo data reseed | [demo-reseed.md](demo-reseed.md) |
+| Platform settings checklist (demo and production, edge secret, throttles) | [platform-settings.md](platform-settings.md) |
+| Database password rotation (demo Supabase + Render, production compose) | [db-password-rotation.md](db-password-rotation.md) |
 
 Rule for every action on a shared or production environment (deploy, restore, secret rotation, seed): get the lead's explicit confirmation first.
 
@@ -49,7 +51,7 @@ Optional keys (defaults in brackets):
 | Runtime (BE-33) | `REQUEST_TIMEOUT_MS` [120000], `HEADERS_TIMEOUT_MS` [60000], `KEEP_ALIVE_TIMEOUT_MS` [65000], `SHUTDOWN_GRACE_MS` [25000], `METRICS_ENABLED` [true; `false` makes `/api/metrics` 404], `METRICS_INTERNAL_CIDRS` [unset; comma list of IPv4/IPv6 CIDRs, invalid value fails the boot] |
 | Files | `MAX_UPLOAD_MB` [10], `INTAKE_MAX_FILE_MB` [20], `UPLOAD_RATE_PER_MINUTE` [30], `FILE_READS_PER_MINUTE` [120] |
 | Jobs and OCR | `JOBS_WORKER_ENABLED` [false], `JOBS_POLL_MS`, `JOBS_CONCURRENCY`, `JOBS_LOCK_TIMEOUT_MS`, `JOBS_BACKOFF_BASE_MS`, `OCR_ENGINE` [none; tesseract needs `OCR_LANG_DIR`], `OCR_LANG_DIR`, `OCR_WORKERS`, `OCR_PAGE_TIMEOUT_MS`, `OCR_INSPECT_TIMEOUT_MS`, `OCR_MAX_PAGES`, `OCR_MIN_TEXT_CHARS`, `OCR_RENDER_DPI`, `OCR_MAX_PIXELS`, `OCR_WORKER_MEMORY_MB`, `OCR_WORKER_RSS_LIMIT_MB` |
-| Intake | `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
+| Intake | `INTAKE_TEACHER_ENABLED` [false; AZ-35: off = intake files and review routes are Admin Pusat only, a teacher gets 403; keep off until ClamAV scans uploads (#78)], `INTAKE_UPLOAD_CONCURRENCY`, `INTAKE_MAX_FILES_PER_BATCH`, `INTAKE_MAX_ACTIVE_BATCHES`, `INTAKE_DAILY_PAGE_QUOTA`, `INTAKE_WRITES_PER_MINUTE`, `INTAKE_READS_PER_MINUTE` |
 | Misc | `BIJAK_SWEEP_INTERVAL_SECONDS`, `MAIL_LOG_RESET_LINKS` (development only) |
 | Rate limits | every `THROTTLE_*` key; see section 9 and `.env.api.example` (each line states the unit and the key: user or address). All optional. |
 
@@ -154,7 +156,21 @@ Drill executed for BE-33 (acceptance criterion 7), 2026-10-20, with the same too
 4. Exact `count(*)` of every table, source against restored: 141 tables, 9876 rows in total in 65 non-empty tables, 0 mismatches, 5 of 5 sequences present. Result `ROW-COUNT COMPARISON PASSED`.
 5. Both scratch databases and the dump file were deleted.
 
-The full output is attached to the PR. The same drill with `npm run db:backup` and `npm run db:restore-check` on the real `db` container, and the first production backup, still need the lead or the operator (see section 15).
+The full output is attached to the PR. The compose drill on the real `db` container is recorded below; the first production backup still needs the lead or the operator (see section 15).
+
+Compose drill evidence (AC7), 2026-10-22, commit `23c98226`, Compose project `pp-ac7`, `postgres:16-alpine`, Docker on a private cloud VM, throwaway random secrets in git-ignored `.env.db` and `.env.api`:
+
+| Step | Result |
+|---|---|
+| Schema | 33 migrations applied, `_prisma_migrations` 33 rows |
+| Seed | `poc` profile, exit 0; `users` 51 |
+| `npm run db:backup` | `pp-backup-20261022T015028Z.dump`, 1037293 bytes (1013.0 KiB), sha256 `5a759050...771d3475`, 1 s |
+| `npm run db:restore-check` | exit 0, 12 s, into `prestasiplus_restorecheck`, dropped afterwards |
+| Counts | users 51, schools 4, sessions 0, audit_events 0, questions 503 |
+| Comparison | `row-count comparison: 197 source tables, 197 restored tables, 15734 rows restored, 0 mismatches`, then `ROW-COUNT COMPARISON PASSED` and `RESTORE CHECK PASSED` |
+| Cleanup | `docker compose -p pp-ac7 down -v`; dump, sidecar and env files deleted (backup folder empty); no `pp-ac7` project or volume left |
+
+Deviation from the written steps: the `migrate` image build failed in this VM (`npm ci` in the `build` stage ended with `npm error Exit handler never called!` twice, after about 75 s, so the in-container network is not usable for npm). Step 2 was done from the host instead: the `db` port was published on a free loopback port with a throwaway Compose override kept outside the repo, `node scripts/demo-db-delta.mjs` applied the 33 `migration.sql` files in order (it writes the same `_prisma_migrations` rows as `prisma migrate deploy`), and `npm run be:db:seed` ran the `poc` seed with `ALLOW_DEMO_SEED=true`. Steps 3 and 4 (backup, restore-check, cleanup) ran exactly as written and operate on the container only. The `migrate` job itself (`prisma migrate deploy` plus seed in the image) was not exercised here and stays covered by the CI `docker` job.
 
 ### AC7 rehearsal (run once in the cloud session)
 
@@ -221,7 +237,7 @@ unset COMPOSE_PROJECT_NAME BACKUP_DIR
 docker compose ls                                            # pp-ac7 must be gone
 ```
 
-If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting. The `ROW-COUNT COMPARISON` lines need the comparison added to `scripts/db-restore-check.mjs` (BE-33 close-out); without it the script prints only the core-table counts and `RESTORE CHECK PASSED`, which is not enough for AC7.
+If `.env.db` or `.env.api` already existed, back them up before the environment block above and restore them afterwards instead of deleting.
 
 ## 11. Logs
 
@@ -248,11 +264,13 @@ Rotate on a schedule agreed with the lead (suggested every 90 days) and immediat
 | Secret | Effect of rotating | Notes |
 |---|---|---|
 | `SESSION_SECRET` | Every signed-in session and CSRF token becomes invalid; all users must log in again. Login-throttle counters and reset hashes keyed with it restart. | Announce it; do it off-peak. |
-| `IC_HASH_KEY` | IC lookups (reset by IC, IC search) stop matching until every `ic_hash` is recomputed with the new key. | Do not rotate without a recompute plan from the backend developers. Never reuse `SESSION_SECRET`. |
+| `IC_HASH_KEY` | IC lookups (reset by IC, IC search) stop matching: every stored `ic_hash` was made with the old key, and v2 keeps no plaintext IC, so the hashes cannot be recomputed from the database. | **Not rotated on a schedule** (LEAD decision, 22 Oct 2026, AM-06 option 1). Rotate only after a suspected leak of the key, and then only together with a re-import of the IC numbers from the source system, under a separate LEAD decision (until then affected users reset through their school admin). Never reuse `SESSION_SECRET`. A lazy dual-key re-hash on reset-ic is a post-go-live ticket. |
 | `DATABASE_URL` password | The API cannot connect until it is redeployed with the new value. | Change the role password in Postgres and the secret in the same maintenance window; for compose also `.env.db` (`POSTGRES_PASSWORD` only applies at first init: run `ALTER ROLE` in the running database). |
 | `POSTGRES_PASSWORD` (`.env.db`) | As above for the `db` service. | |
 | Backup passphrases | Old encrypted copies need the old passphrase. | Keep the old one until those copies expire. |
 | CI tokens | The workflows use only the default `GITHUB_TOKEN` (`contents: read`; the openapi job adds `pull-requests: read`); no stored secret. | |
+
+Detailed rotation procedures: database password, `SESSION_SECRET` and `IC_HASH_KEY` in [db-password-rotation.md](db-password-rotation.md); the edge secret pair (the API accepts one value, so a brief window applies) in [platform-settings.md](platform-settings.md) section 3.
 
 ## 14. CI security gates and allow-list process
 
@@ -301,7 +319,7 @@ Test files are under `apps/api/test/security/` unless a full path is given; scen
 | AC6a | CI fails on high or critical production dependencies, with allow-list | `deps-audit` job, `scripts/npm-audit-gate.mjs`, `npm-audit-gate.spec.ts`, allow-list file; local run on the repo and on a fake critical advisory (exit 1) are in the PR | done locally |
 | AC6b | CI fails on image vulnerabilities | Trivy step, `ci-workflow.spec.ts` | first real scan: needs LEAD/ops |
 | AC6c | A deliberately vulnerable dev branch shows the failure in CI | not run (cannot push a throw-away branch and watch CI from here) | needs LEAD/ops (steps: branch, `npm install --save-prod <package with a known high advisory>`, open a PR, expect `deps-audit` and `dependency-review` red; delete the branch; paste the run link in the PR) |
-| AC7 | Backup restored into a fresh database, row-count comparison | section 10 and the pasted output (141 tables, 0 mismatches) | done on local Postgres; on the compose `db` and in production: needs LEAD/ops |
+| AC7 | Backup restored into a fresh database, row-count comparison | section 10: host drill (141 tables, 0 mismatches) and compose drill (197 tables, 0 mismatches) | done on local Postgres and on the compose `db` (2026-10-22, 197 tables, 15734 rows, 0 mismatches; evidence in section 10); first production backup: needs LEAD/ops |
 | AC8 | Secret scan green; log-capture over login, reset, upload | `secret-scan` job, `log-capture.spec.ts` (and `apps/api/test/logging-pii.spec.ts`) | tests in the PR; the CI job runs on the PR |
 | AC9 | D52 review items each have a threat-model row and a named test | threat-model table in the PR description | in the PR |
 | P10-1 | Contract committed first, `contract:check` | `npm run contract:check` | run before merge |
