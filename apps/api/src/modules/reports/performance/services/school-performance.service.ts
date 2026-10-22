@@ -151,7 +151,7 @@ export class SchoolPerformanceService {
       const q = this.query(scope)
       for (const r of await this.ports.bijak.totals(q, 'school')) {
         sessions += r.sittings
-        answered += r.max
+        answered += r.answered
         gradedScore += r.gradedScore
         gradedMax += r.gradedMax
         totalPupils += r.pupils
@@ -385,7 +385,7 @@ export class SchoolPerformanceService {
         userId: canSeeName(ctx.role, ctx.userId, userId, own) ? userId : REDACTED_ID,
         name: nameFor(names.get(userId) ?? '', canSeeName(ctx.role, ctx.userId, userId, own)),
         sessions: t.sittings,
-        answered: t.max,
+        answered: t.answered,
         accuracy: accuracyOf(t.gradedScore, t.gradedMax),
       }))
     }

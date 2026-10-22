@@ -357,7 +357,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
         const action = MOCK_BULK_TO_V2[mockVerb]!
         const res = await bulk({ action, ids: [a, b] })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
-        expect(bodyData(res)).toEqual({ affected: 2 })
+        expect(bodyData(res)).toEqual({ affected: 2, failed: [] })
         expect((res.body as { status: string }).status).toBe('2 soalan berjaya dikemaskini.')
         const status = MOCK_STATUS_TO_V2[mockVerb === 'archive' ? 'archived' : 'pending_review']
         expect(bodyData(await admin.get(`/api/questions/${a}`)).status).toBe(status)
@@ -370,21 +370,24 @@ describe('AC 9: mock parity on the 14 routes', () => {
       const a = (await create()).id as string
       const res = await bulk({ action: 'approved', ids: [a] })
       expect(res.status).toBe(200)
-      expect(bodyData(res)).toEqual({ affected: 0 })
+      expect(bodyData(res)).toEqual({
+        affected: 0,
+        failed: [{ id: a, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Lulus tidak dibenarkan.', fields: {} }],
+      })
     })
 
     it('D-6: a publish without the curriculum tag is skipped, with the tag it is counted', async () => {
       const bare = (await create()).id as string
       await bulk({ action: 'review', ids: [bare] })
       await bulk({ action: 'approved', ids: [bare] })
-      expect(bodyData(await bulk({ action: 'published', ids: [bare] }))).toEqual({ affected: 0 })
+      expect(bodyData(await bulk({ action: 'published', ids: [bare] }))).toEqual({ affected: 0, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' })] })
     })
 
     it('delete removes the rows; unknown ids are not counted and duplicates count once', async () => {
       const a = (await create()).id as string
       const res = await bulk({ action: 'delete', ids: [a, '999999999', a] })
       expect(res.status).toBe(200)
-      expect(bodyData(res)).toEqual({ affected: 1 })
+      expect(bodyData(res)).toEqual({ affected: 1, failed: [{ id: '999999999', code: 'NOT_FOUND', message: 'Soalan tidak dijumpai.', fields: {} }] })
       expect((res.body as { status: string }).status).toBe('1 soalan berjaya dikemaskini.')
       expectErr(await admin.get(`/api/questions/${a}`), 404, 'NOT_FOUND')
     })

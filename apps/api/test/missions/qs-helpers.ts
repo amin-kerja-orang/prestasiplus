@@ -138,7 +138,8 @@ export async function eligibleQuestionIds(t: QsTestApp, n: number): Promise<stri
 
 export interface NewSet {
   teacherId: string
-  classroomId: string
+  /** Null only for a migrated header (AZ-31): needs `legacySource` and `needsRebuild` (check constraint). */
+  classroomId: string | null
   title?: string
   status?: 'draft' | 'scheduled' | 'published'
   scheduledAt?: string | null
@@ -148,13 +149,15 @@ export interface NewSet {
   questionIds?: string[]
   createdAt?: string
   subjectId?: string | null
+  /** A migrated header: `legacy_source` (`cloud` or `my`) and `legacy_id`. */
+  legacy?: { source: 'cloud' | 'my'; id: string }
 }
 
 /** Inserts a set (and its items in the given order) directly. Returns its id. */
 export async function insertSet(t: QsTestApp, s: NewSet): Promise<string> {
   const rows = await t.db.query<{ id: string }>(
-    `insert into question_sets (teacher_id, classroom_id, subject_id, title, time_limit_minutes, max_attempts, status, scheduled_at, needs_rebuild, created_at, updated_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($10::timestamptz, now()), now()) returning id::text id`,
+    `insert into question_sets (teacher_id, classroom_id, subject_id, title, time_limit_minutes, max_attempts, status, scheduled_at, needs_rebuild, created_at, updated_at, legacy_source, legacy_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($10::timestamptz, now()), now(), $11, $12) returning id::text id`,
     [
       s.teacherId,
       s.classroomId,
@@ -166,6 +169,8 @@ export async function insertSet(t: QsTestApp, s: NewSet): Promise<string> {
       s.scheduledAt ?? null,
       s.needsRebuild ?? false,
       s.createdAt ?? null,
+      s.legacy?.source ?? null,
+      s.legacy?.id ?? null,
     ],
   )
   const id = (rows[0] as { id: string }).id

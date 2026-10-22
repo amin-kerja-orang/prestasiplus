@@ -72,6 +72,25 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     return { sessionId, rows: await itemRows(t.db, sessionId), res }
   }
 
+  /**
+   * Betul/Salah oracle: a true statement is "<question> → <key option text>", a false one shows a wrong option text.
+   * AZ-25: the draw is by level only, so an item may be any servable MCQ of the level (the base seed has three at T4),
+   * not only one of `math`; the served question is read from the database by the item's question id.
+   */
+  async function expectStatementOracle(statement: string | undefined, item: DbItem): Promise<void> {
+    const [served] = await t.db.query<{ stem: string; key: string }>(
+      `select coalesce(nullif(btrim(v.stem_ms), ''), p.prompt_ms) as stem, o.body_ms as key
+         from questions q
+         join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+         join question_parts p on p.question_version_id = v.id
+         join part_options o on o.part_id = p.id
+        where q.id = $1::bigint and o.label = $2`,
+      [item.question_id, 'ABCD'[item.key_index as number]],
+    )
+    expect(served, `question ${item.question_id}`).toBeDefined()
+    expect(statement === `${served?.stem} → ${served?.key}`).toBe(item.statement_true)
+  }
+
   /** Posts the check of item `i` answered correctly (`right`) or wrongly. */
   async function answerItem(c: Client, game: Exclude<GamesSoloGame, 'kad-memori'>, sessionId: string, item: DbItem, right: boolean): Promise<Response> {
     const base = { session_id: sessionId, item_id: item.question_id }
@@ -127,15 +146,24 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(rows.map((r) => r.question_id)).toEqual(payload.statements.map((s) => s.id))
       expect(rows.every((r) => r.key_index !== null && r.statement_true !== null && r.checked_seq === null)).toBe(true)
       expect(await sessionRow(sessionId)).toMatchObject({ item_count: 40, is_test: false, darjah: 10, submitted_at: null, checks: 0 })
-      // the statement of a true item ends with the key option text, a false one with a wrong option text
-      const item = rows[0] as DbItem
-      const q = math.find((m) => m.id === item.question_id) as InsertedMcq
-      const shown = payload.statements[0]?.statement.split(' → ')[1]
-      const keyText = (await t.db.query<{ body_ms: string }>(
-        `select o.body_ms from part_options o join question_parts p on p.id = o.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint and o.label = $2`,
-        [q.id, 'ABCD'[item.key_index as number]],
-      ))[0]?.body_ms
-      expect(shown === keyText).toBe(item.statement_true)
+      // the statement of a true item is "<question> → <key option text>", a false one shows a wrong option text
+      await expectStatementOracle(payload.statements[0]?.statement, rows[0] as DbItem)
+    })
+
+    it('Betul/Salah oracle holds for a question that is not one of this spec\'s (AZ-25 regression: base seed T4 MCQs)', async () => {
+      // With every inserted MATH question inactive, the T4 draw can serve only the base seed's T4 MCQs: the item the old
+      // oracle looked up in `math` (about 5% of runs) is now the only kind there is.
+      const ids = math.map((m) => m.id)
+      await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [ids])
+      try {
+        const { rows, res } = await open(student, 'betul-salah')
+        const payload = parseData(res, GamesBetulSalahPayloadSchema)
+        expect(payload.statements.length).toBeGreaterThan(0)
+        expect(rows.every((r) => !ids.includes(r.question_id))).toBe(true)
+        for (const [i, r] of rows.entries()) await expectStatementOracle(payload.statements[i]?.statement, r)
+      } finally {
+        await t.db.query(`update questions set is_active = true where id = any($1::bigint[])`, [ids])
+      }
     })
 
     it('the darjah query selects the level of the questions', async () => {
@@ -496,6 +524,46 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 6, coins_credited: 6 })
       expect((await submit()).status).toBe(409)
       expectError(await student.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: pairs[0]?.q.card_id }), 'CONFLICT', M.soloAlreadySubmitted)
+    })
+  })
+
+  describe('Kad Memori reveal is idempotent for the open card (AZ-26)', () => {
+    it('re-revealing the open card returns the same face and writes nothing; other refusals are unchanged', async () => {
+      const { sessionId, rows } = await open(student, 'kad-memori')
+      const pairs = Array.from({ length: 6 }, (_, p) => ({
+        q: rows.find((r) => r.pair_key === p && r.face === 'question') as DbItem,
+        a: rows.find((r) => r.pair_key === p && r.face === 'answer') as DbItem,
+      }))
+      const reveal = (card: DbItem) => student.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: card.card_id })
+      const check = (card: DbItem, other: DbItem) => (t.clock.advance(1000), student.post('/api/games/solo/kad-memori/check', { session_id: sessionId, card_id: card.card_id, other_card_id: other.card_id }))
+      const counters = async () => (await t.db.query<{ moves: number; checks: number; fast_moves: number; open_card_id: string | null }>(`select moves, checks, fast_moves, open_card_id from game_sessions where id = $1::uuid`, [sessionId]))[0]
+
+      const first = await reveal(pairs[0]?.q as DbItem)
+      expect(first.status).toBe(200)
+      const before = await counters()
+      const again = await reveal(pairs[0]?.q as DbItem)
+      expect(again.status).toBe(200)
+      expect(again.headers['cache-control']).toBe('no-store')
+      expect(parseData(again, GamesKadMemoriFaceSchema)).toEqual(parseData(first, GamesKadMemoriFaceSchema))
+      expect(await counters()).toEqual(before)
+      expect(before).toMatchObject({ moves: 0, checks: 0, fast_moves: 0, open_card_id: pairs[0]?.q.card_id })
+
+      // a different card while one is open, and a matched card, are still refused
+      expectError(await reveal(pairs[1]?.q as DbItem), 'CONFLICT', M.soloCardOpen)
+      expect(await counters()).toEqual(before)
+
+      // a pair check with the re-revealed card still works: mismatch, then match
+      expect(parseData(await check(pairs[0]?.q as DbItem, pairs[1]?.a as DbItem), GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori']).correct).toBe(false)
+      expect(await counters()).toMatchObject({ moves: 1, checks: 1, fast_moves: 0, open_card_id: null })
+      expect((await reveal(pairs[0]?.q as DbItem)).status).toBe(200)
+      expect((await reveal(pairs[0]?.q as DbItem)).status).toBe(200)
+      expect(parseData(await check(pairs[0]?.q as DbItem, pairs[0]?.a as DbItem), GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori'])).toMatchObject({ correct: true, pair_id: 0 })
+      expect(await counters()).toMatchObject({ moves: 2, checks: 2, fast_moves: 0, open_card_id: null })
+      expectError(await reveal(pairs[0]?.a as DbItem), 'CONFLICT', M.soloCardMatched)
+      expectError(await reveal(pairs[0]?.q as DbItem), 'CONFLICT', M.soloCardMatched)
+
+      // someone else's session stays 404
+      expectError(await student2.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: pairs[2]?.q.card_id }), 'NOT_FOUND', M.soloSessionNotFound)
     })
   })
 
