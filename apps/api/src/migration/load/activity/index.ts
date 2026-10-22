@@ -134,6 +134,7 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
     stepNames: steps.map((s) => s.entity),
     extraTables,
     contentOwnerUserId: options.contentOwnerUserId,
+    publicOrigins: options.env.PUBLIC_ORIGINS,
     filesManifestHash: activity.files?.manifestHash,
   })
   return { activity, steps, inputHash, notMigrated: notMigratedOf(chosen) }
