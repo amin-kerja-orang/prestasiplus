@@ -116,14 +116,16 @@ export async function restoreHttpSession(): Promise<void> {
       // Mirror the login-time refusal (D43): a cookie session of a role outside the prototype
       // scope is ended instead of rebuilt.
       if (isPrototypeScopeOn() && !isPrototypeRole(body.active.role as Role)) {
+        // Clear first: the transport would otherwise replace the header below with a stale stored
+        // CSRF token (an older session in `pp.auth`), and the logout would be refused.
+        store.clear()
         try {
-          // A fresh tab has no stored CSRF token yet: send the one this session just returned, so
-          // the server ends the cookie session too. `/api/auth/*` is outside the 401 policy.
+          // Send the token this session just returned, so the server ends the cookie session too.
+          // `/api/auth/*` is outside the 401 policy.
           await api.post<void>('/api/auth/logout', { headers: { 'x-csrf-token': body.csrf } })
         } catch {
           // best effort
         }
-        store.clear()
         return
       }
       store.setSession(toClientSessionFromApi(body, store.remember))

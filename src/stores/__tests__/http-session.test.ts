@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/api'
 
-import { isApiSession, restoreHttpSession, toClientSessionFromApi, type ApiSession } from '../http-session'
+import { isApiSession, restoreHttpSession, storedCsrfToken, toClientSessionFromApi, type ApiSession } from '../http-session'
 import { useSessionStore } from '../session'
 
 const apiSession: ApiSession = {
@@ -43,6 +43,7 @@ describe('restoreHttpSession scope check (P4)', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
   })
 
   it('rebuilds the session of a prototype role', async () => {
@@ -57,11 +58,28 @@ describe('restoreHttpSession scope check (P4)', () => {
   it('ends the session of a role outside the prototype scope: logout called, no session', async () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     vi.spyOn(api, 'get').mockResolvedValue({ ...apiSession, active: { role: 'parent' } })
-    const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('network'))
+    // Web Storage, so the stale session is really stored (the transport reads it from there).
+    const mem = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, v),
+      removeItem: (k: string) => void mem.delete(k),
+      clear: () => mem.clear(),
+      key: () => null,
+      length: 0,
+    })
     const store = useSessionStore()
-    store.setSession(toClientSessionFromApi(apiSession, true)) // a session left from before the reload
-    expect(store.token).not.toBeNull()
+    // A session left from before the reload, with an OLDER csrf than the one GET /api/session returns.
+    store.setSession(toClientSessionFromApi({ ...apiSession, csrf: 'stale-csrf' }, true))
+    expect(storedCsrfToken()).toBe('stale-csrf')
+    let storedAtLogout: string | null = 'unset'
+    const post = vi.spyOn(api, 'post').mockImplementation(() => {
+      // The transport sends the stored token when there is one: it must be gone by now.
+      storedAtLogout = storedCsrfToken()
+      return Promise.reject(new Error('network'))
+    })
     await restoreHttpSession()
+    expect(storedAtLogout).toBeNull()
     expect(post).toHaveBeenCalledWith('/api/auth/logout', { headers: { 'x-csrf-token': 'csrf-token' } })
     expect(store.token).toBeNull()
     expect(store.user).toBeNull()
