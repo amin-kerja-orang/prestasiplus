@@ -30,9 +30,11 @@ describe('gamification seed (BE-23 data layer)', () => {
     await db.drop()
   })
 
-  it('is registered once, last, as a demo module (the reference set is not touched)', () => {
+  it('is registered once, after practice, as a demo module (the reference set is not touched)', () => {
     expect(seedModules.filter((m) => m.name === 'gamification')).toHaveLength(1)
-    expect(seedModules[seedModules.length - 1]!.name).toBe('gamification')
+    // Append-only registry: later cards append after it (BE-26 adds `poc-profile`), so pin the dependency order, not "last".
+    const names = seedModules.map((m) => m.name)
+    expect(names.indexOf('gamification')).toBeGreaterThan(names.indexOf('practice'))
     expect(gamificationSeed.kind).toBe('demo')
   })
 

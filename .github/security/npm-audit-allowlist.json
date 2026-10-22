@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "id": "GHSA-68fv-2mgg-jv7q",
+      "package": "source-map-js",
+      "reason": "Event-loop DoS needs a source map with indexed section offsets to be parsed. The only runtime consumer is postcss via sanitize-html, which calls postcss.parse with { map: false } (node_modules/sanitize-html/index.js), so no source map is ever read from user input.",
+      "expires": "2026-11-19"
+    },
+    {
+      "id": "GHSA-587h-7wmj-h5pm",
+      "package": "vite",
+      "reason": "Vite dev server (launch-editor, Windows only). vite is a root (frontend build) dependency, which is why --omit=dev at the root reports it; the advisory affects the dev server only, and vite is not in the API runtime image (docker/api/Dockerfile installs --workspace @pp/api --omit=dev).",
+      "expires": "2026-11-19"
+    }
+  ]
+}

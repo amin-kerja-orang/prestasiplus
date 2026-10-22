@@ -1,0 +1,426 @@
+BE-33 AC4 audit-gap fixes. Base 2565b71d. NOT applied. Apply per lane (cross-lane code outside common/):
+  apps/api/src/common/audit/audit-actions.ts ........ BE-33 (registry: GAMES_SETTINGS_UPDATED, BATTLE_TOURNAMENT_CREATED)
+  modules/auth/auth.service.ts ...................... BE-03  (logout scope, session target on login/role/mode/logout)
+  modules/account/password-reset.service.ts ......... BE-06  (reset completion: actor role + scope level)
+  modules/questions/http/{actor,audit}.ts ........... BE-09  (scope level on question.* rows)
+  modules/questions/{types,questions.service}.ts .... BE-09/BE-10 (bulk-action writes question_status_events)
+  modules/gamification/{actor,admin.service}.ts ..... BE-23  (scope level)
+  modules/shop/{actor,admin.service}.ts ............. BE-22  (scope level; owner of shop admin)
+  modules/games/rooms/** ............................ games lane (admin settings audit row)
+  modules/battle/tournaments/** ..................... BE-44  (tournament create audit row)
+After applying: remove the it.fails markers in apps/api/test/security/audit-coverage.spec.ts that turn red; update unit tests that build AuditActor/ShopActor/HttpActor literals (new scopeLevel field). Not compiled or tested.
+
+diff --git a/apps/api/src/common/audit/audit-actions.ts b/apps/api/src/common/audit/audit-actions.ts
+index 487679e..1443cb0 100644
+--- a/apps/api/src/common/audit/audit-actions.ts
++++ b/apps/api/src/common/audit/audit-actions.ts
+@@ -68,5 +68,8 @@ export const AUDIT_ACTIONS = {
+   // BE-19 headcount (M08): no pupil data in the detail.
+   HEADCOUNT_CONFIG_RESET: 'headcount.config.reset',
+   HEADCOUNT_CONFIG_DELETED: 'headcount.config.deleted',
++  // BE-33 AC4 gaps: admin writes that had no audit row.
++  GAMES_SETTINGS_UPDATED: 'games.settings.updated',
++  BATTLE_TOURNAMENT_CREATED: 'battle.tournament.created',
+ } as const
+ export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
+diff --git a/apps/api/src/modules/account/password-reset.service.ts b/apps/api/src/modules/account/password-reset.service.ts
+index e21fd57..f96d46c 100644
+--- a/apps/api/src/modules/account/password-reset.service.ts
++++ b/apps/api/src/modules/account/password-reset.service.ts
+@@ -138,6 +138,8 @@ export class PasswordResetService {
+         await this.audit.record({
+           action: ACCOUNT_AUDIT.RESET_DONE,
+           actorUserId: user.id,
++          actorRole: issued.session.active.role,
++          scopeLevel: issued.session.active.scope.level,
+           targetType: 'user',
+           targetId: user.id,
+           schoolId: user.schoolId,
+diff --git a/apps/api/src/modules/auth/auth.service.ts b/apps/api/src/modules/auth/auth.service.ts
+index 0132842..1bcd6d0 100644
+--- a/apps/api/src/modules/auth/auth.service.ts
++++ b/apps/api/src/modules/auth/auth.service.ts
+@@ -191,6 +191,8 @@ export class AuthService {
+         actorUserId: out.session.user.id,
+         actorRole: out.session.active.role,
+         sessionRowId: issued.row.id,
++        targetType: 'session',
++        targetId: issued.row.id,
+         scopeLevel: out.session.active.scope.level,
+         schoolId: out.session.active.scope.schoolId ?? null,
+         requestId: info.requestId,
+@@ -218,6 +220,10 @@ export class AuthService {
+           actorUserId: state.auth.userId,
+           actorRole: state.auth.active.role,
+           sessionRowId: state.row.id,
++          scopeLevel: state.auth.active.scope.level,
++          schoolId: state.auth.active.scope.schoolId ?? null,
++          targetType: 'session',
++          targetId: state.row.id,
+           requestId: info.requestId,
+           ip: info.ip,
+           isTest: state.auth.mode !== null,
+@@ -324,6 +330,8 @@ export class AuthService {
+         actorUserId: state.auth.userId,
+         actorRole: audit.role,
+         sessionRowId: issued.row.id,
++        targetType: 'session',
++        targetId: issued.row.id,
+         scopeLevel: state.assembled.grants.find((g) => g.role === audit.role)?.scope.level ?? null,
+         schoolId: state.assembled.grants.find((g) => g.role === audit.role)?.scope.schoolId ?? null,
+         requestId: info.requestId,
+diff --git a/apps/api/src/modules/battle/tournaments/tournaments.controller.ts b/apps/api/src/modules/battle/tournaments/tournaments.controller.ts
+index 4c3a302..354bcf6 100644
+--- a/apps/api/src/modules/battle/tournaments/tournaments.controller.ts
++++ b/apps/api/src/modules/battle/tournaments/tournaments.controller.ts
+@@ -9,6 +9,7 @@ import {
+ import type { Request } from 'express'
+ 
+ import { Roles } from '../../../common/guards'
++import { requestIdOf } from '../../../common/request/request-id'
+ import { NoStoreInterceptor, ok } from '../../../common/http'
+ import { ScopeContext, type RequestWithAuth } from '../../../common/scope'
+ import { RateLimit, RateLimitGuard } from '../../../common/throttle'
+@@ -51,7 +52,9 @@ export class TournamentsController {
+   @Roles('admin')
+   @RateLimit(BATTLE_LIMITS.write)
+   async create(@Req() req: Request & RequestWithAuth, @Body() body: unknown) {
+-    return ok(BattleTournamentCreatedSchema.parse(await this.tournaments.create(viewerOf(req), body)))
++    const s = ScopeContext.fromRequest(req)
++    const audit = { role: s.role, scopeLevel: s.scope.level, requestId: requestIdOf(req) ?? null, ip: req.ip ?? req.socket.remoteAddress ?? null }
++    return ok(BattleTournamentCreatedSchema.parse(await this.tournaments.create(viewerOf(req), body, audit)))
+   }
+ 
+   @Get('tournaments/:uuid')
+diff --git a/apps/api/src/modules/battle/tournaments/tournaments.module.ts b/apps/api/src/modules/battle/tournaments/tournaments.module.ts
+index 91dd146..629562e 100644
+--- a/apps/api/src/modules/battle/tournaments/tournaments.module.ts
++++ b/apps/api/src/modules/battle/tournaments/tournaments.module.ts
+@@ -1,5 +1,6 @@
+ import { Module } from '@nestjs/common'
+ 
++import { AuditModule } from '../../../common/audit/audit.module'
+ import { ThrottleModule } from '../../../common/throttle'
+ import { BattleCoreModule } from '../battle-core.module'
+ import { TournamentsController } from './tournaments.controller'
+@@ -7,7 +8,7 @@ import { TournamentsService } from './tournaments.service'
+ 
+ /** Battle tournaments (BE-44): banner, list, form options, create (admin) and detail. Shared providers come from `BattleCoreModule`. */
+ @Module({
+-  imports: [BattleCoreModule, ThrottleModule],
++  imports: [BattleCoreModule, ThrottleModule, AuditModule],
+   controllers: [TournamentsController],
+   providers: [TournamentsService],
+ })
+diff --git a/apps/api/src/modules/battle/tournaments/tournaments.service.ts b/apps/api/src/modules/battle/tournaments/tournaments.service.ts
+index dc77dc2..06371b8 100644
+--- a/apps/api/src/modules/battle/tournaments/tournaments.service.ts
++++ b/apps/api/src/modules/battle/tournaments/tournaments.service.ts
+@@ -8,6 +8,8 @@ import {
+ } from '@pp/contract'
+ import type { Tournament } from '../../../db/generated/client'
+ 
++import { AUDIT_ACTIONS } from '../../../common/audit'
++import { AuditService } from '../../../common/audit/audit.service'
+ import { toMytTimestamp } from '../../../common/time/myt'
+ import { ApiError } from '../../../common/errors/api-error'
+ import { CLOCK, type Clock } from '../../../db/clock'
+@@ -43,6 +45,7 @@ export class TournamentsService {
+     @Inject(PrismaService) private readonly prisma: PrismaService,
+     @Inject(CLOCK) private readonly clock: Clock,
+     @Inject(BattleDeps) private readonly deps: BattleDeps,
++    @Inject(AuditService) private readonly audit: AuditService,
+   ) {}
+ 
+   /** Registration or ongoing tournaments in banner order: opening date (null last), then creation time. */
+@@ -82,12 +85,16 @@ export class TournamentsService {
+     }
+   }
+ 
+-  async create(viewer: TournamentViewer, body: unknown): Promise<{ uuid: string; status: 'draft' | 'registration' }> {
++  async create(
++    viewer: TournamentViewer,
++    body: unknown,
++    audit: { role: string; scopeLevel: string; requestId: string | null; ip: string | null },
++  ): Promise<{ uuid: string; status: 'draft' | 'registration' }> {
+     const subjects = await this.deps.subjects()
+     const input = parseTournamentBody(body, new Set(subjects.map((s) => s.id)))
+     const status = input.action === 'draft' ? 'draft' : 'registration'
+-    const row = await this.prisma.transaction(async (tx) =>
+-      tx.tournament.create({
++    const row = await this.prisma.transaction(async (tx) => {
++      const created = await tx.tournament.create({
+         data: {
+           title: input.title,
+           description: input.description,
+@@ -109,8 +116,22 @@ export class TournamentsService {
+           createdAt: this.clock.now(),
+           subjects: { create: input.mixedSubjectIds.map((id) => ({ subjectId: idFromString(id) })) },
+         },
+-      }),
+-    )
++      })
++      await this.audit.record({
++        tx,
++        action: AUDIT_ACTIONS.BATTLE_TOURNAMENT_CREATED,
++        actorUserId: viewer.userId,
++        actorRole: audit.role,
++        scopeLevel: audit.scopeLevel,
++        requestId: audit.requestId,
++        ip: audit.ip,
++        isTest: viewer.isTest,
++        targetType: 'tournament',
++        targetId: created.id,
++        details: { status },
++      })
++      return created
++    })
+     return { uuid: row.id, status }
+   }
+ 
+diff --git a/apps/api/src/modules/games/rooms/admin/admin-games.controller.ts b/apps/api/src/modules/games/rooms/admin/admin-games.controller.ts
+index 25f9d52..2e8716d 100644
+--- a/apps/api/src/modules/games/rooms/admin/admin-games.controller.ts
++++ b/apps/api/src/modules/games/rooms/admin/admin-games.controller.ts
+@@ -1,6 +1,9 @@
+-import { Body, Controller, Get, Inject, Put, UseGuards } from '@nestjs/common'
++import { Body, Controller, Get, Inject, Put, Req, UseGuards } from '@nestjs/common'
++import type { Request } from 'express'
+ 
+ import { Roles } from '../../../../common/guards/decorators'
++import { requestIdOf } from '../../../../common/request/request-id'
++import { ScopeContext, type RequestWithAuth } from '../../../../common/scope'
+ import { ok } from '../../../../common/http/respond'
+ import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
+ import { GAMES_LIMITS } from '../../games.constants'
+@@ -21,7 +24,8 @@ export class AdminGamesController {
+ 
+   @Put('settings')
+   @RateLimit(GAMES_LIMITS.write)
+-  async settings(@Body() body: unknown) {
+-    return ok(await this.admin.setQuizTiles(body))
++  async settings(@Req() req: Request & RequestWithAuth, @Body() body: unknown) {
++    const s = ScopeContext.fromRequest(req)
++    return ok(await this.admin.setQuizTiles(body, { userId: s.userId, role: s.role, scopeLevel: s.scope.level, requestId: requestIdOf(req) ?? null, ip: req.ip ?? req.socket.remoteAddress ?? null, isTest: s.isTest }))
+   }
+ }
+diff --git a/apps/api/src/modules/games/rooms/admin/admin-games.service.ts b/apps/api/src/modules/games/rooms/admin/admin-games.service.ts
+index e802952..d383669 100644
+--- a/apps/api/src/modules/games/rooms/admin/admin-games.service.ts
++++ b/apps/api/src/modules/games/rooms/admin/admin-games.service.ts
+@@ -5,7 +5,10 @@ import {
+   type GamesAdminSettingsResult,
+ } from '@pp/contract'
+ 
++import { AUDIT_ACTIONS } from '../../../../common/audit'
++import { AuditService } from '../../../../common/audit/audit.service'
+ import { CLOCK, type Clock } from '../../../../db/clock'
++import { PrismaService } from '../../../../db/prisma.service'
+ import { quizTilesInvalid } from '../../errors'
+ import { DEFAULT_QUIZ_TILES } from '../../games.constants'
+ import { RoomsRepository } from '../rooms.repository'
+@@ -16,6 +19,8 @@ export class AdminGamesService {
+   constructor(
+     @Inject(RoomsRepository) private readonly repo: RoomsRepository,
+     @Inject(CLOCK) private readonly clock: Clock,
++    @Inject(PrismaService) private readonly prisma: PrismaService,
++    @Inject(AuditService) private readonly audit: AuditService,
+   ) {}
+ 
+   async overview(): Promise<GamesAdminOverview> {
+@@ -25,12 +30,29 @@ export class AdminGamesService {
+     }
+   }
+ 
+-  async setQuizTiles(body: unknown): Promise<GamesAdminSettingsResult> {
++  async setQuizTiles(
++    body: unknown,
++    actor: { userId: string; role: string; scopeLevel: string; requestId: string | null; ip: string | null; isTest: boolean },
++  ): Promise<GamesAdminSettingsResult> {
+     const r = GamesAdminSettingsUpdateRequestSchema.safeParse(
+       typeof body === 'object' && body !== null ? body : {},
+     )
+     if (!r.success) throw quizTilesInvalid()
+-    await this.repo.setQuizTiles(r.data.boardgame_quiz_tiles, this.clock.now())
++    await this.prisma.transaction(async (tx) => {
++      await this.repo.setQuizTiles(r.data.boardgame_quiz_tiles, this.clock.now())
++      await this.audit.record({
++        tx,
++        action: AUDIT_ACTIONS.GAMES_SETTINGS_UPDATED,
++        actorUserId: actor.userId,
++        actorRole: actor.role,
++        scopeLevel: actor.scopeLevel,
++        requestId: actor.requestId,
++        ip: actor.ip,
++        isTest: actor.isTest,
++        targetType: 'game_settings',
++        details: { keys: ['boardgame_quiz_tiles'] },
++      })
++    })
+     return { boardgameQuizTiles: r.data.boardgame_quiz_tiles }
+   }
+ }
+diff --git a/apps/api/src/modules/games/rooms/rooms.module.ts b/apps/api/src/modules/games/rooms/rooms.module.ts
+index 2fe8622..a789a6d 100644
+--- a/apps/api/src/modules/games/rooms/rooms.module.ts
++++ b/apps/api/src/modules/games/rooms/rooms.module.ts
+@@ -1,5 +1,6 @@
+ import { Module } from '@nestjs/common'
+ 
++import { AuditModule } from '../../../common/audit/audit.module'
+ import { GamesCoreModule } from '../core/core.module'
+ import { AdminGamesController } from './admin/admin-games.controller'
+ import { AdminGamesService } from './admin/admin-games.service'
+@@ -16,7 +17,7 @@ import { RoomsService } from './rooms.service'
+  * paths win over `/games/:game/...`; `GET /games/hub` is the first route of `RoomsController`.
+  */
+ @Module({
+-  imports: [GamesCoreModule],
++  imports: [GamesCoreModule, AuditModule],
+   controllers: [RoomsController, QuickMatchController, AdminGamesController],
+   providers: [RoomSecrets, RoomsRepository, RoomsService, QuickMatchService, AdminGamesService],
+   exports: [],
+diff --git a/apps/api/src/modules/gamification/actor.ts b/apps/api/src/modules/gamification/actor.ts
+index 2c9d7d9..81e9d66 100644
+--- a/apps/api/src/modules/gamification/actor.ts
++++ b/apps/api/src/modules/gamification/actor.ts
+@@ -8,6 +8,7 @@ import { type RequestWithAuth, ScopeContext } from '../../common/scope'
+ export interface AuditActor {
+   userId: string
+   role: string
++  scopeLevel: string
+   requestId: string | null
+   ip: string | null
+   isTest: boolean
+@@ -18,6 +19,7 @@ export function actorOf(req: Request & RequestWithAuth): AuditActor {
+   return {
+     userId: scope.userId,
+     role: scope.role,
++    scopeLevel: scope.scope.level,
+     requestId: requestIdOf(req) ?? null,
+     ip: req.ip ?? req.socket.remoteAddress ?? null,
+     isTest: scope.isTest,
+diff --git a/apps/api/src/modules/gamification/admin.service.ts b/apps/api/src/modules/gamification/admin.service.ts
+index ca30fe5..d777bf4 100644
+--- a/apps/api/src/modules/gamification/admin.service.ts
++++ b/apps/api/src/modules/gamification/admin.service.ts
+@@ -195,6 +195,7 @@ export class GamificationAdminService {
+         action,
+         actorUserId: actor.userId,
+         actorRole: actor.role,
++        scopeLevel: actor.scopeLevel,
+         requestId: actor.requestId,
+         ip: actor.ip,
+         isTest: actor.isTest,
+@@ -586,6 +587,7 @@ export class GamificationAdminService {
+         action: AUDIT_ACTIONS.GAMIFICATION_DRAW_DRAWN,
+         actorUserId: actor?.userId ?? null,
+         actorRole: actor?.role ?? null,
++        scopeLevel: actor?.scopeLevel ?? null,
+         requestId: actor?.requestId ?? null,
+         ip: actor?.ip ?? null,
+         isTest: actor?.isTest ?? false,
+diff --git a/apps/api/src/modules/questions/http/actor.ts b/apps/api/src/modules/questions/http/actor.ts
+index e1bebcd..b8ff9a4 100644
+--- a/apps/api/src/modules/questions/http/actor.ts
++++ b/apps/api/src/modules/questions/http/actor.ts
+@@ -9,6 +9,8 @@ import type { QuestionActor } from '../types'
+ export interface HttpActor extends QuestionActor {
+   /** Active role code of the session (`admin` or `teacher` on these routes). */
+   roleCode: string
++  /** Scope level of the active role (audit `scope_level`). */
++  scopeLevel: string
+   requestId: string | null
+   ip: string | null
+   isTest: boolean
+@@ -20,6 +22,7 @@ export function actorOf(req: Request & RequestWithAuth): HttpActor {
+     userId: scope.userId,
+     role: scope.role === 'admin' ? 'admin' : 'teacher',
+     roleCode: scope.role,
++    scopeLevel: scope.scope.level,
+     requestId: requestIdOf(req) ?? null,
+     ip: req.ip ?? req.socket.remoteAddress ?? null,
+     isTest: scope.isTest,
+diff --git a/apps/api/src/modules/questions/http/audit.ts b/apps/api/src/modules/questions/http/audit.ts
+index 38c6a39..70e7946 100644
+--- a/apps/api/src/modules/questions/http/audit.ts
++++ b/apps/api/src/modules/questions/http/audit.ts
+@@ -19,6 +19,7 @@ export class QuestionAudit {
+       action,
+       actorUserId: actor.userId,
+       actorRole: actor.roleCode,
++      scopeLevel: actor.scopeLevel,
+       targetType: 'question',
+       targetId,
+       requestId: actor.requestId,
+diff --git a/apps/api/src/modules/questions/questions.service.ts b/apps/api/src/modules/questions/questions.service.ts
+index 82fdbe3..c35da59 100644
+--- a/apps/api/src/modules/questions/questions.service.ts
++++ b/apps/api/src/modules/questions/questions.service.ts
+@@ -264,7 +264,8 @@ export class QuestionsService {
+             done.push(id)
+           }
+         } else {
+-          await this.setStatus(id, action, actor.userId)
++          const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
++          await this.setStatus(id, action, actor.userId, { event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+           affected += 1
+           done.push(id)
+         }
+@@ -287,6 +288,11 @@ export class QuestionsService {
+       if (!record) throw questionNotFound()
+       const v = record.version
+       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
++      if (options.event) {
++        await this.prisma.client.questionStatusEvent.create({
++          data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
++        })
++      }
+       if (status === 'published') {
+         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
+         Object.assign(fields, checkKeysGate(v.parts))
+diff --git a/apps/api/src/modules/questions/types.ts b/apps/api/src/modules/questions/types.ts
+index 3e71f38..ff90a7f 100644
+--- a/apps/api/src/modules/questions/types.ts
++++ b/apps/api/src/modules/questions/types.ts
+@@ -228,6 +228,8 @@ export interface SetStatusOptions {
+   actor?: 'admin' | 'owner_teacher'
+   /** Stored by BE-10 in `question_status_events`; BE-09 ignores it. */
+   reason?: string | null
++  /** Set by paths that bypass the BE-10 lifecycle (bulk-action): `setStatus` then writes the status event itself. */
++  event?: { actorUserId: string; actorRole: string; requestId: string | null }
+ }
+ 
+ /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
+diff --git a/apps/api/src/modules/shop/actor.ts b/apps/api/src/modules/shop/actor.ts
+index ffa0ec0..c2282fb 100644
+--- a/apps/api/src/modules/shop/actor.ts
++++ b/apps/api/src/modules/shop/actor.ts
+@@ -8,6 +8,7 @@ import { type RequestWithAuth, ScopeContext } from '../../common/scope'
+ export interface ShopActor {
+   userId: string
+   role: string
++  scopeLevel: string
+   requestId: string | null
+   ip: string | null
+   isTest: boolean
+@@ -18,6 +19,7 @@ export function actorOf(req: Request & RequestWithAuth): ShopActor {
+   return {
+     userId: scope.userId,
+     role: scope.role,
++    scopeLevel: scope.scope.level,
+     requestId: requestIdOf(req) ?? null,
+     ip: req.ip ?? req.socket.remoteAddress ?? null,
+     isTest: scope.isTest,
+diff --git a/apps/api/src/modules/shop/admin.service.ts b/apps/api/src/modules/shop/admin.service.ts
+index 7a71093..6aa8108 100644
+--- a/apps/api/src/modules/shop/admin.service.ts
++++ b/apps/api/src/modules/shop/admin.service.ts
+@@ -90,6 +90,7 @@ export class ShopAdminService {
+       action,
+       actorUserId: actor.userId,
+       actorRole: actor.role,
++      scopeLevel: actor.scopeLevel,
+       targetType,
+       targetId,
+       requestId: actor.requestId,

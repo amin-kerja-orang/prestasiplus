@@ -181,11 +181,11 @@ describe('HttpBijakAdminServer', () => {
   it('rejects (never throws) methods without a backend route', async () => {
     const { server } = setup()
     const calls = [
-      () => server.createManualBatch(1, {} as never),
-      () => server.listReviewQueue(),
-      () => server.listBank(),
-      () => server.bankStats(),
-      () => server.getReviewItem('k'),
+      () => server.resubmit('k'),
+      () => server.getBankEditable('q'),
+      () => server.reviseQuestion('q', 's', 'n'),
+      () => server.reviseQuestionFull('q', {} as never, undefined, 'n'),
+      () => server.reviewDecision('k', { action: 'betulkan', reason: 'x' }),
     ]
     for (const c of calls) {
       let p: Promise<unknown> | undefined
@@ -281,13 +281,15 @@ describe('admin pages in http mode do not crash', () => {
   }
 
   it.each([
-    ['BankPage', BankPage, {}],
-    ['ReviewQueuePage', ReviewQueuePage, {}],
-    ['ReviewItemPage', ReviewItemPage, {}],
-  ] as [string, unknown, Record<string, unknown>][])(
-    '%s shows the demo-unavailable state when its load has no backend route',
-    async (_name, component, props) => {
-      const html = await renderPage(component, props, setup().server)
+    ['BankPage', BankPage, {}, 'listBank'],
+    ['ReviewQueuePage', ReviewQueuePage, {}, 'listReviewQueue'],
+    ['ReviewItemPage', ReviewItemPage, {}, 'getReviewItem'],
+  ] as [string, unknown, Record<string, unknown>, string][])(
+    '%s shows the demo-unavailable state when its load is unavailable',
+    async (_name, component, props, method) => {
+      const server = setup().server as unknown as Record<string, unknown>
+      server[method] = () => Promise.reject(new BijakError('unavailable', UNAVAILABLE_MESSAGE))
+      const html = await renderPage(component, props, server)
       expect(html).toContain('Fungsi ini belum tersedia dalam demo')
       expect(html).not.toContain('Tidak dapat memuatkan')
     },

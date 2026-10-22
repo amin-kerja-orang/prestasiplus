@@ -18,7 +18,7 @@ import { JEMPUT_GENERIC_ERROR, sortParents } from '../lib/jemput'
 
 const loading = ref(true)
 const loadFailed = ref(false)
-const token = ref('')
+const token = ref<string | null>(null)
 const parents = ref<LinkedParent[]>([])
 const regenerating = ref(false)
 const flash = ref<{ type: 'success'; message: string } | null>(null)

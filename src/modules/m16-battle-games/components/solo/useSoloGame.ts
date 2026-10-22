@@ -1,8 +1,11 @@
 import { computed, ref, shallowRef } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
+
 import { fetchSoloGame, submitSoloGame } from '../../api'
 import type { SoloGame, SoloPayloads, SoloSubmitBody, SoloSubmitResponse } from '../../api'
+import { errorInfo } from './solo-check'
 import { parseDarjah } from './solo-lib'
 
 /**
@@ -43,18 +46,22 @@ export function useSoloGame<G extends SoloGame>(game: G, requiresDarjah = true) 
 /**
  * Submits a finished game (§7 #33). A failed submit logs "Submit error:" and the result screen stays
  * (URS FN-M16-6.7.2, as live): the answer is `null`, so no record and no credited syiling show.
+ * D58a, http mode: the body is only the session id (the server computes everything from the stored checks),
+ * and `before` (the checks still in flight) is awaited first, so no check arrives after the submit.
  */
 export async function submitResult(
   game: SoloGame,
   body: SoloSubmitBody,
+  before?: { idle(): Promise<void> },
 ): Promise<SoloSubmitResponse | null> {
   try {
-    const res = await submitSoloGame(game, body)
+    if (before) await before.idle()
+    const res = await submitSoloGame(game, isHttpMode() ? { session_id: body.session_id } : body)
     if (res.status >= 200 && res.status < 300) return res.body
-    console.error('Submit error:', res.body.message ?? res.status)
+    console.error('Submit error:', res.status)
     return null
   } catch (e) {
-    console.error('Submit error:', e)
+    console.error('Submit error:', errorInfo(e))
     return null
   }
 }

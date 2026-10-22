@@ -3,11 +3,23 @@ import type { Scenario } from '@pp/contract-tests'
 import { API_ONLY, dataOf, errorOf, expectError, listOf } from '../helpers'
 
 /**
- * Practice (BE-12) API-only scenarios: the four session routes without the question bank, the assigned
- * work or the ramalan source (their ports answer the documented defaults until BE-09, BE-18 and BE-41 merge).
- * The conformance database has no curriculum seed, so the paths that need a subject end in 404 here; the
- * deep scenarios (a full start, check and submit with a fake bank) are in `apps/api/test/practice`.
+ * Practice (BE-12) API-only scenarios: the four session routes. The question source is the BE-09 bank
+ * (`PracticeQuestionsBridgeModule`) and the assigned work is BE-18's; the ramalan source still answers its
+ * documented default until BE-41 merges. The deep scenarios (a full start, check and submit with a fake bank)
+ * are in `apps/api/test/practice`; the bank-backed ones in `apps/api/test/practice-question-source`.
  */
+
+/** Keys that must never appear in a start response (AC 4). */
+const KEY_FIELDS = new Set(['correctLabel', 'correctAnswer', 'correctOptionId', 'correct', 'explanation', 'key', 'isCorrect', 'tfAnswer', 'modelAnswer'])
+const leakedKeys = (value: unknown, out: string[] = []): string[] => {
+  if (Array.isArray(value)) for (const v of value) leakedKeys(v, out)
+  else if (value !== null && typeof value === 'object')
+    for (const [k, v] of Object.entries(value)) {
+      if (KEY_FIELDS.has(k)) out.push(k)
+      leakedKeys(v, out)
+    }
+  return out
+}
 
 const SESSION = '11111111-1111-4111-8111-111111111111'
 const fieldsOf = (res: { body: unknown }): Record<string, string> => (errorOf(res as never).fields as Record<string, string> | undefined) ?? {}
@@ -99,6 +111,26 @@ export const practiceScenarios: Scenario[] = [
       const missing = await student.request('GET', '/practice/sessions')
       expectError(ctx, missing, 422, 'VALIDATION_ERROR')
       ctx.check(dataOf(missing).sessions === undefined, 'an error carries no data')
+    },
+  },
+  {
+    id: 'practice-api/start from the BE-09 bank: past_year serves seeded published SPM-pool MCQs without the key; an empty draw is 422 NOT_ENOUGH_QUESTIONS',
+    domain: 'practice',
+    targets: API_ONLY,
+    async run(ctx) {
+      const student = await ctx.as('student')
+      // The base seed has one published, active, SPM-pool MCQ per subject (SEED-MCQ-*-T5): past_year serves it.
+      const res = await student.request('POST', '/practice/sessions', { body: { mode: 'past_year', subjectCode: 'MATH', count: 5 } })
+      ctx.expectStatus(res, 201)
+      const data = dataOf(res) as { mode?: unknown; questions?: { id: string; options: unknown[] }[] }
+      ctx.check(data.mode === 'past_year', 'the started mode differs')
+      ctx.check(Array.isArray(data.questions) && data.questions.length >= 1, 'no question was served from the bank')
+      ctx.check((data.questions ?? []).every((q) => q.options.length >= 3), 'a served MCQ has fewer than 3 options')
+      const leaked = leakedKeys(res.body)
+      ctx.check(leaked.length === 0, `the start response leaks ${leaked.join(', ')}`)
+      // Random sessions draw Darjah 1 to 4 questions only; the base seed has none, so the draw is short.
+      const empty = await student.request('POST', '/practice/sessions', { body: { mode: 'random', subjectCode: 'MATH', count: 5 } })
+      expectError(ctx, empty, 422, 'NOT_ENOUGH_QUESTIONS')
     },
   },
 ]

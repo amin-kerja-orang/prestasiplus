@@ -3,6 +3,7 @@ import { DateOnlySchema, TimestampSchema } from '../common/time'
 import { IdSchema } from '../common/ids'
 import {
   GAMES_MESSAGES,
+  GAMES_NAME_RULE,
   GamesKeylessQuestionSchema,
   gamesCount,
   gamesGradeNumber,
@@ -504,8 +505,8 @@ export type GamesJutawanLifelineResponse = z.infer<typeof GamesJutawanLifelineRe
 export const GamesWeeklyRowSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema,
-    name: z.string().meta({ description: 'Display name only (D54(d)).' }),
+    userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first name + initial outside the viewer\'s scope (children\'s names rule).' }),
     sesi: gamesCount,
     betul: gamesCount,
     tepat: z.number().min(0).max(100),

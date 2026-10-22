@@ -8,7 +8,7 @@
 import { computed, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { useApi } from '@/composables'
+import { useApi, useRouteExists } from '@/composables'
 import { DsBackLink, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchStructuredQuestion } from '../api/structured'
@@ -18,6 +18,8 @@ import { kbatLabel, partLabelText } from '../lib/structured-options'
 import { LOAD_ERROR, isNotFound } from '../lib/ui-errors'
 
 const props = defineProps<{ id: number }>()
+// DV: the M10 teacher edit form is not routed yet, so "Edit Soalan" is hidden until it is.
+const { routeExists } = useRouteExists()
 
 const {
   data: question,
@@ -169,6 +171,7 @@ watch(
 
       <div class="flex flex-wrap gap-3">
         <UButton
+          v-if="routeExists(structuredEditPath(question.id))"
           :to="structuredEditPath(question.id)"
           icon="i-ph-pencil-simple"
           class="min-h-11"

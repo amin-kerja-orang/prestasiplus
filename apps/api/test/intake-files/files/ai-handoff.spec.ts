@@ -73,13 +73,19 @@ describe('AI hand-off (no route)', () => {
     await t.close()
   })
 
-  it('DisabledAiExtractor is the default and fails with AI_UNAVAILABLE without a retry', async () => {
-    const extractor = t.app.get<DisabledAiExtractor>(AI_EXTRACTOR)
-    expect(extractor).toBeInstanceOf(DisabledAiExtractor)
+  it('DisabledAiExtractor fails with AI_UNAVAILABLE without a retry', async () => {
+    const extractor = new DisabledAiExtractor()
     expect(extractor.id).toBe('disabled')
     const req = AiExtractRequestSchema.parse({ pages: [], subject: 'MAT', kertas: 1 })
     await expect(extractor.extractPaper(req)).rejects.toMatchObject({ code: 'AI_UNAVAILABLE', retryable: false })
     await expect(extractor.extractPaper(req, new AbortController().signal)).rejects.toBeInstanceOf(JobError)
+  })
+
+  it('AI_EXTRACTOR is the BE-36 adapter (mock provider unless AI_PROVIDER says otherwise)', () => {
+    // BE-36 replaced the BE-37 default (DisabledAiExtractor) with the real adapter; the port interface is unchanged.
+    const extractor = t.app.get<{ id: string }>(AI_EXTRACTOR)
+    expect(extractor).not.toBeInstanceOf(DisabledAiExtractor)
+    expect(extractor.id).toBe('mock')
   })
 
   it('builds the request from page text only, sanitised, capped, and without notes, source, names or admin notes', async () => {

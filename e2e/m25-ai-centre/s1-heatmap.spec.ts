@@ -555,7 +555,8 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
       await expect(card(page)).toHaveCount(1)
       const slug = await slugOf(page)
       const row = DUTA[slug]!
-      await expect(card(page)).toHaveAttribute('href', `/bilik-duta/${slug}`)
+      await expect(card(page)).toHaveAttribute('data-slug', slug)
+      await expect(card(page)).not.toHaveAttribute('href', /.*/)
       await expect(page.getByTestId('cikgu-avatar')).toHaveText(row.initials)
       await expect(page.locator('h4')).toHaveText(row.name)
       await expect(page.getByTestId('cikgu-tagline')).toHaveText(row.tagline)
@@ -631,7 +632,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await expect(page.getByTestId('cikgu-pakar')).toHaveCount(0)
   })
 
-  test('E2E-M25-21 clicking the card opens /bilik-duta/{slug} (global 404 while M24 is not built) @m25', provisional('the M24 page is not built'), async ({
+  test('E2E-M25-21 the card is not a link while M24 is not built: clicking it keeps the URL (D9 dead link) @m25', async ({
     page,
     gotoApp,
     loginAs,
@@ -639,9 +640,12 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(card(page)).toBeVisible()
-    const slug = await slugOf(page)
+    expect(await card(page).evaluate((el) => el.tagName)).toBe('DIV')
+    await expect(card(page)).not.toHaveAttribute('href', /.*/)
+    const before = page.url()
     await card(page).click()
-    await expect(page).toHaveURL(new RegExp(`/bilik-duta/${slug}$`))
+    expect(page.url()).toBe(before)
+    expect(page.url()).not.toContain('/bilik-duta')
   })
 
   test('E2E-M25-22 admin: six cells, attempts 116, correct 45; the D2 chapter is in no cell @m25', async ({
