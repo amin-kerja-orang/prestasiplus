@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { IntakeBatchCreateSchema } from '@pp/contract'
+
 import { ApiClient, ApiError } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
 import { createHttpBijakAdminServer, uploadError } from '../server/http-admin'
-import { IntakeBatchCreateSchema } from '@pp/contract'
-
 import {
   batchCreateToWire,
   batchFromWire,
@@ -193,8 +193,9 @@ describe('intake client', () => {
     expect(b.id).toBe('b1')
     const create = requests.find((r) => r.method === 'POST' && r.url === '/api/intake/batches')!
     expect(create.headers?.['x-csrf-token']).toBe('csrf-1')
-    expect(create.body).toMatchObject({ paperType: 'trial', declaration: true, subject: 'MAT' })
-    expect(create.body).not.toHaveProperty('notes')
+    // the request declare() really sends: the exact contract body (78-10), no notes when blank
+    expect(create.body).toEqual({ paperType: 'trial', subject: 'MAT', kertas: 2, year: 2025, source: 'Sekolah', copyright: 'sendiri', declaration: true })
+    expect(IntakeBatchCreateSchema.safeParse(create.body).success).toBe(true)
     const up = requests.find((r) => r.url === '/api/intake/batches/b1/files')!
     expect(up.headers?.['x-csrf-token']).toBe('csrf-1')
     expect(up.body).toBeInstanceOf(FormData)
