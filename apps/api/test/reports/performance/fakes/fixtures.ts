@@ -35,8 +35,8 @@ export function sitting(over: Partial<BijakSittingFact> & Pick<BijakSittingFact,
     status: 'submitted',
     score: 8,
     maxScore: 10,
-    // Answered questions, not marks: defaults to the marks only so most specs read alike; specs on `answered` set it.
-    answeredCount: over.maxScore ?? 10,
+    // Answered questions, NOT marks: a distinct default (half the marks) so a spec can tell the two apart.
+    answeredCount: Math.floor((over.maxScore ?? 10) / 2),
     provisional: false,
     pendingReview: 0,
     durationSeconds: 600,

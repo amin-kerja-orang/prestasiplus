@@ -183,3 +183,37 @@ describe('PrismaBijakAggregate wiring and item facts', () => {
     expect(row!.questionVersion).toBeGreaterThanOrEqual(1)
   })
 })
+
+describe('PrismaBijakAggregate answered count from attempt_results.graded (issue 61 m1)', () => {
+  const question = (n: number, attempted: unknown) => ({ questionId: `g${String(n)}`, number: n, sectionId: 's', marks: 2, awarded: 0, counted: true, attempted, parts: [] })
+
+  /** Two sittings of one pupil; `graded` of each is overwritten with the given JSON, then read through the real port. */
+  async function withGraded(first: unknown, second: unknown): Promise<{ sittings: BijakSittingFact[]; totals: BijakTotals[] }> {
+    const { sitting } = await import('../fakes/fixtures')
+    await translating({ sittings: [{ fact: sitting({ userId: '1', attemptId: 'g1' }) }, { fact: sitting({ userId: '1', attemptId: 'g2' }) }], items: [] })
+    const rows = await t.db.query<{ attempt_id: string }>(`select attempt_id::text from attempt_results order by attempt_id`)
+    expect(rows).toHaveLength(2)
+    await t.db.query(`update attempt_results set graded = $2::jsonb where attempt_id = $1::uuid`, [rows[0]!.attempt_id, JSON.stringify(first)])
+    await t.db.query(`update attempt_results set graded = $2::jsonb where attempt_id = $1::uuid`, [rows[1]!.attempt_id, JSON.stringify(second)])
+    return { sittings: await real.sittings({}), totals: await real.totals({}, 'user') }
+  }
+
+  it('counts only questions with attempted true: true and false mixed, and a missing or non-boolean flag is not an answer', async () => {
+    const mixed = { sections: [], questions: [question(1, true), question(2, false), question(3, true), question(4, true), question(5, false)] }
+    const sparse = { sections: [], questions: [{ ...question(1, true) }, { questionId: 'g2', number: 2, sectionId: 's', marks: 2, awarded: 0, counted: true, parts: [] }, question(3, null)] }
+    const { sittings, totals } = await withGraded(mixed, sparse)
+    expect(sittings.map((s) => s.answeredCount).sort()).toEqual([1, 3])
+    expect(totals).toHaveLength(1)
+    expect(totals[0]).toMatchObject({ sittings: 2, max: 20, answered: 4 })
+  })
+
+  it('graded.questions that is null, missing or not an array counts 0 and does not break the read', async () => {
+    const { sittings, totals } = await withGraded({ sections: [], questions: null }, { sections: [] })
+    expect(sittings.map((s) => s.answeredCount)).toEqual([0, 0])
+    expect(totals[0]).toMatchObject({ sittings: 2, answered: 0 })
+    const third = await withGraded({ sections: [], questions: { not: 'an array' } }, { sections: [], questions: [question(1, true)] })
+    expect(third.sittings.map((s) => s.answeredCount).sort()).toEqual([0, 1])
+    expect(third.totals[0]).toMatchObject({ answered: 1 })
+  })
+})
+

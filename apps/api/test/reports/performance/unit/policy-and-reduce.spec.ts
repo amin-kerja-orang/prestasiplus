@@ -111,7 +111,7 @@ describe('reduceFacts', () => {
     sitting({ userId: '2', score: 5, maxScore: 5, durationSeconds: 25 }),
   ]
   it('matches hand sums; provisional sittings count everywhere but the graded base', () => {
-    expect(figuresOf(facts)).toEqual({ sittings: 3, score: 15, max: 25, answered: 25, seconds: 175, gradedScore: 13, gradedMax: 15 })
+    expect(figuresOf(facts)).toEqual({ sittings: 3, score: 15, max: 25, answered: 12, seconds: 175, gradedScore: 13, gradedMax: 15 })
     const rows = reduceFacts(facts, 'user')
     expect(rows).toHaveLength(2)
     expect(rows[0]).toMatchObject({ userId: '1', sittings: 2, score: 10, max: 20, seconds: 150, gradedScore: 8, gradedMax: 10, pupils: 1 })
