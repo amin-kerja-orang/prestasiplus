@@ -9,9 +9,9 @@
  *
  * API rule (apps/api/src/modules/bijak/attempts/attempts.service.ts `owned`): another user's attempt
  * is 403 FORBIDDEN "Akses ditolak" (D54b), an unknown id is 404. Controller is `@Roles('student')`.
- * UI (src/modules/m28-bijak-spm/pages/AttemptPage.vue): a failed load shows `DsLoadError`
- * ([data-ds=load-error]) "Percubaan tidak dapat dimuatkan." (only a 404 says "tidak ditemui") and no
- * attempt shell. The UI text is read from source, not yet run: that part is @provisional.
+ * UI (src/modules/m28-bijak-spm/pages/AttemptPage.vue): a 403 or a 404 sets `refused` and renders
+ * `attempt-not-found` "Percubaan ini tidak dijumpai." with no exam shell (no position, map, options or
+ * submit). Run green against a local API at 375/768/1280.
  *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_STUDENT_PASS / BIJAK_STUDENT_B_PASS; B defaults to A's password).
  */
@@ -27,7 +27,7 @@ interface PaperRow {
 test.describe('bijak attempt ownership @api', () => {
   test.setTimeout(90_000)
 
-  test('pupil B cannot read pupil A attempt: API 403, UI refusal without data @api @provisional', async ({
+  test('pupil B cannot read pupil A attempt: API 403, UI refusal without data @api', async ({
     page,
     browser,
   }, testInfo) => {
