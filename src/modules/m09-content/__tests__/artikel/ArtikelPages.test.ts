@@ -20,7 +20,10 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api', () => api)
 
-const session = vi.hoisted(() => ({ loggedIn: true, role: 'student' as string | null }))
+const session = vi.hoisted((): { loggedIn: boolean; role: string | null } => ({
+  loggedIn: true,
+  role: 'student',
+}))
 vi.mock('@/composables/useSession', async () => {
   const { ref: r } = await import('vue')
   const isLoggedIn = r(true)

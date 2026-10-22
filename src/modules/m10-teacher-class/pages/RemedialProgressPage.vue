@@ -82,27 +82,27 @@ const pct = (n: number | null): string => (n === null ? '-' : `${String(n)}%`)
           data-testid="remedial-progress-empty"
         />
         <DsStack v-else as="ul" gap="sm">
-          <DsCluster
-            v-for="row in data.rows"
-            :key="row.id"
-            as="li"
-            justify="between"
-            data-testid="remedial-progress-row"
-          >
-            <DsStack gap="2xs">
-              <DsText variant="body" truncate>{{ row.studentName }}</DsText>
-              <DsText variant="body" tone="muted">{{ row.subjectName }}</DsText>
-            </DsStack>
-            <DsCluster>
-              <DsTag
-                :label="REMEDIAL_STATUS_LABEL[row.status]"
-                data-testid="remedial-progress-status"
-              />
-              <DsText variant="body" tone="muted" as="span" data-testid="remedial-progress-accuracy"
-                >{{ pct(row.beforeAccuracy) }} → {{ pct(row.afterAccuracy) }}</DsText
-              >
+          <li v-for="row in data.rows" :key="row.id" data-testid="remedial-progress-row">
+            <DsCluster justify="between">
+              <DsStack gap="2xs">
+                <DsText variant="body" truncate>{{ row.studentName }}</DsText>
+                <DsText variant="body" tone="muted">{{ row.subjectName }}</DsText>
+              </DsStack>
+              <DsCluster>
+                <DsTag
+                  :label="REMEDIAL_STATUS_LABEL[row.status]"
+                  data-testid="remedial-progress-status"
+                />
+                <DsText
+                  variant="body"
+                  tone="muted"
+                  as="span"
+                  data-testid="remedial-progress-accuracy"
+                  >{{ pct(row.beforeAccuracy) }} → {{ pct(row.afterAccuracy) }}</DsText
+                >
+              </DsCluster>
             </DsCluster>
-          </DsCluster>
+          </li>
         </DsStack>
       </DsPanel>
     </template>
