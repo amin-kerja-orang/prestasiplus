@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsEmptyState, DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -79,6 +79,59 @@ async function load(): Promise<void> {
 }
 onMounted(load)
 
+/* ------------------------------------------------------------------ extraction (http mode) */
+// The server extracts the questions of an uploaded PDF on request (BE-38); the mock extracts in the
+// browser at upload, so `batch.extraction` is absent there and none of this shows.
+const extraction = computed(() => batch.value?.extraction)
+const extracting = ref(false)
+const extractError = ref('')
+const showExtract = computed(
+  () => !!extraction.value && !isManual.value && !readonly.value && batch.value?.questions.length === 0,
+)
+const allDecided = computed(
+  () => extraction.value?.state === 'succeeded' && (extraction.value.itemCount ?? 0) > 0,
+)
+const extractWaiting = computed(() => {
+  const e = extraction.value
+  return !!e && (e.state === 'queued' || e.state === 'running' || (e.state === 'none' && e.processing))
+})
+
+async function startExtract(): Promise<void> {
+  if (!server.extractBatch || extracting.value) return
+  extracting.value = true
+  extractError.value = ''
+  try {
+    await server.extractBatch(props.batchId)
+    await refresh()
+  } catch (e) {
+    extractError.value = e instanceof Error ? e.message : 'Pengekstrakan gagal.'
+  } finally {
+    extracting.value = false
+  }
+}
+
+/** Reads the batch again without the loading state; only while the editor holds no questions yet. */
+async function refresh(): Promise<void> {
+  if ((batch.value?.questions.length ?? 0) > 0) return
+  try {
+    const fresh = await server.getIntakeBatch(props.batchId)
+    if ((batch.value?.questions.length ?? 0) > 0) return // the user added one meanwhile
+    loaded = false // this replacement is not an edit: the autosave watcher skips it
+    batch.value = fresh
+    const first = fresh.questions[0]
+    if (first && open.value.size === 0) open.value = new Set([first.id])
+  } catch {
+    /* keep the last state; the next tick tries again */
+  }
+}
+
+let poller: ReturnType<typeof setInterval> | undefined
+watch(extractWaiting, (waiting) => {
+  clearInterval(poller)
+  poller = waiting ? setInterval(() => void refresh(), 2000) : undefined
+})
+onBeforeUnmount(() => clearInterval(poller))
+
 /* ------------------------------------------------------------------------------ autosave */
 let timer: ReturnType<typeof setTimeout> | undefined
 let loaded = false
@@ -106,11 +159,28 @@ async function save(): Promise<void> {
   if (!b || b.status !== 'draf') return
   saveState.value = 'menyimpan'
   try {
-    await server.saveExtracted(b.id, { questions: b.questions, stimuli: b.stimuli })
+    const saved = await server.saveExtracted(b.id, { questions: b.questions, stimuli: b.stimuli })
+    if (saved?.idMap) applyIdMap(saved.idMap)
     saveState.value = 'tersimpan'
   } catch {
     saveState.value = 'gagal'
   }
+}
+
+/** http mode: rows and rajah added in the editor got server ids; adopt them (local id to server id). */
+function applyIdMap(m: NonNullable<IntakeBatch['idMap']>): void {
+  const b = batch.value
+  if (!b) return
+  const qi = m.items
+  const si = m.stimuli
+  if (b.questions.every((q) => !(q.id in qi) && !(q.stimulusId && q.stimulusId in si)) && b.stimuli.every((s) => !(s.id in si))) return
+  b.questions = b.questions.map((q) => ({
+    ...q,
+    id: qi[q.id] ?? q.id,
+    ...(q.stimulusId ? { stimulusId: si[q.stimulusId] ?? q.stimulusId } : {}),
+  }))
+  b.stimuli = b.stimuli.map((s) => ({ ...s, id: si[s.id] ?? s.id }))
+  open.value = new Set([...open.value].map((id) => qi[id] ?? id))
 }
 
 /* ------------------------------------------------------------------------------ derived */
@@ -415,6 +485,72 @@ async function submit(): Promise<void> {
             :description="batch.unmatched.join(', ')"
           />
         </DsPanel>
+
+        <!-- extraction step (http mode) -->
+        <DsPanel v-if="showExtract" data-testid="extract-panel">
+          <DsStack gap="sm" aria-live="polite">
+            <DsText variant="body-strong">Ekstrak soalan</DsText>
+            <DsText
+              v-if="extractWaiting && extraction?.state === 'none'"
+              variant="caption"
+              data-testid="extract-processing"
+            >
+              Fail sedang diproses. Pengekstrakan boleh dimulakan selepas fail dibaca.
+            </DsText>
+            <DsText v-else-if="extractWaiting" variant="caption" data-testid="extract-running">
+              Mengekstrak soalan daripada kertas. Sila tunggu.
+              <template v-if="extraction?.reason"> {{ extraction.reason }}</template>
+            </DsText>
+            <DsText
+              v-else-if="extraction?.state === 'failed'"
+              variant="caption"
+              tone="error"
+              role="alert"
+              data-testid="extract-failed"
+            >
+              {{ extraction.reason || 'Pengekstrakan gagal.' }}
+            </DsText>
+            <DsText
+              v-else-if="extraction?.state === 'succeeded'"
+              variant="caption"
+              data-testid="extract-empty"
+            >
+              Tiada soalan dikesan dalam kertas ini. Gunakan Tambah soalan untuk menaipnya.
+            </DsText>
+            <DsText v-else variant="caption">
+              Fail sudah dibaca. Mulakan pengekstrakan untuk mendapatkan soalan yang boleh disemak.
+            </DsText>
+            <DsText
+              v-if="extractError"
+              variant="caption"
+              tone="error"
+              role="alert"
+              data-testid="extract-error"
+            >
+              {{ extractError }}
+            </DsText>
+            <div v-if="extraction?.canExtract || extraction?.state === 'failed'">
+              <UButton
+                icon="i-ph-magic-wand"
+                :loading="extracting"
+                :disabled="extractWaiting || !extraction?.canExtract"
+                data-testid="extract-start"
+                @click="startExtract"
+              >
+                {{ extraction?.state === 'failed' ? 'Cuba ekstrak semula' : 'Ekstrak soalan' }}
+              </UButton>
+            </div>
+          </DsStack>
+        </DsPanel>
+        <UAlert
+          v-else-if="allDecided && batch.questions.length === 0"
+          color="success"
+          variant="subtle"
+          icon="i-ph-check-circle"
+          title="Semua soalan telah diputuskan"
+          description="Setiap soalan ekstrak ini sudah diterima atau ditolak. Lihat Baris Gilir Semakan."
+          data-testid="all-decided"
+        />
 
         <!-- mobile switch -->
         <div v-if="!isManual" class="flex gap-2 lg:hidden" role="tablist" aria-label="Paparan">

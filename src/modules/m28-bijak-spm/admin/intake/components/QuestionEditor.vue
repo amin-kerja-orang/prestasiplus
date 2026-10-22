@@ -366,6 +366,10 @@ function insertMath(field: 'stem'): void {
             @change="setUnit(($event.target as HTMLSelectElement).value)"
           >
             <option value="">Pilih unit</option>
+            <!-- http mode: the unit extracted from the curriculum list of the server -->
+            <option v-if="q.tag.unit && !units.some((u) => u.code === q.tag.unit)" :value="q.tag.unit">
+              {{ q.tag.unitLabel || q.tag.unit }}
+            </option>
             <option v-for="u in units" :key="u.code" :value="u.code">
               {{ u.form }} - {{ u.label }}
             </option>

@@ -12,6 +12,7 @@ import {
   jutawanHeading,
   missDeadlineSeconds,
   nextWheelRotation,
+  numericId,
   parseDarjah,
   susunGain,
   susunMatches,
@@ -191,5 +192,21 @@ describe('Roda Nasib rotation (BR-M16-29)', () => {
       expect(to).toBeGreaterThan(from + 5 * 360 - 1)
       expect(((to % 360) + 360) % 360).toBeCloseTo(wheelLandingDeg(index))
     }
+  })
+})
+
+describe('numericId (opaque ids of http mode)', () => {
+  it('keeps a number and reads a decimal string as that number', () => {
+    expect(numericId(42)).toBe(42)
+    expect(numericId('430')).toBe(430)
+  })
+
+  it('hashes any other string to a stable non-negative integer', () => {
+    const a = numericId('q_9f3a')
+    expect(Number.isInteger(a)).toBe(true)
+    expect(a).toBeGreaterThanOrEqual(0)
+    expect(numericId('q_9f3a')).toBe(a)
+    expect(numericId('q_9f3b')).not.toBe(a)
+    expect(numericId('1234567890123456')).toBe(numericId('1234567890123456')) // 16 digits: hashed, not parsed
   })
 })

@@ -122,36 +122,45 @@ export type PbQuickMatchStart = { status: 'searching' } | { error: string }
 export type PbQuickMatchPoll =
   { status: 'searching' | 'expired' | 'cancelled' } | { status: 'matched'; room_code: string }
 
-/** #32 payload: `sessionId`, `personalBest`, `canEarnSyiling` and the items of the game. */
+/**
+ * #32 payload: `sessionId`, `personalBest`, `canEarnSyiling` and the items of the game.
+ *
+ * D58a: the real API (http mode) sends keyless items: no `is_true`, `correct`, `answer`, `pair_id`, and for Kad
+ * Memori no face at all (`type`, `content`); ids are opaque strings. The in-browser mock still sends the keys and
+ * numeric ids. So the key fields are optional and an engine never reads them directly: it asks
+ * `components/solo/solo-check.ts`, which reads the key in mock mode and calls the check route in http mode.
+ */
+export type SoloItemId = number | string
+
 export interface SoloPayloadBase {
   sessionId: string
   personalBest: number
   canEarnSyiling: boolean
 }
 export interface BetulSalahPayload extends SoloPayloadBase {
-  statements: { id: number; statement: string; is_true: boolean; difficulty: number }[]
+  statements: { id: SoloItemId; statement: string; is_true?: boolean; difficulty: number }[]
 }
 export interface CabaranKilatPayload extends SoloPayloadBase {
   questions: {
-    id: number
+    id: SoloItemId
     question_text: string
     difficulty: number
-    options: { id: number; text: string; correct: boolean }[]
+    options: { id: number; text: string; correct?: boolean }[]
   }[]
 }
 export interface TembakJawapanPayload extends SoloPayloadBase {
   questions: {
-    id: number
+    id: SoloItemId
     question: string
     difficulty: number
-    options: { text: string; correct: boolean }[]
+    options: { text: string; correct?: boolean }[]
   }[]
 }
 export interface SusunJawapanPayload extends SoloPayloadBase {
   puzzles: {
-    id: number
+    id: SoloItemId
     question: string
-    answer: string
+    answer?: string
     scrambled: string[]
     type: 'letters' | 'words'
     difficulty: number
@@ -160,11 +169,11 @@ export interface SusunJawapanPayload extends SoloPayloadBase {
 }
 export interface KadMemoriPayload extends SoloPayloadBase {
   cards: {
-    id: number
-    pair_id: number
-    type: 'question' | 'answer'
-    content: string
-    difficulty: number
+    id: SoloItemId
+    pair_id?: number
+    type?: 'question' | 'answer'
+    content?: string
+    difficulty?: number
   }[]
 }
 export interface SoloPayloads {
@@ -220,8 +229,37 @@ export type SoloSubmitBody =
 export interface SoloSubmitResponse {
   is_new_record?: boolean
   syiling_awarded?: number
-  results?: { syiling_earned: number; accuracy: number }
+  results?: { syiling_earned: number; accuracy: number; moves?: number; time_seconds?: number }
+  /** D58a, http mode: the values the server computed from the stored checks. */
+  score?: number
+  correct_count?: number
+  total_answered?: number
   message?: string
+}
+
+/** D58a `POST /api/games/solo/{game}/check` bodies (http mode only; the mock has no such route). */
+export interface SoloCheckBodies {
+  'betul-salah': { session_id: string; item_id: string; answer: boolean }
+  'cabaran-kilat': { session_id: string; item_id: string; option_id: number }
+  'tembak-jawapan': { session_id: string; item_id: string; option_index: number }
+  'susun-jawapan': { session_id: string; item_id: string; answer: string }
+  'kad-memori': { session_id: string; card_id: string; other_card_id: string }
+}
+
+/** One revealed Kad Memori face (reveal route and check response). */
+export interface KadMemoriFace {
+  id: string
+  type: 'question' | 'answer'
+  content: string
+}
+
+/** D58a check results (`{data}` unwrapped): correct/wrong plus the key of that item. */
+export interface SoloCheckResults {
+  'betul-salah': { correct: boolean; is_true: boolean }
+  'cabaran-kilat': { correct: boolean; correct_option_id: number }
+  'tembak-jawapan': { correct: boolean; correct_option_index: number }
+  'susun-jawapan': { correct: boolean; answer: string }
+  'kad-memori': { correct: boolean; pair_id: number | null; cards: [KadMemoriFace, KadMemoriFace] }
 }
 
 /** #34 `GET /api/games/roda-nasib`. */
