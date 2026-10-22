@@ -9,24 +9,24 @@ It is pinned to the commits of the LEAD merge batch (#67 "LEAD merge log 22 Oct"
 
 | Fill in | Value |
 |---|---|
-| `<BACKEND_SHA>` (Render, migrations, seed, smoke/walkthrough scripts) | `<BACKEND_SHA>` (`feature/v2-backend` after the merge batch) |
-| `<FRONTEND_SHA>` (Pages SPA) | `<FRONTEND_SHA>` (`be/integration-frontend` after the merge batch) |
-| Merged PRs this sheet assumes | `<MERGED_PRS>` |
+| `BACKEND_SHA` (Render, migrations, seed, smoke/walkthrough scripts) | `20d201c59776a68ead88f275b9117f7801a0c86c` (`feature/v2-backend` tip: `8008b88a` from the merge batch, then #187, docs only) |
+| `FRONTEND_SHA` (Pages SPA) | `9a5b06808b5b3c7bec94f0f56513b9b927d560a1` (`be/integration-frontend` after the merge batch) |
+| Merged PRs this sheet assumes | From "LEAD merge log 22 Oct" on #67. **Backend:** #112 #110 #111 #115 #119 #117 #116 #118 #144 #138 #139 #137 #132 #158 #162 #161 #167 #173, then #176, which brought in #121 #127 #129 #134 #135 #151 #155 #156 #157 #159; then #187 (docs). **Frontend:** #140 #141 #120, then #178, which brought in #105 #131 #149 #150 #153 and #154's commit `81de8d0e`. |
 
-**Before you paste anything, replace every `<...>` placeholder in this file.** The placeholders are filled from the merge log; `<service>` and `<project>` are your Render and Pages names.
+The commits and PR lists are filled in from the merge log. **Before you paste anything, replace the two placeholders that are left:** `<service>` and `<project>` are your Render and Pages names.
 
 **Different from #112.** #112 pins `23c98226` with 33 migrations. If you change nothing else, change these:
-1. **Commits.** Use `<BACKEND_SHA>` and `<FRONTEND_SHA>` everywhere #112 says `23c98226`.
-2. **Migrations.** The count and the newest name are read from `<BACKEND_SHA>` in step 1. With #127, #132 and #135 merged, that is 36 migrations, up to `0042_question_sets_nullable_classroom`.
-3. **Questions.** With #129 merged (the D1–D4 pool), the questions count is **1271**; without it, 503. Every other count in #112 §2.6 is unchanged (rehearsed in step 13).
-4. **SPA diff check (#112 §4.2).** Only the worker and the demo scripts must match `<BACKEND_SHA>`. `apps/api` on the SPA branch is older by design: `be/integration-frontend` is synced to `23c98226`, not to the later backend merges.
-5. **New env name.** With #167 merged, the new name is `INTAKE_TEACHER_ENABLED`. Leave it unset: intake is Admin Pusat only, and the demo has no teacher intake step.
+1. **Commits.** Use `20d201c5` (backend) and `9a5b0680` (SPA) everywhere #112 says `23c98226`.
+2. **Migrations.** The count and the newest name are read from `$BE` in step 1. #127, #132 and #135 are merged, so that is 36 migrations, up to `0042_question_sets_nullable_classroom`.
+3. **Questions.** #129 (the D1–D4 pool) is merged, so the questions count is **1271**. Every other count in #112 §2.6 is unchanged (rehearsed in step 13).
+4. **SPA diff check (#112 §4.2).** Only the worker and the demo scripts must match `$BE`. `apps/api` on the SPA branch is older by design: `be/integration-frontend` is synced to `23c98226`, not to the later backend merges.
+5. **New env name.** #167 is merged, so the one new name is `INTAKE_TEACHER_ENABLED`. Leave it unset: intake is Admin Pusat only, and the demo has no teacher intake step.
 6. **Go/no-go.** Step 11 is new and comes from AZ-32 (#144).
 
 ## 1. Checkout and pre-checks (5 min)
 
 ```bash
-BE=<BACKEND_SHA>; FE=<FRONTEND_SHA>
+BE=20d201c59776a68ead88f275b9117f7801a0c86c; FE=9a5b06808b5b3c7bec94f0f56513b9b927d560a1
 git fetch origin +refs/heads/feature/v2-backend:refs/remotes/origin/feature/v2-backend \
                  +refs/heads/be/integration-frontend:refs/remotes/origin/be/integration-frontend
 git merge-base --is-ancestor $BE origin/feature/v2-backend && git merge-base --is-ancestor $FE origin/be/integration-frontend && echo "SHAs OK"
@@ -89,7 +89,7 @@ These are the tip's 33 migrations (`0001_init` .. `0038_intake_workflow`), plus 
 - `0041_aggregate_school_index_name` (#132);
 - `0042_question_sets_nullable_classroom` (#135).
 
-Merged in this batch: `<MIGRATIONS_MERGED>`. The `0001_init` NOTICE that pgcrypto already exists is fine.
+Merged in this batch: all three. `0041` came with #132; `0040` (#127) and `0042` (#135) came through #176. The `0001_init` NOTICE that pgcrypto already exists is fine.
 
 ## 5. PoC seed (1 min; #112 §2.4)
 
@@ -157,12 +157,12 @@ If the `worker + demo scripts` line does not print, stop and ask DevOps. The `gi
 | `MARKETPLACE_PLATFORM_WHATSAPP`, `PORT`, `COOKIE_DOMAIN` | unset (the defaults are right for the demo) |
 | `JOBS_*`, `OCR_*`, `INTAKE_*`, `THROTTLE_*`, `METRICS_*`, `*_TIMEOUT_MS` | unset (code defaults, as rehearsed) |
 
-New names on `<BACKEND_SHA>` since #112: `<NEW_ENV_NAMES>`.
+New names on `$BE` since `23c98226`: only `INTAKE_TEACHER_ENABLED` (checked against `env.schema.ts` and every `process.env` read in `apps/api/src`).
 
 ## 9. Deploy the API, then upload the SPA right after (~10 min; #112 §3.2–3.4, §4.3)
 
 1. **Render branch.** Settings → Branch: `feature/v2-backend`.
-2. **Render deploy.** Manual Deploy → **Deploy a specific commit** → `<BACKEND_SHA>`. Wait for "Live", with `API listening on port 10000` in the log.
+2. **Render deploy.** Manual Deploy → **Deploy a specific commit** → `20d201c59776a68ead88f275b9117f7801a0c86c`. Wait for "Live", with `API listening on port 10000` in the log.
 3. **API health.** `https://<service>.onrender.com/api/health` shows `db: up`.
 4. **Pages upload, at once.** Workers & Pages → `prestasiplus-demo` → Create deployment → Production → drag `../pp-spa/dist` → Save and deploy.
 5. **Pages health.** `https://<project>.pages.dev/api/health` shows `db: up`.
@@ -176,7 +176,7 @@ Run these from the step-1 checkout. Run them one at a time, never together with 
 ```bash
 read -rsp 'Demo password (vault): ' DEMO_PASSWORD; echo
 BASE_URL=https://<project>.pages.dev DEMO_PASSWORD="$DEMO_PASSWORD" bash scripts/demo-smoke.sh
-# expect: Result: 28 passed, 0 failed
+# expect: Result: 29 passed, 0 failed (28 checks + "pp_session is Secure", which runs for an https BASE_URL)
 BASE_URL=https://<project>.pages.dev BUILD_SHA=${BE:0:8} STRICT_EXEMPT="" DEMO_PASSWORD="$DEMO_PASSWORD" bash scripts/demo-walkthrough.sh
 # expect: 102 passed, 0 failed, 5 skipped, exit 3 (read-only)
 BASE_URL=https://<project>.pages.dev BUILD_SHA=${BE:0:8} STRICT_EXEMPT="" CONFIRM_WRITES=1 DEMO_PASSWORD="$DEMO_PASSWORD" bash scripts/demo-walkthrough.sh
@@ -197,14 +197,14 @@ The scripts test the API only. These three defects are in the SPA, so check them
 | **D-02:** practice starts with a specific Darjah (D1–D4) | must PASS (needs #129) | demo **"Semua Tahap"** only |
 | **D-03:** Battle Arena Quick Match finds a match, or "Batal" works | must PASS | keep Battle Arena out of the demo |
 
-Check whether #154 is in: `git merge-base --is-ancestor 81de8d0e $FE && echo "#154 in"`. In this batch: `<DEMO_FIXES_LANDED>`.
+Check whether #154 is in: `git merge-base --is-ancestor 81de8d0e $FE && echo "#154 in"`. In this batch, all of these are in, so the three rows above must PASS: #154 (via #178, `81de8d0e` is an ancestor of `$FE`), #153, #105 and #131 in the SPA; #155 and #129 in the backend.
 
 Other checks:
-- **D-05:** `/jemput-ibu-bapa` never shows `/terima/undefined`. If #153 is not in, press "Jana Link Baru" first.
+- **D-05:** `/jemput-ibu-bapa` never shows `/terima/undefined` (#153 is in).
 - **#105:** the 5 solo games reach their result card.
 - **#131:** the 5 intake review screens load as Admin Pusat.
 - **D-06:** try one real PDF upload in the demo laptop's browser. If it fails, demo "Cuba dengan kertas contoh".
-- **D-11:** if #155 is merged, teacher Kirkpatrick lists only the teacher's own school. The "… - Admin" title on `/guru/monitoring` is still open (it is UI only).
+- **D-11:** #155 is merged, so teacher Kirkpatrick lists only the teacher's own school. The "… - Admin" title on `/guru/monitoring` is still open (it is UI only).
 
 **Go** means all of these:
 - steps 6 and 10 match their expected values;
@@ -234,29 +234,29 @@ unset PGURL PGPASSWORD SSLQ DUMP DEMO_REF CA DEMO_PASSWORD; unset -f pp_gate
 
 **After the demo, rotate the DB password:**
 1. Supabase → Database → **Reset database password**. Save the new password in the vault (letters and digits only).
-2. Render → `DATABASE_URL`: the same URL and suffix, with the new password. Then Manual Deploy of the same `<BACKEND_SHA>`.
+2. Render → `DATABASE_URL`: the same URL and suffix, with the new password. Then Manual Deploy of the same `20d201c5`.
 3. Check `/api/health` shows `db: up`, and log in once as `pelajar@demo.test`.
 4. Delete `~/demo-before-22oct-*.dump` once the demo is signed off.
 5. Optional: rotate `EDGE_PROXY_SECRET`, on both sides together.
 
 ## 13. Rehearsal behind this sheet
 
-Local only: nothing ran against Render, Supabase or Cloudflare.
+Local only: nothing ran against Render, Supabase or Cloudflare. Run on 22 Oct at the real commits.
 
-**Tree.** `feature/v2-backend` @ `23c98226` merged with:
-- #129 `989153ca`;
-- #132 `f6174caa`;
-- #127 `38039fcb`;
-- #135 `ebb111a2`;
-- #162 `d318f81d`;
-- #167 `5bbc1892`.
+**Tree.** Backend `20d201c5` (the `feature/v2-backend` tip), SPA `9a5b0680` (the `be/integration-frontend` tip).
 
-**Database.** Postgres 16 in a Supabase-like layout: a non-superuser `postgres` owner, `pgcrypto` in `extensions`, and the roles `anon`, `authenticated` and `service_role`.
+**Database.** Postgres 16 in a Supabase-like layout: a non-superuser `postgres` owner, `pgcrypto` in `extensions`, the roles `anon`, `authenticated` and `service_role`, and Supabase-style default grants to those roles.
 
 **Results:**
-- **Delta script:** a dry run of 36, then `Done: 36 migration(s) applied`, then `Up to date`.
-- **Seed:** 25 modules.
-- **Lockdown:** 0 grants.
-- **Counts:** `36 | 0042_question_sets_nullable_classroom | 197 | 51 | 18 | 0 | 4 | 15 | 34 | 15 | 5 | 1271 | 3 | 10 | 71 | 4`.
-- **Worker and demo scripts:** identical between `23c98226` and #120's head `3726820d`.
-- **SPA, smoke and walkthrough:** AZ-32 (#144 §4) got 102/0/5 and 116/0/0 on a combined tree that included #129.
+- **Step 1:** `SHAs OK`, `SPA branch is synced`, `expect 36 migrations, newest 0042_question_sets_nullable_classroom, questions 1271`.
+- **Delta script:** `Dry run: 36 migration(s) would be applied`, then `Done: 36 migration(s) applied`, then `Up to date: no migration to apply.`
+- **Seed:** `seed: profile=poc, 25 module(s)`, plus the expected "PoC questions are not written" line.
+- **Lockdown:** 4137 grants before, 0 after; `has_table_privilege('anon','public.users','SELECT')` = `f`. Non-demo users: 0.
+- **Counts:** `36 | 0042_question_sets_nullable_classroom | 197 | 51 | 18 | 0 | 4 | 15 | 34 | 15 | 5 | 1271 | 3 | 10 | 71 | 4`, identical to the expect line.
+- **SPA (step 7):** `check-demo-bundle: OK`, and `worker + demo scripts = deploy commit`.
+- **API boot:** `NODE_ENV=production`, `COOKIE_SECURE=true`, `TRUST_PROXY_HOPS=2`, `AI_PROVIDER=mock`, `BIJAK_POC_QUESTIONS=true`, `CLIENT_IP_HEADER=x-pp-client-ip` and a throwaway `EDGE_PROXY_SECRET`. The log shows `API listening`, `/api/health` gives `db: up`, and there is no `ClientIp` warning.
+- **Edge:** the real `dist/_worker.js` ran in a local Node stand-in for Pages, with `dist/` as `ASSETS`.
+- **Smoke:** `Result: 29 passed, 0 failed`. Straight at the API with no edge, it is 25 passed with the 3 proxy-only failures, as in #112.
+- **Walkthrough:** read-only gave `102 passed, 0 failed, 5 skipped`, exit 3. With writes it gave `116 passed, 0 failed, 0 skipped`, `GO`, exit 0.
+- **Rollback (§11 block):** `TABLE DATA` 197 and `SCHEMA - public` 1. The drop, then the restore `&&` lockdown, gives exit 0. After it: 1271 questions, 51 users, 36 migrations, 0 grants, `f`.
+- **Not rehearsed:** the browser go/no-go (step 11) and the two-network login check. These need the real deploy.
