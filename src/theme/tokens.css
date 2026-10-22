@@ -363,8 +363,6 @@
   --radius-chip: var(--ds-r-chip);
 }
 
-/* Personality variants: learner: and staff: apply inside (or on) the scope. :is() keeps the specificity
-   at (0,2,0), like any other variant. Use these instead of arbitrary [data-personality] variants. */
 /* Sticker `contained` (AZ-21a): below sm the stamp starts at its resting scale/rotation (a fade), so a chip on
    the right edge never overshoots the viewport. Desktop keeps the full stamp-in. */
 @media (width < 40rem) {
@@ -374,6 +372,8 @@
   }
 }
 
+/* Personality variants: learner: and staff: apply inside (or on) the scope. :is() keeps the specificity
+   at (0,2,0), like any other variant. Use these instead of arbitrary [data-personality] variants. */
 @custom-variant learner (&:is([data-personality='learner'] *, [data-personality='learner']));
 @custom-variant staff (&:is([data-personality='staff'] *, [data-personality='staff']));
 
