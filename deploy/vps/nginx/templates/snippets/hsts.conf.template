@@ -1,0 +1,8 @@
+# Edge-owned HSTS, value = PP_HSTS (rendered by the image entrypoint; compose always defines it).
+# Included in EVERY https location (SPA, /api proxies and the 404s nginx answers itself), so the browser sees one
+# policy for the whole host. On /api the API's own production header (max-age=15552000; includeSubDomains) is
+# hidden and replaced, so the ramp below is not overridden by a single API response.
+# Ramp (docs/ops/platform-settings.md section 4.3): max-age=300 first, then 86400, then 15552000; add
+# "; includeSubDomains" only once every subdomain of the registrable domain serves HTTPS. PP_HSTS empty = no header.
+proxy_hide_header Strict-Transport-Security;
+add_header Strict-Transport-Security "${PP_HSTS}" always;

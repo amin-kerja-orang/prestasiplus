@@ -242,8 +242,12 @@ export class SoloService {
       const item = await this.repo.itemByCard(s.id, d.card_id)
       if (!item) throw soloItemNotFound()
       if (item.matched) throw soloCardMatched()
-      if (s.openCardId !== null) throw soloCardOpen()
       const [face] = await this.faces([item])
+      // idempotent: the card the server already holds open is returned again (a lost response), nothing is written
+      if (s.openCardId !== null) {
+        if (s.openCardId === d.card_id) return face as Record<string, unknown>
+        throw soloCardOpen()
+      }
       await this.repo.updateSession(s.id, { openCardId: d.card_id })
       return face as Record<string, unknown>
     })
