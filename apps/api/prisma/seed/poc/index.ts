@@ -24,7 +24,7 @@
  *  15. poc-cikgu              Cikgu Alesa demo rows
  *  16. pksk                   PKSK demo rows (BE-42)
  *  17. poc-performance        headcount configs and entries, timeline posts (BE-19)
- *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan (BE-09 seed path); BEFORE the spm seeds, which read the bank
+ *  18. questions-pool         the PoC question pool: 24 published MCQs per DSKP subject and Tingkatan, and per subject at D1 to D4 (AZ-02) (BE-09 seed path); BEFORE the spm seeds, which read the bank
  *  19. spm-subject-configs    REFERENCE: SPM subject configuration rows (BE-41; also runs in production)
  *  20. spm                    SPM hub demo rows (BE-41)
  *  21. practice               practice sessions and answers of the demo accounts

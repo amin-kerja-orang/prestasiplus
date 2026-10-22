@@ -1,0 +1,320 @@
+# PrestasiPlus v2 PRODUCTION overlay for ONE VPS (AZ-09). Runbook: docs/ops/production-vps.md
+#
+# Use it as an OVERLAY over compose.yaml, always from the repo root (compose resolves every relative path
+# in BOTH files against the directory of the FIRST -f file, i.e. the repo root):
+#
+#   docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env <command>
+#
+# deploy/vps/deploy.sh and rollback.sh build that command line for you. Do NOT combine this file with
+# compose.staging.yaml or compose.http.yaml (dev/e2e: demo seed, Secure cookie off).
+#
+# What it changes compared with compose.yaml:
+#   frontend  production build (VITE_API_MODE=http, test hooks off), NO host port: only the edge reaches it
+#   edge      NEW. nginx on 80/443: TLS (Let's Encrypt), HTTP->HTTPS, /api/metrics hidden, upload limits, CSP
+#   migrate   `prisma migrate deploy` ONLY. ALLOW_DEMO_SEED / BIJAK_POC_QUESTIONS are forced false here, so
+#             no env file can switch the demo seed or the PoC question pool on
+#   api       production env forced (see "forced" below), limits, graceful stop, rotated logs
+#   db        production Postgres settings from env, 60 s graceful stop, limits
+#   certbot   (profile `tls`)        run by deploy/vps/tls/*.sh, never long-running
+#   clamav    (profile `clamav`)     clamd for upload scanning, reserved until the API reads CLAMAV_* (backlog #78)
+#   kuma      (profile `monitoring`) Uptime Kuma on 127.0.0.1 only
+#
+# Secrets are NOT in this file or in the repo: /etc/pretasiplus/{prod,api,db}.env (owner root, group ppdeploy, mode 640) hold them.
+# The *.example files in deploy/vps/ list the names with placeholders.
+#
+# SINGLE-INSTANCE RULE (threat model row 18, accepted by the LEAD 2026-10-21): the API keeps its rate-limit
+# counters in process memory. The `api` service must therefore stay ONE container. Never add
+# `deploy.replicas` above 1, never `docker compose up --scale api=N`. A shared counter store (Redis or a
+# Postgres counter table) must exist before scaling out. JOBS_WORKER_ENABLED=true is set on this one
+# container because it is the only instance (exactly one worker).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${PP_LOG_MAX_SIZE:-20m}
+    max-file: ${PP_LOG_MAX_FILE:-5}
+    compress: 'true'
+
+services:
+  frontend:
+    build:
+      args:
+        BUILD_MODE: production
+        VITE_API_MODE: http
+        VITE_TEST_HOOKS: 'false'
+        VITE_API_BASE_URL: ''
+    image: ${PP_IMAGE_PREFIX:-}pretasiplus-frontend:${PP_IMAGE_TAG:-prod}
+    ports: !reset []              # the base file publishes ${FRONTEND_PORT}; production keeps it internal
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_FRONTEND_CPUS:-0.25}
+          memory: ${PP_FRONTEND_MEM:-128m}
+    logging: *logging
+
+  # ---- API. ONE replica only (see the single-instance rule at the top). ----
+  api:
+    image: ${PP_IMAGE_PREFIX:-}pretasiplus-api:${PP_IMAGE_TAG:-prod}
+    env_file: !override
+      - path: ${PP_ENV_DIR:-/etc/pretasiplus}/api.env
+        required: false           # deploy.sh refuses to run without it; a bare container fails its boot checks
+    environment:
+      # Forced here: they win over api.env.
+      NODE_ENV: production
+      PORT: 3000
+      TRUST_PROXY_HOPS: 1         # exactly one proxy in front: the edge nginx, which sets X-Forwarded-For to the peer address it saw
+      COOKIE_SECURE: 'true'
+      ALLOW_DEMO_SEED: 'false'
+      BIJAK_POC_QUESTIONS: 'false'
+      JOBS_WORKER_ENABLED: ${PP_JOBS_WORKER_ENABLED:-true}   # one instance = the worker
+      PUBLIC_BASE_URL: https://${PP_DOMAIN:?set PP_DOMAIN in prod.env}
+      FILE_STORAGE_DIR: /var/lib/pretasiplus/files
+      NODE_OPTIONS: --max-old-space-size=${PP_API_HEAP_MB:-1536}
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: ${PP_API_STOP_GRACE:-35s}   # must stay above SHUTDOWN_GRACE_MS (25000)
+    deploy:
+      # No `replicas` key on purpose. Do not add one.
+      resources:
+        limits:
+          cpus: ${PP_API_CPUS:-1.5}
+          memory: ${PP_API_MEM:-2g}
+    logging: *logging
+
+  # ---- One-shot migration. Production NEVER seeds from here. ----
+  migrate:
+    image: ${PP_IMAGE_PREFIX:-}pretasiplus-api-migrate:${PP_IMAGE_TAG:-prod}
+    command: ['npm', 'run', 'be:db:migrate']
+    env_file: !override
+      - path: ${PP_ENV_DIR:-/etc/pretasiplus}/api.env
+        required: false
+    environment:
+      NODE_ENV: production
+      ALLOW_DEMO_SEED: 'false'
+      BIJAK_POC_QUESTIONS: 'false'
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_MIGRATE_CPUS:-1}
+          memory: ${PP_MIGRATE_MEM:-1g}
+    logging: *logging
+
+  db:
+    env_file: !override
+      - path: ${PP_ENV_DIR:-/etc/pretasiplus}/db.env
+        required: false
+    # Production settings. Defaults suit PP_DB_MEM=2g (shared_buffers about 25% of the db memory); docs/ops/production-vps.md has the sizing table.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PP_PG_SHARED_BUFFERS:-512MB}
+      - -c
+      - effective_cache_size=${PP_PG_EFFECTIVE_CACHE_SIZE:-1GB}
+      - -c
+      - work_mem=${PP_PG_WORK_MEM:-8MB}
+      - -c
+      - maintenance_work_mem=${PP_PG_MAINTENANCE_WORK_MEM:-128MB}
+      - -c
+      - max_connections=${PP_PG_MAX_CONNECTIONS:-100}
+      - -c
+      - wal_compression=on
+      - -c
+      - checkpoint_timeout=15min
+      - -c
+      - max_wal_size=${PP_PG_MAX_WAL_SIZE:-2GB}
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - idle_in_transaction_session_timeout=60000
+      - -c
+      - log_min_duration_statement=${PP_PG_LOG_MIN_DURATION_MS:-1000}
+      - -c
+      - log_lock_waits=on
+      - -c
+      - log_checkpoints=on
+      - -c
+      - log_temp_files=10MB
+    shm_size: ${PP_DB_SHM:-256m}
+    restart: unless-stopped
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_DB_CPUS:-2}
+          memory: ${PP_DB_MEM:-2g}
+    logging: *logging
+
+  # ---- Edge: TLS termination, the only service with published ports. ----
+  # Official nginx image (root master so it can read the certbot key files, workers run as `nginx`).
+  # Config is rendered at start from nginx/templates/*.template (only PP_* variables are substituted).
+  edge:
+    image: ${PP_EDGE_IMAGE:-nginx:1.28-alpine}
+    depends_on:
+      frontend:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    ports:
+      - '${PP_HTTP_BIND:-0.0.0.0}:80:80'
+      - '${PP_HTTP_BIND:-0.0.0.0}:443:443'
+    environment:
+      NGINX_ENVSUBST_FILTER: '^PP_'
+      PP_DOMAIN: ${PP_DOMAIN:?set PP_DOMAIN in prod.env}
+      PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-22}
+      PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-256}
+      PP_CSP_IMG_HOSTS: ${PP_CSP_IMG_HOSTS:-}
+      PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-60r/m}
+      PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-60}
+      PP_CSP_MODE: ${PP_CSP_MODE:-report-only}   # report-only | enforce | off: picks nginx/snippets/csp-<mode>.conf
+      # HSTS of the whole host (edge-owned, replaces the API's own): ramp from max-age=300 (platform-settings.md 4.3).
+      # `-` not `:-`, so an explicitly empty PP_HSTS stays empty (= no header) while an unset one gets the safe start.
+      PP_HSTS: ${PP_HSTS-max-age=300}
+    volumes:
+      - ./deploy/vps/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/vps/nginx/templates:/etc/nginx/templates:ro
+      - ./deploy/vps/nginx/snippets:/etc/nginx/pp-snippets:ro
+      - ${PP_LE_DIR:-/srv/pretasiplus/letsencrypt}:/etc/letsencrypt:ro
+      - ${PP_WEBROOT_DIR:-/srv/pretasiplus/certbot-webroot}:/var/www/certbot:ro
+      - edgetmp:/var/cache/nginx
+    # Request bodies (up to PP_UPLOAD_BIG_MB) and proxy buffers go to the DISK-backed named volume `edgetmp`
+    # (/var/cache/nginx), not to tmpfs: tmpfs pages count against the memory limit and an unauthenticated big
+    # upload would OOM-kill the edge. Only the tiny rendered config and pid file are tmpfs.
+    tmpfs:
+      - /etc/nginx/conf.d
+      - /var/run
+      - /tmp
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:                       # root master: bind 80/443, read root-owned keys, drop to the nginx user
+      - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+      - CHOWN
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:80/healthz || exit 1']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_EDGE_CPUS:-0.5}
+          memory: ${PP_EDGE_MEM:-512m}
+    logging: *logging
+
+  # ---- Let's Encrypt client. Never long-running; deploy/vps/tls/init-cert.sh and renew.sh call `run --rm`. ----
+  certbot:
+    profiles: ['tls']
+    image: ${PP_CERTBOT_IMAGE:-certbot/certbot:v3.0.1}
+    entrypoint: ['certbot']
+    volumes:
+      - ${PP_LE_DIR:-/srv/pretasiplus/letsencrypt}:/etc/letsencrypt
+      - ${PP_WEBROOT_DIR:-/srv/pretasiplus/certbot-webroot}:/var/www/certbot
+      - ${PP_LE_LOG_DIR:-/srv/pretasiplus/letsencrypt-log}:/var/log/letsencrypt
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    restart: 'no'
+    logging: *logging
+
+  # ---- ClamAV daemon for upload scanning (threat model row 43, backlog #78). ----
+  # The environment provides clamd on the internal network (clamav:3310). The API does NOT read it yet: the scan
+  # code is half AM's. Reserved env names for that card (do not add to api.env until it lands):
+  # CLAMAV_HOST=clamav, CLAMAV_PORT=3310.
+  clamav:
+    profiles: ['clamav']
+    image: ${PP_CLAMAV_IMAGE:-clamav/clamav:1.4}
+    environment:
+      CLAMD_CONF_ConcurrentDatabaseReload: 'no'   # a reload does not double the memory
+      CLAMD_CONF_MaxFileSize: 32M                 # above the biggest upload (INTAKE_MAX_FILE_MB=20)
+      CLAMD_CONF_StreamMaxLength: 32M
+    expose:
+      - '3310'
+    networks:
+      - scan
+    volumes:
+      - clamdb:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/clamdcheck.sh']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 300s            # first start downloads and loads the signatures
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:                        # root entrypoint fixes volume ownership, then drops to the clamav user
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    restart: unless-stopped
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_CLAMAV_CPUS:-1}
+          memory: ${PP_CLAMAV_MEM:-2g}
+    logging: *logging
+
+  # ---- Uptime Kuma (self-hosted status page and checks). Loopback only: reach it with an SSH tunnel. ----
+  kuma:
+    profiles: ['monitoring']
+    image: ${PP_KUMA_IMAGE:-louislam/uptime-kuma:1.23.16}
+    ports:
+      - '127.0.0.1:${PP_KUMA_PORT:-3001}:3001'
+    networks:
+      - monitor
+    volumes:
+      - kumadata:/app/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    stop_grace_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: ${PP_KUMA_CPUS:-0.5}
+          memory: ${PP_KUMA_MEM:-512m}
+    logging: *logging
+
+volumes:
+  edgetmp:
+  clamdb:
+  kumadata:
+
+# frontend, api, db and the edge share `default`. kuma is on `monitor` and clamav on `scan` only, so a compromised
+# kuma/clamav container cannot reach api or db directly. Kuma probes the public name through the edge. When the
+# half-AM scan card lands, add `scan` to the api service's networks (and keep clamav off `default`).
+networks:
+  monitor:
+  scan:

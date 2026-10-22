@@ -4,6 +4,8 @@
 #           (with VITE_PROTOTYPE_SCOPE=on VITE_API_MODE=mock VITE_TEST_HOOKS=false)
 #   Start:  docker compose -f docker-compose.preview.yml up -d
 #   Stop:   docker compose -f docker-compose.preview.yml down   (or Stop in Docker Desktop)
+# No fixed container_name: the container is `<project>-preview-1` (default project `pretasiplus-preview`), so
+# `docker compose -p <name> -f docker-compose.preview.yml up -d` can run a second copy (change the host port too).
 #
 # dist-preview is mounted read-only: after a rebuild, just refresh the browser.
 name: pretasiplus-preview
@@ -11,7 +13,6 @@ name: pretasiplus-preview
 services:
   preview:
     image: nginx:1.27-alpine
-    container_name: pretasiplus-preview
     ports:
       - '5191:80'
     volumes:
