@@ -10,7 +10,7 @@ import { DsArt3D } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { PodiumEntry } from '../../api'
-import { LEADERBOARD_COPY, podiumSlots } from '../../lib/student/leaderboard-lib'
+import { LEADERBOARD_COPY, leaderboardKey, podiumSlots } from '../../lib/student/leaderboard-lib'
 
 const props = defineProps<{ podium: readonly PodiumEntry[] }>()
 
@@ -20,8 +20,8 @@ const slots = computed(() => podiumSlots(props.podium))
 <template>
   <div class="grid grid-cols-3 items-end gap-2 sm:gap-4" data-testid="lb-podium">
     <UCard
-      v-for="slot in slots"
-      :key="slot.entry.rank"
+      v-for="(slot, i) in slots"
+      :key="leaderboardKey(slot.entry, i)"
       class="min-w-0"
       :class="slot.raised ? 'bg-highlight-soft' : ''"
       :data-rank="slot.entry.rank"

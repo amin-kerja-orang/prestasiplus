@@ -7,20 +7,22 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsIconChip, DsLoadError, DsPanel, DsScoreRing, DsStatRow, type DsAccent, type StatItem } from '@/ds'
+import { DsEmptyState, DsIconChip, DsLoadError, DsPanel, DsScoreRing, DsStatRow, type DsAccent, type StatItem } from '@/ds'
 import { formatDateLong } from '@/lib/time'
 
 import { fetchPublicProfile } from '../api/performance'
 import PostCard from '../components/timeline/PostCard.vue'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 import { shareProfile } from '../lib/timeline/clipboard'
 import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl, count, initialOf, percent, tierName } from '../lib/timeline/profile'
 
 const route = useRoute()
 const pageMeta = usePageMeta()
-const userId = computed(() => Number(route.params.id))
+const userId = computed(() => routeId(route.params.id))
 
 const { data, error, reload } = useRouteData(
   (signal) => fetchPublicProfile(userId.value, { signal }),
@@ -37,6 +39,8 @@ watch(
 )
 
 const posts = computed(() => sortPosts(data.value?.posts ?? []))
+// http mode: the public profile always has `posts: []` in v2, so the section shows an empty state; the mock keeps hiding an empty section.
+const showEmptyTimeline = computed(() => isHttpMode())
 const nextTier = computed(() => {
   const t = data.value?.tier
   return t && t.toNext !== null && t.nextKey
@@ -247,9 +251,18 @@ const share = (): void => {
           <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
             <DsStatRow :items="stats" prefix="stat" :cols="4" data-testid="stat-cards" />
 
-            <section v-if="posts.length" class="flex flex-col gap-3" data-testid="profile-posts">
+            <section
+              v-if="posts.length || showEmptyTimeline"
+              class="flex flex-col gap-3"
+              data-testid="profile-posts"
+            >
               <h2 class="text-heading text-highlighted">Timeline</h2>
               <PostCard v-for="p in posts" :key="p.id" :post="p" />
+              <DsEmptyState
+                v-if="!posts.length"
+                title="Tiada catatan lagi."
+                data-testid="profile-posts-empty"
+              />
             </section>
 
             <DsPanel data-testid="sponsor-cta">

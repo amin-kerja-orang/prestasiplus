@@ -201,3 +201,161 @@ export const performanceScenarios: Scenario[] = [
     },
   },
 ]
+
+// --- Timeline (S16, S17) and headcount (US-33 completion), BE-19 -------------------------------------------------------
+
+const HTML_AS_PNG = new TextEncoder().encode('<html><script>alert(1)</script></html>')
+
+const timelineScenarios: Scenario[] = [
+  {
+    id: 'performance-api/timeline: 401 without a session on GET and POST',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const anon = ctx.anonymous()
+      expectError(ctx, await anon.request('GET', '/timeline'), 401, 'UNAUTHORIZED')
+      expectError(ctx, await anon.request('POST', '/timeline'), 401, 'UNAUTHORIZED')
+    },
+  },
+  {
+    id: 'performance-api/timeline: GET lists only the caller own posts for every role, no-store',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      for (const role of FOUR_ROLES) {
+        const who = await ctx.as(role)
+        const res = await who.request('GET', '/timeline')
+        ctx.expectStatus(res, 200)
+        noStore(ctx, res, '/timeline')
+        const me = await ownId(who)
+        const data = dataOf(res)
+        ctx.check(data.profileUrl === `/pelajar/${me}`, `${role}: profileUrl must point at the own profile`)
+        const posts = (data.posts ?? []) as { userId?: unknown }[]
+        ctx.check(Array.isArray(posts) && posts.every((p) => String(p.userId) === me), `${role}: /timeline must list own posts only`)
+      }
+    },
+  },
+  {
+    id: 'performance-api/timeline: POST is for a student only; teacher, school admin and admin outside Mod Pelajar are 403; CSRF is required',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      for (const role of ['teacher', 'school_admin', 'admin'] as ActorRole[]) {
+        expectError(ctx, await (await ctx.as(role)).request('POST', '/timeline'), 403, 'FORBIDDEN')
+      }
+      expectError(ctx, await (await ctx.as('student', { csrf: false })).request('POST', '/timeline'), 403, 'CSRF_INVALID')
+    },
+  },
+  {
+    id: 'performance-api/timeline: POST with no fields and a .png that is really HTML is 422 with the contract messages',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const student = await ctx.as('student')
+      const res = await student.request('POST', '/timeline', {
+        file: { field: 'photos', filename: 'gambar.png', contentType: 'image/png', content: HTML_AS_PNG },
+      })
+      expectError(ctx, res, 422, 'VALIDATION_ERROR')
+      const fields = (errorOf(res).fields ?? {}) as Record<string, unknown>
+      ctx.check(fields.title === 'Tajuk diperlukan.', `fields.title: ${String(fields.title)}`)
+      ctx.check(fields.category === 'Kategori tidak sah.', `fields.category: ${String(fields.category)}`)
+      ctx.check(fields.photos === 'Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB).', `fields.photos must refuse spoofed content: ${String(fields.photos)}`)
+      ctx.check(String(errorOf(res).message).endsWith('(and 2 more errors)'), 'the message is the first field message plus the count of the rest')
+    },
+  },
+  {
+    id: 'performance-api/timeline: POST without any photo part is 422 on photos',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const res = await (await ctx.as('student')).request('POST', '/timeline', { body: { title: 'Tajuk', category: 'lain' } })
+      expectError(ctx, res, 422, 'VALIDATION_ERROR')
+      const fields = (errorOf(res).fields ?? {}) as Record<string, unknown>
+      ctx.check(fields.photos === 'Sila muat naik sekurang-kurangnya 1 gambar.', `fields.photos: ${String(fields.photos)}`)
+    },
+  },
+  {
+    id: 'performance-api/public profile of an unknown pupil is 404 for an anonymous caller',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      expectError(ctx, await ctx.anonymous().request('GET', `/public/students/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+    },
+  },
+]
+
+const HEADCOUNT_READS = ['/headcounts', '/headcounts/dashboard', '/headcounts/form-options', '/headcounts/1/summary', '/headcounts/1', '/headcounts/1/export']
+
+const headcountScenarios: Scenario[] = [
+  {
+    id: 'performance-api/headcount: 401 without a session on all 12 routes, 403 for a student',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const anon = ctx.anonymous()
+      for (const path of [...HEADCOUNT_READS, '/headcounts/students/1']) expectError(ctx, await anon.request('GET', path), 401, 'UNAUTHORIZED')
+      for (const path of ['/headcounts', '/headcounts/auto-setup', '/headcounts/1/drop-students', '/headcounts/1/reset']) {
+        expectError(ctx, await anon.request('POST', path, { body: {} }), 401, 'UNAUTHORIZED')
+      }
+      expectError(ctx, await anon.request('DELETE', '/headcounts/1'), 401, 'UNAUTHORIZED')
+      const student = await ctx.as('student')
+      for (const path of [...HEADCOUNT_READS, '/headcounts/students/1']) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('POST', '/headcounts', { body: {} }), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('DELETE', '/headcounts/1'), 403, 'FORBIDDEN')
+    },
+  },
+  {
+    id: 'performance-api/headcount: list, dashboard and form options answer 200 no-store for admin, teacher and school admin; admin and school admin see no configs',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      for (const role of ['admin', 'teacher', 'school_admin'] as ActorRole[]) {
+        const who = await ctx.as(role)
+        for (const path of ['/headcounts', '/headcounts/dashboard', '/headcounts/form-options']) {
+          const res = await who.request('GET', path)
+          ctx.expectStatus(res, 200)
+          noStore(ctx, res, path)
+        }
+        if (role !== 'teacher') ctx.check(listOf(await who.request('GET', '/headcounts')).length === 0, `${role} sees no own configs`)
+      }
+    },
+  },
+  {
+    id: 'performance-api/headcount: an unknown config is the same 404 on every {id} route; CSRF is required on writes',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const teacher = await ctx.as('teacher')
+      for (const path of [`/headcounts/${UNKNOWN_ID}`, `/headcounts/${UNKNOWN_ID}/summary`, `/headcounts/${UNKNOWN_ID}/export`]) {
+        expectError(ctx, await teacher.request('GET', path), 404, 'NOT_FOUND')
+      }
+      expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/reset`), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/drop-students`, { body: { action: 'drop', studentIds: ['1'] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      const noCsrf = await ctx.as('teacher', { csrf: false })
+      expectError(ctx, await noCsrf.request('POST', '/headcounts', { body: {} }), 403, 'CSRF_INVALID')
+      expectError(ctx, await noCsrf.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 403, 'CSRF_INVALID')
+    },
+  },
+  {
+    id: 'performance-api/headcount: create rejects a foreign class with one 422; an admin never owns a class; auto-setup needs a level',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const teacher = await ctx.as('teacher')
+      const res = await teacher.request('POST', '/headcounts', {
+        body: { classroomId: UNKNOWN_ID, subjectId: UNKNOWN_ID, educationLevelId: UNKNOWN_ID, academicYear: 2026, activeOtrs: 3, mode: 'auto' },
+      })
+      expectError(ctx, res, 422, 'VALIDATION_ERROR')
+      const fields = (errorOf(res).fields ?? {}) as Record<string, unknown>
+      ctx.check(fields.classroomId === 'Kelas tidak sah.', `fields.classroomId: ${String(fields.classroomId)}`)
+      const admin = await (await ctx.as('admin')).request('POST', '/headcounts', {
+        body: { classroomId: '1', subjectId: UNKNOWN_ID, educationLevelId: UNKNOWN_ID, academicYear: 2026, activeOtrs: 3, mode: 'auto' },
+      })
+      expectError(ctx, admin, 422, 'VALIDATION_ERROR')
+      expectError(ctx, await teacher.request('POST', '/headcounts/auto-setup', { body: { levels: [] } }), 422, 'VALIDATION_ERROR')
+    },
+  },
+]
+
+performanceScenarios.push(...timelineScenarios, ...headcountScenarios)

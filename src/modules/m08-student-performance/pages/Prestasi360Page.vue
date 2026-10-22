@@ -21,6 +21,7 @@ import { usePhIcon } from '../lib/icons'
 import { studyTime } from '../lib/analitik'
 import { grouped, pct1, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
@@ -29,7 +30,7 @@ const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
 const icon = usePhIcon()
-const userId = computed(() => Number(route.params.userId))
+const userId = computed(() => routeId(route.params.userId))
 
 const { data, error, reload } = useRouteData(
   (signal) => fetchStudentPerformance(userId.value, { signal }),

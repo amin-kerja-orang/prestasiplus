@@ -8,7 +8,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsFeedbackSheet, DsQuizHeader, DsLoadError } from '@/ds'
+import { DsEmptyState, DsFeedbackSheet, DsQuizHeader, DsLoadError, DsStack } from '@/ds'
 
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
@@ -411,19 +411,19 @@ const feedback = computed(() => {
     </template>
 
     <template #main>
-      <DsEmptyState
-        v-if="refused"
-        class="my-8"
-        title="Percubaan ini tidak dijumpai."
-        icon="i-ph-file-x"
-        data-testid="attempt-not-found"
-      >
-        <template #actions>
-          <UButton :to="{ name: 'm28.bijak' }" class="min-h-11" data-testid="attempt-back"
-            >Kembali ke Bijak SPM</UButton
-          >
-        </template>
-      </DsEmptyState>
+      <DsStack v-if="refused" padding="lg">
+        <DsEmptyState
+          title="Percubaan ini tidak dijumpai."
+          icon="i-ph-file-x"
+          data-testid="attempt-not-found"
+        >
+          <template #actions>
+            <UButton :to="{ name: 'm28.bijak' }" class="min-h-11" data-testid="attempt-back"
+              >Kembali ke Bijak SPM</UButton
+            >
+          </template>
+        </DsEmptyState>
+      </DsStack>
       <DsLoadError v-else-if="loadError" class="my-8" :message="loadError" @retry="load" />
       <div
         v-else-if="!view || !current"

@@ -4,7 +4,7 @@ import { DsLeaderRow } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { LeaderboardRow } from '../../api'
-import { LEADERBOARD_COPY } from '../../lib/student/leaderboard-lib'
+import { LEADERBOARD_COPY, leaderboardKey } from '../../lib/student/leaderboard-lib'
 
 defineProps<{ rows: readonly LeaderboardRow[] }>()
 </script>
@@ -12,8 +12,8 @@ defineProps<{ rows: readonly LeaderboardRow[] }>()
 <template>
   <ul class="flex flex-col gap-2" data-testid="lb-rows">
     <DsLeaderRow
-      v-for="row in rows"
-      :key="row.rank"
+      v-for="(row, i) in rows"
+      :key="leaderboardKey(row, i)"
       :rank="row.rank"
       :name="row.name"
       :school="`${row.title} · Level ${row.level}`"

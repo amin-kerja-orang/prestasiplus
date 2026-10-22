@@ -50,6 +50,7 @@ export async function mountAt(
   component: Component,
   url: string,
   props: Record<string, unknown> = {},
+  attachTo?: HTMLElement,
 ): Promise<Mounted> {
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -60,7 +61,7 @@ export async function mountAt(
   })
   await router.push(url)
   await router.isReady()
-  const wrapper = mount(component, { props, global: { plugins: [pinia, router] } })
+  const wrapper = mount(component, { props, global: { plugins: [pinia, router] }, ...(attachTo ? { attachTo } : {}) })
   await flushPromises()
   return { wrapper, router }
 }

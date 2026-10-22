@@ -8,6 +8,7 @@
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import { useClickOutside } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatusBadge } from '@/ds'
@@ -24,13 +25,14 @@ import type { DropAction, HeadcountSort } from '../api/headcount-types'
 import HeadcountConfirmModals from '../components/headcount/HeadcountConfirmModals.vue'
 import HeadcountTable from '../components/headcount/HeadcountTable.vue'
 import { percentOf } from '../lib/headcount/format'
-import { LOAD_ERROR, isLoadError, useRouteData } from '../lib/prestasi/load'
+import { LOAD_ERROR, isLoadError, notFoundOutcome, useRouteData } from '../lib/prestasi/load'
+import { routeId } from '../lib/route-id'
 
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
 
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 /** An unknown `sort` is "ranking" (§5). */
 const sort = computed<HeadcountSort>(() => (route.query.sort === 'name' ? 'name' : 'ranking'))
 
@@ -81,8 +83,8 @@ async function run(task: () => Promise<unknown>): Promise<boolean> {
   try {
     await task()
     return true
-  } catch {
-    actionError.value = LOAD_ERROR
+  } catch (err) {
+    if (!notFoundOutcome(err)) actionError.value = LOAD_ERROR
     return false
   } finally {
     busy.value = false
@@ -90,7 +92,8 @@ async function run(task: () => Promise<unknown>): Promise<boolean> {
 }
 
 async function drop(action: DropAction) {
-  const ids = [...selected.value]
+  // The real API takes string ids (BE-19 `studentIds`); mock mode keeps the numbers.
+  const ids = isHttpMode() ? selected.value.map(String) : [...selected.value]
   if (ids.length === 0) return
   if (await run(() => dropHeadcountStudents(id.value, { action, studentIds: ids }))) {
     selected.value = []

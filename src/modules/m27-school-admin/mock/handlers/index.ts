@@ -6,6 +6,7 @@ import { dashboardRoutes } from './dashboard'
 import { dskpHeatmapRoutes } from './dskp-heatmap'
 import { impersonateRoutes } from './impersonate'
 import { monthlyRoutes } from './monthly'
+import { pendingTeacherRoutes } from './pending-teachers'
 import { usageRoutes } from './usage'
 import { userReadRoutes } from './users-read'
 import { userWriteRoutes } from './users-write'
@@ -17,6 +18,7 @@ export const m27Routes: readonly RouteDef[] = [
   ...activityRoutes,
   ...dskpHeatmapRoutes,
   ...monthlyRoutes,
+  ...pendingTeacherRoutes,
   ...userReadRoutes,
   ...userWriteRoutes,
   ...classRoutes,

@@ -48,9 +48,10 @@ export interface HeadcountFormOptions {
 
 /** #15 `POST /api/headcounts`. */
 export interface CreateHeadcountInput {
-  classroomId: number
-  subjectId: number
-  educationLevelId: number
+  /** The real API takes string ids (BE-19); mock mode sends numbers. */
+  classroomId: number | string
+  subjectId: number | string
+  educationLevelId: number | string
   academicYear: number
   activeOtrs: number
   mode: HeadcountMode
@@ -179,7 +180,8 @@ export type DropAction = 'drop' | 'restore'
 
 export interface DropStudentsInput {
   action: DropAction
-  studentIds: number[]
+  /** String ids on the real API (BE-19); mock mode sends numbers. */
+  studentIds: (number | string)[]
 }
 
 export type HeadcountSort = 'ranking' | 'name'
