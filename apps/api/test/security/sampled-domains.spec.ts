@@ -204,8 +204,11 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
           )
           return call(student, 'post', '/me/notifications/bulk-read', { ids: [own!.id], userId: '1' })
         },
-        // Rows marked read: the refused call marks none, not even the caller's own unread item.
-        async () => Number((await t.db.query<{ n: string }>(`select count(*)::text as n from notifications where read_at is not null`))[0]!.n),
+        // The caller's rows marked read: the refused call marks none, not even its own unread item (scoped, so other specs' writes do not count).
+        async () =>
+          Number(
+            (await t.db.query<{ n: string }>(`select count(*)::text as n from notifications where user_id = $1::bigint and read_at is not null`, [student.session.user.id]))[0]!.n,
+          ),
         'userId',
       ],
       [
