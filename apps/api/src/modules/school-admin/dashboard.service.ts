@@ -78,8 +78,10 @@ export class DashboardService {
     const now = this.clock.now()
     const school = await this.schools.get(schoolId)
     if (!school) throw ApiError.of('FORBIDDEN') // a school admin whose school vanished: fail closed
-    const [counts, posts, subs, view, activeClasses] = await Promise.all([
-      this.schools.memberCounts([schoolId]),
+    // FR-M27-50: the cards count the managed S6/S7 population (no peer school_admin), so they equal the list totals.
+    const [pupilCounts, teacherCounts, posts, subs, view, activeClasses] = await Promise.all([
+      this.users.countsBySchoolRole(schoolId, 'student'),
+      this.users.countsBySchoolRole(schoolId, 'teacher'),
       this.perutusan.feed({ userId: caller.userId, isAdmin: false, schoolId }, now),
       this.subscriptions.list(caller, {}),
       this.performance.school(perf),
@@ -89,7 +91,6 @@ export class DashboardService {
     const authors = new Map<string, Awaited<ReturnType<UsersRepository['get']>>>()
     for (const id of new Set(shown.map((p) => p.authorId))) authors.set(id, await this.users.get(id))
     const status = currentSubscriptionStatus(subs.rows, mytDay(now))
-    const member = counts.get(schoolId)
 
     return {
       school: {
@@ -111,8 +112,8 @@ export class DashboardService {
         }
       }),
       cards: {
-        pupils: member?.studentCount ?? 0,
-        teachers: member?.teacherCount ?? 0,
+        pupils: pupilCounts.total,
+        teachers: teacherCounts.total,
         activeClasses,
         subscription: { status, label: SUBSCRIPTION_LABEL[status] },
       },

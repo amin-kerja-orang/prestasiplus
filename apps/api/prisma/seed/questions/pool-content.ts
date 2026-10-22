@@ -36,7 +36,7 @@ export const POOL_PER_LEVEL = 24
 // --------------------------------------------------------------------------------------------------------------------
 
 /** Places `right` at position `slot` among three wrong options; throws when the four are not distinct. */
-function item(text: string, right: string, wrong: readonly [string, string, string], slot: number): PoolItem {
+export function item(text: string, right: string, wrong: readonly [string, string, string], slot: number): PoolItem {
   const options = [...wrong]
   const at = ((slot % 4) + 4) % 4
   options.splice(at, 0, right)
@@ -54,7 +54,7 @@ function others(values: readonly string[], i: number): [string, string, string] 
  * Both directions of a one-to-one table: `forward(a)` asks for b, `backward(b)` asks for a. Wrong options come from
  * the other rows of the same column, so every question has exactly one correct option.
  */
-function table(
+export function table(
   rows: readonly (readonly [string, string])[],
   forward: (a: string) => string,
   backward: (b: string) => string,
@@ -72,7 +72,7 @@ function table(
 }
 
 /** One direction of a table (the answer column may repeat; wrong options are the given fixed set minus the answer). */
-function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) => string, choices: readonly string[], slot0 = 0): PoolItem[] {
+export function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) => string, choices: readonly string[], slot0 = 0): PoolItem[] {
   return rows.map(([a, b], i) => {
     const wrong = choices.filter((c) => c !== b).slice(0, 3) as [string, string, string]
     return item(ask(a), b, wrong, slot0 + i)
@@ -83,7 +83,7 @@ function oneWay(rows: readonly (readonly [string, string])[], ask: (a: string) =
 const round2 = (n: number): number => Math.round(n * 100) / 100
 const num = (n: number): string => String(n).replace('-', '−')
 /** A numeric question: the answer and three distinct wrong values (computed slips), formatted with `fmt`. */
-function numeric(text: string, right: number, wrong: readonly number[], slot: number, fmt: (n: number) => string = num): PoolItem {
+export function numeric(text: string, right: number, wrong: readonly number[], slot: number, fmt: (n: number) => string = num): PoolItem {
   // Every value is rounded to 2 decimal places BEFORE the distinctness check and the formatter.
   const key = round2(right)
   const picked: number[] = []
@@ -579,6 +579,6 @@ export function poolItems(subject: PoolSubject, level: PoolLevel): PoolItem[] {
   return bank.slice(0, POOL_PER_LEVEL)
 }
 
-/** Natural key (`question_versions.number_label`) of item `index` (0-based). */
-export const poolRef = (subject: PoolSubject, level: PoolLevel, index: number): string =>
+/** Natural key (`question_versions.number_label`) of item `index` (0-based); also used by the Darjah part (AZ-02). */
+export const poolRef = (subject: string, level: string, index: number): string =>
   `SEED-POOL-${subject}-${level}-${String(index + 1).padStart(2, '0')}`
