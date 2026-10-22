@@ -487,7 +487,7 @@ describe('tournaments', () => {
     expect(bad({ subject_id: 3 })).toBe(false)
   })
 
-  it('validates local dates: YYYY-MM-DDTHH:mm, "" is none, close not before open', () => {
+  it('validates local dates: YYYY-MM-DDTHH:mm, "" is none, close strictly after open', () => {
     const bad = (patch: Record<string, unknown>) => BattleTournamentCreateRequestSchema.safeParse({ ...tournamentBody, ...patch }).success
     expect(bad({ registration_opens_at: undefined, registration_closes_at: undefined })).toBe(true)
     expect(bad({ registration_opens_at: '', registration_closes_at: '' })).toBe(true)
@@ -495,7 +495,8 @@ describe('tournaments', () => {
     expect(bad({ registration_opens_at: '2026-11-01 08:00' })).toBe(false)
     expect(bad({ registration_opens_at: '2026-11-01T25:00' })).toBe(false)
     expect(bad({ registration_closes_at: '2026-10-31T08:00' })).toBe(false)
-    expect(bad({ registration_closes_at: '2026-11-01T08:00' })).toBe(true)
+    expect(bad({ registration_closes_at: '2026-11-01T08:00' })).toBe(false)
+    expect(bad({ registration_closes_at: '2026-11-01T08:01' })).toBe(true)
     expect(battleLocalDateTimeKey('2026-11-01T08:00')).toBeLessThan(battleLocalDateTimeKey('2026-11-01T08:01'))
     expect(battleLocalDateTimeKey('nope')).toBeNaN()
   })

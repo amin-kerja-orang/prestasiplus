@@ -5,8 +5,9 @@ import { ThrottleModule } from '../../../common/throttle'
 import { FilesModule } from '../../files'
 import { FilesConfig } from '../../files/files.config'
 import { JobsModule } from '../../jobs'
+import { AiExtractionModule, AiExtractorAdapter } from '../../ai-extraction'
 import { OcrModule } from '../../ocr'
-import { AI_EXTRACTOR, DisabledAiExtractor } from './ai-extractor'
+import { AI_EXTRACTOR } from './ai-extractor'
 import { IntakeFilesController, IntakeUploadGuard } from './intake-files.controller'
 import { IntakeFilesConfig } from './intake-files.config'
 import { IntakeFilesService } from './intake-files.service'
@@ -23,7 +24,7 @@ import { IntakeUploadService } from './intake-upload.service'
  * module that registers a real adapter) and `IntakeFiguresService.enqueueCrop`.
  */
 @Module({
-  imports: [AuditModule, FilesModule, JobsModule, OcrModule, ThrottleModule],
+  imports: [AiExtractionModule, AuditModule, FilesModule, JobsModule, OcrModule, ThrottleModule],
   controllers: [IntakeFilesController],
   providers: [
     FilesConfig, // pure settings reader (INTAKE_MAX_FILE_MB); FilesModule does not export its instance
@@ -35,7 +36,8 @@ import { IntakeUploadService } from './intake-upload.service'
     IntakeFiguresService,
     IntakeProcessingService,
     IntakeExtractionInput,
-    { provide: AI_EXTRACTOR, useClass: DisabledAiExtractor },
+    // BE-36: the real adapter (mock unless AI_PROVIDER says otherwise). DisabledAiExtractor stays exported for tests that want a dead port.
+    { provide: AI_EXTRACTOR, useExisting: AiExtractorAdapter },
   ],
   exports: [IntakeFilesService, IntakeFiguresService, IntakeProcessingService, IntakeExtractionInput, AI_EXTRACTOR],
 })

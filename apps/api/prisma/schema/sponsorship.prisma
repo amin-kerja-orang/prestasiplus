@@ -1,0 +1,41 @@
+// Sponsorship, student side (BE-47, owner module M21): foster-family ("keluarga angkat") applications.
+// Conventions: docs/architecture/v2-backend-plan.md section 14.2, data model section 3.13 and G-01 to G-18.
+// Not expressible in Prisma and written by hand in migration 0034_foster_applications: the identity column
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), the descending sort of the status index and the
+// foreign keys to users (owned by identity.prisma).
+//
+// The foreign keys to users exist in the database but are NOT declared as Prisma relations here: a relation needs a
+// back-relation field in the other owner's schema file (identity.prisma), which this card must not edit. `users` is read
+// through BE-05's UsersRepository, never with `include`.
+// Child data (PDPA, SEC-M21-07): the category, income range and reason describe a minor's family. They are never logged,
+// never copied to `audit_events` or another table, and no route reads them in B1. A later Penaja card extends this file.
+
+/// One foster-family application. Write-only in B1: nothing moves a row out of `pending`. Wire values of the category and
+/// income range are the screen's display strings, kept verbatim (card open question 2).
+model FosterApplication {
+  id                BigInt   @id @default(autoincrement())
+  /// The student found by e-mail (role student).
+  studentId         BigInt   @map("student_id")
+  /// The session user who applied; never taken from the body.
+  applicantUserId   BigInt   @map("applicant_user_id")
+  /// Role code of the session at submission, stored raw.
+  applicantRole     String   @map("applicant_role")
+  /// B40, Asnaf, Yatim, OKU, Lain-lain (check constraint).
+  studentCategory   String   @map("student_category")
+  /// '< RM1,000', 'RM1,000 - RM2,500', 'RM2,500 - RM4,000', '> RM4,000' or null (check constraint).
+  familyIncomeRange String?  @map("family_income_range")
+  /// As typed, at most 5,000 characters (cut by the contract's storedFosterReason).
+  reason            String
+  /// pending, approved, matched, rejected (check constraint). Only pending is written in B1.
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isTest            Boolean  @default(false) @map("is_test")
+  legacySource      String?  @map("legacy_source")
+  legacyId          String?  @map("legacy_id")
+
+  @@unique([legacySource, legacyId], map: "uq_foster_applications_legacy")
+  @@index([status, createdAt(sort: Desc)], map: "ix_foster_applications_status_created_at")
+  @@index([studentId], map: "ix_foster_applications_student_id")
+  @@index([applicantUserId], map: "ix_foster_applications_applicant_user_id")
+  @@map("foster_applications")
+}

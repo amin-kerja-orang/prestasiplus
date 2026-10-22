@@ -245,13 +245,18 @@ export type GamificationChallengesResponse = z.infer<typeof GamificationChalleng
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Ranks 1 to 3. `name` is the student's display name. Children's names rule (LEAD 2026-10-21, #76): outside the
- * viewer's `canSeeName` scope (and not the viewer's own row) `name` is first name + initial and `userId` is null.
+ * Children's names rule (LEAD 2026-10-21, issue #76; applies to every ranking-like read): `userId` and the full
+ * `name` are sent only for a pupil inside the viewer's name scope (the viewer's own row; a teacher for pupils of
+ * the own active classes; a school_admin for pupils of the own school; an admin for everyone). Every other row
+ * carries `userId: null` and `name` = first name + initial, and `initials` follow the shown name.
  */
+const LeaderboardUserIdSchema = IdSchema.nullable().meta({ description: 'null when the viewer may not see this pupil by name (children\'s names rule, issue #76).' })
+
+/** Ranks 1 to 3. `name` is the student's display name, redacted per the children's names rule above. */
 export const GamificationPodiumEntrySchema = z
   .object({
     rank: z.number().int().min(1).max(3),
-    userId: IdSchema.nullable(),
+    userId: LeaderboardUserIdSchema,
     name: z.string(),
     initials: z.string(),
     totalSyilingEarned: count,
@@ -260,11 +265,11 @@ export const GamificationPodiumEntrySchema = z
   .meta({ id: 'GamificationPodiumEntry' })
 export type GamificationPodiumEntry = z.infer<typeof GamificationPodiumEntrySchema>
 
-/** Ranks 4 to 50. Same children's names rule as the podium: `userId` is null outside the viewer's scope. */
+/** Ranks 4 to 50. */
 export const GamificationLeaderboardRowSchema = z
   .object({
     rank: z.number().int().min(4).max(50),
-    userId: IdSchema.nullable(),
+    userId: LeaderboardUserIdSchema,
     name: z.string(),
     initials: z.string(),
     title: z.string(),
