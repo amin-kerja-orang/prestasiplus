@@ -45,7 +45,8 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # LEAD exception (22 Oct): be:test needs more than 20 min on a hosted runner. Raised, test scope unchanged.
+    timeout-minutes: 45
     # Throw-away Postgres for the integration tests (BE-02). Throw-away credentials, CI-only.
     services:
       postgres:
@@ -152,7 +153,7 @@ jobs:
   # BE-33 (AC6): new or changed dependencies in a pull request (license-neutral; vulnerabilities only).
   # Dependency review needs the repository's dependency graph (a repository setting). A probe step asks the
   # dependency-graph compare API first, with the same read-only token the review action uses. If that API refuses
-  # (HTTP 403/404, or "not supported"), the dependency graph is off for this repository, so the review step is skipped
+  # (HTTP 403, or "not supported"; read like actions/dependency-review-action, LEAD decision 22 Oct), the dependency graph is off for this repository, so the review step is skipped
   # with a warning (the npm audit gate above still runs). Any other probe error fails the job, and a high-severity
   # finding fails the review step as before. No continue-on-error (ci-workflow.spec.ts).
   dependency-review:
@@ -174,7 +175,7 @@ jobs:
           set -u
           if out="$(gh api "repos/$REPO/dependency-graph/compare/$BASE_SHA...$HEAD_SHA" 2>&1)"; then
             echo "supported=true" >> "$GITHUB_OUTPUT"
-          elif printf '%s' "$out" | grep -qiE 'not supported|HTTP 403|HTTP 404'; then
+          elif printf '%s' "$out" | grep -qiE 'not supported|HTTP 403'; then
             echo "::warning::Dependency review is not available on this repository ($(printf '%s' "$out" | grep -oE 'HTTP [0-9]+' | head -n 1)); enable the dependency graph in the repository settings. Skipped."
             echo "supported=false" >> "$GITHUB_OUTPUT"
           else
@@ -255,14 +256,15 @@ jobs:
           test "$code" = "0"
       # BE-33 (AC6): image scan. HIGH and CRITICAL with a fix available fail the job. Exceptions: .trivyignore
       # (one id per line with a reason comment and `exp:YYYY-MM-DD`; Trivy ignores an expired line, so it fails again).
-      # Pinned by the full commit SHA of the release tag `v0.33.1`. The upstream tags carry a `v` prefix, so the
-      # earlier `@0.33.1` could not be resolved and the job failed before the scan.
-      # `version` pins the Trivy binary: the action's default (v0.65.0) has no release asset any more (download 404),
-      # so the install step failed. v0.76.1's Linux-64bit asset is checked present (HTTP 200).
+      # Pinned by the full commit SHA of the release tag `v0.35.0` (LEAD decision 22 Oct). After the March 2026
+      # trivy-action supply-chain incident (CVE-2026-33634) most older tags, the 0.33.x series included, were
+      # force-pushed to malicious commits; v0.35.0 is the unaffected action tag. Re-check the SHA against the tag
+      # (`git ls-remote ... refs/tags/v0.35.0`) before changing it.
+      # `version` pins the Trivy binary to v0.69.3, a release named safe after that incident (Linux-64bit asset: HTTP 200).
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
-          version: v0.76.1
+          version: v0.69.3
           image-ref: pretasiplus-api:ci
           format: table
           severity: HIGH,CRITICAL
