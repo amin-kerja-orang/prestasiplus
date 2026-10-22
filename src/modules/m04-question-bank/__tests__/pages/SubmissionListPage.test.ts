@@ -8,6 +8,7 @@ import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import type { QuestionSubmission } from '../../api/submissions'
+import { SubmissionsUnavailableError } from '../../lib/submissions-unavailable'
 import SubmissionListPage from '../../pages/SubmissionListPage.vue'
 
 const api = vi.hoisted(() => ({
@@ -252,5 +253,15 @@ describe('SubmissionListPage (M04 S10)', () => {
     await w.get('[data-testid=submissions-retry]').trigger('click')
     await flushPromises()
     expect(w.findAll('tbody tr')).toHaveLength(2)
+  })
+
+  it('shows the demo unavailable state, not the load error, when the adapter is unavailable', async () => {
+    api.fetchQuestionSubmissions.mockRejectedValueOnce(new SubmissionsUnavailableError())
+    const w = await render()
+    expect(w.get('[data-testid=unavailable-state]').text()).toContain(
+      'Fungsi ini belum tersedia dalam demo',
+    )
+    expect(w.find('[data-testid=submissions-error]').exists()).toBe(false)
+    expect(w.find('[data-testid=submissions-table]').exists()).toBe(false)
   })
 })

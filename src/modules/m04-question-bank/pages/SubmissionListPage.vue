@@ -16,6 +16,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApi, useFlash } from '@/composables'
 import {
   DsDataTable,
+  DsEmptyState,
   DsFilterBar,
   DsFormField,
   DsLoadError,
@@ -43,6 +44,7 @@ import {
   SUBMISSION_STATUS_OPTIONS,
 } from '../lib/submission-options'
 import { queryText } from '../lib/route-query'
+import { SUBMISSIONS_UNAVAILABLE_TITLE, isSubmissionsUnavailable } from '../lib/submissions-unavailable'
 import { LOAD_ERROR, errorLines } from '../lib/ui-errors'
 
 const route = useRoute()
@@ -60,6 +62,7 @@ const { data, error, reload } = useApi(
   () => route.query.status,
 )
 
+const unavailable = computed(() => isSubmissionsUnavailable(error.value))
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
@@ -180,8 +183,15 @@ async function resetFilter(): Promise<void> {
       </div>
     </DsFilterBar>
 
+    <DsEmptyState
+      v-if="unavailable"
+      :title="SUBMISSIONS_UNAVAILABLE_TITLE"
+      icon="stack"
+      data-testid="unavailable-state"
+    />
+
     <DsLoadError
-      v-if="error"
+      v-else-if="error"
       :message="LOAD_ERROR"
       testid="submissions-error"
       retry-testid="submissions-retry"
