@@ -53,8 +53,15 @@ function districtScope(school: School, code: string | null): Scope | null {
   return { level: 'district', districtCode, stateCode: school.state.slice(0, 16), label: districtCode }
 }
 
-/** A stored scope row, if it is valid for the role; otherwise null so the scope is derived instead. */
-function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): Scope | null {
+/** A stored scope row that is ambiguous (a district without its state, a state without a code): the account is refused. */
+const REFUSED = Symbol('refused')
+
+/**
+ * A stored scope row, if it is valid for the role; null so the scope is derived instead (a level the role
+ * may not hold, or a school that cannot be found); `REFUSED` when the row is ambiguous and must not be
+ * resolved to another area (ambiguous means deny).
+ */
+function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): Scope | null | typeof REFUSED {
   if (!(ROLE_SCOPE_LEVELS[role] as readonly string[]).includes(row.level)) return null
   switch (row.level as ScopeLevel) {
     case 'national':
@@ -68,7 +75,6 @@ function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): S
     }
     case 'district': {
       const school = account.school ?? undefined
-      // A stored row without its state never makes a state-less scope: fall back to the derived one.
       if (row.districtCode && row.stateCode) {
         return {
           level: 'district',
@@ -77,12 +83,13 @@ function scopeFromRow(role: RoleCode, row: UserScope, account: AccountRecord): S
           label: row.districtCode,
         }
       }
-      // The derived scope then uses the school's own state AND district, never the stored district.
-      if (row.districtCode) return null
+      // A stored district without its state, or a state without its district, is ambiguous: refuse, never
+      // resolve it to the home school's area. Only a row with neither derives from the school.
+      if (row.districtCode || row.stateCode) return REFUSED
       return school ? districtScope(school, null) : null
     }
     case 'state':
-      return row.stateCode ? { level: 'state', stateCode: row.stateCode.slice(0, 16), label: row.stateCode } : null
+      return row.stateCode ? { level: 'state', stateCode: row.stateCode.slice(0, 16), label: row.stateCode } : REFUSED
     default:
       return null
   }
@@ -108,7 +115,8 @@ function derivedScope(role: RoleCode, account: AccountRecord): Scope | null {
  * Returns null when the account cannot hold a valid session: no role, an unknown role, `student` or
  * `admin` combined with another role, or a role whose scope cannot be derived (for example a
  * teacher without a school, or a ppd_officer whose school has no state: a district is only unique
- * inside its state, so a district scope always carries the state). Failing closed means such an
+ * inside its state, so a district scope always carries the state), or a stored scope row that is
+ * ambiguous (a district without its state, a state without its code). Failing closed means such an
  * account is refused, never half-served.
  */
 export function buildGrants(account: AccountRecord): RoleGrant[] | null {
@@ -118,7 +126,9 @@ export function buildGrants(account: AccountRecord): RoleGrant[] | null {
   const grants: RoleGrant[] = []
   for (const role of held) {
     const row = account.scopes.find((s) => s.role === role)
-    const scope = (row ? scopeFromRow(role, row, account) : null) ?? derivedScope(role, account)
+    const stored = row ? scopeFromRow(role, row, account) : null
+    if (stored === REFUSED) return null
+    const scope = stored ?? derivedScope(role, account)
     if (!scope) return null
     grants.push({ role, portal: ROLE_PORTAL[role], scope })
   }

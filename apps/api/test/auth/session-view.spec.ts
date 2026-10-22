@@ -35,9 +35,50 @@ describe('buildGrants: district scope of a ppd_officer needs the state', () => {
     expect(buildGrants(account(['ppd_officer'], school('')))).toBeNull()
   })
 
-  it('a stored district row without a state falls back to the derived scope WITH the school state', () => {
-    const grants = buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ districtCode: 'Kota' })]))
-    expect(scopeOf(grants)).toMatchObject({ level: 'district', districtCode: 'Kota', stateCode: 'Kedah' })
+  it('a stored district row without a state refuses the account, never the home school area', () => {
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ districtCode: 'Muar' })]))).toBeNull()
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ districtCode: 'Kota' })]))).toBeNull()
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ districtCode: 'Kota', stateCode: '' })]))).toBeNull()
+  })
+
+  it('a stored district row with a state but no district refuses the account, never the home school area', () => {
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ stateCode: 'Sabah' })]))).toBeNull()
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ stateCode: 'Kedah' })]))).toBeNull()
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({ stateCode: 'Kedah', districtCode: '' })]))).toBeNull()
+  })
+
+  it('a stored district row with neither district nor state still derives from the school', () => {
+    expect(scopeOf(buildGrants(account(['ppd_officer'], school('Kedah'), [scopeRow({})])))).toMatchObject({
+      level: 'district',
+      districtCode: 'Kota',
+      stateCode: 'Kedah',
+    })
+  })
+
+  it('a refused row refuses the whole multi-role account', () => {
+    const rows = [scopeRow({ districtCode: 'Muar' })]
+    expect(buildGrants(account(['ppd_officer', 'teacher'], school('Kedah'), rows))).toBeNull()
+  })
+
+  it('a stored state row without a code refuses the account; with a code it is kept', () => {
+    const state = (stateCode: string | null) => scopeRow({ level: 'state', stateCode })
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [state(null)]))).toBeNull()
+    expect(buildGrants(account(['ppd_officer'], school('Kedah'), [state('')]))).toBeNull()
+    expect(scopeOf(buildGrants(account(['ppd_officer'], school('Kedah'), [state('Johor')])))).toMatchObject({
+      level: 'state',
+      stateCode: 'Johor',
+    })
+  })
+
+  it('truncation: a stored code longer than 32 (district) or 16 (state) no longer equals the school value', () => {
+    const longDistrict = 'D'.repeat(40)
+    const longState = 'S'.repeat(20)
+    const sch = school(longState, longDistrict)
+    const scope = scopeOf(buildGrants(account(['ppd_officer'], sch, [scopeRow({ districtCode: longDistrict, stateCode: longState })])))
+    expect(scope).toMatchObject({ level: 'district', districtCode: 'D'.repeat(32), stateCode: 'S'.repeat(16) })
+    expect((scope as { districtCode: string }).districtCode).not.toBe(longDistrict)
+    const derived = scopeOf(buildGrants(account(['ppd_officer'], sch)))
+    expect((derived as { stateCode: string }).stateCode).not.toBe(longState)
   })
 
   it('a stored district row without a state and a school without a state refuses the account', () => {

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { makePng } from './fixtures'
+import { DEMO_PASSWORD } from '../auth/helpers'
 import { addAccount, bootFilesApp, expectError, type FilesTestApp, loginAs, type LoggedIn, uploadOk } from './helpers'
 
 /**
@@ -43,13 +44,16 @@ describe('avatar read by a PPD officer: the district is matched together with it
     expectError(await officer.agent.get(otherStateUrl), 'NOT_FOUND')
   })
 
-  it('a stored district row without a state does not widen the officer to the district name alone', async () => {
+  it('a stored district row without a state is refused at login and on the live session (never the home area)', async () => {
+    const live = await loginAs(t, 'ppd.negeri@demo.test') // session issued before the bad row exists
     await t.db.query(
       `insert into user_scopes (user_id, role, level, district_code)
        select id, 'ppd_officer', 'district', (select district from schools where code = 'DEMO001') from users where email = 'ppd.negeri@demo.test'`,
     )
-    const again = await loginAs(t, 'ppd.negeri@demo.test')
-    expect((await again.agent.get(sameStateUrl)).status).toBe(200)
-    expectError(await again.agent.get(otherStateUrl), 'NOT_FOUND')
+    const res = await t.agent().post('/api/auth/login').send({ identifier: 'ppd.negeri@demo.test', password: DEMO_PASSWORD, remember: false })
+    expectError(res, 'ACCOUNT_INACTIVE')
+    const after = await live.agent.get(sameStateUrl)
+    expect(after.status).not.toBe(200)
+    expect((await live.agent.get(otherStateUrl)).status).not.toBe(200)
   })
 })

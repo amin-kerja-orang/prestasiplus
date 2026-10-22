@@ -173,6 +173,13 @@ describe('ScopeFilter and ScopeContext (AC 7)', () => {
       expect(f.isInScope({ school: { state: 'Kedah', district: 'Kota' } }, USER_COLS)).toBe(true)
     })
 
+    it('a truncated session scope no longer matches the full school value (isInScope false)', () => {
+      const f = new ScopeFilter(
+        auth('ppd_officer', { level: 'district', districtCode: 'D'.repeat(32), stateCode: 'S'.repeat(16), label: 'x' }),
+      )
+      expect(f.isInScope({ school: { state: 'S'.repeat(20), district: 'D'.repeat(40) } }, USER_COLS)).toBe(false)
+    })
+
     it.each([
       ['district without a state', { level: 'district', districtCode: 'Muar', label: 'x' }],
       ['district with an empty state', { level: 'district', districtCode: 'Muar', stateCode: '', label: 'x' }],
