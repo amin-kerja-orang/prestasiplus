@@ -1,13 +1,13 @@
 # MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–3)
 
 - **Item:** MIG-07 (#109, P0), passes 1–3. Date of the runs: 2026-10-21 (passes 1 and 2), 2026-10-22 (pass 3).
-- **Data:** synthetic only (`fixtures:generate --size medium --seed 7`, BE-35). Amin's anonymised real dump (AM-10) does not exist yet, so nothing here proves behaviour on real data volumes or real value shapes.
+- **Data:** synthetic only (`fixtures:generate --size medium --seed 7`, BE-35). The anonymised real dump (AM-10, made by the dump operator) does not exist yet, so nothing here proves behaviour on real data volumes or real value shapes.
 - **Code under test:** branch `be/AM-MIG-07-rehearsal` = `feature/v2-backend` + AM-08 (`migrate:activity`, PR #122) + AZ-30 (rehearsal environment, PR #117). One run also used `origin/be/AM-09-migrate-orchestration` (`migrate:verify`, `migrate:delta`) from a temporary detached worktree.
 - **Passes:** pass 1 ran on the code before the paging fix; pass 2 (same day) re-ran everything on the fixed branch (`f8c519fe`). Pass 1 is kept below unchanged, except that its sections are demoted one heading level.
 
 # Pass 3 (orchestrator, AM-09)
 
-Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this branch (`b73d0dc2`) and AM-09 `be/AM-09-migrate-orchestration` `1c6da999` (not pushed). Same separate Postgres 16 cluster (port 55433), AZ-30 host mode, explicit `--as-of=2026-10-22`. The first attempt (pass 3a) stopped at the delta verify, and its second delta apply was cut by a container restart. The delta phase was then re-run on 2026-10-22 (pass 3b, section P3.3) after the AM-09 fixes for problems D and E, on a local merge of this branch (`21413f4e`) and `be/AM-09-migrate-orchestration` `cdb2f0f2` (not pushed), starting from the `after_full` snapshot; the re-run completed every step (logs: counts only, in the author's scratch folder).
+Run 2026-10-22, synthetic medium seed 7 (20,000 users), on a local merge of this branch (`b73d0dc2`) and AM-09 `be/AM-09-migrate-orchestration` `1c6da999` (not pushed). Same separate Postgres 16 cluster (port `<rehearsal-port>`), AZ-30 host mode, explicit `--as-of=2026-10-22`. The first attempt (pass 3a) stopped at the delta verify, and its second delta apply was cut by a container restart. The delta phase was then re-run on 2026-10-22 (pass 3b, section P3.3) after the AM-09 fixes for problems D and E, on a local merge of this branch (`21413f4e`) and `be/AM-09-migrate-orchestration` `cdb2f0f2` (not pushed), starting from the `after_full` snapshot; the re-run completed every step (logs: counts only, in the author's scratch folder). Pass 3 is not reproducible from this branch alone: it ran on those unpushed local merges, and `mig07-rehearse.sh` cannot run `migrate:all` or `migrate:delta`. The exact commands are in P3.4.
 
 ## P3.1 Verdict
 
@@ -77,10 +77,55 @@ Reported checks (reported, not failures; identical before and after the second a
 
 Notes:
 
+- (c) **Changed sessions: SQL 153 against 176 updated (pass 2, P2.5).** `mig07-make-delta.mjs` sets a new `updated_at` on every changed session and raises `correct` by one capped at `total_questions`. `migrate:activity` writes `updated_at` into the v2 row (`transform/practice.ts`, `stamps`), and a row counts as updated when its `legacy_hash` over all written values differs (`kit/upsert.ts`). So every changed session that loads counts as updated (176), while the SQL diff compared `correct_count` only, which differs for the 153 sessions whose `correct` was below `total_questions`. Check on the dumps: of the 300 changed sessions, 41 were already at `total_questions` (only `updated_at` changes) and 259 were raised; 180 of the 300 have a mode that loads (24 and 156), so the 23 and 153 are those two groups minus 1 and 3 sessions rejected for another reason (reject reasons of these 4 not checked). The ETL does not re-derive session fields from answers (`transformSession` reads the session row only).
 - (a) Each delta run prints "warning: cannot verify --as-of against the first load".
 - (b) **The second, no-op delta apply takes as long as the first (515 s vs 513 s on 20k users).** The run time does not depend on the number of changed rows (the delta re-reads every staged row), so on the real volume the delta window in the cutover plan (MIG-08) must be sized from the full-volume time, not from the number of changed rows. Owner of the cutover sizing: MIG-08.
 
 Still open: OD-24 (`battle`/`spm` modes rejected by design), the real-data pass (AM-10 dump with the storage export and `SHA256SUMS`), VPS sizing (#116), and delta time scales with total rows, not changed rows (P3.3 note b).
+
+## P3.4 Pass 3 commands (manual)
+
+The code was a local merge of this branch with #123 (AM-09 `be/AM-09-migrate-orchestration`). These commands become phases of `mig07-rehearse.sh` once #123 merges. Placeholders: `<rehearsal-db.sh>` = `deploy/rehearsal/rehearsal-db.sh`; environment as in section 2 of pass 1 (`PP_REHEARSAL_MODE=host`, `PP_REHEARSAL_ADMIN_URL`, `PP_REHEARSAL_STATE_DIR`, `PP_REHEARSAL_MIGRATE=psql`), exported before the first call. `<as-of>` is the day of the first load (pass 3: 2026-10-22) and is the same on every call. All from the repo root.
+
+```bash
+# prep
+<rehearsal-db.sh> up
+<rehearsal-db.sh> exec target -- env NODE_ENV=production npm run db:seed -w @pp/api -- --profile=migration
+<rehearsal-db.sh> load-dump <dump-dir> ; <rehearsal-db.sh> stage ; <rehearsal-db.sh> snapshot pre_etl
+# find a content owner (an active, not suspended admin), by a scout core apply, then back to pre_etl
+<rehearsal-db.sh> exec target -- npm run migrate:core -w @pp/api -- --dry-run --as-of=<as-of>
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:core -w @pp/api -- --apply --as-of=<as-of>
+#   <content-owner-id> = select u.id from users u join user_roles r on r.user_id = u.id
+#                        where r.role::text = 'admin' and u.is_active and not u.is_suspended order by u.id limit 1
+<rehearsal-db.sh> restore-snapshot pre_etl --yes
+# full run
+<rehearsal-db.sh> exec target -- npm run migrate:all -w @pp/api -- --dry-run --as-of=<as-of> --content-owner=<content-owner-id>
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:all -w @pp/api -- --apply --as-of=<as-of> --content-owner=<content-owner-id>
+<rehearsal-db.sh> exec target -- npm run migrate:verify -w @pp/api
+<rehearsal-db.sh> status ; <rehearsal-db.sh> snapshot after_full
+# AC9 files (banners): <files-export-dir> holds the export with SHA256SUMS; FILE_STORAGE_DIR is a scratch directory
+<rehearsal-db.sh> exec target -- env FILE_STORAGE_DIR=<storage-dir> npm run migrate:activity -w @pp/api -- --dry-run --as-of=<as-of> --core-as-of=<as-of> --content-owner=<content-owner-id> --table=banners --files-dir=<files-export-dir>
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- env FILE_STORAGE_DIR=<storage-dir> npm run migrate:activity -w @pp/api -- --apply --as-of=<as-of> --core-as-of=<as-of> --content-owner=<content-owner-id> --table=banners --files-dir=<files-export-dir>
+# (the dry-run and the apply of the files step were then repeated once to prove a second apply copies nothing)
+# rollback (AM-09; the env vars are those of the AM-09 header), then the AZ-30 restores
+<rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --confirm=pp_rehearsal
+PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:rollback -w @pp/api -- --confirm=pp_rehearsal --apply
+<rehearsal-db.sh> restore-snapshot after_full --yes ; <rehearsal-db.sh> restore-snapshot pre_etl --yes ; <rehearsal-db.sh> restore-snapshot after_full --yes
+# delta (second dump, same <as-of>; --since is the date before the first change)
+<rehearsal-db.sh> load-dump <delta-dump-dir> ; <rehearsal-db.sh> stage
+DA="--since=2026-08-31T00:00:00Z --as-of=<as-of> --content-owner=<content-owner-id>"
+<rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA --apply &    # run in the background
+# lock probe, once pg_locks shows a granted advisory lock and the apply has run a few seconds: each of these must be refused
+<rehearsal-db.sh> exec target -- npm run migrate:activity -w @pp/api -- --dry-run --as-of=<as-of> --core-as-of=<as-of> --content-owner=<content-owner-id>   # exit 2
+<rehearsal-db.sh> exec target -- npm run migrate:core -w @pp/api -- --dry-run --as-of=<as-of>                                                              # exit 2
+<rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA                                                                                    # exit 4
+wait
+PP_ALLOW_MIGRATE_APPLY=1 <rehearsal-db.sh> exec target -- npm run migrate:delta -w @pp/api -- $DA --apply    # second apply: 0 inserted / 0 updated
+<rehearsal-db.sh> exec target -- npm run migrate:verify -w @pp/api ; <rehearsal-db.sh> status
+```
+
+The env vars of the `migrate:rollback` apply are taken from the AM-09 header (`orchestrate.ts`), not from a saved command line of the run; re-read that header on the merged code before reuse.
 
 # Pass 2 (fixed code)
 
@@ -93,7 +138,7 @@ Still open: OD-24 (`battle`/`spm` modes rejected by design), the real-data pass 
 | Delta | **Pass on idempotency, changed rows and added rows**, now including added sessions (492 inserted; pass 1 inserted none). Source deletes are still not propagated. AM-09 `migrate:delta` stops at its verify step with `fail` (problems A and B below). |
 | `seed_reference` step (new in `mig07-rehearse.sh`) | **Works** on the first try, 3.6 s: `db:seed --profile=migration` in `NODE_ENV=production` ran 3 reference modules (`core-school-packages`, `spm-subject-configs`, `core-marketplace-categories`), 4 `school_packages` rows, 0 demo users; the demo modules were skipped by the runner. |
 
-Setup differences against pass 1: same dump size and seed (medium, seed 7, 20,000 users, 366,026 rows, now 46 files with the generator's own `SHA256SUMS`, no hand-made checksum), same cluster (PostgreSQL 16.15, port 55433), explicit `--as-of=2026-10-21` on every core and activity call (`--core-as-of` too for activity), `etl_runs.git_sha` filled (`f8c519fe`). AM-09 (`origin/be/AM-09-migrate-orchestration` at `7e27577f`) does not contain the AM-08 fixes yet, so a temporary detached worktree merged `2174ec58` and `32182fb0` into it (the only conflict was a docs file; nothing committed or kept).
+Setup differences against pass 1: same dump size and seed (medium, seed 7, 20,000 users, 366,026 rows, now 46 files with the generator's own `SHA256SUMS`, no hand-made checksum), same cluster (PostgreSQL 16.15, port `<rehearsal-port>`), explicit `--as-of=2026-10-21` on every core and activity call (`--core-as-of` too for activity), `etl_runs.git_sha` filled (`f8c519fe`). AM-09 (`origin/be/AM-09-migrate-orchestration` at `7e27577f`) does not contain the AM-08 fixes yet, so a temporary detached worktree merged `2174ec58` and `32182fb0` into it (the only conflict was a docs file; nothing committed or kept).
 
 ## P2.2 Full run: timings (seconds)
 
@@ -187,6 +232,8 @@ Row-level SQL diff, database after the delta against the `after_full` snapshot (
 | schools | 400 | 405 | 5 | 10 | 390 | 0 |
 | practice_sessions (correct_count) | 23,614 | 24,106 | 492 | 153 | 23,461 | 0 |
 
+The 153 changed `practice_sessions` counts `correct_count` only; AM-09 reports 176 updated because `updated_at` also changes (explained in P3.3 note c).
+
 AM-09 `migrate:delta --since=2026-08-31T00:00:00Z --as-of=2026-10-21` on a restored `after_full` (inserted / updated / unchanged from its report; entities not listed 0 / 0 / unchanged): schools 5 / 10 / 390; users 100 / 197 / 19,354; classrooms 2 / 0 / 280; enrolments 37 / 0 / 5,319; coin_ledger 238 / 0 / 45,337; practice_sessions 492 / 176 / 23,318; streaks 0 / 384 / 14,795; referral_codes 100 / 197 / 19,354; referrals 0 / 1 / 935. **Second `migrate:delta --apply`: 0 inserted and 0 updated in every entity** (idempotent). Durations: dry-run 4.9 s (activity skipped by design), apply 409.7 s, second apply 434.0 s, `migrate:verify` 1.9 to 2.0 s. The 2 classrooms and 37 enrolments inserted by the delta are explained in problem C: class levels are derived from the pupils present at run time, so deleting pupils made two previously rejected classes placeable. Runbook wording: "A classroom's level is derived from the pupils present in the source at the time of the run. After a delta that deletes or changes pupils, `migrate:core --apply` may insert previously rejected classrooms (with their rosters) or change the level of loaded ones. The next apply on the same input changes nothing."
 
 The 50 deleted users and 200 deleted sessions stay in v2 (not propagated, by design). After the delta `migrate:verify` is `fail`: `users` 19,651 loaded against 19,700 in v2, `referral_codes` the same, `practice_sessions` 23,986 against 24,106, `feedback` 1,517 against 1,520, the per-role check, and a new distribution check (`practice answers per subject`: staging subject 8 has 10,415 answers, v2 10,416; staging "no subject" 1, v2 0). On the full state the same verify passes.
@@ -215,7 +262,7 @@ Unchanged from the first pass (section 8 of pass 1), minus the paging fix: AM-10
 
 ## P2.8 Teardown
 
-`rehearsal-db.sh down --yes` ran; the dumps, the delta dump, scratch diff files, the state directory contents and the temporary AM-09 worktree were deleted. The throwaway cluster (data dir `/var/tmp/pp-reh-pg/data`, port 55433, role `pp_reh_admin`, trust auth, loopback) is still running with only `postgres` and the templates. Step logs for pass 2 are under `/home/user/prestasiplus/.scratch/AM1-Dev1/mig07/logs/P2` and `P2C` (git-excluded, counts only).
+`rehearsal-db.sh down --yes` ran; the dumps, the delta dump, scratch diff files, the state directory contents and the temporary AM-09 worktree were deleted. The throwaway cluster (data dir `<data-dir>`, port `<rehearsal-port>`, role `pp_reh_admin`, trust auth, loopback) is still running with only `postgres` and the templates. Step logs for pass 2 are under `<scratch>/logs/P2` and `<scratch>/logs/P2C` (git-excluded, counts only; synthetic data, so no retention limit applies to them).
 
 # Pass 1 (before the paging fix)
 
@@ -235,13 +282,13 @@ Unchanged from the first pass (section 8 of pass 1), minus the paging fix: AM-10
 |---|---|
 | Machine | 4 vCPU Intel Xeon 2.80 GHz, 15 GB RAM, Linux 6.18 (Firecracker VM), root disk 252 GB, no full-disk encryption (synthetic data only) |
 | Software | Node 22.22.0, npm 10.9.4, PostgreSQL 16.15 server and client (Ubuntu 24.04 packages) |
-| Database server | A separate throwaway cluster: data dir `/var/tmp/pp-reh-pg/data`, port `55433` (loopback), unix socket dir `/var/tmp/pp-reh-pg`, `--auth=trust`, no password anywhere. Left running. Port 55432 was not touched. |
+| Database server | A separate throwaway cluster: data dir `<data-dir>`, port `<rehearsal-port>` (loopback), unix socket dir `<data-dir>/..`, `--auth=trust`, no password anywhere. Left running. The default local Postgres port was not touched. |
 | Admin role | `pp_reh_admin`: `LOGIN CREATEDB CREATEROLE`, not a superuser. Host mode (`PP_REHEARSAL_MODE=host`), migrations by psql (`PP_REHEARSAL_MIGRATE=psql`): 33 of 33 applied. |
 | Settings (server flags) | `shared_buffers=1GB`, `work_mem=16MB`, `maintenance_work_mem=256MB`, `max_connections=100`, `wal_compression=on`, `log_min_duration_statement=500`; defaults otherwise (`fsync`, `synchronous_commit`, `full_page_writes` on, `wal_level=replica`, `max_wal_size=1GB`, UTC) |
 | Dump | `pp-staging-dump/1`, 45 files, 71 MB on disk, 366,026 rows in 118 tables, manifest `"synthetic": true` |
 | Delta dump | the same dump after a scripted change (section 6), checksum sidecar written by hand |
 
-The VM does not let the `postgres` OS user write to `/tmp`, so the socket dir is `/var/tmp/pp-reh-pg` instead of `/tmp`. The script only uses TCP, so this changes nothing.
+The VM does not let the `postgres` OS user write to `/tmp`, so the socket dir is a directory next to the data dir instead of `/tmp`. The script only uses TCP, so this changes nothing.
 
 ### 2. Commands (exact)
 
@@ -266,7 +313,7 @@ $RDB exec target -- npm run migrate:delta -w @pp/api -- --since=2026-08-31T00:00
 $RDB down --yes
 ```
 
-`apps/api/scripts/rehearsal/mig07-rehearse.sh full | rollback | delta` runs the steps above with a per-step log, duration and WAL bytes (`MIG07_*` variables are described in its header). It was used for the fixed-code full run, the delta phase and the second rollback.
+`apps/api/scripts/rehearsal/mig07-rehearse.sh full | rollback | delta | clean` runs the steps above with a per-step log, duration and WAL bytes (`MIG07_*` variables are described in its header). `clean` deletes the script's own logs and timings (see the retention rule in section 9). It was used for the fixed-code full run, the delta phase and the second rollback.
 
 ### 3. Full run (scratch-patched code): timings and sizes
 
@@ -384,7 +431,7 @@ Severity is my judgement; owners decide.
 ### 8. What remains for the real-data run
 
 - Fix problem 1 on `feature/v2-backend` (and the AM-08/AM-09 branches) before any further rehearsal; repeat this pass on the fixed code from a clean checkout.
-- AM-10: Amin's anonymised real dump (`pg_dump -Fc` or `pp-staging-dump/1` with `"anonymised": true` and its checksum). Rehearse on a full-disk-encrypted machine, with the `.anonymised` attestation, keep at most 7 days and delete afterwards.
+- AM-10: the anonymised real dump (made by the dump operator) (`pg_dump -Fc` or `pp-staging-dump/1` with `"anonymised": true` and its checksum). Rehearse on a full-disk-encrypted machine, with the `.anonymised` attestation, keep at most 7 days and delete afterwards.
 - AZ VPS sizing (#116): re-run with the real PostgreSQL settings and hardware (this VM: 4 vCPU, 15 GB, `shared_buffers` 1 GB). The activity stage was CPU-light on the Node side (about 5 s of CPU per 240 s), so the bottleneck is per-row round trips, not memory; ask whether batching is wanted before the real volume (the freeze window scales roughly linearly with rows).
 - AM-09 `migrate:all` / `migrate:verify` / `migrate:rollback` as the primary path once merged; decision on problem 5; the lead's go/no-go sign-off line in the runbook.
 - Fixture/ETL alignment (problem 4) so that a synthetic rehearsal exercises the whole load path; the real dump will show the true reject profile.
@@ -394,6 +441,7 @@ Severity is my judgement; owners decide.
 ### 9. Teardown and what was left
 
 - `rehearsal-db.sh down --yes` ran: databases `pp_rehearsal`, `pp_rehearsal_staging`, the snapshots and the read-only role are gone. The synthetic dumps, the delta generator copy, scratch scripts and the state directory contents were deleted.
-- Left running by design: the throwaway cluster (data dir `/var/tmp/pp-reh-pg/data`, port 55433, socket dir `/var/tmp/pp-reh-pg`, role `pp_reh_admin`, trust auth, loopback only). Stop it with `sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pp-reh-pg/data stop`.
-- Logs of every step (no personal data, counts and surrogate ids only) stay under `/home/user/prestasiplus/.scratch/AM1-Dev1/mig07/logs/` (git-excluded), together with the verified patch of problem 1 (`mig07-orderby-fix.patch`).
+- Left running by design: the throwaway cluster (data dir `<data-dir>`, port `<rehearsal-port>`, socket dir next to the data dir, role `pp_reh_admin`, trust auth, loopback only). Stop it with `sudo -u postgres /usr/lib/postgresql/16/bin/pg_ctl -D <data-dir> stop`.
+- **Retention of step logs.** `mig07-rehearse.sh clean` deletes the script's step logs and timings (only `*.log` and `*.timings.tsv` in its log dir, default `$PP_REHEARSAL_STATE_DIR/mig07-logs`; it never touches the databases, snapshots or the rest of the state dir). For the real-data pass the logs fall under the same 7-day retention rule as the dump (`docs/ops/rehearsal-db.md` section 9, migration runbook section 0 rule 4): they can carry row values from reject and error output, so keep only the counts and timings that are needed in a report, run `clean`, then `rehearsal-db.sh down --yes` (which removes the databases, snapshots and the state dir), all within 7 days of the load. On a failed step the script prints only the step name, the exit code and the log path, never log lines.
+- Logs of every step of this synthetic pass (no personal data, counts and surrogate ids only) stay under `<scratch>/logs/` (git-excluded), together with the verified patch of problem 1 (`mig07-orderby-fix.patch`). They are synthetic, so the 7-day rule above does not apply to them.
 
