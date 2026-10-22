@@ -283,7 +283,8 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     path: '/gamification/leaderboard',
     tags: ['gamification'],
     summary: 'Papan Pendahulu: top 50 by lifetime syiling',
-    description: 'Global, not scoped. No query parameter is read (period and others are ignored).',
+    description:
+      'Global ranking, not scoped. No query parameter is read (period and others are ignored). Children\'s names rule (LEAD 2026-10-21, issue #76): `userId` and the full `name` only for pupils in the viewer\'s name scope (own row; teacher: pupils of the own active classes; school_admin: pupils of the own school; admin: all); every other row has `userId: null` and first name + initial.',
     responses: { 200: json(envelopeOf(GamificationLeaderboardSchema), 'Podium (ranks 1 to 3) and rows (ranks 4 to 50).'), 401: UNAUTHORIZED },
   })
 

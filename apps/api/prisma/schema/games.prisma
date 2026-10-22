@@ -1,0 +1,333 @@
+// Games tables (BE-45, owner module M16 part 2: Permainan hub, room games, solo games, Roda Nasib, Jutawan Ilmu,
+// leagues, Sekolah Bersaing, game settings). Hand-written in migration 0033_games (proposed number,
+// renumber-at-merge, LEAD to confirm): identity columns (GENERATED ALWAYS), CHECK constraints (enums are text +
+// check), partial unique indexes. Foreign keys to `users`, `schools`, `subjects` and `questions` live in SQL only
+// (no back-relations: this card may not edit the identity, schools, curriculum or questions schema files).
+// legacy_source / legacy_id only on game_rooms, game_room_players, game_sessions (the tables that may receive
+// .cloud rows). Written by the games module only; coins and XP never go through these tables (WalletService).
+
+/// Room game (Papan Bijak, Perang Fakta, Benteng Ilmu, Perlumbaan Matematik, Kuiz Relay, Teka Silang Kata). PK = the 6-char code.
+model GameRoom {
+  code         String    @id
+  game         String
+  /// MATEMATIK, BAHASA_MELAYU, BAHASA_INGGERIS, SAINS, SEJARAH (check).
+  subject      String
+  /// DARJAH_1..6, TINGKATAN_1..5 (check).
+  gradeLevel   String    @map("grade_level")
+  /// same_grade, same_level, custom (check).
+  matchMode    String    @map("match_mode")
+  gradeMin     Int?      @map("grade_min") @db.SmallInt
+  gradeMax     Int?      @map("grade_max") @db.SmallInt
+  maxPlayers   Int       @map("max_players") @db.SmallInt
+  hostId       BigInt    @map("host_id")
+  /// waiting, playing, finished, closed (check).
+  status       String    @default("waiting")
+  startedAt    DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime? @map("finished_at") @db.Timestamptz(6)
+  /// Engine document (G-11 exception): written whole, never queried.
+  state        Json?
+  /// Settled result snapshot, written once together with settledAt.
+  result       Json?
+  settledAt    DateTime? @map("settled_at") @db.Timestamptz(6)
+  isTest       Boolean   @default(false) @map("is_test")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  players  GameRoomPlayer[]
+  searches PbSearch[]
+
+  @@unique([legacySource, legacyId], map: "uq_game_rooms_legacy")
+  @@index([status, createdAt], map: "ix_game_rooms_status_created_at")
+  @@index([hostId], map: "ix_game_rooms_host_id")
+  @@map("game_rooms")
+}
+
+model GameRoomPlayer {
+  id           BigInt   @id @default(autoincrement())
+  roomCode     String   @map("room_code")
+  userId       BigInt   @map("user_id")
+  team         Int?     @db.SmallInt
+  points       Int      @default(0)
+  correct      Int      @default(0) @db.SmallInt
+  isBot        Boolean  @default(false) @map("is_bot")
+  isTest       Boolean  @default(false) @map("is_test")
+  joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  room GameRoom @relation(fields: [roomCode], references: [code], onDelete: Cascade, map: "fk_game_room_players_room_code")
+
+  @@unique([roomCode, userId], map: "uq_game_room_players_room_code_user_id")
+  @@unique([legacySource, legacyId], map: "uq_game_room_players_legacy")
+  @@index([userId], map: "ix_game_room_players_user_id")
+  @@map("game_room_players")
+}
+
+/// Lobby leaderboards (born in v2). Creation order (`id`) is the last tie-break.
+model GameStanding {
+  id        BigInt   @id @default(autoincrement())
+  game      String
+  userId    BigInt   @map("user_id")
+  wins      Int      @default(0)
+  jumlah    Int      @default(0)
+  skor      Int      @default(0)
+  betul     Int      @default(0)
+  reachedAt DateTime @default(now()) @map("reached_at") @db.Timestamptz(6)
+  isTest    Boolean  @default(false) @map("is_test")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([game, userId], map: "uq_game_standings_game_user_id")
+  @@index([userId], map: "ix_game_standings_user_id")
+  @@map("game_standings")
+}
+
+/// Solo game session or Jutawan run; uuid is the id on the wire. D58a: the server-side checks live in game_session_items.
+model GameSession {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                BigInt    @map("user_id")
+  /// betul-salah, cabaran-kilat, tembak-jawapan, susun-jawapan, kad-memori, jutawan (check).
+  game                  String
+  darjah                Int?      @db.SmallInt
+  itemCount             Int?      @map("item_count") @db.SmallInt
+  maxScore              Int?      @map("max_score")
+  score                 Int       @default(0)
+  coinsComputed         Int       @default(0) @map("coins_computed")
+  coinsCredited         Int       @default(0) @map("coins_credited")
+  isNewRecord           Boolean   @default(false) @map("is_new_record")
+  /// Null until submitted; the submit is guarded by a row lock and this column (one submit per session).
+  submittedAt           DateTime? @map("submitted_at") @db.Timestamptz(6)
+  /// Set when a newer session of the same user and game superseded this unsubmitted one (one open session per user and game).
+  closedAt              DateTime? @map("closed_at") @db.Timestamptz(6)
+  /// Kad Memori pair checks so far.
+  moves                 Int       @default(0)
+  /// Pacing guard [PROPOSED]: moves/checks made faster than the minimum gap (no coins when > 0).
+  fastMoves             Int       @default(0) @map("fast_moves")
+  /// Kad Memori: the card revealed and not yet checked (first card of a move).
+  openCardId            String?   @map("open_card_id")
+  /// Checks stored for the session.
+  checks                Int       @default(0)
+  correctCount          Int       @default(0) @map("correct_count")
+  jutawanSubjectId      BigInt?   @map("jutawan_subject_id")
+  jutawanLevel          Int?      @map("jutawan_level") @db.SmallInt
+  jutawanLifelines      Int?      @map("jutawan_lifelines") @db.SmallInt
+  /// 50:50 removal for the current question, empty otherwise.
+  jutawanRemovedOptions Int[]     @default([]) @map("jutawan_removed_options") @db.SmallInt
+  jutawanOver           Boolean   @default(false) @map("jutawan_over")
+  isTest                Boolean   @default(false) @map("is_test")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource          String?   @map("legacy_source")
+  legacyId              String?   @map("legacy_id")
+
+  items GameSessionItem[]
+
+  @@unique([legacySource, legacyId], map: "uq_game_sessions_legacy")
+  @@index([userId, game], map: "ix_game_sessions_user_id_game")
+  @@map("game_sessions")
+}
+
+/// The items served in a session, with the server-only facts needed to check them (never sent to the client before the check).
+model GameSessionItem {
+  id            BigInt    @id @default(autoincrement())
+  sessionId     String    @map("session_id") @db.Uuid
+  position      Int       @db.SmallInt
+  questionId    BigInt    @map("question_id")
+  /// Kad Memori: opaque random card id, unique per session (partial unique index).
+  cardId        String?   @map("card_id")
+  /// Kad Memori: question or answer (check).
+  face          String?
+  /// Kad Memori: server-only pair index 0..5.
+  pairKey       Int?      @map("pair_key") @db.SmallInt
+  matched       Boolean   @default(false)
+  /// Correct option index 0..3 as served.
+  keyIndex      Int?      @map("key_index") @db.SmallInt
+  /// Betul/Salah: whether the served statement is true.
+  statementTrue Boolean?  @map("statement_true")
+  difficulty    Int?      @db.SmallInt
+  /// Susun Jawapan puzzle points.
+  points        Int?      @db.SmallInt
+  /// Order of the check within the session (for streak and combo).
+  checkedSeq    Int?      @map("checked_seq") @db.SmallInt
+  correct       Boolean?
+  /// What the client answered (audit).
+  answer        String?
+  checkedAt     DateTime? @map("checked_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "fk_game_session_items_session_id")
+
+  @@unique([sessionId, position], map: "uq_game_session_items_session_id_position")
+  @@index([questionId], map: "ix_game_session_items_question_id")
+  @@map("game_session_items")
+}
+
+model PersonalBest {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  game      String
+  bestScore Int      @default(0) @map("best_score")
+  isTest    Boolean  @default(false) @map("is_test")
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, game], map: "uq_personal_bests_user_id_game")
+  @@map("personal_bests")
+}
+
+model JutawanStat {
+  id        BigInt  @id @default(autoincrement())
+  userId    BigInt  @unique(map: "uq_jutawan_stats_user_id") @map("user_id")
+  bestLevel Int     @default(0) @map("best_level") @db.SmallInt
+  games     Int     @default(0)
+  isTest    Boolean @default(false) @map("is_test")
+
+  @@map("jutawan_stats")
+}
+
+/// Roda Nasib: one spin per Malaysia day, enforced by the unique (user_id, spin_date).
+model Spin {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt   @map("user_id")
+  spinDate     DateTime @map("spin_date") @db.Date
+  segmentIndex Int      @map("segment_index") @db.SmallInt
+  /// syiling, nothing (check).
+  type         String
+  value        Int      @default(0)
+  credited     Int      @default(0)
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([userId, spinDate], map: "uq_spins_user_id_spin_date")
+  @@map("spins")
+}
+
+model SpinStat {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @unique(map: "uq_spin_stats_user_id") @map("user_id")
+  spins        Int       @default(0)
+  won          Int       @default(0)
+  lastSpinDate DateTime? @map("last_spin_date") @db.Date
+  isTest       Boolean   @default(false) @map("is_test")
+
+  @@map("spin_stats")
+}
+
+/// Papan Bijak quick-match searches (transient).
+model PbSearch {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  subject   String
+  /// same_grade, same_level (check).
+  matchMode String   @map("match_mode")
+  /// searching, matched, expired, cancelled (check).
+  status    String   @default("searching")
+  polls     Int      @default(0)
+  roomCode  String?  @map("room_code")
+  isTest    Boolean  @default(false) @map("is_test")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  room GameRoom? @relation(fields: [roomCode], references: [code], onDelete: SetNull, map: "fk_pb_searches_room_code")
+
+  @@index([userId, createdAt], map: "ix_pb_searches_user_id_created_at")
+  @@map("pb_searches")
+}
+
+/// One row (id = 1, check). Plain tiles = max(0, 48 - 10 - boardgame_quiz_tiles).
+model GameSettings {
+  id                 Int      @id @default(1) @db.SmallInt
+  boardgameQuizTiles Int      @default(35) @map("boardgame_quiz_tiles") @db.SmallInt
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("game_settings")
+}
+
+model League {
+  id            BigInt   @id @default(autoincrement())
+  name          String
+  /// friendly, tournament, league (check).
+  type          String
+  /// school, district, state, national (check).
+  scope         String
+  subjectId     BigInt?  @map("subject_id")
+  /// mixed, quiz, multiplayer (check).
+  gameMode      String   @map("game_mode")
+  /// total_score, avg_accuracy, wins (check).
+  scoringMethod String   @map("scoring_method")
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime @map("end_date") @db.Date
+  maxSchools    Int?     @map("max_schools") @db.SmallInt
+  /// 8 characters A-Z0-9 (check), unique.
+  inviteCode    String   @unique(map: "uq_leagues_invite_code") @map("invite_code")
+  creatorId     BigInt?  @map("creator_id")
+  /// upcoming, ongoing, ended (check); stored, not moved by dates.
+  status        String   @default("upcoming")
+  isTest        Boolean  @default(false) @map("is_test")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  classLevels LeagueClassLevel[]
+  schools     LeagueSchool[]
+  standings   LeagueStanding[]
+
+  @@index([status], map: "ix_leagues_status")
+  @@map("leagues")
+}
+
+model LeagueClassLevel {
+  id       BigInt @id @default(autoincrement())
+  leagueId BigInt @map("league_id")
+  /// D1..D6, T1..T5 (check).
+  level    String
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, map: "fk_league_class_levels_league_id")
+
+  @@unique([leagueId, level], map: "uq_league_class_levels_league_id_level")
+  @@map("league_class_levels")
+}
+
+model LeagueSchool {
+  id       BigInt   @id @default(autoincrement())
+  leagueId BigInt   @map("league_id")
+  schoolId BigInt   @map("school_id")
+  isTest   Boolean  @default(false) @map("is_test")
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, map: "fk_league_schools_league_id")
+
+  @@unique([leagueId, schoolId], map: "uq_league_schools_league_id_school_id")
+  @@index([schoolId], map: "ix_league_schools_school_id")
+  @@map("league_schools")
+}
+
+/// Stored output of the (undefined) standings job: seed-only in B1.
+model LeagueStanding {
+  id        BigInt  @id @default(autoincrement())
+  leagueId  BigInt  @map("league_id")
+  level     String
+  schoolId  BigInt  @map("school_id")
+  peserta   Int     @default(0)
+  skor      Decimal @default(0) @db.Decimal(10, 1)
+  purata    Decimal @default(0) @db.Decimal(5, 1)
+  sortOrder Int     @default(0) @map("sort_order")
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, map: "fk_league_standings_league_id")
+
+  @@unique([leagueId, level, schoolId], map: "uq_league_standings_league_id_level_school_id")
+  @@index([leagueId, level, sortOrder], map: "ix_league_standings_league_id_level_sort_order")
+  @@map("league_standings")
+}
+
+/// Stored weekly snapshot of the Sekolah Bersaing board (seed-only in B1).
+model SekolahBersaingWeek {
+  id          BigInt  @id @default(autoincrement())
+  weekStart   DateTime @map("week_start") @db.Date
+  rank        Int     @db.SmallInt
+  schoolId    BigInt  @map("school_id")
+  aktifPct    Decimal @default(0) @map("aktif_pct") @db.Decimal(5, 1)
+  streakAvg   Decimal @default(0) @map("streak_avg") @db.Decimal(5, 1)
+  notaPer10   Decimal @default(0) @map("nota_per_10") @db.Decimal(5, 1)
+  isAnonymous Boolean @default(false) @map("is_anonymous")
+
+  @@unique([weekStart, rank], map: "uq_sekolah_bersaing_weeks_week_start_rank")
+  @@map("sekolah_bersaing_weeks")
+}
