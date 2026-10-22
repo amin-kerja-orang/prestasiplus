@@ -103,6 +103,8 @@ describe('icon bundle completeness (D-09)', () => {
   })
 
   it('a base name handed to a DsXxx composite or listed as `icon: \'base\'` is bundled in both weights', () => {
+    // Scope: `icon: 'base'` keys and DsXxx attributes only. Other keys (e.g. `stepsIcon` / `featuresIcon` in
+    // m09 `panduan-content.ts`) are not rendered as icons today; a new code path that renders one must be added here.
     const bundled = new Set([...iconBundle.icons, ...[...literals].map((l) => `i-${l.replace(':', '-')}`)])
     const missing = new Set<string>()
     const check = (path: string, base: string): void => {
