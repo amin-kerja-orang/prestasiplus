@@ -16,7 +16,7 @@
 #
 # Inputs (environment only; secrets are never taken from argv and never printed):
 #   BACKEND_SHA, FRONTEND_SHA   40-hex commits (deploy)
-#   PP_MODE                     reset | redeploy (deploy; default reset)
+#   PP_MODE                     reset | redeploy (deploy; required, no default)
 #   DEMO_REF                    Supabase project ref of prestasiplus-demo (pp_gate checks the pooler user against it)
 #   PGURL                       session pooler URL WITHOUT password: postgresql://postgres.<ref>@<host>:5432/postgres
 #   PGPASSWORD                  Supabase DB password                                                   (secret)
@@ -266,7 +266,7 @@ render_set_env() { # key value (the value travels through env V into a 0600 file
 }
 
 render_deploy() { # sha branch
-  local sha="$1" branch="$2" f="$WORK/private/body.json" resp id status commit i before
+  local sha="$1" branch="$2" f="$WORK/private/body.json" resp id status commit i before fails
   hdr "render-deploy ($branch @ ${sha:0:8})"
   if [ "$STUB" = 1 ]; then log "STUB render: PATCH branch=$branch; POST deploy commitId=$sha; poll until live"; return; fi
   if [ "$(render GET "/services/$RENDER_SERVICE_ID" | jq -r '.branch')" != "$branch" ]; then
@@ -278,13 +278,19 @@ render_deploy() { # sha branch
   jq -n --arg c "$sha" '{commitId: $c, clearCache: "do_not_clear"}' >"$f"
   resp=$(render POST "/services/$RENDER_SERVICE_ID/deploys" "$f") || nogo "Render: deploy request refused"
   id=$(jq -r '.id // empty' <<<"$resp" 2>/dev/null || true)
+  fails=0
   for i in $(seq 1 120); do # 120 x 15 s = 30 min
     if [ -z "$id" ]; then # queued (no body): take only a deploy of this commit that did not exist before the POST
       id=$(render GET "/services/$RENDER_SERVICE_ID/deploys?limit=5" | jq -r --arg c "$sha" --arg b " $before " \
         '[.[].deploy | select(.commit.id == $c) | select(($b | contains(" " + .id + " ")) | not)][0].id // empty') || true
     fi
     if [ -n "$id" ]; then
-      resp=$(render GET "/services/$RENDER_SERVICE_ID/deploys/$id") || nogo "Render: cannot read deploy $id"
+      if ! resp=$(render GET "/services/$RENDER_SERVICE_ID/deploys/$id"); then
+        fails=$((fails + 1)) # a transient error must not end the poll: give up after 5 in a row
+        [ "$fails" -lt 5 ] || nogo "Render: cannot read deploy $id (5 attempts in a row)"
+        log "... Render: read of deploy $id failed ($fails/5), retrying"; sleep 15; continue
+      fi
+      fails=0
       status=$(jq -r '.status' <<<"$resp"); commit=$(jq -r '.commit.id // empty' <<<"$resp")
       [ -z "$commit" ] || [ "$commit" = "$sha" ] || nogo "Render deploy $id is commit $commit, expected $sha"
       case "$status" in
@@ -542,7 +548,8 @@ cmd_deploy() {
   need BACKEND_SHA FRONTEND_SHA
   is_sha "$BACKEND_SHA" || usage_err "BACKEND_SHA must be a full 40-hex commit"
   is_sha "$FRONTEND_SHA" || usage_err "FRONTEND_SHA must be a full 40-hex commit"
-  PP_MODE="${PP_MODE:-reset}"; PHASE="${PP_PHASE:-all}"
+  need PP_MODE                # fail closed: an empty mode must never mean the destructive one
+  PHASE="${PP_PHASE:-all}"
   case "$PP_MODE" in reset | redeploy) ;; *) usage_err "PP_MODE must be reset or redeploy" ;; esac
   case "$PHASE" in all | build | backup | apply) ;; *) usage_err "PP_PHASE must be all, build, backup or apply" ;; esac
   [ "$PHASE" = all ] || [ -n "${PP_WORK_DIR:-}" ] || usage_err "split phases need PP_WORK_DIR"
@@ -569,6 +576,8 @@ cmd_deploy() {
     load_state
     [ -n "${DUMP:-}" ] && [ -s "$DUMP" ] && [ -s "$WORK/out/$(basename "$DUMP").gpg" ] || nogo "no encrypted backup from the backup phase"
     setup_targets
+    hdr "apply-gate"
+    gate                        # both modes: re-check the target between the backup and apply phases
     if [ "$PP_MODE" = reset ]; then step_reset; fi
     step_migrate
     if [ "$PP_MODE" = reset ]; then step_seed; fi

@@ -35,6 +35,24 @@ browser.
 
 ## 2. One-time setup / Persediaan sekali sahaja (LEAD)
 
+### 2.0 Make the two workflows dispatchable / Pastikan "Run workflow" muncul
+
+GitHub only offers **Run workflow** (`workflow_dispatch`) for a workflow file that exists on the repository's
+**default branch**. The default branch is currently `feature/student-prototype`, which has no copy of these files, so
+merging this PR into `feature/v2-backend` alone is **not enough**. Use either option (both are safe to do together):
+
+- **Option A (preferred):** Settings → General → **Default branch** → switch to `feature/v2-backend` (a UI step for the
+  LEAD). The files arrive there when this PR merges.
+- **Option B:** merge the twin PR to `feature/student-prototype`, which adds only `.github/workflows/deploy-demo.yml`
+  and `.github/workflows/rollback-demo.yml`, byte-identical to this PR. It adds no script: the workflows check out and
+  run `scripts/deploy-demo.sh` from the branch you pick in **Run workflow** (`feature/v2-backend`).
+
+Either way the job can only reach a secret through `environment: demo`, so every run still waits for your approval,
+and a run from a branch outside the environment's branch list cannot read the secrets.
+
+**Check before the run:** Actions → the left list shows **deploy-demo** and **rollback-demo** (or
+`GET /repos/<owner>/<repo>/actions/workflows` lists both). If they are missing, do option A or B first.
+
 ### 2.1 Environment `demo` + required reviewer
 
 1. GitHub → repo **Settings → Environments → New environment** → name `demo`.
@@ -95,7 +113,7 @@ and in your vault. If you prefer, leave `BACKUP_GPG_PRIVATE_KEY` unset and resto
 
 ### 3.1 Deploy
 
-1. **Actions → deploy-demo → Run workflow.** Branch: `feature/v2-backend`.
+1. **Actions → deploy-demo → Run workflow** (if it is missing, see §2.0). Branch: `feature/v2-backend`.
    - `backend_sha`: e.g. `20d201c59776a68ead88f275b9117f7801a0c86c` (full 40 hex)
    - `frontend_sha`: e.g. `9a5b06808b5b3c7bec94f0f56513b9b927d560a1`
    - `mode`: `reset` (Path A, fresh demo data) or `redeploy` (keep the data, apply new migrations only)
@@ -109,12 +127,16 @@ and in your vault. If you prefer, leave `BACKUP_GPG_PRIVATE_KEY` unset and resto
 
 Nobody may use the demo between the start of `reset` and the end of `pages-deploy` (about 10–15 min).
 
+**Rollback baseline:** the backup of the **first** run that changed the DB is the one to restore. A second run after a
+half-applied first run backs up the broken state. Keep the first run's id; its artifact is kept 7 days.
+
 ### 3.2 If it says NO-GO / Jika NO-GO
 
 | Stopped at | Changed so far | What to do |
 |---|---|---|
 | `render-env`, `checkout`, `spa-build`, `db-target`, `backup`, `backup-encrypt` | nothing | Fix the cause, run again. |
-| `reset`, `migrate`, `seed`, `lockdown-counts` | the DB | Run **rollback-demo** with `restore_db` on and this run's id (the old API still runs). Or fix and run deploy again in mode `reset`. |
+| `apply-gate` | nothing | The target changed between the backup and apply phases (e.g. a non-demo account appeared): investigate before any re-run. |
+| `reset`, `migrate`, `seed`, `lockdown-counts` | the DB | Run **rollback-demo** with `restore_db` on and **this** run's id (the old API still runs). Re-running deploy in mode `reset` works only if the DB still holds data: if the run stopped between the DROP and the first migration, `public` is empty and the next run's backup stops at `backup` ("no TABLE DATA"). |
 | `edge-secret…`, `render-deploy`, `render-health` | DB + secrets (+ Render) | Usually run deploy again (`reset`). If the new API does not come up: **rollback-demo** (full). |
 | `pages-deploy`, `pages-health`, `smoke`, `walkthrough-*` | everything | Look at the failing check; if it is not a quick fix, **rollback-demo** (full). |
 
@@ -122,7 +144,11 @@ Nobody may use the demo between the start of `reset` and the end of `pages-deplo
 
 **Actions → rollback-demo → Run workflow** (branch `feature/v2-backend`), then approve as in 3.1.
 - `render_sha` `adcaad0ce444bab734d43a3939e511fd7d8493fb`, `render_branch` `be/demo-deploy-2` (the pre-22-Oct demo, #112 §6);
-- `pages_deployment_id`: empty = the production deployment before the current one (or the id from the deploy run summary);
+- `backup_run_id`: **always give it** (the deploy run's id), also with `restore_db` off: the rollback then takes the
+  Pages target the deploy run recorded. With neither `backup_run_id` nor `pages_deployment_id`, the target is the
+  second-newest production deployment, which is one too far back if that deploy never reached `pages-deploy`;
+- `pages_deployment_id`: empty = the id the deploy run recorded (needs `backup_run_id`), else the previous production
+  deployment;
 - `restore_db`: on, `backup_run_id` = the run id of the deploy-demo run (the number in its URL) and `backup_run_attempt`
   (1 unless you re-ran that job). The rollback refuses a run that is not a manual deploy-demo run of this repository
   on an allowed branch. Compare the dump sha256 it prints with the one in the deploy run summary.
@@ -133,6 +159,11 @@ Order, as run sheet §11 / #112 §6: decrypt the dump, check it holds only schem
 stops before anything changes), Pages rollback, remove `CLIENT_IP_HEADER` on Render (`EDGE_PROXY_SECRET` stays), Render
 deploy of `render_sha`, then `pp_gate` → `DROP SCHEMA public CASCADE` → `pg_restore --no-owner
 --no-privileges --exit-on-error` → lockdown → grants 0 and `f` → counts printed → both `/api/health` `db: up`.
+
+**If `render-deploy` fails during a rollback with `restore_db` on** (the old API may not pass its health check on a
+half-migrated DB), the restore has not run yet. Restore by hand with run sheet §11 (`gpg --decrypt` of the artifact,
+then the same `pp_gate` → DROP → `pg_restore` → lockdown block), then re-run **rollback-demo** with `restore_db` off and
+the same `backup_run_id`.
 
 ## 4. Security notes
 

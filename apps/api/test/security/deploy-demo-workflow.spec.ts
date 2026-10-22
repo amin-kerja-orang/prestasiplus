@@ -64,8 +64,15 @@ describe.each(FILES)('%s', (file) => {
 
 describe('deploy-demo.yml phases and backup artifact', () => {
   const wf = parse(read('.github/workflows/deploy-demo.yml')) as Workflow
-  const steps = wf.jobs.deploy.steps
+  const deployJob = wf.jobs.deploy
+  if (!deployJob) throw new Error('deploy-demo.yml has no deploy job')
+  const steps = deployJob.steps
   const idx = (pred: (s: Step) => boolean) => steps.findIndex(pred)
+  const at = (i: number): Step => {
+    const s = steps[i]
+    if (!s) throw new Error(`deploy-demo.yml has no step at index ${i}`)
+    return s
+  }
   const phase = (p: string) => idx((s) => s.env?.PP_PHASE === p)
   const upload = idx((s) => Boolean(s.uses?.startsWith('actions/upload-artifact@')))
 
@@ -80,18 +87,18 @@ describe('deploy-demo.yml phases and backup artifact', () => {
     const ca = idx((s) => s.name === 'Supabase CA certificate')
     expect(ca).toBeGreaterThan(phase('build'))
     for (const p of ['backup', 'apply']) {
-      expect(steps[phase(p)].env?.PP_TRUSTED_PATH).toBe('${{ steps.trust.outputs.path }}')
-      expect(String((steps[phase(p)] as Step & { shell?: string }).shell)).toContain('-u BASH_ENV')
+      expect(at(phase(p)).env?.PP_TRUSTED_PATH).toBe('${{ steps.trust.outputs.path }}')
+      expect(String((at(phase(p)) as Step & { shell?: string }).shell)).toContain('-u BASH_ENV')
     }
   })
 
   it('gives the build phase (npm ci, vite, wrangler install) no secret', () => {
-    const env = steps[phase('build')].env ?? {}
+    const env = at(phase('build')).env ?? {}
     for (const v of Object.values(env)) expect(String(v)).not.toMatch(/secrets\./)
   })
 
   it('uploads only the out/ dir of the backup phase, kept 7 days, named per attempt', () => {
-    const up = steps[upload]
+    const up = at(upload)
     expect(up.with?.['retention-days']).toBe(7)
     expect(String(up.with?.path)).toBe('${{ steps.backup.outputs.backup_dir }}')
     expect(String(up.with?.name)).toContain('${{ github.run_attempt }}')

@@ -32,7 +32,7 @@ on:
         type: string
         default: '1'
       backup_run_id:
-        description: 'Run id of the deploy-demo run whose backup to restore (needed when restore_db)'
+        description: 'Run id of the deploy-demo run to roll back (needed when restore_db; also gives the Pages target)'
         required: false
         type: string
         default: ''
@@ -62,9 +62,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          [ "$RESTORE_DB" = true ] || exit 0
+          [ "$RESTORE_DB" = true ] || [ -n "$BACKUP_RUN_ID" ] || exit 0
           [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ && "$BACKUP_RUN_ATTEMPT" =~ ^[0-9]+$ ]] \
-            || { echo "NO-GO: inputs: restore_db needs backup_run_id and backup_run_attempt (numbers)"; exit 1; }
+            || { echo "NO-GO: inputs: restore_db (or a given backup_run_id) needs backup_run_id and backup_run_attempt (numbers)"; exit 1; }
           # The artifact must come from a manual deploy-demo run of this repository on an allowed branch.
           umask 077; printf 'Authorization: Bearer %s\n' "$GH_TOKEN" > "$RUNNER_TEMP/gh.h"
           run=$(curl -sS --fail-with-body -H @"$RUNNER_TEMP/gh.h" -H 'Accept: application/vnd.github+json' \
@@ -87,7 +87,7 @@ jobs:
           sudo apt-get install -y -qq postgresql-client-17 >/dev/null
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Download the encrypted backup
-        if: inputs.restore_db
+        if: inputs.restore_db || inputs.backup_run_id != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: demo-db-backup-${{ inputs.backup_run_id }}-${{ inputs.backup_run_attempt }}
@@ -99,6 +99,7 @@ jobs:
         env:
           SUPABASE_CA_CERT: ${{ vars.SUPABASE_CA_CERT }}
           RESTORE_DB: ${{ inputs.restore_db }}
+          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
         run: |
           set -euo pipefail
           umask 077
@@ -108,8 +109,15 @@ jobs:
             mapfile -t f < <(find "$RUNNER_TEMP/backup" -type f -name '*.dump.gpg')
             [ "${#f[@]}" = 1 ] || { echo "NO-GO: inputs: expected exactly one *.dump.gpg in the artifact, found ${#f[@]}"; exit 1; }
             echo "dump=${f[0]}" >> "$GITHUB_OUTPUT"
+          fi
+          # The Pages target recorded by the deploy run: read whenever its artifact was downloaded (restore_db or not).
+          if [ "$RESTORE_DB" = true ] || [ -n "$BACKUP_RUN_ID" ]; then
             p="$RUNNER_TEMP/backup/pages-previous-deployment.txt"
-            if [ -s "$p" ]; then id=$(head -1 "$p"); [[ "$id" =~ ^[A-Za-z0-9-]+$ ]] && echo "pages_prev=$id" >> "$GITHUB_OUTPUT"; fi
+            if [ -s "$p" ]; then
+              id=$(head -1 "$p")
+              [[ "$id" =~ ^[A-Za-z0-9-]+$ ]] || { echo "NO-GO: inputs: unexpected Pages deployment id in the artifact"; exit 1; }
+              echo "pages_prev=$id" >> "$GITHUB_OUTPUT"
+            fi
           fi
       - name: Roll back (scripts/deploy-demo.sh rollback)
         env:
