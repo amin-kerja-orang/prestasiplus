@@ -46,7 +46,7 @@ export {
   type RunReport,
 } from './runner'
 export { resolveSelfReferences, type SelfReferenceSpec } from './self-reference'
-export { assertSurrogateLegacyId, hashInput, hashRow, hashValue } from './sql'
+export { assertSurrogateLegacyId, hashInput, hashRow, hashValue, ROW_HASH_DIGEST_SQL, tableDigest } from './sql'
 export {
   assertLegacySource,
   LEGACY_SOURCES,

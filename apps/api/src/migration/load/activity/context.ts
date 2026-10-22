@@ -8,6 +8,7 @@ import type { AnyEntityStep } from '../../kit/runner'
 import type { LegacySource } from '../../kit/types'
 import { CoreNotes } from '../context'
 import { DriftCollector } from './drift'
+import type { MigrationFiles } from './files'
 
 export interface ActivityOptions {
   pool: pg.Pool
@@ -19,8 +20,8 @@ export interface ActivityOptions {
   pageSize?: number
   /** v2 user id that owns migrated notes / videos / audio (Q7); content without an owner is rejected when unset. */
   contentOwnerUserId?: string
-  /** Read-only .cloud storage directory. File migration is OFF (Q2): the CLI refuses the flag; kept for later. */
-  storageDir?: string
+  /** `--files-dir`: the read-only export of the .cloud storage files (outside the repo, with a SHA256SUMS manifest). Unset: no file is migrated. */
+  filesDir?: string
 }
 
 export class ActivityContext {
@@ -28,6 +29,8 @@ export class ActivityContext {
   readonly notes = new CoreNotes()
   /** Derived-figure drift (old vs new): counts and surrogate ids only. */
   readonly drift = new DriftCollector()
+  /** The checked export directory; set by `planActivity` when `--files-dir` is given, else file references stay unset. */
+  files: MigrationFiles | undefined
 
   constructor(readonly options: ActivityOptions) {}
 
@@ -55,8 +58,8 @@ export class ActivityContext {
     return this.options.contentOwnerUserId
   }
 
-  get storageDir(): string | undefined {
-    return this.options.storageDir
+  get filesDir(): string | undefined {
+    return this.options.filesDir
   }
 }
 

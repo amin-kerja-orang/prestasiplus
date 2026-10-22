@@ -2,7 +2,7 @@
  * Content transforms of `migrate:activity` (BE-29 Part B): articles, banners, notes, videos, Audio KBAT sets.
  * Pure functions; the loaders resolve the author / owner and the Malaysia dates.
  *
- * File migration is OFF (LEAD Q2): every `*_file_id` stays null and the loader only counts the rows that had
+ * Without `--files-dir` every `*_file_id` stays null and the loader only counts the rows that had
  * a source path. A v2 NOT NULL column that the staged table cannot give (article content, note subject and
  * grade, video category, audio set level and subject) rejects the row as INVALID_VALUE naming the column; the
  * transforms read such a column from the staged row when the staging spec carries it (after the real export
@@ -119,7 +119,8 @@ const HTTP_URL = /^https?:\/\/[^\s]{1,2040}$/i
 export interface BannerValues {
   title: string
   description: string | null
-  image_file_id: null
+  /** Null until the loader has copied the file (`--files-dir`) and checked its checksum. */
+  image_file_id: string | null
   banner_type: string
   link_type: string
   external_url: string | null
@@ -133,7 +134,7 @@ export interface BannerValues {
 
 export interface BannerOutcome {
   out: Outcome<BannerValues>
-  /** The row had an `image_path` (file migration off: counted in the report notes). */
+  /** The row had an `image_path` (counted in the report notes, or migrated as a file with `--files-dir`). */
   hadImage: boolean
   /** The `target` was not an absolute http(s) address, so no link is kept. */
   droppedTarget: boolean

@@ -79,6 +79,20 @@ export async function rebuildAfterResume(a: ActivityContext, pool: pg.Pool, runI
     if (n > 0) a.notes.count('coin_ledger.rejected_amount', n)
   }
 
+  if (ran.has('banners') && a.files !== undefined) {
+    // Skipped batches did not count their files: rejects come from this run's rejects, the rest from the migrated rows.
+    resetNotes(a, 'files.banners.image_path')
+    const rej = await pool.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM etl_rejects WHERE run_id = $1::bigint AND entity = 'banners' AND column_name = 'image_path'`,
+      [runId],
+    )
+    const loaded = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM banners WHERE legacy_source = $1 AND image_file_id IS NOT NULL`, [source])
+    const r = Number(rej.rows[0]?.n ?? 0)
+    const l = Number(loaded.rows[0]?.n ?? 0)
+    if (r > 0) a.notes.count('files.banners.image_path.rejected.resumed', r)
+    if (l > 0) a.notes.count('files.banners.image_path.present', l)
+  }
+
   if (ran.has('wallets')) {
     resetNotes(a, 'wallets.tier_unmapped')
     const res = await pool.query<{ n: string }>(

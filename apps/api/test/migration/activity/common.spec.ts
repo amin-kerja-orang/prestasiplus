@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
 import { FixedClock } from '../../../src/db/clock'
-import { defaultAsOf, migrateActivity } from '../../../src/migration/load/activity/command'
+import { defaultAsOf, filesLine, migrateActivity } from '../../../src/migration/load/activity/command'
 import {
   ACTIVITY_GROUP_NAMES,
   ActivityContext,
@@ -143,10 +143,21 @@ describe('command flags', () => {
   const fakeCtx = () => ({ pool: {} as pg.Pool, env: {}, out: () => undefined, err: () => undefined })
   const args = (flags: Record<string, string | true>) => ({ mode: 'dry-run' as const, flags: new Map(Object.entries(flags)), positional: [] })
 
-  it('refuses every storage flag: file migration is off (Q2)', async () => {
+  it('refuses the storage flags that do not exist and points to --files-dir (no mention of the old Q2 switch)', async () => {
     for (const f of ['storage-dir', 'storage', 'files', 'copy-files']) {
-      await expect(migrateActivity.run(args({ [f]: 'x' }), fakeCtx())).rejects.toThrow(/file migration is off \(Q2\)/)
+      await expect(migrateActivity.run(args({ [f]: 'x' }), fakeCtx())).rejects.toThrow(/never read directly; pass --files-dir/)
+      const e = await migrateActivity.run(args({ [f]: 'x' }), fakeCtx()).catch((x: Error) => x)
+      expect(String(e)).not.toMatch(/Q2/)
     }
+  })
+  it('--files-dir is a known flag that needs a value; a missing directory is refused before any database work', async () => {
+    await expect(migrateActivity.run(args({ 'files-dir': true }), fakeCtx())).rejects.toThrow(/--files-dir needs a value/)
+    await expect(migrateActivity.run(args({ 'files-dir': ' ' }), fakeCtx())).rejects.toThrow(/--files-dir needs a directory/)
+  })
+  it('the file summary line is counts only', () => {
+    const c = new Map([['file_migration_off.banners.image_path', 3], ['file_migration_off.audio_kbat.audio_path', 1]])
+    expect(filesLine(c, false, 'dry-run')).toBe('files: not migrated (no --files-dir) 4 references')
+    expect(filesLine(new Map(), false, 'apply')).toBe('files: not migrated (no --files-dir) 0 references')
   })
   it('refuses an unknown flag (a typo must not select the full entity set) and any positional argument', async () => {
     for (const flag of ['talbe', 'tables', 'asof', 'dry_run', 'groups']) {
