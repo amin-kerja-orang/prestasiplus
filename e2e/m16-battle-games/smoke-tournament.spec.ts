@@ -31,11 +31,9 @@ test.describe('S23 Tournament list', () => {
       await expect(
         page.getByText('Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!'),
       ).toBeVisible()
-      await expect(page.getByTestId('tournament-create')).toHaveText('Cipta Tournament Baru')
-      await expect(page.getByTestId('tournament-create')).toHaveAttribute(
-        'href',
-        '/tournament/admin/create',
-      )
+      // D9 dead link: S24 create is not routed, so the admin button is hidden.
+      await expect(page.getByTestId('tournament-create')).toHaveCount(0)
+      await expect(page.locator('a[href="/tournament/admin/create"]')).toHaveCount(0)
       await expect(page.getByTestId('tournament-empty')).toHaveText(
         'Tiada tournament aktif buat masa ini.',
       )

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '@/api'
 
-import type { ParentInviteView } from '../../api/parent-invite'
+import type { ParentInviteState } from '../../api/parent-invite'
 import JemputIbuBapaPage from '../../pages/JemputIbuBapaPage.vue'
 
 const calls = vi.hoisted(() => ({ fetchParentInvite: vi.fn(), generateParentInvite: vi.fn() }))
@@ -13,7 +13,7 @@ vi.mock('../../api/parent-invite', () => calls)
 const TOKEN_A = 'a'.repeat(64)
 const TOKEN_B = 'b'.repeat(64)
 
-function view(parents: ParentInviteView['parents'] = []): ParentInviteView {
+function view(parents: ParentInviteState['parents'] = []): ParentInviteState {
   return { token: TOKEN_A, createdAt: '2026-10-02T09:00:00+08:00', parents }
 }
 
@@ -192,5 +192,37 @@ describe('loading and load error (FR-L45-17)', () => {
     await flushPromises()
     expect(wrapper!.find('[data-testid=jemput-hero]').exists()).toBe(true)
     expect(wrapper!.find('[data-testid=jemput-alert]').exists()).toBe(false)
+  })
+})
+
+describe('no clear token (http mode, later visit; D58)', () => {
+  it('renders no URL, disables Salin and WhatsApp, and never shows "undefined"', async () => {
+    calls.fetchParentInvite.mockResolvedValue({ ...view(), token: null })
+    await render()
+    expect((t('jemput-url').element as HTMLInputElement).value).toBe('')
+    expect(t('jemput-copy').attributes('disabled')).toBeDefined()
+    const wa = t('jemput-whatsapp')
+    expect(wa.attributes('href') ?? '').not.toContain('undefined')
+    expect(wa.attributes('href')).toBeUndefined()
+    expect(wrapper!.html()).not.toContain('undefined')
+    await t('jemput-copy').trigger('click')
+    expect(writeText).not.toHaveBeenCalled()
+  })
+
+  it('"Jana Link Baru" then shows a valid link', async () => {
+    calls.fetchParentInvite.mockResolvedValue({ ...view(), token: null })
+    calls.generateParentInvite.mockResolvedValue({
+      token: TOKEN_B,
+      createdAt: '2026-10-22T09:00:00+08:00',
+      status: 'Link jemputan baru telah dijana!',
+    })
+    await render()
+    await t('jemput-regenerate').trigger('click')
+    await flushPromises()
+    expect((t('jemput-url').element as HTMLInputElement).value).toBe(
+      `${window.location.origin}/ibu-bapa/terima/${TOKEN_B}`,
+    )
+    expect(t('jemput-copy').attributes('disabled')).toBeUndefined()
+    expect(t('jemput-whatsapp').attributes('href')).toContain(TOKEN_B)
   })
 })

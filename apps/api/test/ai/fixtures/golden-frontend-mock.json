@@ -1,0 +1,723 @@
+{
+  "sample": {
+    "input": {
+      "pages": [
+        {
+          "page": 1,
+          "text": "Kertas Contoh Matematik Kertas 2 (fiksyen, bukan kertas sebenar)\nBahagian A\n1. Selesaikan persamaan 2x + 6 = 14. [2 markah]\n2. Antara berikut, yang manakah nilai min bagi 2, 4, 6, 8?\nA. 4\nB. 5\nC. 6\nD. 8\nRajah 1: Segi tiga bersudut tegak ABC dengan AB = 6 cm dan BC = 8 cm.\nGunakan Rajah 1 untuk menjawab soalan 3 dan 4.\n3. Berdasarkan Rajah 1,\n(a) hitung panjang AC dalam cm. [2 markah]\n(b) hitung luas segi tiga ABC dalam cm2. [2 markah]\n4. Nyatakan teorem yang digunakan untuk mencari panjang AC. [1 markah]\n5. Nyatakan dua kebaikan menggunakan carta palang. [2 markah]",
+          "source": "text-layer"
+        },
+        {
+          "page": 2,
+          "text": "Skema Pemarkahan\nJawapan: 2-B\nSkema 1\nK1 2x = 14 - 6 [1]\nN1 x = 4 [1]\nSkema 3(a)\nK1 AC^2 = 6^2 + 8^2 [1]\nN1 10 [1]\nSkema 3(b)\nK1 1/2 x 6 x 8 atau 0.5 x 6 x 8 [1]\nN1 24 [1]\nSkema 4\nN1 Teorem Pythagoras [1]\nSkema 5\nP1 Mudah dibandingkan [1]\nP2 Mudah dibaca [1]\nP3 Menjimatkan ruang [1]\nMana-mana 2 x 1 m",
+          "source": "text-layer"
+        }
+      ],
+      "subject": "MAT",
+      "kertas": 2
+    },
+    "output": {
+      "provider": "mock",
+      "model": "heuristik-1",
+      "questions": [
+        {
+          "id": "q-1-1",
+          "label": "1",
+          "type": "short",
+          "stem": "Selesaikan persamaan 2x + 6 = 14.",
+          "options": [],
+          "marks": 2,
+          "mode": "working",
+          "parts": [],
+          "tag": {
+            "subject": "MAT",
+            "level": "T5",
+            "unit": "MAT-T5-02",
+            "unitLabel": "Ungkapan dan Persamaan Linear",
+            "sp": [
+              "02.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T5"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": [],
+          "scheme": {
+            "kind": "points",
+            "marks": 2,
+            "points": [
+              {
+                "id": "pt1",
+                "code": "K",
+                "marks": 1,
+                "label": "2x = 14 - 6",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "2x = 14 - 6"
+                  ]
+                }
+              },
+              {
+                "id": "pt2",
+                "code": "N",
+                "marks": 1,
+                "label": "x = 4",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "x = 4"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-2-2",
+          "label": "2",
+          "type": "mcq",
+          "stem": "Antara berikut, yang manakah nilai min bagi 2, 4, 6, 8?",
+          "options": [
+            {
+              "id": "A",
+              "text": "4"
+            },
+            {
+              "id": "B",
+              "text": "5"
+            },
+            {
+              "id": "C",
+              "text": "6"
+            },
+            {
+              "id": "D",
+              "text": "8"
+            }
+          ],
+          "marks": 1,
+          "mode": "numeric",
+          "parts": [],
+          "tag": {
+            "subject": "MAT",
+            "level": "T4",
+            "unit": "MAT-T4-09",
+            "unitLabel": "Statistik",
+            "sp": [
+              "09.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": [],
+          "scheme": {
+            "kind": "option",
+            "marks": 1,
+            "correct": "B",
+            "reason": ""
+          }
+        },
+        {
+          "id": "q-3-3",
+          "label": "3",
+          "type": "structured",
+          "stem": "Berdasarkan Rajah 1,",
+          "options": [],
+          "marks": 4,
+          "mode": "short_text",
+          "parts": [
+            {
+              "id": "3-p1",
+              "label": "(a)",
+              "prompt": "hitung panjang AC dalam cm.",
+              "marks": 2,
+              "mode": "working",
+              "scheme": {
+                "kind": "points",
+                "marks": 2,
+                "points": [
+                  {
+                    "id": "pt1",
+                    "code": "K",
+                    "marks": 1,
+                    "label": "AC^2 = 6^2 + 8^2",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "AC^2 = 6^2 + 8^2"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "pt2",
+                    "code": "N",
+                    "marks": 1,
+                    "label": "10",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "10"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "3-p2",
+              "label": "(b)",
+              "prompt": "hitung luas segi tiga ABC dalam cm2.",
+              "marks": 2,
+              "mode": "working",
+              "scheme": {
+                "kind": "points",
+                "marks": 2,
+                "points": [
+                  {
+                    "id": "pt1",
+                    "code": "K",
+                    "marks": 1,
+                    "label": "1/2 x 6 x 8",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "1/2 x 6 x 8",
+                        "0.5 x 6 x 8"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "pt2",
+                    "code": "N",
+                    "marks": 1,
+                    "label": "24",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "24"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "tag": {
+            "subject": "MAT",
+            "level": "T4+T5",
+            "unit": null,
+            "unitLabel": "",
+            "sp": [],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.unit"
+          ],
+          "confirmed": [],
+          "stimulusId": "stim-mvhkic9y0"
+        },
+        {
+          "id": "q-4-4",
+          "label": "4",
+          "type": "short",
+          "stem": "Nyatakan teorem yang digunakan untuk mencari panjang AC.",
+          "options": [],
+          "marks": 1,
+          "mode": "short_text",
+          "parts": [],
+          "tag": {
+            "subject": "MAT",
+            "level": "T4+T5",
+            "unit": null,
+            "unitLabel": "",
+            "sp": [],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.unit"
+          ],
+          "confirmed": [],
+          "stimulusId": "stim-mvhkic9y0",
+          "scheme": {
+            "kind": "points",
+            "marks": 1,
+            "points": [
+              {
+                "id": "pt1",
+                "code": "N",
+                "marks": 1,
+                "label": "Teorem Pythagoras",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Teorem Pythagoras"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-5-5",
+          "label": "5",
+          "type": "short",
+          "stem": "Nyatakan dua kebaikan menggunakan carta palang.",
+          "options": [],
+          "marks": 2,
+          "mode": "short_text",
+          "parts": [],
+          "tag": {
+            "subject": "MAT",
+            "level": "T4",
+            "unit": "MAT-T4-09",
+            "unitLabel": "Statistik",
+            "sp": [
+              "09.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": [],
+          "scheme": {
+            "kind": "points",
+            "marks": 2,
+            "points": [
+              {
+                "id": "pt1",
+                "code": "P",
+                "marks": 1,
+                "label": "Mudah dibandingkan",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Mudah dibandingkan"
+                  ]
+                }
+              },
+              {
+                "id": "pt2",
+                "code": "P",
+                "marks": 1,
+                "label": "Mudah dibaca",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Mudah dibaca"
+                  ]
+                }
+              },
+              {
+                "id": "pt3",
+                "code": "P",
+                "marks": 1,
+                "label": "Menjimatkan ruang",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Menjimatkan ruang"
+                  ]
+                }
+              }
+            ],
+            "groups": [
+              {
+                "id": "g1",
+                "anyN": 2,
+                "pointIds": [
+                  "pt1",
+                  "pt2",
+                  "pt3"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "stimuli": [
+        {
+          "id": "stim-mvhkic9y0",
+          "kind": "diagram",
+          "label": "Rajah 1",
+          "caption": "Segi tiga bersudut tegak ABC dengan AB = 6 cm dan BC = 8 cm.",
+          "alt": "Segi tiga bersudut tegak ABC dengan AB = 6 cm dan BC = 8 cm.",
+          "page": 1
+        }
+      ],
+      "unmatched": [],
+      "warnings": []
+    }
+  },
+  "unmatched": {
+    "input": {
+      "pages": [
+        {
+          "page": 1,
+          "source": "text-layer",
+          "text": "1. Satu soalan. [1 markah]\nSkema 9\nK1 x [1]"
+        }
+      ],
+      "subject": "MAT",
+      "kertas": 1
+    },
+    "output": {
+      "provider": "mock",
+      "model": "heuristik-1",
+      "questions": [
+        {
+          "id": "q-1-6",
+          "label": "1",
+          "type": "short",
+          "stem": "Satu soalan.",
+          "options": [],
+          "marks": 1,
+          "mode": "short_text",
+          "parts": [],
+          "tag": {
+            "subject": "MAT",
+            "level": "T4+T5",
+            "unit": null,
+            "unitLabel": "",
+            "sp": [],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.unit"
+          ],
+          "confirmed": []
+        }
+      ],
+      "stimuli": [],
+      "unmatched": [
+        "Skema 9"
+      ],
+      "warnings": []
+    }
+  },
+  "empty": {
+    "input": {
+      "pages": [],
+      "subject": "MAT",
+      "kertas": 1
+    },
+    "output": {
+      "provider": "mock",
+      "model": "heuristik-1",
+      "questions": [],
+      "stimuli": [],
+      "unmatched": [],
+      "warnings": [
+        "Tiada soalan dikesan dalam teks kertas."
+      ]
+    }
+  },
+  "rich": {
+    "input": {
+      "pages": [
+        {
+          "page": 1,
+          "source": "text-layer",
+          "text": "Kertas Contoh Sains (fiksyen, bukan kertas sebenar)\nPetikan 1: Sel ialah unit asas hidupan.\nIa terdiri daripada organel yang menjalankan fungsi tertentu.\nBaca Petikan 1 dan jawab soalan 1 hingga 2.\n1. Namakan satu organel dalam sel. [1 markah]\n2. Huraikan fungsi mitokondria dalam sel. [4 markah]\n3. Lukis rajah litar ringkas. [3 markah]\n4. Seorang pelajar mengukur halaju sebuah kereta.\n(a) Nyatakan unit halaju. [1 markah]\n(b) Hitung halaju jika jarak 100 m dan masa 20 s. [2 markah]\n(i) tunjukkan pengiraan anda. [1 markah]\n5. Soalan ini tiada markah dan tiada kata kunci.\nJawapan: 1-A 9-C\nSkema 2\nM1 Mitokondria menjana tenaga [1]\nM2 Respirasi sel berlaku [1]\nM3 Menghasilkan ATP [1]\nM4 Tenaga untuk sel [1]\nMana-mana 3 x 1 m\nSkema 4(b)\nK1 v = d / t [1]\nN1 5 m/s (ecf) [1]\nSkema 7(a)\nK1 abaikan [1]"
+        }
+      ],
+      "subject": "SN",
+      "kertas": 2
+    },
+    "output": {
+      "provider": "mock",
+      "model": "heuristik-1",
+      "questions": [
+        {
+          "id": "q-1-8",
+          "label": "1",
+          "type": "short",
+          "stem": "Namakan satu organel dalam sel.",
+          "options": [],
+          "marks": 1,
+          "mode": "short_text",
+          "parts": [],
+          "tag": {
+            "subject": "SN",
+            "level": "T4",
+            "unit": "SN-T4-02",
+            "unitLabel": "Sel dan Organisasi Sel",
+            "sp": [
+              "02.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": [],
+          "stimulusId": "stim-mvhkica17"
+        },
+        {
+          "id": "q-2-9",
+          "label": "2",
+          "type": "essay",
+          "stem": "Huraikan fungsi mitokondria dalam sel.",
+          "options": [],
+          "marks": 4,
+          "mode": "essay",
+          "parts": [],
+          "tag": {
+            "subject": "SN",
+            "level": "T4",
+            "unit": "SN-T4-02",
+            "unitLabel": "Sel dan Organisasi Sel",
+            "sp": [
+              "02.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": [],
+          "stimulusId": "stim-mvhkica17",
+          "scheme": {
+            "kind": "points",
+            "marks": 3,
+            "points": [
+              {
+                "id": "pt1",
+                "code": "M",
+                "marks": 1,
+                "label": "Mitokondria menjana tenaga",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Mitokondria menjana tenaga"
+                  ]
+                }
+              },
+              {
+                "id": "pt2",
+                "code": "M",
+                "marks": 1,
+                "label": "Respirasi sel berlaku",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Respirasi sel berlaku"
+                  ]
+                }
+              },
+              {
+                "id": "pt3",
+                "code": "M",
+                "marks": 1,
+                "label": "Menghasilkan ATP",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Menghasilkan ATP"
+                  ]
+                }
+              },
+              {
+                "id": "pt4",
+                "code": "M",
+                "marks": 1,
+                "label": "Tenaga untuk sel",
+                "match": {
+                  "type": "step",
+                  "accept": [
+                    "Tenaga untuk sel"
+                  ]
+                }
+              }
+            ],
+            "groups": [
+              {
+                "id": "g1",
+                "anyN": 3,
+                "pointIds": [
+                  "pt1",
+                  "pt2",
+                  "pt3",
+                  "pt4"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-3-10",
+          "label": "3",
+          "type": "short",
+          "stem": "Lukis rajah litar ringkas.",
+          "options": [],
+          "marks": 3,
+          "mode": "drawing",
+          "parts": [],
+          "tag": {
+            "subject": "SN",
+            "level": "T5",
+            "unit": "SN-T5-03",
+            "unitLabel": "Elektrik",
+            "sp": [
+              "03.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T5"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": []
+        },
+        {
+          "id": "q-4-11",
+          "label": "4",
+          "type": "structured",
+          "stem": "Seorang pelajar mengukur halaju sebuah kereta.",
+          "options": [],
+          "marks": 4,
+          "mode": "short_text",
+          "parts": [
+            {
+              "id": "4-p1",
+              "label": "(a)",
+              "prompt": "Nyatakan unit halaju.",
+              "marks": 1,
+              "mode": "short_text"
+            },
+            {
+              "id": "4-p2",
+              "label": "(b)",
+              "prompt": "Hitung halaju jika jarak 100 m dan masa 20 s.",
+              "marks": 2,
+              "mode": "working",
+              "scheme": {
+                "kind": "points",
+                "marks": 2,
+                "points": [
+                  {
+                    "id": "pt1",
+                    "code": "K",
+                    "marks": 1,
+                    "label": "v = d / t",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "v = d / t"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "pt2",
+                    "code": "N",
+                    "marks": 1,
+                    "label": "5 m/s",
+                    "match": {
+                      "type": "step",
+                      "accept": [
+                        "5 m/s"
+                      ]
+                    },
+                    "ecf": {
+                      "fromPart": "4-p1",
+                      "rule": {
+                        "op": "same"
+                      },
+                      "note": "Ikut jawapan sendiri"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "4-p3",
+              "label": "(b)(i)",
+              "prompt": "tunjukkan pengiraan anda.",
+              "marks": 1,
+              "mode": "short_text"
+            }
+          ],
+          "tag": {
+            "subject": "SN",
+            "level": "T4",
+            "unit": "SN-T4-05",
+            "unitLabel": "Daya dan Gerakan",
+            "sp": [
+              "05.1"
+            ],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.sp"
+          ],
+          "confirmed": []
+        },
+        {
+          "id": "q-5-12",
+          "label": "5",
+          "type": "short",
+          "stem": "Soalan ini tiada markah dan tiada kata kunci.",
+          "options": [],
+          "marks": 0,
+          "mode": "short_text",
+          "parts": [],
+          "tag": {
+            "subject": "SN",
+            "level": "T4+T5",
+            "unit": null,
+            "unitLabel": "",
+            "sp": [],
+            "tp": 3,
+            "formOrigin": "T4"
+          },
+          "page": 1,
+          "lowFields": [
+            "tag.unit",
+            "marks"
+          ],
+          "confirmed": []
+        }
+      ],
+      "stimuli": [
+        {
+          "id": "stim-mvhkica17",
+          "kind": "passage",
+          "label": "Petikan 1",
+          "caption": "Sel ialah unit asas hidupan.",
+          "alt": "Sel ialah unit asas hidupan.",
+          "page": 1,
+          "text": "Sel ialah unit asas hidupan. Ia terdiri daripada organel yang menjalankan fungsi tertentu."
+        }
+      ],
+      "unmatched": [
+        "Jawapan 1-A",
+        "Jawapan 9-C",
+        "Skema 7(a)"
+      ],
+      "warnings": []
+    }
+  }
+}

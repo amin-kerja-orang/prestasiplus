@@ -35,6 +35,13 @@ const deferred = () => {
 }
 let seq = 0
 const key = () => `k-${++seq}-${Math.random()}`
+const waitFor = async (cond: () => boolean | Promise<boolean>, ms = 10_000) => {
+  const end = Date.now() + ms
+  while (!(await cond())) {
+    if (Date.now() > end) throw new Error('waitFor timed out')
+    await sleep(25)
+  }
+}
 const makeDue = (id: string) => db.query("UPDATE jobs SET run_after = now() - interval '1 second' WHERE id = $1", [id])
 
 describe('lifecycle', () => {
@@ -569,7 +576,8 @@ describe('claim fairness and per-claim tokens', () => {
     await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'B' })
     await svc.enqueue({ type: 't.fair', idempotencyKey: key() }) // no entity: never held back
     const first = svc.runOnce(4)
-    await sleep(300)
+    await waitFor(() => started.length >= 3) // handlers start only after all four claim statements finish; a fixed sleep flakes under load
+    await sleep(100) // grace: a wrong extra start would show up here
     expect(started.sort()).toEqual(['', 'A', 'B'])
     expect(await db.query("SELECT 1 FROM jobs WHERE state = 'queued'")).toHaveLength(1)
     gate.resolve()

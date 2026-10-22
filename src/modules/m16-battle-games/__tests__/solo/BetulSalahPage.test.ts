@@ -132,7 +132,7 @@ describe('S13 Betul atau Salah (FR-M16-71..75)', () => {
     submitSoloGame.mockResolvedValue({ status: 409, headers: {}, body: { message: 'x' } })
     wrapper = await mountAt(SoloBetulSalahPage, '/permainan/betul-salah?darjah=4')
     await vi.advanceTimersByTimeAsync(2400 + 45_000)
-    expect(log).toHaveBeenCalledWith('Submit error:', 'x')
+    expect(log).toHaveBeenCalledWith('Submit error:', 409)
     expect(text()).toContain('Skor Total')
     expect(text()).not.toContain('REKOD BARU')
     log.mockRestore()
