@@ -196,4 +196,8 @@ function isEntry(): boolean {
 // Run only as the entry script (the spec imports `main` without running it).
 if (isEntry()) {
   process.exitCode = await main(process.argv.slice(2))
+} else if (/admin-bootstrap[\\/]cli\.[cm]?[jt]s$/.test(process.argv[1] ?? '')) {
+  // Started as this script but the path check failed: never end silently with 0 (an operator would read it as done).
+  err('Could not confirm the entry script path; nothing was done.')
+  process.exitCode = EXIT.failed
 }
