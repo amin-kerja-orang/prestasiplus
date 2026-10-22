@@ -13,7 +13,7 @@ import type pg from 'pg'
 
 import { ARCHIVE_SCHEMA, STAGING_SCHEMA, findTable } from '../../ddl/spec'
 import { ApplyGuardError } from '../../kit/apply-guard'
-import { hashInput, quoteIdent } from '../../kit/sql'
+import { hashInput, tableDigest } from '../../kit/sql'
 import type { LegacySource } from '../../kit/types'
 import { parseDefaultHashes } from '../../transform/secrets'
 import { stagingFingerprint } from '../index'
@@ -54,9 +54,8 @@ function qualified(name: string): { schema: string; table: string } {
 }
 
 /**
- * `table=<rows>:<digest>` for each table. The digest is the sum of a 60-bit slice of md5 of every row hash, as numeric:
- * order-independent, deterministic and constant in memory (a `string_agg` of the row hashes would pass Postgres's 1 GB
- * text limit near 30 million rows). BE-28's own `stagingFingerprint` is a separate recipe and stays as it is.
+ * `table=<rows>:<digest>` for each table, with the constant-memory digest shared with BE-28's `stagingFingerprint`
+ * (`tableDigest` in the kit): order-independent and deterministic.
  */
 export async function tableFingerprints(pool: Pick<pg.Pool, 'query'>, names: readonly string[]): Promise<string[]> {
   const parts: string[] = []
@@ -64,10 +63,8 @@ export async function tableFingerprints(pool: Pick<pg.Pool, 'query'>, names: rea
     const { schema, table } = qualified(name)
     const spec = findTable(table)
     if (!spec) throw new RangeError(`Table "${table}" is not in the staging spec.`)
-    const res = await pool.query<{ n: string; h: string | null }>(
-      `SELECT count(*)::text AS n, coalesce(sum(('x' || substr(md5(coalesce("_row_hash", '')), 1, 15))::bit(60)::bigint::numeric), 0)::text AS h FROM ${quoteIdent(schema)}.${quoteIdent(table)}`,
-    )
-    parts.push(`${schema === ARCHIVE_SCHEMA ? `${ARCHIVE_SCHEMA}.` : ''}${table}=${res.rows[0]?.n}:${res.rows[0]?.h ?? ''}`)
+    const { n, h } = await tableDigest(pool, schema, table)
+    parts.push(`${schema === ARCHIVE_SCHEMA ? `${ARCHIVE_SCHEMA}.` : ''}${table}=${n}:${h}`)
   }
   return parts
 }
