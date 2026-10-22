@@ -27,6 +27,7 @@ import {
   pollMatch,
   rejectChallenger,
   startBattle,
+  type BattleQueueId,
   type BattleStartBody,
   type PollChallengerResponse,
   type PollMatchResponse,
@@ -49,6 +50,15 @@ function isAbort(err: unknown): boolean {
 
 const isOk = (status: number): boolean => status >= 200 && status < 300
 
+/**
+ * A usable queue id: a positive integer (mock) or a non-empty opaque string of at most 64 characters
+ * (real API, `IdSchema`; D-03). Anything else is "Ralat sistem: ID giliran tidak sah.".
+ */
+export function isQueueId(value: unknown): value is BattleQueueId {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value > 0
+  return typeof value === 'string' && value.trim() !== '' && value.length <= 64
+}
+
 function bodyOf<T extends object>(res: RawResponse<unknown>): Partial<T> | null {
   return typeof res.body === 'object' && res.body !== null ? res.body : null
 }
@@ -63,7 +73,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   const waitingGrade = ref('')
 
   let session = 0
-  let queueId = 0
+  let queueId: BattleQueueId = 0
   let startedAt = 0
   let tickNo = 0
   let failures = 0
@@ -171,7 +181,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     const mine = new AbortController()
     controller = mine
     let res: RawResponse<{
-      queue_id?: number
+      queue_id?: BattleQueueId
       matched?: boolean
       battle_uuid?: string
       error?: string
@@ -200,7 +210,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
       options.onMatched(body.battle_uuid)
       return
     }
-    if (typeof body.queue_id !== 'number' || body.queue_id <= 0) {
+    if (!isQueueId(body.queue_id)) {
       errorMsg.value = BATTLE_MSG.noQueueId
       return
     }
@@ -285,7 +295,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   }
 
   /** Polls #13 every 3 s for a join request already on file. */
-  function watchWaiting(id: number, name: string, gradeLabel = ''): void {
+  function watchWaiting(id: BattleQueueId, name: string, gradeLabel = ''): void {
     halt()
     const mySession = session
     errorMsg.value = ''
@@ -299,7 +309,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   }
 
   /** `requestJoinQueue`: #12 once, then #13 every 3 s. */
-  async function requestJoin(id: number, name: string, gradeLabel = ''): Promise<void> {
+  async function requestJoin(id: BattleQueueId, name: string, gradeLabel = ''): Promise<void> {
     halt()
     const mySession = session
     errorMsg.value = ''

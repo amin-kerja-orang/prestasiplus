@@ -94,10 +94,8 @@ test.describe('QA-G5 L21 Latih Tubi flow', { tag: [moduleTag(5)] }, () => {
     await expect(tid(page, 'config-start')).toHaveAttribute('href', '/practice/MATH/quiz?count=10')
     // Trial notice shows the remaining free questions for a trial pupil (AC-14.3).
     await expect(page.getByText('Baki percubaan percuma: 50 soalan lagi.')).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Langgan untuk akses tanpa had' })).toHaveAttribute(
-      'href',
-      '/pricing',
-    )
+    // D9 dead link: /pricing (M19) is not routed, so the subscribe link is hidden.
+    await expect(page.getByRole('link', { name: 'Langgan untuk akses tanpa had' })).toHaveCount(0)
   })
 
   test('E2E-M05-12 /practice?subject=BM replaces the URL; ?topic_id is not handled (M03-T1a not built)', async ({

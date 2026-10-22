@@ -215,9 +215,9 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await expect(trial).toContainText('Percubaan Percuma')
     await expect(trial.getByText('Percubaan Percuma')).toHaveCSS('text-transform', 'uppercase')
     await expect(tid(page, 'dash-trial-remaining')).toHaveText('Baki 0 / 50 soalan')
-    await expect(tid(page, 'dash-trial-link')).toHaveText(/Langgan Sekarang/)
-    await expect(tid(page, 'dash-trial-link')).toHaveAttribute('href', '/pricing')
-    expect((await hitArea(tid(page, 'dash-trial-link'))).h).toBeGreaterThanOrEqual(44)
+    // D9 dead link: /pricing (M19) is not routed, so the "Langgan Sekarang" CTA is hidden.
+    await expect(trial.locator('[data-ds="card-cta"]')).toHaveCount(0)
+    await expect(trial.locator('a[href="/pricing"]')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
   test('AC-02.2 pelajar2 Baki 50 / 50', async ({ page, loginAs, gotoApp }) => {
@@ -1096,7 +1096,7 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     })
   }
 
-  test('DV-M05-17 / FR-131 hit areas: carousel arrows, dots, toggle, trial, Kombo, Lihat Semua, subject start, aside link >= 44 px high', async ({
+  test('DV-M05-17 / FR-131 hit areas: carousel arrows, dots, toggle, Kombo, Lihat Semua, subject start, aside link >= 44 px high', async ({
     page,
     loginAs,
     gotoApp,
@@ -1104,7 +1104,6 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
     await open(page, loginAs, gotoApp, ADMIN)
     await freeze(page)
     const checks: Array<[string, Locator]> = [
-      ['trial link', tid(page, 'dash-trial-link')],
       ['toggle', tid(page, 'dash-slide-0').getByTestId('dash-slide-toggle')],
       ['prev', tid(page, 'dash-slide-0').getByTestId('dash-prev')],
       ['next', tid(page, 'dash-slide-0').getByTestId('dash-next')],

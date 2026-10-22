@@ -167,8 +167,26 @@ export interface IntakeBatch extends IntakeMeta {
   stimuli: IntakeStimulus[]
   unmatched: string[]
   pages: PageText[]
-  /** http mode: the extracted questions have no backend route yet (the page says so). */
+  /** http mode: the extracted questions could not be read from the server (the page says so). */
   itemsUnavailable?: boolean
+  /** http mode: the backend extraction run of this batch (the mock extracts in the browser). */
+  extraction?: IntakeExtraction
+  /** http mode, set by a save that created items or stimuli: local id to server id. */
+  idMap?: { items: Record<string, string>; stimuli: Record<string, string> }
+}
+
+/**
+ * http mode: state of the server-side extraction (`POST /intake/batches/{id}/extract`). `none` = never
+ * requested; `canExtract` = the file is read and a run may be requested; `processing` = the PDF is
+ * still being read (OCR) so extraction is not possible yet.
+ */
+export interface IntakeExtraction {
+  state: 'none' | 'queued' | 'running' | 'succeeded' | 'failed'
+  /** BM reason while queued (budget) or after a failure. */
+  reason?: string
+  itemCount?: number
+  canExtract: boolean
+  processing: boolean
 }
 
 export interface IntakeSummary {

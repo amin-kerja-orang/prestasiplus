@@ -69,13 +69,15 @@ function detail(extra: Partial<StructuredDetail> = {}): StructuredDetail {
 
 let wrapper: VueWrapper | null = null
 
-async function render(id = 3698): Promise<VueWrapper> {
+async function render(id = 3698, withEditRoute = true): Promise<VueWrapper> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/admin/structured-questions', component: { template: '<div />' } },
       { path: '/admin/structured-questions/:id', component: StructuredDetailPage },
-      { path: '/guru/soalan-berstruktur/:id/edit', component: { template: '<div />' } },
+      ...(withEditRoute
+        ? [{ path: '/guru/soalan-berstruktur/:id/edit', component: { template: '<div />' } }]
+        : [{ path: '/:rest(.*)*', name: 'core.not-found', component: { template: '<div />' } }]),
     ],
   })
   await router.push(`/admin/structured-questions/${String(id)}`)
@@ -150,6 +152,12 @@ describe('StructuredDetailPage (M04 S9)', () => {
     const back = w.get('[data-testid=structured-back-list]')
     expect(back.text()).toBe('Balik ke Senarai')
     expect(back.attributes('href')).toBe('/admin/structured-questions')
+  })
+
+  it('hides "Edit Soalan" while the M10 edit form is not routed (D9 dead link)', async () => {
+    const w = await render(3698, false)
+    expect(w.find('[data-testid=structured-edit]').exists()).toBe(false)
+    expect(w.get('[data-testid=structured-back-list]').text()).toBe('Balik ke Senarai')
   })
 
   it('an unknown id sets the standard 404 outcome and no red box', async () => {
