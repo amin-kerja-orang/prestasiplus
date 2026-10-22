@@ -2,7 +2,8 @@
  * @api SWEEP-23OCT (AM2-3): proves the sweep fixes against the REAL API (http mode, prototype scope ON).
  *
  *  O1  parent / sponsor / PPD login is refused in the SPA AND the server session is ended.
- *  D3  `/guru/remedial-progress` is a real route (not the 404 page).
+ *  D3  `/guru/remedial-progress` renders the Remedial Progress Dashboard for the teacher (needs the
+ *      half-AZ prototype-scope patch, PR #169) and the admin.
  *  D4  `/admin/monitoring` is mounted; the daily-activity board no longer links `/admin/laporan-eksekutif`.
  *  D4b Audio KBAT card: admin "Cipta Set" -> `/admin/audio-kbat/create`; nobody links `/guru/audio-kbat`.
  *  D5  a pupil's `/prestasi/kelas` has no "Cipta kelas" button / `/guru/kelas/cipta` link.
@@ -32,7 +33,6 @@ const OUT_OF_SCOPE_ACCOUNTS = [
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(path)
   await expect(page.locator('#app > *').first()).toBeAttached({ timeout: 20_000 })
-  await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
   // A rendered page has a heading (page header or error page).
   await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 20_000 })
 }
@@ -74,30 +74,20 @@ test.describe('sweep 23 Oct @api', () => {
     })
   }
 
-  test('D3: guru /guru/remedial-progress is not a 404 (prototype scope page) @api', async ({
+  test('D3: guru /guru/remedial-progress renders "Remedial Progress Dashboard" @api', async ({
     page,
   }) => {
     const { user, pass } = account('guru')
     await loginViaUi(page, user, pass)
     await open(page, '/guru/remedial-progress')
     await expectNotFoundPage(page, false)
-    // pending half-AZ scope patch: `/guru/remedial-progress` is not yet in TEACHER_ITEMS, so with the
-    // prototype scope ON the route guard (guards.ts) sends the teacher to her own home `/guru`
-    // instead of rendering the page. Accepted until the patch lands: no 404, and either the redirect
-    // to `/guru`, the scope page, or (after the patch) the real header.
-    if (/\/guru\/remedial-progress$/.test(page.url())) {
-      const scoped = await page.getByRole('heading', { name: SCOPE_HEADING }).count()
-      if (scoped > 0) {
-        await expect(page.getByTestId('prototype-unavailable')).toBeVisible()
-      } else {
-        await expect(page.getByTestId('remedial-progress-page')).toBeVisible()
-        await expect(
-          page.getByRole('heading', { name: 'Remedial Progress Dashboard' }).first(),
-        ).toBeVisible()
-      }
-    } else {
-      await expect(page).toHaveURL(/\/guru$/)
-    }
+    // Needs the half-AZ prototype-scope patch (#169): `/guru/remedial-progress` is in the teacher scope.
+    await expect(page).toHaveURL(/\/guru\/remedial-progress$/)
+    await expect(page.getByTestId('remedial-progress-page')).toBeVisible({ timeout: 20_000 })
+    await expect(
+      page.getByRole('heading', { name: 'Remedial Progress Dashboard' }).first(),
+    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: SCOPE_HEADING })).toHaveCount(0)
     await expectNoHScroll(page)
   })
 
@@ -124,6 +114,10 @@ test.describe('sweep 23 Oct @api', () => {
     await open(page, '/admin/monitoring')
     await expectNotFoundPage(page, false)
     await expect(page).toHaveURL(/\/admin\/monitoring/)
+    await expect(page.getByTestId('monitoring-page')).toBeVisible({ timeout: 20_000 })
+    await expect(
+      page.getByRole('heading', { name: 'Monitoring Penglibatan', exact: true }),
+    ).toBeVisible()
     await expectNoHScroll(page)
 
     await open(page, '/admin/command-center/daily-activity')
@@ -203,8 +197,9 @@ test.describe('sweep 23 Oct @api', () => {
     await open(page, '/admin/users/create')
     await expectNotFoundPage(page, false)
     await expect(page).toHaveURL(/\/admin\/users\/create/)
-    // Give any late, lazy request a chance to fire.
-    await page.waitForTimeout(1500)
+    // The form is rendered (its fields are what the defaults call used to feed): no fixed sleep.
+    await expect(page.getByTestId('user-create-page')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('user-form')).toBeVisible()
     expect(hits, 'requests to /api/admin/config/defaults').toEqual([])
     await expectNoHScroll(page)
   })

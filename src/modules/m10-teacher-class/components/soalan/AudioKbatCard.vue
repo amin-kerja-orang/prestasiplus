@@ -14,7 +14,8 @@ import { useSessionStore } from '@/stores/session'
 
 import { downloadAudioKbatTemplate } from '../../api/guru'
 
-const isAdmin = computed(() => useSessionStore().role === 'admin')
+const session = useSessionStore()
+const isAdmin = computed(() => session.role === 'admin')
 
 async function download(format: 'xlsx' | 'word', fallback: string): Promise<void> {
   try {

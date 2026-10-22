@@ -32,18 +32,18 @@ const stats = computed<StatItem[]>(() => {
   const s = data.value?.stats
   const gain = s?.avgImprovement ?? 0
   return [
-    { key: 'total', label: 'JUMLAH SET', value: s?.total ?? 0, icon: 'flask', accent: 'action' },
+    { key: 'total', label: COPY.statTotal, value: s?.total ?? 0, icon: 'flask', accent: 'action' },
     {
       key: 'completed',
-      label: 'SELESAI',
+      label: COPY.statCompleted,
       value: s?.completed ?? 0,
       icon: 'check-circle',
       accent: 'win',
     },
-    { key: 'students', label: 'PELAJAR', value: s?.students ?? 0, icon: 'users', accent: 'trial' },
+    { key: 'students', label: COPY.statStudents, value: s?.students ?? 0, icon: 'users', accent: 'trial' },
     {
       key: 'improvement',
-      label: 'PURATA PENINGKATAN',
+      label: COPY.statImprovement,
       value: `${gain < 0 ? '' : '+'}${String(gain)}%`,
       icon: 'trend-up',
       accent: 'heat',

@@ -9,7 +9,10 @@ export const REMEDIAL_PROGRESS_COPY = {
   emptyBody: 'Buka Command Center → klik Remedial untuk mula.',
   loadFailed: 'Gagal memuatkan data remedial. Sila cuba lagi.',
   retry: 'Cuba Lagi',
-  back: 'Command Center',
+  statTotal: 'JUMLAH SET',
+  statCompleted: 'SELESAI',
+  statStudents: 'PELAJAR',
+  statImprovement: 'PURATA PENINGKATAN',
 } as const
 
 /** PROPOSED status labels of a remedial test row. */
