@@ -7,7 +7,18 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsLoadError, DsPage, DsPanel, DsStatRow, type StatItem } from '@/ds'
+import {
+  DsCluster,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsStatRow,
+  DsTag,
+  DsText,
+  type StatItem,
+} from '@/ds'
 
 import { fetchRemedialProgress } from '../api/guru'
 import {
@@ -45,9 +56,9 @@ const pct = (n: number | null): string => (n === null ? '-' : `${String(n)}%`)
 
 <template>
   <DsPage :title="COPY.title" data-testid="remedial-progress-page">
-    <p class="-mt-2 text-body text-muted" data-testid="remedial-progress-subtitle">
-      {{ COPY.subtitle }}
-    </p>
+    <DsText variant="body" tone="muted" data-testid="remedial-progress-subtitle">{{
+      COPY.subtitle
+    }}</DsText>
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
@@ -55,49 +66,44 @@ const pct = (n: number | null): string => (n === null ? '-' : `${String(n)}%`)
       testid="remedial-progress-error"
       @retry="reload"
     />
-    <div
-      v-else-if="!data"
-      class="grid grid-cols-2 gap-3 md:grid-cols-4"
-      aria-busy="true"
-      data-testid="remedial-progress-loading"
-    >
-      <USkeleton v-for="n in 4" :key="n" class="h-28 w-full" />
-    </div>
+    <DsStack v-else-if="!data" aria-busy="true" data-testid="remedial-progress-loading">
+      <DsStatRow :items="stats" prefix="rp-stat" :cols="4" loading />
+    </DsStack>
     <template v-else>
       <DsStatRow :items="stats" prefix="rp-stat" :cols="4" data-testid="remedial-progress-stats" />
 
-      <DsPanel data-testid="remedial-progress-list">
-        <h2 class="text-subheading text-highlighted">{{ COPY.listTitle }}</h2>
-        <div
+      <DsPanel :title="COPY.listTitle" data-testid="remedial-progress-list">
+        <DsEmptyState
           v-if="data.rows.length === 0"
-          class="flex flex-col items-center gap-1 py-6 text-center"
+          size="sm"
+          icon="clipboard-text"
+          :title="COPY.emptyTitle"
+          :description="COPY.emptyBody"
           data-testid="remedial-progress-empty"
-        >
-          <UIcon name="i-ph-clipboard-text-duotone" class="size-12 text-dimmed" />
-          <p class="text-body text-highlighted">{{ COPY.emptyTitle }}</p>
-          <p class="text-body text-muted">{{ COPY.emptyBody }}</p>
-        </div>
-        <ul v-else class="mt-3 flex min-w-0 flex-col gap-2">
-          <li
+        />
+        <DsStack v-else as="ul" gap="sm">
+          <DsCluster
             v-for="row in data.rows"
             :key="row.id"
-            class="flex min-w-0 flex-wrap items-center justify-between gap-2 py-2"
+            as="li"
+            justify="between"
             data-testid="remedial-progress-row"
           >
-            <div class="min-w-0">
-              <p class="truncate text-body text-highlighted">{{ row.studentName }}</p>
-              <p class="text-body text-muted">{{ row.subjectName }}</p>
-            </div>
-            <div class="flex shrink-0 items-center gap-3">
-              <UBadge color="neutral" variant="subtle" data-testid="remedial-progress-status">{{
-                REMEDIAL_STATUS_LABEL[row.status]
-              }}</UBadge>
-              <span class="text-body text-muted" data-testid="remedial-progress-accuracy"
-                >{{ pct(row.beforeAccuracy) }} → {{ pct(row.afterAccuracy) }}</span
+            <DsStack gap="2xs">
+              <DsText variant="body" truncate>{{ row.studentName }}</DsText>
+              <DsText variant="body" tone="muted">{{ row.subjectName }}</DsText>
+            </DsStack>
+            <DsCluster>
+              <DsTag
+                :label="REMEDIAL_STATUS_LABEL[row.status]"
+                data-testid="remedial-progress-status"
+              />
+              <DsText variant="body" tone="muted" as="span" data-testid="remedial-progress-accuracy"
+                >{{ pct(row.beforeAccuracy) }} → {{ pct(row.afterAccuracy) }}</DsText
               >
-            </div>
-          </li>
-        </ul>
+            </DsCluster>
+          </DsCluster>
+        </DsStack>
       </DsPanel>
     </template>
   </DsPage>
