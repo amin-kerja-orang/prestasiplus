@@ -415,6 +415,8 @@ Because the key differs, the fakes differ between two dumps: each run is a compl
 
 Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, plan section 3.3 in the cutover plan on branch `be/AM-MIG-08-cutover-plan`, `docs/ops/v2-cutover-plan.md`) needs the **raw** `dump:cloud` output as the normal path, because the ETL refuses anonymised data in production. AM-10 confirms that addendum, and it is part of this procedure. The same hand-over and wipe rules apply, to a raw directory.
 
+**`NODE_ENV` on the receiver.** "Production" here means real data, not `NODE_ENV=production`. `staging:load` refuses to run under `NODE_ENV=production` for any dump (its reset guard), so the receiver runs `staging:load` on the throwaway staging cluster with `NODE_ENV` not set to production, `PP_ALLOW_STAGING_RESET=1` and a `_staging` database (or `PP_STAGING_DB_ALLOWLIST`). A raw dump carries no `anonymised`/`synthetic` marker, so it is not refused as synthetic; the production guards apply later, to `migrate:*` (MIG-08 plan).
+
 **The raw export is real personal data of minors.** Encrypted disk (section 2, item 1), no screen sharing, no cloud-sync folder, and it never enters GitHub, an issue or PR, any chat, or any Claude/AI session or transcript. Everything in section 1 (hard rules) and section 5 (PDPA and incidents) applies in full.
 
 **Per sitting (the T-1 export and the final export), by the operator on the operator PC, with the data owner present for the account:**
@@ -424,11 +426,15 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
 3. Prepare the terminal as in step 0 (option file, tunnel if used, `$date`), and define the work dir as an absolute path, unique per sitting (for example `run-<date>-t1` for the T-1 export and `run-<date>-final` for the final export):
    ```powershell
    $work = Join-Path (Get-Location) "apps/api/.migration-out/run-$date-t1"
+   New-Item -ItemType Directory -Path $work | Out-Null     # must not exist yet
+   icacls $work /inheritance:r /grant:r "$($env:USERDOMAIN)\$($env:USERNAME):(OI)(CI)F"
    ```
    ```bash
    work="$PWD/apps/api/.migration-out/run-$date-t1"
+   mkdir -m 700 "$work"                                     # must not exist yet
    ```
-4. Run `dump:check` as a last look (section 2, item 8; it reads no rows), then the raw export. `--datetime-offset` stays at its `+08:00` default (DT-1 A; DATETIME with explicit `+08:00`, TIMESTAMP with `Z`).
+   The work dir is created first with owner-only permissions, because the `.gpg` file of step 7 is written into it.
+4. Run `dump:check` as a last look (section 2, item 8; it reads no rows) into a new directory such as `.migration-out/check-<date>-t1` (a reused, non-empty directory gives exit 2), then the raw export. `--datetime-offset` stays at its `+08:00` default (DT-1 A; DATETIME with explicit `+08:00`, TIMESTAMP with `Z`).
    ```powershell
    npm run dump:cloud -w @pp/api -- --out "$work/raw"
    ```
@@ -438,7 +444,7 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
    Expect exit 0. **Exit 6 means stop: it is a no-go for that sitting** (row-count mismatch or bad stream, or an integer of 2^53 or larger). Post only the table names on #109. Do not retry in the same sitting without the LEAD.
 5. **The data owner locks the account again** straight after the export has finished, **also after a failure**.
 6. Check the output: the manifest in `<work>/raw` is marked `raw: true`, no `.partial` directory is left, and the table and row counts equal the `dump:check` report (the final export is frozen, so they are equal; the T-1 export may be slightly higher).
-7. **Encrypt** with the same commands as step 6 of the sitting, with `raw` (and `files`, if section 8.1 applies) in place of `anon`; the **listing check is mandatory** and the entry count must match what is in the directory plus the directory entries. Take the sha256 of the `.gpg` file. The passphrase goes to the receiver through a different channel from the file, never with it, never in GitHub, chat or an AI session.
+7. **Encrypt** with the same commands as step 6 of the sitting, with `raw` (and `files`, if section 8.1 applies) in place of `anon`; the **listing check is mandatory**: the line count it prints must equal the number of files plus directories under `raw` (and `files`) plus the top directories themselves (bash: `find "$work/raw" | wc -l`; PowerShell: `(Get-ChildItem -Recurse "$work/raw").Count + 1`). Take the sha256 of the `.gpg` file. The passphrase goes to the receiver through a different channel from the file, never with it, never in GitHub, chat or an AI session.
    ```powershell
    $name = "pp-cutover-dump-$date.tar.gz.gpg"
    Push-Location $work
