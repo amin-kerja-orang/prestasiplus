@@ -215,8 +215,18 @@ const PAGE_SIZE = 100
 const MAX_PAGES = 50
 
 const BANK_PAGE = 50
+const EMPTY_COUNTS: IntakeItemStateCounts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
 const REMOVED_REASON = 'Dibuang oleh penyemak.'
 const REJECT_REASON_REQUIRED = 'Sebab penolakan diperlukan.'
+
+/** 409 of an item that was accepted or rejected meanwhile (contract INTAKE_MESSAGES.itemLocked / itemAlreadyAccepted). */
+const ITEM_LOCKED = [
+  'Item ini sudah diterima atau ditolak dan tidak boleh disunting.',
+  'Item ini sudah diterima.',
+]
+function isItemLocked(e: unknown): boolean {
+  return e instanceof BijakError && e.code === 'bad_request' && ITEM_LOCKED.includes(e.message)
+}
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
 
@@ -275,6 +285,8 @@ interface Snapshot {
   stimuli: Map<string, IntakeStimulus>
   /** Local id (a row the editor added) to the server id it got. */
   alias: Map<string, string>
+  /** Items decided elsewhere (accepted or rejected from the queue) while the editor was open. */
+  locked: Set<string>
   base: IntakeBatch
 }
 
@@ -427,6 +439,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       questions: new Map(batch.questions.map((q) => [q.id, clone(q)])),
       stimuli: new Map(batch.stimuli.map((x) => [x.id, clone(x)])),
       alias: this.snapshots.get(id)?.alias ?? new Map(),
+      locked: new Set(),
       base: clone(batch),
     })
     return batch
@@ -575,6 +588,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const keepItems = new Set<string>()
     for (const q of payload.questions) {
       let qid = snap.alias.get(q.id) ?? q.id
+      if (snap.locked.has(qid)) continue
       let prev = snap.questions.get(qid)
       if (!prev) {
         const created = await this.send<WireItem>('POST', `/api/intake/batches/${enc(id)}/items`, {
@@ -594,15 +608,26 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       if (!q.stimulusId) delete next.stimulusId
       const patch = itemPatch(prev, next)
       if (patch) {
-        const updated = await this.send<WireItem>('PATCH', `/api/intake/items/${enc(qid)}`, patch)
-        snap.questions.set(qid, questionFromItem(updated))
+        try {
+          const updated = await this.send<WireItem>('PATCH', `/api/intake/items/${enc(qid)}`, patch)
+          snap.questions.set(qid, questionFromItem(updated))
+        } catch (e) {
+          if (!isItemLocked(e)) throw e
+          // Decided from the queue meanwhile: leave it out from now on and carry on with the rest.
+          snap.questions.delete(qid)
+          snap.locked.add(qid)
+        }
       }
     }
     for (const [qid] of [...snap.questions]) {
       if (keepItems.has(qid)) continue
-      await this.send<unknown>('POST', `/api/intake/items/${enc(qid)}/reject`, {
-        reason: REMOVED_REASON,
-      })
+      try {
+        await this.send<unknown>('POST', `/api/intake/items/${enc(qid)}/reject`, {
+          reason: REMOVED_REASON,
+        })
+      } catch (e) {
+        if (!isItemLocked(e)) throw e
+      }
       snap.questions.delete(qid)
     }
 
@@ -621,7 +646,9 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     }
     return {
       ...clone(snap.base),
-      questions: payload.questions.map((q) => clone(snap.questions.get(snap.alias.get(q.id) ?? q.id) ?? q)),
+      questions: payload.questions
+        .filter((q) => !snap.locked.has(snap.alias.get(q.id) ?? q.id))
+        .map((q) => clone(snap.questions.get(snap.alias.get(q.id) ?? q.id) ?? q)),
       stimuli: payload.stimuli.map((x) => clone(snap.stimuli.get(snap.alias.get(x.id) ?? x.id) ?? x)),
       idMap,
     }
@@ -678,11 +705,28 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const params = new URLSearchParams()
     if (f.subject) params.set('subject', f.subject)
     if (states && states.length === 1) params.set('state', states[0]!)
+    if (states && states.length === 0) {
+      // Nothing in the queue is Terbit (accept makes a Draf): one tiny read for the tab counts only.
+      params.set('pageSize', '1')
+      let meta: { counts?: IntakeItemStateCounts } | undefined
+      try {
+        meta = (
+          await this.client.request<{ meta?: { counts?: IntakeItemStateCounts } }>(
+            'GET',
+            `/api/intake/items?${params}`,
+            { raw: true },
+          )
+        )?.meta
+      } catch (e) {
+        throw toBijakError(e)
+      }
+      return { items: [], counts: countsFromWire(meta?.counts ?? EMPTY_COUNTS) }
+    }
     const { rows, meta } = await this.pagedAll<IntakeItemRow, { counts?: IntakeItemStateCounts }>(
       `/api/intake/items${params.size ? `?${params}` : ''}`,
     )
     const counts = countsFromWire(
-      meta?.counts ?? { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 },
+      meta?.counts ?? EMPTY_COUNTS,
     )
     const wanted = states === null ? rows : rows.filter((r) => states.includes(r.state))
     const base = await this.queueContext([...new Set(wanted.map((r) => r.batchId))])
