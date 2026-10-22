@@ -10,6 +10,9 @@
 2. **Dumps are not attached to pull requests**, issues, chat or CI artifacts. They travel out-of-band from the lead only (OD-2).
 3. **Dumps are deleted after the rehearsal.** Delete everything listed in section 6 once the rehearsal report is accepted, and in any case within the maximum retention period below.
 4. **Maximum retention (decided by the lead):** 30 days for synthetic fixtures and profiling artefacts. **Real data dumps (BE-28, BE-30) are deleted as soon as the load and the reconciliation succeed, and kept 7 days at most**, encrypted at rest, whichever comes first. The **custodian is the lead**: the lead issues the dump, keeps the list of every machine that holds a copy, and confirms the deletion.
+
+   **Exception (Q12 A): `archive_cloud` is kept 12 months** after the cutover, although it is real data. Purpose: the question backfill and disputes only (data-migration section 3.3, item 5). Conditions, all required: (a) a **dated deletion** at cutover + 12 months, recorded as a dated line in the issue (no data), with the date written down at the cutover; (b) access only for a **named role with a read-only grant** (`SELECT` on the schema), never an application role, and nothing in the API reads it; (c) **encrypted backups only**, and the schema is dropped from every backup chain at the deletion date (section 5, item 3); (d) **never copied to a non-production database**, a laptop, a fixture or a PR; (e) the rest of rule 4 (dumps, `staging_cloud`, reports) is unchanged. Tables that hold personal references: `question_reports` (`user_id`, `reason`), `question_submissions` (`user_id`), `question_imports` (`user_id`), `spm_sets` (`user_id`).
+   **PROPOSED, LEAD TO CONFIRM (not yet decided): minimisation of those tables.** After the open reports are exported (section 17a), set `user_id` to NULL in the four tables above and redact `question_reports.reason`. The backfill and disputes need the question rows, not the reporter, so nothing the exception is meant for is lost. Until the lead confirms, the exception above applies as written and the columns stay.
 5. **Full-disk encryption at rest is required** on every machine, volume or server that holds a dump, a restored database, a staging database or a report. Without it, do not load the data.
 6. **Nobody connects to prestasiplus.cloud or prestasiplus.my from a development machine.** There are no credentials in the repo, in `.env.*` examples, in tests or in logs. The loader reads either a dump directory or a restore of the anonymised dump that the lead provides.
 7. **Do not type a connection string with a password on the command line** or into shell history. Put `CLOUD_SOURCE_URL` in a file readable only by you (for example `chmod 600 .env.migration`, git-ignored, outside the repo if you can) and load it from there: `set -a; . ./.env.migration; set +a`. Never `export CLOUD_SOURCE_URL=...` by hand and never echo it.
@@ -266,7 +269,7 @@ Decisions and assumptions:
 
 ## 12. Full run and verification (BE-30)
 
-The commands below run on a rehearsal or staging database that holds an imported dump. Run them from the repository root as `npm run <script> -w @pp/api -- <flags>`. The source is always `cloud`. `--dry-run` is the default of every command; nothing is written until `--apply` is given.
+The commands below run on a rehearsal or staging database that holds an imported dump. Run them from the repository root as `npm run <script> -w @pp/api -- <flags>`. The source is always `cloud`. `--dry-run` is the default of every command; no v2 data table is written until `--apply` is given. Dry-runs do write `etl_runs`, `etl_recon` and `etl_rejects` rows and report files under `.migration-out/`.
 
 **Environment (names only; values come from a restricted file or the platform secret store, section 0 rule 7):**
 
@@ -276,7 +279,8 @@ The commands below run on a rehearsal or staging database that holds an imported
 | `CLOUD_SOURCE_URL` | `staging:load` | Only when loading from a read-only restore instead of `--from <dump dir>`. Read-only role (section 3). |
 | `PP_ALLOW_STAGING_RESET=1` | `staging:load` | Allows the drop and re-create of the staging schemas (section 1). |
 | `PP_STAGING_DB_ALLOWLIST` | `staging:load` | Only if the database name does not end in `_staging`. |
-| `PP_ALLOW_MIGRATE_APPLY=1` | `--apply`, `migrate:rollback` | Without it every apply is refused. |
+| `PP_ALLOW_MIGRATE_APPLY=1` | `--apply`, `migrate:rollback` | Without it every apply is refused. `migrate:rollback` needs it in dry-run too. |
+| `PP_ALLOW_MIGRATE_ROLLBACK=1` | `migrate:rollback` | Extra gate for the rollback, dry-run included. Set it only for the rollback command, in that shell. |
 | `PP_MIGRATE_TARGET_DB` | `--apply`, `migrate:rollback` | Required when `NODE_ENV` is `production` or `prod`; must equal `current_database()`. |
 | `IC_HASH_KEY` | `migrate:core` | Else `SESSION_SECRET` outside production. Keep the key stable across the full run and the delta run, otherwise IC hashes differ. |
 | `PP_MIGRATE_ROSTER_DEFAULT_HASHES` | `migrate:core` | Optional. The lead's list of shared roster default hashes. Never logged. |
@@ -351,7 +355,7 @@ Tick each box and record the evidence in the PR or the issue as text (counts, ex
 
 **F. Timed delta run (section 15)**
 
-- [ ] 18. Change or add a few rows in the staged data (or take a second dump), record `T-dump2`, run `staging:load`, then `migrate:delta --since=<T-dump1>` (dry-run), then `--apply`, then `migrate:verify`. Owner: be. Evidence: duration, the delta report (rows with `updated_at` after `--since` against inserted and updated), verify `pass`.
+- [ ] 18. Change or add a few rows in the staged data (or take a second dump), record `T-dump2`, run `staging:load`, then `migrate:delta --since=<T-dump1> --as-of=<first load's date>` (dry-run; `--as-of` is required, exit 2 without it), then the same with `--apply`, then `migrate:verify`. Owner: be. Evidence: duration, the delta report (rows with `updated_at` after `--since` against inserted and updated), verify `pass`.
 
 **G. Timed rollback (section 16)**
 
@@ -411,15 +415,15 @@ Notes.
 
 ## 16. Rollback (BE-30)
 
-**When.** Any no-go in section 14 after the apply, or after the switch, for example: `migrate:verify` fails; the orphan scan is above 0; users report that logins or their data are wrong; the timings would not fit the window; a PDPA incident (section 0, rule 8) touches the loaded data. The lead decides.
+**When.** Any no-go in section 14 after the apply, or after the switch, for example: `migrate:verify` fails; the orphan scan is above 0; users report that logins or their data are wrong; the timings would not fit the window; a PDPA incident (section 0, rule 8) touches the loaded data. The lead decides. **Never after go-live without a decision of the lead** (once users write v2 data, the rollback refuses or releases rows, see below).
 
 **Procedure A: rehearsal database.** Drop the database, or the target schema, and re-create it from the migrations (`DATABASE_URL` points at the scratch `_staging` database). This is the simplest and is the default for a rehearsal.
 
 **Procedure B: shared database** (a database with other data, or with v2-born rows).
 
 1. Stop writes to the migrated data if the switch already happened (`<MIG-08 owner>`).
-2. Dry-run: `npm run migrate:rollback -w @pp/api -- --confirm=<database name>`. It counts the rows per table and deletes nothing. Read the counts.
-3. Apply: `PP_ALLOW_MIGRATE_APPLY=1 npm run migrate:rollback -w @pp/api -- --confirm=<database name> --apply`. In production also set `PP_MIGRATE_TARGET_DB=<database name>`. `--confirm` must equal `current_database()`, otherwise it is refused (exit 2).
+2. Dry-run: `PP_ALLOW_MIGRATE_APPLY=1 PP_ALLOW_MIGRATE_ROLLBACK=1 npm run migrate:rollback -w @pp/api -- --confirm=<database name>`. Both variables are needed even for the dry-run. It counts the rows per table and changes nothing, but it runs the DELETEs and then rolls them back, so it **takes row locks** on the migrated tables: run it in a quiet window (no load, no heavy traffic). Read the counts.
+3. Apply: `PP_ALLOW_MIGRATE_APPLY=1 PP_ALLOW_MIGRATE_ROLLBACK=1 npm run migrate:rollback -w @pp/api -- --confirm=<database name> --apply`. In production also set `PP_MIGRATE_TARGET_DB=<database name>`. `--confirm` must equal `current_database()`, otherwise it is refused (exit 2).
 
 What it does: in one transaction it deletes every row with `legacy_source = 'cloud'` from every migratable table, children first, and the `etl_id_map` rows of the source. Rows born in v2 are never deleted. `etl_runs`, `etl_recon`, `etl_rejects` and `etl_checkpoints` are kept as the audit trail.
 
@@ -430,7 +434,8 @@ Migrated rows that other data depends on:
 - **After a rollback on a shared database, re-run the idempotent seeds** (`npm run be:db:seed`) to restore the seed rows, and only then compare the counts (below).
 - **`coin_ledger`** is append-only (trigger). Its rows are not deleted one by one; they go with their user through the user cascade, and the rollback checks that no migrated ledger row is left.
 - **Concurrency.** The rollback takes a lock per source and **refuses** (no change) while another rollback holds it or while an apply run of the source is `running` in `etl_runs`. A crashed run stays `running`: confirm no load is active, mark that run `failed`, then retry. The same refusal applies to `migrate:link-questions --apply` (exit 4).
-- **Warnings.** The report prints `warnings`, including one for every reference table with deleted rows (they may be adopted seed rows: re-run the seeds, above). If an apply run did not finish, its checkpoints are kept, and the next load must **not** resume that run: start a fresh dry-run and apply.
+- **Unfinished apply runs.** In the same transaction the rollback closes the source's unfinished apply runs (status `failed`) and deletes their checkpoints, so the next apply starts fresh from the first batch. No operator step is needed; the run rows themselves stay in `etl_runs` as the audit trail. (A run still marked `running` is refused, see Concurrency.)
+- **Warnings.** The report prints `warnings`, including one for every reference table with deleted rows (they may be adopted seed rows: re-run the seeds, above). Read them before the apply.
 
 **Prove the result.** Do not re-run `migrate:verify`; it reads the loaded data and would report mismatches by design. Instead:
 
@@ -459,7 +464,8 @@ Decision Q9 A (data-migration 3.3 item 4): `question_reports` is not migrated, b
 3. **"Open" is a working assumption** until the status values are profiled (MIG-01): `baru`, `menunggu`, `pending`, `open`, `new` (case and spaces ignored). The summary and the console list the count of every status with `exported` yes or no. If a value that means open is listed as `no`, tell the owner of the command before the hand-over; do not edit the file by hand.
 4. **The file holds personal data.** `reason` is free text written by the reporter, who can be a minor. The command minimises it: e-mail addresses, Malaysian phone numbers and 12-digit IC / MyKad numbers become `[dihapus]`, and the text is cut at 1,000 characters (marked `[dipotong]`). A name or an address written in words cannot be detected, so the file is still personal data. Treat it like a dump copy (section 0): lead's encrypted storage only; hand it to the content team lead over the agreed encrypted channel; never in GitHub (PR, issue, CI artifact), chat or e-mail body. Cells whose first non-blank character is `=`, `+`, `-` or `@` are prefixed with `'` so a spreadsheet does not run them as formulas; open the file with a text/CSV import, not by double-click.
 5. **Custody and deletion:** the lead is the custodian. Retention is **at hand-over to the content team, or 7 days after the export at the latest, whichever comes first** (section 0, rule 4: real-data copies, not the 30 days of the aggregate-only reports). On the day of hand-over the lead deletes the CSV and the summary from their storage and every working copy, and asks the content team to delete theirs after triage (their copy is not kept longer than the triage). Record the deletion date as text in the issue (section 18).
-6. If the file or a copy was exposed outside this chain, or outlived the retention above, treat it as a PDPA incident (section 0, rule 8).
+6. **Manual review before hand-over.** The command removes only e-mail addresses, phone numbers and IC numbers. Before the file leaves the lead's storage, the lead (or the named recipient on the lead's behalf) reads the CSV by hand for names and social handles that the scrubber cannot catch, and, if it finds any, does not edit the file by hand: it asks the owner of the command for a re-export with that column dropped, then deletes the earlier pair (item 1). Open submissions (`question_submissions`) go in a **second, metadata-only CSV** (no reporter, no free text), with the same custody and deletion rules.
+7. If the file or a copy was exposed outside this chain, or outlived the retention above, treat it as a PDPA incident (section 0, rule 8).
 
 ## 18. Deletion of dumps after cutover (BE-30)
 
@@ -478,7 +484,7 @@ Extends sections 5 and 10. Timing follows section 0, rule 4: delete as soon as t
 
 | Keep | Why | For how long |
 |---|---|---|
-| `archive_cloud` (legacy and canonical question tables) | Read-only archive that supports the backfill and disputes (data-migration section 3.3, item 5). Not served by the API. | The retention period in data-migration 3.3 item 5 (default 12 months), then delete. |
+| `archive_cloud` (legacy and canonical question tables) | Read-only archive that supports the backfill and disputes (data-migration section 3.3, item 5). Not served by the API. **Real data: exception to section 0, rule 4 (Q12 A).** | Cutover + 12 months, then drop it (and from every backup chain). Write the dated deletion line in the issue at the cutover. Conditions: read-only grant for one named role (no application role), encrypted backups only, never copied to a non-production database. **PROPOSED, LEAD TO CONFIRM:** after the section 17a export, null `user_id` and redact `reason` in `question_reports`, `question_submissions`, `question_imports` and `spm_sets`. |
 | `etl_runs`, `etl_recon`, `etl_rejects` (and `etl_checkpoints`) | Audit trail of the migration. Holds counts, reason codes and surrogate ids, no personal values. | With the database. |
 | `etl_id_map` | Needed by the backfill and by any later delta. Do not delete it after a successful cutover. | With the database. |
 
