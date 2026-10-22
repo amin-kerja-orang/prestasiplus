@@ -33,10 +33,15 @@
  * back at the end) and counts what the guarded UPDATE would do. The guard cannot differ because the examined rows
  * were selected with `question_id IS NULL` in that same snapshot.
  *
- * Concurrency (apply only): the run takes the session advisory lock `etl:link-questions:<source>` (a second
- * backfill is refused) and is refused while `etl_runs` has a `running` apply run for that source (`migrate:core`,
- * `migrate:activity`, delta), because a loader may still be writing the answers. The lock is released in `finally`.
- * The guarded UPDATE stays the last line of defence.
+ * Concurrency (apply only): the run holds two session advisory locks for its whole duration, released in `finally`:
+ * `etl:link-questions:<source>` (a second backfill is refused) and the source-level `etl:source:<source>` (the key
+ * the rollback holds too). OPEN POINT: the kit runner (`kit/runner.ts`) does not take `etl:source:<source>` yet (it
+ * locks `etl:<mode>:<inputHash>`), and the kit is outside this card, so a loader that starts after the backfill is
+ * only seen through `etl_runs`. For that, the start of the run AND the start of every batch transaction (before its
+ * UPDATE) refuse while `etl_runs` has a `running` apply run for the source (`migrate:core`, `migrate:activity`,
+ * delta). Stopping mid-way throws `LinkQuestionsBusyError` carrying `committedBatches` and `linked`: the batches
+ * already committed stay (each is complete and correct on its own) and a re-run continues. The guarded UPDATE stays
+ * the last line of defence.
  *
  * Rules: only `question_id` is ever written, only where it is still NULL (the UPDATE itself says
  * `WHERE question_id IS NULL`), only when exactly one candidate matches. Zero candidates -> unmatched, more than
@@ -93,7 +98,13 @@ export interface LinkQuestionsReport {
 
 /** An apply of the backfill was refused because another writer is active (advisory lock or a running apply). */
 export class LinkQuestionsBusyError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** Batches already committed before the run stopped (they stay). 0 when refused at the start. */
+    readonly committedBatches = 0,
+    /** Answers linked by those batches. */
+    readonly linked = 0,
+  ) {
     super(message)
     this.name = 'LinkQuestionsBusyError'
   }
@@ -211,26 +222,46 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
     report.alreadyLinked = already.rows[0]?.n ?? 0
 
     const client = await pool.connect()
-    let locked = false
-    const lockKey = `etl:link-questions:${source}`
+    const lockKeys = [`etl:link-questions:${source}`, `etl:source:${source}`]
+    const held: string[] = []
+    let committedBatches = 0
+    const assertNoRunningApply = async (): Promise<void> => {
+      const running = await client.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM etl_runs WHERE status = 'running' AND mode = 'apply' AND $1 = ANY(sources)`,
+        [source],
+      )
+      if ((running.rows[0]?.n ?? 0) > 0) {
+        throw new LinkQuestionsBusyError(
+          committedBatches === 0
+            ? `Refusing --apply: a migration apply run for source "${source}" is still running (etl_runs).`
+            : `Stopped: a migration apply run for source "${source}" started (etl_runs) after ${committedBatches} committed batch(es); ${report.linked} answer(s) linked so far stay linked.`,
+          committedBatches,
+          report.linked,
+        )
+      }
+    }
     try {
       if (mode === 'apply') {
-        const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [lockKey])
-        if (!got.rows[0]?.ok) throw new LinkQuestionsBusyError(`Refusing --apply: another link-questions run holds the lock for source "${source}".`)
-        locked = true
-        const running = await client.query<{ n: number }>(
-          `SELECT count(*)::int AS n FROM etl_runs WHERE status = 'running' AND mode = 'apply' AND $1 = ANY(sources)`,
-          [source],
-        )
-        if ((running.rows[0]?.n ?? 0) > 0) {
-          throw new LinkQuestionsBusyError(`Refusing --apply: a migration apply run for source "${source}" is still running (etl_runs).`)
+        for (const key of lockKeys) {
+          const got = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS ok`, [key])
+          if (!got.rows[0]?.ok) {
+            throw new LinkQuestionsBusyError(`Refusing --apply: another writer holds the lock "${key}" for source "${source}".`)
+          }
+          held.push(key)
         }
+        await assertNoRunningApply()
       }
       // dry-run: one READ ONLY snapshot around everything, rolled back, no UPDATE. apply: one transaction per batch.
       if (mode === 'dry-run') await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY')
       let after = '0'
       for (;;) {
-        if (mode === 'apply') await client.query('BEGIN')
+        if (mode === 'apply') {
+          await client.query('BEGIN')
+          await assertNoRunningApply().catch(async (err: unknown) => {
+            await client.query('ROLLBACK').catch(() => undefined)
+            throw err
+          })
+        }
         try {
           const page = await client.query<AnswerRow>(NEXT_ANSWERS_SQL, [source, after, batchSize])
           const rows = page.rows
@@ -292,7 +323,10 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
               else report.linkedByHash = (report.linkedByHash ?? 0) + 1
             }
           }
-          if (mode === 'apply') await client.query('COMMIT')
+          if (mode === 'apply') {
+            await client.query('COMMIT')
+            committedBatches += 1
+          }
         } catch (err) {
           if (mode === 'apply') await client.query('ROLLBACK').catch(() => undefined)
           throw err
@@ -300,7 +334,7 @@ export async function linkQuestions(options: LinkQuestionsOptions): Promise<Link
       }
     } finally {
       if (mode === 'dry-run') await client.query('ROLLBACK').catch(() => undefined)
-      if (locked) await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [lockKey]).catch(() => undefined)
+      for (const key of held) await client.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [key]).catch(() => undefined)
       client.release()
     }
   } catch (err) {
