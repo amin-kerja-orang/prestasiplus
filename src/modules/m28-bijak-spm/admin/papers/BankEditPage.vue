@@ -13,6 +13,7 @@ import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
 import {
   DsCluster,
+  DsEmptyState,
   DsFormField,
   DsLoadError,
   DsPage,
@@ -27,6 +28,7 @@ import QuestionEditor from '../intake/components/QuestionEditor.vue'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
 import { bijakAdminServer } from '../../server/client'
+import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import { ADMIN_ROUTES, KIND_LABEL, STATUS_BADGE, detailMessage } from './ui'
 
 const props = defineProps<{ qid: string }>()
@@ -104,8 +106,13 @@ async function save(): Promise<void> {
     back-label="Bank Soalan SPM"
     data-testid="bank-edit-page"
   >
+    <DsEmptyState
+      v-if="isUnavailable(error)"
+      :title="UNAVAILABLE_TITLE"
+      data-testid="unavailable-state"
+    />
     <DsLoadError
-      v-if="error"
+      v-else-if="error"
       message="Tidak dapat memuatkan soalan untuk disunting."
       @retry="reload()"
     />
@@ -117,7 +124,8 @@ async function save(): Promise<void> {
             <DsStatusBadge :status="STATUS_BADGE[data.row.status]" />
             <DsText variant="caption" tone="muted" as="span">{{ data.row.id }}</DsText>
             <DsText variant="caption" tone="muted" as="span">
-              {{ data.row.subjectName }} · Kertas {{ data.row.kertas }} ·
+              {{ data.row.subjectName
+              }}<template v-if="data.row.kertas"> · Kertas {{ data.row.kertas }}</template> ·
               {{ KIND_LABEL[data.row.kind] }}
             </DsText>
             <DsText variant="caption" tone="muted" as="span">

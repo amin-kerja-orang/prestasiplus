@@ -70,7 +70,8 @@ describe('GET /intake/dashboard with every store present', () => {
     await insertEvent(db, I3, 'confirmed', A('2026-10-03T10:01:00'), 'tag.subject')
     await insertEvent(db, I3, 'accepted', A('2026-10-04T12:00:00'))
     const I4 = await insertItem(db, B1, 'accepted', A('2026-10-03T09:00:00'))
-    await insertEvent(db, I4, 'field_edited', A('2026-10-03T10:00:00'), 'tag.unit')
+    // The real table only holds the contract event names (`edited`); the source still reads `field_edited` as an alias, but the check constraint of the table cannot store it.
+    await insertEvent(db, I4, 'edited', A('2026-10-03T10:00:00'), 'tag.unit')
     await insertEvent(db, I4, 'edited', A('2026-10-03T10:01:00'), 'tag.tp')
     await insertEvent(db, I4, 'accepted', A('2026-10-04T13:00:00'))
 

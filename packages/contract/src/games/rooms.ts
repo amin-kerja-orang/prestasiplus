@@ -4,6 +4,7 @@ import {
   GAMES_GRADE_LEVELS,
   GAMES_MATCH_MODES,
   GAMES_MESSAGES,
+  GAMES_NAME_RULE,
   GAMES_PAPAN_BIJAK_SUBJECTS,
   GAMES_ROOM_LIMITS,
   GAMES_ROOM_SUBJECTS,
@@ -60,13 +61,16 @@ const lobbyBase = {
   autoGradeName: z.string().nullable().meta({ description: '"Darjah n" or "Tingkatan n", null without a grade.' }),
 }
 
-/** One Papan Bijak Top 10 row. Display name only (D54(d)); `name` is cut to 15 characters plus "...". */
+/**
+ * One Papan Bijak Top 10 row. Display name only (D54(d)); `name` is cut to 15 characters plus "...".
+ * Children's names rule (issue #76): `name`, `initials` and `userId` follow the viewer's scope.
+ */
 export const GamesPapanBijakTopRowSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema,
+    userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
     name: z.string().max(18).meta({ description: 'Truncated to 15 characters + "...".' }),
-    initials: z.string().max(2).meta({ description: 'First letters of up to two words, upper case.' }),
+    initials: z.string().max(2).meta({ description: 'First letters of up to two words of the shown name, upper case.' }),
     menang: gamesCount,
     jumlah: gamesCount,
     kadar: z.number().int().min(0).max(100).meta({ description: 'round(menang / jumlah * 100), 0 when jumlah is 0.' }),
@@ -80,8 +84,8 @@ export type GamesPapanBijakTopRow = z.infer<typeof GamesPapanBijakTopRowSchema>
 export const GamesLobbyLeaderSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema,
-    name: z.string(),
+    userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
+    name: z.string().meta({ description: 'Full name, or first name + initial (children\'s names rule).' }),
     value: gamesCount,
   })
   .meta({ id: 'GamesLobbyLeader' })
@@ -182,7 +186,7 @@ export type GamesRoomJoinRequest = z.infer<typeof GamesRoomJoinRequestSchema>
 export const GamesRoomPlayerSchema = z
   .strictObject({
     id: IdSchema,
-    name: z.string().meta({ description: 'Display name only (D54(d)).' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first name + initial outside the viewer\'s scope (children\'s names rule). The id stays: it keys `state.positions` / `meter`.' }),
     grade: z.string().meta({ description: '"Darjah n", "Tingkatan n" or "" without a grade.' }),
     team: z.number().int().optional().meta({ description: 'Kuiz Relay team number, once teams are set.' }),
     points: z.number().int(),

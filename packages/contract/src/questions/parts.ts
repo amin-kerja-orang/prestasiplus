@@ -28,6 +28,8 @@ export const QUESTION_LEAF_MODES = [
   'essay',
   'drawing',
   'table_fill',
+  /** BE-42 (M07 PKSK): 0 or 2 to 6 options, any number of correct labels. Valid only on a question tagged `pksk_domain`. */
+  'pksk_choice',
 ] as const
 export const QuestionLeafModeSchema = z.enum(QUESTION_LEAF_MODES).meta({ id: 'QuestionLeafMode' })
 
@@ -111,6 +113,8 @@ const RubricKey = z.object({
 })
 
 const OptionKey = z.object({ kind: z.literal('option'), correct: OptionLabel })
+/** BE-42: several or no correct label (PKSK, BR-M07-04). Not used by any other mode. */
+const OptionsKey = z.object({ kind: z.literal('options'), correct: z.array(OptionLabel).max(6) })
 const MappingKey = z.object({ kind: z.literal('mapping'), map: z.record(z.string(), OptionLabel), bankUnique: z.boolean().optional() })
 const CellsKey = z.object({ kind: z.literal('mapping'), cells: z.record(z.string(), z.array(z.string()).min(1)) })
 const AcceptedTextKey = z.object({
@@ -148,8 +152,15 @@ const keyed = <M extends string, K extends z.ZodType>(mode: M, key: K) =>
   z.object({ ...leafBase, mode: z.literal(mode), key })
 
 const McqLeaf = keyed('mcq', OptionKey).extend({ options: z.array(QuestionOptionSchema).min(3).max(8) })
+/**
+ * BE-42 PKSK choice leaf (additive; `McqLeaf` is unchanged). Bahagian A and B carry 2 to 6 options, Bahagian C (essay,
+ * marked by the simulated marker) carries none. Several or no label may be correct (BR-M07-04). Valid only on a question
+ * tagged `pksk_domain`: the question service rejects it with 422 otherwise.
+ */
+const PkskChoiceLeaf = keyed('pksk_choice', OptionsKey).extend({ options: z.array(QuestionOptionSchema).max(6) })
 const LeafBranches = [
   McqLeaf,
+  PkskChoiceLeaf,
   keyed('match_letter', MappingKey),
   keyed('short_text', AcceptedTextKey).extend({ blankCount: z.number().int().min(1).optional() }),
   keyed('numeric', AcceptedNumericKey),
@@ -167,6 +178,16 @@ export const QuestionLeafPartSchema = z
     const p = ctx.value
     if (p.mode === 'mcq' && !p.options.some((o) => o.label === p.key.correct)) {
       ctx.issues.push({ code: 'custom', input: p, path: ['key', 'correct'], message: 'Jawapan betul mesti salah satu pilihan.' })
+    }
+    if (p.mode === 'pksk_choice') {
+      const labels = new Set(p.options.map((o) => o.label))
+      if (labels.size !== p.options.length || p.options.length === 1) {
+        ctx.issues.push({ code: 'custom', input: p, path: ['options'], message: 'Sila masukkan 2 hingga 6 pilihan jawapan.' })
+      }
+      const correct = p.key.correct
+      if (new Set(correct).size !== correct.length || correct.some((c) => !labels.has(c))) {
+        ctx.issues.push({ code: 'custom', input: p, path: ['key', 'correct'], message: 'Jawapan betul mesti salah satu pilihan.' })
+      }
     }
   })
   .meta({ id: 'QuestionLeafPart' })
