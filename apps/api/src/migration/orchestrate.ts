@@ -26,7 +26,9 @@
  *   them. `--since` is required and is used for the delta report only: per `staging_cloud` table that has an
  *   `updated_at` column, the rows with `updated_at > since`, and per entity the inserted / updated / unchanged counters
  *   of the run. Precondition: a succeeded core apply for the source exists (else exit 2). `--as-of` is REQUIRED and must be
- *   the first load's value (it is an input of the transform; another value would rewrite rows). Source deletes are not
+ *   the first load's value (it is an input of the transform; another value would rewrite rows). It cannot be checked
+ *   against the first load (the runner keeps only an input hash, and the staged data in it has just been replaced), so
+ *   every delta prints and records the warning "cannot verify --as-of against the first load". Source deletes are not
  *   propagated (plan 14.5 item 4).
  *   A delta DRY-RUN skips the activity stage whenever a table that core reads (users, schools, classes, curriculum, ...)
  *   changed in staging: the activity preflight needs a core apply on the staged data now in the database, and the
@@ -44,7 +46,8 @@
  * soon as it finishes, so when a later stage throws (preflight, busy, apply refused) the operator still sees which
  * stages completed, e.g. that the core apply committed.
  */
-import { existsSync, lstatSync, unlinkSync, writeFileSync } from 'node:fs'
+import { randomBytes } from 'node:crypto'
+import { writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -109,6 +112,8 @@ export interface DeltaReport {
   /** `staging_cloud` tables with an `updated_at` column and the number of rows newer than `since`. */
   staged: { table: string; changedRows: number }[]
   entities: DeltaEntity[]
+  /** Things the operator must check by hand. */
+  warnings: string[]
 }
 
 export interface PipelineResult {
@@ -145,6 +150,11 @@ export interface DeltaOptions extends PipelineOptions {
   since: string
 }
 
+/**
+ * `--as-of` cannot be compared with the first load's: the runner stores only an input hash, and that hash covers the
+ * staged data, which the freeze dump has just replaced. So the delta says so, in the output and in the report.
+ */
+export const AS_OF_UNVERIFIED = 'cannot verify --as-of against the first load; make sure it is the same value'
 export const ACTIVITY_NEEDS_CORE = 'needs migrate:core --apply first'
 const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
 const DEFAULT_OUT_DIR = join(REPO_ROOT, '.migration-out')
@@ -293,6 +303,7 @@ export async function runDelta(options: DeltaOptions): Promise<PipelineResult> {
     since,
     staged: await stagedChanges(options.pool, since),
     entities: deltaEntities(result.stages),
+    warnings: [AS_OF_UNVERIFIED],
   }
   return result
 }
@@ -318,23 +329,15 @@ export function parseSince(value: string): string {
   return new Date(ms).toISOString()
 }
 
-function isLink(path: string): boolean {
-  try {
-    return lstatSync(path).isSymbolicLink()
-  } catch {
-    return false
-  }
-}
-
-/** Writes `delta-<stamp>.json` (mode 0600) into a `.migration-out` folder; returns the path. */
-export function writeDeltaReport(delta: DeltaReport, outDir: string = DEFAULT_OUT_DIR): string {
+/**
+ * Writes `delta-<stamp>-<random>.json` (mode 0600) into a `.migration-out` folder; returns the path. The file is created
+ * with `wx` (O_EXCL): an existing file or symbolic link at the path is an error, never replaced or written through. The
+ * random suffix keeps two reports of the same second apart. `suffix` is a test seam.
+ */
+export function writeDeltaReport(delta: DeltaReport, outDir: string = DEFAULT_OUT_DIR, suffix: string = randomBytes(3).toString('hex')): string {
   const dir = prepareOutputDir(outDir)
-  const file = join(dir, `delta-${delta.generatedAt.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}.json`)
-  // Like profile/render.ts: never write through a symbolic link; replace an existing file, then create with `wx`.
-  if (existsSync(file) || isLink(file)) {
-    if (lstatSync(file).isSymbolicLink()) throw new RangeError('The delta report file is a symbolic link; refusing to write through it.')
-    unlinkSync(file)
-  }
+  const stamp = delta.generatedAt.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
+  const file = join(dir, `delta-${stamp}-${suffix}.json`)
   writeFileSync(file, `${JSON.stringify(delta, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
   return file
 }
@@ -434,6 +437,7 @@ function printDelta(ctx: CliContext, delta: DeltaReport): void {
   ctx.out('staging table | rows with updated_at > since')
   for (const t of delta.staged.filter((x) => x.changedRows > 0)) ctx.out(`${t.table} | ${t.changedRows}`)
   ctx.out(`staging tables with updated_at: ${delta.staged.length}, with changed rows: ${delta.staged.filter((x) => x.changedRows > 0).length}`)
+  for (const w of delta.warnings) ctx.out(`warning: ${w}`)
   ctx.out('stage | entity | read | inserted | updated | unchanged')
   for (const e of delta.entities) ctx.out(`${e.stage} | ${e.entity} | ${e.read} | ${e.inserted} | ${e.updated} | ${e.unchanged}`)
 }
