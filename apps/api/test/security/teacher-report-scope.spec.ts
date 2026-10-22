@@ -23,7 +23,11 @@ describe('TRIAGE-1: teacher report and monitoring APIs are scoped to the own sch
   const json = (body: unknown) => JSON.stringify(body)
 
   beforeAll(async () => {
-    t = await bootSchoolAdminApp({ modules: featureModules })
+    // Pin the read throttles high: the sweep sends one request per other school per endpoint (G4 #155 minor 3).
+    t = await bootSchoolAdminApp({
+      modules: featureModules,
+      env: { THROTTLE_KIRKPATRICK_READ_PER_MINUTE: '100000', THROTTLE_ANALYTICS_READ_PER_MINUTE: '100000' },
+    })
     await runSeeds(seedModules, { prisma: t.db.prisma, profile: 'poc', env: { NODE_ENV: 'test' } })
     const p = t.db.prisma
     const guru = await p.user.findFirstOrThrow({ where: { email: 'guru@demo.test' }, select: { id: true, schoolId: true } })
@@ -31,7 +35,9 @@ describe('TRIAGE-1: teacher report and monitoring APIs are scoped to the own sch
     others = (await p.school.findMany({ where: { NOT: { id: guru.schoolId! } }, select: { id: true, name: true } })).map((s) => ({ id: String(s.id), name: s.name }))
     const pupil = await t.db.query<{ id: string; school_id: string }>(
       `select u.id::text as id, u.school_id::text as school_id from users u
-       where u.school_id is not null and u.school_id <> $1 order by u.id limit 1`,
+       where u.school_id is not null and u.school_id <> $1
+         and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')
+       order by u.id limit 1`,
       [own],
     )
     foreignPupil = pupil[0]!.id
@@ -92,7 +98,7 @@ describe('TRIAGE-1: teacher report and monitoring APIs are scoped to the own sch
       const body = json(res.body)
       for (const s of others) {
         expect(body, `${path} names ${s.name}`).not.toContain(s.name)
-        expect(body, `${path} carries schoolId ${s.id}`).not.toMatch(new RegExp(`"schoolId":"${s.id}"`))
+        expect(body, `${path} carries schoolId ${s.id}`).not.toMatch(new RegExp(`"school(Id|_id)":"?${s.id}"?[,}]`))
       }
     }
   })
