@@ -196,7 +196,14 @@ export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   item(46, 'Statistik Penggunaan', p('/admin-sekolah/statistik-penggunaan')),
   item(47, 'DSKP Heatmap', p('/admin-sekolah/dskp-heatmap')),
   item(48, 'Laporan Aktiviti', p('/admin-sekolah/laporan-aktiviti')),
-  item(49, 'Amaran Awal', p('/amaran/sekolah')),
+  item(
+    49,
+    'Amaran Awal',
+    p('/amaran/sekolah'),
+    // M18 S23 and S21, reached from the two buttons of S4 (design m18-amaran-summary, decision 6).
+    p('/amaran/ringkasan-eksekutif'),
+    p('/amaran/keberkesanan'),
+  ),
   item(50, 'Laporan Bulanan', p('/admin-sekolah/laporan-bulanan')),
   item(51, 'Senarai Pelajar', p('/admin-sekolah/pelajar')),
   item(52, 'Senarai Guru', p('/admin-sekolah/guru')),
