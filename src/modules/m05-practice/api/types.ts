@@ -6,6 +6,8 @@
  * #15–#21 (structured, SPM targets, remedial, missions) are typed at the end of the file (M05-T2).
  */
 
+import type { EntityId } from '@/api'
+
 /** DATA-M05-01 `mode` (§6.1, BR-35). */
 export type PracticeMode =
   | 'random'
@@ -95,7 +97,8 @@ export interface DashboardBanner {
 }
 
 export interface DashboardBadge {
-  id: number
+  /** Opaque on the wire (a string in http mode, a number in the mock); used only as a list key. */
+  id: EntityId
   name: string
   icon: string
   rarityLabel: string | null
@@ -119,7 +122,8 @@ export interface DashboardLevelPill {
 }
 
 export interface DashboardRecentQuestion {
-  id: number
+  /** Opaque on the wire (a string in http mode, a number in the mock); used only as a list key. */
+  id: EntityId
   subjectName: string
   difficulty: number
   /** Cut at 100 characters + "..." (BR-29). */
@@ -129,7 +133,8 @@ export interface DashboardRecentQuestion {
 }
 
 export interface DashboardSubjectStat {
-  id: number
+  /** Opaque on the wire (a string in http mode, a number in the mock); used only as a list key. */
+  id: EntityId
   name: string
   icon: string | null
   color: string
@@ -141,7 +146,7 @@ export interface DashboardSubjectStat {
 }
 
 export interface Dashboard {
-  user: { id: number; name: string; role: string }
+  user: { id: EntityId; name: string; role: string }
   greetingPeriod: GreetingPeriod
   trial: TrialStatus
   streak: { count: number; practisedToday: boolean }

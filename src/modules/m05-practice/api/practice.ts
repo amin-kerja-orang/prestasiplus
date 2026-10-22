@@ -3,7 +3,7 @@
  * M05-T1). UI tasks import these and do not change this file (build-plan §S.3 rule 5).
  */
 
-import { api, wireId, wireIdOpt, type ListResult } from '@/api'
+import { api, isHttpMode, wireId, wireIdOpt, type ListResult } from '@/api'
 
 import type {
   ChapterSubject,
@@ -49,8 +49,32 @@ interface Signal {
 const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 
 /** #1 `GET /api/dashboard`. */
-export function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
-  return api.get<Dashboard>('/api/dashboard', withSignal(options))
+export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
+  const body = await api.get<Dashboard>('/api/dashboard', withSignal(options))
+  return isHttpMode() ? normaliseDashboard(body) : body
+}
+
+/**
+ * http mode only: the `PracticeReadDashboard` wire body (`GET /api/dashboard`, packages/contract
+ * practice/reads) already has the page's `Dashboard` shape. Ids stay as sent (opaque strings, the
+ * `EntityId` of the dashboard types; the page uses them only as list keys and never posts them back).
+ * List sections the server returns empty (or omits) become `[]` so the page shows its existing empty
+ * state.
+ */
+export function normaliseDashboard(wire: Dashboard): Dashboard {
+  const list = <T>(rows: readonly T[] | null | undefined): T[] => (Array.isArray(rows) ? [...rows] : [])
+  return {
+    ...wire,
+    banners: list(wire.banners),
+    quests: list(wire.quests),
+    badges: list(wire.badges),
+    articles: list(wire.articles),
+    subjects: list(wire.subjects),
+    levelPills: list(wire.levelPills),
+    recentQuestions: list(wire.recentQuestions),
+    difficultyChart: list(wire.difficultyChart),
+    subjectStats: list(wire.subjectStats),
+  }
 }
 
 /** #2 `GET /api/practice/subjects`. */
