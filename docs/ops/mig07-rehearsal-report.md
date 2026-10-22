@@ -1,6 +1,6 @@
-# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–4)
+# MIG-07 rehearsal report: .cloud to v2 data migration, SYNTHETIC data (passes 1–5)
 
-- **Item:** MIG-07 (#109, P0), passes 1–3. Date of the runs: 2026-10-21 (passes 1 and 2), 2026-10-22 (pass 3).
+- **Item:** MIG-07 (#109, P0), passes 1–5. Date of the runs: 2026-10-21 (passes 1 and 2), 2026-10-22 (passes 3, 4 and 5).
 - **Data:** synthetic only (`fixtures:generate --size medium --seed 7`, BE-35). The anonymised real dump (AM-10, made by the dump operator) does not exist yet, so nothing here proves behaviour on real data volumes or real value shapes.
 - **Code under test:** branch `be/AM-MIG-07-rehearsal` = `feature/v2-backend` + AM-08 (`migrate:activity`, PR #122) + AZ-30 (rehearsal environment, PR #117). One run also used `origin/be/AM-09-migrate-orchestration` (`migrate:verify`, `migrate:delta`) from a temporary detached worktree.
 - **Passes:** pass 1 ran on the code before the paging fix; pass 2 (same day) re-ran everything on the fixed branch (`f8c519fe`). Pass 1 is kept below unchanged, except that its sections are demoted one heading level.
@@ -311,6 +311,46 @@ Under the AM-09 default (AND, `verify/index.ts`: `deleted.count > maxRows && del
 3. After (a), `migrate:verify` exit 1 is expected and must not be read as "rollback failed".
 4. `migrate:verify` run between `stage` and `--apply` exits 1 even for a normal delta (entities such as `schools`, `users` show `mismatch` because the staged source rows changed since the recorded runs). The only line that separates a breach is `deleted_at_source_ratio:<entity>`.
 5. The two scenarios ran once each. Times come from a local cluster with `fsync` off; the delta apply took 668 to 682 s here against 513 s in pass 3b on the same data, so expect a spread of about 30 %.
+6. **Open, cause not analysed:** in scenario A, `migrate:verify` shows `classrooms` as `mismatch` (v2 319 against loaded 291) and `referrals` as `mismatch` (v2 936 against loaded 912). Owner: #123 (AM-09 verify). Until it is explained, treat a `mismatch` on these two as a question for #123, not as a result.
+
+## P3.6 Night-sitting phase (pass 5, synthetic)
+
+What: new phases `night`, `night-rollback` and `archive` in `apps/api/scripts/rehearsal/mig07-rehearse.sh` mirror the 29 Oct 01:00 sitting for one operator working alone (freeze, export, `migrate:all --apply`, `migrate:verify`; a breach means restoring `pre_etl`). The real-data pass is run by the dump operator with the procedure in [docs/ops/mig07-real-data-pass.md](mig07-real-data-pass.md). This pass only proves the phases on synthetic medium seed 7, on the P3 local tree (this branch `43d611b4` merged with #123 `89c4ece7`, plus the edited script), same cluster and settings as pass 3 (`fsync` off).
+
+```bash
+export MIG07_DUMP=<dump-dir> MIG07_AS_OF=2026-10-22 MIG07_LOG_DIR=<log-dir>   # plus the rehearsal env of P3.4
+<rehearsal-db.sh> reset --yes                                   # clean target (drop all, up: 36 migrations)
+MIG07_TAG=night-1 mig07-rehearse.sh night                       # content owner unset: scout
+mig07-rehearse.sh night-rollback
+<rehearsal-db.sh> reset --yes                                   # a second pre_etl needs a clean target
+MIG07_TAG=night-2 MIG07_CONTENT_OWNER=<id printed by night-1> mig07-rehearse.sh night
+mig07-rehearse.sh archive
+```
+
+`night` runs: `seed-reference`, `assert_no_users` (0), `load-dump`, `stage`, `snapshot pre_etl` (after the schema migrations), the content-owner scout when needed, `migrate:all --dry-run --as-of=<d> --content-owner=<id>`, the same with `--apply` (and `PP_ALLOW_MIGRATE_APPLY=1`), `migrate:verify`, `status`. `--files-dir` is added when `MIG07_FILES_DIR` is set (it needs `MIG07_STORAGE_DIR`; not exercised in this pass).
+
+| Step | night-1 s (scout) | night-2 s (owner given) | Exit |
+|---|---:|---:|---|
+| seed-reference | 4.1 | 3.8 | 0 |
+| load-dump | 15.8 | 16.6 | 0 |
+| stage | 3.8 | 3.8 | 0 |
+| snapshot pre_etl | 1.3 | 1.0 | 0 |
+| scout core dry-run / apply / restore pre_etl | 8.9 / 8.6 / 1.9 | - | 0 |
+| `migrate:all` dry-run | 9.9 | 9.8 | 0 |
+| `migrate:all --apply` (includes its own verify) | 964.1 | 718.0 | 0 |
+| `migrate:verify` | 5.3 | 5.9 | 0 |
+| status | 1.1 | 1.1 | 0 |
+| Phase, wall clock | 1,039 | 770 | 0 |
+
+Apply WAL about 498 MB in both runs. The apply time is the noisy part: 527 s in pass 3, 668 to 682 s in pass 4, 964 s and 718 s here, on the same data and cluster. Read it as a spread of at least 2x on this host, not as a production figure.
+
+- **Results equal pass 2/3.** The entity table of `migrate:verify` (37 entities, 16 checks) is identical in night-1 and night-2 and equals P2.3 (users 19,600 of 20,000, classrooms 280, enrolments 5,319, practice_sessions 23,614, practice_answers 67,522). Rejects by reason of the apply run (from `etl_rejects`, counts only): ORPHAN_PARENT 72,818, UNKNOWN_ENUM 16,273, INVALID_VALUE 2,154, DUPLICATE_KEY 40, UNSUPPORTED 4, as in P2.3. No `deleted_at_source` line appears in `migrate:all` or `migrate:verify` on a single load (n/a for the night).
+- **Content owner.** The owner must be an active v2 admin, and none exists before the load. The scout (core apply on the staged data, then restore `pre_etl`) found one; night-2 used that id and every entity count was the same, so for the same dump the id is stable. A different dump can give another id (ids follow load order). Open for the LEAD / #124: scout at go-live (about 20 s here), or fix the owner before the sitting. Without `--content-owner`, content rows (articles, notes, videos) have no owner and are rejected.
+- **Rollback.** `night-rollback`: `restore-snapshot pre_etl --yes` 3.1 s (phase 5 s), `ROLLBACK VERIFIED` and `MIGRATION CHECK PASSED` (36 of 36), then `users`, `etl_id_map`, `schools`, `classrooms`, `enrolments`, `parent_links`, `practice_sessions`, `practice_answers`, `coin_ledger`, `wallets`, `referral_codes` all counted 0. `migrate:verify` is not used (P3.5 note 3).
+- **Second night.** `rehearsal-db.sh snapshot` refuses a name that exists and has no delete command, so a second `night` needs `reset --yes` first. `night` checks this (and its settings) before it touches any log, and refuses with exit 2. On a migrated target `seed-reference` followed by the no-user check stops the phase (19,600 users found, exit 1).
+- **Archive.** On the synthetic dump the staged `question_reports`, submissions and the other minimise tables are empty: export 0 of 0, minimise dry-run and apply 0 rows (2.6, 2.7, 2.8 s, exit 0, both CSV files deleted). To exercise the write, 3 synthetic report rows were inserted by hand into `archive_cloud.question_reports` (one `open`, one `pending`, one `closed`) and `archive` was run again: export 2 of 3 open, dry-run (rolled back) and apply `user_id` 3 and `reason` 3 rows set to NULL, total 6, counts 0 afterwards; 2.7, 2.8, 2.8 s, exit 0. The guards ran as in the AM-09 header (`PP_ALLOW_MIGRATE_APPLY`, `PP_MIGRATE_TARGET_DB`, `--confirm`, `--export-summary`).
+- **Found and fixed in the script during this pass:** `grep -q` on a pipe under `pipefail` missed an existing `pre_etl`; an early refusal truncated the timings file of the same tag (the checks now run first).
+- **Not exercised:** `night` with `--files-dir` (AC9 was proven in P3.1 with `migrate:activity`), a failing step (the stop is the existing `step` code, tested in earlier passes), the verify breach path (P3.5).
 
 # Pass 2 (fixed code)
 

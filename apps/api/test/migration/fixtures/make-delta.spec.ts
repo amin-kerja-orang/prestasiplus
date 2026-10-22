@@ -126,6 +126,7 @@ describe('mig07-make-delta.mjs', () => {
       const r = run(TINY_DIR, out, ...args)
       expect(r.status, args.join(' ')).toBe(2)
       expect(r.stderr).toMatch(re)
+      expect(existsSync(out)).toBe(false)
     })
   })
 
