@@ -17,7 +17,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | P2 | 12 | 9 |
 | **Total** | **48** | **44** |
 
-(Done = implementation merged into feature/v2-backend: BE-01 to BE-18, BE-20, BE-22, BE-23, BE-24, BE-25, BE-26, BE-27, BE-28, BE-31, BE-34, BE-35, BE-36, BE-37, BE-38, BE-39, BE-40, BE-41, BE-42, BE-43, BE-44, BE-45, BE-46, BE-47, BE-48. Batch3 (BE-13, 18, 20, 23, 37, 40, 43, 48) merged via be/groupb-batch3-reint 7bdebea7. Cards not done on 2026-10-22 (@ 8008b88a): BE-32 and BE-33 `in-progress` (slices merged, release-gate ACs open); BE-29 and BE-30 `review` (PRs open, nothing merged). "Contract merged" rows are contract-only, not yet done.)
+(Done = implementation merged into feature/v2-backend: BE-01 to BE-18, BE-19, BE-20, BE-21, BE-22, BE-23, BE-24, BE-25, BE-26, BE-27, BE-28, BE-31, BE-34, BE-35, BE-36, BE-37, BE-38, BE-39, BE-40, BE-41, BE-42, BE-43, BE-44, BE-45, BE-46, BE-47, BE-48. Batch3 (BE-13, 18, 20, 23, 37, 40, 43, 48) merged via be/groupb-batch3-reint 7bdebea7. Cards not done on 2026-10-22 (@ 8008b88a): BE-32 and BE-33 `in-progress` (slices merged, release-gate ACs open); BE-29 and BE-30 `review` (PRs open, nothing merged). "Contract merged" rows are contract-only, not yet done.)
 
 **Progress (2026-10-22, after the LEAD merge @ 8008b88a): 44 of 48 cards done + 2 slices (BE-32, BE-33) ≈ 94% ((44 + 1) / 48 = 93.75%), unchanged; BE-29 and BE-30 now in review. 2026-10-21, after lead/merge-final (BE-28, 36, 38, 42, 46): 44 + 2 slices ≈ 94%. Earlier on 2026-10-21: 39 done + 2 slices ≈ 83%; 33 done + 2 slices ≈ 71%; 31 done + 4 slices ≈ 69%; before batch3 ≈ 52%.**
 
