@@ -177,7 +177,7 @@ Commands are the `npm run <script> -w @pp/api -- <flags>` forms of runbook 12; s
 
 ### 4.2 Why the freeze includes nearly a full pass
 
-The delta is a re-run of core and activity on the whole fresh dump (runbook 15; deviation from backend plan 14.5 item 4). It reads and transforms every row; only unchanged rows are skipped when writing (by `legacy_hash`). So the delta takes close to a full run, not a few minutes. The delta apply itself runs a dry-run and an apply for each of the two stages, and B6 adds a standalone dry-run. These figures must come from MIG-07 item 18, and the real rate from A11, not from a guess.
+The delta is a re-run of core and activity on the whole fresh dump (runbook 15; deviation from backend plan 14.5 item 4). It reads and transforms every row; only unchanged rows are skipped when writing (by `legacy_hash`). So the delta takes close to a full run, not a few minutes. The delta apply itself runs a dry-run and an apply for each of the two stages, and B6 adds a standalone dry-run. These figures must come from MIG-07 item 18, and the real rate from A11, not from a guess. Evidence (MIG-07 pass 3b, #133, synthetic 20k users): a delta with changes took 513 s and a no-op delta 515 s, so size the delta window from the full-volume time, not from the number of changed rows.
 
 Source deletes are **not** propagated by the delta (runbook 15): a row removed in `.cloud` after the T-1 export stays in v2. The freeze keeps `.cloud` still during the final export, but it cannot remove a row that was deleted between the two exports. `migrate:verify` therefore counts such rows after the delta (B8, `deleted_at_source:<entity>`), and criterion 12 and decision 15 say what is done with them.
 
