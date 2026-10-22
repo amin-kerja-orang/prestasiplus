@@ -70,6 +70,29 @@ export function describeBijakAggregatePort(name: string, factory: BijakFactory):
       expect(u2).toMatchObject({ sittings: 1, score: 4, max: 10, gradedScore: 0, gradedMax: 0 })
     })
 
+    it('answered counts answered questions, not marks (issue 61 m1): per sitting and summed in totals', async () => {
+      const port = await factory({
+        sittings: [
+          { fact: sitting({ userId: '81', attemptId: 'q1', score: 6, maxScore: 10, answeredCount: 3 }) },
+          { fact: sitting({ userId: '81', attemptId: 'q2', score: 0, maxScore: 10, answeredCount: 0 }) },
+          { fact: sitting({ userId: '81', attemptId: 'q3', score: 2, maxScore: 5, answeredCount: 2, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik' }) },
+        ],
+        items: [],
+      })
+      const got = await port.sittings({ userIds: ['81'] })
+      expect(got.map((s) => [s.attemptId, s.maxScore, s.answeredCount]).sort()).toEqual([
+        ['q1', 10, 3],
+        ['q2', 10, 0],
+        ['q3', 5, 2],
+      ])
+      const [u] = await port.totals({ userIds: ['81'] }, 'user')
+      expect(u).toMatchObject({ max: 25, answered: 5 })
+      expect((await port.totals({ userIds: ['81'] }, 'user_subject')).map((r) => [r.subjectId, r.answered]).sort()).toEqual([
+        ['1', 3],
+        ['2', 2],
+      ])
+    })
+
     it('totals by day uses the Malaysian calendar day', async () => {
       const port = await factory(seed)
       const rows = await port.totals({ userIds: ['1', '2'] }, 'day')

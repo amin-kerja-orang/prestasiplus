@@ -1,0 +1,28 @@
+# Restore drill. STOPS THE API for the duration (about 1-3 minutes) to make the row-count comparison exact.
+# Node 22 must be installed on the host. Enable the timer only after the first manual drills passed.
+[Unit]
+Description=PrestasiPlus restore drill (stops the api briefly)
+After=docker.service
+Requires=docker.service
+OnFailure=pp-alert@%n.service
+
+[Service]
+Type=oneshot
+User=ppdeploy
+Group=ppdeploy
+Environment=PP_ENV_DIR=/etc/pretasiplus
+Environment=PP_OPERATOR=scheduled-drill
+WorkingDirectory=/opt/pretasiplus
+ExecStart=/opt/pretasiplus/deploy/vps/backup/restore-drill.sh
+TimeoutStartSec=3h
+# Hardening that is compatible with using the docker CLI (the docker socket stays reachable; the socket is the real
+# privilege, see the runbook). Paths with a leading "-" are skipped when absent. Change them with PP_BACKUP_DIR /
+# PP_STATE_DIR / PP_LOCK_FILE.
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+ReadWritePaths=-/var/backups/pretasiplus -/var/lib/pretasiplus-deploy -/run/lock

@@ -34,14 +34,14 @@ describe('Prestasi sekolah', () => {
     const r = await w.school.school(schoolAdmin)
     expect(r.scope).toBe('school')
     expect(r.header).toEqual({ classCount: 3, studentCount: 7 })
-    expect(r.stats).toEqual({ students: 7, teachers: 2, classes: 3, subjects: 2, sessions: 9, answered: 90, accuracy: 70 })
+    expect(r.stats).toEqual({ students: 7, teachers: 2, classes: 3, subjects: 2, sessions: 9, answered: 45, accuracy: 70 })
     PerformanceSchoolSchema.parse(r)
   })
 
   it('platform scope for the admin covers every school', async () => {
     const r = await w.school.school(admin)
     expect(r.scope).toBe('platform')
-    expect(r.stats).toMatchObject({ students: 8, teachers: 2, sessions: 10, answered: 100, accuracy: 73 })
+    expect(r.stats).toMatchObject({ students: 8, teachers: 2, sessions: 10, answered: 50, accuracy: 73 })
   })
 
   it('level rows are the sums of their members', async () => {
@@ -107,7 +107,7 @@ describe('Cohort rules on the school totals (M1)', () => {
     // counts of structure stay
     expect(r.stats.students).toBe(7)
     const staff = await w.school.school(ctxOf('school_admin', 'sa1'))
-    expect(staff.stats).toMatchObject({ sessions: 9, answered: 90, accuracy: 70 })
+    expect(staff.stats).toMatchObject({ sessions: 9, answered: 45, accuracy: 70 })
   })
 
   it('a small remainder outside the levels also hides the totals', async () => {
@@ -134,7 +134,7 @@ describe('Cohort rules on the school totals (M1)', () => {
       big.bijak.addSitting(sitting({ userId: id, score: 5 }))
     }
     const r = await big.school.school(student)
-    expect(r.stats).toMatchObject({ sessions: 5, answered: 50, accuracy: 50 })
+    expect(r.stats).toMatchObject({ sessions: 5, answered: 25, accuracy: 50 })
   })
 
   it('subject rows backed by fewer than 5 pupils are dropped for non-staff only', async () => {
@@ -243,7 +243,7 @@ describe('Tingkatan', () => {
 
   it('top students need 3 sittings; a teacher sees names only of own pupils', async () => {
     const r = await w.school.level(schoolAdmin, 't4')
-    expect(r.topStudents).toEqual([{ userId: '1', name: 'Murid Ujian 1', sessions: 3, answered: 30, accuracy: 80 }])
+    expect(r.topStudents).toEqual([{ userId: '1', name: 'Murid Ujian 1', sessions: 3, answered: 15, accuracy: 80 }])
     const own = await w.school.level(ctxOf('teacher', 't2'), 't4')
     expect(own.topStudents[0]?.name).toBe('Murid Ujian 1')
     const other = await w.school.level(ctxOf('teacher', 't9'), 't4')
