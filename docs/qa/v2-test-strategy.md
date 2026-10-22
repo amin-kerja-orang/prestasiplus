@@ -291,7 +291,7 @@ Rules: a bug is judged against the AC or requirement it violates and against D9 
 ### 7.1 Shared tree and processes (mandatory)
 
 - Several sessions work in one folder. **Never kill all `node.exe`, Playwright or vite processes**; other sessions and the dev server on 5173 depend on them. Stop only the PIDs/ports you started, and say which in your report.
-- Ports: do not use 5173 (dev server), 4173 (default e2e preview), 5191 (Docker preview `pretasiplus-preview`), 5192 (compose frontend). For your own preview or Playwright config pick an unused port, check it is free first, and stop it afterwards. Preview only via the Docker container `pretasiplus-preview`; no hidden background servers left running.
+- Ports: do not use 5173 (dev server), 4173 (default e2e preview), 5191 (Docker preview `pretasiplus-preview`), 5192 (compose frontend). For your own preview or Playwright config pick an unused port, check it is free first, and stop it afterwards. Preview only via the Docker compose project `pretasiplus-preview` (service `preview`); no hidden background servers left running.
 - Playwright MCP lanes: one agent per lane (`playwright`, `playwright2`, `playwright3`); never two agents on one lane.
 - Scratch files and scripts live in your own subfolder of the scratchpad (`<scratchpad>/<role-or-module>/`); run only scripts from your own subfolder.
 - Never leave half-done data edits in the shared tree: a failing boot blocks every session. Shared-store changes use a worktree, as in section 4. Commit checkpoints only after a green boot, and only when the user has asked.

@@ -39,6 +39,7 @@ import { INTAKE_LIMITS } from './intake-files.config'
 import { type CallerInfo, IntakeFilesService, type ServedBytes } from './intake-files.service'
 import { IntakeUploadInterceptor } from './intake-upload.interceptor'
 import { IntakeUploadService, type UploadedPart } from './intake-upload.service'
+import { IntakeTeacherGate } from '../intake-teacher.gate'
 
 type Req = Request & RequestWithAuth
 
@@ -76,7 +77,7 @@ function pageNumber(raw: string): number {
  */
 @Controller('intake')
 @Roles('teacher', 'admin')
-@UseGuards(RateLimitGuard)
+@UseGuards(IntakeTeacherGate, RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 export class IntakeFilesController {
   constructor(
