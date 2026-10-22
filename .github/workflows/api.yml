@@ -257,9 +257,12 @@ jobs:
       # (one id per line with a reason comment and `exp:YYYY-MM-DD`; Trivy ignores an expired line, so it fails again).
       # Pinned by the full commit SHA of the release tag `v0.33.1`. The upstream tags carry a `v` prefix, so the
       # earlier `@0.33.1` could not be resolved and the job failed before the scan.
+      # `version` pins the Trivy binary: the action's default (v0.65.0) has no release asset any more (download 404),
+      # so the install step failed. v0.76.1's Linux-64bit asset is checked present (HTTP 200).
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
+          version: v0.76.1
           image-ref: pretasiplus-api:ci
           format: table
           severity: HIGH,CRITICAL
