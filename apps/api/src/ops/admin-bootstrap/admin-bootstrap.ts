@@ -107,10 +107,11 @@ export function parseBootstrapArgs(argv: readonly string[]): BootstrapArgs | nul
 
   const mode = text('mode')
   if (mode !== 'create' && mode !== 'reset') throw new UsageError('--mode must be create or reset.')
-  const email = text('email').trim()
+  // Lower case, as the app stores e-mails (lookups and the unique index use lower(email)).
+  const email = text('email').trim().toLowerCase()
   if (!EMAIL.test(email) || email.length > 255) throw new UsageError('--email is not a valid e-mail address.')
   if (!flags.has('confirm')) throw new UsageError('Refused: --confirm=<the same e-mail> is required (explicit confirmation).')
-  if (text('confirm').trim() !== email) throw new UsageError('Refused: --confirm must repeat --email exactly.')
+  if (text('confirm').trim().toLowerCase() !== email) throw new UsageError('Refused: --confirm must repeat --email exactly.')
   const reactivate = bool('reactivate')
   if (reactivate && mode !== 'reset') throw new UsageError('--reactivate is only for --mode=reset.')
   if (flags.has('name') && mode !== 'create') throw new UsageError('--name is only for --mode=create.')

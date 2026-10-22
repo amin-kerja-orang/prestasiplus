@@ -55,6 +55,13 @@ describe('argument parsing (no database)', () => {
     expect(() => parseBootstrapArgs(['--mode=reset', `--email=${ADMIN}`, '--confirm=lain@demo.test'])).toThrow(/repeat --email/)
   })
 
+  it('normalises the e-mail to lower case (as the app stores it); --confirm is compared the same way', () => {
+    expect(parseBootstrapArgs(['--mode=reset', '--email= Admin@Demo.Test ', '--confirm=admin@demo.test'])).toMatchObject({ email: ADMIN })
+    expect(parseBootstrapArgs(['--mode=reset', '--email=admin@demo.test', '--confirm=ADMIN@DEMO.TEST'])).toMatchObject({ email: ADMIN })
+    expect(() => parseBootstrapArgs(['--mode=reset', `--email=${ADMIN}`, '--confirm='])).toThrow(/repeat --email/)
+    expect(() => parseBootstrapArgs(['--mode=reset', `--email=${ADMIN}`, '--confirm=admin@demo.tes'])).toThrow(/repeat --email/)
+  })
+
   it('validates mode, e-mail and the mode-specific flags', () => {
     expect(() => parseBootstrapArgs([`--email=${ADMIN}`, `--confirm=${ADMIN}`])).toThrow(/--mode/)
     expect(() => parseBootstrapArgs(['--mode=delete', `--email=${ADMIN}`, `--confirm=${ADMIN}`])).toThrow(/create or reset/)
@@ -238,7 +245,9 @@ describe('bootstrap / reset against the database', () => {
     await t.db.query(`update users set is_active = false where id = $1::bigint`, [adminId])
     await expect(runAdminBootstrap(prisma, input({ mode: 'create', email: 'guru@demo.test' }))).rejects.toThrow(/already exists/)
 
-    const out = await runAdminBootstrap(prisma, input({ mode: 'create', email: 'pusat.baru@demo.test', name: 'Admin Pusat Baru' }))
+    const args = parseBootstrapArgs(['--mode=create', '--email=Pusat.Baru@Demo.Test', '--confirm=pusat.baru@demo.test', '--name=Admin Pusat Baru'])
+    const out = await runAdminBootstrap(prisma, input({ ...args, mode: 'create', email: args?.email ?? '', name: args?.name ?? '' }))
+    expect(await t.db.query(`select email from users where id = $1::bigint`, [out.userId])).toEqual([{ email: 'pusat.baru@demo.test' }])
     expect(out).toMatchObject({ mode: 'create', sessionsRevoked: 0, reactivated: false })
     const roles = await t.db.query(`select role from user_roles where user_id = $1::bigint`, [out.userId])
     expect(roles).toEqual([{ role: 'admin' }])

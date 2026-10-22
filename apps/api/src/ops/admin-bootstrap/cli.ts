@@ -154,7 +154,14 @@ export async function main(argv: readonly string[]): Promise<number> {
     throw e
   }
 
-  const prisma = createPrismaClient(url)
+  let prisma: ReturnType<typeof createPrismaClient>
+  try {
+    prisma = createPrismaClient(url)
+  } catch {
+    // Never print the error: it can quote the connection string.
+    err('DATABASE_URL could not be used; nothing was written.')
+    return EXIT.usage
+  }
   try {
     const db = (await prisma.$queryRaw<{ name: string }[]>`SELECT current_database() AS name`)[0]?.name ?? '?'
     const out = await runAdminBootstrap(prisma, { ...args, password, now: new Date(), hostUser: hostUser() })
@@ -195,7 +202,12 @@ function isEntry(): boolean {
 
 // Run only as the entry script (the spec imports `main` without running it).
 if (isEntry()) {
-  process.exitCode = await main(process.argv.slice(2))
+  process.exitCode = await main(process.argv.slice(2)).catch((e: unknown) => {
+    // Last resort: no stack trace (it could quote the connection string or input), the error code only.
+    const code = typeof e === 'object' && e !== null && 'code' in e ? String((e as { code: unknown }).code) : 'unknown'
+    err(`Failed (${code}); nothing was written.`)
+    return EXIT.failed
+  })
 } else if (/admin-bootstrap[\\/]cli\.[cm]?[jt]s$/.test(process.argv[1] ?? '')) {
   // Started as this script but the path check failed: never end silently with 0 (an operator would read it as done).
   err('Could not confirm the entry script path; nothing was done.')
