@@ -5,6 +5,7 @@
  * `/practice/{CODE}/quiz?level=…&dskp_sp_id=…&count={k}` (`level` omitted when unknown). Empty: green
  * check "Tiada topik lemah! Teruskan usaha.".
  */
+import { usePrototypeScope } from '@/composables'
 import { DsEmptyState, DsPanel } from '@/ds'
 
 import type { WeakTopic } from '../../api/types'
@@ -14,6 +15,8 @@ import { cut, focusHref } from '../../lib/analitik'
 defineProps<{ topics: WeakTopic[] }>()
 
 const icon = usePhIcon()
+// A teacher / admin reading a pupil's 360 may have no `/practice` in their scope: hide "Fokus" then (D6).
+const { allows } = usePrototypeScope()
 
 const href = (t: WeakTopic): string =>
   focusHref({
@@ -58,6 +61,7 @@ const href = (t: WeakTopic): string =>
               </p>
             </div>
             <UButton
+              v-if="allows('/practice')"
               :to="href(t)"
               :title="`Klik untuk ${String(t.focusCount)} soalan fokus`"
               color="neutral"
@@ -69,7 +73,10 @@ const href = (t: WeakTopic): string =>
             />
           </li>
         </ul>
-        <p class="flex flex-wrap items-center gap-2 text-caption text-muted">
+        <p
+          v-if="allows('/practice')"
+          class="flex flex-wrap items-center gap-2 text-caption text-muted"
+        >
           <UBadge
             color="primary"
             variant="subtle"

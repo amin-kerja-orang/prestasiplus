@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ItemAnalysis } from '../../api/types'
 import {
@@ -135,5 +135,14 @@ describe('/analisa-item redirect (OD-R4)', () => {
     expect(analisaItemTarget('student')).toBe('/dashboard')
     expect(analisaItemTarget('parent')).toBe('/dashboard')
     expect(analisaItemTarget(null)).toBe('/login')
+  })
+
+  it('sends a pelajar to the role home, not a fixed /dashboard (D6, 23 Oct sweep)', () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      expect(analisaItemTarget('student')).toBe('/spm/bijak')
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
