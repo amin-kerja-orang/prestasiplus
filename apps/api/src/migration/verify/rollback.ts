@@ -18,7 +18,8 @@
  *
  * One transaction. `dryRun` does the same work and rolls it back, so the counts are exact. Before anything: the shared
  * apply guard (`PP_ALLOW_MIGRATE_APPLY=1`, and in production `PP_MIGRATE_TARGET_DB`), `PP_ALLOW_MIGRATE_ROLLBACK=1` (a
- * second, separate switch, also for a dry-run) and `confirmDb = current_database()`.
+ * second, separate switch, also for a dry-run), `PP_MIGRATE_TARGET_DB = current_database()` in EVERY environment (not only in
+ * production) and `confirmDb = current_database()`.
  * NEVER AFTER GO-LIVE WITHOUT A LEAD DECISION: once v2 users work on the migrated data, a rollback deletes their accounts
  * (it refuses while v2 rows depend on them, but that is a safety net, not a procedure).
  *
@@ -111,6 +112,10 @@ export async function rollbackLegacy(options: RollbackOptions): Promise<Rollback
     throw new RollbackRefusedError('Refusing rollback: set PP_ALLOW_MIGRATE_ROLLBACK=1 to allow it (never after go-live without a LEAD decision). Nothing was changed.')
   }
   const current = (await pool.query<{ db: string }>('SELECT current_database() AS db')).rows[0]?.db ?? ''
+  // Stricter than the apply guard (which asks for it in production only): a rollback names its database in EVERY environment.
+  if (env.PP_MIGRATE_TARGET_DB !== current) {
+    throw new RollbackRefusedError(`Refusing rollback: PP_MIGRATE_TARGET_DB must equal the connected database name ("${current}") in every environment. Nothing was changed.`)
+  }
   if (confirmDb !== current) {
     throw new ApplyGuardError(`Refusing rollback: the confirmed database name does not match the connected database "${current}". Nothing was changed.`)
   }
@@ -268,12 +273,21 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
   // Close the runs a resume would continue, so the next apply starts from scratch (see the header).
   const closed = await db.query<{ id: string }>(
     `UPDATE etl_runs SET input_hash = 'rolled-back:' || coalesce(input_hash, '')
-     WHERE mode = 'apply' AND status = 'failed' AND $1 = ANY(sources) AND coalesce(input_hash, '') NOT LIKE 'rolled-back:%'
+     WHERE mode = 'apply' AND status = 'failed' AND sources = ARRAY[$1]::text[] AND coalesce(input_hash, '') NOT LIKE 'rolled-back:%'
      RETURNING id`,
     [source],
   )
   if (closed.rows.length > 0) await db.query(`DELETE FROM etl_checkpoints WHERE run_id = ANY($1::bigint[])`, [closed.rows.map((r) => r.id)])
   const warnings: string[] = []
+  // Only runs of this source alone are closed; a run that covers more sources also holds rows of the others.
+  const multi = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM etl_runs WHERE mode = 'apply' AND status = 'failed' AND $1 = ANY(sources) AND sources <> ARRAY[$1]::text[]
+       AND coalesce(input_hash, '') NOT LIKE 'rolled-back:%'`,
+    [source],
+  )
+  if ((multi.rows[0]?.n ?? 0) > 0) {
+    warnings.push(`${multi.rows[0]?.n} failed apply run(s) cover more than this source and were left open; a resume of one of them would skip batches that were rolled back`)
+  }
 
   // An adopted seed row nobody uses is deleted with the rest (see the header): say so for every claimable table.
   for (const t of out) {

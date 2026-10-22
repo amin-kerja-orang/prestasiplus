@@ -150,6 +150,10 @@ async function entityCheck(
   }
 }
 
+/** Proposed defaults of the deleted-at-source ceiling; the LEAD confirms them in MIG-08 section 8 item 4. */
+export const DEFAULT_MAX_DELETED_RATIO = 0.05
+export const DEFAULT_MAX_DELETED_ROWS = 100
+
 export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
   const { pool, source } = options
   assertLegacySource(source)
@@ -166,6 +170,19 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
       const deleted = recon1 ? await deletedAtSource(pool, source, entry) : null
       entities.push(await entityCheck(pool, source, entry, recon1, deleted))
       if (deleted && deleted.count > 0) {
+        const target = entities[entities.length - 1]?.targetCount ?? 0
+        const maxRatio = options.maxDeletedRatio ?? DEFAULT_MAX_DELETED_RATIO
+        const maxRows = options.maxDeletedRows ?? DEFAULT_MAX_DELETED_ROWS
+        if (deleted.count > maxRows && deleted.count > maxRatio * target) {
+          extra.push({
+            name: `deleted_at_source_ratio:${entry.entity}`,
+            kind: 'counts',
+            expected: `<= ${Math.max(maxRows, Math.floor(maxRatio * target))}`,
+            actual: deleted.count,
+            status: 'mismatch',
+            detail: `more than ${maxRatio * 100}% of the ${target} target rows and more than ${maxRows} rows have no source row now: check that the re-staged dump is complete (proposed ceiling; the LEAD confirms it in MIG-08 section 8 item 4)`,
+          })
+        }
         deletedIds[entry.entity] = deleted.ids
         extra.push({
           name: `deleted_at_source:${entry.entity}`,
