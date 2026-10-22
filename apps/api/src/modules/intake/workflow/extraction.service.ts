@@ -297,8 +297,8 @@ export class IntakeExtractionService implements OnModuleInit {
    * port, whose implementation (BE-36's `AiExtractorAdapter`) hands it to `AiExtractionService`, which redacts it once
    * with BE-36's redactor right before the provider and masks a provider that echoes a masked value (#189, LEAD
    * decision (c), 2026-10-21). The request carries no page image, not even a reference: the provider receives
-   * local-OCR text only (v2-threat-model rows 46 and 50). `images` is left out explicitly so that no later change to
-   * `IntakeExtractionInput` can bring it back.
+   * local-OCR text only (v2-threat-model rows 46 and 50). The request is built field by field, so an `images` entry
+   * that a later change to `IntakeExtractionInput` might add is not copied (and BE-36's service drops one as well).
    */
   private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[] }> {
     const built = await this.input.build(idToString(batchId))

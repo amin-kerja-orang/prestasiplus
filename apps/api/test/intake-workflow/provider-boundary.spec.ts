@@ -1,8 +1,11 @@
 import type { AiCapabilities, AiExtractedPaper, AiExtractRequest, AiGenerateTextRequest, AiGenerateTextResult, AiProviderId, AiSuggestTagsRequest } from '@pp/contract'
+import { Logger } from '@nestjs/common'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { AiExtractionService, AiExtractorAdapter } from '../../src/modules/ai-extraction'
 import type { AiTagSuggestion, ExtractedDraftPaper, ExtractionProvider, ProviderCallOptions, ProviderHealth, Tokens } from '../../src/modules/ai-extraction/ai.types'
 import { MASK, Redactor } from '../../src/modules/ai-extraction/redaction/redactor'
+import { AI_EXTRACTOR } from '../../src/modules/intake/files'
 import { bootWorkflowApp, draft, extractAndRun, loginAs, paper, readyBatch, type LoggedIn, type WorkflowTestApp } from './helpers'
 
 /**
@@ -91,6 +94,8 @@ describe('the real path is wired (sanity)', () => {
     const { batchId } = await readyBatch(t, teacher)
     await runOne(batchId)
     expect(t.ai.calls).toHaveLength(0)
+    // The production binding of the port: the only implementation, and it goes through BE-36's service.
+    expect(t.app.get(AI_EXTRACTOR)).toBeInstanceOf(AiExtractorAdapter)
     const rows = await t.db.query<{ n: string }>(`select count(*)::text n from intake_items where batch_id = $1`, [batchId])
     expect(rows[0]?.n).toBe('1')
   })
@@ -134,7 +139,6 @@ describe('text only (AC-8, #189): no page image reaches the provider adapter', (
     provider.answer = () => paper([draft(t.codes, '1')])
     const { batchId } = await readyBatch(t, teacher)
     // A future caller that puts image references on the port request: the service still sends text only.
-    const { AiExtractionService } = await import('../../src/modules/ai-extraction/ai-extraction.service')
     const svc = t.app.get(AiExtractionService)
     const original = svc.extractPaper.bind(svc)
     vi.spyOn(svc, 'extractPaper').mockImplementation((req, ctx, signal) =>
@@ -215,5 +219,37 @@ describe("redaction (AC-8, #189): applied once, by BE-36's redactor", () => {
       JSON.stringify(await t.db.query(`select payload from intake_items where batch_id = $1`, [batchId])) +
       JSON.stringify(await t.db.query(`select warnings from intake_extraction_runs where batch_id = $1`, [batchId]))
     expect(text).not.toMatch(/Zulkarnain|CONTOHAN/i)
+  })
+})
+
+describe('a provider failure (AC-8, #189)', () => {
+  it('leaves no page text in the run, the job or the logs', async () => {
+    const { batchId } = await readyBatch(t, teacher)
+    await setPage(batchId, 1, 'Nama: Contoh Penuh Gagal\nNo. KP: 090909-10-4321\nSoalan 1. Hitung 6 + 7.')
+    provider.answer = (req) => {
+      throw new Error(`gagal: ${JSON.stringify(req)}`)
+    }
+    const lines: string[] = []
+    for (const m of ['log', 'error', 'warn', 'debug', 'verbose'] as const) {
+      vi.spyOn(Logger.prototype, m).mockImplementation((...args: unknown[]) => {
+        lines.push(JSON.stringify(args))
+      })
+    }
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
+      lines.push(String(chunk))
+      return true
+    })
+    try {
+      await runOne(batchId)
+    } finally {
+      out.mockRestore()
+    }
+    const dump =
+      JSON.stringify(await t.db.query(`select * from intake_extraction_runs where batch_id = $1`, [batchId])) +
+      JSON.stringify(await t.db.query(`select * from jobs where entity_id = $1`, [batchId])) +
+      JSON.stringify(await t.db.query(`select * from ai_usage_logs`)) +
+      JSON.stringify(await t.db.query(`select * from ai_extraction_runs`)) +
+      lines.join('\n')
+    for (const secret of ['Contoh Penuh Gagal', '090909', 'Hitung 6 + 7', 'gagal: ']) expect(dump, secret).not.toContain(secret)
   })
 })
