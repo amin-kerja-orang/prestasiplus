@@ -72,6 +72,25 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     return { sessionId, rows: await itemRows(t.db, sessionId), res }
   }
 
+  /**
+   * Betul/Salah oracle: a true statement is "<question> → <key option text>", a false one shows a wrong option text.
+   * AZ-25: the draw is by level only, so an item may be any servable MCQ of the level (the base seed has three at T4),
+   * not only one of `math`; the served question is read from the database by the item's question id.
+   */
+  async function expectStatementOracle(statement: string | undefined, item: DbItem): Promise<void> {
+    const [served] = await t.db.query<{ stem: string; key: string }>(
+      `select coalesce(nullif(btrim(v.stem_ms), ''), p.prompt_ms) as stem, o.body_ms as key
+         from questions q
+         join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+         join question_parts p on p.question_version_id = v.id
+         join part_options o on o.part_id = p.id
+        where q.id = $1::bigint and o.label = $2`,
+      [item.question_id, 'ABCD'[item.key_index as number]],
+    )
+    expect(served, `question ${item.question_id}`).toBeDefined()
+    expect(statement === `${served?.stem} → ${served?.key}`).toBe(item.statement_true)
+  }
+
   /** Posts the check of item `i` answered correctly (`right`) or wrongly. */
   async function answerItem(c: Client, game: Exclude<GamesSoloGame, 'kad-memori'>, sessionId: string, item: DbItem, right: boolean): Promise<Response> {
     const base = { session_id: sessionId, item_id: item.question_id }
@@ -127,15 +146,24 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(rows.map((r) => r.question_id)).toEqual(payload.statements.map((s) => s.id))
       expect(rows.every((r) => r.key_index !== null && r.statement_true !== null && r.checked_seq === null)).toBe(true)
       expect(await sessionRow(sessionId)).toMatchObject({ item_count: 40, is_test: false, darjah: 10, submitted_at: null, checks: 0 })
-      // the statement of a true item ends with the key option text, a false one with a wrong option text
-      const item = rows[0] as DbItem
-      const q = math.find((m) => m.id === item.question_id) as InsertedMcq
-      const shown = payload.statements[0]?.statement.split(' → ')[1]
-      const keyText = (await t.db.query<{ body_ms: string }>(
-        `select o.body_ms from part_options o join question_parts p on p.id = o.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint and o.label = $2`,
-        [q.id, 'ABCD'[item.key_index as number]],
-      ))[0]?.body_ms
-      expect(shown === keyText).toBe(item.statement_true)
+      // the statement of a true item is "<question> → <key option text>", a false one shows a wrong option text
+      await expectStatementOracle(payload.statements[0]?.statement, rows[0] as DbItem)
+    })
+
+    it('Betul/Salah oracle holds for a question that is not one of this spec\'s (AZ-25 regression: base seed T4 MCQs)', async () => {
+      // With every inserted MATH question inactive, the T4 draw can serve only the base seed's T4 MCQs: the item the old
+      // oracle looked up in `math` (about 5% of runs) is now the only kind there is.
+      const ids = math.map((m) => m.id)
+      await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [ids])
+      try {
+        const { rows, res } = await open(student, 'betul-salah')
+        const payload = parseData(res, GamesBetulSalahPayloadSchema)
+        expect(payload.statements.length).toBeGreaterThan(0)
+        expect(rows.every((r) => !ids.includes(r.question_id))).toBe(true)
+        for (const [i, r] of rows.entries()) await expectStatementOracle(payload.statements[i]?.statement, r)
+      } finally {
+        await t.db.query(`update questions set is_active = true where id = any($1::bigint[])`, [ids])
+      }
     })
 
     it('the darjah query selects the level of the questions', async () => {
