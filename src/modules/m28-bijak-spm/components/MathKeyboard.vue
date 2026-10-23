@@ -46,20 +46,20 @@ function press(k: MathKey): void {
 
 <template>
   <div
-    class="mx-auto flex w-full max-w-md flex-col gap-1.5 rounded-card bg-accented p-2"
+    class="mx-auto flex w-full max-w-md flex-col gap-1 rounded-card bg-accented p-1.5 sm:gap-1.5 sm:p-2"
     role="group"
     :aria-label="label"
     data-testid="math-keyboard"
     @keydown.esc.stop="emit('close')"
   >
     <div
-      class="flex flex-col gap-1.5"
+      class="flex flex-col gap-1 sm:gap-1.5"
       :data-testid="symbols ? 'math-area-simbol' : 'math-area-fungsi'"
     >
       <div
         v-for="(row, r) in symbols ? SYMBOL_ROWS : FUNCTION_ROWS"
         :key="`${symbols}-${r}`"
-        class="grid grid-cols-5 gap-1.5"
+        class="grid grid-cols-5 gap-1 sm:gap-1.5"
       >
         <UButton
           v-for="k in row"
@@ -78,14 +78,14 @@ function press(k: MathKey): void {
             class="flex flex-col items-center gap-0.5"
             aria-hidden="true"
           >
-            <span class="size-2 rounded-xs bg-primary-t" />
+            <span class="size-2 rounded-none bg-primary-t opacity-60" />
             <span class="h-0.5 w-4 bg-primary-t" />
-            <span class="size-2 rounded-xs bg-primary-t" />
+            <span class="size-2 rounded-none bg-primary-t opacity-60" />
           </span>
           <template v-else>{{ k.label }}</template>
         </UButton>
       </div>
-      <div class="grid grid-cols-5 gap-1.5">
+      <div class="grid grid-cols-5 gap-1 sm:gap-1.5">
         <UButton
           v-for="k in SHARED_KEYS"
           :key="k.id"
@@ -114,8 +114,8 @@ function press(k: MathKey): void {
       </div>
     </div>
 
-    <div class="mt-1 flex flex-col gap-1.5" data-testid="math-area-number">
-      <div v-for="(row, r) in NUMBER_ROWS" :key="r" class="grid grid-cols-5 gap-1.5">
+    <div class="mt-1 flex flex-col gap-1 sm:gap-1.5" data-testid="math-area-number">
+      <div v-for="(row, r) in NUMBER_ROWS" :key="r" class="grid grid-cols-5 gap-1 sm:gap-1.5">
         <UButton
           v-for="k in row"
           :key="k.id"

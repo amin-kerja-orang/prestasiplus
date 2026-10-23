@@ -5,6 +5,7 @@ import { defineComponent, h } from 'vue'
 
 import { formStubs } from '@/test-support/form-stubs'
 
+import { plainToLatex, previewLatex } from '../domain/math-expr'
 import MathField from '../components/MathField.vue'
 import MathKeyboard from '../components/MathKeyboard.vue'
 import {
@@ -226,6 +227,78 @@ describe('MathField with the keypad', () => {
     await w.vm.$nextTick()
     expect((w.get('input').element as HTMLInputElement).value).toBe('')
     expect(w.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    w.unmount()
+  })
+})
+
+describe('keypad keeps the field and its preview in view (FB-047)', () => {
+  const global = {
+    components: { ...formStubs, UButton: UButtonStub, UIcon: { template: '<i />' } },
+  }
+
+  it('previews fractions stacked, also with a power on the denominator', () => {
+    expect(previewLatex('(7)/(3)')).toBe('\\frac{7}{3}')
+    expect(previewLatex('(7)/(3)^2')).toBe('\\frac{7}{3^{2}}')
+    expect(previewLatex('1/2+x^2')).toBe('\\frac{1}{2}+x^{2}')
+    expect(previewLatex('x/y^2')).toBe('\\frac{x}{y^{2}}')
+    expect(previewLatex('()/()')).toBe('\\frac{}{}')
+    // the stored answer is unchanged by the preview conversion
+    expect(plainToLatex('(7)/(3)')).toBe('\\frac{7}{3}')
+    expect(plainToLatex('(7)/(3)^2')).toBe('(7)/(3)^{2}')
+  })
+
+  it('previews functions upright, the degree sign and a literal percent', () => {
+    expect(previewLatex('sin(30°)')).toBe('\\sin (30^{\\circ})')
+    expect(previewLatex('log(100)+ln(e)')).toBe('\\log (100)+\\ln (e)')
+    expect(previewLatex('50%')).toBe('50\\%')
+    expect(previewLatex('2×10^(3)')).toBe('2\\times 10^{3}')
+    expect(previewLatex('')).toBe('')
+  })
+
+  it('renders a stacked fraction in the preview, above the docked keypad', async () => {
+    const w = mount(MathField, {
+      props: { modelValue: '(7)/(3)^{2}', label: 'Langkah 1' },
+      global,
+      attachTo: document.body,
+    })
+    await w.get('[data-testid=math-keypad-toggle]').trigger('click')
+    const preview = w.get('[data-testid=math-preview]')
+    expect(preview.find('.mfrac').exists()).toBe(true)
+    const dock = w.get('[data-testid=math-keyboard-dock]')
+    // DOM order: input line, preview, keypad dock
+    const order = [
+      ...w.element.querySelectorAll(
+        'input, [data-testid=math-preview], [data-testid=math-keyboard-dock]',
+      ),
+    ]
+    expect(
+      order.map((e) => (e.tagName === 'INPUT' ? 'input' : e.getAttribute('data-testid'))),
+    ).toEqual(['input', 'math-preview', 'math-keyboard-dock'])
+    expect(dock.classes()).toContain('fixed')
+    expect(dock.classes()).toContain('md:sticky')
+    expect(w.find('[data-testid=math-keyboard-spacer]').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('opens one keypad at a time and Escape closes it', async () => {
+    // Both fields in one app: useId gives each its own id there.
+    const Two = {
+      components: { MathField },
+      template:
+        '<div><MathField model-value="" label="Langkah 1" /><MathField model-value="" label="Langkah 2" /></div>',
+    }
+    const w = mount(Two, { global, attachTo: document.body })
+    const toggles = w.findAll('[data-testid=math-keypad-toggle]')
+    const inputs = w.findAll('input')
+    await toggles[0]!.trigger('click')
+    expect(w.findAll('[data-testid=math-keyboard]')).toHaveLength(1)
+    expect(inputs[0]!.attributes('inputmode')).toBe('none')
+    await toggles[1]!.trigger('click')
+    expect(w.findAll('[data-testid=math-keyboard]')).toHaveLength(1)
+    expect(inputs[0]!.attributes('inputmode')).toBe('text')
+    expect(inputs[1]!.attributes('inputmode')).toBe('none')
+    await w.get('[data-testid=math-keyboard]').trigger('keydown', { key: 'Escape' })
+    expect(w.find('[data-testid=math-keyboard]').exists()).toBe(false)
     w.unmount()
   })
 })
