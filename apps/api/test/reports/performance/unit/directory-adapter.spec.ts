@@ -29,3 +29,20 @@ describe('UsersDirectoryAdapter.users', () => {
     expect(n).toBe(0)
   })
 })
+
+describe('UsersDirectoryAdapter.subjectIdOfCode', () => {
+  it('maps a Bijak code to the curriculum row id (MAT to MATH) and an unknown code to null', async () => {
+    const asked: string[] = []
+    const curriculum = {
+      subjectByCode: async (code: string) => {
+        asked.push(code)
+        return code === 'MATH' ? { id: 3n } : code === 'BM' ? { id: 1n } : null
+      },
+    }
+    const adapter = new UsersDirectoryAdapter({} as never, {} as never, curriculum as never)
+    expect(await adapter.subjectIdOfCode('MAT')).toBe('3')
+    expect(await adapter.subjectIdOfCode('BM')).toBe('1')
+    expect(await adapter.subjectIdOfCode('ZZZ')).toBeNull()
+    expect(asked).toEqual(['MATH', 'BM', 'ZZZ'])
+  })
+})

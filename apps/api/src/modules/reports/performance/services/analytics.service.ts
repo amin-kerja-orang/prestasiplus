@@ -89,7 +89,14 @@ export class AnalyticsService {
 
     const members = await this.ports.classes.memberIds(cls.id)
     const facts = members.length === 0 ? [] : await this.ports.bijak.sittings({ userIds: members, modes: COUNTED_MODES.analytics })
-    const bySubject = groupBy(facts, (f) => f.subjectId)
+    // A sitting stores the Bijak subject CODE; a class stores the curriculum subject id. Group by the curriculum id so
+    // the options and the class subject agree (a code with no curriculum subject keeps the sitting's own id).
+    const idOfCode = new Map<string, string>()
+    for (const code of new Set(facts.map((f) => f.subjectCode))) {
+      const id = await this.directory.subjectIdOfCode(code)
+      if (id !== null) idOfCode.set(code, id)
+    }
+    const bySubject = groupBy(facts, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)
     const subjectIds = [...bySubject.keys()].sort(compareIds)
     if (cls.subjectId !== null) {
       const i = subjectIds.indexOf(cls.subjectId)

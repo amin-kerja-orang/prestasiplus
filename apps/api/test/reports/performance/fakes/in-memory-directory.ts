@@ -4,6 +4,7 @@ import type { DirectoryPort, PupilRef, SchoolRef } from '../../../../src/modules
 export class InMemoryDirectory implements DirectoryPort {
   private readonly pupils = new Map<string, PupilRef>()
   private readonly schoolRows = new Map<string, SchoolRef>()
+  private readonly subjectIds = new Map<string, string>()
   private readonly teachers = new Map<string, { id: string; name: string; schoolId: string }>()
 
   addSchool(s: Partial<SchoolRef> & Pick<SchoolRef, 'id'>): this {
@@ -13,6 +14,12 @@ export class InMemoryDirectory implements DirectoryPort {
 
   addPupil(p: Partial<PupilRef> & Pick<PupilRef, 'id'>): this {
     this.pupils.set(p.id, { name: `Murid ${p.id}`, grade: 10, levelSlug: 't4', levelId: '10', schoolId: null, isActive: true, isStudent: true, ...p })
+    return this
+  }
+
+  /** Registers a curriculum subject id for a Bijak subject code (codes without one fall back to the sitting's own id). */
+  addSubject(code: string, id: string): this {
+    this.subjectIds.set(code, id)
     return this
   }
 
@@ -53,5 +60,8 @@ export class InMemoryDirectory implements DirectoryPort {
   }
   async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
     return new Map(schoolIds.map((id) => [id, [...this.teachers.values()].filter((t) => t.schoolId === id).length]))
+  }
+  async subjectIdOfCode(code: string): Promise<string | null> {
+    return this.subjectIds.get(code) ?? null
   }
 }

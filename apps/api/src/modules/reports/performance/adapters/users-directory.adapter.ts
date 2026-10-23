@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
+import { curriculumCodeOf } from '../../../bijak/papers/subject-codes'
 import { CurriculumRepository } from '../../../curriculum/curriculum.repository'
 import { SchoolsRepository, type SchoolRow } from '../../../schools'
 import { UsersRepository } from '../../../users'
@@ -110,5 +111,10 @@ export class UsersDirectoryAdapter implements DirectoryPort {
   async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
     const counts = await this.schools.memberCounts(schoolIds)
     return new Map([...counts].map(([id, c]) => [id, c.teacherCount]))
+  }
+
+  async subjectIdOfCode(code: string): Promise<string | null> {
+    const subject = await this.curriculum.subjectByCode(curriculumCodeOf(code))
+    return subject ? subject.id.toString() : null
   }
 }
