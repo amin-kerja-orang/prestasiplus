@@ -68,12 +68,24 @@ describe('Analisa Item: school', () => {
       PerformanceSchoolItemAnalysisSchema.parse(s9)
     })
 
-    it('non-staff: empty below 5 graded pupils, and a year under 5 pupils is not listed', async () => {
+    it('non-staff: empty below 5 graded pupils; staff see the series', async () => {
       w.facts.add(graded('1', 95), graded('2', 85), graded('3', 75), graded('4', 62))
       expect((await w.items.school(ctxOf('student', '1'), {})).gps).toEqual({ value: null, band: null, entries: 0, years: [] })
       expect((await w.items.school(sa, {})).gps).toMatchObject({ value: 1.75, entries: 4, years: [{ year: 2026, gps: 1.75 }] })
-      w.facts.add(graded('5', 52), graded('1', 45, { configId: '2', academicYear: 2025 }))
-      expect((await w.items.school(ctxOf('student', '1'), {})).gps.years).toEqual([{ year: 2026, gps: 2.6 }])
+    })
+
+    it('non-staff: all years at 5 pupils or more give the full series', async () => {
+      w.facts.add(graded('1', 95), graded('2', 85), graded('3', 75), graded('4', 62), graded('5', 52))
+      for (const id of ['1', '2', '3', '4', '5']) w.facts.add(graded(id, 45, { configId: '2', academicYear: 2025 }))
+      const gps = (await w.items.school(ctxOf('student', '1'), {})).gps
+      expect(gps.years).toEqual([{ year: 2025, gps: 7 }, { year: 2026, gps: 2.6 }])
+    })
+
+    it('non-staff: one year under 5 pupils withholds the whole series (no differencing); staff always get it; the overall is unchanged', async () => {
+      w.facts.add(graded('1', 95), graded('2', 85), graded('3', 75), graded('4', 62), graded('5', 52), graded('1', 45, { configId: '2', academicYear: 2025 }))
+      const pupil = (await w.items.school(ctxOf('student', '1'), {})).gps
+      expect(pupil).toEqual({ value: 3.33, band: 'Baik', entries: 6, years: [] })
+      expect((await w.items.school(sa, {})).gps).toEqual({ value: 3.33, band: 'Baik', entries: 6, years: [{ year: 2025, gps: 7 }, { year: 2026, gps: 2.6 }] })
     })
 
     it('a tingkatan narrows it to the pupils of that level', async () => {

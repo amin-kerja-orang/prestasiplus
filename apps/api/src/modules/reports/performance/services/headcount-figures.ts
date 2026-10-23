@@ -61,15 +61,20 @@ export function schoolGps(entries: readonly HeadcountEntryView[], staff: boolean
   return { value: g.value, band: gpsBand(g.value), entries: g.entries }
 }
 
-/** The yearly headcount GPS of the same entries (S9 sparkline), oldest year first. Non-staff: a year below MIN_COHORT graded pupils is left out. */
+/**
+ * The yearly headcount GPS of the same entries (S9 sparkline), oldest year first. Non-staff: if ANY year has fewer than MIN_COHORT
+ * graded pupils the whole series is withheld. Dropping only that year would let it be recovered by differencing against the
+ * overall GPS and entry count, which S1 and S9 both serve (overall x entries minus the visible years).
+ */
 export function gpsByYear(entries: readonly HeadcountEntryView[], staff: boolean): { year: number; gps: number }[] {
   const by = new Map<number, HeadcountEntryView[]>()
   for (const e of gradedEntries(entries)) by.set(e.academicYear, [...(by.get(e.academicYear) ?? []), e])
+  if (!staff && [...by.values()].some((list) => distinctStudents(list) < MIN_COHORT)) return []
   return [...by]
     .sort(([a], [b]) => a - b)
     .flatMap(([year, list]) => {
       const g = gpsOf(list)
-      return g.value === null || (!staff && distinctStudents(list) < MIN_COHORT) ? [] : [{ year, gps: g.value }]
+      return g.value === null ? [] : [{ year, gps: g.value }]
     })
 }
 

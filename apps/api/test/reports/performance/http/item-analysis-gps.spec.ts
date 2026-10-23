@@ -41,9 +41,9 @@ describe('Analisa Item sekolah GPS card (SW5-07)', () => {
     ])
   })
 
-  it('a pupil gets the same figure; a year below the cohort of 5 pupils is left out of the series', async () => {
+  it('a pupil gets the same figure, but the whole series is withheld because 2025 is below the cohort of 5 pupils', async () => {
     const s9 = await itemSchool(as.pelajar as Client)
-    expect(s9.gps).toEqual({ value: 3.33, band: 'Baik', entries: 6, years: [{ year: 2026, gps: 2.6 }] })
+    expect(s9.gps).toEqual({ value: 3.33, band: 'Baik', entries: 6, years: [] })
   })
 
   it('a school without headcount entries keeps the empty card', async () => {
