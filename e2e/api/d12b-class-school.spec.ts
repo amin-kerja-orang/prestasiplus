@@ -1,13 +1,10 @@
 /**
- * @api D-12b (AZ-32 rehearsal, report #144 section 7): "a teacher-created class has `schoolId` null, so it
- * is missing from Kelas Sekolah". Not a defect: on S5 "Cipta Kelas" the school is OPTIONAL and is set only
- * through the "Pilih Sekolah" search (URS M10 FN-M10-3.2.2, SRS M10 §5 `school_id` "optional; must exist",
- * OBSERVED on live; the backend keeps it, `classes.service.ts` createClass). The rehearsal created its class
- * through the API without a school. This spec pins the documented path at 375 / 768 / 1280:
- *
- * - a class created WITH the teacher's own school (picked in "Pilih Sekolah") is sent with a string
- *   `schoolId` and is listed in the school admin's "Kelas Sekolah";
- * - a class created WITHOUT a school is sent without `schoolId` and is not listed there (as live).
+ * @api D-12b / SW7-01 (LEAD decision 6371548446 item 3): a teacher-created class belongs to the teacher's own
+ * school. In http mode S5 "Cipta Kelas" opens with the teacher's own school already chosen (DV-M10-40), so a
+ * class created without touching "Pilih Sekolah" is sent with a string `schoolId` and is listed in the school
+ * admin's "Kelas Sekolah". The teacher can still clear the picker: then no `schoolId` is sent, and the class
+ * is listed exactly when the API stored a school for it (the API default to the teacher's school, SW7-01,
+ * may or may not be deployed yet). Pinned at 375 / 768 / 1280.
  *
  * Env: E2E_DEMO_PASSWORD (or the BIJAK_<ROLE>_PASS variables). Seed: PoC (teacher and school admin of
  * "SMK Demo Satu").
@@ -26,16 +23,16 @@ const SCHOOL = 'SMK Demo Satu'
 async function createClass(
   page: Page,
   name: string,
-  pickSchool: boolean,
-): Promise<Record<string, unknown>> {
+  clearSchool: boolean,
+): Promise<{ sent: Record<string, unknown>; storedSchoolId: unknown }> {
   await page.goto('/guru/kelas/cipta')
   await expect(page.getByTestId('kelas-create-page')).toBeVisible()
-  if (pickSchool) {
-    await page.getByTestId('school-search').fill('Demo Satu')
-    const result = page.getByTestId('school-result').filter({ hasText: SCHOOL })
-    await expect(result).toHaveCount(1)
-    await result.click()
-    await expect(page.getByTestId('school-selected-name')).toContainText(SCHOOL)
+  // The teacher's own school is preselected (DV-M10-40).
+  await expect(page.getByTestId('school-selected-name')).toContainText(SCHOOL)
+  await expect(page.getByTestId('school-search')).toHaveCount(0)
+  if (clearSchool) {
+    await page.getByTestId('school-clear').click()
+    await expect(page.getByTestId('school-search')).toBeVisible()
   }
   const subject = page.getByTestId('kelas-subject')
   await expect(subject.locator('option').filter({ hasText: /^\s*Matematik\s*$/ })).toHaveCount(1)
@@ -50,14 +47,15 @@ async function createClass(
   await page.getByTestId('kelas-submit').click()
   const res = await created
   expect(res.status(), `POST /api/guru/classes ${await res.text()}`).toBe(201)
+  const stored = ((await res.json()) as { data: { schoolId: unknown } }).data.schoolId
   await expect(page).toHaveURL(/\/guru\/kelas$/)
-  return res.request().postDataJSON() as Record<string, unknown>
+  return { sent: res.request().postDataJSON() as Record<string, unknown>, storedSchoolId: stored }
 }
 
 test.describe('D-12b class school @api', () => {
   test.setTimeout(120_000)
 
-  test('a class gets the school picked in "Pilih Sekolah" and shows in Kelas Sekolah @api', async ({
+  test('a class gets the teacher\'s own school by default and shows in Kelas Sekolah @api', async ({
     page,
     browser,
   }, info) => {
@@ -65,12 +63,15 @@ test.describe('D-12b class school @api', () => {
     await loginViaUi(page, guru.user, guru.pass)
     const stamp = `${info.project.name} ${String(Date.now()).slice(-6)}`
     const withSchool = `D12b sekolah ${stamp}`
-    const without = `D12b tiada ${stamp}`
+    const cleared = `D12b kosong ${stamp}`
 
-    const sentWith = await createClass(page, withSchool, true)
-    expect(typeof sentWith.schoolId, 'schoolId on the wire').toBe('string')
-    const sentWithout = await createClass(page, without, false)
-    expect(sentWithout).not.toHaveProperty('schoolId')
+    const own = await createClass(page, withSchool, false)
+    expect(typeof own.sent.schoolId, 'schoolId on the wire').toBe('string')
+    expect(own.storedSchoolId).toBe(own.sent.schoolId)
+    const none = await createClass(page, cleared, true)
+    expect(none.sent).not.toHaveProperty('schoolId')
+    // Listed exactly when the API stored a school (the SW7-01 API default may or may not be deployed).
+    const clearedListed = none.storedSchoolId !== null && none.storedSchoolId !== undefined
 
     const peer = await newPeerContext(browser, info)
     try {
@@ -79,7 +80,7 @@ test.describe('D-12b class school @api', () => {
       await loginViaUi(adminPage, admin.user, admin.pass)
       for (const [name, listed] of [
         [withSchool, true],
-        [without, false],
+        [cleared, clearedListed],
       ] as const) {
         const list = adminPage.waitForResponse(
           (r) => r.url().includes('/api/admin-sekolah/kelas') && r.request().method() === 'GET',
