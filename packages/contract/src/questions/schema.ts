@@ -31,6 +31,8 @@ export const QUESTION_MESSAGES = {
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
   bulkBadIds: 'Senarai soalan tidak sah.',
+  /** A `failed[]` entry of `POST /questions/bulk-action` for an id that does not exist ([PROPOSED] copy). */
+  notFound: 'Soalan tidak dijumpai.',
   subject: 'Sila pilih subjek.',
   level: 'Sila pilih tahap pendidikan.',
   difficulty: 'Sila pilih tahap kesukaran.',
@@ -296,7 +298,29 @@ export const QuestionBulkRequestSchema = z
   .meta({ id: 'QuestionBulkRequest' })
 
 export const QuestionDeleteResultSchema = z.object({ deleted: z.literal(1) }).meta({ id: 'QuestionDeleteResult' })
-export const QuestionBulkResultSchema = z.object({ affected: z.number().int().min(0) }).meta({ id: 'QuestionBulkResult' })
+/** Why one requested id of a bulk action was not applied. */
+export const QUESTION_BULK_FAILURE_CODES = ['NOT_FOUND', 'CONFLICT', 'VALIDATION_ERROR'] as const
+export const QuestionBulkFailureSchema = z
+  .object({
+    id: IdSchema,
+    code: z.enum(QUESTION_BULK_FAILURE_CODES),
+    message: z.string().meta({
+      description:
+        'The BM text for this id. NOT_FOUND: "Soalan tidak dijumpai." [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view).',
+    }),
+    fields: z.record(z.string(), z.string()).meta({ description: 'The exact gate field messages (VALIDATION_ERROR); `{}` otherwise.' }),
+  })
+  .meta({ id: 'QuestionBulkFailure' })
+export type QuestionBulkFailure = z.infer<typeof QuestionBulkFailureSchema>
+export const QuestionBulkResultSchema = z
+  .object({
+    affected: z.number().int().min(0),
+    failed: z
+      .array(QuestionBulkFailureSchema)
+      .default([])
+      .meta({ description: 'One entry per unique requested id that was not applied, in request order; `[]` when all were applied.' }),
+  })
+  .meta({ id: 'QuestionBulkResult' })
 
 /* ------------------------------------------------------------------------- structured (admin reads) */
 

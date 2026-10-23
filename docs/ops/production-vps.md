@@ -281,7 +281,7 @@ What it does, in order (`deploy.sh --help`):
    `app.example.my`, the dev WhatsApp number, ...); **fail-closed guard**: refuses if `ALLOW_DEMO_SEED`, `BIJAK_POC_QUESTIONS` or `MAIL_LOG_RESET_LINKS` is `true`/`1`
    in any env file or the shell; secrets 32+ characters, `IC_HASH_KEY` different from `SESSION_SECRET` (what the API enforces at boot, plus the 32-character team policy);
    `DATABASE_URL` matches `db.env` (host `db`, user, database, password); stop grace above `SHUTDOWN_GRACE_MS`; the certificate is readable (directly, or through the running edge when `live/` is root-only) and is **not self-signed** (issuer differs from subject: the `init-cert.sh` placeholder is refused), not expired; `docker compose config -q`
-   passes with the overlay; the working tree is clean (`--allow-dirty` to override).
+   passes with the overlay; **single-instance guard** (section 14); the working tree is clean (`--allow-dirty` to override).
 2. **Pre-deploy backup** (`backup.sh --tag pre-deploy --no-files`) if the database is running. `--skip-backup` exists and is logged as a warning: do not use it with a migrating release.
 3. **Build or pull** the three images tagged with the git sha.
 4. `db` up and healthy.
@@ -291,6 +291,8 @@ What it does, in order (`deploy.sh --help`):
 8. **Health checks through the edge** (real host name, forced to 127.0.0.1): `/api/health` 200, `/api/ready` 200 `ready` (database up and every shipped migration applied), `/` 200,
    `/api/metrics` 404, `http://` redirects 301.
 9. Records `current.tag` and `previous.tag` in `PP_STATE_DIR`, appends to `history.log` (tag, sha, user).
+
+**Deploy check (single instance).** After the deploy, `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env ps api` must show exactly one container.
 
 **Expected log line:** in production the API logs one boot warning (`clientIpBootWarning`, #91) when `TRUST_PROXY_HOPS` > 0 and `CLIENT_IP_HEADER` / `EDGE_PROXY_SECRET` are unset. On this stack that is expected and harmless: the edge is the single proxy and sets the client address itself; those two keys are for the Cloudflare Pages path and stay empty here.
 
@@ -543,6 +545,8 @@ The API keeps its rate-limit counters (and the AI provider limits) in process me
 
 - `api` is one container. `compose.prod.yaml` has no `deploy.replicas`, and says so in a comment next to the service. **Never** add `replicas`, `docker compose up --scale api=N`, a second stack on the same database, or a second host running the API.
 - A shared store (Redis, or a Postgres counter table behind `RateLimiter.consume`) is required before scaling out; that is a backend-developer card. Until then, scale up (section 13), not out.
+- **Go-live (30 Oct) is single-instance on the VPS. This is the accepted go-live limit (LEAD decision A on #190, 2026-10-22); scaling out needs the shared store first** (Redis, or a Postgres counter table behind `RateLimiter.consume`).
+- **Guard.** `deploy.sh` preflight (also in `--dry-run`, read-only, no root) refuses the deploy with "api must run as ONE instance (threat model row 18, runbook section 14)" when the rendered production config gives the `api` service `deploy.replicas` or `scale` other than 1, or when more than one `api` container of this compose project is already running (a leftover `--scale api=2`). It also refuses `PP_JOBS_WORKER_ENABLED` set to anything but true, because the single instance is the worker. It prints names and counts only. It cannot see a second host or a second stack on another project name: those stay a rule.
 - `JOBS_WORKER_ENABLED=true` runs on exactly this one instance (`PP_JOBS_WORKER_ENABLED`). With a second instance, exactly one must have it `true`.
 - A restart resets the in-memory counters; a deploy therefore briefly resets rate limits. Accepted.
 - During a deploy the API is recreated: for the few seconds of the swap the edge returns 502 for `/api` (the SPA stays up). Deploy outside exam windows.
