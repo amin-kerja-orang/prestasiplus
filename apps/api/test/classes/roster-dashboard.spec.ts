@@ -88,6 +88,12 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       errorIs(await a.put(`/guru/students/${sOther}`, { classroomId: k1.id }), 403, 'FORBIDDEN', CLASS_MESSAGES.studentOtherSchool)
     })
 
+    it('SW5-10: a deactivated pupil of the school is 404 like an unknown pupil and no enrolment is written', async () => {
+      errorIs(await a.put(`/guru/students/${sInactive}`, { classroomId: k1.id }), 404, 'NOT_FOUND', CLASS_MESSAGES.studentNotFound)
+      expect(await t.db.query(`select 1 from enrolments where student_id = $1`, [sInactive])).toHaveLength(0)
+      expect(await t.db.query(`select 1 from audit_events where action = 'classes.student.added' and detail->>'studentId' = $1`, [sInactive])).toHaveLength(0)
+    })
+
     it('another teacher of the same school gets 403 "Kelas ini bukan milik anda."; a teacher of another school gets 404', async () => {
       errorIs(await b.put(`/guru/students/${s2}`, { classroomId: k1.id }), 403, 'FORBIDDEN', CLASS_MESSAGES.classNotOwn)
       errorIs(await c.put(`/guru/students/${sOther}`, { classroomId: k1.id }), 404, 'NOT_FOUND', CLASS_MESSAGES.classroom)

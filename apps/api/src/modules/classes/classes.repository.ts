@@ -526,12 +526,12 @@ export class ClassesRepository {
     return (await this.db.school.count({ where: { id: key } })) > 0
   }
 
-  /** The user as the roster rules need it: a student account, its school and state; null for any other user. */
+  /** The user as the roster rules need it: an ACTIVE student account, its school and state; null for any other user (inactive included). */
   async studentFacts(id: string): Promise<{ id: string; name: string; schoolId: string | null } | null> {
     const key = idOf(id)
     if (key === null) return null
     const row = await this.db.user.findFirst({
-      where: { id: key, roles: { some: { role: 'student' } } },
+      where: { id: key, isActive: true, roles: { some: { role: 'student' } } },
       select: { id: true, name: true, schoolId: true },
     })
     return row ? { id: idToString(row.id), name: row.name, schoolId: row.schoolId === null ? null : idToString(row.schoolId) } : null

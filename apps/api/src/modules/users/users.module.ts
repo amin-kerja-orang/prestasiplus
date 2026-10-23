@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { AuthModule } from '../auth'
+import { ParentLinksModule } from '../parents/parent-links.module'
 import { SchoolsModule } from '../schools'
 import { IcService } from './credentials'
 import { ImportJobsRepository, UserImportService } from './import'
@@ -16,7 +17,7 @@ import { UsersService } from './users.service'
  * for the other cards (ADR-0014) and `ImportJobsRepository` plus the import helpers for BE-25.
  */
 @Module({
-  imports: [AuditModule, AuthModule, SchoolsModule, ThrottleModule],
+  imports: [AuditModule, AuthModule, SchoolsModule, ThrottleModule, ParentLinksModule],
   controllers: [UsersController, LookupsController],
   providers: [UsersRepository, ImportJobsRepository, UsersService, UserImportService, IcService],
   exports: [UsersRepository, ImportJobsRepository],

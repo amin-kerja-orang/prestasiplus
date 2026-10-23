@@ -29,3 +29,23 @@ describe('UsersDirectoryAdapter.users', () => {
     expect(n).toBe(0)
   })
 })
+
+describe('UsersDirectoryAdapter.subjectIdsOfCodes', () => {
+  it('maps Bijak codes to the curriculum row ids (MAT to MATH) in one read; an unknown code is absent', async () => {
+    let reads = 0
+    const curriculum = {
+      subjects: async () => (reads++, [{ id: 3n, code: 'MATH' }, { id: 1n, code: 'BM' }, { id: 7n, code: 'SCI' }]),
+    }
+    const adapter = new UsersDirectoryAdapter({} as never, {} as never, curriculum as never)
+    const ids = await adapter.subjectIdsOfCodes(['MAT', 'BM', 'SN', 'ZZZ'])
+    expect([...ids]).toEqual([['MAT', '3'], ['BM', '1'], ['SN', '7']])
+    expect(reads).toBe(1)
+  })
+
+  it('an empty list makes no read', async () => {
+    let reads = 0
+    const adapter = new UsersDirectoryAdapter({} as never, {} as never, { subjects: async () => (reads++, []) } as never)
+    expect((await adapter.subjectIdsOfCodes([])).size).toBe(0)
+    expect(reads).toBe(0)
+  })
+})
