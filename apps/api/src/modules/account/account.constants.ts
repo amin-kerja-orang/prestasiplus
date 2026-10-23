@@ -24,6 +24,13 @@ export const ACCOUNT_AUDIT = {
 export const ACCOUNT_REGISTRATION_CLOSED_CODE = 'REGISTRATION_CLOSED'
 export const ACCOUNT_REGISTRATION_CLOSED_MESSAGE = 'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.'
 
+/**
+ * `PUT /me` school change (SW2-12): the student's username already exists in the chosen school (usernames are unique
+ * per school). Replaces the generic English "The username has already been taken." on `schoolId`.
+ */
+export const ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE =
+  'Nama pengguna anda sudah digunakan di sekolah ini. Sila hubungi pentadbir sekolah.'
+
 /** A reset token is 32 random bytes (256 bits, contract minimum 128), base64url. */
 export const RESET_TOKEN_BYTES = 32
 export const RESET_TOKEN_TTL_MS = ACCOUNT_RESET_TOKEN_TTL_MINUTES * 60_000

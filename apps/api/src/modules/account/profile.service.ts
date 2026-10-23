@@ -6,7 +6,6 @@ import {
   ACCOUNT_PICTURE_MIME_TYPES,
   AccountPasswordChangeRequestSchema,
   AccountProfileUpdateRequestSchema,
-  V,
   type AccountUserMe,
 } from '@pp/contract'
 
@@ -24,6 +23,7 @@ import { SchoolsRepository } from '../schools'
 import { UsersRepository, uniqueField, type UserRecord } from '../users'
 import {
   ACCOUNT_AUDIT,
+  ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE,
   ACCOUNT_TX,
   PASSWORD_CHANGE_CEILING,
   SELF_SCHOOL_ROLES,
@@ -175,7 +175,7 @@ export class ProfileService {
       } catch (err) {
         // The school change collided with an existing username of the target school (unique per school).
         if (!(err instanceof ApiError) && uniqueField(err) === 'username')
-          throw invalid({ schoolId: V.taken('username') })
+          throw invalid({ schoolId: ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE })
         throw err
       }
       return this.me(auth)

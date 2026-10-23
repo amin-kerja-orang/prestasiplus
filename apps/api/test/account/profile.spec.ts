@@ -11,6 +11,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE } from '../../src/modules/account/account.constants'
 import { makePng } from '../files/fixtures'
 import { schoolIdOf } from '../auth/helpers'
 import {
@@ -189,7 +190,8 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
     it('a student whose username already exists in the target school gets 422, not 500', async () => {
       const who = await login(t, 'pelajar@demo.test') // username murid01; DEMO002 already has a murid01
       const res = await put(who, '/me', { name: 'Murid Demo', schoolId: school2 })
-      expect(fieldsOf(res)).toEqual({ schoolId: 'The username has already been taken.' })
+      expect(fieldsOf(res)).toEqual({ schoolId: ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE })
+      expect(ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE).toBe('Nama pengguna anda sudah digunakan di sekolah ini. Sila hubungi pentadbir sekolah.')
     })
 
     it('a teacher cannot change or clear the school: schoolId is ignored (membership is managed by school_admin/admin)', async () => {
