@@ -236,6 +236,18 @@ export class AnalyticsRepository {
     return rows.map((r) => ({ id: r.id, name: r.name, email: r.email ?? '', lastLoginAt: r.last_login_at, createdAt: r.created_at }))
   }
 
+  /** The given teacher accounts (any status), id ascending. The caller picks the ids; nothing is filtered by school or activity here. */
+  async teachersAmong(ids: readonly string[]): Promise<TeacherLine[]> {
+    const keys = toIds(ids)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: string; name: string; email: string | null; last_login_at: Date | null; created_at: Date }[]>`
+      SELECT u.id::text AS id, u.name, u.email, u.last_login_at, u.created_at
+      FROM users u
+      WHERE u.id = ANY(${keys}::bigint[]) AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
+      ORDER BY u.id`
+    return rows.map((r) => ({ id: r.id, name: r.name, email: r.email ?? '', lastLoginAt: r.last_login_at, createdAt: r.created_at }))
+  }
+
   /** Answers, correct answers and the latest answer per pupil, over the whole log (Q-ANS-USER). */
   async pupilStats(userIds: readonly string[]): Promise<Map<string, PupilStat>> {
     const ids = toIds(userIds)
