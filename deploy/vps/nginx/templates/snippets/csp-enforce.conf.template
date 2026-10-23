@@ -1,0 +1,8 @@
+# SPA Content-Security-Policy, ENFORCED. Same policy as csp-report-only.conf; keep the two files identical apart from the header name.
+# - script-src 'self': the Vite build has no inline script.
+# - style-src 'unsafe-inline': Vue sets inline style attributes and index.html carries the splash <style>.
+# - img-src: PP_CSP_IMG_HOSTS = space-separated https origins for article/banner images and video thumbnails,
+#   e.g. "https://img.youtube.com https://cdn.example.my" (the origins in PUBLIC_ORIGINS). No bare https:.
+# - This file is a template: only ${PP_*} variables are substituted at container start.
+# - frame-src: the video embeds the SPA allows (VideoPlayerFrame: youtube, vimeo, dailymotion).
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: ${PP_CSP_IMG_HOSTS}; font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src https://www.youtube.com https://player.vimeo.com https://www.dailymotion.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;

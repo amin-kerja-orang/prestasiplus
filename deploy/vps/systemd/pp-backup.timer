@@ -1,0 +1,11 @@
+[Unit]
+Description=PrestasiPlus nightly backup
+
+[Timer]
+# Server time zone should be Asia/Kuala_Lumpur (timedatectl set-timezone Asia/Kuala_Lumpur): 02:15 local, low traffic.
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target
