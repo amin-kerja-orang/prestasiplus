@@ -33,11 +33,13 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     return r!
   }
   const TOTAL = { inClass: 9001, sameSchool: 9002, otherSchool: 9003, testEnrolled: 9004, inactiveClass: 9005 }
-  /** The teacher's own wallet: the own row is shown in full although the teacher is not a pupil of the own classes. */
+  /** The teacher's own (staff) wallet: never ranked on the pupil board (FIX-3 D-08). */
   const TEACHER_TOTAL = 9006
 
   async function pupil(name: string, schoolId: string): Promise<string> {
-    return (await t.db.query<{ id: string }>(`insert into users (name, school_id) values ($1, $2::bigint) returning id::text`, [name, schoolId]))[0]!.id
+    const id = (await t.db.query<{ id: string }>(`insert into users (name, school_id) values ($1, $2::bigint) returning id::text`, [name, schoolId]))[0]!.id
+    await t.db.query(`insert into user_roles (user_id, role) values ($1::bigint, 'student')`, [id]) // only student wallets are ranked (FIX-3 D-08)
+    return id
   }
   async function classOf(teacherId: string, schoolId: string, active: boolean, members: { id: string; isTest: boolean }[]): Promise<void> {
     let level = (await t.db.query<{ id: string }>(`select id::text from education_levels order by id limit 1`))[0]?.id
@@ -145,9 +147,16 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     expect(byTotal(await board(await signIn(t, STUDENT)), TOTAL.inClass).userId).toBeNull()
   })
 
-  it('teacher: the own row stays full', async () => {
+  it('a pupil sees the own row in full', async () => {
+    const me = await userIdOf(t.db, STUDENT)
+    const mine = (await board(await signIn(t, STUDENT))).find((r) => r.userId === me)
+    expect(mine, 'own row').toBeDefined()
+    expect(mine!.name).not.toMatch(/\.$/)
+  })
+
+  it('teacher: the own staff wallet is not on the pupil board (FIX-3 D-08)', async () => {
     const rows = await board(await signIn(t, TEACHER))
-    expect(byTotal(rows, TEACHER_TOTAL)).toMatchObject({ userId: ids.teacher, name: 'Guru Demo' })
+    expect(rows.find((r) => r.totalSyilingEarned === TEACHER_TOTAL)).toBeUndefined()
   })
 
   it('ranks and totals are the same whoever asks', async () => {
