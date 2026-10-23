@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+
 import { describe, expect, it } from 'vitest'
 
 import type { CcDrillRowMap } from '../../api/command-center-types'
@@ -7,6 +10,7 @@ import {
   gpsText,
   gpsTone,
   insightText,
+  NAV_LINKS,
   rarityOf,
   riskLabel,
   signedPct,
@@ -171,5 +175,15 @@ describe('drill tables (FN-M10-2.2.7)', () => {
       '55%',
       '24/09/2026 10:00',
     ])
+  })
+})
+
+describe('top-bar icons (DV-M10-39)', () => {
+  it('every top-bar glyph exists in the installed Phosphor set, so it is bundled and renders', () => {
+    const json = JSON.parse(
+      readFileSync(createRequire(import.meta.url).resolve('@iconify-json/ph/icons.json'), 'utf8'),
+    ) as { icons: Record<string, unknown>; aliases?: Record<string, unknown> }
+    const names = new Set([...Object.keys(json.icons), ...Object.keys(json.aliases ?? {})])
+    for (const l of NAV_LINKS) expect(names.has(l.icon.replace(/^i-ph-/, '')), l.icon).toBe(true)
   })
 })

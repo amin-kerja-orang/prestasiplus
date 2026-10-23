@@ -63,6 +63,20 @@ const inactivePupil = () =>
     canEdit: false,
   })
 
+/** Runs `fn` with `matchMedia` answering for a viewport `width` (jsdom has none: every breakpoint counts as reached). */
+async function atWidth<T>(width: number, fn: () => Promise<T>): Promise<T> {
+  const matchMedia = vi.fn((q: string) => {
+    const min = Number(/(?:min-width:|width >=)\s*(\d+)px/.exec(q)?.[1] ?? 0)
+    return { matches: width >= min, addEventListener: vi.fn(), removeEventListener: vi.fn() }
+  })
+  window.matchMedia = matchMedia as unknown as typeof window.matchMedia
+  try {
+    return await fn()
+  } finally {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  }
+}
+
 async function mountPupils(
   data: ReturnType<typeof list> | ApiError = list([pupil(), inactivePupil()]),
   url = '/admin-sekolah/pelajar',
@@ -114,7 +128,11 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
 
   it('shows one count card "Pelajar" (unfiltered total) and "{n} pengguna dijumpai"', async () => {
     const { wrapper: w } = await mountPupils(
-      list([pupil()], { totalItems: 1234, totalPages: 50 }, { total: 2000, active: 1900, inactive: 100 }),
+      list(
+        [pupil()],
+        { totalItems: 1234, totalPages: 50 },
+        { total: 2000, active: 1900, inactive: 100 },
+      ),
     )
     expect(w.findAll('[data-testid="user-count-card"] > [data-ds="stat-tile"]')).toHaveLength(1)
     expect(text(w, 'user-count-card')).toContain('2,000')
@@ -166,6 +184,43 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(edit.attributes('href')).toBe('/admin-sekolah/pelajar/3001')
   })
 
+  it('shows the value of every hidden column under the name, the date always (Codex P2, DV-M27-24)', async () => {
+    const sub = (w: Awaited<ReturnType<typeof mountPupils>>['wrapper'], k: string) =>
+      w.findAll('tbody tr')[0]!.find(`[data-testid="user-sub-${k}"]`)
+    // 768: Tingkatan, Kelas, Telefon and Tarikh are all under the name.
+    await atWidth(768, async () => {
+      const { wrapper: w } = await mountPupils()
+      expect(sub(w, 'grade').text()).toBe('Tingkatan 5')
+      expect(sub(w, 'kelas').text()).toBe('Kelas: 5 Amanah, 5 Bestari')
+      expect(sub(w, 'phone').text()).toMatch(/^Telefon: /)
+      expect(sub(w, 'date').text()).toBe('Tarikh: 04/03/2026')
+      expect(sub(w, 'last-login').exists()).toBe(false)
+    })
+    // 1280: Tingkatan and Kelas have their columns; Telefon and Tarikh stay under the name.
+    await atWidth(1280, async () => {
+      const { wrapper: w } = await mountPupils()
+      expect(sub(w, 'grade').exists()).toBe(false)
+      expect(sub(w, 'kelas').exists()).toBe(false)
+      expect(sub(w, 'phone').exists()).toBe(true)
+      expect(sub(w, 'date').text()).toBe('Tarikh: 04/03/2026')
+    })
+    // 1536: Tarikh has no column that fits, so the line is still there.
+    await atWidth(1536, async () => {
+      const { wrapper: w } = await mountPupils()
+      expect(sub(w, 'phone').exists()).toBe(false)
+      expect(sub(w, 'date').text()).toBe('Tarikh: 04/03/2026')
+    })
+  })
+
+  it('lists "Tarikh" on the card of a pupil below md', async () => {
+    await atWidth(375, async () => {
+      const { wrapper: w } = await mountPupils()
+      const card = w.get('[data-ds="data-table-cards"] li')
+      expect(card.text()).toContain('Tarikh')
+      expect(card.text()).toContain('04/03/2026')
+    })
+  })
+
   it('renders an inactive pupil with no link and no "Edit", "-" cells and a red read-only "Tidak" badge', async () => {
     const { wrapper: w } = await mountPupils()
     const row = w.findAll('tbody tr')[1]!
@@ -179,12 +234,20 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(badge.element.tagName).toBe('SPAN')
     // the only button is the disabled "Menyamar" (FR-M27-121)
     expect(row.findAll('button').map((b) => b.text())).toEqual(['Menyamar'])
-    expect(row.get('[data-testid="user-impersonate"]').attributes('title')).toBe('Akaun ini tidak aktif')
+    expect(row.get('[data-testid="user-impersonate"]').attributes('title')).toBe(
+      'Akaun ini tidak aktif',
+    )
   })
 
   it('numbers rows from meta.from and asks for the page in the URL', async () => {
     const { wrapper: w } = await mountPupils(
-      list([pupil(), pupil({ id: 3002 })], { page: 2, from: 26, to: 27, totalItems: 27, totalPages: 2 }),
+      list([pupil(), pupil({ id: 3002 })], {
+        page: 2,
+        from: 26,
+        to: 27,
+        totalItems: 27,
+        totalPages: 2,
+      }),
       '/admin-sekolah/pelajar?page=2',
     )
     expect(w.findAll('[data-testid="user-index"]').map((e) => e.text())).toEqual(['26', '27'])
@@ -213,8 +276,13 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
   })
 
   it('initialises the controls from the URL and sends the applied filters to the endpoint', async () => {
-    const { wrapper: w } = await mountPupils(undefined, '/admin-sekolah/pelajar?is_active=1&search=%20amin%20')
-    expect((w.get('[data-testid="user-status-filter"]').element as HTMLSelectElement).value).toBe('1')
+    const { wrapper: w } = await mountPupils(
+      undefined,
+      '/admin-sekolah/pelajar?is_active=1&search=%20amin%20',
+    )
+    expect((w.get('[data-testid="user-status-filter"]').element as HTMLSelectElement).value).toBe(
+      '1',
+    )
     expect((w.get('[data-testid="user-search"]').element as HTMLInputElement).value).toBe(' amin ')
     expect(api.fetchSchoolPupils).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: true, search: 'amin', page: 1 }),
@@ -324,6 +392,26 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
       'Tarikh',
       'Tindakan',
     ])
+  })
+
+  it('shows Kelas, Telefon, Login Terakhir and the date under the name while their columns are hidden', async () => {
+    await atWidth(768, async () => {
+      const { wrapper: w } = await mountTeachers()
+      const row = w.findAll('tbody tr')[0]!
+      const sub = (k: string) => row.get(`[data-testid="user-sub-${k}"]`)
+      expect(sub('kelas').text()).toBe('Kelas: 2 kelas')
+      expect(sub('phone').text()).toMatch(/^Telefon: /)
+      expect(sub('last-login').text()).toMatch(/^Login Terakhir: /)
+      expect(sub('date').text()).toMatch(/^Tarikh: \d{2}\/\d{2}\/\d{4}$/)
+      expect(row.find('[data-testid="user-sub-grade"]').exists()).toBe(false)
+    })
+    await atWidth(1536, async () => {
+      const { wrapper: w } = await mountTeachers()
+      const row = w.findAll('tbody tr')[0]!
+      expect(row.find('[data-testid="user-sub-kelas"]').exists()).toBe(false)
+      expect(row.find('[data-testid="user-sub-last-login"]').exists()).toBe(false)
+      expect(row.get('[data-testid="user-sub-date"]').text()).toMatch(/^Tarikh: /)
+    })
   })
 
   it('renders "{n} kelas", "Belum login", the active button and the edit link; an inactive teacher has none', async () => {

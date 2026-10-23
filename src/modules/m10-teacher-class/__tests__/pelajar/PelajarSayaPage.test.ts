@@ -139,7 +139,7 @@ describe('S6 PelajarSayaPage', () => {
     // student 3001 is not in 2002; student 2 is not either
     await w.findAll('[data-testid="student-add"]')[1]?.trigger('click')
     await flushPromises()
-    expect(api.addStudentToClass).toHaveBeenCalledWith(2, { classroomId: 2002 })
+    expect(api.addStudentToClass).toHaveBeenCalledWith(2, { classroomId: '2002' })
     expect(useFlashStore().current).toMatchObject({ type: 'success', message: PELAJAR_COPY.added })
     // the lists were reloaded
     expect(

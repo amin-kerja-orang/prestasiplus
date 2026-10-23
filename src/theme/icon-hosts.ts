@@ -18,6 +18,5 @@ export const ICON_NOT_BUNDLED = '[icons] not bundled:'
  */
 export const KNOWN_ABSENT_ICONS = [
   'ph:seedling-duotone', // m14 S11MasteryCard (the plant glyph is `plant-duotone`)
-  'ph:crystal-ball', // m10 command-center copy.ts, "Ramalan SPM" action
   'ph:file-check-bold', // m06 TrackingASubjectPage, "soalan kuiz siap guna" badge
 ] as const

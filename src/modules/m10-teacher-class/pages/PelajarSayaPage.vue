@@ -111,7 +111,7 @@ async function act(run: () => Promise<unknown>, okMessage: string): Promise<void
 
 const add = (studentId: number): Promise<void> =>
   act(
-    () => addStudentToClass(studentId, { classroomId: Number(targetClass.value) }),
+    () => addStudentToClass(studentId, { classroomId: targetClass.value }),
     PELAJAR_COPY.added,
   )
 
