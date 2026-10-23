@@ -71,6 +71,7 @@ const kpi = computed<StatItem[]>(() => {
       key: 'total',
       label: 'Jumlah soalan',
       value: s.total,
+      sub: `${s.total} Terbit · ${s.semakan} menunggu semakan`,
       icon: 'books',
       active: !applied.value.subject,
       onClick: () => pick(''),
@@ -147,6 +148,10 @@ const {
 } = useApi(
   () => (selectedId.value ? server.getBankDetail(selectedId.value) : Promise.resolve(null)),
   selectedId,
+)
+/** The other questions of the stimulus group of the question in the drawer. */
+const siblings = computed(
+  () => detail.value?.sharers?.questions.filter((x) => x.id !== detail.value?.row.id) ?? [],
 )
 </script>
 
@@ -267,7 +272,7 @@ const {
           <span class="flex flex-wrap gap-1">
             <UBadge color="neutral" variant="subtle">{{ row.original.topic }}</UBadge>
             <UBadge v-if="row.original.groupId" color="info" variant="subtle" icon="i-ph-image"
-              >Rangsangan</UBadge
+              >Kumpulan {{ row.original.groupSize }} soalan</UBadge
             >
             <UBadge v-if="row.original.version > 1" color="secondary" variant="subtle"
               >v{{ row.original.version }}</UBadge
@@ -318,10 +323,33 @@ const {
               {{ detail.row.version }}
             </span>
           </div>
+          <div
+            v-if="detail.sharers && detail.sharers.count > 1"
+            class="flex flex-col gap-1"
+            data-testid="bank-siblings"
+          >
+            <p class="text-caption font-semibold text-muted">
+              Dikongsi dengan:
+            </p>
+            <ul class="flex flex-wrap gap-x-3">
+              <li v-for="s in siblings" :key="s.id">
+                <UButton
+                  variant="link"
+                  color="primary"
+                  size="sm"
+                  class="min-h-11"
+                  :label="`${s.label} · ${s.id}`"
+                  :data-testid="`bank-sibling-${s.id}`"
+                  @click="selectedId = s.id"
+                />
+              </li>
+            </ul>
+          </div>
           <QuestionPreview
             :questions="[detail.question]"
             :stimulus="detail.stimulus"
             :option-bank="detail.optionBank"
+            :shared-count="detail.sharers?.count ?? 0"
           />
           <DsPanel v-if="detail.usedInPapers.length">
             <h3 class="mb-2 text-subheading text-highlighted">Digunakan dalam kertas</h3>

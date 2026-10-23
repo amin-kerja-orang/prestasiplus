@@ -133,6 +133,8 @@ export interface ReviewDetail {
   revisionNote?: string
   /** The revision changes more than the stem (options, scheme, tag): the preview is the new version. */
   fullEdit?: boolean
+  /** A revision that changes a shared stimulus: who else sees the change. */
+  sharers?: StimulusSharers
 }
 
 export type DecisionAction = 'terbit' | 'tolak' | 'betulkan'
@@ -150,9 +152,21 @@ export interface BankFilter {
   status?: QuestionStatus | 'semua'
 }
 
+/** The questions that share one stimulus (figure / passage), in group order. */
+export interface StimulusSharers {
+  /** Label of the shared stimulus, e.g. "Rajah 1". */
+  stimulusLabel: string
+  /** Number of questions that share it (not the members of a review unit). */
+  count: number
+  /** Group order: "Soalan 1", "Soalan 2", ... with the bank id of each. */
+  questions: { id: string; label: string }[]
+}
+
 export interface BankRow {
   id: string
   groupId?: string
+  /** Number of questions in the stimulus group (set whenever `groupId` is). */
+  groupSize?: number
   subject: SubjectCode
   subjectName: string
   kertas: number
@@ -167,7 +181,10 @@ export interface BankRow {
 }
 
 export interface BankStats {
+  /** Terbit questions: equals the sum of `bySubject[].terbit`. */
   total: number
+  /** Questions of every subject waiting for review (not part of `total`). */
+  semakan: number
   bySubject: {
     code: SubjectCode
     name: string
@@ -187,6 +204,8 @@ export interface BankEditable {
   pendingRevision: boolean
   /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
   legacyTag: boolean
+  /** The questions that share the stimulus being edited. */
+  sharers?: StimulusSharers
 }
 
 export interface BankDetail {
@@ -197,6 +216,8 @@ export interface BankDetail {
   history: HistoryEntry[]
   usedInPapers: { id: string; title: string }[]
   pendingRevision: boolean
+  /** The questions that share the stimulus (set whenever the question is in a group). */
+  sharers?: StimulusSharers
 }
 
 /* ------------------------------------------------------------------------------- papers */

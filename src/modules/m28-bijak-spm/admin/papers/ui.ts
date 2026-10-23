@@ -1,7 +1,12 @@
 /** Shared labels and route names of the admin question bank screens (papers / review / bank). */
 import type { DsStatus } from '@/ds'
 
-import type { Confidence, QuestionKind, QuestionStatus } from '../../domain/admin-types'
+import type {
+  Confidence,
+  QuestionKind,
+  QuestionStatus,
+  StimulusSharers,
+} from '../../domain/admin-types'
 
 export const ADMIN_ROUTES = {
   review: 'm28.admin.review',
@@ -52,4 +57,14 @@ export function ageText(days: number): string {
 
 export function detailMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Sesuatu tidak kena. Sila cuba lagi.'
+}
+
+/**
+ * "Rajah 1 dikongsi oleh 4 soalan: Soalan 1, 2, 3, 4. Perubahan di sini terpakai untuk semua soalan
+ * tersebut." The numbers are the position in the stimulus group.
+ */
+export function sharersText(s: StimulusSharers): string {
+  if (s.count <= 1) return `${s.stimulusLabel} hanya digunakan oleh soalan ini.`
+  const nums = s.questions.map((q) => q.label.replace(/^Soalan\s+/, '')).join(', ')
+  return `${s.stimulusLabel} dikongsi oleh ${s.count} soalan: Soalan ${nums}. Perubahan di sini terpakai untuk semua soalan tersebut.`
 }

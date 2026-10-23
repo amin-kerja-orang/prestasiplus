@@ -39,6 +39,7 @@ import type {
   ReviewSeed,
   RevisionContent,
   SchemeLine,
+  StimulusSharers,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
 import type {
@@ -75,8 +76,11 @@ export interface AdminHost {
 const SEED_BY_KEY = new Map<string, ReviewSeed>(REVIEW_SEEDS.map((s) => [s.key, s]))
 const SEED_OF_Q = new Map<string, ReviewSeed>()
 const SEED_Q = new Map<string, QuestionDef>()
+/** Stimulus groups of review units, by group id (a unit's key is not always its group id). */
+const SEED_GROUP = new Map<string, NonNullable<ReviewSeed['group']>>()
 const SEED_SCHEMES = new Map<string, SchemeDef>()
 for (const s of REVIEW_SEEDS) {
+  if (s.group) SEED_GROUP.set(s.group.def.id, s.group)
   for (const q of s.questions) {
     SEED_OF_Q.set(q.id, s)
     SEED_Q.set(q.id, q)
@@ -89,6 +93,7 @@ const DYN_KEY_OF_Q = new Map<string, string>()
 
 function registerSeed(s: ReviewSeed): void {
   SEED_BY_KEY.set(s.key, s)
+  if (s.group) SEED_GROUP.set(s.group.def.id, s.group)
   for (const q of s.questions) {
     SEED_OF_Q.set(q.id, s)
     SEED_Q.set(q.id, q)
@@ -102,14 +107,36 @@ const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
 const getQ = (id: string): QuestionDef | undefined => BANK.questions.get(id) ?? SEED_Q.get(id)
 const getScheme = (id: string): SchemeDef | undefined =>
   BANK.schemes.get(id) ?? SEED_SCHEMES.get(id)
-const getGroup = (gid: string) => BANK.groups.get(gid) ?? SEED_BY_KEY.get(gid)?.group?.def
+const getGroup = (gid: string) => BANK.groups.get(gid) ?? SEED_GROUP.get(gid)?.def
 const getStimulus = (gid: string): StimulusDef | undefined => {
   const g = BANK.groups.get(gid)
   if (g) return BANK.stimuli.get(g.stimulusId)
-  return SEED_BY_KEY.get(gid)?.group?.stimulus
+  return SEED_GROUP.get(gid)?.stimulus
 }
 const membersOf = (gid: string): string[] => getGroup(gid)?.questionIds ?? []
 const groupOf = (qid: string): string | undefined => getQ(qid)?.groupId
+
+/** Every question that uses the stimulus of group `gid`, in group order ("Soalan 1", "Soalan 2", ...). */
+function sharersOf(gid: string): StimulusSharers | undefined {
+  const st = getStimulus(gid)
+  if (!st) return undefined
+  const ids = membersOf(gid).filter((id) => !!getQ(id))
+  return {
+    stimulusLabel: st.label,
+    count: ids.length,
+    questions: ids.map((id, i) => ({ id, label: `Soalan ${i + 1}` })),
+  }
+}
+
+/** Whether a revised stimulus differs from the live one in what the editor can change. */
+function stimulusChanged(live: StimulusDef | undefined, next: StimulusDef | undefined): boolean {
+  if (!live || !next) return false
+  return (
+    live.alt !== next.alt ||
+    (live.caption ?? '') !== (next.caption ?? '') ||
+    (live.text ?? '') !== (next.text ?? '')
+  )
+}
 
 function hydrate(seed: ReviewSeed): void {
   // Units made from an intake batch always win: their ids repeat across server instances.
@@ -296,7 +323,10 @@ function reviewQuestion(
   }
 }
 
-/** Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks. */
+/**
+ * Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks, and a DSKP
+ * topic unless the question is tagged T1-T3 (outside DSKP).
+ */
 export function gateErrors(
   qs: readonly QuestionDef[],
   schemeOf: SchemeLookup = getScheme,
@@ -317,7 +347,9 @@ export function gateErrors(
           out.push(`${n} ${l.label}: markah skema ${sc.marks} tidak sama dengan markah ${l.marks}`)
       }
     }
-    if (!q.curriculum.unitLabel) out.push(`${n}: topik DSKP belum dipilih`)
+    // T1-T3 content is outside DSKP and has no unit (same rule as the intake gate, validation.ts).
+    if (!q.curriculum.unitLabel && q.curriculum.formOrigin !== 'T1-T3')
+      out.push(`${n}: topik DSKP belum dipilih`)
   })
   return out
 }
@@ -537,6 +569,9 @@ export class AdminOps {
         ...(q.groupId ? this.groupParts(q.groupId) : {}),
         ...(content?.stimulus ? { stimulus: content.stimulus } : {}),
         ...(content ? { fullEdit: true } : {}),
+        ...(q.groupId && stimulusChanged(getStimulus(q.groupId), content?.stimulus)
+          ? { sharers: sharersOf(q.groupId)! }
+          : {}),
         history: rec.history,
         gate: [
           ...(rev.stem.trim() ? [] : ['Teks soalan tidak boleh kosong']),
@@ -717,6 +752,7 @@ export class AdminOps {
       ...(stimulus ? { stimulus: plain(stimulus) } : {}),
       pendingRevision: !!this.review[qid]?.revision,
       legacyTag: q.curriculum.sp.length === 0,
+      ...(q.groupId && stimulus ? { sharers: sharersOf(q.groupId)! } : {}),
     }
   }
 
@@ -804,11 +840,16 @@ export class AdminOps {
     }))
   }
 
+  /** Questions that share the stimulus of `q`; a group always counts at least the question itself. */
+  private groupSizeOf(q: QuestionDef): number {
+    return Math.max(1, sharersOf(q.groupId!)?.count ?? 0)
+  }
+
   private bankRow(qid: string): BankRow {
     const q = getQ(qid)!
     return {
       id: qid,
-      ...(q.groupId ? { groupId: q.groupId } : {}),
+      ...(q.groupId ? { groupId: q.groupId, groupSize: this.groupSizeOf(q) } : {}),
       subject: q.curriculum.subject,
       subjectName: subjectName(q.curriculum.subject),
       kertas: kertasOf(qid),
@@ -858,8 +899,11 @@ export class AdminOps {
   async bankStats(): Promise<BankStats> {
     await this.host.tick()
     const rows = this.allQuestionIds().map((id) => this.bankRow(id))
+    // "Jumlah soalan" is the Terbit bank (what the list shows by default and what the subject cards
+    // count); questions still in review are reported on their own, never added into the total.
     return {
-      total: rows.length,
+      total: rows.filter((r) => r.status === 'terbit').length,
+      semakan: rows.filter((r) => r.status === 'semakan').length,
       bySubject: SUBJECTS.map((s) => {
         const mine = rows.filter((r) => r.subject === s.code)
         const n = (st: QuestionStatus) => mine.filter((r) => r.status === st).length
@@ -889,6 +933,7 @@ export class AdminOps {
       ],
       usedInPapers: this.usedIn(qid),
       pendingRevision: !!rec?.revision,
+      ...(q.groupId ? { sharers: sharersOf(q.groupId)! } : {}),
     }
   }
 

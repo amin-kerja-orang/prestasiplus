@@ -16,7 +16,14 @@ import type { DecisionAction } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
-import { ADMIN_ROUTES, CONFIDENCE_LABEL, KIND_LABEL, STATUS_BADGE, ageText } from './ui'
+import {
+  ADMIN_ROUTES,
+  CONFIDENCE_LABEL,
+  KIND_LABEL,
+  STATUS_BADGE,
+  ageText,
+  sharersText,
+} from './ui'
 
 const server = bijakServer()
 const route = useRoute()
@@ -175,10 +182,23 @@ async function resubmit(): Promise<void> {
         data-testid="revision-full-note"
       />
 
-      <p v-if="data.item.groupId" class="text-body text-muted" data-testid="group-note">
+      <p
+        v-if="data.item.groupId && !data.item.isRevision"
+        class="text-body text-muted"
+        data-testid="group-note"
+      >
         Keputusan ini terpakai untuk semua {{ data.questions.length }} soalan dalam kumpulan
         rangsangan.
       </p>
+      <UAlert
+        v-if="data.sharers"
+        color="warning"
+        variant="subtle"
+        icon="i-ph-share-network"
+        title="Rajah / petikan dikongsi"
+        :description="sharersText(data.sharers)"
+        data-testid="revision-sharers"
+      />
 
       <QuestionPreview
         :questions="data.questions"

@@ -27,7 +27,7 @@ import QuestionEditor from '../intake/components/QuestionEditor.vue'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
 import { bijakServer } from '../../server/client'
-import { ADMIN_ROUTES, KIND_LABEL, STATUS_BADGE, detailMessage } from './ui'
+import { ADMIN_ROUTES, KIND_LABEL, STATUS_BADGE, detailMessage, sharersText } from './ui'
 
 const props = defineProps<{ qid: string }>()
 
@@ -155,8 +155,12 @@ async function save(): Promise<void> {
           <DsText as="legend" variant="subheading" tone="highlighted">
             Rajah / petikan dikongsi: {{ stimulus.label }}
           </DsText>
-          <DsText variant="caption" tone="muted">
-            Perubahan di sini terpakai untuk semua soalan dalam kumpulan ini.
+          <DsText variant="caption" tone="muted" data-testid="edit-stimulus-sharers">
+            {{
+              data.sharers
+                ? sharersText(data.sharers)
+                : 'Perubahan di sini terpakai untuk semua soalan dalam kumpulan ini.'
+            }}
           </DsText>
           <StimulusView :stimulus="stimulus" />
           <DsFormField native for="edit-caption" label="Tajuk kapsyen">
