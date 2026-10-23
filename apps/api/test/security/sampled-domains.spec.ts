@@ -176,6 +176,53 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
         () => count(t.db, 'school_subscriptions'),
         'status',
       ],
+      // STRICT-1 (#97, #98, #99; LEAD decision 22 Oct): these five bodies were the AC1c known gap (it.fails) until now.
+      [
+        'school admin people (BE-21): POST /admin-sekolah/guru with isAdmin',
+        () => call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Jurang', email: 'guru.jurang@ujian.test', isAdmin: true }),
+        () => count(t.db, 'users'),
+        'isAdmin',
+      ],
+      [
+        'articles (BE-24): POST /admin/articles with views',
+        () => call(admin, 'post', '/admin/articles', { title: 'Artikel jurang', content: '<p>Isi</p>', category: 'UMUM', isPublished: false, views: 5 }),
+        () => count(t.db, 'articles'),
+        'views',
+      ],
+      [
+        'support tickets (BE-24): POST /tiket with status',
+        () => call(student, 'post', '/tiket', { subject: 'Jurang', body: 'Ujian medan lebih.', status: 'closed' }),
+        () => count(t.db, 'support_tickets'),
+        'status',
+      ],
+      [
+        'notifications (BE-06): POST /me/notifications/bulk-read with userId',
+        async () => {
+          const [own] = await t.db.query<{ id: string }>(
+            `insert into notifications (user_id, type, title, body) values ($1::bigint, 'system', 'Ujian', 'Ujian') returning id::text`,
+            [student.session.user.id],
+          )
+          return call(student, 'post', '/me/notifications/bulk-read', { ids: [own!.id], userId: '1' })
+        },
+        // The caller's rows marked read: the refused call marks none, not even its own unread item (scoped, so other specs' writes do not count).
+        async () =>
+          Number(
+            (await t.db.query<{ n: string }>(`select count(*)::text as n from notifications where user_id = $1::bigint and read_at is not null`, [student.session.user.id]))[0]!.n,
+          ),
+        'userId',
+      ],
+      [
+        // A body that is valid apart from the unknown key: the refusal is the key itself, and no account is written.
+        'registration (BE-06): POST /auth/register with isAdmin',
+        () =>
+          t
+            .http()
+            .post('/api/auth/register')
+            .set('X-Forwarded-For', ip(90))
+            .send({ name: 'Ibu Jurang', email: 'ibu.jurang@ujian.test', role: 'parent', password: 'Rahsia123', passwordConfirmation: 'Rahsia123', isAdmin: true }),
+        () => count(t.db, 'users'),
+        'isAdmin',
+      ],
     ]
     it.each(cases)('%s', async (_name, send, rows, field) => {
       const before = await rows()
@@ -186,58 +233,52 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
       expect(await rows()).toBe(before)
     })
 
-    // These routes ignore (do not reject) an unknown field: the contract schemas are not strict there. The field must
-    // have NO effect. The 422 of the strict schemas is reported as a cross-lane gap for them (see the card report).
-    describe('routes that ignore an unknown field: the field has no effect', () => {
-      it('school admin people: POST /admin-sekolah/guru with role=admin still creates a plain teacher', async () => {
+    // STRICT-1: the routes that used to ignore an unknown field now refuse it; the forged value still has no effect.
+    describe('the former ignore-routes refuse the forged field and it has no effect', () => {
+      it('school admin people: POST /admin-sekolah/guru with role=admin is 422 and creates no account', async () => {
         const res = await call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Lebih Dua', email: 'guru.lebih2@ujian.test', role: 'admin', roles: ['admin'], isActive: false })
-        expect(res.status, JSON.stringify(res.body)).toBe(201)
-        expect(res.body.data.role).toBe('teacher')
-        const roles = await t.db.query<{ code: string }>(
-          `select ur.role as code from user_roles ur join users u on u.id = ur.user_id where u.email = 'guru.lebih2@ujian.test'`,
-        )
-        expect(roles.map((r) => r.code)).toEqual(['teacher'])
+        expectError(res, 422, 'VALIDATION_ERROR')
+        expect(Object.keys(ErrorBodySchema.parse(res.body).error.fields ?? {}).sort()).toEqual(['isActive', 'role', 'roles'])
+        expect(await t.db.query(`select 1 from users where email = 'guru.lebih2@ujian.test'`)).toHaveLength(0)
       })
 
-      it('articles: POST /admin/articles with views=99999 starts at 0', async () => {
+      it('articles: POST /admin/articles with viewCount and views is 422 naming both and writes no article', async () => {
+        const before = await count(t.db, 'articles')
         const res = await call(admin, 'post', '/admin/articles', { title: 'Artikel lebih', content: '<p>Isi</p>', category: 'UMUM', isPublished: true, viewCount: 99999, views: 99999 })
-        expect(res.status, JSON.stringify(res.body)).toBe(201)
-        expect(res.body.data.views).toBe(0)
+        expectError(res, 422, 'VALIDATION_ERROR')
+        expect(Object.keys(ErrorBodySchema.parse(res.body).error.fields ?? {}).sort()).toEqual(['viewCount', 'views'])
+        expect(await count(t.db, 'articles')).toBe(before)
       })
 
-      it('notifications: POST /me/notifications/bulk-read with a forged userId touches only the caller own items', async () => {
+      it('notifications: POST /me/notifications/bulk-read with a forged userId is 422 and touches no item', async () => {
         const [foreign] = await t.db.query<{ id: string }>(
           `insert into notifications (user_id, type, title, body) values ($1::bigint, 'system', 'Ujian', 'Ujian') returning id::text`,
           [student2.session.user.id],
         )
         const res = await call(student, 'post', '/me/notifications/bulk-read', { ids: [foreign!.id], userId: student2.session.user.id })
-        expect(res.status).toBe(200)
+        expectError(res, 422, 'VALIDATION_ERROR')
+        expect(ErrorBodySchema.parse(res.body).error.fields).toHaveProperty('userId')
         const rows = await t.db.query<{ read_at: Date | null }>(`select read_at from notifications where id = $1::bigint`, [foreign!.id])
         expect(rows[0]?.read_at).toBeNull()
       })
-    })
-  })
 
-  // --- c'. KNOWN GAP (AC1c, cross-lane): these routes should refuse an unknown field with 422 --------------------
-  // `it.fails` while the owner schema is not strict; it turns red the day the owner makes it strict, so this list is
-  // then shrunk on purpose. Deviation row "BE-33 rest: AC1c non-strict body schemas"; owners in the PR #81 body.
-  describe("c'. KNOWN GAP: non-strict body schemas (should be 422 VALIDATION_ERROR naming the unknown field)", () => {
-    const strictGap: [string, () => Promise<Response>, string][] = [
-      ['school admin people (BE-21): POST /admin-sekolah/guru', () => call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Jurang', email: 'guru.jurang@ujian.test', isAdmin: true }), 'isAdmin'],
-      ['articles (BE-24): POST /admin/articles', () => call(admin, 'post', '/admin/articles', { title: 'Artikel jurang', content: '<p>Isi</p>', category: 'UMUM', isPublished: false, views: 5 }), 'views'],
-      ['notifications (BE-06): POST /me/notifications/bulk-read', () => call(student, 'post', '/me/notifications/bulk-read', { ids: ['999999999'], userId: '1' }), 'userId'],
-      ['support tickets (BE-24): POST /tiket', () => call(student, 'post', '/tiket', { subject: 'Jurang', body: 'Ujian medan lebih.', status: 'closed' }), 'status'],
-      [
-        'registration (BE-06): POST /auth/register',
-        // Empty otherwise: a strict schema reports the unknown key next to the missing fields.
-        () => t.http().post('/api/auth/register').set('X-Forwarded-For', ip(90)).send({ isAdmin: true }),
-        'isAdmin',
-      ],
-    ]
-    it.fails.each(strictGap)('%s', async (_name, send, field) => {
-      const res = await send()
-      expect(res.status).toBe(422)
-      expect(JSON.stringify(res.body?.error?.fields ?? {})).toContain(field)
+      it('registration: an unknown key is listed next to the missing fields, not instead of them', async () => {
+        const res = await t.http().post('/api/auth/register').set('X-Forwarded-For', ip(91)).send({ isAdmin: true })
+        expectError(res, 422, 'VALIDATION_ERROR')
+        const fields = ErrorBodySchema.parse(res.body).error.fields ?? {}
+        expect(fields).toHaveProperty('isAdmin', 'The isAdmin field is not allowed.')
+        expect(fields).toHaveProperty('name')
+        expect(fields).toHaveProperty('email')
+      })
+
+      it('the same bodies without the unknown key are still accepted', async () => {
+        expect((await call(schoolAdmin, 'post', '/admin-sekolah/guru', { name: 'Guru Sah', email: 'guru.sah@ujian.test', phone: '0123456789' })).status).toBe(201)
+        expect((await call(admin, 'post', '/admin/articles', { title: 'Artikel sah', content: '<p>Isi</p>', category: 'UMUM', isPublished: false })).status).toBe(201)
+        expect((await call(student, 'post', '/tiket', { subject: 'Sah', body: 'Tiket sah.' })).status).toBe(201)
+        expect((await call(student, 'post', '/me/notifications/bulk-read', { ids: ['999999999'] })).status).toBe(200)
+        const reg = await t.http().post('/api/auth/register').set('X-Forwarded-For', ip(92)).send({ name: 'Ibu Sah', email: 'ibu.sah@ujian.test', role: 'parent', password: 'Rahsia123', passwordConfirmation: 'Rahsia123' })
+        expect(reg.status, JSON.stringify(reg.body)).toBe(201)
+      })
     })
   })
 
