@@ -85,9 +85,7 @@ export class ClassesService {
 
   /**
    * `POST /guru/classes` (FR-M10-34): the owner is the caller; `name`, `subjectId` (an active subject) and
-   * `educationLevel` are required; `schoolId` is optional and defaults to the teacher's own school (SW7-01: a class
-   * without a school would be invisible to the school admin), staying null only for a teacher without one. All failing
-   * fields are reported together, like the mock.
+   * `educationLevel` are required; `schoolId` is optional. All failing fields are reported together, like the mock.
    */
   async createClass(actor: ClassActor, raw: unknown): Promise<TeacherClass> {
     const parsed = tryParseStrict(ClassCreateRequestSchema, raw)
@@ -96,7 +94,7 @@ export class ClassesService {
 
     let subjectId: string | null = null
     let levelId: string | null = null
-    let schoolId: string | null = actor.schoolId
+    let schoolId: string | null = null
     if (body) {
       if (isRealId(body.subjectId) && (await this.repo.activeSubjectExists(body.subjectId))) subjectId = body.subjectId
       else fields.subjectId = CLASS_MESSAGES.subject

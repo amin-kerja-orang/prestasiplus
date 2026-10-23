@@ -26,8 +26,6 @@ import {
   type Client,
   type ClassesTestApp,
 } from './helpers'
-import { ClassesService } from '../../src/modules/classes/classes.service'
-import type { ClassActor } from '../../src/modules/classes/actor'
 
 const ClassEnvelope = envelopeOf(TeacherClassSchema)
 const ClassList = listEnvelopeOf(TeacherClassSchema)
@@ -137,59 +135,14 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       expect(JSON.stringify(res.body)).not.toMatch(/legacy/)
     })
 
-    it('description is optional: absent, null and blank give null', async () => {
-      const x = await createClass(t, a, { name: 'Tanpa Huraian' })
-      expect(x.schoolId).toBe(school1)
+    it('school and description are optional: absent, null and blank give null', async () => {
+      const x = await createClass(t, a, { name: 'Tanpa Sekolah' })
+      expect(x.schoolId).toBeNull()
       const y = await a.post('/guru/classes', { name: 'Kosong', subjectId: subject.id, educationLevel: 'tahun-3', schoolId: '', description: '   ' })
       expect(y.status).toBe(201)
-      expect(y.body.data).toMatchObject({ schoolId: school1, description: null, levelLabel: 'Tahun 3', educationLevel: 'tahun-3' })
+      expect(y.body.data).toMatchObject({ schoolId: null, description: null, levelLabel: 'Tahun 3', educationLevel: 'tahun-3' })
       const z = await a.post('/guru/classes', { name: 'Null', subjectId: subject.id, educationLevel: 'tahun-6', schoolId: null, description: null })
       expect(z.status).toBe(201)
-    })
-
-    // SW7-01: the school picker is optional in the SPA; a class without a school is invisible to the school admin.
-    it('SW7-01: no schoolId (absent, null or blank) gives the class the teacher own school', async () => {
-      const base = { name: 'Sekolah Lalai', subjectId: subject.id, educationLevel: 'tingkatan-4' }
-      for (const extra of [{}, { schoolId: null }, { schoolId: '' }]) {
-        const res = await a.post('/guru/classes', { ...base, ...extra })
-        expect(res.status, JSON.stringify(res.body)).toBe(201)
-        expect(ClassEnvelope.parse(res.body).data.schoolId).toBe(school1)
-        const [row] = await t.db.query<{ school_id: string | null }>(`select school_id::text from classrooms where id = $1`, [res.body.data.id])
-        expect(row?.school_id).toBe(school1)
-      }
-      // the QR payload names the school now
-      const k = await createClass(t, a, { name: 'QR Lalai' })
-      expect((await a.get(`/guru/classes/${k.id}/qr-data`)).body.school).toBe('SMK Demo Satu')
-    })
-
-    it('SW7-01: an explicit own schoolId still works', async () => {
-      const k = await createClass(t, a, { name: 'Sekolah Sendiri', schoolId: school1 })
-      expect(k.schoolId).toBe(school1)
-    })
-
-    it('SW7-01: another school stays "Sekolah tidak sah." even though the default would be valid', async () => {
-      const res = await a.post('/guru/classes', { name: 'Sekolah Lain', subjectId: subject.id, educationLevel: 'tingkatan-4', schoolId: school2 })
-      expect(fieldsOf(res)).toEqual({ schoolId: CLASS_MESSAGES.school })
-    })
-
-    it('SW7-01: an actor without a school (not reachable by login, which refuses a school-less teacher) still gets a class without a school', async () => {
-      // `buildGrants` refuses a teacher without a school, so this is the service contract, called with a hand-made actor.
-      const teacherId = await idOfEmail(t, TEACHER_A)
-      const actor = {
-        auth: { sessionRowId: null, active: { scope: { level: 'school' } } },
-        userId: teacherId,
-        role: 'teacher',
-        schoolId: null,
-        isTest: false,
-        requestId: null,
-        ip: null,
-      } as unknown as ClassActor
-      const made = await t.get(ClassesService).createClass(actor, { name: 'Tiada Sekolah', subjectId: subject.id, educationLevel: 'tingkatan-4' })
-      expect(made.schoolId).toBeNull()
-      // an explicit school is refused for them too: it is not their school
-      await expect(
-        t.get(ClassesService).createClass(actor, { name: 'Cuba', subjectId: subject.id, educationLevel: 'tingkatan-4', schoolId: school1 }),
-      ).rejects.toMatchObject({ fields: { schoolId: CLASS_MESSAGES.school } })
     })
 
     it('every join code is unique and never taken from the client', async () => {
@@ -284,6 +237,8 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         school: 'SMK Demo Satu',
         joinUrl: `https://app.example.test/kelas-saya?kod=${k.joinCode}`,
       })
+      const noSchool = await createClass(t, a, { name: 'Tanpa Sekolah QR' })
+      expect((await a.get(`/guru/classes/${noSchool.id}/qr-data`)).body.school).toBeNull()
     })
 
     it('another teacher (same school or not), a school class, an unknown or malformed id is a plain 404', async () => {
