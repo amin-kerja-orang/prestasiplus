@@ -179,11 +179,11 @@ Plan 4.5 part 2 (line 283) wants the student to "start the first-login flow" at 
 
 - **Q18 (how the four accounts are created while registration is closed):** answered by section 2: the admin route and the host bootstrap command exist; no new script is needed. The #220 "Script gaps" row "Script that creates the student, teacher and parent smoke accounts" can be closed with "not needed, admin route".
 - **Still a gap:** there is no script for this checklist; it is manual (15 minutes, like EN-6 in `docs/qa/full-testing-25oct.md:258`). `scripts/demo-smoke.sh` expects demo accounts and `DEMO_PASSWORD` (`docs/ops/go-live-bijak-spm.md:364-366`); it was not checked against these accounts and is not part of C2.
-- **Not found on the tip:** an SPA screen for the forced password change (open question 3); it is in open PR #226 and needs the half-AZ guard patch; an edge allow-list for the dark address (#220 Q15), which decides how QA reaches `<vps-url>` on 28 Oct.
+- **Not found on the tip:** an SPA screen for the forced password change (open question 3); it is in open PR #226 and needs the half-AZ guard patch (patch v2, #226 comment 6361274392); an edge allow-list for the dark address (#220 Q15), which decides how QA reaches `<vps-url>` on 28 Oct.
 
 ## 7. What was not verified
 
 - Nothing was run: no server, no browser, no API call, no test. All statements come from reading the files named above.
-- What the half-AZ guard patch for #226 contains and whether #226 and the patch are on the release sha; whether the release SPA has the edit-user "Janakan kata laluan baharu" switch (read on `be/integration-frontend`, not on the tip); the exact copy of the `/password/change` fields beyond the heading, notice and button.
+- Whether #226 and its half-AZ guard patch (patch v2, #226 comment 6361274392; it touches only shared `src/app`, `src/api`, `src/stores` files, which #226 itself does not) are on the release sha; whether the release SPA has the edit-user "Janakan kata laluan baharu" switch (read on `be/integration-frontend`, not on the tip); the exact copy of the `/password/change` fields beyond the heading, notice and button.
 - Whether the SPA lets a flagged account reach `/profile` and change its password; what a parent sees if the production build has the scope off; whether the release SPA shows the one-time password; how `migrate:all` handles an e-mail collision; whether `GET /api/public/stats` and school lists count the smoke rows (they are v2 rows, so assume yes).
 - The mail path for password reset in production (not needed by this plan).
