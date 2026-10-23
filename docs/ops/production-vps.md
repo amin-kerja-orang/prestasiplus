@@ -13,7 +13,7 @@ seed) needs the LEAD's explicit confirmation first; the scripts ask for it (type
 Contents: 1 Design | 2 Server prerequisites | 3 Parameters | 4 First install | 5 Edge nginx | 6 TLS | 7 Deploy |
 8 Rollback | 9 Backups and restore drill | 10 Monitoring and alerts | 11 Logs | 12 Secrets | 13 Sizing and load test |
 14 Single-instance rule | 15 ClamAV | 16 Cutover 30 Oct (AZ side) | 17 Findings for the developer roles |
-18 Not rehearsed here | 19 Troubleshooting
+18 Not rehearsed here | 19 Troubleshooting | 20 Defaults applied on 22 Oct (LEAD may veto)
 
 ---
 
@@ -143,8 +143,8 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_BUILD_MODE` | `local` | OPS | `local` builds on the VPS (needs ~2 GB free RAM); `pull` pulls from `PP_IMAGE_PREFIX` |
 | `PP_PROFILES` | empty | LEAD | Compose profiles to run: `clamav`, `monitoring` (comma list) |
 | `PP_HTTP_BIND` | `0.0.0.0` | OPS | IPv4 address for ports 80/443. The edge publishes **IPv4 only**: create an A record, no AAAA record |
-| `PP_EDGE_AUTH_RATE` | `60r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address. A huge value (`100000r/m`) makes it a no-op |
-| `PP_EDGE_AUTH_BURST` | `60` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
+| `PP_EDGE_AUTH_RATE` | `300r/m` | OPS | Edge `limit_req` per client IP on `/api/auth/` (nginx rate syntax). Secondary to the API's own login throttle; generous because many schools share one NAT address (F2 default, section 20). A huge value (`100000r/m`) makes it a no-op |
+| `PP_EDGE_AUTH_BURST` | `120` | OPS | Burst size of that limit (excess requests get `429` immediately, `nodelay`) |
 | `PP_LOCK_FILE` | `/var/lock/pretasiplus.lock` | OPS | The shared lock for backup, deploy, rollback, restore drill and certificate jobs; the deploy user must be able to write it |
 | `PP_DEPLOY_GROUP` | `ppdeploy` | OPS | When a script runs as root (`sudo init-cert.sh`), `pp_lock` hands the lock file to this group with mode 0660, so the deploy user's timers are not locked out. Also install `systemd/pretasiplus.tmpfiles.conf` (section 9, Schedule) |
 | `PP_LOCK_WAIT` | `1800` | OPS | Seconds a timer-started backup or drill waits for another operation before it fails |
@@ -155,12 +155,12 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_KUMA_PORT` | `3001` | OPS | Loopback port of Uptime Kuma |
 | `PP_PG_SHARED_BUFFERS`, `PP_PG_EFFECTIVE_CACHE_SIZE`, `PP_PG_WORK_MEM`, `PP_PG_MAINTENANCE_WORK_MEM`, `PP_PG_MAX_CONNECTIONS`, `PP_PG_MAX_WAL_SIZE`, `PP_PG_LOG_MIN_DURATION_MS` | `512MB`, `1GB`, `8MB`, `128MB`, `100`, `2GB`, `1000` | OPS (LEAD sizes) | Postgres settings passed as `-c` (table in section 13) |
 | `PP_UPLOAD_FILES_MB`, `PP_UPLOAD_BIG_MB` | `22`, `256` | OPS | Edge body limits (section 5) |
-| `PP_CSP_MODE` | `report-only` | LEAD (decision D-7) | `report-only`, `enforce` or `off` |
-| `PP_HSTS` | `max-age=300` | LEAD | HSTS value for the whole host, sent by the edge on every https response (the API's own HSTS is replaced, so there is one policy). Ramp per `platform-settings.md` §4.3: `max-age=300` → `max-age=86400` → `max-age=15552000`; add `; includeSubDomains` only once every subdomain serves HTTPS. Empty = no header |
+| `PP_CSP_MODE` | `report-only` | LEAD (decision D-7) | `report-only`, `enforce` or `off`. Default applied 22 Oct: `report-only` at go-live (section 20) |
+| `PP_HSTS` | `max-age=300` | LEAD | HSTS value for the whole host, sent by the edge on every https response (the API's own HSTS is replaced, so there is one policy). Ramp per `platform-settings.md` §4.3: `max-age=300` → `max-age=86400` → `max-age=604800` → `max-age=15552000`, one clean week per step; add `; includeSubDomains` only once every subdomain serves HTTPS; never `preload`. Empty = no header. `deploy.sh` refuses any other shape (the value is pasted into the nginx config) |
 | `PP_LOG_MAX_SIZE`, `PP_LOG_MAX_FILE` | `20m`, `5` | OPS | Docker log rotation |
 | `PP_JOBS_WORKER_ENABLED` | `true` | OPS | The one API instance runs the job worker |
 | `PP_BACKUP_KEEP_DAILY`, `PP_BACKUP_KEEP_WEEKLY`, `PP_BACKUP_WEEKLY_DAY`, `PP_BACKUP_KEEP_AUX`, `PP_BACKUP_KEEP_FILES`, `PP_BACKUP_FILES` | `7`, `4`, `7`, `5`, `2`, `weekly` | LEAD | Retention (section 9) |
-| `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none` |
+| `PP_OFFSITE_KIND` | `none` | LEAD | `s3`, `rsync` or `none`. Default applied 22 Oct: **`s3`** once the LEAD has the bucket (section 20) |
 | `PP_OFFSITE_S3_URI`, `PP_OFFSITE_S3_ENDPOINT`, `PP_OFFSITE_S3_PROFILE` | empty | LEAD | S3-compatible target (credentials in the backup user's aws CLI config, not here) |
 | `PP_OFFSITE_RSYNC_TARGET`, `PP_OFFSITE_RSYNC_SSH_PORT` | empty, `22` | LEAD | rsync-over-ssh target (key-based login of the backup user) |
 | `PP_BACKUP_GPG_RECIPIENT` | empty | LEAD | **Required when `PP_OFFSITE_KIND` is `s3` or `rsync`**: public key (id/e-mail) that every off-site copy is encrypted to. The PRIVATE key is kept off the server (LEAD's vault / a second machine); `offsite.sh` checks `gpg --list-keys` and dies otherwise |
@@ -184,10 +184,12 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `SESSION_SECRET`, `IC_HASH_KEY` | LEAD | 32+ characters each, different. **Never rotate `IC_HASH_KEY` casually** (section 12) |
 | `MARKETPLACE_PLATFORM_WHATSAPP` | LEAD | The real wa.me number (digits, country code first); the dev default is refused by `deploy.sh` |
 | `PUBLIC_ORIGINS` | LEAD | Extra image origins for articles/banners (empty = API origin only) |
-| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | Mock until decided; `AI_API_KEY` is a secret |
-| `OCR_ENGINE`, `OCR_LANG_DIR` | LEAD | `none` until OCR language data is shipped |
+| `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | **Decided 22 Oct (AZ-29 item 1): `AI_PROVIDER=mock`**, the other four stay unset. `AI_API_KEY` is a secret. See `docs/ops/ai-intake-production-decisions.md` (lands with #138) |
+| `OCR_ENGINE`, `OCR_LANG_DIR` | LEAD | **Decided 22 Oct (AZ-29 item 4): `OCR_ENGINE=none`**, `OCR_LANG_DIR` unset. Scanned pages are typed in by hand |
+| `INTAKE_*` limits | LEAD | **Decided 22 Oct (AZ-29 item 5 KEEP):** no key set, the schema defaults apply (20 MB, 200 pages, 500 pages per day). Intake is admin-only at go-live (item 7, card AZ-35) |
 | `METRICS_ENABLED`, `METRICS_INTERNAL_CIDRS` | OPS | Metrics stay admin-session-only; the edge returns 404 from outside |
-| `THROTTLE_*`, `LOGIN_*`, `INTAKE_*`, ... | LEAD (OQ1) | Defaults unless the LEAD changes them. See the `THROTTLE_GLOBAL_PER_MINUTE` finding in section 17 |
+| `THROTTLE_GLOBAL_PER_MINUTE` | LEAD (OQ1) | **`3000`** (F2 default applied 22 Oct, section 20): counted per client address, and a school shares one NAT address. `deploy.sh` warns below 3000 |
+| other `THROTTLE_*`, `LOGIN_*`, ... | LEAD (OQ1) | Defaults unless the LEAD changes them |
 | `KEEP_ALIVE_TIMEOUT_MS`, `REQUEST_TIMEOUT_MS`, `SHUTDOWN_GRACE_MS` | OPS | Defaults 65000 / 120000 / 25000; the edge timeouts are built around them |
 
 Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`, `PORT=3000`, `TRUST_PROXY_HOPS=1`,
@@ -216,8 +218,8 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 8. Reference data, once: `deploy/vps/deploy.sh --seed-reference` (section 7). Then the smoke test of section 7.
 9. Schedulers: install the timers (section 9) and the probe (section 10), and logrotate (section 11).
 10. First backup and a restore drill (section 9) before any user data exists, then again after the data migration.
-11. `LEAD:` the first administrator account. **There is no production path to create one yet** (no demo seed, no bootstrap command):
-    see section 17, finding F1. Do not enable the demo seed to work around it.
+11. `LEAD:` the first administrator account. Default applied 22 Oct (F1, section 20): the first Admin Pusat accounts come from the
+    `.cloud` migration (T-1 load, 29 Oct). There is still no bootstrap command; do not enable the demo seed to work around it.
 
 ---
 
@@ -237,7 +239,7 @@ Template `deploy/vps/nginx/templates/pp.conf.template`, rendered at container st
 | Uploads, tier 2 (`PP_UPLOAD_BIG_MB`, 256 MB) | Many-file multipart routes: `/api/intake/batches` and `/api/intake/batches/:id/files` (up to `INTAKE_MAX_FILES_PER_BATCH`+1 = 11 files x 20 MB = 220 MB), `/api/admin/audio-kbat-sets` (4 x 20 MB = **80 MB**, the biggest the audio KBAT needs), `/api/admin/screenshots` (20 x 10 MB), `/api/perutusan` (6 x 2 MB + 3 x 5 MB), `/api/guru/question-papers` (up to 101 MB). At most **2 concurrent big uploads per address and 4 for the whole server** (`limit_conn`). The API enforces each purpose itself; this is the outer fence. A new many-file route needs a line in that regex |
 | SPA | `/` proxied to `frontend:8080`. Cache headers come from the frontend nginx (`/assets/*` immutable for a year, `index.html` and deep links `no-cache`, SPA fallback). Gzip is on for SPA assets, **off for `/api`** (the JSON carries the CSRF token: BREACH) |
 | Security headers on the SPA | The frontend nginx already sends `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; the edge adds only HSTS and the CSP, so nothing is duplicated |
-| CSP | Decision **D-7 is open** (add a CSP, or replicate live, which has none). Default `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
+| CSP | Decision **D-7**: default `report-only` applied for go-live on 22 Oct (section 20). `report-only`: no breakage, violations appear in the browser console. `PP_CSP_MODE=enforce` enforces the same policy (decide D-7 before go-live: section 16, T-2 d), `off` sends nothing. The policy (`snippets/csp-*.conf`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: $PP_CSP_IMG_HOSTS (no bare `https:`); font-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src` the three video hosts the SPA allows; `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. **Check in a browser on staging before choosing `enforce`** (video embeds, article images, audio player) |
 | Request-body buffers | `client_body_temp_path` and `proxy_temp_path` are on the **disk-backed named volume `edgetmp`** (`/var/cache/nginx`), not tmpfs. tmpfs pages count against the edge's memory limit, so buffering unauthenticated 256 MB bodies in RAM would OOM-kill the edge. Worst case on disk: 4 big uploads x 256 MB + the 22 MB tier, a few GB at most; the nginx workers' memory stays small. HSTS (`PP_HSTS`) is also sent on the 404s that nginx itself answers (`/api/metrics`, `/api`) |
 | Auth flood guard | `/api/auth/` has `limit_req` per client IP (`PP_EDGE_AUTH_RATE`, `PP_EDGE_AUTH_BURST`, status 429). It is a secondary guard: the API throttles logins per account and per IP itself, and the edge sees one address for a whole school behind NAT, hence the generous default. Tested by `test-routing.sh` |
 | Access log | Same format as the frontend nginx: a 64-hex path segment (parent invite token) is logged as `[redacted]`, no Referer |
@@ -436,7 +438,7 @@ Real-data migration dumps follow the shorter 7-day rule of the migration runbook
 
 Alerts required by the task and where they come from: **disk usage** (probe), **backup failure** (backup.sh alert + `/fail` ping + backup-age check + dead man's switch), **certificate expiry** (probe + renewal failure alert + Let's Encrypt e-mail), **service down** (probe + external checker).
 
-### DECISION NEEDED: error tracking (Sentry)
+### Error tracking (Sentry): default A applied 22 Oct (section 20)
 
 State: `apps/api` has **no Sentry SDK and no DSN variable** (searched `apps/api`, `packages`, `src`; the only hit is a word inside a vendored PDF-engine comment). Go-live checklist item D-4.
 
@@ -530,7 +532,7 @@ against a **staging box of the same size**, never against production without the
 Pass thresholds tied to the table: read p95 < 500 ms, autosave p95 < 400 ms, login p95 < 3 s, error rate < 0.5%, **zero 429**, checks > 99%; and during the run the API container stays under 70% of its CPU limit and 80% of its memory limit.
 Start at N, then 1.5 x N: where p95 crosses the threshold is the real capacity; replace A4 with that number.
 
-**Throttles vs one load generator.** The API throttles per client address: `THROTTLE_GLOBAL_PER_MINUTE` = 300 requests per minute per address on every `/api` route, login 5 per minute per identifier and address.
+**Throttles vs one load generator.** The API throttles per client address: `THROTTLE_GLOBAL_PER_MINUTE` = 300 requests per minute per address on every `/api` route (3000 in production, section 20), login 5 per minute per identifier and address.
 A single-IP generator hits the global ceiling within seconds and then measures the limiter. Do not change production values: either run on staging with `THROTTLE_GLOBAL_PER_MINUTE=1000000` in its `api.env`
 (per-user limits can stay), or spread the load over several source addresses. The same ceiling is a **production risk** for schools (finding F2).
 
@@ -561,7 +563,7 @@ This pack provides the environment:
 - Enable with `PP_PROFILES=clamav` in `prod.env`, then `deploy.sh`.
 - **Reserved env names, read once the half-AM card lands:** `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`. They are only comments in `.env.prod.example`. Do not add them to `api.env` before the card: `env.schema.ts` does not know them and a test keeps `.env.api.example` equal to the schema.
 - Until the card lands, clamd runs but nothing calls it. Check it is alive: `docker compose ... ps clamav` shows `healthy` (the image's `clamdcheck.sh` health check asks clamd to answer).
-- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
+- **Go-live gate:** no pupil or teacher uploads in production until the #78 ClamAV wiring lands, **or a recorded LEAD risk acceptance** (a dated line in the cutover log). Intake is admin-only at go-live (AZ-29 item 7, card AZ-35); the gate still covers the other pupil and teacher upload routes (section 20). It is an explicit go/no-go item in section 16. `clamav` runs on its own network `scan` (add `scan` to the api service when the card lands) with `cap_drop: ALL` plus the few capabilities its entrypoint needs.
 - ClamAV needs outbound HTTPS to the ClamAV mirrors for signature updates (freshclam). Cost: 1 to 1.5 GB RAM (section 13).
 
 ---
@@ -573,14 +575,14 @@ decision D-3 "is migration needed at go-live" are open, see [go-live-bijak-spm.m
 
 | When | Step | Owner | Done when |
 |---|---|---|---|
-| T-7 d | `LEAD:` VPS provisioned, SSH access, domain bought, off-site target and alert channel chosen; sizing profile chosen (section 13) | LEAD | accounts exist |
+| T-7 d | `LEAD:` VPS provisioned, SSH access, domain bought, off-site **S3-compatible bucket and write key** created (section 20) and alert channel chosen; sizing profile chosen (section 13) | LEAD | accounts exist |
 | T-5 d | Server hardened (section 2); repo cloned; env files written (section 4); `deploy.sh --dry-run` passes | AZ | `preflight passed` |
 | T-4 d | `init-cert.sh --dry-run` on the real name, then the real certificate (DNS must already point at the VPS, or use a temporary name) | AZ | `https://` works with a valid certificate |
 | **T-2 d** | **Infrastructure ready**: full deploy of the release candidate on the production box under its real name (no pupils yet), `--seed-reference`, smoke test (section 7), ufw check (`ss -tlnp`), timers installed, external uptime checker and dead-man's-switch URLs live, a test alert delivered end to end (stop the backup timer's ping URL and see the provider mail, or `monitoring/alert.sh "test"`) | AZ | smoke test 100% pass; test alert received |
 | T-2 d | First **backup + restore drill** on the production box; evidence file kept; one off-site copy restored on a scratch host | AZ | `result: PASS`, off-site copy restores |
 | **T-2 d** | **DNS TTL lowered** to 300 s (48 h before the switch) on the records that will change | LEAD | `dig` shows TTL <= 300 |
 | **T-2 d** | **Decide D-7 (SPA CSP) before go-live**: check the report-only policy in a browser on staging (video embeds, article images, audio player), then set `PP_CSP_MODE=enforce` (and `PP_CSP_IMG_HOSTS`) or record the LEAD's decision to stay on `report-only`/`off` | LEAD + frontend | decision recorded |
-| T-1 d | Load test on a staging box of the same size at 1 x and 1.5 x the expected N (section 13); decision on `THROTTLE_GLOBAL_PER_MINUTE` made (F2); CSP decision D-7 made (`PP_CSP_MODE`); error-tracking decision made (section 10); go-live checklist items 17-19 closed or waived in writing | LEAD + AZ | numbers recorded |
+| T-1 d | Load test on a staging box of the same size at 1 x and 1.5 x the expected N (section 13), with the section 20 values (`THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120): zero 429 from one source address at the class-login wave; go-live checklist items 17-19 closed or waived in writing | LEAD + AZ | numbers recorded |
 | T-1 d | Freeze announced: no merges after the release tag; the release SHA in `deploy.sh --dry-run` equals the tag the LEAD approved | LEAD | tag recorded |
 | T-2 h | Rollback readiness: previous image tag present (`previous.tag`), disk free > 30%, last scheduled backup < 24 h old and off-site, operator awake and `sudo`-capable, on-call phone list | AZ | checklist ticked |
 | **T-1 h** | **Pre-cutover backup**: `deploy/vps/backup/backup.sh --tag pre-deploy` (dump + sha256 + off-site copy), verify the off-site copy is there; record file name and sha256 in the cutover log | AZ | file and hash recorded |
@@ -607,15 +609,15 @@ Found while building this pack; AZ does not change application code.
 
 | # | Finding | For | Severity |
 |---|---|---|---|
-| F1 | **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
-| F2 | **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
+| F1 | **Default applied 22 Oct (section 20): migrated `.cloud` admins; a bootstrap command card is still needed as the fallback and for a locked-out last admin.** **No way to create the first Admin Pusat account in production.** The demo seed is refused in production (correct), the production seed loads reference data only, and there is no bootstrap command in `apps/api`. Unless the data migration (BE-28) brings an admin, go-live has nobody who can publish papers. Needs a one-off, audited "create first admin" command (password from the environment, not the command line) or a documented migration step | backend-developer | High (go-live blocker) |
+| F2 | **Default applied 22 Oct (section 20): `THROTTLE_GLOBAL_PER_MINUTE=3000`, edge auth 300r/m burst 120.** **`THROTTLE_GLOBAL_PER_MINUTE=300` is per client address.** A school (a class of 40 on one NAT address at about 12 requests per minute each = 480) exceeds it, and then every request from that school is 429. The login failed-attempt limit of 20 per minute per address (fixed) is similar. LEAD decision OQ1 (rate-limit numbers) must raise it for production or key signed-in routes on the user | backend-developer, LEAD | High |
 | F3 | Many-file multipart routes exceed the staging frontend nginx limits (`/api/` 3 MB, `/api/files` 22 MB): `POST /api/admin/audio-kbat-sets` (80 MB), `/api/intake/batches/:id/files` (220 MB), `/api/admin/screenshots` (200 MB), `/api/guru/question-papers` (101 MB), `/api/perutusan`, plus 5 MB photo routes would get 413 on the staging stack. The production edge handles them; `docker/frontend/nginx.conf` (staging) does not. Not changed here | devops (follow-up on staging), qa-engineer | Medium |
 | F4 | `REQUEST_TIMEOUT_MS=120000` covers the whole request, so a 220 MB upload must arrive within 2 minutes (about 15 Mbit/s). The runbook suggests up to 300000 for slow links; the edge already allows 300 s upstream on those routes. LEAD to decide per intake behaviour | LEAD, backend-developer | Low |
 | F5 | The API buffers multipart bodies in memory (multer memory storage): 220 MB x `INTAKE_UPLOAD_CONCURRENCY`=2 means API memory spikes of about 450 MB (included in the sizing) | backend-developer | Info |
 | F6 | `apifiles` (uploads) is not in the database dump. This pack archives it weekly; pupil photos grow it. A plan for object storage or incremental backup is a later improvement | devops | Info |
 | F7 | ClamAV: the scan code is not in the API yet (half AM). Reserved env names `CLAMAV_HOST` / `CLAMAV_PORT` | half AM (backlog #78) | High before go-live per row 43 |
-| F8 | No error tracking in the API (section 10 DECISION NEEDED) | LEAD | Decision |
-| F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16) | LEAD, frontend-developer (verify the policy in a browser) | Decision |
+| F8 | No error tracking in the API (section 10). **Default A applied 22 Oct: none for 30 Oct, re-decide after week 1** | LEAD | Default applied |
+| F9 | SPA CSP decision D-7; the pack ships report-only (explicit T-2 d item in section 16). **Default applied 22 Oct: report-only at go-live** | LEAD, frontend-developer (verify the policy in a browser) | Default applied |
 
 ---
 
@@ -653,3 +655,29 @@ the edge nginx config (`nginx -t` and a live behaviour test against stub upstrea
 | `restore-drill.sh`: row-count mismatch | Writes happened between dump and check: run with the api stopped (default), not `--no-quiesce` |
 | Disk full | `docker system df`, old images (`docker image prune` keeps tagged ones in use; keep the last two releases), backup dir, Docker logs |
 | After a reboot nothing is up | `restart: unless-stopped` needs the Docker service enabled: `systemctl enable docker` |
+
+---
+
+## 20. Defaults applied on 22 Oct (LEAD may veto)
+
+The LEAD DECISION of 22 Oct 2026, 10:30 MYT (#113) told AZ-DevOps to apply the recommended defaults of this pack to
+the open items and list them, so the LEAD can veto any line. A veto is one line on #113; AZ-DevOps then changes this
+section, the example files and the checks. **The VPS size stays parameterised** (section 13) until the LEAD gives the
+specs.
+
+| # | Item | Default in force | Where it is set | What the LEAD still supplies |
+|---|---|---|---|---|
+| F1 | First Admin Pusat in production | The first Admin Pusat accounts are the **migrated `.cloud` admins** (MIG-08 load option A: `migrate:all --apply` on 29 Oct brings `admin` users with a national scope; their password hash is carried, or they must reset it). At the T-1 check (cutover plan step A10) the LEAD confirms that at least **two** active Admin Pusat accounts exist (a second one is the break-glass path for a locked-out admin) and signs in with his own. No demo seed, no raw SQL | Cutover plan (#124) A10; this runbook section 4 step 11 | His own admin account on `.cloud`. A fallback is still needed if no admin migrates, and for a locked-out last admin: a one-off, audited bootstrap/reset command (backend card, to be assigned by the LEAD) |
+| F2 | Throttle behind a school NAT | `THROTTLE_GLOBAL_PER_MINUTE=3000` (about 250 active pupils on one address at 12 requests per minute each); edge `PP_EDGE_AUTH_RATE=300r/m`, `PP_EDGE_AUTH_BURST=120` (a class of 40 signing in at once). Per-user and per-route buckets unchanged. The fixed login limit of 20 failed attempts per minute per address stays (code); it counts failures only | `api.env.example`, `.env.prod.example`, compose defaults; `deploy.sh` warns below 3000 | Nothing. The T-1 d load test confirms zero 429 |
+| Sentry | Error tracking | **A: none for 30 Oct**; re-decide after week 1 with real error volume. The probe alerts on bursts of API error lines (`PP_ALERT_API_ERRORS_5M`) | Section 10 | Nothing now |
+| CSP | SPA CSP (D-7) | **`PP_CSP_MODE=report-only`** at go-live. The T-2 d browser check still runs; switching to `enforce` is a later LEAD decision | `.env.prod.example`; section 16 T-2 d | Nothing now |
+| ClamAV | Upload scanning | Profile `clamav` **not** in `PP_PROFILES` until the #78 scan card lands (clamd would run with nothing calling it). Intake is admin-only (AZ-29 item 7, card AZ-35). The go/no-go uploads gate of section 16 stays for every other pupil or teacher upload route: #78 landed, or a dated LEAD risk-acceptance line | `.env.prod.example`; sections 15 and 16 | The risk acceptance line, if #78 is not in by 30 Oct |
+| Off-site | Off-site target | **`s3`**: an S3-compatible bucket, ideally in a Malaysian or Asia-Pacific region; a key that can write but not delete if the provider supports it; bucket lifecycle **35 days** (the erasure rule of section 9); **no object lock** and versioning off (the erasure rule and the migration clean-up of the cutover plan section 7 must be able to delete); GPG required with `PP_BACKUP_GPG_FPR` pinned; one off-site copy restored on a scratch host at T-2 d. `rsync` stays possible if the LEAD prefers a second server | `.env.prod.example` (`PP_OFFSITE_KIND` stays `none` in the example until the bucket exists) | The bucket, endpoint and key (in the backup user's aws profile, never in `prod.env`), and the GPG key pair |
+
+AI intake values (AZ-29: `AI_PROVIDER=mock`, `OCR_ENGINE=none`, intake limits KEEP, admin-only) are decided, not
+defaults: see section 3 and `docs/ops/ai-intake-production-decisions.md` (lands with #138).
+
+Also folded in here (optional G4 minors of the #116 review): the HSTS ramp now lists 604800 like
+`platform-settings.md`; `deploy.sh` refuses a `PP_HSTS` value that is not empty, `max-age=N` or
+`max-age=N; includeSubDomains`; and a failed deploy with no api container running now prints the rollback command
+instead of "nothing to roll back".

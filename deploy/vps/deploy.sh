@@ -172,6 +172,15 @@ preflight() {
     fi
   fi
   case "$(pp_cfg PP_CSP_MODE report-only)" in report-only|enforce|off) ;; *) err "PP_CSP_MODE must be report-only, enforce or off" ;; esac
+  # PP_HSTS is pasted into the nginx config text: allow only the ramp shapes (empty = no header; never preload).
+  # Unset means the compose default max-age=300, so only a value written in prod.env or the shell is checked.
+  v="${PP_HSTS-$(pp_env_value "$PP_PROD_ENV" PP_HSTS)}"
+  [[ "$v" =~ ^(max-age=[0-9]{1,9}(\;\ includeSubDomains)?)?$ ]] || err "PP_HSTS must be empty or 'max-age=N' or 'max-age=N; includeSubDomains' (no preload)"
+  # Finding F2: the global throttle counts per client address and a school shares one NAT address.
+  v="$(pp_env_value "$api_env" THROTTLE_GLOBAL_PER_MINUTE)"
+  if [[ ! "$v" =~ ^[0-9]+$ ]] || [ "$v" -lt 3000 ]; then
+    warn "THROTTLE_GLOBAL_PER_MINUTE is ${v:-unset (300)} in api.env: below the 3000 default of runbook section 20, a school behind one NAT address will get 429"
+  fi
   if [ "$(pp_cfg PP_OFFSITE_KIND none)" = none ]; then warn "PP_OFFSITE_KIND=none: backups stay on this server only"
   elif [ -z "$(pp_cfg PP_BACKUP_GPG_RECIPIENT '')" ] && [ "$(pp_cfg PP_OFFSITE_ALLOW_PLAINTEXT false)" != true ]; then
     err "off-site copies are enabled but PP_BACKUP_GPG_RECIPIENT is empty: set the public key (private key stays off the server), or PP_OFFSITE_ALLOW_PLAINTEXT=true as a recorded LEAD decision"
@@ -243,7 +252,11 @@ fail_deploy() { # fail_deploy EXIT_CODE WHAT: alert and print the way back. Call
   api_tag="$(pp_running_tag)"
   pp_log "DEPLOY FAILED at: ${what} (exit $rc)" >&2
   pp_log "Nothing is rolled back automatically. If the failure happened before 'migrate', the old release is still running." >&2
-  if [ -n "$running" ] && [ "$running" != "$prev" ] && [ "$api_tag" != "$running" ]; then
+  if [ -n "$running" ] && [ -n "$prev" ] && [ "$running" != "$prev" ] && [ -z "$api_tag" ]; then
+    # No api container is running at all: the new one may have started and exited (pp_running_tag sees running
+    # containers only), so "nothing to roll back" would be wrong. rollback.sh starts the previous release.
+    pp_log "No api container is running (the new release $running may have started and then exited). Start the previous release: deploy/vps/rollback.sh $prev" >&2
+  elif [ -n "$running" ] && [ "$running" != "$prev" ] && [ "$api_tag" != "$running" ]; then
     # deploying.tag is written before migrate, but the api never switched (migrate itself failed, or api did not start):
     # rollback.sh would refuse ("already running"), so say so and clear the stale marker.
     rm -f "$state_dir/deploying.tag"
