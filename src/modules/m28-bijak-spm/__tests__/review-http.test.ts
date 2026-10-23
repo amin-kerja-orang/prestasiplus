@@ -363,6 +363,21 @@ describe('review client', () => {
     expect((await server.listReviewQueue({ kertas: 1 })).items).toEqual([])
   })
 
+  it('status terbit reads only the counts, not the items', async () => {
+    const { server, requests } = setup({
+      'GET /api/admin/blueprints': blueprints,
+      'GET /api/intake/items': ok([row()], {
+        meta: { totalPages: 9, counts: { generated: 1, needs_review: 0, accepted: 2, rejected: 0, duplicate: 0 } },
+      }),
+    })
+    const q = await server.listReviewQueue({ status: 'terbit' })
+    expect(q.items).toEqual([])
+    expect(q.counts).toEqual({ semakan: 1, draf: 2, ditolak: 0, terbit: 0 })
+    const reads = requests.filter((r) => r.url === '/api/intake/items')
+    expect(reads).toHaveLength(1)
+    expect(reads[0]?.query).toMatchObject({ pageSize: '1' })
+  })
+
   it('opens an item and maps 404 to not_found', async () => {
     const { server } = setup({
       'GET /api/admin/blueprints': blueprints,
@@ -507,15 +522,30 @@ describe('extraction and the editor client', () => {
     expect(requests.some((r) => r.method === 'DELETE' && r.url === '/api/intake/stimuli/s9')).toBe(true)
   })
 
-  it('surfaces a locked item (409) from a save', async () => {
-    const { server } = setup({
+  it('a 409 locked item is dropped from the save and the rest still goes through', async () => {
+    const locked = 'Item ini sudah diterima atau ditolak dan tidak boleh disunting.'
+    const { server, requests } = setup({
       ...batchRoutes,
-      'PATCH /api/intake/items/11': fail(409, 'CONFLICT', 'Item ini sudah diterima atau ditolak dan tidak boleh disunting.'),
+      'GET /api/intake/items': ok(
+        [row(), row({ id: '12', position: 2 })],
+        { meta: { totalPages: 1 } },
+      ),
+      'GET /api/intake/items/12': ok(item({ id: '12', label: '2', position: 2 })),
+      'PATCH /api/intake/items/11': fail(409, 'CONFLICT', locked),
+      'PATCH /api/intake/items/12': ok(item({ id: '12', label: '2', stem: 'B' }), { reordered: false }),
     })
     const b = await server.getIntakeBatch('7')
-    await expect(
-      server.saveExtracted('7', { questions: [{ ...b.questions[0]!, stem: 'x' }], stimuli: [] }),
-    ).rejects.toMatchObject({ code: 'bad_request', message: expect.stringContaining('tidak boleh disunting') })
+    const edited = b.questions.map((q) => ({ ...q, stem: 'B' }))
+    const saved = await server.saveExtracted('7', { questions: edited, stimuli: [] })
+    expect(saved.questions.map((q) => q.id)).toEqual(['12'])
+    expect(requests.filter((r) => r.method === 'PATCH').map((r) => r.url)).toEqual([
+      '/api/intake/items/11',
+      '/api/intake/items/12',
+    ])
+    // the next save does not retry it and does not create a copy
+    await server.saveExtracted('7', { questions: edited.map((q) => ({ ...q, stem: 'C' })), stimuli: [] })
+    expect(requests.filter((r) => r.method === 'PATCH' && r.url === '/api/intake/items/11')).toHaveLength(1)
+    expect(requests.some((r) => r.method === 'POST' && r.url.endsWith('/items'))).toBe(false)
   })
 
   it('submit runs the batch gate: issues come back, none gives Semakan', async () => {
