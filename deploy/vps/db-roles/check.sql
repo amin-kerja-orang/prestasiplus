@@ -55,6 +55,26 @@ BEGIN
   RETURN QUERY SELECT CASE WHEN v = '0' THEN 'PASS' ELSE 'FAIL' END, 'all', 'pg_hba: no trust rule for non-loopback addresses',
     'trust rules beyond loopback: ' || v;
 
+  -- ---- exact privileges: on public tables and sequences app and etl hold nothing beyond the granted set ----
+  FOREACH k IN ARRAY ARRAY['app', 'etl'] LOOP
+    n := names ->> k;
+    SELECT coalesce(string_agg(DISTINCT x.privilege_type, ','), 'none') INTO v
+      FROM pg_class c, aclexplode(c.relacl) x
+     WHERE c.relnamespace = 'public'::regnamespace AND x.grantee = n::regrole
+       AND ((c.relkind IN ('r', 'p', 'v', 'm', 'f') AND x.privilege_type NOT IN ('SELECT', 'INSERT', 'UPDATE', 'DELETE'))
+         OR (c.relkind = 'S' AND x.privilege_type NOT IN ('USAGE', 'SELECT', 'UPDATE')));
+    RETURN QUERY SELECT CASE WHEN v = 'none' THEN 'PASS' ELSE 'FAIL' END, k,
+      'no TRUNCATE/TRIGGER/REFERENCES or other extra privilege on any public table or sequence', 'extra privileges: ' || v;
+    SELECT coalesce(string_agg(r.setconfig::text, ' '), 'none') INTO v FROM pg_db_role_setting r WHERE r.setrole = n::regrole;
+    RETURN QUERY SELECT CASE WHEN v = '{search_path=public}' THEN 'PASS' ELSE 'FAIL' END, k, 'role settings: search_path pinned to public', v;
+  END LOOP;
+  -- Schemas: public plus at most the two stage schemas (no schema planted under a role name by a restore).
+  SELECT coalesce(string_agg(nspname, ',' ORDER BY nspname), 'none') INTO v FROM pg_namespace
+   WHERE nspname NOT IN ('public', 'staging_cloud', 'archive_cloud', 'information_schema')
+     AND nspname NOT LIKE 'pg\_%';
+  RETURN QUERY SELECT CASE WHEN v = 'none' THEN 'PASS' ELSE 'FAIL' END, 'all', 'no schema besides public and the two stage schemas',
+    'other schemas: ' || v;
+
   -- ---- _prisma_migrations: read-only for app and etl (a forged row would make prisma skip a migration) ----
   IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
     FOREACH k IN ARRAY ARRAY['app', 'etl'] LOOP

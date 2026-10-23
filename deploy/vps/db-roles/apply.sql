@@ -44,7 +44,7 @@ BEGIN
       EXECUTE format('CREATE ROLE %I', n);
     END IF;
     EXECUTE format('ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT CONNECTION LIMIT -1 VALID UNTIL %L', n, 'infinity');
-    EXECUTE format('ALTER ROLE %I RESET ALL', n);   -- no per-role settings (search_path and the like)
+    EXECUTE format('ALTER ROLE %I RESET ALL', n);   -- no per-role settings except the search_path below
     FOR r IN
       SELECT g.rolname AS grp, m.rolname AS mem, gr.rolname AS grantor
       FROM pg_auth_members am
@@ -57,6 +57,12 @@ BEGIN
     END LOOP;
   END LOOP;
   EXECUTE format('ALTER ROLE %I PASSWORD NULL', s);   -- local socket only
+  -- The stage role may create schemas (it recreates the stage schemas), so a crafted dump could add a schema named
+  -- like a role ("$user" comes first in the default search_path). The API, the ETL and the owner resolve unqualified
+  -- names in public only.
+  FOREACH n IN ARRAY ARRAY[o, a, e] LOOP
+    EXECUTE format('ALTER ROLE %I SET search_path = public', n);
+  END LOOP;
 
   -- ---- database ----
   EXECUTE format('ALTER DATABASE %I OWNER TO %I', db, o);

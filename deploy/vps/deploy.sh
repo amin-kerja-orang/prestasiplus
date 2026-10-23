@@ -14,7 +14,7 @@
 #   1 preflight   2 pre-deploy backup   3 build or pull images tagged with the git sha
 #   4 db up, then the least-privilege roles (db-roles.sh apply: idempotent, cutover plan P3)
 #   5 migrate (one-shot, `prisma migrate deploy` only, never a seed, as the schema owner pp_owner), then
-#     db-roles.sh check (the API role has no DDL; a failed check stops the deploy before the api switches)
+#     db-roles.sh apply + check (the API role has no DDL; a failed check stops the deploy before the api switches)
 #   6 api + frontend up (wait healthy)
 #   7 edge (re)created   8 health checks through the edge: /api/health, /api/ready, /, /api/metrics (404), http->https
 #   9 record current and previous image tag for rollback.sh
@@ -307,8 +307,11 @@ run "$PP_VPS_DIR/db-roles.sh" apply
 # failure message use it to tell "new release started but not recorded" from "nothing started".
 [ "$dry" = 1 ] || { mkdir -p "$state_dir"; printf '%s\n' "$tag" >"$state_dir/deploying.tag"; }
 
-step "5/9 migrate (prisma migrate deploy only, as $PP_DB_ROLE_OWNER), then the role check"
+step "5/9 migrate (prisma migrate deploy only, as $PP_DB_ROLE_OWNER), then the roles again and the role check"
 run pp_compose run --rm --no-deps migrate
+# apply again: tables the migrate just created get the per-table rules default privileges cannot express
+# (_prisma_migrations read-only for the API and the ETL; on a fresh database it did not exist at step 4).
+run "$PP_VPS_DIR/db-roles.sh" apply
 run "$PP_VPS_DIR/db-roles.sh" check
 
 step "6/9 api and frontend"

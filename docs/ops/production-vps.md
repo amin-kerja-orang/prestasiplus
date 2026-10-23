@@ -215,7 +215,9 @@ acceptance. `deploy/vps/db-roles.sh` implements cutover plan P3 ([v2-cutover-pla
 | `pp_stager` | `slot.sh copy` and the section 7 `drop schema ... cascade` (stage-only role) | none | `CONNECT` and `CREATE` on the database: it creates the two stage schemas and, as their owner, drops them. **Nothing on `public`** (a `select` and an `insert` are refused). **No password**: it connects only over the local socket inside the db container (`docker compose exec db psql -U pp_stager`), never over the network |
 | `POSTGRES_USER` of `db.env` | bootstrap superuser of the cluster | `db.env` | Used only by ops scripts, always inside the db container: `db-roles.sh`, `backup/backup.sh` and `backup/restore-drill.sh` (a full dump, and the drill's `CREATE DATABASE <db>_restorecheck`), a manual restore (section 8), and #166's `restore-point.sh` / `pitr.sh` (whole-database dump, base backup). Never in a `DATABASE_URL` |
 
-Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
+`pp_owner`, `pp_app` and `pp_etl` have `search_path = public` pinned: `pp_stager` may create schemas, so a crafted dump could add one
+named like a role (`"$user"` is first in the default search path); `check` also fails on any schema besides `public` and the two stage
+schemas. Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
 later runs with its own rights; with `CREATE` on the database it can also install a trusted extension into its schemas. That is accepted
 because `pp_stager` is reachable only from inside the db container, which is root-equivalent anyway (the deploy user is in the docker group).
 
@@ -225,8 +227,9 @@ on; `pp_etl` gets read/write on every `public` table, with no DDL. Narrowing it 
 
 **How it is wired.** `compose.prod.yaml`: `api` reads `api.env` (`pp_app`); `migrate` reads `api.env` and then `migrate.env`, so its
 `DATABASE_URL` is `pp_owner`'s. `slot.sh etl` must add `--env-from-file /etc/pretasiplus/etl.env` and `slot.sh copy` must restore as
-`pp_stager` (the patch is on #166). `deploy.sh` runs `db-roles.sh apply` after `db` is up (step 4) and `db-roles.sh check` after `migrate`
-(step 5): a failed check stops the deploy before the API is switched. `deploy.sh` refuses any `DATABASE_URL` whose user is not the role
+`pp_stager` (the patch is on #166). `deploy.sh` runs `db-roles.sh apply` after `db` is up (step 4), and `apply` again plus `db-roles.sh check` after
+`migrate` (step 5; the second `apply` makes a `_prisma_migrations` created by that first migrate read-only): a failed check stops the
+deploy before the API is switched. `deploy.sh` refuses any `DATABASE_URL` whose user is not the role
 of its file.
 
 **First set-up (and the switch of a server that ran as the superuser).** As `ppdeploy`, from the release checkout:
@@ -256,7 +259,8 @@ restore drill restores in the same cluster and is not affected.
 **What `check` proves** (each probe runs the statement **as the role** in a rolled-back subtransaction, so nothing changes; plus a real
 network login with each env-file password): attributes and memberships of the four roles; `pp_owner` owns the database and every `public`
 table and sequence; `pp_app` and `pp_etl` hold `SELECT/INSERT/UPDATE/DELETE` on every `public` table and `USAGE/SELECT/UPDATE` on every
-sequence; `pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
+sequence, and nothing else (an extra `TRUNCATE`, `TRIGGER` or `REFERENCES` grant on any table is a FAIL; `search_path` pinned);
+`pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
 `staging_cloud` or `archive_cloud` (when they exist; otherwise no default privilege can give it anything there); `pp_etl` can use `TEMP`,
 read both stage schemas and update `archive_cloud`, but has no DDL in `public`; `pp_stager` is refused `select` and `insert` on `public` and
 can create and drop the stage schemas; `_prisma_migrations` is read-only for `pp_app` and `pp_etl`; `pg_hba` has no `trust` rule beyond
@@ -275,7 +279,10 @@ docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/p
 deploy/vps/db-roles.sh check                         # the network login lines must PASS
 ```
 
-Between `apply` and the recreate, open API connections keep working and new ones fail: run the three lines together. `owner` and `etl` are
+`secrets --rotate` writes the env file first and `apply` changes the database password: between them and the recreate, open API
+connections keep working and new ones fail, so run the lines together. A rotation does not end existing sessions: after a suspected
+leak, also end the role's sessions as the superuser (`select pg_terminate_backend(pid) from pg_stat_activity where usename = 'pp_app'`,
+then the recreate). `owner` and `etl` are
 used by one-shot containers only, so nothing needs a restart. `pp_stager` has no password to rotate. The bootstrap `POSTGRES_PASSWORD` is
 rotated as before (section 12: `ALTER ROLE` plus `db.env`); since no `DATABASE_URL` uses it, the API is not affected.
 

@@ -19,8 +19,17 @@ const APPLY_SQL = readFileSync(`${SQL_DIR}apply.sql`, 'utf8')
 const CHECK_SQL = readFileSync(`${SQL_DIR}check.sql`, 'utf8')
 
 const suffix = randomBytes(4).toString('hex')
-const R = { owner: `t_owner_${suffix}`, app: `t_app_${suffix}`, etl: `t_etl_${suffix}`, stage: `t_stage_${suffix}` }
-const PW = { owner: randomBytes(24).toString('hex'), app: randomBytes(24).toString('hex'), etl: randomBytes(24).toString('hex') }
+const R = {
+  owner: `t_owner_${suffix}`,
+  app: `t_app_${suffix}`,
+  etl: `t_etl_${suffix}`,
+  stage: `t_stage_${suffix}`,
+}
+const PW = {
+  owner: randomBytes(24).toString('hex'),
+  app: randomBytes(24).toString('hex'),
+  etl: randomBytes(24).toString('hex'),
+}
 const GUCS = `SET pp.role_owner = '${R.owner}'; SET pp.role_app = '${R.app}'; SET pp.role_etl = '${R.etl}'; SET pp.role_stage = '${R.stage}';`
 
 type CheckRow = { result: string; role: string; probe: string; detail: string }
@@ -34,7 +43,8 @@ async function apply(): Promise<void> {
   try {
     await admin.query(GUCS)
     await admin.query(APPLY_SQL)
-    for (const k of ['owner', 'app', 'etl'] as const) await admin.query(`ALTER ROLE "${R[k]}" PASSWORD '${PW[k]}'`)
+    for (const k of ['owner', 'app', 'etl'] as const)
+      await admin.query(`ALTER ROLE "${R[k]}" PASSWORD '${PW[k]}'`)
     await admin.query('COMMIT')
   } catch (err) {
     await admin.query('ROLLBACK')
@@ -64,13 +74,16 @@ async function deniedAs(kind: 'owner' | 'app' | 'etl', sql: string): Promise<str
     await c.query(sql)
     return 'allowed'
   } catch (err) {
-    return (err as Error & { code?: string }).code === '42501' ? `denied: ${(err as Error).message}` : `error: ${(err as Error).message}`
+    return (err as Error & { code?: string }).code === '42501'
+      ? `denied: ${(err as Error).message}`
+      : `error: ${(err as Error).message}`
   } finally {
     await c.end()
   }
 }
 
-const failures = (rows: CheckRow[]) => rows.filter((r) => r.result !== 'PASS').map((r) => `${r.role} | ${r.probe} | ${r.detail}`)
+const failures = (rows: CheckRow[]) =>
+  rows.filter((r) => r.result !== 'PASS').map((r) => `${r.role} | ${r.probe} | ${r.detail}`)
 
 beforeAll(async () => {
   db = await createTestDatabase()
@@ -100,24 +113,35 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
 
   it('turns a superuser-migrated database into the P3 layout, and check.sql passes every probe', async () => {
     // The template is migrated from the SQL files; prisma migrate deploy would also have its ledger table.
-    await admin.query(`CREATE TABLE _prisma_migrations (id varchar(36) PRIMARY KEY, migration_name varchar(255) NOT NULL)`)
+    await admin.query(
+      `CREATE TABLE _prisma_migrations (id varchar(36) PRIMARY KEY, migration_name varchar(255) NOT NULL)`,
+    )
     await apply()
     const rows = await check()
     expect(failures(rows)).toEqual([])
-    const by = (role: string, probe: RegExp) => rows.find((r) => r.role === role && probe.test(r.probe))?.detail
-    expect(by('owner', /owns every public table/)).toMatch(/^objects owned by another role: 0 of \d+$/)
-    expect(by('app', /CREATE TABLE in public/)).toMatch(/^denied: permission denied for schema public/)
+    const by = (role: string, probe: RegExp) =>
+      rows.find((r) => r.role === role && probe.test(r.probe))?.detail
+    expect(by('owner', /owns every public table/)).toMatch(
+      /^objects owned by another role: 0 of \d+$/,
+    )
+    expect(by('app', /CREATE TABLE in public/)).toMatch(
+      /^denied: permission denied for schema public/,
+    )
     expect(by('app', /^DROP TABLE/)).toMatch(/^denied: must be owner of table/)
     expect(by('stage', /^SELECT on public/)).toMatch(/^denied: permission denied for schema public/)
     expect(by('stage', /^INSERT on public/)).toMatch(/^denied: permission denied for schema public/)
     for (const role of ['owner', 'app', 'etl', 'stage'])
-      expect(by(role, /^attributes /)).toBe('super=f createdb=f createrole=f replication=f bypassrls=f login=t memberships=0')
+      expect(by(role, /^attributes /)).toBe(
+        'super=f createdb=f createrole=f replication=f bypassrls=f login=t memberships=0',
+      )
   })
 
   it('the API role reads and writes app tables over a real login but has no DDL, no TEMP, no superuser', async () => {
     const app = await connectAs('app')
     try {
-      const me = await app.query<{ u: string; s: boolean }>(`SELECT current_user AS u, rolsuper AS s FROM pg_roles WHERE rolname = current_user`)
+      const me = await app.query<{ u: string; s: boolean }>(
+        `SELECT current_user AS u, rolsuper AS s FROM pg_roles WHERE rolname = current_user`,
+      )
       expect(me.rows[0]).toEqual({ u: R.app, s: false })
       await app.query('BEGIN')
       const ins = await app.query<{ id: string }>(
@@ -125,38 +149,70 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
          VALUES ('dry-run', '{}', '{}', 'test', 'h', 'running', '{}') RETURNING id::text`,
       )
       expect(ins.rows).toHaveLength(1)
-      await app.query(`UPDATE etl_runs SET status = 'failed' WHERE id = $1::bigint`, [ins.rows[0]!.id])
+      await app.query(`UPDATE etl_runs SET status = 'failed' WHERE id = $1::bigint`, [
+        ins.rows[0]!.id,
+      ])
       await app.query(`DELETE FROM etl_runs WHERE id = $1::bigint`, [ins.rows[0]!.id])
       await app.query('ROLLBACK')
       expect((await app.query('SELECT count(*) FROM _prisma_migrations')).rows).toHaveLength(1)
     } finally {
       await app.end()
     }
-    expect(await deniedAs('app', `UPDATE _prisma_migrations SET migration_name = 'x'`)).toMatch(/^denied: permission denied for table _prisma_migrations/)
-    expect(await deniedAs('etl', `DELETE FROM _prisma_migrations`)).toMatch(/^denied: permission denied for table _prisma_migrations/)
-    expect(await deniedAs('app', 'CREATE TABLE public.pp_probe (i int)')).toMatch(/^denied: permission denied for schema public/)
-    expect(await deniedAs('app', 'DROP TABLE public.users')).toMatch(/^denied: must be owner of table users/)
-    expect(await deniedAs('app', 'TRUNCATE public.users')).toMatch(/^denied: permission denied for table users/)
-    expect(await deniedAs('app', 'CREATE TEMP TABLE pp_probe (i int)')).toMatch(/^denied: permission denied to create temporary tables/)
-    expect(await deniedAs('app', 'CREATE SCHEMA staging_cloud')).toMatch(/^denied: permission denied for database/)
-    expect(await deniedAs('app', `CREATE ROLE pp_probe_${suffix}`)).toMatch(/^denied: permission denied to create role/)
+    expect(await deniedAs('app', `UPDATE _prisma_migrations SET migration_name = 'x'`)).toMatch(
+      /^denied: permission denied for table _prisma_migrations/,
+    )
+    expect(await deniedAs('etl', `DELETE FROM _prisma_migrations`)).toMatch(
+      /^denied: permission denied for table _prisma_migrations/,
+    )
+    expect(await deniedAs('app', 'CREATE TABLE public.pp_probe (i int)')).toMatch(
+      /^denied: permission denied for schema public/,
+    )
+    expect(await deniedAs('app', 'DROP TABLE public.users')).toMatch(
+      /^denied: must be owner of table users/,
+    )
+    expect(await deniedAs('app', 'TRUNCATE public.users')).toMatch(
+      /^denied: permission denied for table users/,
+    )
+    expect(await deniedAs('app', 'CREATE TEMP TABLE pp_probe (i int)')).toMatch(
+      /^denied: permission denied to create temporary tables/,
+    )
+    expect(await deniedAs('app', 'CREATE SCHEMA staging_cloud')).toMatch(
+      /^denied: permission denied for database/,
+    )
+    expect(await deniedAs('app', `CREATE ROLE pp_probe_${suffix}`)).toMatch(
+      /^denied: permission denied to create role/,
+    )
   })
 
   it('the stage copy is readable by the migration role only; the stage role can drop it', async () => {
     // What slot.sh copy does: pg_restore --no-acl as the stage role creates both schemas.
     await admin.query(`SET ROLE "${R.stage}"`)
-    await admin.query(`CREATE SCHEMA staging_cloud; CREATE TABLE staging_cloud.users (id int, nama text)`)
-    await admin.query(`CREATE SCHEMA archive_cloud; CREATE TABLE archive_cloud.logs (id int, ip text)`)
+    await admin.query(
+      `CREATE SCHEMA staging_cloud; CREATE TABLE staging_cloud.users (id int, nama text)`,
+    )
+    await admin.query(
+      `CREATE SCHEMA archive_cloud; CREATE TABLE archive_cloud.logs (id int, ip text)`,
+    )
     await admin.query('RESET ROLE')
-    expect(await deniedAs('app', 'SELECT * FROM staging_cloud.users')).toMatch(/^denied: permission denied for schema staging_cloud/)
-    expect(await deniedAs('app', 'SELECT * FROM archive_cloud.logs')).toMatch(/^denied: permission denied for schema archive_cloud/)
+    expect(await deniedAs('app', 'SELECT * FROM staging_cloud.users')).toMatch(
+      /^denied: permission denied for schema staging_cloud/,
+    )
+    expect(await deniedAs('app', 'SELECT * FROM archive_cloud.logs')).toMatch(
+      /^denied: permission denied for schema archive_cloud/,
+    )
     expect(await deniedAs('etl', 'SELECT * FROM staging_cloud.users')).toBe('allowed')
-    expect(await deniedAs('etl', 'CREATE TABLE staging_cloud.x (i int)')).toMatch(/^denied: permission denied for schema staging_cloud/)
+    expect(await deniedAs('etl', 'CREATE TABLE staging_cloud.x (i int)')).toMatch(
+      /^denied: permission denied for schema staging_cloud/,
+    )
     // UPDATE on archive_cloud (migrate:archive-minimise) comes from the apply run after the copy.
-    expect(await deniedAs('etl', `UPDATE archive_cloud.logs SET ip = NULL`)).toMatch(/^denied: permission denied for table logs/)
+    expect(await deniedAs('etl', `UPDATE archive_cloud.logs SET ip = NULL`)).toMatch(
+      /^denied: permission denied for table logs/,
+    )
     await apply()
     expect(await deniedAs('etl', `UPDATE archive_cloud.logs SET ip = NULL`)).toBe('allowed')
-    expect(await deniedAs('etl', `UPDATE staging_cloud.users SET nama = NULL`)).toMatch(/^denied: permission denied for table users/)
+    expect(await deniedAs('etl', `UPDATE staging_cloud.users SET nama = NULL`)).toMatch(
+      /^denied: permission denied for table users/,
+    )
     expect(failures(await check())).toEqual([])
     await admin.query(`SET ROLE "${R.stage}"`)
     await admin.query('DROP SCHEMA staging_cloud CASCADE; DROP SCHEMA archive_cloud CASCADE')
@@ -165,7 +221,9 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
 
   it('a copy made by the superuser is handed to the stage role by the next apply', async () => {
     await admin.query(`CREATE SCHEMA staging_cloud; CREATE TABLE staging_cloud.users (id int)`)
-    expect(failures(await check()).join('\n')).toMatch(/stage \| DROP SCHEMA staging_cloud -> expect allowed \| denied: must be owner/)
+    expect(failures(await check()).join('\n')).toMatch(
+      /stage \| DROP SCHEMA staging_cloud -> expect allowed \| denied: must be owner/,
+    )
     await apply()
     expect(failures(await check())).toEqual([])
     await admin.query('DROP SCHEMA staging_cloud CASCADE')
@@ -174,7 +232,9 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
   it('tables of a later migration (created by the owner) are covered by the default privileges', async () => {
     const owner = await connectAs('owner')
     try {
-      await owner.query(`CREATE TABLE pp_later_migration (id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, v text)`)
+      await owner.query(
+        `CREATE TABLE pp_later_migration (id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, v text)`,
+      )
     } finally {
       await owner.end()
     }
@@ -185,6 +245,51 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
     } finally {
       await app.end()
     }
+    expect(failures(await check())).toEqual([])
+  })
+
+  it('fresh install order: _prisma_migrations created by the first migrate is read-only only after the next apply', async () => {
+    // deploy.sh: apply (step 4, no ledger yet) -> migrate as the owner creates it -> apply -> check (step 5).
+    await admin.query('DROP TABLE _prisma_migrations')
+    await apply()
+    const owner = await connectAs('owner')
+    try {
+      await owner.query(
+        `CREATE TABLE _prisma_migrations (id varchar(36) PRIMARY KEY, migration_name varchar(255) NOT NULL)`,
+      )
+    } finally {
+      await owner.end()
+    }
+    expect(failures(await check()).join('\n')).toMatch(
+      /app \| _prisma_migrations read-only \| select=t insert=t/,
+    )
+    await apply()
+    expect(failures(await check())).toEqual([])
+    expect(await deniedAs('app', `DELETE FROM _prisma_migrations`)).toMatch(
+      /^denied: permission denied for table _prisma_migrations/,
+    )
+  })
+
+  it('check catches drift: an extra TRUNCATE grant, a planted schema; search_path is pinned to public', async () => {
+    const app = await connectAs('app')
+    try {
+      expect((await app.query<{ search_path: string }>('SHOW search_path')).rows[0]).toEqual({
+        search_path: 'public',
+      })
+    } finally {
+      await app.end()
+    }
+    await admin.query(`GRANT TRUNCATE ON users TO "${R.app}"`)
+    await admin.query(`SET ROLE "${R.stage}"; CREATE SCHEMA "${R.etl}"; RESET ROLE`)
+    const fails = failures(await check()).join('\n')
+    expect(fails).toMatch(
+      /app \| no TRUNCATE\/TRIGGER\/REFERENCES .* \| extra privileges: TRUNCATE/,
+    )
+    expect(fails).toMatch(
+      new RegExp(`all \\| no schema besides public .* \\| other schemas: ${R.etl}`),
+    )
+    await admin.query(`DROP SCHEMA "${R.etl}"`)
+    await apply()
     expect(failures(await check())).toEqual([])
   })
 
