@@ -163,7 +163,7 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 
 /** Guru: 15 module items (rows 1-11 and 41-44). */
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
-  item(1, 'Command Center', p('/guru/command-center')),
+  item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
   item(2, 'Dashboard Guru', p('/guru', true)),
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),

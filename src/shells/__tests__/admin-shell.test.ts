@@ -231,7 +231,7 @@ describe('AdminShell: menu per role', () => {
       'Aktiviti Harian',
       'Audio KBAT',
       'Dashboard',
-      'Laporan Eksekutif',
+      'Analitik',
     ])
     expect(labels).toContain('Ke Dashboard')
     expect(labels).toContain('Tetapan Peribadi')
