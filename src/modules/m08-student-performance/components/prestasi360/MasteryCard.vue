@@ -4,6 +4,7 @@
  * code), the name, a bar (≥ 80 success, 60–79.9 warning, < 60 error; INFERRED bands), "{round(x)}%" and
  * "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
  */
+import { usePrototypeScope } from '@/composables'
 import { DsEmptyState, DsPanel } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
@@ -13,6 +14,8 @@ import { masteryTone } from '../../lib/analitik'
 defineProps<{ mastery: StudentPerformance['mastery'] }>()
 
 const icon = usePhIcon()
+// A teacher / admin reading a pupil's 360 may have no `/practice` in their scope: hide the button then (D6).
+const { allows } = usePrototypeScope()
 </script>
 
 <template>
@@ -23,7 +26,7 @@ const icon = usePhIcon()
       </h2>
       <div v-if="mastery.length === 0" data-testid="mastery-empty">
         <DsEmptyState title="Belum ada data latihan." icon="i-ph-chart-pie">
-          <template #actions>
+          <template v-if="allows('/practice')" #actions>
             <UButton
               to="/practice"
               size="lg"

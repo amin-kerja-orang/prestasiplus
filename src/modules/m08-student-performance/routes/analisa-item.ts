@@ -1,17 +1,20 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { shellHomePath } from '@/app/prototype-scope'
+import type { Role } from '@/stores/session-types'
 import { useSessionStore } from '@/stores/session'
 
 /**
  * `/analisa-item` (the sidebar "Analisa Item"; FR-M08-09, OD-R4): admin and teacher → S10, school admin →
- * S9 (the dead-link fix of DV-M08-02, INFERRED), every other role, pelajar included → `/dashboard`
- * without a message (INFERRED, provisional); a guest goes to `/login` as on every M08 route (FR-M08-05).
+ * S9 (the dead-link fix of DV-M08-02, INFERRED), every other role, pelajar included → the role's own home
+ * (`shellHomePath`: `/dashboard`, or the student home in http mode; DV-M08-40) without a message (INFERRED,
+ * provisional); a guest goes to `/login` as on every M08 route (FR-M08-05).
  */
 export function analisaItemTarget(role: string | null): string {
   if (role === null) return '/login'
   if (role === 'admin' || role === 'teacher') return '/analisa-item/kelas'
   if (role === 'school_admin') return '/analisa-item/sekolah'
-  return '/dashboard'
+  return shellHomePath(role as Role)
 }
 
 /**

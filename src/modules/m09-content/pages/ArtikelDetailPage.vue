@@ -15,6 +15,7 @@
 import { computed, watch } from 'vue'
 
 import { isApiError } from '@/api'
+import { shellHomePath } from '@/app/prototype-scope'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, useSession } from '@/composables'
 import { DsLoadError, DsMediaCard, DsPage, DsProse } from '@/ds'
@@ -27,7 +28,9 @@ import { sanitizeHtml } from '../lib/artikel/sanitize-html'
 
 const props = defineProps<{ slug: string }>()
 
-const { isLoggedIn } = useSession()
+const { isLoggedIn, role } = useSession()
+/** The "Dashboard" crumb goes to the role's own home, not the student `/dashboard` (SWEEP-23OCT D6, D9). */
+const homePath = computed(() => shellHomePath(role.value))
 const pageMeta = usePageMeta()
 
 const {
@@ -88,7 +91,7 @@ const age = computed(() =>
           data-testid="artikel-breadcrumb"
         >
           <UButton
-            to="/dashboard"
+            :to="homePath"
             color="neutral"
             variant="soft"
             icon="i-ph-squares-four-duotone"

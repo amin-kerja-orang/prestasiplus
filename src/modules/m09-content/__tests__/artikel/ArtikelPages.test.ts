@@ -20,14 +20,19 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api', () => api)
 
-const session = vi.hoisted(() => ({ loggedIn: true }))
+const session = vi.hoisted((): { loggedIn: boolean; role: string | null } => ({
+  loggedIn: true,
+  role: 'student',
+}))
 vi.mock('@/composables/useSession', async () => {
   const { ref: r } = await import('vue')
   const isLoggedIn = r(true)
+  const role = r<string | null>('student')
   return {
     useSession: () => {
       isLoggedIn.value = session.loggedIn
-      return { isLoggedIn }
+      role.value = session.role
+      return { isLoggedIn, role }
     },
   }
 })
@@ -77,6 +82,7 @@ async function mountAt(url: string, component: object): Promise<VueWrapper> {
       { path: '/artikel', component: ArtikelListPage },
       { path: '/artikel/:slug', component: ArtikelDetailPage, props: true },
       { path: '/dashboard', component: { template: '<div />' } },
+      { path: '/spm/bijak', component: { template: '<div />' } },
     ],
   })
   await router.push(url)
@@ -91,6 +97,7 @@ async function mountAt(url: string, component: object): Promise<VueWrapper> {
 beforeEach(() => {
   setActivePinia(createPinia())
   session.loggedIn = true
+  session.role = 'student'
   for (const fn of Object.values(api)) fn.mockReset()
   api.fetchArticles.mockResolvedValue(list([card(1, { isFeatured: true }), card(2)], 72))
   api.fetchHotArticles.mockResolvedValue({ data: HOT, meta: list(HOT).meta })
@@ -238,6 +245,20 @@ describe('ArtikelDetailPage (S16)', () => {
     expect(body.findAll('ol li')).toHaveLength(2)
     expect(body.html()).not.toContain('script')
     expect(body.html()).not.toContain('onerror')
+  })
+
+  it('the "Dashboard" crumb goes to the role\'s own home (SWEEP-23OCT D6, DV-M09-22)', async () => {
+    const crumb = (w: VueWrapper) =>
+      w.get('[data-testid=artikel-breadcrumb]').findAll('a')[0]?.attributes('href')
+    expect(crumb(await mountAt('/artikel/teknik-pomodoro', ArtikelDetailPage))).toBe('/dashboard')
+    wrapper?.unmount()
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      // The student home is /dashboard in http mode too since AZ-20c (GET /api/dashboard is served).
+      expect(crumb(await mountAt('/artikel/teknik-pomodoro', ArtikelDetailPage))).toBe('/dashboard')
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('renders related cards and the aside with the five latest', async () => {

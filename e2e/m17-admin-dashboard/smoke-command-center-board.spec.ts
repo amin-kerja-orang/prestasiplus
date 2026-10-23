@@ -357,8 +357,8 @@ test.describe('S3 admin', MODULE, () => {
     await expect(tid(page, 'cc-title')).toHaveText('⚡ AKTIVITI PLATFORM')
     await expect(tid(page, 'cc-s3-back')).toHaveText('◀ Command Center')
     await expect(tid(page, 'cc-s3-back')).toHaveAttribute('href', CC)
-    await expect(tid(page, 'cc-s3-report')).toHaveText('Laporan Eksekutif')
-    await expect(tid(page, 'cc-s3-report')).toHaveAttribute('href', '/admin/laporan-eksekutif')
+    // S8 is not built: the link is hidden rather than dead (DV-M17-45).
+    await expect(tid(page, 'cc-s3-report')).toHaveCount(0)
     await expect(tid(page, 'cc-clock')).toHaveText(/^15:40:\d\d$/)
     await expect(tid(page, 'cc-tab')).toHaveText(['📅 Hari Ini', '📆 Minggu Ini', '🗓️ Bulan Ini'])
     await expect(page.locator('[data-testid=cc-tab][data-period=today]')).toHaveAttribute(
