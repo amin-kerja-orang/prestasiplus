@@ -333,7 +333,8 @@ export class UsersService {
         ...(grade !== undefined ? { grade } : {}),
         ...(ic !== undefined ? { icHash: ic?.hash ?? null, icMasked: ic?.masked ?? null } : {}),
         ...(body.isActive !== undefined ? { isActive: nextActive } : {}),
-        ...(newHash !== null ? { passwordHash: newHash } : {}),
+        // R39: an admin password write clears the flag, so a migrated account that kept it is not locked out.
+        ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: false } : {}),
         now,
         },
         caller,

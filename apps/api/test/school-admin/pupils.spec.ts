@@ -195,6 +195,13 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     errorOf(await admin.post(`/admin-sekolah/pelajar/${pSuspended}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 404, 'NOT_FOUND')
   })
 
+  it('reset-password on a flagged pupil (e.g. migrated) clears the flag (R39)', async () => {
+    await t.db.query(`update users set must_reset_password = true where id = $1::bigint`, [pKosong])
+    const res = await admin.post(`/admin-sekolah/pelajar/${pKosong}/reset-password`, { newPassword: 'Murid-Buka-77', newPasswordConfirmation: 'Murid-Buka-77' })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect((await userRow(t.db, pKosong))?.must_reset_password).toBe(false)
+  })
+
   it('lost-response recovery: a retried create is 422 taken, the credential is never served again, reset-password recovers', async () => {
     const first = SchoolAdminPupilCreatedResultSchema.parse((await admin.post('/admin-sekolah/pelajar', { name: 'Hana Demo', email: 'hana@ujian.test' }, { 'Idempotency-Key': 'hana-1' })).body)
     const retry = await admin.post('/admin-sekolah/pelajar', { name: 'Hana Demo', email: 'hana@ujian.test' }, { 'Idempotency-Key': 'hana-1' })

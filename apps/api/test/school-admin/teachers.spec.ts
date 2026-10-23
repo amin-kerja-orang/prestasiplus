@@ -242,14 +242,21 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     errorOf(await admin.post(`/admin-sekolah/guru/${b}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 403, 'FORBIDDEN', 'This action is unauthorized.')
   })
 
-  it('reset-password and update with a new password leave an already-set flag as stored; they never set it (R39)', async () => {
+  it('an admin password write CLEARS an already-set flag; an update without a password leaves it alone (R39)', async () => {
+    // Why: a migrated account keeps must_reset_password and has no usable hash; the forced-change screen is parked, so the
+    // admin's new password must unlock it instead of leaving it flagged.
     const flag = async () => (await userRow(t.db, a))?.must_reset_password
-    await t.db.query(`update users set must_reset_password = false where id = $1::bigint`, [a])
+    const setFlag = (v: boolean) => t.db.query(`update users set must_reset_password = $2 where id = $1::bigint`, [a, v])
+    await setFlag(true)
     expect((await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'Tanpa-Paksa-1', newPasswordConfirmation: 'Tanpa-Paksa-1' })).status).toBe(200)
     expect(await flag()).toBe(false)
-    // An operator-set flag (e.g. the admin bootstrap) is not cleared or changed by the school admin's reset either.
-    await t.db.query(`update users set must_reset_password = true where id = $1::bigint`, [a])
-    expect((await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'Tanpa-Paksa-2', newPasswordConfirmation: 'Tanpa-Paksa-2' })).status).toBe(200)
+    await setFlag(true)
+    const put = (extra: Record<string, string>) => admin.put(`/admin-sekolah/guru/${a}`, { name: 'Guru Alpha Baru', email: 'alpha2@ujian.test', ...extra })
+    expect((await put({ newPassword: 'Tanpa-Paksa-2', newPasswordConfirmation: 'Tanpa-Paksa-2' })).status).toBe(200)
+    expect(await flag()).toBe(false)
+    // No password written: the flag is not touched.
+    await setFlag(true)
+    expect((await put({})).status).toBe(200)
     expect(await flag()).toBe(true)
   })
 

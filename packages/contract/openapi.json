@@ -24206,7 +24206,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it."
+            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it, and when an admin sets or resets the password."
           },
           "ppdState": {
             "type": [
@@ -25336,7 +25336,7 @@
           },
           "mustChangePassword": {
             "type": "boolean",
-            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it."
+            "description": "True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it, and when an admin sets or resets the password."
           },
           "ppdState": {
             "type": [
@@ -87568,7 +87568,7 @@
           "users"
         ],
         "summary": "Update a user",
-        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school, a parent with a child outside the school or a parent with no children is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable. status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value, except `roles`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); R39: the target is not flagged `mustChangePassword` (no forced change; the stored flag is left as is) and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
+        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school, a parent with a child outside the school or a parent with no children is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable. status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value, except `roles`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); R39: the target is not flagged `mustChangePassword` (no forced change; an already-set flag is cleared, so the account is not locked out) and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
         "parameters": [
           {
             "schema": {

@@ -164,7 +164,7 @@ export const AdminUserDetailSchema = z
     isSuspended: z.boolean(),
     subscriptionPackage: z.enum(SUBSCRIPTION_PACKAGES),
     hasPkskSubscription: z.boolean(),
-    mustChangePassword: z.boolean().meta({ description: 'True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it.' }),
+    mustChangePassword: z.boolean().meta({ description: 'True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it, and when an admin sets or resets the password.' }),
     ppdState: z.string().nullable(),
     ppdDistrict: z.string().nullable(),
     linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account. For a school_admin caller only children in the caller school are listed (children in other schools are hidden).' }),
@@ -184,7 +184,7 @@ export type CreatedUser = z.infer<typeof CreatedUserSchema>
 
 /**
  * Response of PUT /admin/users/:id. `generatedPassword` is present only when the request had
- * `resetPassword: true` (R39: `mustChangePassword` is not set and stays as stored; the target sessions are revoked).
+ * `resetPassword: true` (R39: `mustChangePassword` is cleared, so the target is not forced to change it and a flagged account is unlocked; the target sessions are revoked).
  */
 export const UpdatedUserSchema = AdminUserDetailSchema.extend({
   generatedPassword: z.string().min(1).optional().meta({ description: 'Only after resetPassword: random, shown once, never logged, never retrievable again. The response is no-store.' }),

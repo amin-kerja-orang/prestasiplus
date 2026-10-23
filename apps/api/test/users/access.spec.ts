@@ -344,6 +344,21 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       await admin.put(`/admin/users/${e.u.id}`, { roles: ['teacher'], name: 'E Baru' })
       expect(await alive(e)).toBe(true)
     })
+
+    it('R39: an admin reset clears an already-set flag (a migrated account is not locked out); an edit without a reset leaves it', async () => {
+      const u = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s1, { email: 'bertanda@ujian.test' }))).body.data)
+      const flag = async () => (await t.db.query<{ m: boolean }>('select must_reset_password m from users where id = $1::bigint', [u.id]))[0]?.m
+      await t.db.query('update users set must_reset_password = true where id = $1::bigint', [u.id])
+      expect((await admin.put(`/admin/users/${u.id}`, { roles: ['teacher'], name: 'Bertanda Baru' })).status).toBe(200)
+      expect(await flag()).toBe(true) // no password written: the flag is not touched
+      const reset = await admin.put(`/admin/users/${u.id}`, { roles: ['teacher'], name: 'Bertanda Baru', resetPassword: true })
+      expect(reset.status, JSON.stringify(reset.body)).toBe(200)
+      const upd = UpdatedUserSchema.parse(reset.body.data)
+      expect(upd.mustChangePassword).toBe(false)
+      expect(await flag()).toBe(false)
+      const sess = await login(t, 'bertanda@ujian.test', { password: upd.generatedPassword as string })
+      expect(sess.session.mustChangePassword).toBe(false) // the session no longer carries the forced-change flag
+    })
   })
 
   describe('audit (writes run in a transaction with their audit row)', () => {
