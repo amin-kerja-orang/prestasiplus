@@ -64,6 +64,7 @@ shred -u -n 1 -z <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg ; gpgconf --
 # A1.5 stage. Expect: "STAGE COPY PASSED: <b> tables", then archive_cloud|35 and staging_cloud|83
 step stage "$RDB" stage
 q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
+step analyze q "ANALYZE"      # planner statistics for the staged tables (n_live_tup was 0 after the copy)
 
 # A1.6 snapshots. Expect: "applied: <n> of <F>" with n = F; "snapshot 'pre_etl' created ...", "snapshot 'pre_etl_d' written as a dump (<size>)"; exit 0
 "$RDB" status | grep 'applied:'
@@ -286,12 +287,15 @@ Record: seconds (this is the scan **plus** the load; the scan alone can be timed
 ```bash
 step stage "$RDB" stage
 q "select table_schema, count(*) from information_schema.tables where table_schema in ('staging_cloud','archive_cloud') group by 1 order by 1"
+step analyze q "ANALYZE"      # planner statistics for the staged tables (n_live_tup was 0 after the copy)
 ```
 
 For the ndjson route `stage` only copies the two schemas (`pg_dump -Fc -n staging_cloud -n archive_cloud | pg_restore`) after dropping old copies in the target.
 Expect: `STAGE COPY PASSED: <b> tables (staging_cloud + archive_cloud) now in <db>`; `[time] stage-copy: <s>s`. Exit 0. The query returns `archive_cloud|35` and `staging_cloud|83` (runbook 12 step 1; `slot.sh` expects the same). Any other number: red (the staging spec and the dump disagree).
 
-Record: seconds; the two counts.
+Then `ANALYZE` (the `step analyze` line). The stage copy leaves no planner statistics (`n_live_tup` = 0 in the profile), so the ETL queries can pick unstable plans. `ANALYZE` of the whole database covers `staging_cloud`, `archive_cloud` and the v2 tables; it writes statistics only, no rows. It runs before the `pre_etl` snapshot, so the snapshot keeps them. Statistics of the v2 targets after the core apply would need a run between the stages of `migrate:all`, which the command does not offer (it runs core and activity back to back); that is a proposed code change, not an operator step. Night analogue: after B5 `S copy`, before B6.
+
+Record: seconds; the two counts; the `ANALYZE` seconds.
 
 ### A1.6 Pre-ETL snapshot and the migration-count check (night analogue: A5 restore points)
 
