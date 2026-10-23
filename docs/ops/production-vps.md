@@ -125,7 +125,7 @@ Five files hold everything, all outside the repo, owner `root`, group `ppdeploy`
 | `/etc/pretasiplus/api.env` | API secrets and production settings (`env_file` of `api` and `migrate`) | `deploy/vps/api.env.example` |
 | `/etc/pretasiplus/db.env` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (the bootstrap superuser, ops scripts only: section 3.1) | `deploy/vps/db.env.example` |
 | `/etc/pretasiplus/migrate.env` | `DATABASE_URL` of the schema owner `pp_owner` (`env_file` of `migrate`, read after `api.env`) | written by `sudo deploy/vps/db-roles.sh secrets` (`migrate.env.example`) |
-| `/etc/pretasiplus/etl.env` | `DATABASE_URL` of the migration role `pp_etl` (`slot.sh etl`, `--env-from-file`) | written by `sudo deploy/vps/db-roles.sh secrets` (`etl.env.example`) |
+| `/etc/pretasiplus/etl.env` | `DATABASE_URL` of the migration role `pp_etl` (`slot.sh etl`, `--env-from-file`), and one optional line added by hand, `PP_MIGRATE_ROSTER_DEFAULT_HASHES` (R32, see "etl.env" below) | `DATABASE_URL` written by `sudo deploy/vps/db-roles.sh secrets` (`etl.env.example`) |
 
 Write values with an editor (`sudoedit`), never on a command line. Generate secrets with `openssl rand -hex 32`. The `*.example`
 files use inline-comment-free lines on purpose (Compose would keep a trailing comment of an empty value).
@@ -190,7 +190,6 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 |---|---|---|
 | `DATABASE_URL` | OPS (generated) | `postgresql://pp_app:<generated>@db:5432/<POSTGRES_DB>`: the API role, **never** the `db.env` superuser. Written by `sudo deploy/vps/db-roles.sh secrets`; `deploy.sh` checks host `db`, user `pp_app`, database, a 32+ character password different from the other two files and from `POSTGRES_PASSWORD` (section 3.1) |
 | `SESSION_SECRET`, `IC_HASH_KEY` | LEAD | 32+ characters each, different. **Never rotate `IC_HASH_KEY` casually** (section 12) |
-| `PP_MIGRATE_ROSTER_DEFAULT_HASHES` | LEAD | Not an `api.env` key: one line in `/etc/pretasiplus/etl.env` (the file of `pp_etl`, mode 640, root:`ppdeploy`), the LEAD's comma-separated list of the shared roster default password hashes. `migrate:*` reads it through `slot.sh etl` (`compose run --env-from-file etl.env`). **Never on a command line or in `slot.sh`'s env list**, which is logged. `db-roles.sh secrets --rotate` rewrites only the `DATABASE_URL` line, so this line survives. Keep the same value for every later `migrate:delta` / `migrate:activity`: it is part of the core input hash |
 | `MARKETPLACE_PLATFORM_WHATSAPP` | LEAD | The real wa.me number (digits, country code first); the dev default is refused by `deploy.sh` |
 | `PUBLIC_ORIGINS` | LEAD | Extra image origins for articles/banners (empty = API origin only) |
 | `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_MONTHLY_BUDGET_SEN`, `AI_PRICE_TABLE_JSON` | LEAD (decision D-5/OD-14) | **Decided 22 Oct (AZ-29 item 1): `AI_PROVIDER=mock`**, the other four stay unset. `AI_API_KEY` is a secret. See `docs/ops/ai-intake-production-decisions.md` (lands with #138) |
@@ -207,6 +206,21 @@ Forced by the overlay (cannot be overridden by `api.env`): `NODE_ENV=production`
 `PUBLIC_BASE_URL=https://$PP_DOMAIN`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `NODE_OPTIONS=--max-old-space-size=$PP_API_HEAP_MB`.
 
 Reserved (do NOT put them in `api.env` yet): `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310` (section 15).
+
+### etl.env (secrets; `DATABASE_URL` is generated, the other line is added by hand)
+
+| Name | Who | Rule |
+|---|---|---|
+| `DATABASE_URL` | OPS (generated) | The migration role `pp_etl`; written by `sudo deploy/vps/db-roles.sh secrets` (section 3.1) |
+| `PP_MIGRATE_ROSTER_DEFAULT_HASHES` (R32) | LEAD | Optional. One line, added with `sudoedit` as root: the LEAD's comma-separated list of the shared roster default password hashes. `migrate:*` reads it through `slot.sh etl` (`compose run --env-from-file etl.env`). **Never on a command line or in `slot.sh`'s env list**, which is logged. `db-roles.sh secrets --rotate` rewrites only the `DATABASE_URL` line, so this line survives. Keep the same value for every later `migrate:delta`: it is part of the core input hash that the activity stage recomputes (the activity stage runs inside `migrate:all` and `migrate:delta`; `slot.sh etl` has no `migrate:activity`) |
+
+**Quote the value with single quotes.** Bcrypt hashes contain `$` (for example `$2b$10$...`), and Compose applies `$` interpolation to unquoted and double-quoted values in env files, which would silently cut the hashes. Docker documents single-quoted values in a Compose env file as literal (`VAR='$OTHER'` stays `$OTHER`). The safe form is one line, no spaces around `=`, no trailing comment:
+
+```
+PP_MIGRATE_ROSTER_DEFAULT_HASHES='<hash1>,<hash2>'
+```
+
+The Compose documentation states the single-quote rule for the interpolation `.env` file; it does not say outright that `--env-from-file` and `env_file:` parse the same way. **Verify once on the host before B7** (no hash is printed; the count of `$` must be 3 per bcrypt hash, so 6 for two hashes, and no `$` may be missing): `docker compose ... run --rm --no-deps -T --env-from-file /etc/pretasiplus/etl.env migrate sh -c 'printenv PP_MIGRATE_ROSTER_DEFAULT_HASHES | tr -cd "$" | wc -c'`. If the count is short, fall back to doubling every `$` (`$$`) and check again. The plan's B7 line `note rosterDefaultHashes: <n>` (n at least 1) is the second check.
 
 ### 3.1 Database roles (cutover plan P3)
 
