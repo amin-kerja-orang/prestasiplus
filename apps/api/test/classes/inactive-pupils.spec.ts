@@ -83,6 +83,45 @@ describe('deactivated pupils in the teacher class views (SW7-06)', () => {
     expect(rows[0]?.n).toBe(2)
   })
 
+  it('class-scoped member reads (memberIds, memberIdsOf) and the teacher-to-pupil check drop an inactive pupil; roster rows and classIdsOfStudents stay', async () => {
+    const teacherId = await idOfEmail(t, TEACHER_A)
+    const byNumber = (...ids: string[]) => [...ids].sort((x, y) => Number(x) - Number(y))
+    const reads = async () => ({
+      memberIds: await repo.memberIds(k1.id),
+      memberIdsOf: (await repo.memberIdsOf([k1.id, k2.id])).get(k1.id),
+      memberIdsOfK2: (await repo.memberIdsOf([k1.id, k2.id])).get(k2.id),
+      isMember: await repo.isMemberOfTeacher(teacherId, s1),
+      isMemberOther: await repo.isMemberOfTeacher(teacherId, s2),
+    })
+
+    // control: active (the previous test leaves the pupil inactive)
+    await setActive(s1, true)
+    expect(await reads()).toEqual({
+      memberIds: byNumber(s1, s2, sMaju),
+      memberIdsOf: byNumber(s1, s2, sMaju),
+      memberIdsOfK2: byNumber(s1, s2),
+      isMember: true,
+      isMemberOther: true,
+    })
+
+    await setActive(s1, false)
+    expect(await reads()).toEqual({
+      memberIds: byNumber(s2, sMaju),
+      memberIdsOf: byNumber(s2, sMaju),
+      memberIdsOfK2: [s2],
+      isMember: false,
+      isMemberOther: true,
+    })
+    // raw enrolment rows (enrolment management) and the per-pupil class lookup are not member views
+    expect((await repo.roster(k1.id)).map((e) => e.studentId)).toContain(s1)
+    expect((await repo.classIdsOfStudents([s1])).get(s1)).toEqual(byNumber(k1.id, k2.id))
+
+    await setActive(s1, true)
+    expect((await reads()).isMember).toBe(true)
+    expect((await reads()).memberIds).toEqual(byNumber(s1, s2, sMaju))
+    expect((await reads()).memberIdsOfK2).toEqual(byNumber(s1, s2))
+  })
+
   it('reactivating the pupil brings them back everywhere', async () => {
     await setActive(s1, true)
     expect((await classOf(k1.id))?.studentCount).toBe(3)

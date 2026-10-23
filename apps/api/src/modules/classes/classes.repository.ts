@@ -298,17 +298,20 @@ export class ClassesRepository {
     return out
   }
 
-  /** Active, real member ids per class id (student id ascending); every asked class is present, with [] when empty. One query per 1000 classes. */
+  /**
+   * Active, real member ids per class id, ACTIVE accounts only (SW7-06: a deactivated pupil keeps the row but is not a
+   * member for reports and games); student id ascending; every asked class is present, with [] when empty. One query per 1000 classes.
+   */
   async memberIdsOf(classIds: readonly string[]): Promise<Map<string, string[]>> {
     const out = new Map<string, string[]>(classIds.map((id) => [id, []]))
     const keys = idsOf(classIds)
     for (let i = 0; i < keys.length; i += READ_CHUNK) {
-      const rows = await this.db.enrolment.findMany({
-        where: { classroomId: { in: keys.slice(i, i + READ_CHUNK) }, status: 'active', isTest: false },
-        select: { classroomId: true, studentId: true },
-        orderBy: [{ classroomId: 'asc' }, { studentId: 'asc' }],
-      })
-      for (const r of rows) out.get(idToString(r.classroomId))?.push(idToString(r.studentId))
+      const rows = await this.db.$queryRaw<{ classroom_id: bigint; student_id: bigint }[]>`
+        SELECT e.classroom_id, e.student_id
+          FROM enrolments e JOIN users u ON u.id = e.student_id
+         WHERE e.classroom_id = ANY(${keys.slice(i, i + READ_CHUNK)}::bigint[]) AND e.status = 'active' AND e.is_test = false AND u.is_active
+         ORDER BY e.classroom_id, e.student_id`
+      for (const r of rows) out.get(idToString(r.classroom_id))?.push(idToString(r.student_id))
     }
     return out
   }
@@ -328,17 +331,22 @@ export class ClassesRepository {
     return out
   }
 
-  /** True when the student is an active, real member of an ACTIVE class owned by the teacher (one count query). */
+  /** True when the student, with an ACTIVE account (SW7-06), is an active, real member of an ACTIVE class owned by the teacher (one query). */
   async isMemberOfTeacher(teacherId: string, studentId: string): Promise<boolean> {
     const t = idOf(teacherId)
     const s = idOf(studentId)
     if (t === null || s === null) return false
-    return (await this.db.enrolment.count({ where: { studentId: s, status: 'active', isTest: false, classroom: { teacherId: t, isActive: true } } })) > 0
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`
+      SELECT 1 AS ok
+        FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id JOIN users u ON u.id = e.student_id
+       WHERE e.student_id = ${s} AND e.status = 'active' AND e.is_test = false AND c.teacher_id = ${t} AND c.is_active AND u.is_active
+       LIMIT 1`
+    return rows.length > 0
   }
 
   // --- enrolments -------------------------------------------------------------------------------
 
-  /** Active enrolments of a class, student id ascending. */
+  /** Active enrolment rows of a class, student id ascending, whatever the state of the pupil's account (enrolment management). */
   async roster(classroomId: string): Promise<EnrolmentRecord[]> {
     const key = idOf(classroomId)
     if (key === null) return []
@@ -349,9 +357,19 @@ export class ClassesRepository {
     return rows.map(toEnrolment)
   }
 
-  /** Student ids actively enrolled in a class, ascending by number. */
+  /**
+   * Student ids actively enrolled in a class, ascending by number, ACTIVE accounts only (SW7-06). The member list of
+   * class reports; `roster` stays the raw enrolment rows.
+   */
   async memberIds(classroomId: string): Promise<string[]> {
-    return (await this.roster(classroomId)).map((e) => e.studentId)
+    const key = idOf(classroomId)
+    if (key === null) return []
+    const rows = await this.db.$queryRaw<{ student_id: bigint }[]>`
+      SELECT e.student_id
+        FROM enrolments e JOIN users u ON u.id = e.student_id
+       WHERE e.classroom_id = ${key} AND e.status = 'active' AND e.is_test = false AND u.is_active
+       ORDER BY e.student_id`
+    return rows.map((r) => idToString(r.student_id))
   }
 
   /** True when the student is an active member of the class (a Mod Pelajar row does not count unless `isTest`). */
