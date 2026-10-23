@@ -238,11 +238,11 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'userName', header: 'Pengguna', ...cellClass('') },
-  { accessorKey: 'packageName', header: 'Pakej', ...cellClass('w-44') },
-  { accessorKey: 'granter', header: 'Diberi Oleh', ...cellClass('w-36') },
-  { accessorKey: 'granted', header: 'Tarikh', ...cellClass('w-32') },
-  { accessorKey: 'expires', header: 'Tamat', ...cellClass('w-32') },
-  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { accessorKey: 'packageName', header: 'Pakej', ...cellClass('w-48') },
+  { accessorKey: 'granter', header: 'Diberi Oleh', ...cellClass('w-28') },
+  { accessorKey: 'granted', header: 'Tarikh', ...cellClass('w-30') },
+  { accessorKey: 'expires', header: 'Tamat', ...cellClass('w-30') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
   { id: 'actions', header: 'Tindakan', ...cellClass('w-32') },
 ]
 const cardFields: CardField[] = [
@@ -385,6 +385,7 @@ const cardFields: CardField[] = [
       v-else
       variant="flush"
       layout="fixed"
+      min-width="60rem"
       :data="tableRows"
       :columns="columns"
       caption="Senarai akses PKSK"

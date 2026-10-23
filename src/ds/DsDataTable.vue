@@ -8,7 +8,8 @@
  * (KaTeX) and a `cardFields` entry with `cell: true` shows the column's `<key>-cell` slot (badge)
  * on the card. Pagination is client-side unless
  * `total` is given (server paging: the caller slices `data`). At `lg`+ the table never scrolls the
- * page sideways: `layout="fixed"` fits the columns, `auto` scrolls inside its own container.
+ * page sideways: `layout="fixed"` fits the columns (with `minWidth` it scrolls inside its own container
+ * below that width), `auto` scrolls inside its own container.
  */
 import UCard from '@nuxt/ui/components/Card.vue'
 import type { TableColumn } from '@nuxt/ui'
@@ -41,6 +42,12 @@ const props = withDefaults(
     variant?: 'card' | 'flush' | 'bare'
     /** `fixed` = `table-fixed` full width (the caller sets column widths); `auto` scrolls inside its container when wider. */
     layout?: 'auto' | 'fixed'
+    /**
+     * `fixed` only: a CSS length (e.g. `60rem`) below which the table stops shrinking and scrolls
+     * inside its own container instead (the flexible column would otherwise collapse and the
+     * columns beside it be clipped). Leave unset when the columns always fit.
+     */
+    minWidth?: string
     /** `tight` = 4px less cell padding for tables with many columns. */
     density?: DsTableDensity
     stickyHeader?: boolean
@@ -76,6 +83,7 @@ const props = withDefaults(
     rowKey: undefined,
     variant: 'card',
     layout: 'auto',
+    minWidth: undefined,
     density: 'cozy',
     stickyHeader: false,
     stickyFirstColumn: undefined,
@@ -308,7 +316,7 @@ function cell(row: T, key: string): string {
           </li>
         </ul>
       </div>
-      <div v-else :class="fixed ? 'max-w-full' : 'max-w-full overflow-x-auto'">
+      <div v-else :class="fixed && !minWidth ? 'max-w-full' : 'max-w-full overflow-x-auto'">
         <UTable
           v-model:row-selection="rowSelection"
           :sticky="bare"
@@ -318,6 +326,7 @@ function cell(row: T, key: string): string {
           :caption="caption"
           :ui="tableUi"
           :class="bare ? 'max-h-dvh rounded-card bg-soft' : ''"
+          :style="fixed && minWidth ? { minWidth } : undefined"
           @select="(_e: Event, row: { original: T }) => emit('row-click', row.original)"
         >
           <template
