@@ -38,6 +38,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$operator" ] || operator="OPERATOR-NAME-TO-FILL-IN"
+operator="${operator//[$'\t\r\n']/ }"   # one evidence line, as in restore-point.sh
 
 # The drill stops the api: take the shared lock first (before the exit trap that restarts it).
 pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"

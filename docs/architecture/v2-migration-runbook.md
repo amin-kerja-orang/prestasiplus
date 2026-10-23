@@ -199,6 +199,8 @@ The production refusal depends on `NODE_ENV` being set to `production` or `prod`
 
 **Linkability.** Ids and timestamps are kept, so they match the raw source: never share the dump with anyone who also has raw data.
 
+**Producing the dump straight from the .cloud MySQL database (AM-10).** The step-by-step human procedure for the operator (read-only account, preflight `dump:check`, the single sitting with `dump:produce`, encryption, hand-over, deletion and incident handling) is in [docs/ops/cloud-dump-procedure.md](../ops/cloud-dump-procedure.md). The `dump:*` tools read MySQL only to write a `pp-staging-dump/1` directory on the operator PC; `staging:load` still takes only a dump directory or a PostgreSQL restore (section 7, item 5 is unchanged for the loader). The raw export is wiped inside the same command, and a key is used for one run only (above).
+
 ## 9. Developers: using fixtures (BE-35)
 
 Everyone except the lead works on synthetic data. `fixtures:generate` writes a .cloud-shaped dump (`pp-staging-dump/1`, every table of `ddl/spec.ts` in the manifest) that `staging:load` takes as it is:
@@ -237,6 +239,7 @@ Everything the anonymiser touches is deleted after the rehearsal. In addition to
 The lead confirms the deletion in writing (section 6).
 
 For the deletion after the real cutover (including `staging_cloud`, `archive_cloud` and the `etl_*` tables) see section 18.
+For dumps made with `dump:produce`, the deletion steps and the written confirmation on issue #109 are in [docs/ops/cloud-dump-procedure.md](../ops/cloud-dump-procedure.md) (sections 3 and 4).
 
 ## 11. Anonymiser: decisions and open points (BE-35)
 

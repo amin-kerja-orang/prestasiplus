@@ -664,12 +664,20 @@ export class UsersRepository {
     return new Set(rows.map((r) => r.e))
   }
 
-  /** True when every id is a user with the student role. */
-  async allStudents(ids: readonly string[]): Promise<boolean> {
+  /**
+   * True when every id is a user with the student role. With `caller`, a school_admin is limited to the
+   * students of its own school (an out-of-scope student answers like an unknown one); admin is not limited.
+   */
+  async allStudents(ids: readonly string[], caller?: Caller): Promise<boolean> {
     if (!ids.every(isIdString)) return false
     const unique = [...new Set(ids)].map(idFromString)
     if (unique.length === 0) return true
-    const n = await this.prisma.client.user.count({ where: { id: { in: unique }, roles: { some: { role: 'student' } } } })
+    const scope: Prisma.UserWhereInput = {}
+    if (caller && !caller.isAdmin) {
+      if (caller.schoolId === null || !isIdString(caller.schoolId)) return false
+      scope.schoolId = idFromString(caller.schoolId)
+    }
+    const n = await this.prisma.client.user.count({ where: { id: { in: unique }, roles: { some: { role: 'student' } }, ...scope } })
     return n === unique.length
   }
 
