@@ -204,8 +204,10 @@ function open(row: Row): void {
       empty-description="Tiada soalan menunggu semakan."
       card-title="previewPlain"
       :card-fields="[
-        { key: 'subjectName', label: 'Subjek' },
+        { key: 'subjectName', label: 'Subjek', cell: true },
         { key: 'marks', label: 'Markah' },
+        { key: 'ageDays', label: 'Usia', cell: true },
+        { key: 'status', label: 'Status', cell: true, wide: true },
       ]"
       :page-size="20"
       row-key="key"
@@ -254,6 +256,19 @@ function open(row: Row): void {
           class="min-h-11"
           :data-testid="`queue-open-${row.original.key}`"
           :to="{ name: ADMIN_ROUTES.reviewItem, params: { key: row.original.key } }"
+        />
+      </template>
+      <template #card-title="{ row }">
+        <RichText :text="row.preview" />
+      </template>
+      <template #card-actions="{ row }">
+        <UButton
+          size="sm"
+          icon="i-ph-eye"
+          label="Semak"
+          class="min-h-11"
+          :data-testid="`queue-open-${row.key}`"
+          :to="{ name: ADMIN_ROUTES.reviewItem, params: { key: row.key } }"
         />
       </template>
     </DsDataTable>

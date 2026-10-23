@@ -97,7 +97,9 @@ async function remove(row: Row): Promise<void> {
       card-title="title"
       :card-fields="[
         { key: 'subjectName', label: 'Subjek' },
-        { key: 'marks', label: 'Markah' },
+        { key: 'marks', label: 'Markah', cell: true },
+        { key: 'status', label: 'Status', cell: true, wide: true },
+        { key: 'ok', label: 'Blueprint', cell: true, wide: true },
       ]"
       :page-size="20"
       row-key="id"
@@ -146,6 +148,28 @@ async function remove(row: Row): Promise<void> {
             aria-label="Padam kertas"
             class="min-h-11 min-w-11"
             @click.stop="remove(row.original)"
+          />
+        </div>
+      </template>
+      <template #card-actions="{ row }">
+        <div class="flex flex-col gap-1">
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            label="Buka"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.id } }"
+            :data-testid="`paper-open-${row.id}`"
+          />
+          <UButton
+            v-if="row.status === 'draf'"
+            size="sm"
+            color="error"
+            variant="ghost"
+            icon="i-ph-trash"
+            aria-label="Padam kertas"
+            class="min-h-11 min-w-11"
+            @click.stop="remove(row)"
           />
         </div>
       </template>

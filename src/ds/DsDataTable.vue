@@ -4,7 +4,9 @@
  * rows, no lines, tabular numbers and BM pager copy. Three surfaces: `card` (own `UCard`), `flush`
  * (edge-to-edge card for list pages) and `bare` (no surface, for a panel or tab). Below `md` the
  * rows render as a card list (title, label/value pairs, row actions; or the whole card through the
- * `card` slot) with an "Isih" select instead of header sorting. Pagination is client-side unless
+ * `card` slot) with an "Isih" select instead of header sorting. `card-title` renders a rich title
+ * (KaTeX) and a `cardFields` entry with `cell: true` shows the column's `<key>-cell` slot (badge)
+ * on the card. Pagination is client-side unless
  * `total` is given (server paging: the caller slices `data`). At `lg`+ the table never scrolls the
  * page sideways: `layout="fixed"` fits the columns, `auto` scrolls inside its own container.
  */
@@ -21,6 +23,10 @@ import { useMedia } from './useMedia'
 export interface CardField {
   key: string
   label: string
+  /** Render the column's `<key>-cell` slot (badge, formatted text) instead of the raw value. */
+  cell?: boolean
+  /** Span both card columns (a badge or a long value that does not fit half the card). */
+  wide?: boolean
 }
 
 const props = withDefaults(
@@ -175,7 +181,7 @@ const showPager = computed(() => {
 const showPagination = computed(() => !bare.value || count.value > pageSize.value)
 
 // Reserved slots are ours; every other slot is a `UTable` slot (`<id>-cell`, `<id>-header`).
-const OWN_SLOTS = new Set(['empty', 'card', 'card-actions', 'toolbar'])
+const OWN_SLOTS = new Set(['empty', 'card', 'card-title', 'card-actions', 'toolbar'])
 
 // Selection. `UTable` keeps a row-index keyed record; the model holds the row objects, so a
 // selection survives paging.
@@ -271,13 +277,29 @@ function cell(row: T, key: string): string {
                   color="neutral"
                   variant="link"
                   class="h-auto justify-start p-0 text-start text-label whitespace-normal"
-                  :label="cell(row, cardTitle)"
+                  :label="$slots['card-title'] ? undefined : cell(row, cardTitle)"
                   @click="emit('row-click', row)"
-                />
+                >
+                  <template v-if="$slots['card-title']" #default>
+                    <span class="line-clamp-3 min-w-0 break-words" data-ds="data-table-card-title">
+                      <slot name="card-title" :row="row" />
+                    </span>
+                  </template>
+                </UButton>
                 <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-                  <div v-for="f in cardFields" :key="f.key" class="min-w-0">
+                  <div
+                    v-for="f in cardFields"
+                    :key="f.key"
+                    class="min-w-0"
+                    :class="f.wide ? 'col-span-2' : ''"
+                  >
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
-                    <dd class="tabular truncate text-body">{{ cell(row, f.key) }}</dd>
+                    <dd class="tabular truncate text-body">
+                      <slot v-if="f.cell" :name="`${f.key}-cell`" :row="{ original: row }">{{
+                        cell(row, f.key)
+                      }}</slot>
+                      <template v-else>{{ cell(row, f.key) }}</template>
+                    </dd>
                   </div>
                 </dl>
               </slot>

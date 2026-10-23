@@ -134,6 +134,12 @@ const COLUMNS: TableColumn<Row>[] = [
       variant="flush"
       caption="Senarai ekstrak kertas"
       card-title="title"
+      :card-fields="[
+        { key: 'fileName', label: 'Fail / sumber', cell: true, wide: true },
+        { key: 'questionCount', label: 'Soalan' },
+        { key: 'status', label: 'Status', cell: true, wide: true },
+        { key: 'updatedAt', label: 'Dikemas kini', cell: true },
+      ]"
       :loading="data === null && error === null"
       :error="error ? 'Tidak dapat memuatkan senarai ekstrak.' : undefined"
       :filtered="filtered"
@@ -182,6 +188,18 @@ const COLUMNS: TableColumn<Row>[] = [
           :aria-label="`Buka ${row.original.title}`"
         >
           {{ row.original.status === 'draf' ? 'Semak' : 'Lihat' }}
+        </UButton>
+      </template>
+      <template #card-actions="{ row }">
+        <UButton
+          :to="intakeReviewPath(row.id)"
+          size="sm"
+          variant="outline"
+          color="neutral"
+          class="min-h-11"
+          :aria-label="`Buka ${row.title}`"
+        >
+          {{ row.status === 'draf' ? 'Semak' : 'Lihat' }}
         </UButton>
       </template>
     </DsDataTable>
