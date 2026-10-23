@@ -199,13 +199,6 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     exact: true,
     bottomNav: true,
   }),
-  item(
-    'laporan-eksekutif',
-    'Laporan Eksekutif',
-    '/admin/laporan-eksekutif',
-    'fa-file-alt',
-    'text-slate-500',
-  ),
 
   {
     kind: 'section',
