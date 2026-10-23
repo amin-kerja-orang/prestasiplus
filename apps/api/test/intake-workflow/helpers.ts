@@ -16,6 +16,8 @@ import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
+import { AI_PROVIDER } from '../../src/modules/ai-extraction/ai.constants'
+import type { ExtractionProvider } from '../../src/modules/ai-extraction/ai.types'
 import { AuthModule } from '../../src/modules/auth'
 import { CurriculumModule } from '../../src/modules/curriculum'
 import { FilesModule } from '../../src/modules/files'
@@ -67,7 +69,16 @@ export interface WorkflowTestApp extends AuthTestApp {
   releaseDelayed(): Promise<void>
 }
 
-export async function bootWorkflowApp(env: Record<string, string | undefined> = {}): Promise<WorkflowTestApp> {
+export interface BootWorkflowOptions {
+  /**
+   * Runs the real AI path (BE-36's `AiExtractorAdapter` and `AiExtractionService`, with its redaction, limits and usage
+   * log) and puts this provider adapter at its end, instead of the scripted `MockExtractor` on the `AI_EXTRACTOR` port.
+   * `t.ai` then records nothing.
+   */
+  provider?: ExtractionProvider
+}
+
+export async function bootWorkflowApp(env: Record<string, string | undefined> = {}, opts: BootWorkflowOptions = {}): Promise<WorkflowTestApp> {
   const db: TestDatabase = await createTestDatabase()
   await runSeeds([identitySeed, curriculumSeed], { prisma: db.prisma })
   const dir = await mkdtemp(join(tmpdir(), 'pp-workflow-test-'))
@@ -82,6 +93,9 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
     FILE_READS_PER_MINUTE: '10000',
     JOBS_WORKER_ENABLED: 'false',
     JOBS_BACKOFF_BASE_MS: '100',
+    // These suites exercise the teacher paths: the AZ-35 flag is on here and its default (off) is pinned in
+    // test/intake-workflow/teacher-gate.spec.ts.
+    INTAKE_TEACHER_ENABLED: 'true',
     INTAKE_WRITES_PER_MINUTE: '1000',
     INTAKE_READS_PER_MINUTE: '10000',
     INTAKE_REVIEW_WRITES_PER_MINUTE: '10000',
@@ -98,16 +112,17 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
   }
   const ai = new MockExtractor()
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports: [defineAppModule([AuthModule, FilesModule, CurriculumModule, QuestionsModule, IntakeFilesModule, IntakeWorkflowModule])],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .overrideProvider(OCR_ENGINE)
     .useValue(new FakeOcrEngine())
-    .overrideProvider(AI_EXTRACTOR)
-    .useValue(ai)
-    .compile()
+  const moduleRef = await (opts.provider
+    ? builder.overrideProvider(AI_PROVIDER).useValue(opts.provider)
+    : builder.overrideProvider(AI_EXTRACTOR).useValue(ai)
+  ).compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
