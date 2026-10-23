@@ -358,7 +358,7 @@ export class UsersRepository {
   // --- scope ------------------------------------------------------------------------------------
 
   private scopeWhere(caller: Caller): Prisma.UserWhereInput {
-    return new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId' }) as Prisma.UserWhereInput
+    return new ScopeFilter(caller.auth).where({ schoolColumn: 'schoolId', schoolRelation: 'school' }) as Prisma.UserWhereInput
   }
 
   /**
