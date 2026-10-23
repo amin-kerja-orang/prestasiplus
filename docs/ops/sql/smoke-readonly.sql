@@ -230,29 +230,41 @@ fs AS (
          (xpath('/row/derivable_not_flagged/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS derivable,
          (xpath('/row/remainder/text()', (SELECT x FROM f_xml)))[1]::text::bigint AS remainder
 ),
--- Block F, persisted counters of the core stage: etl_runs.counters -> 'notes' of the latest succeeded core apply run
--- (core = entity set holds users and classrooms, as orchestrate.ts recognises it). Builds that do not persist the
--- notes give has_notes = false and the rows below turn into 'info' (compare with the B7 output). A must_reset.* key that
--- is absent while the notes exist means 0 (the loader counts a reason only when it happens).
+-- Block F, persisted counters of the core stage: etl_runs.counters -> 'notes' of the LATEST succeeded core apply run
+-- (core = entity set holds users and classrooms, as orchestrate.ts recognises it). The run is picked first; only then
+-- is it tested for notes, so a newer run without notes is never replaced by an older run's notes. A build or a run
+-- that has no notes object gives has_notes = false and the notes rows turn into 'info' (compare with the B7 output).
+-- A must_reset.* key that is absent while the notes exist means 0 (the loader counts a reason only when it happens).
+-- A note value that is not a plain integer counts as absent for its row (that row is 'info'; the file never aborts).
 core_notes AS (
-  SELECT counters -> 'notes' AS n FROM etl_runs
+  SELECT CASE WHEN jsonb_typeof(counters -> 'notes') = 'object' THEN counters -> 'notes' END AS n
+  FROM etl_runs
   WHERE mode = 'apply' AND status = 'succeeded' AND 'cloud' = ANY (sources) AND entity_set @> ARRAY['users', 'classrooms']
-    AND jsonb_typeof(counters -> 'notes') = 'object'
   ORDER BY id DESC LIMIT 1
 ),
+kv AS (
+  SELECT e.key AS k, e.value AS v, (e.value ~ '^-?[0-9]{1,15}$') AS isnum
+  FROM core_notes, jsonb_each_text(coalesce(core_notes.n, '{}'::jsonb)) e
+),
 nt AS (
-  SELECT (SELECT n FROM core_notes) IS NOT NULL AS has_notes,
-         coalesce(((SELECT n FROM core_notes) ->> 'countsFromCommittedRows')::numeric, 0) = 1 AS partial,
-         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.roster_account')::numeric, 0)::bigint AS roster,
-         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.non_bcrypt')::numeric, 0)::bigint AS non_bcrypt,
-         coalesce(((SELECT n FROM core_notes) ->> 'must_reset.shared_default')::numeric, 0)::bigint AS shared,
-         coalesce((SELECT n FROM core_notes) ? 'nullHashAccounts', false) AS has_null,
-         ((SELECT n FROM core_notes) ->> 'nullHashAccounts')::numeric::bigint AS null_hash,
-         coalesce((SELECT n FROM core_notes) ? 'flaggedWithoutLoginId', false) AS has_nologin,
-         ((SELECT n FROM core_notes) ->> 'flaggedWithoutLoginId')::numeric::bigint AS no_login,
-         coalesce((SELECT n FROM core_notes) ? 'rosterDefaultHashesWarning', false) AS has_warn,
-         ((SELECT n FROM core_notes) ->> 'rosterDefaultHashesWarning')::numeric::bigint AS warn,
-         ((SELECT n FROM core_notes) ->> 'rosterDefaultHashes')::numeric::bigint AS hashes
+  SELECT coalesce((SELECT n IS NOT NULL FROM core_notes), false) AS has_notes,
+         -- countsFromCommittedRows = 1 means partial; an unreadable value is treated as partial (the safe side: 'info')
+         coalesce((SELECT CASE WHEN isnum THEN v::bigint = 1 ELSE true END FROM kv WHERE k = 'countsFromCommittedRows'), false) AS partial,
+         -- roster / non_bcrypt / shared: usable when the notes exist and the key is absent (= 0) or a plain integer
+         coalesce((SELECT v::bigint FROM kv WHERE k = 'must_reset.roster_account' AND isnum), 0) AS roster,
+         (coalesce((SELECT n IS NOT NULL FROM core_notes), false) AND NOT EXISTS (SELECT 1 FROM kv WHERE k = 'must_reset.roster_account' AND NOT isnum)) AS has_roster,
+         coalesce((SELECT v::bigint FROM kv WHERE k = 'must_reset.non_bcrypt' AND isnum), 0) AS non_bcrypt,
+         (coalesce((SELECT n IS NOT NULL FROM core_notes), false) AND NOT EXISTS (SELECT 1 FROM kv WHERE k = 'must_reset.non_bcrypt' AND NOT isnum)) AS has_non_bcrypt,
+         coalesce((SELECT v::bigint FROM kv WHERE k = 'must_reset.shared_default' AND isnum), 0) AS shared,
+         (coalesce((SELECT n IS NOT NULL FROM core_notes), false) AND NOT EXISTS (SELECT 1 FROM kv WHERE k = 'must_reset.shared_default' AND NOT isnum)) AS has_shared,
+         -- the next three need the key to be present and a plain integer
+         EXISTS (SELECT 1 FROM kv WHERE k = 'nullHashAccounts' AND isnum) AS has_null,
+         (SELECT v::bigint FROM kv WHERE k = 'nullHashAccounts' AND isnum) AS null_hash,
+         EXISTS (SELECT 1 FROM kv WHERE k = 'flaggedWithoutLoginId' AND isnum) AS has_nologin,
+         (SELECT v::bigint FROM kv WHERE k = 'flaggedWithoutLoginId' AND isnum) AS no_login,
+         EXISTS (SELECT 1 FROM kv WHERE k = 'rosterDefaultHashesWarning' AND isnum) AS has_warn,
+         (SELECT v::bigint FROM kv WHERE k = 'rosterDefaultHashesWarning' AND isnum) AS warn,
+         (SELECT v::bigint FROM kv WHERE k = 'rosterDefaultHashes' AND isnum) AS hashes
 ),
 -- Block U (#226 F1): one lower-case username used by more than one account; same presence test as A1.11 (f).
 uname AS (
@@ -345,19 +357,19 @@ checks AS (
   UNION ALL SELECT 'F', 'F2', 'cloud accounts migrated (same as A1.11 (e), migrated)', migrated::text, '= entity users in the verify report', 'info' FROM u
   UNION ALL SELECT 'F', 'F3', 'roster accounts by the staged rule (username, no valid e-mail) against note must_reset.roster_account',
          CASE WHEN fs.has_f THEN fs.roster::text ELSE 'n/a: staging_cloud.users not present' END,
-         CASE WHEN nt.has_notes THEN nt.roster::text
+         CASE WHEN nt.has_roster THEN nt.roster::text
               ELSE '= note must_reset.roster_account in the B7 output (counter not persisted in this build)' END,
-         CASE WHEN NOT fs.has_f OR NOT nt.has_notes THEN 'info' WHEN fs.roster = nt.roster THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+         CASE WHEN NOT fs.has_f OR NOT nt.has_roster THEN 'info' WHEN fs.roster = nt.roster THEN 'ok' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F4', 'non-bcrypt accounts by the staged hash (includes argon2id and NULL) against note must_reset.non_bcrypt',
          CASE WHEN fs.has_f THEN fs.non_bcrypt::text ELSE 'n/a: staging_cloud.users not present' END,
-         CASE WHEN nt.has_notes THEN nt.non_bcrypt::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
+         CASE WHEN nt.has_non_bcrypt THEN nt.non_bcrypt::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
               ELSE '= note must_reset.non_bcrypt in the B7 output (counter not persisted in this build)' END,
-         CASE WHEN NOT fs.has_f OR NOT nt.has_notes OR nt.partial THEN 'info' WHEN fs.non_bcrypt = nt.non_bcrypt THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+         CASE WHEN NOT fs.has_f OR NOT nt.has_non_bcrypt OR nt.partial THEN 'info' WHEN fs.non_bcrypt = nt.non_bcrypt THEN 'ok' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F5', 'flagged accounts that are neither roster nor non-bcrypt = shared default remainder, at most note must_reset.shared_default',
          CASE WHEN fs.has_f THEN fs.remainder::text ELSE 'n/a: staging_cloud.users not present' END,
-         CASE WHEN nt.has_notes THEN '<= ' || nt.shared::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
+         CASE WHEN nt.has_shared THEN '<= ' || nt.shared::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
               ELSE '<= note must_reset.shared_default in the B7 output (counter not persisted in this build)' END,
-         CASE WHEN NOT fs.has_f OR NOT nt.has_notes OR nt.partial THEN 'info' WHEN fs.remainder <= nt.shared THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+         CASE WHEN NOT fs.has_f OR NOT nt.has_shared OR nt.partial THEN 'info' WHEN fs.remainder <= nt.shared THEN 'ok' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F6', 'accounts the ETL flags (roster or non-bcrypt/NULL hash by the staged row) but that are NOT flagged in v2 (dropped duplicate e-mails are not counted)',
          CASE WHEN fs.has_f THEN fs.derivable::text ELSE 'n/a: staging_cloud.users not present' END, '0',
          CASE WHEN NOT fs.has_f THEN 'info' WHEN fs.derivable = 0 THEN 'ok' ELSE 'FAIL' END FROM fs
