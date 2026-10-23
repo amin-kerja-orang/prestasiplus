@@ -174,6 +174,13 @@ export async function bareUser(t: GamificationTestApp, label: string): Promise<s
   return rows[0]!.id
 }
 
+/** A bare pupil: a user holding the role `student` (only student wallets are ranked, FIX-3 D-08), no wallet. */
+export async function bareStudent(t: GamificationTestApp, label: string): Promise<string> {
+  const id = await bareUser(t, label)
+  await t.db.query(`insert into user_roles (user_id, role) values ($1::bigint, 'student')`, [id])
+  return id
+}
+
 export const challengeIdByTitle = async (t: GamificationTestApp, title: string): Promise<string> =>
   (await t.db.query<{ id: string }>(`select id::text from challenges where title = $1`, [title]))[0]!.id
 

@@ -658,6 +658,25 @@ export class PracticeRepository {
     })
   }
 
+  /**
+   * M14 BR-M14-12 read: the user's completed sessions (ALL modes) with `completed_at` in `[from, to)` (one Malaysia
+   * day), and the chapter ids of the answers given in that window (one entry per answer, null chapters skipped).
+   * Rows written under Mod Pelajar are the user's own and are included, so a staff member practising in test mode
+   * sees the same progress the test submit settles. Read-only; joins the ambient transaction.
+   */
+  async dayFacts(userId: string, from: Date, to: Date): Promise<{ sessions: SessionRecord[]; chapterIds: string[] }> {
+    const uid = idFromString(userId)
+    const rows = await this.db.practiceSession.findMany({
+      where: { userId: uid, status: 'completed', completedAt: { gte: from, lt: to } },
+      orderBy: [{ completedAt: 'asc' }, { id: 'asc' }],
+    })
+    const answers = await this.db.practiceAnswer.findMany({
+      where: { userId: uid, answeredAt: { gte: from, lt: to }, chapterId: { not: null } },
+      select: { chapterId: true },
+    })
+    return { sessions: rows.map(toSession), chapterIds: answers.flatMap((a) => (a.chapterId === null ? [] : [idToString(a.chapterId)])) }
+  }
+
   /** Counts and sums over EVERY completed session of `modes` (not only one page or one `type`). */
   async historyStats(userId: string, options: Pick<HistoryOptions, 'modes' | 'includeTest'>): Promise<HistoryStats> {
     const modes = [...options.modes]
