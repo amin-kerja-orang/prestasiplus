@@ -138,12 +138,22 @@ export async function scanWalletDrift(
   drift: ActivityContext['drift'],
 ): Promise<void> {
   const res = await db.query<DriftRow>(
-    `SELECT w.legacy_id, w.current_syiling::text AS cur,
-            (SELECT sum(l.amount)::text FROM coin_ledger l WHERE l.user_id = w.user_id AND l.legacy_source = $2) AS s,
-            (SELECT l.balance_after::text FROM coin_ledger l WHERE l.user_id = w.user_id AND l.legacy_source = $2
-             ORDER BY l.created_at DESC, l.id DESC LIMIT 1) AS last
-     FROM wallets w WHERE w.legacy_source = $2 AND w.legacy_id = ANY($1::text[])
-     ORDER BY w.legacy_id`,
+    // One pass over the ledger rows of the batch's users (a hash/group aggregate), not two correlated sub-selects per
+    // wallet: with stale statistics (a dry-run's rows are never analysed) the planner turned those into one full
+    // ledger scan per wallet.
+    `WITH ws AS (
+       SELECT w.legacy_id, w.user_id, w.current_syiling FROM wallets w
+       WHERE w.legacy_source = $2 AND w.legacy_id = ANY($1::text[])
+     ), agg AS (
+       SELECT l.user_id, sum(l.amount) AS s,
+              (array_agg(l.balance_after ORDER BY l.created_at DESC, l.id DESC))[1] AS last
+       FROM coin_ledger l
+       WHERE l.legacy_source = $2 AND l.user_id IN (SELECT user_id FROM ws)
+       GROUP BY l.user_id
+     )
+     SELECT ws.legacy_id, ws.current_syiling::text AS cur, agg.s::text AS s, agg.last::text AS last
+     FROM ws LEFT JOIN agg ON agg.user_id = ws.user_id
+     ORDER BY ws.legacy_id`,
     [[...byWallet.keys()], source],
   )
   for (const r of res.rows) {

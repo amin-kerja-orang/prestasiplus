@@ -124,6 +124,8 @@ interface SessionInfo {
 
 export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
   const entity = 'practice_answers'
+  // The archive is read-only during a run: one read per distinct question for the whole step (not per batch).
+  const snapshotCache = new Map<string, RawDims | null>()
   return {
     entity,
     source: a.source,
@@ -134,7 +136,7 @@ export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
       const sessions = await ctx.idMap.resolveMany('practice_sessions', distinctValues(rows, 'practice_session_id'))
       const info = await sessionInfo(ctx, [...sessions.values()])
       // The snapshot join: question dimensions come from the archive (text is hashed inside the helper).
-      const raw = await readSnapshotDims(a.pool, distinctValues(rows, 'question_id'))
+      const raw = await readSnapshotDims(a.pool, distinctValues(rows, 'question_id'), snapshotCache)
       const pickIds = (f: (r: RawDims) => string | null): string[] => [...new Set([...raw.values()].map(f).filter((v): v is string => v !== null))]
       const maps = {
         subjects: await ctx.idMap.resolveMany('subjects', pickIds((r) => r.subjectId)),

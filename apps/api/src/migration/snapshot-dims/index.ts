@@ -22,27 +22,39 @@ const A = quoteIdent(ARCHIVE_SCHEMA)
  * that contains the question. Nothing here is a join on free text.
  */
 export const SNAPSHOT_SQL = `
+WITH opts AS (
+  SELECT o.question_id, array_agg(o.body::text ORDER BY o.id) AS options
+  FROM ${A}."question_options" o
+  WHERE o.question_id = ANY($1::bigint[])
+  GROUP BY o.question_id
+),
+canon AS (
+  SELECT DISTINCT ON (m.legacy_id) m.legacy_id, eq.id AS eq_id, eq.number_label::text AS number_label
+  FROM ${A}."legacy_canonical_map" m
+  JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
+  WHERE m.source = 'questions' AND m.canonical_type = 'exam_question'
+    AND m.legacy_id = ANY(ARRAY(SELECT x::text FROM unnest($1::bigint[]) AS x))
+  ORDER BY m.legacy_id, m.id
+),
+keys AS (
+  SELECT DISTINCT ON (epq.exam_question_id) epq.exam_question_id, sp.natural_key::text AS natural_key
+  FROM ${A}."exam_paper_questions" epq
+  JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
+  JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
+  WHERE epq.exam_question_id IN (SELECT eq_id FROM canon)
+  ORDER BY epq.exam_question_id, ep.id
+)
 SELECT q.id::text AS id,
        q.subject_id::text AS subject_id, q.education_level_id::text AS education_level_id,
        q.chapter_id::text AS chapter_id, q.topic_id::text AS topic_id,
        q.difficulty_level::text AS difficulty, q.question_type::text AS qtype,
        q.body::text AS stem,
-       coalesce((SELECT array_agg(o.body::text ORDER BY o.id) FROM ${A}."question_options" o WHERE o.question_id = q.id), ARRAY[]::text[]) AS options,
-       k.natural_key AS natural_key, k.number_label AS number_label
+       coalesce(opts.options, ARRAY[]::text[]) AS options,
+       keys.natural_key AS natural_key, canon.number_label AS number_label
 FROM ${A}."questions" q
-LEFT JOIN LATERAL (
-  SELECT eq.number_label::text AS number_label,
-         (SELECT sp.natural_key::text
-          FROM ${A}."exam_paper_questions" epq
-          JOIN ${A}."exam_papers" ep ON ep.id = epq.exam_paper_id
-          JOIN ${A}."source_papers" sp ON sp.id = ep.source_paper_id
-          WHERE epq.exam_question_id = eq.id
-          ORDER BY ep.id LIMIT 1) AS natural_key
-  FROM ${A}."legacy_canonical_map" m
-  JOIN ${A}."exam_questions" eq ON eq.id = m.canonical_id
-  WHERE m.source = 'questions' AND m.legacy_id = q.id::text AND m.canonical_type = 'exam_question'
-  ORDER BY m.id LIMIT 1
-) k ON true
+LEFT JOIN opts ON opts.question_id = q.id
+LEFT JOIN canon ON canon.legacy_id = q.id::text
+LEFT JOIN keys ON keys.exam_question_id = canon.eq_id
 WHERE q.id = ANY($1::bigint[])`
 
 interface SnapshotRow {
@@ -59,14 +71,29 @@ interface SnapshotRow {
   number_label: string | null
 }
 
-/** Reads the dimensions of `questionIds` (.cloud ids as text); questions that are not in the archive are absent. */
-export async function readSnapshotDims(db: SqlExecutor, questionIds: readonly string[]): Promise<Map<string, RawDims>> {
+/**
+ * Reads the dimensions of `questionIds` (.cloud ids as text); questions that are not in the archive are absent.
+ * `cache` (optional, one per run) remembers every id already asked for, found or not: the archive does not change
+ * during a run, so a question that many attempts point to is read once, not once per batch.
+ */
+export async function readSnapshotDims(
+  db: SqlExecutor,
+  questionIds: readonly string[],
+  cache?: Map<string, RawDims | null>,
+): Promise<Map<string, RawDims>> {
   const out = new Map<string, RawDims>()
   const ids = [...new Set(questionIds.filter((id) => /^\d{1,18}$/.test(id)))]
-  if (ids.length === 0) return out
-  const res = await db.query<SnapshotRow>(SNAPSHOT_SQL, [ids])
+  const todo: string[] = []
+  for (const id of ids) {
+    const hit = cache?.get(id)
+    if (hit === undefined) todo.push(id)
+    else if (hit !== null) out.set(id, hit)
+  }
+  if (todo.length === 0) return out
+  const res = await db.query<SnapshotRow>(SNAPSHOT_SQL, [todo])
+  const found = new Map<string, RawDims>()
   for (const r of res.rows) {
-    out.set(r.id, {
+    found.set(r.id, {
       legacyQuestionId: r.id,
       subjectId: r.subject_id,
       levelId: r.education_level_id,
@@ -79,6 +106,11 @@ export async function readSnapshotDims(db: SqlExecutor, questionIds: readonly st
       sourceNaturalKey: r.natural_key,
       numberLabel: r.number_label,
     })
+  }
+  for (const id of todo) {
+    const d = found.get(id)
+    cache?.set(id, d ?? null)
+    if (d) out.set(id, d)
   }
   return out
 }
