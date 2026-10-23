@@ -1,11 +1,37 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+
 /**
  * Full-screen frame of the attempt (design: "quiz full-screen"). Mobile: one column, with a
  * sticky stimulus chip under the header. From `lg`: pinned stimulus panel on the left (it stays
  * while the questions of its group change), the question in the middle, the question map on the
  * right. The frame owns the fixed positioning so pages stay free of layering utilities.
  */
-defineProps<{ hasStimulus: boolean }>()
+const props = defineProps<{ hasStimulus: boolean }>()
+
+/**
+ * FB-046: below `lg` the sticky stimulus strip (about 70 px) must never cover a field that is
+ * focused or scrolled into view. `scroll-padding-top` keeps that band free of focus scrolling. The
+ * design-system class allowlist has no `scroll-pt-*`, so it is set on the scroller from here.
+ */
+const STRIP_CLEARANCE = '5rem'
+const scroller = ref<HTMLElement | null>(null)
+const wide = ref(false)
+const stripShown = computed(() => props.hasStimulus && !wide.value)
+let query: MediaQueryList | undefined
+const onChange = (e: MediaQueryListEvent): void => {
+  wide.value = e.matches
+}
+onMounted(() => {
+  query = window.matchMedia('(min-width: 1024px)')
+  wide.value = query.matches
+  query.addEventListener('change', onChange)
+})
+onBeforeUnmount(() => query?.removeEventListener('change', onChange))
+watchEffect(() => {
+  if (scroller.value)
+    scroller.value.style.scrollPaddingTop = stripShown.value ? STRIP_CLEARANCE : ''
+})
 </script>
 
 <template>
@@ -20,7 +46,11 @@ defineProps<{ hasStimulus: boolean }>()
         <slot name="header" />
       </div>
       <slot name="banner" />
-      <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto" data-testid="attempt-scroll">
+      <div
+        ref="scroller"
+        class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+        data-testid="attempt-scroll"
+      >
         <div class="mx-auto grid w-full max-w-7xl gap-4 px-3 pb-6 sm:px-6 lg:grid-cols-12">
           <aside
             v-if="hasStimulus"
