@@ -4,6 +4,8 @@
  * AC 13). The school admin verifies teachers who registered themselves: one list (unpaged, oldest first) and one
  * action, "Sahkan", behind a confirm. No reject, search, filter or pager (the contract has none). After a verify the
  * list is reloaded from the server; focus moves to the next row's button, else the previous row's, else the heading.
+ * #208 follow-up (spec section 16): the registrant's e-mail and phone are unchecked, so a notice above the list and the
+ * confirm dialog both say so, and the dialog repeats the details the admin can check before verifying.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -33,6 +35,7 @@ import {
   GONE_MESSAGE,
   PENDING_TITLE,
   PENDING_UNIT,
+  UNCHECKED_NOTICE,
   confirmMessage,
   emailText,
   focusTargetAfter,
@@ -120,12 +123,10 @@ function focusVerify(id: string): boolean {
   return false
 }
 
-/** The shell prints the page's one h1; it gets a temporary tab stop so focus can land on it. */
+/** The page owns the h1 (route `ownsH1`): sr-only; programmatic focus target (tab stop -1) so focus can land on it. */
+const heading = ref<HTMLElement | null>(null)
 function focusHeading(): void {
-  const heading = document.querySelector<HTMLElement>('h1')
-  if (!heading) return
-  heading.setAttribute('tabindex', '-1')
-  heading.focus()
+  heading.value?.focus()
 }
 
 async function refresh(): Promise<void> {
@@ -148,7 +149,7 @@ async function verify(row: Item): Promise<void> {
   if (verifyingId.value !== null) return
   const ok = await confirm({
     title: 'Sahkan Guru',
-    message: confirmMessage(row.name),
+    message: confirmMessage(row),
     confirmLabel: 'Sahkan',
     tone: 'primary',
   })
@@ -183,12 +184,20 @@ async function verify(row: Item): Promise<void> {
 <template>
   <DsPage data-testid="pt-page">
     <div ref="root">
+      <h1
+        ref="heading"
+        tabindex="-1"
+        class="sr-only"
+        data-testid="pt-heading"
+      >
+        {{ PENDING_TITLE }}
+      </h1>
       <DsStack gap="lg">
         <DsBackLink :to="TEACHER_LIST_PATH" label="Senarai Guru" data-testid="pt-back" />
 
         <section data-testid="pt-count-card">
           <DsGrid :cols="{ base: 1, sm: 2, lg: 4 }">
-            <USkeleton v-if="firstLoad" data-testid="pt-loading" />
+            <USkeleton v-if="firstLoad" class="h-24" data-testid="pt-loading" />
             <DsStatTile
               v-else-if="data"
               :value="formatCount(count)"
@@ -210,6 +219,15 @@ async function verify(row: Item): Promise<void> {
           <DsText variant="body" tone="muted" data-testid="pt-found">
             <template v-if="data">{{ foundText(formatCount(count)) }}</template>
           </DsText>
+
+          <UAlert
+            v-if="count > 0"
+            color="warning"
+            variant="subtle"
+            icon="i-ph-warning"
+            :description="UNCHECKED_NOTICE"
+            data-testid="pt-notice"
+          />
 
           <DsPanel v-if="!firstLoad && count === 0" data-testid="pt-empty">
             <DsEmptyState
@@ -278,7 +296,11 @@ async function verify(row: Item): Promise<void> {
                   :initials="row.initials"
                   data-testid="pt-row"
                   :data-user-id="row.id"
-                />
+                >
+                  <template #name>
+                    <span data-testid="pt-name">{{ row.name }}</span>
+                  </template>
+                </DsIdentity>
                 <DsCluster gap="xs" align="baseline">
                   <DsText variant="caption" tone="muted" as="span">Emel</DsText>
                   <DsText variant="body" as="span" wrap="anywhere" data-testid="pt-email">{{

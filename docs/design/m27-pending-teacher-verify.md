@@ -1,7 +1,7 @@
 # M27 Admin Sekolah: Sahkan guru yang mendaftar sendiri (verify self-registered teachers)
 
 - **Slug:** `m27-pending-teacher-verify`
-- **Status:** Draft for G2, revised 2026-10-21 with the lead's decisions (section 14). Design only; no code written.
+- **Status:** Draft for G2, revised 2026-10-21 with the lead's decisions (section 14). Design only; no code written. Section 15 added 2026-10-22 for issue #191 (delivery check of the built screen). Section 16 added 2026-10-23 (#208 follow-up: unchecked-details guard and final copy).
 - **Date:** 2026-10-21
 - **Owner:** ui-ux-designer
 - **Backlog:** #78 (FE has nothing; backend done in BE-21 AC#13)
@@ -60,7 +60,7 @@ flowchart TD
   C -->|Batal / Esc| T
   C -->|Sahkan| P[POST guru/id/verify, butang dalam keadaan memuat]
   P -->|200| OK[Muat semula senarai + flash 'Guru berjaya disahkan.']
-  P -->|404 / 409| GONE[Flash amaran 'tidak lagi menunggu' + muat semula senarai]
+  P -->|404 / 409| GONE[Flash ralat 'tidak lagi menunggu' + muat semula senarai]
   P -->|429| RL[Flash ralat, baris kekal, boleh cuba lagi]
   P -->|403 CSRF / 5xx / rangkaian| FE[Flash ralat, baris kekal]
   OK --> T
@@ -90,6 +90,7 @@ Steps as the admin sees them: (1) sees the callout on S7; (2) opens S7b; (3) rea
 1. `DsBackLink` -> `/admin-sekolah/guru`, label "Senarai Guru".
 2. One count tile (`DsStatTile`, `icon="chalkboard-teacher"`, `accent="friend"`, value = n, unit "Menunggu Pengesahan"). Grid `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` like S7.
 3. Found line (`text-body text-muted`): "{n} guru menunggu pengesahan". Left on `sm+`, above the table on mobile.
+3a. Notice (section 16, copy 24): `UAlert color="warning" variant="subtle" icon="i-ph-warning"`, test id `pt-notice`, shown only when n > 0 (hidden while loading, on a load error and in the empty state).
 4. Table or cards. **No filter bar, no search, no export, no "Tambah" button, no pager** (contract is unpaged; pass `:page-size="Math.max(n, 1)"` and `:total="n"` so `DsDataTable` shows no pager; **Perlu pengesahan:** confirm the pager hides when total <= page size).
 
 ```
@@ -145,7 +146,7 @@ Card (`card-title="name"`): fields Emel, Telefon, Tarikh Daftar; `#card-actions`
 
 ### 5.4 Confirm dialog (`useConfirm`)
 
-- Title "Sahkan Guru"; message "Sahkan {nama} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan."; confirm label "Sahkan"; cancel "Batal"; `tone: 'primary'` (this is not destructive, so not the `error` colour).
+- Title "Sahkan Guru"; message (copy 12, revised in section 16) "Sahkan {nama} sebagai guru sekolah ini? Emel: {emel}. Telefon: {telefon}. Tarikh Daftar: {tarikh}. Butiran ini diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan." (the "Emel" or "Telefon" sentence is left out when that value is empty); confirm label "Sahkan"; cancel "Batal"; `tone: 'primary'` (this is not destructive, so not the `error` colour).
 - Follow the S7 toggle pattern: the dialog resolves true/false, then the page makes the call, shows the button loading, reloads, then flashes. (The `run` option of `useConfirm` is the alternative; the S7 pattern is preferred so the row button shows the loading state and so the 404/429 branches are handled in one place.)
 - Esc, backdrop and Batal cancel with no call.
 
@@ -182,36 +183,37 @@ Not in this build. For the record only: the same component and copy as section 6
 
 ## 8. Copy table
 
-Source key: **existing** = already in the M27 FE or DS; **contract** = in `pending-teachers.ts` / paths; **Perlu pengesahan** = proposed, needs user approval. .cloud was not observed, so no string is "observed on .cloud".
+Source key: **existing** = already in the M27 FE or DS; **contract** = in `pending-teachers.ts` / paths; **observed** = the same string is already used for the same meaning on a replicated live screen (URS reference); **final (#208 follow-up)** = chosen in the 2026-10-23 copy pass in the wording style of the neighbouring M27 screens, listed in the follow-up PR for the lead to confirm. .cloud was not observed, so no string is "observed on .cloud". The "Perlu pengesahan" marks of the 2026-10-21 draft are closed by section 16.
 
 | # | Where | BM copy | Source |
 |---|---|---|---|
-| 1 | Header title and S7b page name | Guru Menunggu Pengesahan | **Perlu pengesahan** |
-| 2 | Browser tab title | Guru Menunggu Pengesahan - PRESTASIPLUS | **Perlu pengesahan** (pattern existing) |
+| 1 | Header title and S7b page name | Guru Menunggu Pengesahan | final (#208 follow-up): "Menunggu Pengesahan" is observed (M20 S4 card), prefixed with the subject like "Senarai Guru" |
+| 2 | Browser tab title | Guru Menunggu Pengesahan - PRESTASIPLUS | final (#208 follow-up), existing pattern |
 | 3 | Header subtitle | {nama sekolah} | existing (S7) |
 | 4 | Back link | Senarai Guru | existing |
-| 5 | Count tile unit; callout badge | Menunggu Pengesahan | **Perlu pengesahan** |
-| 6 | Found line; callout text | {n} guru menunggu pengesahan | **Perlu pengesahan** (form follows "{n} pengguna dijumpai") |
+| 5 | Count tile unit; callout badge | Menunggu Pengesahan | observed (URS M20 FN-M20-3.1.1, stat card "Menunggu Pengesahan") |
+| 6 | Found line; callout text | {n} guru menunggu pengesahan | final (#208 follow-up), form follows "{n} pengguna dijumpai" |
 | 7 | Column headers | #, Nama, Emel, Telefon, Tindakan | existing |
-| 8 | Column header (date) | Tarikh Daftar | **Perlu pengesahan** ("Tarikh" exists on S7; "Daftar" disambiguates) |
-| 9 | Empty cell (phone, e-mail) | - | existing (phone); e-mail is **Perlu pengesahan** (no new copy string, behaviour only) |
-| 10 | Row button; dialog confirm label | Sahkan | **Perlu pengesahan** (feature name from the brief) |
-| 10a | Row button accessible name (not visible) | Sahkan {nama} | **Perlu pengesahan** (decision 3; starts with the visible label) |
-| 11 | Dialog title | Sahkan Guru | **Perlu pengesahan** |
-| 12 | Dialog message | Sahkan {nama} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan. | **Perlu pengesahan** |
+| 8 | Column header (date); dialog date label | Tarikh Daftar | observed (URS M21 FN-M21-2.3.2, "Tarikh Daftar" = registration date) |
+| 9 | Empty cell (phone, e-mail) | - | existing (phone); e-mail follows the phone (behaviour only) |
+| 10 | Row button; dialog confirm label | Sahkan | final (#208 follow-up), the feature verb |
+| 10a | Row button accessible name (not visible) | Sahkan {nama} | final (#208 follow-up), decision 3 |
+| 11 | Dialog title | Sahkan Guru | final (#208 follow-up) |
+| 12 | Dialog message | Sahkan {nama} sebagai guru sekolah ini? Emel: {emel}. Telefon: {telefon}. Tarikh Daftar: {tarikh}. Butiran ini diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan. | final (#208 follow-up); revised from the 2026-10-21 text by section 16. The "Emel: …" or "Telefon: …" sentence is left out when that value is empty |
 | 13 | Dialog cancel | Batal | existing (DS `cancel`) |
 | 14 | Success flash | Guru berjaya disahkan. | contract |
-| 15 | 404 / 409 flash | Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini. | **Perlu pengesahan** |
-| 16 | 429 flash and load error | Terlalu banyak percubaan. Sila cuba sebentar lagi. | contract (marked "proposed copy" there, same as auth routes) |
+| 15 | 404 / 409 flash | Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini. | final (#208 follow-up) |
+| 16 | 429 flash and load error | Terlalu banyak percubaan. Sila cuba sebentar lagi. | contract (same text as the auth routes) |
 | 17 | Generic error | Ralat berlaku. Sila cuba lagi. | existing (`GENERIC_ERROR`) |
 | 18 | Load error retry | Cuba Semula | existing (DS `retry`) |
 | 19 | Load error message | server message via `errorLines`, else row 17 | existing |
-| 20 | Empty title | Tiada guru menunggu pengesahan | **Perlu pengesahan** |
-| 21 | Empty description | Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini. | **Perlu pengesahan** |
-| 22 | Callout button | Semak | **Perlu pengesahan** |
+| 20 | Empty title | Tiada guru menunggu pengesahan | final (#208 follow-up), form follows the other M27 "Tiada …" empty titles |
+| 21 | Empty description | Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini. | final (#208 follow-up) |
+| 22 | Callout button | Semak | final (#208 follow-up) |
 | 23 | Teacher inbox notice (sent by the server, not a UI string) | Akaun guru anda telah disahkan / Pentadbir sekolah telah mengesahkan akaun guru anda. Anda kini boleh log masuk dan menggunakan PrestasiPlus. | contract |
+| 24 | Notice above the list (new, section 16) | Emel dan telefon di bawah diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya guru yang anda pasti bertugas di sekolah ini. | final (#208 follow-up), new |
 
-**Count of distinct strings marked Perlu pengesahan: 13** (rows 1, 2, 5, 6, 8, 10, 10a, 11, 12, 15, 20, 21, 22). The lead approved the original 12 as provisional (decision 2); row 10a is new from decision 3. All keep the mark until the final copy review. Plus 3 behaviour points flagged the same way in the text (null e-mail shown as "-", pager hiding, reload/flash order).
+**Strings marked "Perlu pengesahan" in the 2026-10-21 draft: 13** (rows 1, 2, 5, 6, 8, 10, 10a, 11, 12, 15, 20, 21, 22). The 2026-10-23 pass made all of them final (rows 5 and 8 now cite an observed live use; row 12 is revised) and added row 24; the lead confirms the list in the follow-up PR. The 3 behaviour points (null e-mail shown as "-", pager hiding, reload/flash order) were checked in the build and the #191 e2e (section 15).
 
 ## 9. Interaction notes
 
@@ -245,7 +247,7 @@ S7b has no live counterpart, so it is specified for WCAG 2.2 AA directly. The sh
 
 ## 11. Component inventory (existing DS only)
 
-`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/school-admin.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component used on S7. No new DS component and no new token.
+`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/pending-teachers.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component used on S7. No new DS component and no new token.
 
 ## 12. Proposed test ids (e2e)
 
@@ -264,6 +266,7 @@ S7b has no live counterpart, so it is specified for WCAG 2.2 AA directly. The sh
 | `pt-loading` | loading wrapper |
 | `pt-callout` | S7 callout; `pt-callout-count`; `pt-callout-link` ("Semak") |
 | `pt-heading` | the `h1` that receives focus when the list becomes empty |
+| `pt-notice` | the unchecked-details notice above the list (section 16) |
 
 The confirm dialog uses the DS host; the e2e finds its buttons by role and name ("Sahkan", "Batal") unless the DS host already exposes ids (it has none today).
 
@@ -273,7 +276,7 @@ E2E cases (each at 375, 768, 1280): each `pt-verify` has the accessible name "Sa
 
 1. **Contract tip check:** the frontend developer diffs the contract against `origin/feature/v2-backend` 0896421f (not done here); confirm there is still no 409 and no reject route.
 2. **Reject action (decision 5):** none. The contract has no route, so nothing is designed. If a school must be able to refuse a self-registration (for example a wrong school chosen), that needs a new backend route first, then a design pass (button, reason, copy, teacher notice).
-3. **Final copy review:** the 13 strings marked Perlu pengesahan stay provisional until the user's copy review ("Sahkan", dialog text, "Tarikh Daftar").
+3. **Final copy review:** done in section 16 (2026-10-23); the lead confirms the list in the follow-up PR.
 4. **Reload-then-flash order and pager hiding:** the two behaviour points in section 8 need a quick check when built.
 5. **Dashboard strip:** later (section 7); revisit when the dashboard contract carries a pending count.
 6. **.cloud reference:** not observed (D24: no role account is requested). A visual check, if wanted, is read-only on whatever .cloud already shows without a new role account.
@@ -290,6 +293,61 @@ Closed by the lead: S0 strip later (1); 12 strings approved as provisional (2); 
 | 4 | Follow the contract: school_admin only, own school; Admin Pusat gets 403 and uses M02 user management; BE-21 AC#13 is being aligned by the lead's session | section 1 |
 | 5 | No reject action | section 1, Q2 |
 | 6 | Unpaged list accepted | risk R1 |
-| 7 | Never request role accounts for .cloud (D24); copy stays Perlu pengesahan | section 0 |
+| 7 | Never request role accounts for .cloud (D24); copy stays Perlu pengesahan until the copy pass | section 0 |
+| 8 | (2026-10-23, #208 follow-up) The self-registered impostor risk is accepted for now and closed on the UI side by a notice and a dialog that repeat the unchecked details; the backend part is a lead decision (section 16) | sections 5.1, 5.4, 8, 16 |
 
 **Risk R1 (unpaged list):** `GET /admin-sekolah/guru/pending` returns every pending teacher in one response, with no limit. It is expected to be small. If a school ever has hundreds of pending teachers, the page renders all rows (long DOM, long scroll, slow list). Mitigation if it happens: ask backend for paging; the UI then reuses the `DsDataTable` pager and the S7 `page` query. No UI work is needed now.
+
+## 15. #191 delivery check (2026-10-22)
+
+Checked by reading the built code (commit 7571650b) against sections 1 to 14. No browser was used; .cloud/.my not observed. Two spec lines corrected: flowchart node for 404/409 said "amaran" but section 5.5 and the code use an `error` flash (now "ralat"); section 11 named `api/school-admin.ts`, the functions live in `api/pending-teachers.ts`. "Toast" in the brief = the app's `useFlash` region (section 10); no second toast system.
+
+### 15.1 Coverage
+
+| Brief point | Spec section | Built |
+|---|---|---|
+| "Menunggu pengesahan" state/entry on teacher list | 2 (B, D rejected), 6 | Yes (`SchoolUserList.vue:396`; callout badge + count + "Semak"); gap 4 |
+| Sahkan action + confirm dialog | 5.4 | Yes (`GuruMenungguPage.vue:147-159`) |
+| Success toast from API `status` | 5.5, 8 (14) | Yes (`:165`) |
+| Error: 404/409, 429, 403/CSRF, network | 5.5, 8 (15-17) | Yes (`:168-176`, `errorLines`) |
+| Empty / loading / load-error / 403 states | 5.5 | Yes; gap 1 (skeleton height) |
+| Light + dark, tokens only | 10, 11 | Yes (DS components only, no raw colours in the page) |
+| 375 / 768 / 1280 | 5.3, 6 | Partly: gap 4 (callout button), gap 3 (card) |
+| Focus after verify | 10 | Yes, but gap 2 (heading test id) |
+| Testable in mock mode | 12 | No: gap 5 |
+
+### 15.2 Gaps for the frontend developer
+
+1. Minor, `GuruMenungguPage.vue:191`: spec 5.5 says tile skeleton `h-24`; `USkeleton` has no height class (collapses). Add `class="h-24"`.
+2. Minor, `:124-129` and `:184`: spec 10/12 require the `h1` to carry `data-testid="pt-heading"` with `tabindex="-1"`; code queries the shell's first `h1` and sets tabindex at runtime, no test id. Set `data-testid="pt-heading"` on that `h1` (shell header) or have e2e target `h1`.
+3. Minor, `:276-281`: card variant `DsIdentity` lacks the `#name` slot with `data-testid="pt-name"` that the table variant has. Add it so `pt-name` exists at 375.
+4. Minor, `PendingTeacherCallout.vue:36-43`: section 6 says the "Semak" button is full width at 375, row layout from `sm`. Add `class="min-h-11 w-full sm:w-auto justify-center"`.
+5. Major (for acceptance, not for the screen), `mock/handlers/pending-teachers.ts:16-17`: the mock list is always empty and verify always 404, so verify, focus and callout cannot be exercised in mock mode. Acceptance below therefore runs only in `@api` (http) mode and needs the backend test DB to hold at least 3 pending teachers for the school of the school_admin test user, one with null e-mail (backend seed task, not a UI change).
+6. Minor, spec only: confirm with the user that provisional strings (section 8, 13 marks) are final; no code change.
+
+No other spec-vs-code gap found (route, role guard, copy rows 1-22, aria-label, focus rules, 404 mapping, reload-then-flash, no reject/bulk all match).
+
+### 15.3 E2E acceptance (`@api`, each step at 375, 768 and 1280; log in as school_admin of a school with 3 pending teachers; names are fictitious, e.g. "Cikgu Contoh")
+
+1. Open `/admin-sekolah/guru`. Expect `pt-callout` with badge "Menunggu Pengesahan", `pt-callout-count` = "3 guru menunggu pengesahan", link "Semak". At 375 the button is stacked under the text and is at least 44 px high; no horizontal scroll (also check 320).
+2. Press "Semak". URL `/admin-sekolah/guru/menunggu`; heading "Guru Menunggu Pengesahan"; back link "Senarai Guru"; tile "3" + "Menunggu Pengesahan"; `pt-found` "3 guru menunggu pengesahan". 375 shows cards, 768 and 1280 show the table with columns #, Nama, Emel, Telefon, Tarikh Daftar, Tindakan. The null e-mail shows "-". No search, filter or pager.
+3. Each `pt-verify` has accessible name "Sahkan {nama}" and is at least 44 px high.
+4. Press "Batal" in the dialog (and again with Esc): dialog titled "Sahkan Guru", message "Sahkan {nama} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan."; buttons "Sahkan" and "Batal". Cancel makes no POST, list still 3, focus back on the opening button.
+5. Press "Sahkan" in the dialog on row 1: button loading, POST `/api/admin-sekolah/guru/{id}/verify` returns 200; toast "Guru berjaya disahkan."; list 2 rows, found line "2 guru menunggu pengesahan"; focus on the former row 2's `pt-verify`. Verify the last row: focus on the previous row's button. Verify the final row: empty state "Tiada guru menunggu pengesahan" / "Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini."; focus on the `h1`.
+6. Open `/admin-sekolah/guru`: verified teacher is listed as Aktif; callout hidden when 0 pending.
+7. Stale row: verify the same teacher in a second session first, then Sahkan in the first: toast "Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini."; row gone.
+8. 429 (route-intercept the POST with 429 and message "Terlalu banyak percubaan. Sila cuba sebentar lagi."): toast shows that text, row stays, focus on its button. Network failure on POST: toast "Ralat berlaku. Sila cuba lagi.", row stays. Failing GET: error panel (`pt-error`) with "Cuba Semula"; retry loads the list.
+9. Log in as Admin Pusat and open `/admin-sekolah/guru/menunggu`: the 403 page. A school_admin of another school never sees these teachers.
+10. Repeat steps 2 and 5 with the dark theme on; text and badge remain readable, focus ring visible.
+
+## 16. #208 follow-up: unchecked registrant details and final copy (2026-10-23)
+
+**Finding (G4 of #208, security, Medium):** a self-registered account can ask for any school. The pending row shows the name, e-mail and phone the registrant typed in; nothing proves the registrant owns that e-mail or phone, and the admin has no reject action. An admin who trusts the row could give school scope to someone who is not a teacher of the school.
+
+**UI change (no contract or backend change):**
+1. A notice above the list (copy 24, `pt-notice`, `UAlert` warning, shown only when n > 0) says the e-mail and phone are typed in by the registrant and unchecked, and that the admin should verify only a teacher they are sure works at the school.
+2. The confirm dialog (copy 12) repeats the e-mail, phone and registration date at the decision point, says again that they are unchecked, and asks the admin to go on only when sure. An empty e-mail or phone sentence is left out (no "Emel: -").
+3. Nothing else changes: still one action ("Sahkan"), same focus rules, same errors.
+
+**Backend part (lead decision, recorded in the follow-up PR and on #113 as "DECISION NEEDED #208-MEDIUM"):** the UI cannot prove ownership or refuse a registrant. Closing the risk fully needs (a) proof that the registrant owns the e-mail (a confirmed flag on the pending row, or verification before the row is listed), and/or (b) a reject route for the school admin that clears the pending school (with audit and a teacher notice). Each would add a contract field or route and a design pass (badge, button, reason, copy). Until then the guard above is the mitigation.
+

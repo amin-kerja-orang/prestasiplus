@@ -16,7 +16,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { PendingTeacherRow } from '../../api/pending-teachers'
 import PendingTeacherCallout from '../../components/users/PendingTeacherCallout.vue'
-import { focusTargetAfter } from '../../components/users/pending-format'
+import { UNCHECKED_NOTICE, confirmMessage, focusTargetAfter } from '../../components/users/pending-format'
 import GuruMenungguPage from '../../pages/GuruMenungguPage.vue'
 import guru from '../../routes/guru'
 import { has, mountAt, text } from './helpers'
@@ -94,6 +94,47 @@ describe('S7b list', () => {
     expect(verifyButtons(w).map((b) => b.attributes('data-user-id'))).toEqual(['101', '102', '103'])
   })
 
+  it('shows a tile skeleton with a height while loading', async () => {
+    api.fetchPendingTeachers.mockReturnValue(new Promise(() => {}))
+    const { wrapper: w } = await mountAt(GuruMenungguPage, '/admin-sekolah/guru/menunggu')
+    expect(w.get('[data-testid="pt-loading"]').classes()).toContain('h-24')
+  })
+
+  it('exposes pt-name in both the table and the card variant', async () => {
+    const { wrapper: w } = await mountPage()
+    const names = w.findAll('[data-testid="pt-name"]').map((n) => n.text())
+    expect(names.filter((n) => n === 'Guru Contoh Satu').length).toBeGreaterThanOrEqual(1)
+    expect(names).toContain('Guru Contoh Tiga')
+    const cards = w.findAll('[data-testid="pt-row"]')
+    expect(cards.length).toBeGreaterThanOrEqual(3)
+    for (const c of cards) expect(c.find('[data-testid="pt-name"]').exists()).toBe(true)
+  })
+
+  it('prints its own h1 with the pt-heading test id and a tab stop for focus', async () => {
+    const { wrapper: w } = await mountPage()
+    const h1 = w.get('h1[data-testid="pt-heading"]')
+    expect(h1.text()).toBe('Guru Menunggu Pengesahan')
+    expect(h1.attributes('tabindex')).toBe('-1')
+    expect(h1.classes()).toContain('sr-only')
+    expect(w.findAll('h1')).toHaveLength(1)
+  })
+
+  it('warns above the list that the e-mail and phone are unchecked (#208 follow-up)', async () => {
+    const { wrapper: w } = await mountPage()
+    expect(text(w, 'pt-notice')).toBe(UNCHECKED_NOTICE)
+    expect(UNCHECKED_NOTICE).toBe(
+      'Emel dan telefon di bawah diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya guru yang anda pasti bertugas di sekolah ini.',
+    )
+  })
+
+  it('hides the unchecked-details notice when nothing is pending or the load failed', async () => {
+    const { wrapper: empty } = await mountPage([])
+    expect(has(empty, 'pt-notice')).toBe(false)
+    api.fetchPendingTeachers.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }))
+    const { wrapper: failed } = await mountAt(GuruMenungguPage, '/admin-sekolah/guru/menunggu')
+    expect(has(failed, 'pt-notice')).toBe(false)
+  })
+
   it('shows the empty state with its copy and no table', async () => {
     const { wrapper: w } = await mountPage([])
     expect(has(w, 'pt-empty')).toBe(true)
@@ -136,7 +177,9 @@ describe('S7b verify', () => {
     await verifyButtons(w)[0]!.trigger('click')
     await flushPromises()
     expect(confirm).toHaveBeenCalledWith(
-      'Sahkan Guru Contoh Satu sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan.',
+      'Sahkan Guru Contoh Satu sebagai guru sekolah ini? Emel: satu@demo.test. Telefon: 0123456789. ' +
+        'Tarikh Daftar: 20/10/2026 09:14. Butiran ini diisi sendiri oleh pendaftar dan belum disemak. ' +
+        'Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan.',
     )
     expect(api.verifyPendingTeacher).not.toHaveBeenCalled()
   })
@@ -171,16 +214,13 @@ describe('S7b verify', () => {
   it('removing the only row shows the empty state and moves focus to the page heading', async () => {
     confirmWith(true)
     api.verifyPendingTeacher.mockResolvedValue(VERIFIED)
-    const heading = document.createElement('h1')
-    heading.textContent = 'Guru Menunggu Pengesahan'
-    document.body.append(heading)
     const { wrapper: w } = await mountAttached([ROWS[0]!])
     api.fetchPendingTeachers.mockResolvedValue(list([]))
     await verifyButtons(w)[0]!.trigger('click')
     await flushPromises()
     expect(has(w, 'pt-empty')).toBe(true)
-    expect(document.activeElement).toBe(heading)
-    expect(heading.getAttribute('tabindex')).toBe('-1')
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('pt-heading')
+    expect(document.activeElement?.tagName).toBe('H1')
     w.unmount()
   })
 
@@ -252,6 +292,14 @@ describe('S7 callout', () => {
     expect(link.attributes('href')).toBe('/admin-sekolah/guru/menunggu')
   })
 
+  it('makes the "Semak" button full width below sm and 44 px high', async () => {
+    api.fetchPendingTeachers.mockResolvedValue(list(ROWS))
+    const { wrapper: w } = await mountAt(PendingTeacherCallout, '/admin-sekolah/guru')
+    expect(w.get('[data-testid="pt-callout-link"]').classes()).toEqual(
+      expect.arrayContaining(['min-h-11', 'w-full', 'justify-center', 'sm:w-auto']),
+    )
+  })
+
   it.each([
     ['empty', () => api.fetchPendingTeachers.mockResolvedValue(list([]))],
     ['failing', () => api.fetchPendingTeachers.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }))],
@@ -274,6 +322,7 @@ describe('S7b route', () => {
       onForbidden: '403',
       title: 'Guru Menunggu Pengesahan - PRESTASIPLUS',
       header: { title: 'Guru Menunggu Pengesahan' },
+      ownsH1: true,
       module: 'M27',
     })
     const paths = guru.map((r) => r.path)
@@ -287,5 +336,39 @@ describe('S7b route', () => {
   it('sends a guest to the login and lets a school_admin in', () => {
     expect(decideAccess(to, { isLoggedIn: false, role: null, landingPath: null })).toEqual({ kind: 'redirect', to: '/login' })
     expect(decideAccess(to, { isLoggedIn: true, role: 'school_admin', landingPath: '/admin-sekolah' })).toEqual({ kind: 'allow' })
+  })
+})
+
+describe('confirmMessage (#208 follow-up)', () => {
+  const tail =
+    'Butiran ini diisi sendiri oleh pendaftar dan belum disemak. ' +
+    'Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan.'
+
+  it('repeats the e-mail, phone and registration date the admin can check', () => {
+    expect(
+      confirmMessage({ name: 'Guru Contoh', email: 'guru@demo.test', phone: '0123456789', requestedAt: '20/10/2026 09:14' }),
+    ).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Emel: guru@demo.test. Telefon: 0123456789. Tarikh Daftar: 20/10/2026 09:14. ${tail}`,
+    )
+  })
+
+  it('leaves out a missing e-mail or phone instead of printing "-"', () => {
+    expect(confirmMessage({ name: 'Guru Contoh', email: '-', phone: '-', requestedAt: '20/10/2026 11:02' })).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+    expect(confirmMessage({ name: 'Guru Contoh', email: 'guru@demo.test', phone: '', requestedAt: '20/10/2026 11:02' })).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Emel: guru@demo.test. Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+  })
+
+  it('the row dialog for a teacher without contact details still names the teacher and the date', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { wrapper: w } = await mountPage()
+    await verifyButtons(w)[1]!.trigger('click')
+    await flushPromises()
+    expect(confirm).toHaveBeenCalledWith(
+      `Sahkan Guru Contoh Dua sebagai guru sekolah ini? Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+    expect(api.verifyPendingTeacher).not.toHaveBeenCalled()
   })
 })
