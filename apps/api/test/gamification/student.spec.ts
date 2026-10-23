@@ -9,7 +9,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, STUDENT, STUDENT_EMPTY, STUDENT_MAJU, TEACHER, bareUser, bootGamificationApp, challengeIdByTitle, dataOf, fail, signIn, userIdOf, type Client, type GamificationTestApp } from './helpers'
+import { ADMIN, STUDENT, STUDENT_EMPTY, STUDENT_MAJU, TEACHER, bareStudent, bareUser, bootGamificationApp, challengeIdByTitle, dataOf, fail, signIn, userIdOf, type Client, type GamificationTestApp } from './helpers'
 
 const GET_ROUTES = ['dashboard', 'challenges', 'achievements', 'leaderboard', 'referral', 'share-cards', 'convert']
 
@@ -133,6 +133,8 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
 
   describe('GET /api/gamification/leaderboard (S14)', () => {
     it('podium 1-3 and rows by lifetime syiling; ignores query; names and initials', async () => {
+      // The seed has two pupil wallets; a third pupil fills the podium (the admin wallet is no longer ranked).
+      await t.wallet.credit({ userId: await bareStudent(t, 'Papan Podium'), amount: 5, source: 'quiz_practice', sourceId: 'lb-podium', description: 'Latih Tubi: 5 betul', isTest: false })
       const res = await student.get('/gamification/leaderboard?period=week')
       const d = GamificationLeaderboardSchema.parse(dataOf(res))
       expect(d.podium.map((p) => p.rank)).toEqual([1, 2, 3])
@@ -143,8 +145,8 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
     })
 
     it('MOD PELAJAR rule: test credits are not counted and a test-only actor is not shown', async () => {
-      const real = await bareUser(t, 'Papan Satu')
-      const testOnly = await bareUser(t, 'Papan Ujian')
+      const real = await bareStudent(t, 'Papan Satu')
+      const testOnly = await bareStudent(t, 'Papan Ujian')
       await t.wallet.credit({ userId: real, amount: 40, source: 'quiz_practice', sourceId: 'lb-real', description: 'Latih Tubi: 40 betul', isTest: false })
       await t.wallet.credit({ userId: real, amount: 7000, source: 'admin_award', sourceId: 'lb-test', description: 'Ujian', isTest: true })
       await t.wallet.credit({ userId: testOnly, amount: 9000, source: 'admin_award', sourceId: 'lb-only', description: 'Ujian', isTest: true })

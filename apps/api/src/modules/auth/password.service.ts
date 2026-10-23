@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { hash, verify } from '@node-rs/argon2'
 
+import { ARGON2_OPTIONS } from './argon2-params'
 import { AuthConfig } from './auth.config'
 import { isLegacyBcrypt, LegacyBcryptPool } from './legacy-bcrypt'
 
-/** OWASP argon2id minimum (19 MiB, t=2, p=1); the demo seed uses the same parameters. */
-const ARGON2_OPTIONS = { memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const
 const DUMMY_SALT = 'abcdefghijklmnopqrstuu'
 
 /** Concurrent argon2id operations in the whole process (each needs about 19 MiB and a libuv thread). */
