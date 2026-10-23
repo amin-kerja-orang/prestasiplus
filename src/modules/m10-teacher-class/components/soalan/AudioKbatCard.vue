@@ -2,13 +2,20 @@
 /**
  * S21 cards "Sumbang Set Audio KBAT / Ujian Mendengar" (FN-M10-7.1.6) and the static "AI
  * Auto-Generate Soalan" (FN-M10-7.1.7, DV-M10-10: no link, button or form, as live). The two template
- * links download a file (contract #63; live answers 200 with the file) and "Cipta Set" / "Senarai Set"
- * go to S26 / S25.
+ * links download a file (contract #63; live answers 200 with the file). "Cipta Set" / "Senarai Set"
+ * (S26 / S25) have no teacher screen in the SPA (`/guru/audio-kbat*` is a 404, DV-M10-36): the admin
+ * is sent to the M09 admin screens, a teacher does not see the two buttons.
  */
+import { computed } from 'vue'
+
 import { DsIconChip, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
+import { useSessionStore } from '@/stores/session'
 
 import { downloadAudioKbatTemplate } from '../../api/guru'
+
+const session = useSessionStore()
+const isAdmin = computed(() => session.role === 'admin')
 
 async function download(format: 'xlsx' | 'word', fallback: string): Promise<void> {
   try {
@@ -41,7 +48,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
         </div>
         <div class="flex flex-wrap gap-2">
           <UButton
-            href="/guru/audio-kbat/template"
+            href="/api/guru/audio-kbat/template"
             color="neutral"
             variant="soft"
             icon="i-ph-file-xls-duotone"
@@ -51,7 +58,7 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             >Template XLSX</UButton
           >
           <UButton
-            href="/guru/audio-kbat/template-word"
+            href="/api/guru/audio-kbat/template-word"
             color="neutral"
             variant="soft"
             icon="i-ph-file-doc-duotone"
@@ -61,14 +68,16 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             >Template Word</UButton
           >
           <UButton
-            to="/guru/audio-kbat/create"
+            v-if="isAdmin"
+            to="/admin/audio-kbat/create"
             icon="i-ph-plus"
             class="min-h-11"
             data-testid="audio-create"
             >Cipta Set</UButton
           >
           <UButton
-            to="/guru/audio-kbat"
+            v-if="isAdmin"
+            to="/admin/audio-kbat"
             color="neutral"
             variant="soft"
             icon="i-ph-list-bullets-duotone"
