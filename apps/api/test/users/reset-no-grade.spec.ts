@@ -1,7 +1,7 @@
-import { CreatedUserSchema, UpdatedUserSchema } from '@pp/contract'
+import { CreatedUserSchema, LAST_ADMIN_MESSAGE, UpdatedUserSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, apiOf, bootUsersApp, fieldsOf, login, SCHOOL_ADMIN, type Api, type UsersTestApp } from './helpers'
+import { ADMIN, apiOf, bootUsersApp, expectError, fieldsOf, login, SCHOOL_ADMIN, type Api, type UsersTestApp } from './helpers'
 
 const GRADE_REQUIRED = 'The grade field is required when role is student.'
 
@@ -25,6 +25,12 @@ describe('admin PUT /admin/users/{id}: a credential-only change of a grade-less 
     const id = CreatedUserSchema.parse(res.body.data).id
     await t.db.query(`update users set grade = null, password_hash = null, must_reset_password = false where id = $1::bigint`, [id])
     return { id, name }
+  }
+
+
+  /** The whole stored row of a user, to prove a refused request wrote nothing. */
+  async function rowOf(id: string): Promise<unknown> {
+    return (await t.db.query<{ r: unknown }>(`select to_jsonb(u) as r from users u where id = $1::bigint`, [id]))[0]?.r
   }
 
   beforeAll(async () => {
@@ -117,5 +123,69 @@ describe('admin PUT /admin/users/{id}: a credential-only change of a grade-less 
     expect(d.mustChangePassword).toBe(true)
     expect(d.generatedPassword?.length).toBeGreaterThanOrEqual(12)
     expect(fieldsOf(await schoolAdmin.put(`/admin/users/${s.id}`, { roles: ['student'], name: 'Nama Lain', resetPassword: true })).grade).toBe(GRADE_REQUIRED)
+  })
+
+  describe('negative cases from the security review (Q13, R73)', () => {
+    it('a profile or scope field in the same request makes it an edit: 422 fields.grade, nothing written', async () => {
+      const s = await gradeLessStudent()
+      const email = `tanpa.gred.${String(n)}@ujian.test`
+      const other = await admin.post('/admin/users', { roles: ['student'], name: 'Murid Lain', email: 'murid.lain.q13@ujian.test', schoolId, grade: 2 })
+      const otherId = CreatedUserSchema.parse(other.body.data).id
+      const before = await rowOf(s.id)
+      const base = { roles: ['student'], name: s.name, resetPassword: true }
+      const cases: Array<[string, Record<string, unknown>]> = [
+        ['changed email', { email: 'e-mel.baharu.q13@ujian.test' }],
+        ['changed username', { username: 'nama.pengguna.q13' }],
+        ['differently-cased email', { email: email.toUpperCase() }],
+        ['ppdState present', { ppdState: 'Johor' }],
+        ['ppdDistrict present', { ppdDistrict: 'P001' }],
+        ['linkedStudentIds present', { linkedStudentIds: [otherId] }],
+        ['isActive flip with a changed name', { name: 'Nama Lain', isActive: false }],
+        ['isActive flip with a changed school', { schoolId: otherSchoolId, isActive: false }],
+        ['isActive flip with a changed phone', { phone: '0123456789', isActive: false }],
+      ]
+      for (const [label, extra] of cases) {
+        const res = await admin.put(`/admin/users/${s.id}`, { ...base, ...extra })
+        expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBe(422)
+        expect(fieldsOf(res).grade, label).toBe(GRADE_REQUIRED)
+        expect(await rowOf(s.id), label).toEqual(before)
+      }
+    })
+
+    it('a school admin cannot reach a grade-less pupil of ANOTHER school: 404, nothing written', async () => {
+      const name = 'Murid Sekolah Lain Q13'
+      const res = await admin.post('/admin/users', { roles: ['student'], name, email: 'sekolah.lain.q13@ujian.test', schoolId: otherSchoolId, grade: 3 })
+      const id = CreatedUserSchema.parse(res.body.data).id
+      await t.db.query(`update users set grade = null, password_hash = null where id = $1::bigint`, [id])
+      const before = await rowOf(id)
+      expectError(await schoolAdmin.put(`/admin/users/${id}`, { roles: ['student'], name, resetPassword: true }), 'NOT_FOUND', 'Not Found.')
+      expect(await rowOf(id)).toEqual(before)
+    })
+
+    it('an admin-role target: the last-admin guards still apply to a reset; an ordinary reset of a second admin is 200', async () => {
+      const me = (await t.db.query<{ id: string }>(`select id::text from users where email = $1`, [ADMIN]))[0]?.id as string
+      const before = await rowOf(me)
+      // Sole active admin: a reset that also demotes or deactivates it is refused, as without the reset.
+      expectError(await admin.put(`/admin/users/${me}`, { roles: ['teacher'], name: 'X', schoolId, resetPassword: true }), 'CONFLICT', LAST_ADMIN_MESSAGE)
+      expectError(await admin.put(`/admin/users/${me}`, { roles: ['admin'], name: 'X', isActive: false, resetPassword: true }), 'CONFLICT', LAST_ADMIN_MESSAGE)
+      expect(await rowOf(me)).toEqual(before)
+      // A reset that keeps the admin role and status is allowed (no grade or student rule applies).
+      const created = await admin.post('/admin/users', { roles: ['admin'], name: 'Admin Kedua Q13', email: 'admin.kedua.q13@ujian.test' })
+      const second = CreatedUserSchema.parse(created.body.data).id
+      const reset = await admin.put(`/admin/users/${second}`, { roles: ['admin'], name: 'Admin Kedua Q13', resetPassword: true })
+      expect(reset.status, JSON.stringify(reset.body)).toBe(200)
+      expect(UpdatedUserSchema.parse(reset.body.data).mustChangePassword).toBe(true)
+    })
+
+    it('known: login-less pupil needs a username in the same request (e-mail-required check runs before the grade check)', async () => {
+      const s = await gradeLessStudent()
+      await t.db.query(`update users set email = null, username = null where id = $1::bigint`, [s.id])
+      const before = await rowOf(s.id)
+      const res = await admin.put(`/admin/users/${s.id}`, { roles: ['student'], name: s.name, resetPassword: true })
+      const fields = fieldsOf(res)
+      expect(fields.email).toBeTruthy()
+      expect(fields).not.toHaveProperty('grade')
+      expect(await rowOf(s.id)).toEqual(before)
+    })
   })
 })
