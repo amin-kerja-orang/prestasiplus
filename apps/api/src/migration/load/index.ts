@@ -181,14 +181,23 @@ const LEDGER_NOTES = /^(must_reset\..+|nullHashAccounts|flaggedWithoutLoginId|ro
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
- * counts stay). The run is the latest apply row of this input hash: the one that just finished or failed.
+ * counts stay). The row is the one named by `runId` when the runner returned a report; without a report (a failed run) it
+ * is the latest apply row of the input hash, i.e. the one that just failed.
  */
-async function saveNotesToRun(pool: Pick<pg.Pool, 'query'>, core: CoreContext, inputHash: string): Promise<void> {
+async function saveNotesToRun(
+  pool: Pick<pg.Pool, 'query'>,
+  core: CoreContext,
+  target: { runId: string } | { inputHash: string },
+): Promise<void> {
   const notes = Object.fromEntries([...core.notes.counters].filter(([k, v]) => LEDGER_NOTES.test(k) && Number.isFinite(v)))
+  const [where, key] =
+    'runId' in target
+      ? ['id = $1::bigint', target.runId]
+      : [`id = (SELECT max(id) FROM etl_runs WHERE mode = 'apply' AND input_hash = $1)`, target.inputHash]
   await pool.query(
     `UPDATE etl_runs SET counters = jsonb_set(coalesce(counters, '{}'::jsonb), '{notes}', $2::jsonb)
-     WHERE id = (SELECT max(id) FROM etl_runs WHERE mode = 'apply' AND input_hash = $1)`,
-    [inputHash, JSON.stringify(notes)],
+     WHERE ${where}`,
+    [key, JSON.stringify(notes)],
   )
 }
 
@@ -224,7 +233,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
         await recountFromCommitted(options.pool, core)
         const file = writeFile('interrupted')
         if (file !== undefined) core.options.warn?.(`restricted id file (mode 0600, delete within 7 days): ${file}`)
-        await saveNotesToRun(options.pool, core, inputHash)
+        await saveNotesToRun(options.pool, core, { inputHash })
       } catch {
         // nothing more can be done here
       }
@@ -234,7 +243,7 @@ export async function runCore(options: CoreRunOptions): Promise<CoreRunResult> {
   let restrictedFile: string | undefined
   if (mode === 'apply') {
     if (report.resumedBatches > 0) await recountFromCommitted(options.pool, core)
-    await saveNotesToRun(options.pool, core, inputHash)
+    await saveNotesToRun(options.pool, core, { runId: report.runId })
     restrictedFile = writeFile(report.runId)
   }
   return { report, core, restrictedFile }

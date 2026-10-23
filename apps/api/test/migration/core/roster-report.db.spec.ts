@@ -227,7 +227,9 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect(warnings.some((w) => w.includes('restricted id file'))).toBe(true)
 
     const failedRun = await env2.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
-    const afterFailure = expectNumbersOnly((await ledgerNotes(env2.pool, failedRun.rows[0]?.id as string)).notes)
+    const failedLedger = await ledgerNotes(env2.pool, failedRun.rows[0]?.id as string)
+    expect(failedLedger.users, 'the committed batches keep their runner counters next to the notes').toMatchObject({ read: 8 })
+    const afterFailure = expectNumbersOnly(failedLedger.notes)
     expect(afterFailure.flaggedWithoutLoginId).toBe(1) // committed batches only: user 3
     expect(afterFailure.nullHashAccounts).toBe(0)
 
@@ -242,7 +244,10 @@ describe('Q11 after an interrupted and resumed apply', () => {
     // account by the staged row (transform / C5 definition), which neither this process' notes nor the committed row alone show.
     expect(resumed.core.notes.counters.get('must_reset.roster_account')).toBe(1)
     expect((await env2.pool.query(`select username, email from users where legacy_id = '3'`)).rows).toEqual([{ username: null, email: null }])
-    const final = expectNumbersOnly((await ledgerNotes(env2.pool, resumed.report.runId)).notes)
+    expect(resumed.report.runId).toBe(failedRun.rows[0]?.id) // the resume continues the failed run, so notes and counts share one row
+    const finalLedger = await ledgerNotes(env2.pool, resumed.report.runId)
+    expect(finalLedger.users, 'the runner counters survive the notes merge').toMatchObject({ read: 13 })
+    const final = expectNumbersOnly(finalLedger.notes)
     expect(final).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1 })
     const body = JSON.parse(readFileSync(resumed.restrictedFile as string, 'utf8')) as { ids: Record<string, string[]> }
     expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
