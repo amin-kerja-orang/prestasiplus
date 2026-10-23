@@ -55,6 +55,13 @@ describe('roles and sessions (AC8)', () => {
     // No phone, WhatsApp number, owner id, counter or legacy column on the wire.
     expect(text).not.toMatch(/60100000000|0100000000|whatsapp|phone|userId":"1"|legacy_|whatsappClicks/)
   })
+
+  it('the WhatsApp hand-off (moves a counter) also answers Cache-Control: no-store (contract BE-46, LEAD edit 8fc79aaf)', async () => {
+    const c = await loginAs(t, ACCOUNTS.student)
+    const res = await c.post(`/api/marketplace/products/${SLUG}/whatsapp`)
+    expect(res.status).toBe(200)
+    expect(res.headers['cache-control']).toBe('no-store')
+  })
 })
 
 describe('429 on the counter routes (D57a)', () => {

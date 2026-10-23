@@ -5,6 +5,8 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { ACCOUNT_REGISTER_PENDING_MESSAGE, ACCOUNT_REGISTER_PENDING_STATUS } from '@pp/contract'
+
 import type { TransportResponse } from '@/api/transport'
 import { sessions } from '@/mock/auth/sessions'
 import { CLOCK_ANCHOR_ISO, createClock, MINUTE_MS, SECOND_MS, toEpochMs } from '@/lib/time'
@@ -13,7 +15,7 @@ import type { UserMe as CoreUserMe } from '@/mock/core-data/me'
 import { bootMock, type MockRuntime } from '@/mock/index'
 import type { ClientSession as StoreSession } from '@/stores/session-types'
 import { PASSWORD_RESET_OUTBOX_TYPE as HOOKS_OUTBOX_TYPE } from '@/mock/testing/hooks'
-import { wallet } from '@/modules/m14-gamification/mock'
+import { referrals, wallet } from '@/modules/m14-gamification/mock'
 
 import type { ClientSession, UserMe, UserSettings } from '../../api/types'
 import { impersonation, loginThrottle, passwordResets, users, userSettings } from '../../mock'
@@ -289,15 +291,73 @@ describe('POST /api/auth/register (#2)', () => {
     expect(second.body.data!.user!.id).toBe(user.id + 1)
   })
 
-  it('registers a teacher: grade and IC are ignored (BR-04)', async () => {
+  it('registers a teacher as pending: 201 notice, no session, inactive, no school, login refused (AM2-N1)', async () => {
     const r = await call('POST', '/api/auth/register', {
       ...student,
       role: 'teacher',
+      schoolId: 900001,
       email: 'cikgu.baharu@demo.test',
     })
     expect(r.status).toBe(201)
-    expect(r.body.data!.user).toMatchObject({ role: 'teacher', grade: null })
-    expect(users.icMasked(r.body.data!.user!.id)).toBeNull()
+    expect(r.body.data).toEqual({
+      status: ACCOUNT_REGISTER_PENDING_STATUS,
+      message: ACCOUNT_REGISTER_PENDING_MESSAGE,
+    })
+    expect(r.body.data).not.toHaveProperty('token')
+    expect(r.res.headers).not.toHaveProperty('set-cookie')
+    const created = users.findByEmail('cikgu.baharu@demo.test')
+    expect(created).toMatchObject({ role: 'teacher', grade: null, isActive: false, schoolId: null })
+    expect(users.icMasked(created!.id)).toBeNull()
+    const login = await call('POST', '/api/auth/login', {
+      email: 'cikgu.baharu@demo.test',
+      password: student.password,
+    })
+    expect(login.status).toBe(403)
+    expect(login.body.error!.code).toBe('ACCOUNT_INACTIVE')
+  })
+
+  it('refuses a teacher without a school, with the real API field message (AM2-N1)', async () => {
+    for (const schoolId of [undefined, null, '']) {
+      const r = await call('POST', '/api/auth/register', {
+        ...student,
+        role: 'teacher',
+        email: 'guru.tanpa.sekolah@demo.test',
+        schoolId,
+      })
+      expect(r.status).toBe(422)
+      expect(r.body.error?.fields).toEqual({
+        schoolId: 'The school id field is required when role is teacher.',
+      })
+    }
+    expect(users.findByEmail('guru.tanpa.sekolah@demo.test')).toBeUndefined()
+    // A parent still needs no school.
+    const p = await call('POST', '/api/auth/register', {
+      ...student,
+      role: 'parent',
+      email: 'ibu.tanpa.sekolah@demo.test',
+      schoolId: null,
+    })
+    expect(p.status).toBe(201)
+  })
+
+  it('gives no referral reward for a pending teacher, but does for a student (AM2-N1)', async () => {
+    const code = referrals.codeOf(1)
+    const before = referrals.stats(1).referrals
+    const t = await call('POST', '/api/auth/register', {
+      ...student,
+      role: 'teacher',
+      email: 'guru.rujukan@demo.test',
+      referralCode: code,
+    })
+    expect(t.status).toBe(201)
+    expect(referrals.stats(1).referrals).toBe(before)
+    const s = await call('POST', '/api/auth/register', {
+      ...student,
+      email: 'murid.rujukan@demo.test',
+      referralCode: code,
+    })
+    expect(s.status).toBe(201)
+    expect(referrals.stats(1).referrals).toBe(before + 1)
   })
 
   it('needs no grade for teacher or parent, but requires it for a student', async () => {

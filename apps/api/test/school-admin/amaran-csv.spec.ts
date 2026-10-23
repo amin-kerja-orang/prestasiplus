@@ -195,3 +195,28 @@ describe('BE-21 Amaran CSV: 429 on the export bucket', () => {
     expect((await schoolAdmin.get(`/amaran/schools/${s1}`)).status).toBe(200)
   })
 })
+
+describe('BE-21 Amaran: GET /amaran/summary is a read route, not on the export bucket', () => {
+  let t: SchoolAdminTestApp
+  let schoolAdmin: PeopleApi
+  let s1: string
+
+  beforeAll(async () => {
+    // Export ceiling 1 per minute: any summary call on the export bucket would be 429 from the second call on.
+    t = await bootPeopleApp({ env: { THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE: '1' } })
+    s1 = await schoolIdOf(t.db, 'DEMO001')
+    schoolAdmin = peopleApiOf(await login(t, SCHOOL_ADMIN))
+  }, 180_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('reloading the summary and the effectiveness report 8 times in a minute never gives 429, while the CSV export keeps its own limit', async () => {
+    for (let i = 0; i < 8; i++) {
+      expect((await schoolAdmin.get('/amaran/summary')).status).toBe(200)
+      expect((await schoolAdmin.get('/amaran/effectiveness')).status).toBe(200)
+    }
+    expect((await schoolAdmin.get(`/amaran/export/school/${s1}`)).status).toBe(200)
+    expect((await schoolAdmin.get(`/amaran/export/school/${s1}`)).status).toBe(429)
+  })
+})

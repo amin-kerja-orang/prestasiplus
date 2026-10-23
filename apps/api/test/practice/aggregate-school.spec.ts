@@ -17,6 +17,12 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 const MIGRATION_0018 = fileURLToPath(
   new URL('../../prisma/migrations/0018_aggregate_school_id/migration.sql', import.meta.url),
 )
+/** AZ-22 (#61 m4): renames the 0018 index, whose 66-character name PostgreSQL truncated to 63. */
+const MIGRATION_0041 = fileURLToPath(
+  new URL('../../prisma/migrations/0041_aggregate_school_index_name/migration.sql', import.meta.url),
+)
+const INDEX_0018_TRUNCATED = 'ix_practice_attempt_aggregates_school_id_subject_code_submitted'
+const INDEX = 'ix_practice_attempt_aggregates_school_subject_submitted'
 
 let n = 0
 const uuid = (): string => `00000000-0000-4000-8018-${String(++n).padStart(12, '0')}`
@@ -57,6 +63,13 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
     (await db.query<{ id: string }>(`insert into users (name, school_id) values ('Murid Contoh', $1) returning id::text`, [schoolId]))[0]!.id
   const schoolOf = async (attemptId: string): Promise<string | null> =>
     (await db.query<{ school_id: string | null }>(`select school_id::text from practice_attempt_aggregates where attempt_id = $1`, [attemptId]))[0]!.school_id
+  /** Names of the indexes on (school_id, subject_code, submitted_at): the 0018 index under whatever name it has. */
+  const indexNames = async (): Promise<string[]> =>
+    (
+      await db.query<{ indexname: string }>(
+        `select indexname from pg_indexes where tablename = 'practice_attempt_aggregates' and indexdef like '%(school_id, subject_code, submitted_at DESC)%' order by 1`,
+      )
+    ).map((r) => r.indexname)
 
   beforeAll(async () => {
     db = await createTestDatabase()
@@ -161,6 +174,13 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
     expect((await svc.forStudents({ userIds: [s] })).map((r) => r.attemptId)).toEqual([a.attemptId])
   })
 
+  it('0041 names the 0018 index within the 63-character identifier limit (AZ-22)', async () => {
+    expect(INDEX.length).toBeLessThanOrEqual(63)
+    expect(await indexNames()).toEqual([INDEX])
+    const sql = readFileSync(MIGRATION_0041, 'utf8').replace(/--.*$/gm, '')
+    expect(sql).toContain(`ALTER INDEX "${INDEX_0018_TRUNCATED}" RENAME TO "${INDEX}"`)
+  })
+
   it('the migration backfills existing rows from the student current users.school_id and adds the partial index', async () => {
     const f = await school('AGG018F')
     const withSchool = await user(f)
@@ -168,8 +188,9 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
     const a = input(withSchool)
     const b = input(noSchool)
     const t = input(withSchool, { isTest: true })
-    // Roll 0018 back (its documented reverse), write rows as the pre-0018 code did, then apply 0018 again.
-    await db.query('DROP INDEX "ix_practice_attempt_aggregates_school_id_subject_code_submitted_at"')
+    // Roll 0041 and 0018 back (0018's documented reverse, on the index name 0041 gave), write rows as the pre-0018
+    // code did, then apply 0018 and 0041 again.
+    await db.query(`DROP INDEX "${INDEX}"`)
     await db.query('ALTER TABLE "practice_attempt_aggregates" DROP COLUMN "school_id"')
     for (const x of [a, b, t]) {
       await db.query(
@@ -186,6 +207,12 @@ describe('PracticeAggregateService school_id snapshot (0018)', () => {
       `select indexdef from pg_indexes where indexname = 'ix_practice_attempt_aggregates_school_id_subject_code_submitted_at'`,
     )
     expect(idx!.indexdef).toMatch(/\(school_id, subject_code, submitted_at DESC\) WHERE \(NOT is_test\)/)
+    // 0018's name was truncated to 63 characters; 0041 renames that index without changing it.
+    expect(await indexNames()).toEqual([INDEX_0018_TRUNCATED])
+    await db.query(readFileSync(MIGRATION_0041, 'utf8'))
+    expect(await indexNames()).toEqual([INDEX])
+    const [renamed] = await db.query<{ indexdef: string }>(`select indexdef from pg_indexes where indexname = $1`, [INDEX])
+    expect(renamed!.indexdef).toBe(idx!.indexdef.replace(INDEX_0018_TRUNCATED, INDEX))
     const [fk] = await db.query<{ def: string }>(
       `select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'fk_practice_attempt_aggregates_school_id'`,
     )

@@ -288,15 +288,24 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
   })
 
   describe('filter options', () => {
-    it('admin and teacher list the schools with users A to Z with their states', async () => {
-      for (const who of [admin, teacherA]) {
-        const data = envelopeOf(KirkpatrickFilterOptionsSchema).parse((await who.get('/kirkpatrick/filter-options')).body).data
-        const names = data.schools.map((s) => s.name)
-        expect(names).toContain('SMK Demo Satu')
-        expect(names).toContain('SK Demo Dua')
-        expect([...names].sort((a, b) => a.localeCompare(b, 'ms'))).toEqual(names)
-        expect(data.states).toContain('Selangor')
+    it('admin lists the schools with users A to Z with their states', async () => {
+      const data = envelopeOf(KirkpatrickFilterOptionsSchema).parse((await admin.get('/kirkpatrick/filter-options')).body).data
+      const names = data.schools.map((s) => s.name)
+      expect(names).toContain('SMK Demo Satu')
+      expect(names).toContain('SK Demo Dua')
+      expect([...names].sort((a, b) => a.localeCompare(b, 'ms'))).toEqual(names)
+      expect(data.states).toContain('Selangor')
+    })
+
+    it('a teacher gets only the own session school, whatever the query says (TRIAGE-1, SEC-M12-01/02)', async () => {
+      for (const path of ['/kirkpatrick/filter-options', `/kirkpatrick/filter-options?schoolId=${w.schoolB}&state=Johor`]) {
+        const data = envelopeOf(KirkpatrickFilterOptionsSchema).parse((await teacherA.get(path)).body).data
+        expect(data.schools).toEqual([{ id: w.schoolA, name: 'SMK Demo Satu' }])
+        expect(data.states).toEqual(['Selangor'])
       }
+      const other = envelopeOf(KirkpatrickFilterOptionsSchema).parse((await teacherC.get(`/kirkpatrick/filter-options?schoolId=${w.schoolA}`)).body).data
+      expect(other.schools.map((s) => s.id)).toEqual([w.schoolB])
+      expect(other.schools.map((s) => s.name)).not.toContain('SMK Demo Satu')
     })
 
     it('school_admin gets only the own school', async () => {
