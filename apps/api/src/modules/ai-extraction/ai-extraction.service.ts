@@ -20,6 +20,7 @@ import { AiCallPipeline } from './ai-call.pipeline'
 import { AiError } from './ai.errors'
 import type { AiCallerContext } from './ai.types'
 import { redactExtractRequest, redactGenerateTextRequest, redactSuggestTagsRequest } from './redaction/redact-request'
+import { maskEchoes } from './redaction/redactor'
 
 const EMPTY_REDACTION: AiRedactionSummary = { applied: true, masked: [] }
 
@@ -71,7 +72,9 @@ export class AiExtractionService {
         redaction: EMPTY_REDACTION,
       }
     }
-    const { request, summary } = redactExtractRequest(parsed)
+    // The one redaction of an extraction (#189): callers (BE-38's intake job) hand over the unredacted request, and only
+    // this output reaches the provider. It is text only: `redactExtractRequest` never copies `images`.
+    const { request, summary, spans } = redactExtractRequest(parsed)
     const { value, usage } = await this.pipeline.execute({
       purpose: 'extract_paper',
       ctx,
@@ -80,7 +83,9 @@ export class AiExtractionService {
       run: 'extract_paper',
       call: (o) => provider.extractPaper(request, o),
     })
-    const paper: AiExtractedPaper = { ...value.paper, provider: provider.id, model: provider.model, usage, redaction: summary }
+    // A provider that echoes a masked value gets it masked again, before the answer leaves this service.
+    const answer = maskEchoes(value.paper, spans)
+    const paper: AiExtractedPaper = { ...answer, provider: provider.id, model: provider.model, usage, redaction: summary }
     assertDraftsOnly(paper)
     return paper
   }
