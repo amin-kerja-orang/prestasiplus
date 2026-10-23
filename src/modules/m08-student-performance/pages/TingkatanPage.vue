@@ -3,7 +3,8 @@
  * S3 `/prestasi/tingkatan/{t4|t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28). An unknown code is the
  * standard 404 (the API answers 404). "On Track" / "Below Target", the class On Track / Below and the
  * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist. The "Lihat →"
- * class link is shown only to a role that may open the class page (staff), so a pupil gets no dead link (DV-M08-47).
+ * class link (and its "Aksi" column) is shown only to a role that may open the class page (staff), so a pupil gets
+ * no dead link and no empty column (DV-M08-47).
  */
 import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -101,7 +102,7 @@ const rows = computed<Row[]>(() =>
     href: r.href,
   })),
 )
-const columns: TableColumn<Row>[] = [
+const baseColumns: TableColumn<Row>[] = [
   { accessorKey: 'name', header: 'Kelas' },
   { accessorKey: 'subject', header: 'Subjek' },
   { accessorKey: 'teacher', header: 'Guru' },
@@ -110,8 +111,12 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'accuracyText', header: 'Ketepatan' },
   { accessorKey: 'onTrack', header: 'On Track' },
   { accessorKey: 'below', header: 'Below' },
-  { accessorKey: 'href', header: 'Aksi' },
 ]
+// "Aksi" only when at least one row can be opened, so a pupil gets no column of empty cells.
+const hasActions = computed(() => rows.value.some((r) => r.href !== null && canOpen(r.href)))
+const columns = computed<TableColumn<Row>[]>(() =>
+  hasActions.value ? [...baseColumns, { accessorKey: 'href', header: 'Aksi' }] : baseColumns,
+)
 const cardFields = [
   { key: 'subject', label: 'Subjek' },
   { key: 'teacher', label: 'Guru' },

@@ -12,7 +12,11 @@
  * (e) joins only a class the pupil already belongs to, so the API answers 409 and nothing is written.
  * The join code is not in `GET /api/kelas-saya`, so it is the seeded demo class code (DEMO4S,
  * apps/api/prisma/seed/poc/classes.ts DEMO_CLASS_CODE); `SWP_JOINED_CODE` overrides it. The test first
- * asserts that the pupil is in a class on this stack.
+ * asserts that the pupil is already a member of THAT class (its card, "Kelas Demo Tingkatan 4", is listed on
+ * Kelas Saya; `SWP_JOINED_CLASS_NAME` overrides the name), so it fails loudly instead of creating a membership.
+ *
+ * Test (a) needs a build with `VITE_PROTOTYPE_SCOPE=on` (the default in compose and in CI): the scope is what
+ * keeps /pelajar/:id away from the pupil, so with the scope off the box is rightly shown and (a) fails.
  *
  * Env: E2E_DEMO_PASSWORD (or BIJAK_STUDENT_B_PASS / BIJAK_GURU_PASS).
  */
@@ -25,6 +29,7 @@ import { account, expectNoHScroll } from './helpers'
 const NOT_FOUND_TITLE = '404 - Halaman Tidak Dijumpai | PRESTASIPLUS'
 const ALREADY_JOINED = 'Anda sudah menyertai kelas ini.'
 const JOINED_CODE = process.env.SWP_JOINED_CODE || 'DEMO4S'
+const JOINED_CLASS_NAME = process.env.SWP_JOINED_CLASS_NAME || 'Kelas Demo Tingkatan 4'
 
 /** The pupil's own user id, from the session the app itself uses. */
 async function ownId(page: Page): Promise<string> {
@@ -116,13 +121,21 @@ test.describe('pupil sweep: no dead links @api', () => {
     const { user, pass } = account('studentB')
     await loginViaUi(page, user, pass)
 
-    // Precondition: the pupil is in a class, so joining it again is refused (409), never written.
+    // Precondition: the pupil is already a member of the class behind JOINED_CODE, so joining it again is
+    // refused (409) and nothing is written. If not, stop here: submitting would create a membership.
     const mine = await page.request.get('/api/kelas-saya')
     expect(mine.status(), 'GET /api/kelas-saya').toBe(200)
-    const body = (await mine.json()) as { data: unknown[] }
-    expect(body.data.length, 'the pupil has joined at least one class').toBeGreaterThan(0)
+    const body = (await mine.json()) as { data: { name: string }[] }
+    expect(
+      body.data.map((c) => c.name),
+      `the pupil is already in "${JOINED_CLASS_NAME}" (join code ${JOINED_CODE})`,
+    ).toContain(JOINED_CLASS_NAME)
 
     await page.goto('/kelas-saya')
+    await expect(
+      page.getByTestId('joined-class').filter({ hasText: JOINED_CLASS_NAME }),
+      'its card is listed on Kelas Saya',
+    ).toBeVisible({ timeout: 20_000 })
     const input = page.getByTestId('class-code')
     const submit = page.getByTestId('join-submit')
     await expect(input).toBeVisible({ timeout: 20_000 })
