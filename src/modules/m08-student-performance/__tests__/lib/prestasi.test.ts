@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { shellHomePath } from '@/app/prototype-scope'
 
 import type { ItemAnalysis } from '../../api/types'
 import {
@@ -135,5 +137,15 @@ describe('/analisa-item redirect (OD-R4)', () => {
     expect(analisaItemTarget('student')).toBe('/dashboard')
     expect(analisaItemTarget('parent')).toBe('/dashboard')
     expect(analisaItemTarget(null)).toBe('/login')
+  })
+
+  it('sends a pelajar to the role home in http mode too (D6, 23 Oct sweep; /dashboard since AZ-20c)', () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    try {
+      expect(analisaItemTarget('student')).toBe(shellHomePath('student'))
+      expect(analisaItemTarget('student')).toBe('/dashboard')
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
