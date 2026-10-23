@@ -285,7 +285,7 @@ The commands below run on a rehearsal or staging database that holds an imported
 | `IC_HASH_KEY` | `migrate:core` | Else `SESSION_SECRET` outside production. Keep the key stable across the full run and the delta run, otherwise IC hashes differ. |
 | `PP_MIGRATE_ROSTER_DEFAULT_HASHES` | `migrate:core` | Optional. The lead's list of shared roster default hashes. Never logged. |
 | `NODE_ENV` | all | `production` on a production host, so the anonymised-data and wrong-database guards apply. |
-| `PP_GIT_SHA` (or `GIT_SHA`) | `migrate:all`, `migrate:delta`, `migrate:core`, `migrate:activity` | The commit recorded in `etl_runs.git_sha`. Read first; otherwise `git rev-parse HEAD` of the working directory is used. A value that is not 7 to 64 hex characters is ignored. **In a container the runtime image has no `.git` (`.dockerignore`), so `git_sha` is NULL unless it is set:** pass `PP_GIT_SHA=$(git rev-parse HEAD)` of the release checkout into the run (on the VPS through `slot.sh etl`, #166). |
+| `PP_GIT_SHA` (or `GIT_SHA`) | `migrate:all`, `migrate:delta`, `migrate:core`, `migrate:activity` | The commit recorded in `etl_runs.git_sha`. Read first; otherwise `git rev-parse HEAD` of the working directory is used. A value that is not 7 to 64 hex characters is ignored. **In a container the runtime image has no `.git` (`.dockerignore`), so `git_sha` is NULL unless it is set:** pass `PP_GIT_SHA=$(git rev-parse HEAD)` of the release checkout into the run. On the VPS this depends on #166 F14 (`slot.sh etl` forwarding it; **Perlu pengesahan**). |
 
 **Sequence.**
 
