@@ -265,11 +265,25 @@ export function createContributedQuestion(
 ): Promise<ContributedQuestionDetail> {
   const files: QuestionImages = images instanceof Blob ? { questionImage: images } : (images ?? {})
   const optionFiles = (files.optionImages ?? []).flatMap((f, i) => (f ? [[i, f] as const] : []))
+  // The contract ids are opaque strings (`idWith` / `idOrBlank`): http mode sends them as strings
+  // (a number is 422 "Sila pilih tahap pendidikan." etc., SW7-08). null stays null, undefined absent.
+  const wired = {
+    ...body,
+    educationLevelId: wireId(body.educationLevelId),
+    subjectId: wireId(body.subjectId),
+    ...(body.curriculumChapterId !== undefined
+      ? { curriculumChapterId: wireIdOpt(body.curriculumChapterId) }
+      : {}),
+    ...(body.curriculumTopicId !== undefined
+      ? { curriculumTopicId: wireIdOpt(body.curriculumTopicId) }
+      : {}),
+    ...(body.dskpSpId !== undefined ? { dskpSpId: wireIdOpt(body.dskpSpId) } : {}),
+  }
   if (!files.questionImage && optionFiles.length === 0) {
-    return api.post<ContributedQuestionDetail>('/api/guru/questions', { body })
+    return api.post<ContributedQuestionDetail>('/api/guru/questions', { body: wired })
   }
   const form = new FormData()
-  appendFields(form, body)
+  appendFields(form, wired)
   if (files.questionImage) form.append('questionImage', files.questionImage)
   for (const [i, f] of optionFiles) form.append(`optionImages[${String(i)}]`, f)
   return api.multipart<ContributedQuestionDetail>('/api/guru/questions', form)
