@@ -95,6 +95,12 @@ describe('addStudentToClass wire ids', () => {
     expect(sent[1]?.body).toEqual({ classroomId: '15' })
   })
 
+  it('http mode: an id beyond Number.MAX_SAFE_INTEGER is sent exactly as given (opaque id)', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    await addStudentToClass(3001, { classroomId: '9007199254740993' })
+    expect(sent[0]?.body).toEqual({ classroomId: '9007199254740993' })
+  })
+
   it('mock mode: the number is unchanged', async () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
     await addStudentToClass(3001, { classroomId: 15 })
