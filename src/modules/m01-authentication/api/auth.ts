@@ -108,10 +108,14 @@ export async function sendPasswordResetLink(email: string): Promise<string> {
 export async function resetPassword(
   request: ResetPasswordRequest,
 ): Promise<{ session: ClientSession; status: string }> {
-  const { status, ...payload } = await api.post<ResetPasswordPayload>('/api/auth/password/reset', {
-    body: request,
-  })
-  return { session: toClientSession(payload, false), status }
+  // `raw`: the real API answers `{data: Session, status}`, and the client would unwrap that to
+  // `data` and drop `status` (SW8-07). The mock answers `{data: {...session, status}}`; both work.
+  const body = await api.post<{ data: ResetPasswordPayload; status?: string }>(
+    '/api/auth/password/reset',
+    { body: request, raw: true },
+  )
+  const { status: inner, ...payload } = body.data
+  return { session: toClientSession(payload, false), status: body.status ?? inner ?? '' }
 }
 
 /** #5 `POST /api/auth/password/reset-ic`: the broker token, then S4 (`FR-M01-35`). */

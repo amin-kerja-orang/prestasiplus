@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
 vi.mock('@/api', () => ({ api }))
 
-import { fetchParentInvite } from '../../api/parent-invite'
+import { fetchInvitePreview, fetchParentInvite } from '../../api/parent-invite'
 
 const TOKEN = 'c'.repeat(64)
 const AT = '2026-10-22T09:00:00+08:00'
@@ -67,5 +67,55 @@ describe('fetchParentInvite (D58 wire)', () => {
     })
     await expect(fetchParentInvite({ signal: ctl.signal })).rejects.toBeDefined()
     expect(api.post).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchInvitePreview (D57f wire: firstName only)', () => {
+  it('maps the contract body {firstName, schoolName} to the name and initials the page reads', async () => {
+    api.get.mockResolvedValue({
+      valid: true,
+      student: { firstName: 'Ali', schoolName: 'SMK DEMO' },
+      viewer: 'guest',
+    })
+    const view = await fetchInvitePreview(TOKEN)
+    expect(api.get).toHaveBeenCalledWith(`/api/parent-invites/${TOKEN}`, {})
+    expect(view).toEqual({
+      valid: true,
+      student: { name: 'Ali', initials: 'A', schoolName: 'SMK DEMO' },
+      viewer: 'guest',
+    })
+  })
+
+  it('upper-cases the initial and keeps a null school', async () => {
+    api.get.mockResolvedValue({
+      valid: true,
+      student: { firstName: 'siti', schoolName: null },
+      viewer: 'parent',
+    })
+    const view = await fetchInvitePreview(TOKEN)
+    expect(view.student).toEqual({ name: 'siti', initials: 'S', schoolName: null })
+  })
+
+  it('mock shape (name + initials present) is unchanged', async () => {
+    api.get.mockResolvedValue({
+      valid: true,
+      student: { name: 'Pelajar Demo', initials: 'PD', schoolName: 'SMK DEMO' },
+      viewer: 'other',
+    })
+    const view = await fetchInvitePreview(TOKEN)
+    expect(view.student).toEqual({ name: 'Pelajar Demo', initials: 'PD', schoolName: 'SMK DEMO' })
+  })
+
+  it('no name at all: empty name and "?" initials', async () => {
+    api.get.mockResolvedValue({ valid: true, student: { schoolName: null }, viewer: 'guest' })
+    const view = await fetchInvitePreview(TOKEN)
+    expect(view.student).toEqual({ name: '', initials: '?', schoolName: null })
+  })
+
+  it('passes the abort signal', async () => {
+    const ctl = new AbortController()
+    api.get.mockResolvedValue({ valid: true, student: { firstName: 'Ali', schoolName: null }, viewer: 'guest' })
+    await fetchInvitePreview(TOKEN, { signal: ctl.signal })
+    expect(api.get).toHaveBeenCalledWith(`/api/parent-invites/${TOKEN}`, { signal: ctl.signal })
   })
 })

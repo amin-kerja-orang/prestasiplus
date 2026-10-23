@@ -83,10 +83,11 @@ describe('LoginPage (M01 S1)', () => {
   it('renders the live fields with native validation attributes and no novalidate', async () => {
     const w = await render()
     const email = w.get('[data-testid=login-email]')
+    // DV-25 (AM2-A1b): type=text so a roster username is not blocked by the browser's e-mail check.
     expect(email.attributes()).toMatchObject({
-      type: 'email',
+      type: 'text',
       required: '',
-      autocomplete: 'email',
+      autocomplete: 'username',
       placeholder: 'nama@email.com',
     })
     const password = w.get('[data-testid=login-password]')
@@ -98,7 +99,7 @@ describe('LoginPage (M01 S1)', () => {
     })
     expect(w.get('form').attributes('novalidate')).toBeUndefined()
     expect(w.get('[data-testid=login-remember]').attributes('aria-checked')).toBe('false')
-    expect(w.text()).toContain('Alamat Email')
+    expect(w.text()).toContain('Alamat Email / Nama Pengguna')
     expect(w.text()).toContain('Kata Laluan')
     expect(w.text()).toContain('© 2026 PRESTASIPLUS. Platform Pendidikan Malaysia.')
   })
@@ -247,6 +248,33 @@ describe('LoginPage (M01 S1)', () => {
     expect(w.get('[data-testid=login-alert]').text()).toBe(
       'Too many login attempts. Please try again in 30 seconds.',
     )
+  })
+
+  it('accepts a username: the input is not an e-mail field and the value is sent as typed (AM2-A1b)', async () => {
+    apiMocks.login.mockResolvedValue(SESSION)
+    const w = await render()
+    const input = w.get('[data-testid=login-email]')
+    expect(input.attributes('type')).not.toBe('email')
+    await fillAndSubmit(w, 'murid04', 'Demo1234')
+    expect((input.element as HTMLInputElement).validity.typeMismatch).toBe(false)
+    expect(apiMocks.login).toHaveBeenCalledWith({
+      email: 'murid04',
+      password: 'Demo1234',
+      remember: false,
+    })
+    expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+  })
+
+  it('shows the server text of an ambiguous username (AMBIGUOUS_USERNAME) in the alert', async () => {
+    const text = 'Nama pengguna ini wujud di lebih daripada satu sekolah. Sila pilih sekolah anda.'
+    apiMocks.login.mockRejectedValue(
+      new ApiError({ status: 422, code: 'AMBIGUOUS_USERNAME', message: text }),
+    )
+    const w = await render()
+    await fillAndSubmit(w, 'murid01', 'Demo1234')
+    expect(w.get('[data-testid=login-alert]').text()).toBe(text)
+    expect((w.get('[data-testid=login-email]').element as HTMLInputElement).value).toBe('murid01')
+    expect(router.currentRoute.value.fullPath).toBe('/login')
   })
 
   describe('prototype scope (SWEEP-23OCT O1)', () => {
