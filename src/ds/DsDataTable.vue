@@ -13,7 +13,7 @@
  */
 import UCard from '@nuxt/ui/components/Card.vue'
 import type { TableColumn } from '@nuxt/ui'
-import { computed, watch } from 'vue'
+import { computed, useSlots, watch, type VNodeChild } from 'vue'
 
 import { dsCopy, fillCopy } from './copy'
 import { warnDeprecated } from './deprecate'
@@ -43,11 +43,11 @@ const props = withDefaults(
     /** `fixed` = `table-fixed` full width (the caller sets column widths); `auto` scrolls inside its container when wider. */
     layout?: 'auto' | 'fixed'
     /**
-     * `fixed` only: a CSS length (e.g. `60rem`) below which the table stops shrinking and scrolls
+     * `fixed` only: a width (`56rem`, `60rem` or `64rem`) below which the table stops shrinking and scrolls
      * inside its own container instead (the flexible column would otherwise collapse and the
      * columns beside it be clipped). Leave unset when the columns always fit.
      */
-    minWidth?: string
+    minWidth?: '56rem' | '60rem' | '64rem'
     /** `tight` = 4px less cell padding for tables with many columns. */
     density?: DsTableDensity
     stickyHeader?: boolean
@@ -114,6 +114,8 @@ const wide = useMedia('(min-width: 768px)')
 
 const kind = computed(() => props.variant)
 const fixed = computed(() => props.layout === 'fixed')
+// Literal class names (Tailwind reads the source text; no arbitrary values in the design system).
+const MIN_WIDTH = { '56rem': 'min-w-224', '60rem': 'min-w-240', '64rem': 'min-w-256' } as const
 const bare = computed(() => kind.value === 'bare')
 const flush = computed(() => kind.value === 'flush')
 if (props.compactCells) warnDeprecated('DsDataTable', 'compactCells', 'density="compact"')
@@ -190,6 +192,14 @@ const showPagination = computed(() => !bare.value || count.value > pageSize.valu
 
 // Reserved slots are ours; every other slot is a `UTable` slot (`<id>-cell`, `<id>-header`).
 const OWN_SLOTS = new Set(['empty', 'card', 'card-title', 'card-actions', 'toolbar'])
+
+// A card field with `cell: true` shows the column's `<key>-cell` slot. It is read through
+// `useSlots()` rather than a `<slot :name>` so the dynamic name does not widen the typing of the
+// table's own cell slots (`row.index`, `getValue()` ...).
+const slots = useSlots()
+const hasCell = (key: string): boolean => Boolean(slots[`${key}-cell`])
+const CardCell = (p: { name: string; row: T }): VNodeChild =>
+  slots[`${p.name}-cell`]?.({ row: { original: p.row } })
 
 // Selection. `UTable` keeps a row-index keyed record; the model holds the row objects, so a
 // selection survives paging.
@@ -303,9 +313,7 @@ function cell(row: T, key: string): string {
                   >
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
                     <dd class="tabular truncate text-body">
-                      <slot v-if="f.cell" :name="`${f.key}-cell`" :row="{ original: row }">{{
-                        cell(row, f.key)
-                      }}</slot>
+                      <CardCell v-if="f.cell && hasCell(f.key)" :name="f.key" :row="row" />
                       <template v-else>{{ cell(row, f.key) }}</template>
                     </dd>
                   </div>
@@ -325,8 +333,7 @@ function cell(row: T, key: string): string {
           :loading="loading"
           :caption="caption"
           :ui="tableUi"
-          :class="bare ? 'max-h-dvh rounded-card bg-soft' : ''"
-          :style="fixed && minWidth ? { minWidth } : undefined"
+          :class="[bare ? 'max-h-dvh rounded-card bg-soft' : '', fixed && minWidth ? MIN_WIDTH[minWidth] : '']"
           @select="(_e: Event, row: { original: T }) => emit('row-click', row.original)"
         >
           <template
