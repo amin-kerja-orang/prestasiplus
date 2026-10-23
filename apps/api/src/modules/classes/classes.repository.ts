@@ -268,21 +268,17 @@ export class ClassesRepository {
     throw new Error('classes: no free join code after several draws')
   }
 
-  /**
-   * Number of active, real (not Mod Pelajar) enrolments per class id, for pupils whose account is active (SW7-06: a
-   * deactivated pupil keeps the enrolment row, so reactivating brings them back, but is not counted); a class without
-   * members is 0.
-   */
+  /** Number of active, real (not Mod Pelajar) enrolments per class id; a class without members is 0. */
   async memberCounts(classIds: readonly string[]): Promise<Map<string, number>> {
     const keys = idsOf(classIds)
     const out = new Map<string, number>(classIds.map((id) => [id, 0]))
     for (let i = 0; i < keys.length; i += READ_CHUNK) {
-      const groups = await this.db.$queryRaw<{ classroom_id: bigint; n: number }[]>`
-        SELECT e.classroom_id, count(*)::int AS n
-          FROM enrolments e JOIN users u ON u.id = e.student_id
-         WHERE e.classroom_id = ANY(${keys.slice(i, i + READ_CHUNK)}::bigint[]) AND e.status = 'active' AND e.is_test = false AND u.is_active
-         GROUP BY e.classroom_id`
-      for (const g of groups) out.set(idToString(g.classroom_id), g.n)
+      const groups = await this.db.enrolment.groupBy({
+        by: ['classroomId'],
+        where: { classroomId: { in: keys.slice(i, i + READ_CHUNK) }, status: 'active', isTest: false },
+        _count: { _all: true },
+      })
+      for (const g of groups) out.set(idToString(g.classroomId), g._count._all)
     }
     return out
   }
@@ -362,33 +358,34 @@ export class ClassesRepository {
     return (await this.db.enrolment.count({ where: { classroomId: c, studentId: s, status: 'active', isTest } })) > 0
   }
 
-  /** BR-M10-04: distinct ACTIVE-account students actively enrolled in any ACTIVE class the teacher owns, id ascending (SW7-06). */
+  /** BR-M10-04: distinct students actively enrolled in any ACTIVE class the teacher owns, id ascending. */
   async teacherStudentIds(teacherId: string): Promise<string[]> {
     const key = idOf(teacherId)
     if (key === null) return []
-    const rows = await this.db.$queryRaw<{ student_id: bigint }[]>`
-      SELECT DISTINCT e.student_id
-        FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id JOIN users u ON u.id = e.student_id
-       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active
-       ORDER BY e.student_id`
-    return rows.map((r) => idToString(r.student_id))
+    const rows = await this.db.enrolment.findMany({
+      where: { status: 'active', isTest: false, classroom: { teacherId: key, isActive: true } },
+      select: { studentId: true },
+      distinct: ['studentId'],
+      orderBy: { studentId: 'asc' },
+    })
+    return rows.map((r) => idToString(r.studentId))
   }
 
-  /** The class names of the teacher's active classes per ACTIVE-account student (the "Pelajar Saya" chips), in class creation order (SW7-06). */
+  /** The class names of the teacher's active classes per student (the "Pelajar Saya" chips), in class creation order. */
   async classNamesByStudent(teacherId: string): Promise<Map<string, string[]>> {
     const key = idOf(teacherId)
     const out = new Map<string, string[]>()
     if (key === null) return out
-    const rows = await this.db.$queryRaw<{ student_id: bigint; class_id: bigint; name: string; created_at: Date }[]>`
-      SELECT e.student_id, c.id AS class_id, c.name, c.created_at
-        FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id JOIN users u ON u.id = e.student_id
-       WHERE e.status = 'active' AND e.is_test = false AND c.teacher_id = ${key} AND c.is_active AND u.is_active`
-    rows.sort((a, b) => b.created_at.getTime() - a.created_at.getTime() || Number(a.class_id - b.class_id))
+    const rows = await this.db.enrolment.findMany({
+      where: { status: 'active', isTest: false, classroom: { teacherId: key, isActive: true } },
+      select: { studentId: true, classroom: { select: { id: true, name: true, createdAt: true } } },
+    })
+    rows.sort((a, b) => b.classroom.createdAt.getTime() - a.classroom.createdAt.getTime() || Number(a.classroom.id - b.classroom.id))
     for (const r of rows) {
-      const id = idToString(r.student_id)
+      const id = idToString(r.studentId)
       const list = out.get(id)
-      if (list) list.push(r.name)
-      else out.set(id, [r.name])
+      if (list) list.push(r.classroom.name)
+      else out.set(id, [r.classroom.name])
     }
     return out
   }
