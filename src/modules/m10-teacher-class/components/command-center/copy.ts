@@ -43,7 +43,7 @@ export const NAV_LINKS: readonly { id: NavAction | 'rekod'; label: string; icon:
   { id: 'remedial', label: 'Remedial', icon: 'i-ph-flask' },
   { id: 'rekod', label: 'Rekod', icon: 'i-ph-chart-bar' },
   { id: 'evaluate', label: 'Evaluate', icon: 'i-ph-warning' },
-  { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-chart-line-up' },
+  { id: 'predictive', label: 'Ramalan SPM', icon: 'i-ph-crystal-ball' },
   { id: 'kelas', label: 'Kelas', icon: 'i-ph-chalkboard-teacher' },
   { id: 'badges', label: 'Badges', icon: 'i-ph-trophy' },
 ]
