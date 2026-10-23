@@ -193,7 +193,7 @@ export class UsersService {
         schoolId,
         grade: isStudent ? gradeOf(body.grade) : null,
         passwordHash,
-        mustChangePassword: true,
+        mustChangePassword: false, // R39: an admin-created account is not forced to change its password
         icHash: ic?.hash ?? null,
         icMasked: ic?.masked ?? null,
         isActive: body.isActive === undefined ? true : toBool(body.isActive),
@@ -212,7 +212,7 @@ export class UsersService {
     })
     const created = await this.mustGet(id)
     const detail = await this.detailOf(caller, created)
-    return { data: { ...detail, mustChangePassword: true, generatedPassword: password }, status: USER_MESSAGES.created }
+    return { data: { ...detail, mustChangePassword: false, generatedPassword: password }, status: USER_MESSAGES.created }
   }
 
   // --- update -------------------------------------------------------------------------------------
@@ -324,7 +324,7 @@ export class UsersService {
         ...(grade !== undefined ? { grade } : {}),
         ...(ic !== undefined ? { icHash: ic?.hash ?? null, icMasked: ic?.masked ?? null } : {}),
         ...(body.isActive !== undefined ? { isActive: nextActive } : {}),
-        ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: true } : {}),
+        ...(newHash !== null ? { passwordHash: newHash } : {}),
         now,
         },
         caller,

@@ -164,7 +164,7 @@ export const AdminUserDetailSchema = z
     isSuspended: z.boolean(),
     subscriptionPackage: z.enum(SUBSCRIPTION_PACKAGES),
     hasPkskSubscription: z.boolean(),
-    mustChangePassword: z.boolean().meta({ description: 'True for an account with a server-generated initial password, or whose password an admin set (D55c, D59b). Cleared when the user changes it.' }),
+    mustChangePassword: z.boolean().meta({ description: 'True only while a forced password change is pending. R39: an admin-created, imported or admin-reset account is NOT flagged, so this stays false for them; the user can change the password in /profile/edit. Cleared when the user changes it.' }),
     ppdState: z.string().nullable(),
     ppdDistrict: z.string().nullable(),
     linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account. For a school_admin caller only children in the caller school are listed (children in other schools are hidden).' }),
@@ -177,14 +177,14 @@ export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>
  * once to the creator. Never logged, never stored in clear and never retrievable again.
  */
 export const CreatedUserSchema = AdminUserDetailSchema.extend({
-  mustChangePassword: z.literal(true),
+  mustChangePassword: z.boolean().meta({ description: 'False on create (R39): the new account is not forced to change its password.' }),
   generatedPassword: z.string().min(1).meta({ description: 'Random per account, shown once, never retrievable again. The response is no-store.' }),
 }).meta({ id: 'CreatedUser' })
 export type CreatedUser = z.infer<typeof CreatedUserSchema>
 
 /**
  * Response of PUT /admin/users/:id. `generatedPassword` is present only when the request had
- * `resetPassword: true` (then `mustChangePassword` is true and the target sessions are revoked).
+ * `resetPassword: true` (R39: `mustChangePassword` is not set and stays as stored; the target sessions are revoked).
  */
 export const UpdatedUserSchema = AdminUserDetailSchema.extend({
   generatedPassword: z.string().min(1).optional().meta({ description: 'Only after resetPassword: random, shown once, never logged, never retrievable again. The response is no-store.' }),
@@ -391,7 +391,7 @@ export const ImportCredentialSchema = z
     line: z.number().int().min(1).meta({ description: '1-based line of the file or paste.' }),
     email: z.string(),
     generatedPassword: z.string().min(1),
-    mustChangePassword: z.literal(true),
+    mustChangePassword: z.boolean().meta({ description: 'False for an imported account (R39): no forced password change.' }),
   })
   .meta({ id: 'ImportCredential' })
 

@@ -28,7 +28,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
   })
 
   describe('create', () => {
-    it('creates a teacher: 201, status text, generated password once, must change password', async () => {
+    it('creates a teacher: 201, status text, generated password once, not flagged must change (R39)', async () => {
       const res = await api.post('/admin/users', teacherBody(school1, { email: 'baharu@ujian.test', phone: '0123456789' }))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(res.headers['cache-control']).toBe('no-store')
@@ -36,7 +36,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       const data = CreatedUserSchema.parse(res.body.data)
       expect(data.roles).toEqual(['teacher'])
       expect(data.isActive).toBe(true)
-      expect(data.mustChangePassword).toBe(true)
+      expect(data.mustChangePassword).toBe(false) // R39: no forced change at go-live
       expect(data.generatedPassword.length).toBeGreaterThanOrEqual(12)
       expect(data.school?.id).toBe(school1)
       // The detail never returns the password again.

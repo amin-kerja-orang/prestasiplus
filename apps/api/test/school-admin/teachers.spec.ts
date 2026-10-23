@@ -111,13 +111,13 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expectNoCache(res)
     const body = SchoolAdminTeacherCreatedResultSchema.parse(res.body)
     expect(body.status).toBe('Pengguna berjaya didaftarkan.')
-    expect(body.mustChangePassword).toBe(true)
+    expect(body.mustChangePassword).toBe(false) // R39: no forced change at go-live
     expect(body.data).toMatchObject({ name: 'Guru Baharu', email: 'baharu@ujian.test', phone: '0191112223', role: 'teacher', isActive: true, school: { id: s1 } })
     expect(body.credential).toMatchObject({ name: 'Guru Baharu', school: 'SMK Demo Satu', email: 'baharu@ujian.test' })
     expect(body.credential.password.length).toBeGreaterThanOrEqual(12)
 
     const row = await userRow(t.db, body.data.id)
-    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: true, created_by_id: await userIdOf(t.db, SCHOOL_ADMIN), roles: ['teacher'] })
+    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: false, created_by_id: await userIdOf(t.db, SCHOOL_ADMIN), roles: ['teacher'] })
     expect(row?.password_hash).toMatch(/^\$argon2id\$/)
     expect(row?.password_hash).not.toContain(body.credential.password)
 
@@ -192,7 +192,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expect(JSON.stringify(ok.body)).not.toContain('cukup-panjang-1')
     const after = await userRow(t.db, a)
     expect(after?.password_hash).not.toBe(before)
-    expect(after?.must_reset_password).toBe(true)
+    expect(after?.must_reset_password).toBe(false) // R39: an admin password change does not force a change
     expect((await auditRows(t.db, 'school_admin.teacher.updated'))[0]?.detail).toMatchObject({ credentialReset: true })
   })
 
@@ -220,7 +220,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     errorOf(await admin.put(`/admin-sekolah/guru/${me}`, { name: 'X', email: 'x@ujian.test' }), 404, 'NOT_FOUND')
   })
 
-  it('reset-password: the admin types it; replaced, must-change, no echo, both headers; 404 / 403 / 422', async () => {
+  it('reset-password: the admin types it; replaced, flag stays false (R39), no echo, both headers; 404 / 403 / 422', async () => {
     const before = (await userRow(t.db, a))?.password_hash
     const res = await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'Kata-Baharu-77', newPasswordConfirmation: 'Kata-Baharu-77' })
     expect(res.status).toBe(200)
@@ -229,7 +229,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expect(JSON.stringify(res.body)).not.toContain('Kata-Baharu-77')
     const row = await userRow(t.db, a)
     expect(row?.password_hash).not.toBe(before)
-    expect(row?.must_reset_password).toBe(true)
+    expect(row?.must_reset_password).toBe(false) // R39: an admin reset does not force a change
     expect((await auditRows(t.db, 'school_admin.teacher.password_reset'))[0]).toMatchObject({ target_id: a })
 
     const e422 = errorOf(await admin.post(`/admin-sekolah/guru/${a}/reset-password`, {}), 422, 'VALIDATION_ERROR', 'The new password field is required.')
@@ -240,6 +240,17 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     errorOf(await admin.post(`/admin-sekolah/guru/${foreign}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 404, 'NOT_FOUND')
     errorOf(await admin.post(`/admin-sekolah/guru/${pupil}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 404, 'NOT_FOUND')
     errorOf(await admin.post(`/admin-sekolah/guru/${b}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 403, 'FORBIDDEN', 'This action is unauthorized.')
+  })
+
+  it('reset-password and update with a new password leave an already-set flag as stored; they never set it (R39)', async () => {
+    const flag = async () => (await userRow(t.db, a))?.must_reset_password
+    await t.db.query(`update users set must_reset_password = false where id = $1::bigint`, [a])
+    expect((await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'Tanpa-Paksa-1', newPasswordConfirmation: 'Tanpa-Paksa-1' })).status).toBe(200)
+    expect(await flag()).toBe(false)
+    // An operator-set flag (e.g. the admin bootstrap) is not cleared or changed by the school admin's reset either.
+    await t.db.query(`update users set must_reset_password = true where id = $1::bigint`, [a])
+    expect((await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'Tanpa-Paksa-2', newPasswordConfirmation: 'Tanpa-Paksa-2' })).status).toBe(200)
+    expect(await flag()).toBe(true)
   })
 
   it('page past the last is clamped to the last page', async () => {

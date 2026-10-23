@@ -104,19 +104,19 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     errorOf(await admin.get(`/admin-sekolah/pelajar/${pSuspended}`), 403, 'FORBIDDEN')
   })
 
-  it('create without a class: 201, credential once, hashed, must-change, role student, school from the session', async () => {
+  it('create without a class: 201, credential once, hashed, not flagged must-change (R39), role student, school from the session', async () => {
     const res = await admin.post('/admin-sekolah/pelajar', { name: 'Aisyah Demo', email: 'aisyah@ujian.test' })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expectNoCache(res)
     const body = SchoolAdminPupilCreatedResultSchema.parse(res.body)
     expect(body.status).toBe('Pelajar "Aisyah Demo" berjaya dicipta.')
-    expect(body.mustChangePassword).toBe(true)
+    expect(body.mustChangePassword).toBe(false) // R39: no forced change at go-live
     expect(body.data).toMatchObject({ name: 'Aisyah Demo', role: 'student', isActive: true, school: { id: s1 } })
     expect(body.credential).toMatchObject({ name: 'Aisyah Demo', school: 'SMK Demo Satu', email: 'aisyah@ujian.test' })
     expect(body.credential.password.length).toBeGreaterThanOrEqual(12)
 
     const row = await userRow(t.db, body.data.id)
-    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: true, grade: null, roles: ['student'], created_by_id: await userIdOf(t.db, SCHOOL_ADMIN) })
+    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: false, grade: null, roles: ['student'], created_by_id: await userIdOf(t.db, SCHOOL_ADMIN) })
     expect(row?.password_hash).toMatch(/^\$argon2id\$/)
     expect(await countOf(t.db, `select count(*)::text as n from enrolments where student_id = $1::bigint`, [body.data.id])).toBe(0)
     expect((await loginWith(t, 'aisyah@ujian.test', body.credential.password)).csrf).toBeTruthy()
@@ -176,7 +176,7 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     expect((await userRow(t.db, p1))?.is_active).toBe(true)
   })
 
-  it('reset-password: replaced, must-change, no echo, both headers; 422 / 404 / 403 / suspended 404', async () => {
+  it('reset-password: replaced, flag stays false (R39), no echo, both headers; 422 / 404 / 403 / suspended 404', async () => {
     const before = (await userRow(t.db, pKosong))?.password_hash
     const res = await admin.post(`/admin-sekolah/pelajar/${pKosong}/reset-password`, { newPassword: 'Murid-Baharu-88', newPasswordConfirmation: 'Murid-Baharu-88' })
     expect(res.status).toBe(200)
@@ -185,7 +185,7 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     expect(JSON.stringify(res.body)).not.toContain('Murid-Baharu-88')
     const row = await userRow(t.db, pKosong)
     expect(row?.password_hash).not.toBe(before)
-    expect(row?.must_reset_password).toBe(true)
+    expect(row?.must_reset_password).toBe(false) // R39: an admin reset does not force a change
     expect((await auditRows(t.db, 'school_admin.pupil.password_reset'))[0]).toMatchObject({ target_id: pKosong })
     errorOf(await admin.post(`/admin-sekolah/pelajar/${pKosong}/reset-password`, { newPassword: 'abc', newPasswordConfirmation: 'abc' }), 422, 'VALIDATION_ERROR', 'The new password field must be at least 8 characters.')
     errorOf(await admin.post(`/admin-sekolah/pelajar/${pKosong}/reset-password`, {}), 422, 'VALIDATION_ERROR', 'The new password field is required.')

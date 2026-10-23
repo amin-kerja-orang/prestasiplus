@@ -323,7 +323,8 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       const reset = await admin.put(`/admin/users/${b.u.id}`, { roles: ['teacher'], name: 'B', resetPassword: true })
       const upd = UpdatedUserSchema.parse(reset.body.data)
       expect(upd.generatedPassword).toBeTruthy()
-      expect(upd.mustChangePassword).toBe(true)
+      expect(upd.mustChangePassword).toBe(false) // R39: an admin reset does not force a change
+      expect((await t.db.query<{ m: boolean }>('select must_reset_password m from users where id = $1::bigint', [b.u.id]))[0]).toEqual({ m: false })
       expect(await alive(b)).toBe(false)
       // The old password stops working; the new one works.
       const old = await t.http().post('/api/auth/login').send({ identifier: 'sesi.b@ujian.test', password: b.u.generatedPassword })

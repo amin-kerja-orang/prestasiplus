@@ -83,7 +83,7 @@ describe('complimentary students (AC 3)', () => {
     )
 
   describe('POST /admin/comp-students', () => {
-    it('registers each line: generated login not derived from the IC, hashed and masked IC, must change password, coins off, enrolled', async () => {
+    it('registers each line: generated login not derived from the IC, hashed and masked IC, not flagged must-change (R39), coins off, enrolled', async () => {
       const res = await register({ students: 'Aina Contoh, 070101-01-0101\nBudi Contoh,880202025555\n' })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(res.body.status).toBe('2 pelajar komplimen berjaya didaftarkan.')
@@ -109,7 +109,7 @@ describe('complimentary students (AC 3)', () => {
       )
       expect(users).toHaveLength(2)
       const aina = users[0]
-      expect(aina).toMatchObject({ name: 'Aina Contoh', ic_masked: 'xxxxxx-xx-xx01', school_id: s1, grade: 10, must: true, comp: true, coins: false, expires: '2026-12-31', orig: 'SMK Demo Satu', role: 'student' })
+      expect(aina).toMatchObject({ name: 'Aina Contoh', ic_masked: 'xxxxxx-xx-xx01', school_id: s1, grade: 10, must: false /* R39 */, comp: true, coins: false, expires: '2026-12-31', orig: 'SMK Demo Satu', role: 'student' })
       expect(aina?.email).toMatch(/^komp-[0-9a-f]{18}@prestasiplus\.my$/)
       expect(aina?.email).not.toContain('010101')
       expect(aina?.ic_hash).toMatch(/^[0-9a-f]{64}$/)
