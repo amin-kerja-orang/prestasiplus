@@ -55,8 +55,8 @@ describe('S3 admin', () => {
     expect(get(w, 'cc-s3-subtitle').text()).toBe('Aktiviti Platform')
     expect(get(w, 'cc-s3-back').text()).toBe('◀ Command Center')
     expect(get(w, 'cc-s3-back').attributes('href')).toBe('/admin/command-center')
-    expect(get(w, 'cc-s3-report').text()).toBe('Laporan Eksekutif')
-    expect(get(w, 'cc-s3-report').attributes('href')).toBe('/admin/laporan-eksekutif')
+    // S8 is not built: the link is hidden rather than dead (DV-M17-45).
+    expect(w.find('[data-testid="cc-s3-report"]').exists()).toBe(false)
     expect(get(w, 'cc-clock').text()).toBe('15:40:00')
     expect(texts(w, 'cc-tab')).toEqual(['Hari Ini', 'Minggu Ini', 'Bulan Ini'])
     expect(tab(w, 'today').attributes('data-active')).toBe('true')

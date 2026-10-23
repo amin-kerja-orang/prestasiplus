@@ -298,8 +298,10 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('tier-card')).toContainText('Bronze')
     await expect(page.getByTestId('tier-card')).toContainText('Tahap 1')
     await expect(page.getByTestId('tier-next')).toHaveText('244 syiling lagi ke Silver')
-    const bar = await page.getByTestId('tier-bar').evaluate((el) => (el as HTMLElement).style.width)
-    expect(bar).toBe('51.2%')
+    await expect(page.getByTestId('tier-bar').getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '51.2',
+    )
     await expect(page.getByRole('heading', { name: 'Ringkasan Aktiviti' })).toBeVisible()
     await expect(page.getByTestId('summary-item')).toHaveText([
       '0 sesi latihan',
@@ -307,19 +309,17 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
       '0 jawapan betul',
       '5 kombo terpanjang',
     ])
-    await expect(
-      page
-        .getByTestId('stat-card')
-        .locator('p')
-        .filter({ hasText: /^[A-Z]/ }),
-    ).toHaveText(['Syiling', 'Kombo Hari', 'Sesi Latihan', 'Ketepatan'])
+    // The stat row is `DsStatRow` (`stat-cards > li`: value then label), no longer `stat-card` paragraphs.
+    await expect(page.getByTestId('stat-cards').locator('> li')).toHaveText([
+      /^256\s*Syiling$/,
+      /^1\s*Kombo Hari$/,
+      /^0\s*Sesi Latihan$/,
+      /^0%\s*Ketepatan$/,
+    ])
     await expect(page.getByTestId('profile-posts')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Ingin menyokong pelajar ini?' })).toBeVisible()
-    await expect(
-      page.getByText('Jadilah penaja "Anak Angkat" dan bantu pelajar cemerlang!'),
-    ).toBeVisible()
-    await expect(page.getByTestId('sponsor-link')).toHaveText('Jadi Penaja')
-    await expect(page.getByTestId('sponsor-link')).toHaveAttribute('href', '/sponsor/register')
+    // The sponsor CTA is hidden while no `/sponsor/register` route exists (DV-M08-43, D9).
+    await expect(page.getByTestId('sponsor-cta')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Ingin menyokong pelajar ini?' })).toHaveCount(0)
     await expect(page.getByTestId('footer-line')).toHaveText('Teruskan usaha Admin!')
     await expect(page.getByText('Setiap latihan membawa kejayaan ⭐')).toBeVisible()
     await expect(page.getByText('— Platform Latih Tubi Interaktif Malaysia')).toBeVisible()
