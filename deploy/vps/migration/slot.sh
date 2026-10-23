@@ -2,15 +2,15 @@
 # Production migration slot on the VPS, 29-30 Oct (MIG08-PREP). Runbook: docs/ops/production-migration-slot.md.
 # The cutover plan (docs/ops/v2-cutover-plan.md, half AM) owns WHAT runs WHEN; this script is HOW it runs on this host.
 #
-#   deploy/vps/migration/slot.sh throwaway-up                         A4 / B0: the throwaway staging cluster
-#   deploy/vps/migration/slot.sh load --from DIR                      A5 / B4: staging:load of a RAW dump into it
-#   deploy/vps/migration/slot.sh copy                                 A5 / B5: staging_cloud + archive_cloud -> target
-#   deploy/vps/migration/slot.sh throwaway-down                       A5 / B5: destroy the cluster and its data dir
+#   deploy/vps/migration/slot.sh throwaway-up                         B0: the throwaway staging cluster
+#   deploy/vps/migration/slot.sh load --from DIR                      B4: staging:load of a RAW dump into it
+#   deploy/vps/migration/slot.sh copy                                 B5: staging_cloud + archive_cloud -> target
+#   deploy/vps/migration/slot.sh throwaway-down                       B5: destroy the cluster and its data dir
 #   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg] [--missing-ok]  after a good load: delete the raw dump copies
 #                                                                     (a missing path exits 3; --missing-ok: STOP block only)
-#   deploy/vps/migration/slot.sh etl COMMAND [ARGS...]                A6-A11, B6-B8: staging:profile / migrate:* in the
+#   deploy/vps/migration/slot.sh etl COMMAND [ARGS...]                B6-B8, C5, C6: staging:profile / migrate:* in the
 #                                                                     migrate image, production guards set per run
-#   deploy/vps/migration/slot.sh gonogo                               evidence lines for the go/no-go (infra part)
+#   deploy/vps/migration/slot.sh gonogo                               A5, B0, B9: evidence lines for the go/no-go (infra part)
 #
 # This is the PRODUCTION path for REAL (not anonymised) data. It is separate from deploy/rehearsal/rehearsal-db.sh
 # (AZ-30), which stays limited to attested anonymised or synthetic dumps and NODE_ENV=development. Here:
@@ -200,10 +200,8 @@ cmd_copy() {
   b="$(schema_tables target_psql)"
   [ "$a" = "$b" ] || pp_die "STAGE COPY FAILED: $a in $staging_db, $b in the target"
   # Cutover plan 4.6 B5: a count other than 83/35 is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
-  case "$b" in
-    "$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:35 staging_cloud:83')") ;;
-    *) pp_die "STAGE COPY COUNTS DIFFER: $b (expected archive_cloud:35 staging_cloud:83): STOP and report to the half-AM operator" 4 ;;
-  esac
+  local want; want="$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:35 staging_cloud:83')"
+  [ "$b" = "$want" ] || pp_die "STAGE COPY COUNTS DIFFER: $b (expected $want): STOP and report to the half-AM operator" 4
   pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
 }
 
