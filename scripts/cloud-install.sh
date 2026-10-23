@@ -141,7 +141,7 @@ main() {
     [ -x "$PG_BIN/initdb" ] || die "no server on ${DB_HOST}:${DB_PORT} and $PG_BIN/initdb is missing; install PostgreSQL 16 or start a local server yourself."
     as_root mkdir -p "$PG_ROOT"
     as_root chown postgres "$PG_ROOT"
-    as_postgres test -f "$PG_DATA/PG_VERSION" || as_postgres "$PG_BIN/initdb" -D "$PG_DATA" -U "$DB_USER" --auth=trust >/dev/null
+    as_postgres test -f "$PG_DATA/PG_VERSION" || as_postgres "$PG_BIN/initdb" -D "$PG_DATA" -U "$DB_USER" --auth=trust -E UTF8 --locale=C >/dev/null
     # Only reached when nothing answers on the port; a postmaster.pid left over from a stopped VM
     # would block the start, but never delete it while the server process is alive.
     if ! as_postgres "$PG_BIN/pg_ctl" -D "$PG_DATA" status >/dev/null 2>&1; then
@@ -160,6 +160,13 @@ main() {
   local admin_url="postgresql://${DB_USER}@${DB_HOST}:${DB_PORT}/postgres"
   [ "$PRESET_URL" = "1" ] && admin_url="$TEST_DATABASE_URL"
   psql "$admin_url" -X -q -tAc 'select 1' </dev/null >/dev/null || die "cannot connect to the test database server (role '$DB_USER' needs LOGIN + superuser; tests run CREATE/DROP DATABASE and CREATE EXTENSION pgcrypto)."
+  # The tests clone template1. Without UTF8 (a POSIX-locale initdb gives SQL_ASCII), char_length() counts
+  # bytes and the code-point CHECK constraints reject valid non-ASCII rows, so some API tests fail with 500.
+  local tpl_enc
+  tpl_enc="$(psql "$admin_url" -X -q -tAc "SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname = 'template1'" </dev/null)"
+  if [ "$tpl_enc" != "UTF8" ]; then
+    echo "[cloud-install] WARNING: template1 encoding is '${tpl_enc:-unknown}', not UTF8; tests with non-ASCII text will fail. Recreate the throwaway cluster: stop it (pg_ctl -D $PG_DATA stop), remove $PG_DATA, re-run this script." >&2
+  fi
   if [ "$PRESET_URL" != "1" ] && [ "$DB_NAME" != "postgres" ]; then
     if [ "$(psql "$admin_url" -X -q -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" </dev/null)" != "1" ]; then
       psql "$admin_url" -X -q -c "CREATE DATABASE \"$DB_NAME\"" </dev/null
