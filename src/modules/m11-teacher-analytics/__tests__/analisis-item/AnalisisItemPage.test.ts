@@ -218,6 +218,35 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
   })
 })
 
+describe('S6 Analisis Item: http-mode string ids (SW3-01)', () => {
+  // The API sends option ids as strings (contract `IdSchema`); the query ids are parsed to numbers.
+  it('keeps the chosen subject and class selected when the option ids are strings', async () => {
+    api.fetchItemAnalysis.mockResolvedValue(
+      analysis({
+        options: {
+          subjects: [
+            { id: '18', name: 'Bahasa Arab' },
+            { id: '1', name: 'Bahasa Melayu' },
+          ],
+          classes: [{ id: '2002', name: '5 Amanah' }],
+        },
+      }),
+    )
+    const w = await mountAt('/guru/analisis-item?subject_id=1&classroom_id=2002')
+    expect((t(w, 'filter-subject').element as HTMLSelectElement).value).toBe('1')
+    expect((t(w, 'filter-classroom').element as HTMLSelectElement).value).toBe('2002')
+  })
+
+  it('still reads an id that is not an option as "Semua"', async () => {
+    api.fetchItemAnalysis.mockResolvedValue(
+      analysis({ options: { subjects: [{ id: '1', name: 'Bahasa Melayu' }], classes: [] } }),
+    )
+    const w = await mountAt('/guru/analisis-item?subject_id=99&classroom_id=7')
+    expect((t(w, 'filter-subject').element as HTMLSelectElement).value).toBe('')
+    expect((t(w, 'filter-classroom').element as HTMLSelectElement).value).toBe('')
+  })
+})
+
 describe('S6 Analisis Item: states', () => {
   // @provisional: the error copy is the design-system default (no M11 copy in the SRS)
   it('@provisional shows an error message when the request fails', async () => {
