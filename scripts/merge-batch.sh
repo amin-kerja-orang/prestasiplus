@@ -66,21 +66,30 @@ cmd_select_summary() {
 # The section is cut into blocks: a block is one column-0 line plus the indented/blank lines that follow it (a numbered item
 # with its sub-bullets). The sign-off flag and the warning note are decided over the whole block.
 cmd_parse_summary() {
-  local body line in_sec=0 found=0 base='-' name
+  local body line in_sec=0 found=0 base='-' name hold=0 blk_hold=0 blk_num=0 nonbase
   local -a out=() blk=()
   local -A seen=()
   local re_bold='^\*\*([^*]+)\*\*'
   local re_branch='^[A-Za-z0-9._-]+/[A-Za-z0-9._/-]+$'
   local re_signoff='sign(-|[[:space:]]|‑|‐)?off'
+  local re_heading='^#{1,6}[[:space:]]'
+  local re_table='^[[:space:]]*\|'
+  local re_item='^[0-9]+\.[[:space:]]'
+  local re_new='^([0-9]+\.[[:space:]]|\*\*|[-*][[:space:]])'
 
   flush_block() {
-    local text='' l flag=merge note=- rest total valid pr sha repo tmp
+    local text='' l flag=merge note=- rest total valid pr sha repo tmp marked
     # shellcheck disable=SC2016
     local re_span='`gh pr merge ([0-9]+) --repo ([^[:space:]`]+) --merge --match-head-commit ([0-9a-f]{40})`'
     ((${#blk[@]} > 0)) || return 0
     for l in "${blk[@]}"; do text+="$l"$'\n'; done
-    [[ ${text,,} =~ $re_signoff ]] && flag=signoff
     if [[ $text == *'⚠'* || ${text,,} == *'lead chooses'* ]]; then note=warn; fi
+    marked=0
+    if [[ ${text,,} =~ $re_signoff ]]; then flag=signoff; marked=1; fi
+    if ((blk_hold == 1)); then
+      flag=signoff
+      if ((marked == 0)); then if [[ $note == - ]]; then note=hold; else note+=,hold; fi; fi
+    fi
     for l in "${blk[@]}"; do
       tmp=${l//'gh pr merge'/}
       total=$(((${#l} - ${#tmp}) / 11))
@@ -111,28 +120,41 @@ cmd_parse_summary() {
       if [[ $line == '### SEDIA MERGE (safe order)' ]]; then in_sec=1; found=1; fi
       continue
     fi
-    if [[ $line == '### '* ]]; then break; fi
+    if [[ $line =~ $re_heading ]]; then break; fi
     [[ $line != *'<!--'* ]] || die 'HTML comment in SEDIA section'
-    if [[ $line =~ $re_bold ]]; then
-      name=${BASH_REMATCH[1]}
-      name=${name%.}
-      if is_allowed_base "$name" || [[ $name =~ $re_branch ]]; then
-        flush_block
-        base=$name
-        continue
+    if [[ $line == *'gh pr merge'* && $line =~ $re_table ]]; then die 'merge command inside a markdown table row'; fi
+    nonbase=0
+    if [[ $line == '**'* ]]; then
+      nonbase=1
+      if [[ $line =~ $re_bold ]]; then
+        name=${BASH_REMATCH[1]}
+        name=${name%.}
+        if is_allowed_base "$name" || [[ $name =~ $re_branch ]]; then
+          flush_block
+          base=$name
+          hold=0
+          continue
+        fi
       fi
     fi
     if [[ -z $line || $line == [[:space:]]* ]]; then
       ((${#blk[@]} > 0)) && blk+=("$line")
       continue
     fi
-    local re_new='^([0-9]+\.[[:space:]]|\*\*|[-*][[:space:]])'
-    if ((${#blk[@]} > 0)) && [[ -n ${blk[-1]//[[:space:]]/} ]] && ! [[ $line =~ $re_new ]]; then
+    if ((nonbase == 0)) && ((${#blk[@]} > 0)) && [[ -n ${blk[-1]//[[:space:]]/} ]] && ! [[ $line =~ $re_new ]]; then
       blk+=("$line")
+      if ((blk_num == 0)) && [[ ${line,,} =~ $re_signoff ]]; then hold=1; blk_hold=1; fi
       continue
     fi
     flush_block
     base_of_blk=$base
+    blk_num=0
+    [[ $line =~ $re_item ]] && blk_num=1
+    # a bold line that is not a base heading, or a sign-off line outside a numbered item, holds everything after it
+    # until the next base heading (fail closed)
+    if ((nonbase == 1)); then hold=1; fi
+    if ((blk_num == 0)) && [[ ${line,,} =~ $re_signoff ]]; then hold=1; fi
+    blk_hold=$hold
     blk=("$line")
   done <<<"$body"
   flush_block
@@ -166,20 +188,30 @@ cmd_parse_manual() {
 }
 
 # ---------------------------------------------------------------- blocking-text
-# Returns 0 when the text blocks a merge: the word void, "changes needed", or the word Blocker/Major not followed by 0.
+# Returns 0 when the text blocks a merge: the word void, "changes needed/requested", "request(ed) changes", or the word
+# Blocker/Major that is neither followed by 0 nor preceded by 0 ("0 Blocker, 0 Major" is clean; "2 Blockers" blocks;
+# a plural without a number before it, like "Majors 1-2 are fixed", is not counted).
 blocking_text() (
   shopt -s nocasematch
-  local text=$1 rest tail
+  local text=$1 rest tail ctx num plural
   local re_void='(^|[^[:alnum:]_])void([^[:alnum:]_]|$)'
-  local re_changes='changes[[:space:]]+needed'
-  local re_sev='(^|[^[:alnum:]_])(blocker|major)([^[:alnum:]_].*|)$'
+  local re_changes='(changes[[:space:]]+(needed|requested))|(request(ed|s)?[[:space:]]+changes)'
+  local re_sev='(^|[^[:alnum:]_])(blocker|major)(s?)([^[:alnum:]_].*|)$'
   local re_zero='^[:[:space:]]*0([^[:alnum:]_]|$)'
+  local re_numbefore='(^|[^[:alnum:]_])([0-9]+)[[:space:]]*$'
   [[ $text =~ $re_void ]] && return 0
   [[ $text =~ $re_changes ]] && return 0
   rest=$text
   while [[ $rest =~ $re_sev ]]; do
-    tail=${BASH_REMATCH[3]}
-    [[ $tail =~ $re_zero ]] || return 0
+    ctx=${rest:0:$((${#rest} - ${#BASH_REMATCH[0]}))}${BASH_REMATCH[1]}
+    plural=${BASH_REMATCH[3]}
+    tail=${BASH_REMATCH[4]}
+    if [[ $ctx =~ $re_numbefore ]]; then
+      num=${BASH_REMATCH[2]}
+      [[ $num =~ ^0+$ ]] || return 0
+    elif [[ -z $plural ]]; then
+      [[ $tail =~ $re_zero ]] || return 0
+    fi
     rest=$tail
   done
   return 1
@@ -345,7 +377,10 @@ process_pr() {
   local pr=$1 sha=$2 sbase=$3 flag=$4 note=$5 cutoff=$6 waited=0 rc mstate mergeable payload merged msg
   P_RES=SKIPPED P_REASON='' P_BASE=$sbase P_WARN=0
   if [[ -n ${EXCLUDED[$((10#$pr))]-} ]]; then P_REASON='excluded by input'; return 0; fi
-  if [[ $flag == signoff ]]; then P_REASON="marked 'After LEAD sign-off' in the summary"; return 0; fi
+  if [[ $flag == signoff ]]; then
+    if [[ $note == *hold* ]]; then P_REASON='after a non-base heading in the summary (hold)'; else P_REASON="marked 'After LEAD sign-off' in the summary"; fi
+    return 0
+  fi
   if [[ $sbase == - ]]; then P_REASON='no base heading in summary'; return 0; fi
   if [[ $sbase != '*' ]] && ! is_allowed_base "$sbase"; then P_REASON="base '$sbase' is not an allowed merge base"; return 0; fi
   if [[ $sbase != '*' && -n ${FAILED_BASE[$sbase]-} ]]; then P_REASON="not attempted: an earlier merge on $sbase failed"; return 0; fi
@@ -363,6 +398,13 @@ process_pr() {
   later_blocker "$cutoff" "$pr" || rc=$?
   if ((rc == 2)); then read_error; return 0; fi
   if ((rc == 0)); then return 0; fi
+
+  # merge-tooling guard: a PR that changes the workflow or the script is merged by hand after review
+  get_pages "$WORK/f.json" "/repos/$GH_REPO/pulls/$pr/files?per_page=100" || { read_error; return 0; }
+  if [[ -n $(jq -r '.[] | (.filename, (.previous_filename // empty)) | select(startswith(".github/") or . == "scripts/merge-batch.sh" or startswith("apps/api/test/security/merge-batch"))' "$WORK/f.json" | head -n 1) ]]; then
+    P_REASON='touches the merge tooling (.github/ or merge-batch): merge by hand after review'
+    return 0
+  fi
 
   # re-read the PR after the scan and re-check everything before the mergeability wait
   if ! get "/repos/$GH_REPO/pulls/$pr"; then read_error; return 0; fi
@@ -389,8 +431,13 @@ process_pr() {
   esac
   if [[ $mergeable == false ]]; then P_REASON="not mergeable (mergeable_state $mstate)"; return 0; fi
 
-  [[ $note == warn ]] && P_WARN=1
+  [[ $note == *warn* ]] && P_WARN=1
   if ((DRY == 1)); then P_RES='WOULD MERGE'; return 0; fi
+  # scan again right before the PUT, so the window for a late blocking comment is only seconds
+  rc=0
+  later_blocker "$cutoff" "$pr" || rc=$?
+  if ((rc == 2)); then read_error; return 0; fi
+  if ((rc == 0)); then return 0; fi
   payload=$(jq -cn --arg s "$sha" '{merge_method: "merge", sha: $s}')
   http "$MERGE_TOK" "/repos/$GH_REPO/pulls/$pr/merge" -X PUT -H 'Content-Type: application/json' --data-binary "$payload"
   merged=$(jq -r '.merged // false' "$RESP" 2>/dev/null || echo false)

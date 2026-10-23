@@ -327,12 +327,42 @@ describe('parse-summary edge cases (synthetic)', () => {
     expect(out).toBe([`5\t${sha('a')}\t${BE}\tsignoff\t-`, `6\t${sha('b')}\t${BE}\tsignoff\t-`, `7\t${sha('c')}\t${BE}\tmerge\t-`, `8\t${sha('d')}\t${BE}\tsignoff\t-`, `9\t${sha('e')}\t${BE}\tmerge\t-`].join('\n') + '\n')
   })
 
-  it('ignores other bold lines; the marker line before sub-bullets covers them; a base heading ends the item', () => {
+  it('a non-base bold line holds everything after it until the next base heading; sign-off items and base headings behave', () => {
     const out = ok(
       ['parse-summary'],
       doc([`**${BE}**`, '1. **After LEAD sign-off:**', `   - ${cmd(5, sha('a'))}`, '**Verification**', `2. next ${cmd(6, sha('b'))}`, `**${FE}.** note`, `3. After LEAD sign-off ${cmd(7, sha('c'))}`, `**${BE}**`, `- ${cmd(8, sha('d'))}`]),
     )
-    expect(out).toBe([`5\t${sha('a')}\t${BE}\tsignoff\t-`, `6\t${sha('b')}\t${BE}\tmerge\t-`, `7\t${sha('c')}\t${FE}\tsignoff\t-`, `8\t${sha('d')}\t${BE}\tmerge\t-`].join('\n') + '\n')
+    expect(out).toBe([`5\t${sha('a')}\t${BE}\tsignoff\t-`, `6\t${sha('b')}\t${BE}\tsignoff\thold`, `7\t${sha('c')}\t${FE}\tsignoff\t-`, `8\t${sha('d')}\t${BE}\tmerge\t-`].join('\n') + '\n')
+  })
+
+  it('reviewer repro: item 1, then a bold "After LEAD sign-off" line, then a bullet: the bullet is sign-off', () => {
+    const out = ok(['parse-summary'], doc([`**${BE}**`, `1. #215 ${cmd(215, sha('a'))}`, '**After LEAD sign-off**', `- #145 ${cmd(145, sha('b'))}`]))
+    expect(out).toBe([`215\t${sha('a')}\t${BE}\tmerge\t-`, `145\t${sha('b')}\t${BE}\tsignoff\thold`].join('\n') + '\n')
+  })
+
+  it.each([['**Not ready**'], ['**Hold**'], ['**Verification this run**']])('a bold line %s holds the commands after it', (bold) => {
+    const out = ok(['parse-summary'], doc([`**${BE}**`, `1. ${cmd(5, sha('a'))}`, '', bold, '', `- ${cmd(6, sha('b'))}`, `**${FE}**`, `- ${cmd(7, sha('c'))}`]))
+    expect(out).toBe([`5\t${sha('a')}\t${BE}\tmerge\t-`, `6\t${sha('b')}\t${BE}\tsignoff\thold`, `7\t${sha('c')}\t${FE}\tmerge\t-`].join('\n') + '\n')
+  })
+
+  it('a column-0 "After LEAD sign-off:" line outside a numbered item, then a blank line, then bullets: the bullets are held', () => {
+    const out = ok(['parse-summary'], doc([`**${BE}**`, `1. ${cmd(5, sha('a'))}`, '', 'After LEAD sign-off:', '', `- ${cmd(6, sha('b'))}`, `- ${cmd(7, sha('c'))}`, `**${FE}**`, `- ${cmd(8, sha('d'))}`]))
+    expect(out).toBe([`5\t${sha('a')}\t${BE}\tmerge\t-`, `6\t${sha('b')}\t${BE}\tsignoff\thold`, `7\t${sha('c')}\t${BE}\tsignoff\thold`, `8\t${sha('d')}\t${FE}\tmerge\t-`].join('\n') + '\n')
+  })
+
+  it('any markdown heading (#### or ##) ends the section: later commands are not output', () => {
+    for (const h of ['#### Not ready', '## Not ready', '# Not ready', '###### x']) {
+      const out = ok(['parse-summary'], ['Merge-ready checker summary', '### SEDIA MERGE (safe order)', `**${BE}**`, `1. ${cmd(5, sha('a'))}`, h, `2. ${cmd(6, sha('b'))}`].join('\n'))
+      expect(out, h).toBe(`5\t${sha('a')}\t${BE}\tmerge\t-\n`)
+    }
+  })
+
+  it('refuses a merge command inside a markdown table row', () => {
+    for (const row of [`| #5 | ${cmd(5, sha('a'))} | AZ |`, `  | ${cmd(5, sha('a'))} |`]) {
+      const r = sh(['parse-summary'], doc([`**${BE}**`, row]))
+      expect(r.status, row).not.toBe(0)
+      expect(r.stderr).toContain('table')
+    }
   })
 
   it('adds a warn note for an item with the warning sign or "LEAD chooses" (not sign-off)', () => {
@@ -376,9 +406,19 @@ describe('blocking-text', () => {
     ['every command there is void.'],
     ['Blocker 0, Major 1'],
     ['**Major** left'],
+    ['request changes'],
+    ['Requested changes on the head'],
+    ['changes requested'],
+    ['REQUEST CHANGES'],
+    ['1 Major'],
+    ['2 Blockers'],
+    ['0 Blocker, 1 Major'],
   ])('blocks: %s', (t) => expect(blocking(t)).toBe(true))
   it.each([
     ['Blocker 0, Major 0'],
+    ['0 Blocker, 0 Major'],
+    ['0 Majors'],
+    ['Blocker 0'],
     ['Approve. Blocker: 0 Major: 0 Minor 2'],
     ['Majors 1–2 are fixed'],
     ['Minor 3'],
@@ -406,8 +446,12 @@ describe('run guards (no network)', () => {
     expect(sh(['run'], '', { ...dead, MB_SOURCE: '172:short' }).stderr).toContain('manual')
   })
   it('does not leak a token into its output', () => {
-    const r = sh(['run'], '', { ...dead, DRY_RUN: '0', MERGE_TOKEN: 'fake-merge-token-value', MB_SOURCE: 'junk' })
-    expect(r.stdout + r.stderr).not.toContain('SECRETVALUE')
+    const mergeToken = 'fake-merge-token-value'
+    const readToken = 'fake-read-token-value'
+    const r = sh(['run'], '', { ...dead, DRY_RUN: '0', MERGE_TOKEN: mergeToken, READ_TOKEN: readToken, MB_SOURCE: 'junk' })
+    expect(r.status).not.toBe(0)
+    expect(r.stdout + r.stderr).not.toContain(mergeToken)
+    expect(r.stdout + r.stderr).not.toContain(readToken)
   })
 })
 
@@ -441,6 +485,7 @@ describe('run against a fake GitHub API', () => {
     `5. #22 ${command(22)}`,
     `6. ⚠ #23 ${command(23)}`,
     `7. #24 ${command(24)}`,
+    `8. #25 ${command(25)}`,
     '',
     '### Not ready',
     '| #99 | nope | AZ |',
@@ -452,6 +497,8 @@ describe('run against a fake GitHub API', () => {
   let port = 0
   let summaryUpdated = '2026-10-22T10:00:00Z'
   let lostPut = false
+  let lateBlock = false
+  let scans21 = 0
   let prCreated = '2026-10-22T12:00:00Z'
   const putDone = new Set<number>()
 
@@ -497,8 +544,11 @@ describe('run against a fake GitHub API', () => {
         if (m) {
           const n = Number(m[1])
           const c = (assoc: string) => [{ html_url: `https://example.test/c${n}`, updated_at: '2026-10-22T11:00:00Z', body: 'Major 1 remains', author_association: assoc }]
+          if (n === 21 && lateBlock && ++scans21 >= 2) return json(res, 200, c('MEMBER'))
           return json(res, 200, n === 22 ? c('MEMBER') : n === 23 ? c('NONE') : [])
         }
+        m = /^\/repos\/amin-kerja-orang\/prestasiplus\/pulls\/(\d+)\/files$/.exec(path)
+        if (m) return json(res, 200, Number(m[1]) === 25 ? [{ filename: 'docs/readme.md' }, { filename: '.github/workflows/merge-batch.yml' }] : [{ filename: 'apps/api/src/x.ts' }])
         if (/\/pulls\/\d+\/(comments|reviews)$/.test(path)) return json(res, 200, [])
         m = /^\/repos\/amin-kerja-orang\/prestasiplus\/branches\/(.+)$/.exec(path)
         if (m) return json(res, 200, { commit: { sha: (m[1] === BE ? 'a1' : 'b2').repeat(20) } })
@@ -538,6 +588,8 @@ describe('run against a fake GitHub API', () => {
     expect(row(23)).toContain('MERGED')
     expect(row(23)).toContain('summary warns')
     expect(row(24)).toContain('head moved: ffffffff')
+    expect(row(25)).toContain('SKIPPED')
+    expect(row(25)).toContain('touches the merge tooling')
     expect(r.stdout).toContain('Warnings: #23')
     expect(r.stdout).toContain('body sha256')
 
@@ -608,6 +660,19 @@ describe('run against a fake GitHub API', () => {
     expect(row).toContain('later comment blocks')
     expect(row).toContain(`\`${FE}\``)
     prCreated = '2026-10-22T12:00:00Z'
+  }, 60000)
+
+  it('scans comments again right before the PUT: a blocking comment that arrives in between prevents the merge', async () => {
+    lateBlock = true
+    scans21 = 0
+    try {
+      const r = await runScript({ DRY_RUN: '0', MB_EXCLUDE: '11 12 13 22 23 24 25' })
+      const row = r.stdout.split('\n').find((l) => l.includes('| #21 |')) ?? ''
+      expect(row).toContain('later comment blocks')
+      expect(r.reqs.filter((q) => q.method === 'PUT')).toEqual([])
+    } finally {
+      lateBlock = false
+    }
   }, 60000)
 
   it('ignores GITHUB_API and other overrides when GITHUB_ACTIONS=true', async () => {
