@@ -134,16 +134,17 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    - **InnoDB.** The consistent snapshot of the sitting holds only for InnoDB tables. `dump:check` prints each spec table's `engine` and warns about every non-InnoDB table. A warning means the data owner must confirm that writes to that table are frozen for the whole sitting; otherwise the sitting is a no-go. Tell the LEAD privately; post only "engine warning: yes/no" on #109.
    - **Binding smoke against the real server (before the first real sitting).** Proof so far is on MariaDB 10.11. `dump:check` must run clean **once** against the real .cloud server (metadata only, no rows), whatever its flavour and version (**Perlu pengesahan:** MySQL 8?). The JSON expression path for MySQL 5.7/8 is otherwise only string-tested. Do not schedule the sitting until this run exits 0; if it fails, post only the exit code and the MySQL error number (for example `ERROR 1045`).
    - For any failure of `dump:check`, `dump:produce` or `dump:cloud`, post on #109 **only the exit code and the MySQL error numbers** (e.g. `ERROR 1045`), never the message text.
-   - **Wait for a developer to reply "rules OK" on #109.** Do not schedule the sitting before that. Section 9 gives the exact command again for 24 Oct and the night, and the list of what the report must show before the operator posts the aggregates.
+   - **Wait for a developer to reply "rules OK" on #109.** The operator posts the aggregates above on #109 and a developer replies "rules OK" to them; the LEAD does not give it. Do not start the export (step 2) before that reply, and do not schedule the sitting before it. **When it runs:** `dump:check` needs the account unlocked (section 11, item 7 plans a short day-before window for it, **Perlu pengesahan**, .cloud owner). If that window is not booked, `dump:check` runs at the start of the sitting instead (as in section 3, row "A"), the operator posts the aggregates, and step 2 waits for the reply; in that case a developer must be on #109 for that time. Section 9 gives the exact command again for 24 Oct and the night, and the list of what the report must show before the operator posts the aggregates.
 9. **Time zone (LEAD decision 21 Oct, DT-1 A).** .cloud DATETIME values are `+08:00`, which is the default of `--datetime-offset`; **do not change the default**. Rule: the export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. The `dump:check` report still lists the server time zones; if they look inconsistent with this, tell the LEAD instead of changing the offset.
 10. **Book the sitting** with the LEAD (about 30 minutes, uninterrupted) and with the receiver of the rehearsal host (so the file can be accepted and confirmed the same day).
 
-## 3. The sitting (target under 30 minutes)
+## 3. The sitting (target about 30 minutes)
 
 Run every command from the repository root, in one terminal for the whole sitting (the environment variables live in it). `<date>` is `YYYYMMDD`. `$work` is a shell variable that holds the **absolute** path of the work dir; step 0 sets it (PowerShell and bash forms). Because `npm run ... -w @pp/api` runs inside `apps/api`, the work dir is `<repo>/apps/api/.migration-out/run-<date>`; the tools accept an absolute path as long as it is inside a `.migration-out` folder under the repository root, and using the one absolute path everywhere avoids pointing a command at the wrong folder.
 
 | Step | What | Expected time |
 |---|---|---|
+| A | `dump:check` (section 9), read the report, post the aggregates, "rules OK" received | 2 min, plus the wait for "rules OK" if it was not received the day before (the check itself took 1 to 2 s on the synthetic fixture, section 9.4) |
 | 0 | Prepare the machine | 2 min |
 | 1 | Create a fresh key | 2 min |
 | 2 | `dump:produce` | 8 min (depends on the row counts in the check report; **Perlu pengesahan**, not yet measured on real data; section 9.4 has the synthetic timing) |
@@ -154,7 +155,7 @@ Run every command from the repository root, in one terminal for the whole sittin
 | 7 | Hand over to the rehearsal host | 3 min |
 | 8 | Delete the local copies | 1 min |
 | 9 | Report on #109 | 2 min |
-| | **Total** | **28 min** |
+| | **Total** | **30 min** (28 min of steps 0 to 9, plus row A) |
 
 ### Step 0. Prepare the machine (2 min)
 
@@ -233,7 +234,7 @@ If the exit code is not 0, go to section 6 now.
    npm run anonymise:scan -w @pp/api -- --dir "$work/anon"
    ```
    It must exit 0.
-2. For each kept free-text column in the list in runbook section 11 (`notes.body`, `notes.title`, `questions.body`, `exam_papers.title`, `users.kelas`, `users.teaching_subject`, `question_attempts.selected_option`, and the rest of that list), look at a sample of the values in the terminal. This prints to the screen only; do not redirect to a file, copy or screenshot. The command prints every `<stride>`-th value of one column, at most 40:
+2. For each kept free-text column in the list in [runbook section 11](../architecture/v2-migration-runbook.md#11-anonymiser-decisions-and-open-points-be-35), paragraph "Required review of kept free text" (`notes.body`, `notes.title`, `questions.body`, `exam_papers.title`, `users.kelas`, `users.teaching_subject`, `question_attempts.selected_option`, and the rest of that list), look at a sample of the values in the terminal. This prints to the screen only; do not redirect to a file, copy or screenshot. The command prints every `<stride>`-th value of one column, at most 40:
    ```powershell
    node -e "const r=require('readline').createInterface({input:require('fs').createReadStream(process.argv[1])});let i=0,n=0;const k=+process.argv[3];r.on('line',l=>{if(i++%k===0&&n++<40){const v=JSON.parse(l)[process.argv[2]];console.log(typeof v==='string'?v:JSON.stringify(v))}})" "$work/anon/notes.ndjson" body 50
    ```
@@ -344,7 +345,8 @@ Post one comment with **only**:
 - sha256 of the `.gpg` file;
 - the offset used for `--datetime-offset`;
 - "free-text check passed (operator)" and "LEAD review: present in person" or "LEAD accepted on #109" (aggregates only);
-- "raw wiped, key destroyed", and "local copies deleted" once step 8 is done.
+- "raw wiped, key destroyed", and "local copies deleted" once step 8 is done;
+- "option file deleted" or "account locked" (step 8, checklist item c).
 
 Never post data, file paths that contain personal information, the passphrase, the key, the option file or any host name.
 
@@ -796,8 +798,8 @@ The readings and the counter files are aggregates. They live in `apps/api/.migra
 - [ ] **6. TLS or tunnel, as section 2 says.**
   Direct connection: the account requires TLS and the server offers it: MariaDB `SHOW CREATE USER` contains `REQUIRE SSL`; MySQL `SELECT ssl_type FROM mysql.user WHERE user = 'pp_dump_ro';` is not empty; and `SHOW VARIABLES LIKE 'have_ssl';` is `YES`. The operator's option file verifies the certificate (section 2, item 7).
   Tunnel variant: the account host is the one MySQL sees (section 2, item 5), the tunnel is the only route, and the owner states whether `REQUIRE SSL` was dropped for the tunnel account (**Perlu pengesahan**).
-- [ ] **7. Unlock and lock are pre-arranged for 24 Oct and the night of 29 Oct.**
-  How: **Perlu pengesahan** (for example scheduled events that run `ALTER USER ... ACCOUNT UNLOCK` and `... ACCOUNT LOCK`). If events are used: `SELECT @@global.event_scheduler;` is `ON`, and `SELECT event_schema, event_name, status, execute_at, interval_value, interval_field, starts, time_zone FROM information_schema.events;` lists the unlock and the lock event as `ENABLED` (the statements run on MariaDB; no event was created in the test). The times are read in the time zone of the event or the server: 29 Oct 01:00 MYT is 28 Oct 17:00 UTC. Expected: an unlock before the operator's first reading of B1 (section 10.1) or at the sitting start on 24 Oct, and a lock after B2 or the end of the sitting. The owner states what happens if an event does not fire (a manual unlock by the owner is not available at night: the plan has no one on call, so a missed unlock is a STOP).
+- [ ] **7. Unlock and lock are pre-arranged for the day-before check, 24 Oct and the night of 29 Oct.**
+  How: **Perlu pengesahan** (for example scheduled events that run `ALTER USER ... ACCOUNT UNLOCK` and `... ACCOUNT LOCK`). If events are used: `SELECT @@global.event_scheduler;` is `ON`, and `SELECT event_schema, event_name, status, execute_at, interval_value, interval_field, starts, time_zone FROM information_schema.events;` lists the unlock and the lock event as `ENABLED` (the statements run on MariaDB; no event was created in the test). The times are read in the time zone of the event or the server: 29 Oct 01:00 MYT is 28 Oct 17:00 UTC. Expected: a short unlock for the `dump:check` of the day before 24 Oct (section 2, item 8; **Perlu pengesahan**: if not booked, `dump:check` runs at the start of the 24 Oct sitting), an unlock before the operator's first reading of B1 (section 10.1) or at the sitting start on 24 Oct, and a lock after B2 or the end of the sitting. The owner states what happens if an event does not fire (a manual unlock by the owner is not available at night: the plan has no one on call, so a missed unlock is a STOP).
 - [ ] **8. The operator holds no `ALTER USER`.**
   The only database credential the operator holds is `pp_dump_ro` (check 3 shows no grant option), and no other account on the .cloud database was given to the operator. Written statement by the owner.
 - [ ] **9. Clean-up is dated.** The owner drops the account after the last use (`DROP USER 'pp_dump_ro'@'<host>';`) on a date that is agreed (**Perlu pengesahan**: the date; section 4 says after the last rehearsal or at go-live, whichever comes first).
