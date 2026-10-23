@@ -63716,10 +63716,51 @@
           "affected": {
             "type": "integer",
             "minimum": 0
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBulkFailure"
+            },
+            "default": [],
+            "description": "One entry per unique requested id that was not applied, in request order; `[]` when all were applied."
           }
         },
         "required": [
           "affected"
+        ]
+      },
+      "QuestionBulkFailure": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "NOT_FOUND",
+              "CONFLICT",
+              "VALIDATION_ERROR"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "The BM text for this id. NOT_FOUND: \"Soalan tidak dijumpai.\" [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view)."
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The exact gate field messages (VALIDATION_ERROR); `{}` otherwise."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "message",
+          "fields"
         ]
       },
       "QuestionDeleteResult": {
@@ -84132,7 +84173,7 @@
           "games"
         ],
         "summary": "Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]",
-        "description": "The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 \"Kad sudah dipadankan.\" [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.",
+        "description": "The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked). Revealing the card that is already open is idempotent: 200 with the same face, nothing changes (a client that lost the first response can reveal it again). Revealing a different card while one is open is 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 \"Kad sudah dipadankan.\" [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.",
         "parameters": [
           {
             "schema": {
@@ -84158,7 +84199,7 @@
         },
         "responses": {
           "200": {
-            "description": "The face of the card; Cache-Control: no-store.",
+            "description": "The face of the card (also for a repeat reveal of the card already open); Cache-Control: no-store.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
@@ -84217,7 +84258,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Keputusan sudah dihantar.\", \"Kad sudah dipadankan.\" [PROPOSED] or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED].",
+            "description": "CONFLICT \"Keputusan sudah dihantar.\", \"Kad sudah dipadankan.\" [PROPOSED] or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED] (a different card is open).",
             "content": {
               "application/json": {
                 "schema": {

@@ -82,7 +82,27 @@ async function boot(): Promise<void> {
   admin = apiOf(await login(t, SCHOOL_ADMIN))
 }
 
-/** A pupil of `schoolId`, optionally with one submitted, graded Bijak sitting (score 7 of 10). */
+/**
+ * Graded JSON as the real marking stores it: one row per paper question, `attempted` true when the pupil gave a
+ * non-blank response. 6 questions on the paper, 4 answered, so "questions answered" (4) differs from the paper's
+ * question count (6) and its marks (10).
+ */
+const ANSWERED_PER_SITTING = 4
+const GRADED = JSON.stringify({
+  sections: [],
+  questions: Array.from({ length: 6 }, (_, n) => ({
+    questionId: `q${n + 1}`,
+    number: n + 1,
+    sectionId: 's',
+    marks: n < 4 ? 2 : 1,
+    awarded: 0,
+    counted: true,
+    attempted: n < ANSWERED_PER_SITTING,
+    parts: [],
+  })),
+})
+
+/** A pupil of `schoolId`, optionally with one submitted, graded Bijak sitting (score 7 of 10, 4 of 6 questions answered). */
 async function pupil(schoolId: string, sitting: boolean): Promise<string> {
   counter += 1
   const [u] = await db.query<{ id: string }>(`insert into users (name, email, school_id) values ($1, $2, $3::bigint) returning id::text`, [
@@ -98,8 +118,8 @@ async function pupil(schoolId: string, sitting: boolean): Promise<string> {
     [u!.id],
   )
   await db.query(
-    `insert into attempt_results (attempt_id, score, max_score, provisional, pending_review, graded) values ($1::uuid, 7, 10, false, 0, '{"sections":[],"questions":[]}'::jsonb)`,
-    [a!.id],
+    `insert into attempt_results (attempt_id, score, max_score, provisional, pending_review, graded) values ($1::uuid, 7, 10, false, 0, $2::jsonb)`,
+    [a!.id, GRADED],
   )
   return u!.id
 }
@@ -147,7 +167,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     for (let i = 0; i < 5; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 5, questions: 50 })
+    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERED_PER_SITTING })
     expect(d.performance.levels.map((l) => l.code)).toEqual(['t4', 't5'])
     // BE-19 has no per-level figures without BE-17 classes and no grade rows before the SPM slice: rows exist, counts stay 0.
     expect(d.performance.distribution.length).toBeGreaterThan(0)
@@ -168,7 +188,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     for (let i = 0; i < 8; i++) await pupil(s2, true) // other school: 8 sittings
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 2, questions: 20 })
+    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 2, questions: 2 * ANSWERED_PER_SITTING })
   })
 
   it('the class count is the number of ACTIVE classes of the own school (BE-17); another school and inactive classes are not counted', async () => {

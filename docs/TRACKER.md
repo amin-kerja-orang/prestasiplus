@@ -68,7 +68,7 @@
 | D63 | **BE-33 gaps accepted as go-live exceptions** (user, 2026-10-21): BE-33 gaps #97-#100 (non-strict request bodies) are accepted go-live exceptions, to be fixed after go-live. #94-#96 remain release-gate items. | 2026-10-21 |
 | D64 | **Merge process** (user, 2026-10-21): the "SEDIA MERGE" checker (scheduled every 2 hours) plus a human merge by the LEAD; no automated merging. Rules in docs/plan/AGENT-SYNC.md. | 2026-10-21 |
 | D65 | **Go-live scope and hosting pending** (user, 2026-10-21): the go-live scope (D-1) is being chosen from the module/function workbook, and production hosting (D-2) depends on a VPS sufficiency check. Both decisions are pending. | 2026-10-21 |
-| D66 | **MIG-03/06 migration decisions: "all defaults"** (LEAD `azarulhakim`, 2026-10-21 23:20 MYT, #109 answer to `[Amin1] DECISION NEEDED MIG-03/06`, PR #114): OD-10 Q1–Q7 and Q9–Q13 all option A (Q4 A keeps migrated teacher question-set headers as "needs rebuild", which needs `question_sets.classroom_id` nullable = AZ-31 #135, migration 0042); OD-21 C (no notification broadcasts), OD-22 A (`quota` → `student_quota`), OD-23 B (no `ai_usage_logs` at go-live), OD-18 A (Amin is the AM-10 operator, the LEAD approves), DT-1 A (.cloud `DATETIME` = `+08:00`). Q8 unanswered, stays as in BE-11. Options touching personal data (Q2, Q5, Q7, Q12) still need a security-engineer pass before the AM-08/AM-09 PRs are READY. Record: `docs/architecture/v2-migration-decisions.md` (#114). | 2026-10-21 |
+| D66 | **MIG-03/06 migration decisions: "all defaults"** (LEAD `azarulhakim`, 2026-10-21 23:20 MYT, #109 answer to `[Amin1] DECISION NEEDED MIG-03/06`, PR #114): OD-10 Q1–Q7 and Q9–Q13 all option A (Q4 A keeps migrated teacher question-set headers as "needs rebuild", which needs `question_sets.classroom_id` nullable = AZ-31 #135, migration 0042); OD-21 C (no notification broadcasts), OD-22 A (`quota` → `student_quota`), OD-23 B (no `ai_usage_logs` at go-live), OD-18 A (the `.cloud` operator (half AM) is the AM-10 operator, the LEAD approves), DT-1 A (.cloud `DATETIME` = `+08:00`). Q8 unanswered, stays as in BE-11. Options touching personal data (Q2, Q5, Q7, Q12) still need a security-engineer pass before the AM-08/AM-09 PRs are READY. Record: `docs/architecture/v2-migration-decisions.md` (#114). | 2026-10-21 |
 | D67 | **Kill switch** (LEAD, 2026-10-22 00:11 MYT, LEAD notice on #109 and #113; overrides item 3 of the 23:20 notice): a comment by `aminfaudzi` or `azarulhakim` whose text contains `STOP half-AM` (#109) or `STOP half-AZ` (#113) stops that half, with or without a prefix. STOP always wins; when in doubt, stop. `RESUME` counts only from a comment that starts with `RESUME half-AM` / `RESUME half-AZ`, posted after the STOP. The prefix rule (`[Amin1]`, `[Amin2]`, `**LEAD notice`) applies only to `ASSIGN`, `HANDOFF`, `OK` and other steering commands. A LEAD notice never overrides the guard-rails. | 2026-10-22 |
 | D68 | **Migration number ranges and claims** (LEAD, 2026-10-21 23:20 MYT, LEAD notices on #109 and #113; refines D60 rule 2): half AM's 0070–0099 is split, **Lead-Amin1 0070–0089** and **Lead-Amin2 0090–0099**; half AZ keeps **0040–0069**. Before creating a migration folder, a developer posts `MIGRATION 00NN (<dev>, <item>)` (half AM: `[AmiN] MIGRATION …` on #109; half AZ: on #113); the first comment wins. Claimed so far on #113: 0040 AZ-13 (#127), 0041 AZ-22 (#132), 0042 AZ-31 (#135). | 2026-10-21 |
 | D69 | **SEDIA MERGE gate 2 is strict** (LEAD, 2026-10-22 01:16 MYT, LEAD correction on #67 and notices on #113): an open Major from **any** reviewer blocks SEDIA MERGE, even when the checker's own G4 missed it. First applied to #105: its SEDIA MERGE on head `1ba52f7b` was voided because of AZ-Dev4's open Major. Refines D64. | 2026-10-22 |
@@ -131,6 +131,18 @@ Pending decisions already made: M04-T6b in student slice; OQ-M13-08 voice simula
 | 2026-10-01 | 21/27 = 77.8% | 15.0% + M02 G4+G5 (1/27 × 85% ≈ 3.1%) = 18.1% | **≈ 42.0%** | first module complete; next: 50% |
 | 2026-10-02 | 21/27 = 77.8% | 15.0% + M02, M04 G4+G5 (2/27 × 85% ≈ 6.3%) = 21.3% | **≈ 43.9%** | second module complete; next: 50% |
 | 2026-10-02 | 21/27 = 77.8% | 15.0% + M02, M04, M08 G4+G5 (3/27 × 85% ≈ 9.4%) = 24.4% | **≈ 45.8%** | third module complete (M08; D21 rows L08–L11, L23, L38, L44, L48 at 100%); next: 50% |
+| 2026-10-21 | 21/27 = 77.8% (M01–M21 whole-module G1; M22 tickets, M25 Heatmap, M27 S0 + Part B G1 are partial, not counted here) | 15.0% + 85% × 13.8/27 (51.0%) = 15.0% + 43.4% = 58.4% (F-tasks 29/29) | **≈ 66.1%** | ✅ 50% and ✅ 60% announced; v2 sprint; next: 70% |
+| 2026-10-22 | 21/27 = 77.8% (unchanged: no module reached whole-module G1 since 21 Oct; M22 tickets, M25 Heatmap, M27 S0 + Part B stay partial, not counted) | 15.0% + 85% × 13.8/27 (51.0%) = 15.0% + 43.4% = 58.4% (unchanged: F-tasks 29/29; no new module G4 + G5 READY verdict merged since the 21 Oct row) | **≈ 66.1%** | — (no new 10% step; next: 70%) |
+
+*The 2026-10-21 row above is carried over verbatim from `feature/student-prototype` @ `3e192a7a` (it was never merged into this branch; #194 names it the reference). Its arithmetic note and v2 backend line are carried over unchanged below, followed by the 2026-10-22 notes (#194).*
+
+**2026-10-21 arithmetic:** Req 0.4 × 77.8 = 31.1; Build 0.6 × 58.4 = 35.0; Overall = 66.1%. Module fractions (screens passed G4 + G5 ÷ module screens; evidence = `docs/qa/*` READY verdicts and `docs/ROLES-MATRIX-LINES.md` with all 59 rows at 100%): M01 4/12, M02 16/16, M03 14/14, M04 14/14, M05 11/15, M06 13/13, M07 8/8, M08 23/23, M09 9/28, M10 12/35, M11 6/8, M12 8/10, M13 8/8, M14 8/22, M15 5/11, M16 12/30, M17 6/11, M18 0, M19 0, M20 4/12, M21 1/7, M22 2/6, M23 0, M24 0, M25 1/6, M26 0, M27 13/17 = 13.8 of 27. Ambiguous (counted conservatively, screen counts taken from URS/QA scope lines, not a per-screen audit): M16 (exact READY screen set for L26/L28/L50), M10 (S1 teacher dashboard counted), M22/M25/M27 denominators (board route counts), M01 (login/register screens built but outside the G5 scope, not counted). This metric tracks the v1 prototype (`feature/student-prototype`); v2 (D28 onward) is tracked separately.
+
+**v2 backend plan (docs/plan/backend-tracker.md): 2026-10-21 ≈ 69% (31/48 cards done + 4 slices; 52% before batch3). Demo of Bijak SPM live at https://prestasiplus-demo.pages.dev (2026-10-20 22:36).**
+
+**2026-10-22 arithmetic (formula unchanged):** Req 0.4 × 77.8 = 31.1; Build 0.6 × 58.4 = 35.0; Overall = 66.1% (unrounded 66.15%). Assumptions: (1) the module fractions are the 21 Oct ones (13.8 of 27), because the merges of 21–22 Oct (`feature/v2-backend` → `20d201c5`, merge log on #67 of 22 Oct 11:47Z; `be/integration-frontend` → `9a5b0680`) added no module-level G5 READY verdict: every QA doc added or changed is a plan, run script or rehearsal (`docs/qa/full-testing-25oct.md`, `docs/qa/uat-demo-23oct.md`, `docs/qa/demo-rehearsal-integrated-22oct.md`, `docs/qa/bijak-go-no-go.md`, `docs/qa/bijak-uat.md`) or backend-card evidence (`docs/qa/BE-33-audit-coverage.md`, `docs/qa/BE-33-audit-gaps.patch`, `docs/qa/v2-test-strategy.md`); the only requirements change is a wording fix in `docs/requirements/srs/M27-school-admin.md`; (2) Requirements stays the v1 G1 count, because the v2 requirements (`docs/requirements/v2-*.md`, D28–D47) have no per-module G1 that maps onto the ÷ 27 denominator; (3) v2 work (http-mode fixes, backend cards, ops) does not move the formula, because the formula's Build term counts v1 prototype screens that passed G4 + G5, and the v2 changes have no per-screen G4 + G5 verdict yet (the G5 full test is planned for 25 Oct). The formula's inputs are therefore ambiguous for v2 (D28–D32), so the v2 line below is reported separately.
+
+**v2 line, 2026-10-22 (NOT the §0b formula; reported separately because of D28–D32):** backend cards **44 / 48 done = 91.7%** (`docs/plan/backend-tracker.md` Summary after the LEAD merge @ `8008b88a`; it reports ≈ 93.75% when the BE-32 and BE-33 merged slices count as one card: (44 + 1) / 48). Not done: BE-32, BE-33 `in-progress` (release-gate ACs open); BE-29, BE-30 `review` (PRs open; on the go-live critical path per D61). **Go-live readiness: 20 items open** = 17 of the 29 rows of `docs/ops/go-live-bijak-spm.md` §2 (items 6, 7, 8, 9, 10, 11, 16b, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27) + 3 go-live issues opened on 22 Oct (#188 malware scan P0, PR #203 open; #189 intake redactor P1, PR #200 open; #190 single instance P1, LEAD decision A on #113 14:00Z, PR #204 open). Assumptions: the checklist status is the one recorded at `2be3b5f6` (21 Oct), changed only where 22 Oct evidence exists: item 16a closed (rehearsal at backend `20d201c5` / frontend `9a5b0680`: walkthrough 116/0/0 with writes, #67 22 Oct 13:09Z); item 17 closed for go-live (#94, #95, #96 closed; #97–#100 are go-live exceptions per D63 and #100 is closed). `docs/ops/go-live-bijak-spm.md` itself still reads rows 16a and 17 as open at `20d201c5`; that ops doc needs its own refresh (not done here, docs-only scope of #194). Items kept open although work landed, because no closing evidence exists: 10 (solo-game fix #105 merged via #178, but the go-live scope D-1 is still pending per D65), 21/22 (production pack #116 merged; no restore drill or alert run recorded), 26 (frontend CI #140 merged, but the `be/integration-frontend` tip is red: vue-tsc heap abort and 6 failed `@api` e2e, #113 22 Oct 13:54Z and 14:09Z). Items counted as done 1–5, 12–16. D-2 hosting and D-1 scope stay pending (D65).
 
 ## 0a. Roadmap to UI & prototype (user: "teruskan sampai dapat UI dan Prototype")
 
@@ -223,49 +235,58 @@ Fictitious schools use reserved ids 900001–900099 (M02): 900001 SMK DEMO, 9000
 
 ## 2. Summary
 
+As of 2026-10-22 (`feature/v2-backend` @ `20d201c5`, `be/integration-frontend` @ `9a5b0680`). Sources: the §0b rows of 21 and 22 Oct, `docs/requirements/urs/` and `srs/`, `docs/qa/audit/`, `docs/SCOPE-STATUS.md`, `docs/plan/backend-tracker.md`, `docs/ops/go-live-bijak-spm.md` and the #67/#113 LEAD notices. "Partial" = a slice of the module passed the gate, not the whole module.
+
 | Metric | Value |
 |---|---|
-| Modules | 26 |
-| Discovery done | 21 / 26 |
-| Audit passed | 12 / 26 |
-| URS done | 12 / 26 |
-| SRS done | 12 / 26 |
-| G1 approved | 12 / 26 |
+| Modules (v1 rebuild) | 27 (D16; the §0b formula uses ÷ 27). M28 Bijak SPM is v2 (D32, D44) and sits outside the ÷ 27 formula |
+| Discovery done | 23 / 27 whole (M01–M22, M27) + M25 Heatmap slice (R10 discovery). M26 stays ⬜: `docs/discovery/M26-sekolah-bersaing.md` covers L50 only, a screen owned and counted by M16 |
+| URS / SRS / audit done | 21 / 27 whole (M01–M21) + 3 partial (M22 tickets, M25 Heatmap, M27 S0 + Part B) |
+| G1 approved | 21 / 27 whole (M01–M21) + 3 partial (M22 tickets D27, M25 Heatmap, M27 S0 + Part B D26) |
+| Foundation tasks F-01..F-30 | 29 / 29 (G4 Approve) |
+| Modules whose screens passed G4 + G5 (v1 prototype) | 7 whole (M02, M03, M04, M06, M07, M08, M13) + 15 partial; weighted 13.8 / 27 (fractions in the §0b 21 Oct note) |
+| Role-matrix rows (`docs/ROLES-MATRIX-LINES.md`) | 59 / 59 at 100% (G5 READY; as recorded in the §0b 21 Oct note and `docs/SCOPE-STATUS.md` §1, not re-run on 22 Oct) |
+| **Overall (§0b formula)** | **≈ 66.1%** (2026-10-22, unchanged since 21 Oct) |
+| v2 backend cards | 44 / 48 done (BE-32, BE-33 in progress; BE-29, BE-30 in review) |
+| Go-live readiness (30 Oct) | 20 items open (§0b v2 line) |
 | Routes identified (menu-level) | ~210 |
 
 ---
 
 ## 3. Module board
 
-| ID | Module | Phase | Portal | Routes | DISC | URS | SRS | AUD | G1 | DSN | BLD | REV | QA |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| M01 | Authentication & Account | A | Public / All | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ user | ◐ user | ◐ user | ◐ user |
-| M02 | Users & Schools Management | A | Admin | 16 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| M03 | Curriculum (Subjects, Levels, Topics) | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ admin | ◐ admin | ◐ admin | ◐ admin |
-| M04 | Question Bank | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| M05 | Practice & Drills (Latih Tubi) | B | Student | 15 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ S1–S7, S10, S13–S15 | ◐ | ◐ | ◐ |
-| M06 | SPM | B | Admin / Student | 13 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M07 | Premium PKSK | B | Admin / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M08 | Student Performance & Analytics | B | Student | 23 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| M09 | Content (Articles, Notes, Video, Audio) | B | Admin / All | 28 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ reader | ◐ reader | ◐ reader | ◐ reader |
-| M10 | Teacher Portal — Class & Teaching | C | Teacher | 35 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M11 | Teacher Portal — Analytics & Reports | C | Teacher | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M12 | Kirkpatrick Evaluation | C | Admin / Teacher | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M13 | Cikgu Alesa (AI Teacher Assistant) | C | Teacher / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M14 | Gamification (Coins, Tokens, Challenges) | D | Admin / Student / Teacher | 22 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M15 | Rewards Shop & Redemption | D | Admin / Student / Teacher | 9 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M16 | Battle, Games & Competitions | D | Admin / Student | 30 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ student | ◐ student (S1–S23, S28, S30) | ◐ student | ✅ student (L26, L28, L50) |
-| M17 | Admin Dashboard & Analytics | E | Admin | 11 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M18 | PPD & JPN (District/State) | E | PPD / JPN | 33 | ✅ | ✅ | ✅ | ✅ | ✅ | — | ◐ risk mock #21/#22/#24/#30 | ◐ risk mock | — |
-| M19 | Finance & Subscriptions | E | Admin / All | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M20 | Marketplace | E | Admin / Seller / Student | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ buyer | ◐ buyer S6–S8 + W | ◐ buyer | ✅ buyer (L37) |
-| M21 | Sponsorship & Anak Angkat | E | Admin / Public / Student | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| M22 | Notifications & Support | E | Admin / All | 6 | ✅ | ✅ tickets | ✅ tickets | ✅ tickets | ✅ tickets (D27) | ✅ tickets | ✅ tickets | ✅ tickets | ✅ tickets (L04) |
-| M23 | System Administration | E | Admin | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
-| M24 | Ambassador Programme (Duta) | F | Admin / Duta | 7 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
-| M25 | AI Centre (Pusat AI) | F | All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
-| M26 | Vision & Special Features | F | All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
-| M27 | School Admin Portal (`/admin-sekolah/*`) | E | Admin Sekolah | 17 probed (2 aliases of M11/M12, 15 unrevealed) | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — |
+| ID | Module | Phase | Portal | Routes | DISC | URS | SRS | AUD | G1 | DSN | BLD | REV | QA | v2 BE cards |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| M01 | Authentication & Account | A | Public / All | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ user | ◐ user | ◐ 4/12 | ◐ 4/12 | BE-03, BE-06 ✅ |
+| M02 | Users & Schools Management | A | Admin | 16 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-05, BE-25 ✅ |
+| M03 | Curriculum (Subjects, Levels, Topics) | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-08 ✅ |
+| M04 | Question Bank | A | Admin / Student | 14 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-09, BE-10 ✅ |
+| M05 | Practice & Drills (Latih Tubi) | B | Student | 15 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ S1–S7, S10, S13–S15 | ◐ | ◐ 11/15 | ◐ 11/15 | BE-12, BE-13 ✅ |
+| M06 | SPM | B | Admin / Student | 13 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-41 ✅ |
+| M07 | Premium PKSK | B | Admin / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-42 ✅ |
+| M08 | Student Performance & Analytics | B | Student | 23 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-19 ✅ |
+| M09 | Content (Articles, Notes, Video, Audio) | B | Admin / All | 28 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ reader | ◐ reader | ◐ 9/28 | ◐ 9/28 | BE-24 ✅ |
+| M10 | Teacher Portal — Class & Teaching | C | Teacher | 35 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 12/35 | ◐ 12/35 | BE-17, BE-18, BE-22 ✅ |
+| M11 | Teacher Portal — Analytics & Reports | C | Teacher | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 6/8 | ◐ 6/8 | BE-20 ✅ |
+| M12 | Kirkpatrick Evaluation | C | Admin / Teacher | 10 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 8/10 | ◐ 8/10 | BE-20 ✅ |
+| M13 | Cikgu Alesa (AI Teacher Assistant) | C | Teacher / Student | 8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | BE-43 ✅ |
+| M14 | Gamification (Coins, Tokens, Challenges) | D | Admin / Student / Teacher | 22 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 8/22 | ◐ 8/22 | BE-11, BE-23 ✅ |
+| M15 | Rewards Shop & Redemption | D | Admin / Student / Teacher | 9 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 5/11 | ◐ 5/11 | BE-23 ✅ |
+| M16 | Battle, Games & Competitions | D | Admin / Student | 30 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ student | ◐ student (S1–S23, S28, S30) | ◐ 12/30 | ◐ 12/30 | BE-44, BE-45 ✅ |
+| M17 | Admin Dashboard & Analytics | E | Admin | 11 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 6/11 | ◐ 6/11 | BE-22 ✅ |
+| M18 | PPD & JPN (District/State) | E | PPD / JPN | 33 | ✅ | ✅ | ✅ | ✅ | ✅ | — | ◐ risk mock #21/#22/#24/#30 | ◐ risk mock | — | — (Amaran folded into BE-21, D53 UD-4) |
+| M19 | Finance & Subscriptions | E | Admin / All | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — | — | — |
+| M20 | Marketplace | E | Admin / Seller / Student | 12 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ buyer | ◐ buyer S6–S8 + W | ◐ 4/12 | ◐ 4/12 | BE-46 ✅ (buyer) |
+| M21 | Sponsorship & Anak Angkat | E | Admin / Public / Student | 7 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ 1/7 | ◐ 1/7 | BE-47 ✅ (student side) |
+| M22 | Notifications & Support | E | Admin / All | 6 | ✅ | ✅ tickets | ✅ tickets | ✅ tickets | ✅ tickets (D27) | ✅ tickets | ✅ tickets | ◐ 2/6 | ◐ 2/6 | BE-24 ✅ |
+| M23 | System Administration | E | Admin | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — | — |
+| M24 | Ambassador Programme (Duta) | F | Admin / Duta | 7 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — | — |
+| M25 | AI Centre (Pusat AI) | F | All | 6 | ◐ Heatmap (R10) | ◐ Heatmap | ◐ Heatmap | ◐ Heatmap | ◐ Heatmap | ◐ | ◐ | ◐ 1/6 | ◐ 1/6 | BE-48 ✅ (Heatmap) |
+| M26 | Vision & Special Features | F | All | 6 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — | — | — |
+| M27 | School Admin Portal (`/admin-sekolah/*`) | E | Admin Sekolah | 17 probed (2 aliases of M11/M12, 15 unrevealed) | ✅ | ◐ S0 + Part B | ◐ S0 + Part B | ◐ S0 + Part B | ◐ S0 + Part B (D26) | ◐ | ◐ | ◐ 13/17 | ◐ 13/17 | BE-21 ✅ |
+| M28 | Bijak SPM (v2: Kertas Pilihan + Jana Kertas, intake, paper builder) | v2 | Student / Admin Pusat | 5 student routes | v2 docs | v2 docs | v2 docs | — | v2 (D32, D44, D47, D52) | — | — | — | G5 planned 25 Oct | BE-14, BE-15, BE-16, BE-39; intake BE-36, BE-37, BE-38, BE-40 ✅ |
+
+REV and QA show screens that passed G4 + G5 ÷ module screens (the §0b 2026-10-21 fractions; unchanged on 22 Oct). DSN/BLD show ◐ where a passed screen implies a built one. The v2 BE column lists the backend cards per module from `docs/plan/backend-tracker.md` (✅ = merged into `feature/v2-backend`). Cross-cutting cards: BE-01, BE-02, BE-04, BE-07, BE-26, BE-31 ✅; BE-32, BE-33 in progress. Migration from .cloud (D61): BE-27, BE-28, BE-34, BE-35 ✅; BE-29, BE-30 in review. M28 v1 gate cells are n/a: it is a v2 module (`docs/requirements/v2-bijak-spm.md`, `docs/requirements/v2-exam-schema.md`). M15's 11-screen denominator (vs 9 routes) is the 21 Oct note's figure, kept as recorded.
 
 **Phases (recommended build order, foundation first):**
 - **A — Foundation:** M01–M04 (everything else depends on users, schools, curriculum, questions)
@@ -684,6 +705,7 @@ Master indexes: `docs/requirements/URS.md` and `docs/requirements/SRS.md` link e
 | Date | Change |
 |---|---|
 | 2026-10-22 | **Decisions D66–D70 recorded from the LEAD comments of 21–22 Oct** (AZ-26 housekeeping, docs only): MIG-03/06 "all defaults" (D66), kill switch (D67), migration ranges 0040–0069 / 0070–0089 / 0090–0099 with `MIGRATION` claims (D68), strict SEDIA MERGE gate 2 (D69), AZ-21c CI exception (D70). Half-AZ card rows added to `docs/plan/backend-tracker.md`; Lead notice appended to `docs/plan/AGENT-SYNC.md`; obsolete-issue list in `docs/plan/issues-to-close-22oct.md` (nothing closed). |
+| 2026-10-22 | **#194 tracker refresh (AZ-Docs, docs only).** §0b: appended the 2026-10-21 row (carried over verbatim from `feature/student-prototype` @ `3e192a7a`) and a 2026-10-22 row, formula unchanged: **≈ 66.1%** (Req 21/27 = 77.8%, Build 58.4%; no new whole-module G1 or module G4 + G5 verdict since 21 Oct). Added a separate, labelled v2 line: backend cards 44/48 done, 20 go-live readiness items open. §2 summary and §3 board refreshed to 22 Oct (G1 partials for M22/M25/M27, G4 + G5 screen fractions, a v2 backend-card column and an M28 Bijak SPM row). Sources: merge history of `feature/v2-backend` @ `20d201c5` and `be/integration-frontend` @ `9a5b0680`, `docs/plan/backend-tracker.md`, `docs/SCOPE-STATUS.md`, `docs/ops/go-live-bijak-spm.md`, D28–D65, the #67 merge log and the #113 LEAD notices of 22 Oct. |
 | 2026-10-16 | **v2 Wave 0 progress (branch `feature/v2-frontend`, tip 85e031f):** V2-T02 Nuxt UI spike Go; V2-T03 theme (two personalities × light/dark, own colour mode `pp.theme`, Phosphor, fonts, `learner:`/`staff:` variants, bundle budget) G4 Approve after fixes; V2-T04 strict DS tooling (page/ds levels, tokens generated from tokens.css, ratchet, lint runner) G4 Approve after fixes; baseline fix (9 legacy lint errors, M04 inovasi test corrected per M07 evidence) G4 Approve. Integrated verification: lint 0/0, typecheck clean, unit 418/418 files (7415 pass), build + bundle budget OK, e2e smoke 48/48. In progress: V2-T05 DS composites + /__ds gallery, V2-T06 contract package. V2-T01 GitHub setup deferred (D32). Bank Soalan v2 G1 draft `docs/requirements/v2-question-bank.md` (D40) + DSKP T4–T5 extracts for 13 subjects `docs/reference/dskp/` (not yet audited). |
 | 2026-10-16 | **v2 direction (D28–D30) + three v2 analysis docs, awaiting user answers (G1 open questions):** `docs/requirements/v2-portals.md` (G1 Portal & Peranan: US-01–US-16, 94 admin functions mapped to the 9 D30 groups, all 12 live shell-switch items resolved); `docs/requirements/v2-cloud-gap.md` (163 rows: Replicate 99 / Merge 33 / Redesign-question 19 / Redesign-portal 8 / Drop 4; 23 missing features incl. Bijak SPM `/simulasi`, Set Builder, Question Studio, Finance, PPD/JPN); `docs/architecture/v2-data-migration.md` (134 .cloud tables: Same 2 / Rename 17 / Reshape 42 / Missing 22 / Not migrated 51; question-dependent data = historical snapshot + later backfill; MIG-01–09). All three were written from code only and are not yet reviewed. Live check confirmed the admin→student shell switch on prestasiplus.my. | 
 | 2026-10-10 | **Session 2: L56–L58 (M27 S6–S12) → 100%; M27 Part B (L51–L58) complete.** Independent G5 by Session 8 READY (`da09c18`, `docs/qa/L56-L58-pengguna-sekolah.md`): S6–S12 + CSV, every executed AC Pass, responsive Pass at 320/375/768/1280 on all seven screens, no Critical/High/Medium. Low observations: N-1 Chrome autocomplete log (D10, replicates live), N-2 = BUG-M27B-02 (inline error block until the M01 global error page exists), N-3 e-mail wraps mid-word at 375 in S6 (table scrolls in its card), N-4 CSV `created_at` milliseconds on rows created at runtime, N-5 = OQ-M27-26 (Kod Kelas). Blocked, covered only by unit tests: second paginator page (no school above 25 rows), S9 403 for an inactive pupil, S12 foreign `classId` 422. |

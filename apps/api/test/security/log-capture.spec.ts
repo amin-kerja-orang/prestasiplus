@@ -83,7 +83,9 @@ describe('BE-33 AC8: logs hold no secrets across login, password reset and uploa
       expect(secret.length).toBeGreaterThanOrEqual(8)
       expect(all, `logs contain a secret starting ${secret.slice(0, 4)}`).not.toContain(secret)
     }
-    expect(all).not.toMatch(/(?<!\d)\d{12}(?!\d)/) // no bare 12-digit IC
+    // No bare 12-digit IC. Request ids are UUIDs whose last group can be 12 decimal digits (~0.4% each), so UUIDs are
+    // removed for this one check only; an IC is never written in UUID form.
+    expect(all.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')).not.toMatch(/(?<!\d)\d{12}(?!\d)/)
     expect(all).not.toMatch(/\b\d{6}-\d{2}-\d{4}\b/)
     expect(all).not.toMatch(/\$argon2|\$2[aby]\$/)
     // No cookie header values, request or response.
