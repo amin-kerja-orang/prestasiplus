@@ -30,6 +30,18 @@ import {
 
 const STUDENT = 'pelajar@demo.test'
 
+/**
+ * A change to a different password succeeds (the same password is refused, see the "must differ" block), then the
+ * demo password is put back so later tests keep logging in with it. The session rotates, so the CSRF is re-read.
+ */
+async function changeAndRestore(who: Who): Promise<void> {
+  const first = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu9', passwordConfirmation: 'baharu9' })
+  expect(first.status, JSON.stringify(first.body)).toBe(200)
+  const csrf = SessionSchema.parse((await get(who, '/session')).body.data).csrf
+  const back = await put({ ...who, csrf }, '/me/password', { currentPassword: 'baharu9', password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
+  expect(back.status, JSON.stringify(back.body)).toBe(200)
+}
+
 describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC9)', () => {
   let t: AccountTestApp
   let school2: string
@@ -241,7 +253,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       const err = errorOf(blocked, 429, 'RATE_LIMITED')
       expect(err.retryAfter).toBeGreaterThan(0)
       t.clock.advance(61_000)
-      expect((await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })).status).toBe(200)
+      await changeAndRestore(who)
     })
 
     it('reserves the unit before the check: parallel wrong guesses cannot exceed 5 per minute', async () => {
@@ -271,7 +283,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(rows[0]?.detail).toEqual({ failures: 20, windowMinutes: 15 })
       expect(JSON.stringify(rows)).not.toContain('salah-sungguh')
       t.clock.advance(15 * 60_000)
-      expect((await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })).status).toBe(200)
+      await changeAndRestore(who)
     })
 
     it('clears must_reset_password (and rotates the session, as every change does)', async () => {

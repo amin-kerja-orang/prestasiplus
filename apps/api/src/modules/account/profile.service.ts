@@ -26,6 +26,7 @@ import {
   ACCOUNT_AUDIT,
   ACCOUNT_TX,
   PASSWORD_CHANGE_CEILING,
+  PASSWORD_MUST_DIFFER_MESSAGE,
   SELF_SCHOOL_ROLES,
 } from './account.constants'
 import { fieldsOf, invalid } from './account.errors'
@@ -187,7 +188,8 @@ export class ProfileService {
   /**
    * Requires the current password (a wrong one is counted: 5 per minute per user, then 429), re-hashes
    * with argon2id, clears `must_reset_password`, ends the user's OTHER sessions and ALWAYS rotates the caller's own
-   * session (new cookie, old row deleted; OWASP, lead decision 2026-10-20). The CSRF token changes, so the client
+   * session (new cookie, old row deleted; OWASP, lead decision 2026-10-20). A new password equal to the current one
+   * is refused with 422 on `password` before anything is written. The CSRF token changes, so the client
    * must read `GET /session` afterwards. Returns the new grant.
    */
   async changePassword(auth: AuthContext, raw: unknown, info: RequestInfo): Promise<SessionGrant> {
@@ -204,6 +206,16 @@ export class ProfileService {
         const failures = await this.throttle.passwordChangeFailed(auth.userId)
         if (failures === PASSWORD_CHANGE_CEILING) await this.auditLocked(auth, failures, info)
         throw invalid({ currentPassword: ACCOUNT_AUTH_MESSAGES.currentPasswordWrong })
+      }
+
+      // Hardening (SRS SEC-M01-21c): the new password must differ from the current one, so a forced change
+      // cannot be cleared by "changing" to the same password. Same verifier as above (argon2id and legacy bcrypt).
+      // Nothing is written, the session is not rotated and no audit row is added (like the wrong-password 422).
+      if ((await this.passwords.check(data.password, credentials.passwordHash)).ok) {
+        // The current password was proven, so this is not a guess: give the per-minute unit back (clears the
+        // per-minute window, like a success). The 15-minute failure ceiling is not touched.
+        await this.throttle.passwordChangeSucceeded(auth.userId).catch(() => undefined)
+        throw invalid({ password: PASSWORD_MUST_DIFFER_MESSAGE })
       }
 
       const passwordHash = await this.passwords.hash(data.password, 'high')
