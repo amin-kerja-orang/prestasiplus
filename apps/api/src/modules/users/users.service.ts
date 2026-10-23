@@ -28,6 +28,7 @@ import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { PasswordService } from '../auth/password.service'
 import { isOverloadError } from '../auth/auth.errors'
+import { ParentsRepository } from '../parents/parents.repository'
 import { SchoolsRepository } from '../schools'
 import type { Caller } from './caller'
 import { classLevelOfGrade } from './class-level'
@@ -75,6 +76,7 @@ export class UsersService {
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(ParentsRepository) private readonly parentLinks: ParentsRepository,
   ) {}
 
   // --- reads --------------------------------------------------------------------------------------
@@ -176,7 +178,7 @@ export class UsersService {
     const schoolId = await this.resolveSchool(caller, blankToNull(body.schoolId), fields)
     const ppd = await this.resolveRegion(roles, blankToNull(body.ppdState), blankToNull(body.ppdDistrict), fields)
     const ic = isStudent ? this.icOf(blankToNull(body.icNumber), fields) : null
-    await this.checkLinked(roles, body.linkedStudentIds, fields)
+    await this.checkLinked(caller, roles, body.linkedStudentIds, fields)
     await this.checkUnique(fields, { email, username, schoolId })
     if (Object.keys(fields).length > 0) throw invalid(fields)
 
@@ -203,6 +205,7 @@ export class UsersService {
       await this.users.setRoles(newId, roles, now)
       await this.users.setAdminScope(newId, roles.includes('admin'), now)
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(newId, ppd, now)
+      if (roles.includes('parent') && body.linkedStudentIds !== undefined) await this.storeLinked(caller, newId, body.linkedStudentIds)
       await this.audit.record({
         tx,
         ...this.auditBase(caller, USER_AUDIT.CREATED, { id: newId, schoolId }),
@@ -294,7 +297,7 @@ export class UsersService {
       }
 
       const ic = isStudent && body.icNumber !== undefined ? this.icOf(blankToNull(body.icNumber), fields) : undefined
-      await this.checkLinked(roles, body.linkedStudentIds, fields)
+      await this.checkLinked(caller, roles, body.linkedStudentIds, fields)
       await this.checkUnique(fields, {
         email: body.email === undefined ? null : email,
         username: body.username === undefined && schoolId === target.schoolId ? null : username,
@@ -336,6 +339,8 @@ export class UsersService {
         if (!roles.includes('ppd_officer')) await this.users.setPpdScope(id, null, now)
       }
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(id, ppd, now)
+      // BR-10 / BR-11: the set is replaced only for a parent that sent it (absent keeps the stored links).
+      if (roles.includes('parent') && body.linkedStudentIds !== undefined) await this.storeLinked(caller, id, body.linkedStudentIds)
 
       // A role, status, school or password change ends the sessions of the target (BE-NFR-39).
       const deactivated = target.isActive && !nextActive
@@ -509,10 +514,23 @@ export class UsersService {
     return parts
   }
 
-  /** Every linked id must be a student. Links are stored by BE-25 (parent links); until then they are only checked. */
-  private async checkLinked(roles: readonly RoleCode[], ids: readonly string[] | undefined, fields: Record<string, string>): Promise<void> {
+  /** Every linked id must be a student (a school_admin: of its own school; a student elsewhere reads as unknown). */
+  private async checkLinked(
+    caller: Caller,
+    roles: readonly RoleCode[],
+    ids: readonly string[] | undefined,
+    fields: Record<string, string>,
+  ): Promise<void> {
     if (!roles.includes('parent') || ids === undefined) return
-    if (!(await this.users.allStudents(ids))) fields.linkedStudentIds = FIELD_MESSAGES.linkedInvalid
+    if (!(await this.users.allStudents(ids, caller))) fields.linkedStudentIds = FIELD_MESSAGES.linkedInvalid
+  }
+
+  /**
+   * Stores the checked links of a parent in the user write's transaction: the set is replaced by `ids`
+   * (AC-M02-15.4). A school_admin only replaces the links of its own school's children, the ones it can see.
+   */
+  private async storeLinked(caller: Caller, parentId: string, ids: readonly string[]): Promise<void> {
+    await this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
   }
 
   /**

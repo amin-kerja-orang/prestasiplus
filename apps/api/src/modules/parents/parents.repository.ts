@@ -84,6 +84,29 @@ export class ParentsRepository {
     return { link: toLink(row), created: made.count === 1 }
   }
 
+  /**
+   * Makes the links of one parent exactly `studentIds` (admin edit, AC-M02-15.4): missing pairs are added
+   * (an existing row keeps its id and relationship), the others are removed. With `schoolId` only links whose
+   * student is in that school are removed, so a school_admin never touches a link it cannot see.
+   * Call inside the caller's transaction together with the user write.
+   */
+  async replaceLinksOfParent(parentId: string, studentIds: readonly string[], schoolId: string | null = null): Promise<void> {
+    const parent = idFromString(parentId)
+    const wanted = [...new Set(studentIds)].map(idFromString)
+    await this.prisma.client.parentLink.deleteMany({
+      where: {
+        parentId: parent,
+        ...(wanted.length > 0 ? { studentId: { notIn: wanted } } : {}),
+        ...(schoolId !== null ? { student: { schoolId: idFromString(schoolId) } } : {}),
+      },
+    })
+    if (wanted.length === 0) return
+    await this.prisma.client.parentLink.createMany({
+      data: wanted.map((studentId) => ({ parentId: parent, studentId, relationship: null })),
+      skipDuplicates: true,
+    })
+  }
+
   private linkWhere(scope: LinkScope): Prisma.ParentLinkWhereInput | null {
     const ids = [scope.parentId, scope.studentId, scope.schoolId]
     if (ids.some((i) => i !== undefined && !isIdString(i))) return null // a malformed id matches nothing

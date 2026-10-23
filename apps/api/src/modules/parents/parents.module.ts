@@ -5,8 +5,8 @@ import { ThrottleModule } from '../../common/throttle'
 import { AuthModule } from '../auth'
 import { SchoolsModule } from '../schools'
 import { UsersModule } from '../users'
+import { ParentLinksModule } from './parent-links.module'
 import { ParentsController } from './parents.controller'
-import { ParentsRepository } from './parents.repository'
 import { ParentsService } from './parents.service'
 
 /**
@@ -14,9 +14,9 @@ import { ParentsService } from './parents.service'
  * `ParentsRepository`, the only doorway to `parent_invites` and `parent_links` (ADR-0014).
  */
 @Module({
-  imports: [AuditModule, AuthModule, SchoolsModule, UsersModule, ThrottleModule],
+  imports: [AuditModule, AuthModule, SchoolsModule, UsersModule, ThrottleModule, ParentLinksModule],
   controllers: [ParentsController],
-  providers: [ParentsRepository, ParentsService],
-  exports: [ParentsRepository],
+  providers: [ParentsService],
+  exports: [ParentLinksModule],
 })
 export class ParentsModule {}
