@@ -15,20 +15,20 @@ Fixes for findings in `docs/qa/audit-sistem/BIJAK-SPM-AUDIT-REPORT.md` (branch `
 | FB-002 | §13.9.3 c3, §13.9.4 (notice) | Standard | In progress | | Editing a shared stimulus gives no list of the questions that share it, and the review text says "semua 1 soalan" for a 4-member group. Fix: notice with the real sharer count and labels on `/admin/spm/soalan/:qid/sunting` and on the review item; correct the count text. (Fork-on-edit is FB-027, Planned.) | |
 | FB-003 | §13.9.3 c1/c2, §13.9.4 (bank list) | Standard | In progress | | Bank chip "Rangsangan" has no group size and is missing on some members; the preview shows no siblings. Fix: chip "Kumpulan N soalan" on every member; preview lists the sibling questions. | |
 | FB-004 | §13.4 (T1-T3 contradiction) | Standard | In progress | | "Tingkatan 1-3 (di luar DSKP)" passes intake with no unit, but the publish gate then refuses it ("topik DSKP belum dipilih"). Fix: one rule for both gates so a T1-T3 question that passed intake can be published. | |
-| FB-005 | §10.2 V1 | Fast | In progress | | Raw select/input/textarea on the extract review and sunting pages have no visible boundary (staff border token is transparent). | |
+| FB-005 | §10.2 V1 | Fast | Fixed | be456f48 | Raw select/input/textarea on the extract review and sunting editor replaced with DsNativeSelect / UInput / UTextarea (same filled field style as the rest of the admin). Ids, labels, data-testids unchanged; global border tokens untouched. |  |
 | FB-006 | §10.2 V2 | Fast | In progress | | Selected pager/segment/tab button reads as disabled in dark (~1.4:1). | |
 | FB-007 | §10.2 V3 | Fast | In progress | | Disabled primary buttons have near-unreadable labels (~1.9:1 dark, ~1.6:1 light). | |
 | FB-008 | §10.2 V4 | Fast | In progress | | "Tambah dari bank" picker row text ~1.6:1 in dark. | |
 | FB-009 | §10.2 V5 | Fast | In progress | | Tables wider than their card hide "Tindakan" (`/admin/spm/soalan`) and Status + "Semak" (`/admin/spm/semakan`). | |
 | FB-010 | §10.2 V6 | Fast | In progress | | Phone cards show raw LaTeX (`soalan`, `semakan`) and drop Status/action fields (`soalan`, `semakan`, `kertas`, `ekstrak`). | |
-| FB-011 | §10.2 V7 | Fast | In progress | | Four stacked scroll areas on the extract review page. | |
-| FB-012 | §10.5 F1 | Fast | In progress | | Edit-question option rows clip at 320/375 ("Buang pilihan X" cut off). | |
-| FB-013 | §10.5 F2, §10.4 | Fast | In progress | | "Tag DSKP" fieldset and selects overflow the card at 320/375. | |
-| FB-014 | §10.5 F3 | Fast | In progress | | Expanded structured card: "Mod jawapan (a)" and "Buang bahagian (a)" beyond the card at 1024/1280. | |
+| FB-011 | §10.2 V7 | Fast | Fixed | a6c1e595 | The source-pages aside is no longer sticky with its own scroll, and the page text <pre> no longer has max-h-96: one page scroll at 1280, nothing clipped. Side effect: the source page scrolls away while editing a later question. | Panel "Halaman sumber" kini ikut skrol halaman (tidak lagi melekat). Nak ia melekat semula? Itu hanya berfungsi jika panel lebih pendek daripada skrin. |
+| FB-012 | §10.5 F1 | Fast | Fixed | 1ff39c43 | Option rows get min-w-0 and the remove button shrink-0: 0 px overflow at 320/375 (was +102 / +47 px). |  |
+| FB-013 | §10.5 F2, §10.4 | Fast | Fixed | 1c6b35f8 | Editor is a container; top fields and Tag DSKP switch 1 / 2 / 4 columns on card width; labels no longer clipped. 0 px overflow at 320/375 (was up to +103 px). |  |
+| FB-014 | §10.5 F3 | Fast | Fixed | 2fe1bf60 | Structured part row: Label / Teks / Markah in 3 columns from container lg, Mod jawapan + Buang bahagian on their own row: 0 px overflow at 768/1024/1280 (was +10 / +324 / +175 px). The question-4 offset is the deliberate group indent (ml-3 sm:ml-6) and was kept. | Kad soalan dalam kumpulan rangsangan diinden ke dalam (disengajakan). Kekalkan? |
 | FB-015 | §10.5 F4, F5 | Fast | In progress | | PKSK question list and access tables (fixed layout) clip right columns at 768/1024; "Tindakan" unreachable. | |
 | FB-016 | §10.5 F6 | Fast | In progress | | Cell content overflows its cell at 1280 (PKSK list/access, `/admin/questions`). | |
 | FB-017 | §10.5 F7 | Fast | In progress | | Pentadbiran top bar tap targets under 40 px at 320/375 (menu, search, theme toggle, drawer close, brand). | |
-| FB-018 | §10.5 F8 | Fast | In progress | | Page-level tap targets under 40 px at 320/375 ("Sisip matematik", slide-over "Tutup", checkboxes, "Tarik", "Lihat"). | |
+| FB-018 | §10.5 F8 | Fast | Fixed | 7e6b12af | Admin intake part: "Sisip matematik" now 167x44; the confirm-tag checkbox label row is min-h-11 (the theme already gives the checkbox a 44 px hit area; a size-based check that reads the 24 px box will still report 24x24). Remaining F8 targets are in the DS/table batch (in progress). |  |
 | FB-019 | §10.5 F9 | Fast | In progress | | Sticky form bar covers the last fields on create/edit forms. | |
 | FB-020 | §10.5 F10, §10.3 #15 | Fast | In progress | | Phone truncation: stat labels ("Jumlah ke…"), clipped input values, two-line pill. | |
 | FB-021 | §10.3 #8 | Fast | In progress | | Phone review action bar on `/admin/spm/semakan/:key` floats over the answer scheme with no bar background. | |
