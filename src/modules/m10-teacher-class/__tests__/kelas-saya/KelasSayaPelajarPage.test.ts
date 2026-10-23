@@ -134,6 +134,21 @@ describe('S33 Kelas Saya (student)', () => {
     expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
     expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
   })
+
+  it('clears a stale refusal as soon as the code is edited or emptied (SWP-9)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    api.joinClass.mockRejectedValueOnce(refusal(409, 'Anda sudah menyertai kelas ini.'))
+    const w = await mountPage()
+    await t(w, 'class-code').setValue('DMO102')
+    await t(w, 'join-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
+
+    await t(w, 'class-code').setValue('')
+    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
+    expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
+    expect(api.joinClass).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('joinErrorMessage', () => {

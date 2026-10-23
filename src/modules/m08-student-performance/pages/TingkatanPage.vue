@@ -2,7 +2,8 @@
 /**
  * S3 `/prestasi/tingkatan/{t4|t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28). An unknown code is the
  * standard 404 (the API answers 404). "On Track" / "Below Target", the class On Track / Below and the
- * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist.
+ * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist. The "Lihat →"
+ * class link is shown only to a role that may open the class page (staff), so a pupil gets no dead link (DV-M08-47).
  */
 import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -26,9 +27,11 @@ import {
   plain,
 } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { useCanOpen } from '../lib/route-access'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
+const { canOpen } = useCanOpen()
 
 const route = useRoute()
 const code = computed(() => String(route.params.code ?? ''))
@@ -212,7 +215,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           </template>
           <template #href-cell="{ row }">
             <UButton
-              v-if="row.original.href"
+              v-if="row.original.href && canOpen(row.original.href)"
               :to="row.original.href"
               color="neutral"
               variant="link"
@@ -222,7 +225,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           </template>
           <template #card-actions="{ row }">
             <UButton
-              v-if="row.href"
+              v-if="row.href && canOpen(row.href as string)"
               :to="row.href as string"
               color="neutral"
               variant="soft"

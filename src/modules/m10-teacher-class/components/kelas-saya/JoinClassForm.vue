@@ -27,11 +27,17 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 
+// A message belongs to the code that was sent: typing a new code clears it, so a refusal never stays
+// under an emptied field. (`code.value = ''` after a successful join must keep the success message.)
+function clearMessages(): void {
+  error.value = null
+  success.value = null
+}
+
 async function submit(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
-  error.value = null
-  success.value = null
+  clearMessages()
   try {
     const res = await joinClass(code.value.trim())
     success.value = res.message
@@ -66,6 +72,7 @@ async function submit(): Promise<void> {
           class="min-w-0 flex-1"
           :ui="{ base: 'font-mono tracking-wider uppercase' }"
           data-testid="class-code"
+          @input="clearMessages"
         />
         <UButton
           type="submit"

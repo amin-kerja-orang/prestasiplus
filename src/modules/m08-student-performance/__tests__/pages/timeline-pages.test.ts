@@ -72,6 +72,7 @@ async function render(component: object, path: string, routePath: string): Promi
     routes: [
       { path: routePath, component },
       { path: '/timeline', component: { template: '<i />' } },
+      { path: '/pelajar/:id(\\d+)', component: { template: '<i />' } },
     ],
   })
   await router.push(path)
