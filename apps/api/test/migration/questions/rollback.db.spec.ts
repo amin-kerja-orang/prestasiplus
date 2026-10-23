@@ -42,6 +42,33 @@ describe('rollback of the question bank', () => {
     await h.q(`delete from questions where id = $1`, [child])
   })
 
+  it('a v2-born row that refers to a DESCENDANT of a migrated question (version, part, option, key) is refused by name, not by a raw FK error', async () => {
+    const targets = [
+      ['question_versions', 'question_version_id'],
+      ['question_parts', 'part_id'],
+      ['part_options', 'option_id'],
+      ['answer_keys', 'key_id'],
+    ] as const
+    for (const [parent, col] of targets) {
+      await h.q(`create table zz_pin_${parent} (id bigserial primary key, ${col} bigint not null references ${parent}(id) on delete restrict)`)
+      await h.q(`insert into zz_pin_${parent} (${col}) select min(id) from ${parent}`)
+    }
+    const counts = await questionTableCounts(h.pool)
+    try {
+      for (const [parent, col] of targets) {
+        await h.q(`truncate ${targets.map(([t]) => `zz_pin_${t}`).join(', ')}`)
+        await h.q(`insert into zz_pin_${parent} (${col}) select min(id) from ${parent}`)
+        const err = await call().catch((e: unknown) => e)
+        expect(err, parent).toBeInstanceOf(RollbackRefusedError)
+        expect((err as Error).message, parent).toContain(`${parent}: 1 row(s) referenced by zz_pin_${parent}.${col}`)
+        expect((err as Error).message).toContain('Nothing was changed')
+        expect(await questionTableCounts(h.pool)).toEqual(counts)
+      }
+    } finally {
+      for (const [parent] of targets) await h.q(`drop table zz_pin_${parent}`)
+    }
+  })
+
   it('a dry-run reports the cascade and changes nothing; the apply removes exactly the migrated question rows', async () => {
     const loaded = await questionTableCounts(h.pool)
     const dry = await call({ dryRun: true })

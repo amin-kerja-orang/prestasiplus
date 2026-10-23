@@ -67,10 +67,12 @@ export interface PracticeSelection {
 export interface PracticeQuestionSource {
   /** `QuestionsRepository.sample`: up to `n` eligible ids drawn in SQL (seeded hash order, LIMIT) with a seed taken from `rng`. */
   sample(filter: PracticeSelection, n: number, rng: Prng): Promise<string[]>
-  /** Eligible questions of a chapter in ascending id order (BR-15, BR-17). */
-  chapterQuestionIds(chapterId: string): Promise<string[]>
-  /** Servable question count per chapter (BR-15, BR-16), one grouped statement; a chapter with none is absent or 0. */
-  chapterCounts(chapterIds: readonly string[]): Promise<ReadonlyMap<string, number>>
+  /**
+   * Question count per chapter, one grouped statement; a chapter with none is absent or 0. Cheap form (default): eligible
+   * published plain MCQs (BR-15 list). `exact: true` also checks the servable shape per row (one part, no stimulus, no option
+   * image, the key names an option): use it for a few chapters only (the target and the one before it, BR-16).
+   */
+  chapterCounts(chapterIds: readonly string[], exact?: boolean): Promise<ReadonlyMap<string, number>>
   /** Up to `limit` servable questions of a chapter in ascending id order, never one of `excludeIds` (BR-17 unanswered first). */
   chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]>
   /**
@@ -88,9 +90,6 @@ export interface PracticeQuestionSource {
 /** Until BE-09 merges: the bank is empty (every draw is `NOT_ENOUGH_QUESTIONS`). */
 export class NoPracticeQuestions implements PracticeQuestionSource {
   async sample(): Promise<string[]> {
-    return []
-  }
-  async chapterQuestionIds(): Promise<string[]> {
     return []
   }
   async chapterCounts(): Promise<ReadonlyMap<string, number>> {

@@ -133,6 +133,18 @@ const SAMPLE_MAX = 50_000
 /** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
 const AMONG_CHUNK = 5000
 
+/** SQL of `QuestionFilter.mcqShape` on the version alias `v`: the plain servable MCQ (see the filter doc). */
+function shapeSql(shape: { minOptions: number; maxOptions: number }): Prisma.Sql {
+  return Prisma.sql`(SELECT count(*) FROM question_parts sp WHERE sp.question_version_id = v.id) = 1
+    AND NOT EXISTS (SELECT 1 FROM question_parts sp WHERE sp.question_version_id = v.id AND (sp.mode IS DISTINCT FROM 'mcq' OR sp.stimulus_id IS NOT NULL))
+    AND NOT EXISTS (SELECT 1 FROM question_version_stimuli sv WHERE sv.question_version_id = v.id)
+    AND (SELECT count(*) FROM part_options so JOIN question_parts sp ON sp.id = so.part_id WHERE sp.question_version_id = v.id)
+        BETWEEN ${Math.trunc(shape.minOptions)} AND ${Math.trunc(shape.maxOptions)}
+    AND NOT EXISTS (SELECT 1 FROM part_options so JOIN question_parts sp ON sp.id = so.part_id WHERE sp.question_version_id = v.id AND so.image_file_id IS NOT NULL)
+    AND EXISTS (SELECT 1 FROM answer_keys sk JOIN question_parts sp ON sp.id = sk.part_id JOIN part_options so ON so.part_id = sp.id AND so.label = sk.content ->> 'correct'
+                 WHERE sp.question_version_id = v.id)`
+}
+
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
@@ -336,10 +348,30 @@ export class QuestionsRepository {
   async sampleIds(filter: SampleFilter, n: number, seed: number): Promise<string[]> {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
-    const { from, where } = this.scope({ ...filter, status: 'published', active: true })
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${Math.trunc(seed)}::bigint), q.id LIMIT ${limit}`
-    return rows.map((r) => idToString(r.id))
+    const { mcqShape, ...plain } = filter
+    const { from, where } = this.scope({ ...plain, status: 'published', active: true })
+    const key = Math.trunc(seed)
+    if (!mcqShape) {
+      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+        SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${limit}`
+      return rows.map((r) => idToString(r.id))
+    }
+    // The shape check is per row (sub-selects): run it on a hash-ordered window only, and widen x4 while the window falls short.
+    let window = Math.min(limit * 3, SAMPLE_MAX)
+    let out: string[] = []
+    for (let round = 0; round < 3; round++) {
+      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+        SELECT c.id FROM (
+          SELECT q.id, v.id AS vid, hashtextextended(q.id::text, ${key}::bigint) AS h ${from} WHERE ${where}
+           ORDER BY h, q.id LIMIT ${window}
+        ) c JOIN question_versions v ON v.id = c.vid
+        WHERE ${shapeSql(mcqShape)}
+        ORDER BY c.h, c.id LIMIT ${limit}`
+      out = rows.map((r) => idToString(r.id))
+      if (out.length >= limit || window >= SAMPLE_MAX) break
+      window = Math.min(window * 4, SAMPLE_MAX)
+    }
+    return out
   }
 
   /** `sampleIds` with the seed taken from one draw of `rng` (never Math.random). */
@@ -941,6 +973,7 @@ export class QuestionsRepository {
       conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`q.id > ${key}`)
     }
     if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
+    if (filter.mcqShape) conds.push(shapeSql(filter.mcqShape))
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
@@ -962,7 +995,7 @@ export class QuestionsRepository {
     if (filter.type) conds.push(Prisma.sql`v.type = ${filter.type}`)
     if (filter.excludeIds && filter.excludeIds.length > 0) {
       const keys = filter.excludeIds.map(bi).filter((k): k is bigint => k !== null)
-      if (keys.length > 0) conds.push(Prisma.sql`q.id NOT IN (${Prisma.join(keys)})`)
+      if (keys.length > 0) conds.push(Prisma.sql`q.id <> ALL(${keys}::bigint[])`)
     }
     return { from, where: Prisma.join(conds, ' AND ') }
   }

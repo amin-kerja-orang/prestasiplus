@@ -15,8 +15,8 @@ import { QuestionWorkflowPorts } from '../ports'
 import type { WorkflowActor } from '../actor'
 import { bucketOfScore, scoreQuestion } from './quality-score'
 
-/** The audit writes the whole catalogue in one transaction: allow far more than Prisma's 5 s. */
-const AUDIT_TX = { maxWait: 20_000, timeout: 120_000 } as const
+/** Questions scored and written per statement (keyset batch of the audit and of the summary walk). */
+const AUDIT_BATCH = 2000
 
 const round1 = (n: number): number => Math.round(n * 10) / 10
 const cmpId = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
@@ -82,7 +82,7 @@ export class QualityService {
           levelAgg.set(q.educationLevelId, e)
         }
       }
-    })
+    }, AUDIT_BATCH)
     const share = (n: number): number => (scoredCount === 0 ? 0 : round1((n * 100) / scoredCount))
 
     const bySubject = [...subjects.entries()]
@@ -131,44 +131,47 @@ export class QualityService {
     }
   }
 
-  /** `POST /question-quality/audit`: scores EVERY question (keyset batches, one statement each), one `quality_audits` row per run. */
+  /**
+   * `POST /question-quality/audit`: scores EVERY question, one `quality_audits` row per run. Mark and sweep, no long transaction:
+   * the run row is written first, each keyset batch of `AUDIT_BATCH` questions is upserted in its own short statement stamped with
+   * the run id, and at the end the rows NOT stamped with this run (questions deleted since) are removed and the run is closed. A
+   * crash in the middle leaves an open run (no `finishedAt`) and the previous scores in place.
+   */
   async audit(actor: WorkflowActor): Promise<{ data: { lastAuditAt: string }; status: string }> {
     const now = this.clock.now()
-    const finishedAt = await this.prisma.transaction(async (tx) => {
-      const run = await tx.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
-      let scored = 0
-      let changed = 0
-      let sum = 0
-      await this.ports.questionBank.forEachQualityBatch(async (batch) => {
-        const existing = await tx.questionQualityScore.findMany({
-          where: { questionId: { in: batch.map((q) => idFromString(q.id)) } },
-          select: { questionId: true, score: true },
-        })
-        const before = new Map(existing.map((s) => [idToString(s.questionId), s.score]))
-        const scores = batch.map((q) => {
-          const score = scoreQuestion(q)
-          return { id: q.id, score, bucket: bucketOfScore(score) }
-        })
-        // One statement per batch (three array parameters).
-        await tx.$executeRaw`
-          INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
-          SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
-            FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
-                 AS t(question_id, score, bucket)
-          ON CONFLICT (question_id) DO UPDATE
-            SET score = EXCLUDED.score, bucket = EXCLUDED.bucket, audit_id = EXCLUDED.audit_id, scored_at = EXCLUDED.scored_at`
-        scored += scores.length
-        changed += scores.filter((s) => before.get(s.id) !== s.score).length
-        sum += scores.reduce((a, s) => a + s.score, 0)
+    const db = this.prisma.client
+    const run = await db.qualityAudit.create({ data: { runById: idFromString(actor.userId), createdAt: now } })
+    let scored = 0
+    let changed = 0
+    let sum = 0
+    await this.ports.questionBank.forEachQualityBatch(async (batch) => {
+      const existing = await db.questionQualityScore.findMany({
+        where: { questionId: { in: batch.map((q) => idFromString(q.id)) } },
+        select: { questionId: true, score: true },
       })
-      // Every current question was just stamped with this run; what is left belongs to deleted questions.
-      await tx.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${run.id}`
-      await tx.qualityAudit.update({
-        where: { id: run.id },
-        data: { finishedAt: now, findingCount: changed, scoredCount: scored, averageScore: scored === 0 ? 0 : sum / scored },
+      const before = new Map(existing.map((s) => [idToString(s.questionId), s.score]))
+      const scores = batch.map((q) => {
+        const score = scoreQuestion(q)
+        return { id: q.id, score, bucket: bucketOfScore(score) }
       })
-      return now
-    }, AUDIT_TX)
-    return { data: { lastAuditAt: toMytTimestamp(finishedAt) }, status: QUESTION_QUALITY_FLASH }
+      // One statement per batch (three array parameters).
+      await db.$executeRaw`
+        INSERT INTO question_quality_scores (question_id, score, bucket, audit_id, scored_at)
+        SELECT t.question_id, t.score, t.bucket, ${run.id}, ${now}
+          FROM unnest(${scores.map((x) => x.id)}::bigint[], ${scores.map((x) => x.score)}::int[], ${scores.map((x) => x.bucket)}::text[])
+               AS t(question_id, score, bucket)
+        ON CONFLICT (question_id) DO UPDATE
+          SET score = EXCLUDED.score, bucket = EXCLUDED.bucket, audit_id = EXCLUDED.audit_id, scored_at = EXCLUDED.scored_at`
+      scored += scores.length
+      changed += scores.filter((s) => before.get(s.id) !== s.score).length
+      sum += scores.reduce((a, s) => a + s.score, 0)
+    }, AUDIT_BATCH)
+    // Every current question was just stamped with this run; what is left belongs to deleted questions.
+    await db.$executeRaw`DELETE FROM question_quality_scores WHERE audit_id IS DISTINCT FROM ${run.id}`
+    await db.qualityAudit.update({
+      where: { id: run.id },
+      data: { finishedAt: now, findingCount: changed, scoredCount: scored, averageScore: scored === 0 ? 0 : sum / scored },
+    })
+    return { data: { lastAuditAt: toMytTimestamp(now) }, status: QUESTION_QUALITY_FLASH }
   }
 }

@@ -35,7 +35,7 @@ import type {
   SetStatusOptions,
 } from './ports'
 
-const QUALITY_PAGE = 200
+const QUALITY_PAGE = 2000
 const bi = (id: string): bigint | null => (/^[1-9]\d{0,18}$/.test(id) ? BigInt(id) : null)
 
 type Leaf = Extract<QuestionPart, { mode: string }>

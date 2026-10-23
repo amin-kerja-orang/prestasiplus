@@ -95,10 +95,31 @@ describe('transformQuestion: the happy path', () => {
     expect(p.stem).toBe('Soalan?')
   })
 
-  it('counts HTML and does not alter the text', () => {
-    const p = plan(row({ body: '<p>Soalan</p>' }))
-    expect(p.stem).toBe('<p>Soalan</p>')
+  it('converts a known small tag set to plain text and counts it', () => {
+    const p = plan(row({ body: '<p>Nilai <b>x</b><sup>2</sup> + H<sub>2</sub>O &amp; lain</p><p>Kira.<br/>Cepat&nbsp;&lt;3 minit</p>', explanation: '<p>Sebab <em>ini</em>.</p>' }, [opt('A', '<span style="x">Satu</span>', '0'), opt('B', 'Dua<sup>k+1</sup>', '1'), opt('C', 'Tiga', '0')]))
+    expect(p.stem).toBe('Nilai x\u00b2 + H\u2082O & lain\nKira.\nCepat <3 minit')
+    expect(p.options.map((o) => o.body)).toEqual(['Satu', 'Dua^(k+1)', 'Tiga'])
+    expect(p.explanation).toBe('Sebab ini.')
+    expect(p.notes).toEqual(expect.arrayContaining(['html_stripped', 'explanation_html_stripped']))
+    expect(p.notes).not.toContain('body_has_html')
+  })
+
+  it('leaves text without a known tag untouched, including a bare < or an entity', () => {
+    const p = plan(row({ body: 'Jika x < y dan a<b maka 5 &amp; 6?', explanation: null }))
+    expect(p.stem).toBe('Jika x < y dan a<b maka 5 &amp; 6?')
+    expect(p.notes).not.toContain('html_stripped')
+  })
+
+  it('counts an unknown tag as body_has_html and does not alter it', () => {
+    const p = plan(row({ body: '<table><tr><td>Soalan</td></tr></table>' }))
+    expect(p.stem).toBe('<table><tr><td>Soalan</td></tr></table>')
     expect(p.notes).toContain('body_has_html')
+  })
+
+  it('rejects a body that is empty once its tags are gone', () => {
+    const out = transformQuestion(row({ body: '<p><br/></p>' }), cur)
+    expect(out.ok).toBe(false)
+    if (!out.ok) expect(out.reject).toMatchObject({ reason: 'INVALID_VALUE', column: 'body' })
   })
 })
 

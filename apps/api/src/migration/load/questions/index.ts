@@ -55,5 +55,19 @@ export async function runQuestions(options: QuestionsRunOptions): Promise<Questi
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })
   const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })
+  if (mode === 'apply') await analyseLoadedTables(options.pool, options.progress)
   return { report, questions }
+}
+
+/** Tables that a bulk load fills; without fresh statistics the draw and shape queries plan as nested loops. */
+export const ANALYSED_TABLES: readonly string[] = ['questions', 'question_versions', 'question_parts', 'part_options', 'answer_keys', 'question_tags', 'etl_id_map']
+
+/** ANALYZE after the last batch has committed (outside every batch transaction). A failure is a warning, never a failed run. */
+export async function analyseLoadedTables(pool: pg.Pool, out?: (line: string) => void): Promise<void> {
+  try {
+    for (const t of ANALYSED_TABLES) await pool.query(`ANALYZE "${t}"`)
+    out?.(`analyzed ${ANALYSED_TABLES.length} tables: ${ANALYSED_TABLES.join(', ')}`)
+  } catch (e) {
+    out?.(`warning: ANALYZE failed (${e instanceof Error ? e.name : 'error'}); run ANALYZE on ${ANALYSED_TABLES.join(', ')} by hand`)
+  }
 }

@@ -234,3 +234,24 @@ describe('the command', () => {
     }
   })
 })
+
+describe('statistics after the load', () => {
+  it('an apply analyses the loaded tables after the last batch, one line; a dry-run does not', async () => {
+    await h.reset()
+    await addArchive(h.pool, [{ id: 61 }, { id: 62 }, { id: 63 }])
+    const analyzeCount = async (): Promise<number> => {
+      await h.q('select pg_stat_force_next_flush()')
+      return Number((await h.q<{ n: string }>(`select coalesce(sum(analyze_count), 0)::text as n from pg_stat_user_tables where relname in ('questions','question_versions','question_parts','part_options','answer_keys','question_tags','etl_id_map')`))[0]?.n)
+    }
+    const lines: string[] = []
+    const before = await analyzeCount()
+    const dry = await h.run('dry-run', { progress: (l) => lines.push(l) })
+    expect(dry.report.status).toBe('succeeded')
+    expect(lines.filter((l) => l.startsWith('analyzed'))).toEqual([])
+    expect(await analyzeCount()).toBe(before)
+    const apply = await h.run('apply', { progress: (l) => lines.push(l) })
+    expect(apply.report.status).toBe('succeeded')
+    expect(lines.filter((l) => l.startsWith('analyzed'))).toEqual(['analyzed 7 tables: questions, question_versions, question_parts, part_options, answer_keys, question_tags, etl_id_map'])
+    expect(await analyzeCount()).toBeGreaterThanOrEqual(before + 7)
+  })
+})

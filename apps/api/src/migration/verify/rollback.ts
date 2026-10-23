@@ -96,6 +96,39 @@ export function pinnedPredicate(fk: ForeignKey, childPredicate: string): string 
   return `p.legacy_source = $1 AND EXISTS (SELECT 1 FROM ${q(fk.child)} c WHERE ${childPredicate} AND ${notNull} AND ${match})`
 }
 
+/**
+ * Tables that leave with a migrated row through ON DELETE CASCADE although they carry no legacy pair: the registered derived
+ * children (`ETL_DERIVED_CHILDREN`) and, transitively, every table that cascades from one of them (for a question: its
+ * versions, parts, options, keys, SP nodes and stimulus links). `via` is the cascade foreign key that reaches the table.
+ */
+export function cascadeClosure(inSet: ReadonlySet<string>, derived: ReadonlyMap<string, string>, fks: readonly ForeignKey[]): Map<string, ForeignKey> {
+  const via = new Map<string, ForeignKey>()
+  for (const [table, parent] of derived) {
+    if (!inSet.has(parent)) continue
+    const fk = fks.find((f) => f.child === table && f.parent === parent)
+    if (fk) via.set(table, fk)
+  }
+  for (let grew = true; grew; ) {
+    grew = false
+    for (const fk of fks) {
+      if (fk.onDelete !== 'c' || via.has(fk.child) || inSet.has(fk.child) || !via.has(fk.parent) || fk.child === fk.parent) continue
+      via.set(fk.child, fk)
+      grew = true
+    }
+  }
+  return via
+}
+
+/** SQL that is true for a row `alias` of `table` that belongs to a migrated row (source `$1`) through its cascade chain. */
+export function belongsToMigrated(table: string, alias: string, inSet: ReadonlySet<string>, via: ReadonlyMap<string, ForeignKey>, depth = 0): string {
+  const fk = via.get(table)
+  if (!fk) return 'false'
+  const a = `r${depth}`
+  const match = fk.childCols.map((c, i) => `${alias}.${q(c)} = ${a}.${q(fk.parentCols[i] as string)}`).join(' AND ')
+  const parentOk = inSet.has(fk.parent) ? `${a}.legacy_source = $1` : belongsToMigrated(fk.parent, a, inSet, via, depth + 1)
+  return `EXISTS (SELECT 1 FROM ${q(fk.parent)} ${a} WHERE ${match} AND ${parentOk})`
+}
+
 interface Pinned {
   parent: string
   child: string
@@ -180,6 +213,7 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
     ).rows.map((r) => r.table_name),
   )
   const derived = new Map(ETL_DERIVED_CHILDREN.map((d) => [d.table, d.parent]))
+  const closure = cascadeClosure(inSet, derived, fks)
 
   // ---- 1. pinned rows: release the adopted ones, refuse for the rest
   const released = new Map<string, number>()
@@ -209,6 +243,21 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
         const n = res.rows[0]?.n ?? 0
         if (n > 0) blockers.push({ parent: fk.parent, child: fk.child, columns: fk.childCols.join('+'), rows: n })
       }
+    }
+    // Rows that cascade away with a migrated row (a question's versions, parts, options, keys): a reference from outside the
+    // migration to one of them would make the DELETE fail with a raw FK error, so it is refused here, by name.
+    for (const fk of fks) {
+      if (!closure.has(fk.parent) || closure.has(fk.child)) continue
+      const childPredicate = inSet.has(fk.child) ? 'c.legacy_source IS DISTINCT FROM $1' : 'true'
+      const notNull = fk.childCols.map((c) => `c.${q(c)} IS NOT NULL`).join(' AND ')
+      const match = fk.childCols.map((c, i) => `c.${q(c)} = p.${q(fk.parentCols[i] as string)}`).join(' AND ')
+      const res = await db.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM ${q(fk.parent)} p WHERE ${belongsToMigrated(fk.parent, 'p', inSet, closure)}
+           AND EXISTS (SELECT 1 FROM ${q(fk.child)} c WHERE ${childPredicate} AND ${notNull} AND ${match})`,
+        [source],
+      )
+      const n = res.rows[0]?.n ?? 0
+      if (n > 0) blockers.push({ parent: fk.parent, child: fk.child, columns: fk.childCols.join('+'), rows: n })
     }
     if (releasedNow === 0) break
   }

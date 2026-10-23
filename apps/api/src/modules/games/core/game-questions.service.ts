@@ -42,7 +42,8 @@ export class GameQuestions {
   /** Up to `n` servable questions for the filter, in the order of the seeded sample. */
   async sample(filter: GameQuestionFilter, n: number, rng: Prng): Promise<ServedQuestion[]> {
     if (n <= 0) return []
-    const ids = await this.questions.sample({ ...filter, type: 'mcq' }, n * OVERSAMPLE, rng)
+    // Plain MCQ with 2 to 4 options only (what `toServed` accepts), so the oversampled window is rarely short.
+    const ids = await this.questions.sample({ ...filter, type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } }, n * OVERSAMPLE, rng)
     return this.servedFrom(await this.questions.getMany(ids, 'live'), n)
   }
 

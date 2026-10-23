@@ -13,6 +13,8 @@ import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practic
 const HYDRATE_MAX = 500
 /** `sample` asks the bank for `n * OVER_FETCH` ids, and widens by the same factor while the draw comes up short. */
 export const OVER_FETCH = 4
+/** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
+const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
 /** Windows one `sample` reads at most (each is a LIMIT-ed SQL draw, the last of `n * 4^MAX_ROUNDS` ids). */
 const MAX_ROUNDS = 4
 /** Refusals logged once per question version; the memory is bounded (cleared when full). */
@@ -72,16 +74,25 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 
   async chapterQuestionIds(chapterId: string): Promise<string[]> {
     if (!isIdString(chapterId)) return []
-    const ids = await this.questions.eligibleIds({ chapterId, type: 'mcq' })
-    const servable = await this.servableIds(ids)
-    return ids.filter((id) => servable.has(id))
+    // Keyset pages of `HYDRATE_MAX` ids (one hydrate round trip each): never a single unbounded read. Not on the port: the
+    // planner counts with `chapterCounts` and reads `chapterPage`; this walks a whole chapter (tests, tools).
+    const out: string[] = []
+    for (let after: string | undefined; ; ) {
+      const page = await this.questions.eligibleIdsPage({ chapterId, type: 'mcq' }, after, HYDRATE_MAX)
+      if (page.length === 0) break
+      const servable = await this.servableIds(page)
+      for (const id of page) if (servable.has(id)) out.push(id)
+      after = page[page.length - 1]
+      if (page.length < HYDRATE_MAX) break
+    }
+    return out
   }
 
-  async chapterCounts(chapterIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+  async chapterCounts(chapterIds: readonly string[], exact = false): Promise<ReadonlyMap<string, number>> {
     const wanted = [...new Set(chapterIds)].filter(isIdString)
     if (wanted.length === 0) return new Map()
-    // The SQL scope is the servable shape (one MCQ, no group); loaded questions are single-part MCQ by construction.
-    return this.questions.groupCount('chapter', { chapterIds: wanted, type: 'mcq', ungrouped: true, status: 'published', active: true })
+    // Cheap form: eligible plain MCQs (the loader writes single-part MCQs only). `exact` adds the per-row shape check.
+    return this.questions.groupCount('chapter', { chapterIds: wanted, type: 'mcq', ungrouped: true, ...(exact ? { mcqShape: PRACTICE_SHAPE } : {}), status: 'published', active: true })
   }
 
   async chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]> {
@@ -91,7 +102,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     let after: string | undefined
     // Keyset pages of the chapter; ids the hydration refuses (`servableMcq`) are skipped and the next page read.
     while (out.length < limit) {
-      const page = await this.questions.eligibleIdsPage({ chapterId, type: 'mcq', ungrouped: true, excludeIds: exclude }, after, Math.max(limit, 50))
+      const page = await this.questions.eligibleIdsPage({ chapterId, type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE, excludeIds: exclude }, after, Math.max(limit, 50))
       if (page.length === 0) break
       after = page[page.length - 1]
       const servable = await this.servableIds(page)
@@ -123,6 +134,8 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return {
       subjectId: s.subjectId,
       type: 'mcq',
+      ungrouped: true,
+      mcqShape: PRACTICE_SHAPE,
       ...(s.educationLevelIds !== undefined ? { educationLevelIds: s.educationLevelIds } : {}),
       ...(s.difficulty !== undefined ? { difficultyTps: tpsOfDifficulty(s.difficulty) } : {}),
       ...(s.spmPool ? { spmPool: true } : {}),

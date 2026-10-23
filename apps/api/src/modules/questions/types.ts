@@ -214,6 +214,13 @@ export interface QuestionFilter {
   spmPool?: boolean
   /** `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice and games servable shape. */
   ungrouped?: boolean
+  /**
+   * Only questions whose live version has the plain servable MCQ shape: exactly one part, an `mcq` leaf, no stimulus on the
+   * version or the part, between `minOptions` and `maxOptions` options, no option image, and a key naming one of the options.
+   * `maxOptions: 4` is the battle / games shape (key index always 0..3). In `sampleIds` it is checked only on a window of
+   * hash-ordered candidates (never on the whole subject).
+   */
+  mcqShape?: { minOptions: number; maxOptions: number }
   /** Any of these chapters (ANDed with `chapterId` when both are set); `[]` matches nothing. */
   chapterIds?: readonly string[]
   /** Only ids in this list (`q.id = ANY(...)`): "which of these are still eligible". `[]` matches nothing. */

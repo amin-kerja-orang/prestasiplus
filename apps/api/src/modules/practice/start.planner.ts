@@ -208,13 +208,23 @@ export class PracticeStartPlanner {
     if (!ch || ch.educationLevelId === null) throw notFound()
     const count = countIn(req.count, COUNT_OPTIONS)
     const chapterKey = idToString(ch.id)
-    if (((await this.ports.questions.chapterCounts([chapterKey])).get(chapterKey) ?? 0) === 0) throw notEnoughQuestions()
+    // The exact (servable-shape) count of this one chapter: a chapter whose questions cannot be served is empty.
+    if (((await this.ports.questions.chapterCounts([chapterKey], true)).get(chapterKey) ?? 0) === 0) throw notEnoughQuestions()
 
     // BR-16: chapter 1 is open; chapter k needs chapter k - 1 complete with a score of at least 70.
     const list = await this.practiceChapters(ch.subjectId, ch.educationLevelId)
     const i = list.findIndex((c) => c.chapter.id === ch.id)
     if (i > 0) {
-      const prev = list[i - 1]
+      // The chapter before this one that can actually be served: its exact count is what "complete" is measured against, and a
+      // chapter whose questions are all unservable is skipped, so one non-servable question never locks the rest for good.
+      let prev: { chapter: (typeof list)[number]['chapter']; count: number } | null = null
+      for (let j = i - 1; j >= 0 && prev === null; j--) {
+        const candidate = list[j]
+        if (!candidate) continue
+        const key = idToString(candidate.chapter.id)
+        const exact = (await this.ports.questions.chapterCounts([key], true)).get(key) ?? 0
+        if (exact > 0) prev = { chapter: candidate.chapter, count: exact }
+      }
       if (prev) {
         const progress = await this.repo.chapterProgress(userId, idToString(prev.chapter.id), isTest)
         const answered = progress.size

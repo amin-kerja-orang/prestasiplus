@@ -120,6 +120,7 @@ model Question {
   @@index([liveVersionNo], map: "ix_questions_live_version_no")
   @@index([groupId, groupPosition], map: "ix_questions_group_id_group_position")
   @@index([familyId], map: "ix_questions_family_id")
+  @@index([parentQuestionId], map: "ix_questions_parent_question_id")
   @@index([createdById], map: "ix_questions_created_by_id")
   @@unique([legacySource, legacyId], map: "uq_questions_legacy")
   @@map("questions")

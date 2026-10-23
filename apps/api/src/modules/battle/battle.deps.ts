@@ -36,6 +36,12 @@ import type { Caller } from '../users/caller'
 export const STUDENT_POOL_CAP = 5000
 /** Student pool and SPM pool reads are reused this long (see 5b). */
 export const CACHE_TTL_MS = 60_000
+
+/**
+ * What the arena can serve and grade: a plain MCQ (no group, one part, no stimulus) with 2 to 4 text options, so the key index is
+ * always 0..3 (`ARENA_OPTIONS`, `projection.ts` `correctAnswer`). A 5 to 8 option question never enters a battle draw or count.
+ */
+const BATTLE_POOL = { type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } } as const satisfies QuestionFilter
 /** Rows read by the name search before the active / not-suspended filter (the caller sees at most `limit`). */
 const SEARCH_OVER_READ = 40
 const ARENA_OPTIONS = 4
@@ -232,7 +238,7 @@ export class BattleDeps {
   /** Size of the SPM pool of a subject (lobby `spmSubjects`, start check): one SQL count, cached `CACHE_TTL_MS`. */
   async spmPoolCount(subjectId: string): Promise<number> {
     return this.cached(`spm-count:${subjectId}`, () =>
-      this.questions.count({ subjectId, type: 'mcq', spmPool: true, ungrouped: true, status: 'published', active: true }),
+      this.questions.count({ ...BATTLE_POOL, subjectId, spmPool: true, status: 'published', active: true }),
     )
   }
 
@@ -251,8 +257,8 @@ export class BattleDeps {
     if (!Number.isSafeInteger(n) || n <= 0) return n === 0 ? [] : null
     const filter: QuestionFilter =
       spec.questionType === 'spm'
-        ? { subjectId: spec.subjectId, type: 'mcq', spmPool: true }
-        : { subjectId: spec.subjectId, type: 'mcq', ...(spec.levelId === null ? {} : { educationLevelId: spec.levelId }) }
+        ? { ...BATTLE_POOL, subjectId: spec.subjectId, spmPool: true }
+        : { ...BATTLE_POOL, subjectId: spec.subjectId, ...(spec.levelId === null ? {} : { educationLevelId: spec.levelId }) }
     const ids = await this.questions.sampleIds(filter, n, rng.int(0, 0xffffffff))
     return ids.length < n ? null : ids
   }

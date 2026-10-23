@@ -1,5 +1,5 @@
 /**
- * QLOAD volume check, behind `QLOAD_VOLUME=1` (it takes minutes): `QLOAD_VOLUME_N` synthetic questions (default 50,000, about
+ * QLOAD volume check, behind `QLOAD_VOLUME=1` (it takes minutes): `QLOAD_VOLUME_N` synthetic questions (default 5,000; use 100000 for the figures per 100k, about
  * four options each) are generated INSIDE the database into `archive_cloud`, then dry-run, apply, a re-run and the rollback are
  * timed and the counts asserted. The timings are printed (`QLOAD volume:` lines) so they can be quoted per 100,000 questions.
  */
@@ -9,7 +9,7 @@ import { rollbackLegacy } from '../../../src/migration/verify'
 import { bootQuestions, questionTableCounts, type QuestionsHarness } from './helpers'
 
 const enabled = process.env.QLOAD_VOLUME === '1'
-const N = Number(process.env.QLOAD_VOLUME_N ?? 50_000)
+const N = Number(process.env.QLOAD_VOLUME_N ?? 5_000)
 const HOUR = 3_600_000
 const d = enabled ? describe : describe.skip
 

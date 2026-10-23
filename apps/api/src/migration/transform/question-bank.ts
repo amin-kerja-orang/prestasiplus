@@ -106,6 +106,44 @@ export function normaliseLabels(raw: readonly (string | null)[]): (string | null
 
 const HTML = /<\/?[a-z][^>]*>/i
 
+/**
+ * The learner UI shows a stem, an option and an explanation as escaped text (Vue interpolation; Bijak SPM adds `$latex$`
+ * spans; the explanation is a small Markdown subset), never as HTML. A legacy body that holds HTML would show its tags.
+ * So a SMALL, KNOWN tag set is converted to plain text: line breaks for `br`, closing `p`, `div` and `li`; `sup` and `sub`
+ * to Unicode (or `^(..)` / `_(..)`); every other listed tag is dropped; the five basic entities and `&nbsp;` are decoded.
+ * Unknown tags stay as they are (a `<` in "x < y" or "a<b" is never touched) and the question is counted `body_has_html`.
+ */
+const KNOWN_TAG = '(?:p|br|div|span|b|strong|i|em|u|sub|sup|font|ol|ul|li)'
+const KNOWN_TAG_RE = new RegExp(`</?${KNOWN_TAG}(?:\\s[^<>]*)?/?>`, 'i')
+const SUP: Record<string, string> = { '0': '\u2070', '1': '\u00b9', '2': '\u00b2', '3': '\u00b3', '4': '\u2074', '5': '\u2075', '6': '\u2076', '7': '\u2077', '8': '\u2078', '9': '\u2079', '+': '\u207a', '-': '\u207b', n: '\u207f' }
+const SUB: Record<string, string> = { '0': '\u2080', '1': '\u2081', '2': '\u2082', '3': '\u2083', '4': '\u2084', '5': '\u2085', '6': '\u2086', '7': '\u2087', '8': '\u2088', '9': '\u2089', '+': '\u208a', '-': '\u208b' }
+const script = (inner: string, map: Record<string, string>, mark: string): string => {
+  const plain = inner.replace(/<[^>]*>/g, '').trim()
+  if (plain === '') return ''
+  return [...plain].every((c) => map[c] !== undefined) ? [...plain].map((c) => map[c]).join('') : `${mark}(${plain})`
+}
+
+/** Plain text of a legacy body that holds a known tag; `null` when it holds none (the caller keeps the value as it is). */
+export function plainFromHtml(value: string): string | null {
+  if (!KNOWN_TAG_RE.test(value)) return null
+  const out = value
+    .replace(/<sup(?:\s[^<>]*)?>([\s\S]*?)<\/sup>/gi, (_, inner: string) => script(inner, SUP, '^'))
+    .replace(/<sub(?:\s[^<>]*)?>([\s\S]*?)<\/sub>/gi, (_, inner: string) => script(inner, SUB, '_'))
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(?:p|div|li)>/gi, '\n')
+    .replace(new RegExp(`</?${KNOWN_TAG}(?:\\s[^<>]*)?/?>`, 'gi'), '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  return out
+}
+
 /** Plan of one in-scope question, or the reject. `row` must not be excluded (`exclusionOf` is null). */
 export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome<QuestionPlan> {
   const notes: string[] = []
@@ -114,13 +152,22 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   const level = text(row.education_level_id) === null ? undefined : cur.levels.get((row.education_level_id as string).trim())
   if (level === undefined) return reject('ORPHAN_PARENT', 'education_level_id')
 
-  const stem = text(row.body)
-  if (stem === null) return reject('INVALID_VALUE', 'body')
+  const rawStem = text(row.body)
+  if (rawStem === null) return reject('INVALID_VALUE', 'body')
+  const stemPlain = plainFromHtml(rawStem)
+  const stem = stemPlain ?? rawStem
+  if (stem === '') return reject('INVALID_VALUE', 'body')
+  let htmlStripped = stemPlain !== null
 
   const opts = row.options
   if (opts.length < MIN_OPTIONS || opts.length > MAX_OPTIONS) return reject('INVALID_VALUE', 'options')
-  const bodies = opts.map((o) => text(o.body))
-  if (bodies.some((b) => b === null)) return reject('INVALID_VALUE', 'options.body')
+  const bodies = opts.map((o) => {
+    const raw = text(o.body)
+    const plain = raw === null ? null : plainFromHtml(raw)
+    if (plain !== null) htmlStripped = true
+    return plain ?? raw
+  })
+  if (bodies.some((b) => b === null || b === '')) return reject('INVALID_VALUE', 'options.body')
 
   const labels = normaliseLabels(opts.map((o) => o.label))
   if (labels === null || labels.some((l) => l === null)) return reject('INVALID_VALUE', 'label')
@@ -187,6 +234,10 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
     }
   }
   if (issues.length > 0) notes.push('held_image')
+  const rawExplanation = text(row.explanation)
+  const explanationPlain = rawExplanation === null ? null : plainFromHtml(rawExplanation)
+  if (htmlStripped) notes.push('html_stripped')
+  if (explanationPlain !== null) notes.push('explanation_html_stripped')
   if (HTML.test(stem) || ordered.some((o) => HTML.test(o.body))) notes.push('body_has_html')
 
   const code = cur.levelCodes.get(level)
@@ -204,7 +255,7 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
     form_origin: formOriginOf(code),
     difficulty_tp: difficulty,
     stem,
-    explanation: text(row.explanation),
+    explanation: explanationPlain === null ? rawExplanation : explanationPlain === '' ? null : explanationPlain,
     import_issues: issues.length > 0 ? issues : null,
     options: ordered.map((o) => ({ label: o.label, body: o.body, position: o.position })),
     correct,

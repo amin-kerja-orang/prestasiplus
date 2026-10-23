@@ -1,6 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { mulberry32, prngStream } from '../../src/db/prng'
+import { spmSeed } from '../../prisma/seed/spm'
+import { FixedClock } from '../../src/db/clock'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { QuestionPool } from '../../src/modules/classes/missions/question-pool'
 import { GameQuestions } from '../../src/modules/games'
@@ -31,6 +33,11 @@ let repo: QuestionsRepository
 /** Ascending ids of the eligible fixture rows. */
 let primary: string[]
 let form4: string[]
+let otherLevel: string
+let chapterA: string
+let chapterB: string
+let fiveOption: string[]
+let fourOption: string[]
 
 const spies = {
   getMany: vi.spyOn(QuestionsRepository.prototype, 'getMany'),
@@ -59,6 +66,34 @@ beforeAll(async () => {
   repo = t.get(QuestionsRepository)
   primary = await bulkMcqs(t.db, { count: SUBJECT_BIG + 300, subjectId: w.tag.subjectId, levelId: dLevel, chapterId, heldEvery: 20, draftEvery: 25, label: 'QL-P' })
   form4 = await bulkMcqs(t.db, { count: POOLED, subjectId: w.tag.subjectId, levelId: w.tag.levelId, poolEvery: 2, heldEvery: 50, label: 'QL-F' })
+  otherLevel = (
+    await t.db.query<{ id: string }>(`select education_level_id::text id from subject_levels where subject_id = $1 and education_level_id not in ($2, $3) order by education_level_id limit 1`, [w.tag.subjectId, dLevel, w.tag.levelId])
+  )[0]?.id as string
+  expect(otherLevel).toBeTruthy()
+  // Five-option questions keyed E (the loader admits 3 to 8 options): never battle- or games-servable.
+  fiveOption = await bulkMcqs(t.db, { count: 300, subjectId: w.tag.subjectId, levelId: otherLevel, optionCount: 5, keyIndex: 5, poolEvery: 1, label: 'QL-E5' })
+  fourOption = await bulkMcqs(t.db, { count: 45, subjectId: w.tag.subjectId, levelId: otherLevel, poolEvery: 1, label: 'QL-E4' })
+  // Two chapters at that level: A holds 3 plain MCQs and one with two parts (not servable); B holds 2.
+  const mk = async (n: number): Promise<string> =>
+    (await t.db.query<{ id: string }>(`insert into chapters (subject_id, education_level_id, name, chapter_number) values ($1, $2, $3, $4) returning id::text`, [w.tag.subjectId, otherLevel, `Bab QL ${String(n)}`, 900 + n]))[0]?.id as string
+  chapterA = await mk(1)
+  chapterB = await mk(2)
+  const inA = await bulkMcqs(t.db, { count: 4, subjectId: w.tag.subjectId, levelId: otherLevel, chapterId: chapterA, label: 'QL-CA' })
+  await bulkMcqs(t.db, { count: 2, subjectId: w.tag.subjectId, levelId: otherLevel, chapterId: chapterB, label: 'QL-CB' })
+  await t.db.query(
+    `insert into question_parts (question_version_id, position, depth, label, prompt_ms, marks, mode)
+     select v.id, 2, 1, '2', 'Bahagian kedua.', 1, 'mcq' from question_versions v where v.question_id = $1 and v.version_no = 1`,
+    [inA[inA.length - 1]],
+  )
+  // The second part is a complete MCQ leaf too (three options, a key), so the bank can hydrate the question; it is just not servable.
+  await t.db.query(
+    `with p as (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 and p.position = 2),
+          o as (insert into part_options (part_id, label, body_ms, position) select p.id, l.label, 'Pilihan ' || l.label, l.pos from p cross join (values ('A', 1), ('B', 2), ('C', 3)) l(label, pos) returning 1)
+     insert into answer_keys (part_id, kind, content) select id, 'option', '{"kind":"option","correct":"A"}'::jsonb from p`,
+    [inA[inA.length - 1]],
+  )
+  // Fresh planner statistics, as autovacuum gives after a real load.
+  await t.db.query('analyze')
 }, 300_000)
 
 afterAll(async () => {
@@ -340,5 +375,105 @@ describe('admin landmines (Q5, Q6)', () => {
     expect(bank.length).toBeLessThanOrEqual(5000)
     expect(spies.listIds).not.toHaveBeenCalled()
     expect(hydrated().max).toBeLessThanOrEqual(200)
+  })
+})
+
+describe('servable shape in SQL (battle, games, BR-16)', () => {
+  it('a five-option question keyed E is never drawn into a battle, and the pool count and the draw agree', async () => {
+    const deps = t.get(BattleDeps)
+    deps.invalidateCache()
+    const banned = new Set(fiveOption)
+    for (let i = 0; i < 30; i++) {
+      const ids = (await deps.drawQuestions({ questionType: 'biasa', subjectId: w.tag.subjectId, levelId: otherLevel }, 10, prngStream(`e5-${String(i)}`))) as string[]
+      expect(ids).toHaveLength(10)
+      for (const id of ids) expect(banned.has(id), `${id} has five options`).toBe(false)
+    }
+    // Every drawn question grades: the key index is 0..3.
+    const ids = (await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, 25, prngStream('e5-spm'))) as string[]
+    for (const id of ids) {
+      expect(banned.has(id)).toBe(false)
+      expect(await deps.arenaQuestion(id)).not.toBeNull()
+      expect(await deps.gradeAnswer(id, 0)).not.toBeNull()
+    }
+    // The size shown in the lobby is the size a draw can serve (count and draw share the same filter).
+    const size = await deps.spmPoolCount(w.tag.subjectId)
+    expect(await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, size, prngStream('e5-all'))).toHaveLength(size)
+    expect(await deps.drawQuestions({ questionType: 'spm', subjectId: w.tag.subjectId, levelId: null }, size + 1, prngStream('e5-all'))).toBeNull()
+    // The five-option pool questions are in the SPM pool for practice and the hub, but not in the battle size.
+    expect(await t.get(SpmPoolService).count(w.tag.subjectId)).toBe(size + fiveOption.length)
+  })
+
+  it('games draw only 2 to 4 option questions, and still fill the draw when most of the level has five options', async () => {
+    const games = t.get(GameQuestions)
+    const banned = new Set(fiveOption)
+    const drawn = await games.sample({ subjectId: w.tag.subjectId, educationLevelId: otherLevel }, 20, prngStream('e5-g'))
+    expect(drawn).toHaveLength(20)
+    for (const s of drawn) {
+      expect(banned.has(s.question.id)).toBe(false)
+      expect(s.question.options.length).toBeLessThanOrEqual(4)
+    }
+    expect(fourOption.length).toBeGreaterThan(20)
+  })
+
+  it('BR-16: a chapter holding one non-servable MCQ counts only the servable ones, so the next chapter can unlock', async () => {
+    const source = t.get(Be09PracticeQuestionSource)
+    expect((await source.chapterCounts([chapterA])).get(chapterA)).toBe(4) // the cheap count (BR-15 list) sees four plain MCQs
+    const counts = await source.chapterCounts([chapterA, chapterB], true)
+    expect(counts.get(chapterA)).toBe(3) // the exact count (BR-16) drops the two-part one
+    expect(counts.get(chapterB)).toBe(2)
+    expect(await source.chapterPage(chapterA, [], 10)).toHaveLength(3)
+    const locked = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
+    expect(locked.status).toBe(409)
+    const started = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterA, count: 10 })
+    expect(started.status, JSON.stringify(started.body)).toBe(201)
+    const served = started.body.data.questions as { id: string }[]
+    expect(served).toHaveLength(3)
+    for (const q of served) {
+      const r = await s1.post(`/practice/sessions/${started.body.data.sessionId as string}/check-answer`, { questionId: q.id, selectedOptionId: 0 })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+    }
+    expect((await s1.post(`/practice/sessions/${started.body.data.sessionId as string}/submit`, { timeSpent: 30 })).status).toBe(200)
+    const open = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
+    expect(open.status, JSON.stringify(open.body)).toBe(201)
+  })
+
+  it('excludeIds is one array parameter: a very long exclude list works', async () => {
+    const f = { subjectId: w.tag.subjectId, educationLevelId: dLevel, excludeIds: primary.slice(0, 5500) }
+    const ids = await repo.sampleIds(f, 50, 3)
+    expect(ids).toHaveLength(50)
+    const skip = new Set(primary.slice(0, 5500))
+    for (const id of ids) expect(skip.has(id)).toBe(false)
+  })
+})
+
+describe('seed spm no longer loads a whole subject', () => {
+  it('builds the Tracking A set of a subject whose pool is above the eligibleIds cap', async () => {
+    await t.db.query(`insert into spm_subject_configs (subject_id, grp, display_order) values ($1, 'teras', 1) on conflict do nothing`, [w.tag.subjectId])
+    const poolSize = await t.get(SpmPoolService).count(w.tag.subjectId)
+    expect(poolSize).toBeGreaterThan(2000)
+    await spmSeed.run({ profile: 'poc', clock: new FixedClock(new Date('2026-10-19T01:00:00Z')), prng: () => prngStream('seed'), prisma: t.db.prisma } as never)
+    const set = await t.db.query<{ n: number; id: string }>(
+      `select s.id::text id, (select count(*)::int from spm_tracking_set_questions q where q.set_id = s.id) n from spm_tracking_sets s where s.subject_id = $1 and s.year = 2026 and s.set_no = 1`,
+      [w.tag.subjectId],
+    )
+    expect(set).toHaveLength(1)
+    expect(set[0]?.n).toBe(poolSize)
+    const ordered = await t.db.query<{ ok: boolean }>(`select bool_and(question_id > prev) ok from (select question_id, lag(question_id, 1, 0) over (order by position) prev from spm_tracking_set_questions where set_id = $1) x`, [set[0]?.id])
+    expect(ordered[0]?.ok).toBe(true)
+  })
+})
+
+describe('quality audit timing (Q5)', () => {
+  it('audits the whole fixture bank in short per-batch statements (no long transaction)', async () => {
+    const quality = t.get(QualityService)
+    const total = (await t.db.query<{ n: number }>(`select count(*)::int n from questions`))[0]?.n as number
+    const started = performance.now()
+    await quality.audit({ userId: w.admin, role: 'admin', requestId: null, ip: null, isTest: false })
+    const ms = performance.now() - started
+    process.stdout.write(`QLOAD audit timing: ${String(total)} questions in ${String(Math.round(ms))} ms (${(ms / total).toFixed(2)} ms per question)\n`)
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from question_quality_scores`))[0]?.n).toBe(total)
+    // 300k questions at this rate stay far below one hour; the old single transaction was capped at 120 s.
+    expect((ms / total) * 300_000).toBeLessThan(600_000)
+    expect((await t.db.query<{ n: number }>(`select count(*)::int n from quality_audits where finished_at is not null`))[0]?.n).toBeGreaterThan(0)
   })
 })

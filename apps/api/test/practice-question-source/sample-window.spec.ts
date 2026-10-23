@@ -97,6 +97,8 @@ function bank(total: number, servable: (i: number) => boolean): Bank {
         .slice(0, n)
         .map((x) => x.id),
     eligibleIds: async () => [...ids],
+    eligibleIdsPage: async (_f: QuestionFilter, after: string | undefined, limit: number) =>
+      ids.filter((id) => after === undefined || Number(id) > Number(after)).slice(0, limit),
     sample: async function (this: QuestionsRepository, f: QuestionFilter, n: number, rng: Parameters<QuestionsRepository['sample']>[2]) {
       sampleLimits.push(n)
       return realSample.call(this, f, n, rng)

@@ -14,6 +14,10 @@ export interface BulkSpec {
   heldEvery?: number
   /** Every n-th row is a draft (not published, no live version); 0 or absent = none. */
   draftEvery?: number
+  /** Options per question (default 4, labels A..). */
+  optionCount?: number
+  /** 1-based index of the correct option (default 1 = `A`). */
+  keyIndex?: number
   /** `number_label` prefix (also how a fixture is found again). */
   label: string
 }
@@ -50,11 +54,11 @@ export async function bulkMcqs(db: TestDatabase, s: BulkSpec): Promise<string[]>
      ),
      o AS (
        INSERT INTO part_options (part_id, label, body_ms, position)
-       SELECT p.id, l.label, 'Pilihan ' || l.label, l.pos FROM p CROSS JOIN (VALUES ('A', 1), ('B', 2), ('C', 3), ('D', 4)) l(label, pos)
+       SELECT p.id, chr(64 + l.pos), 'Pilihan ' || chr(64 + l.pos), l.pos FROM p CROSS JOIN generate_series(1, $10::int) AS l(pos)
        RETURNING 1
      ),
      k AS (
-       INSERT INTO answer_keys (part_id, kind, content) SELECT id, 'option', '{"kind":"option","correct":"A"}'::jsonb FROM p RETURNING 1
+       INSERT INTO answer_keys (part_id, kind, content) SELECT id, 'option', jsonb_build_object('kind', 'option', 'correct', chr(64 + $11::int)) FROM p RETURNING 1
      ),
      t AS (
        INSERT INTO question_tags (question_id, kind, code)
@@ -62,7 +66,7 @@ export async function bulkMcqs(db: TestDatabase, s: BulkSpec): Promise<string[]>
        RETURNING 1
      )
      SELECT (SELECT count(*) FROM o) + (SELECT count(*) FROM k) + (SELECT count(*) FROM t) AS done`,
-    [s.count, s.label, s.subjectId, s.levelId, s.chapterId ?? null, tps, s.heldEvery ?? 0, s.draftEvery ?? 0, s.poolEvery ?? 0],
+    [s.count, s.label, s.subjectId, s.levelId, s.chapterId ?? null, tps, s.heldEvery ?? 0, s.draftEvery ?? 0, s.poolEvery ?? 0, s.optionCount ?? 4, s.keyIndex ?? 1],
   )
   const rows = await db.query<{ id: string }>(
     `SELECT q.id::text FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = 1
