@@ -209,7 +209,12 @@ function toggleMember(stimulusId: string, qid: string, on: boolean): void {
 }
 function quickAttach(qid: string, stimulusId: string): void {
   toggleMember(stimulusId || '', qid, false)
-  if (stimulusId) toggleMember(stimulusId, qid, true)
+  const detachNote = groupNote.value
+  if (stimulusId) {
+    toggleMember(stimulusId, qid, true)
+    // Keep the detach step's renumber note when the attach step has nothing to say.
+    if (!groupNote.value) groupNote.value = detachNote
+  }
 }
 function previewImage(s: IntakeStimulus) {
   return images.value.find((i) => i.page === s.page)
