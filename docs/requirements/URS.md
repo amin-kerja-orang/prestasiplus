@@ -9,7 +9,7 @@
 | Date | 2026-09-25 |
 | Status | Draft |
 | Author | product-analyst (agent) |
-| Owner | Project owner (rosliamir16@gmail.com) |
+| Owner | Project owner (owner@example.test) |
 
 **Change log**
 

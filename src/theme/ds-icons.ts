@@ -71,6 +71,24 @@ export const dsIconBaseNames = [
   'caret-right',
   'info',
   'broadcast',
+  // D-09: base names that pages hand to the composites (`icon: 'number-one'` in a data array,
+  // `<DsIconChip icon="laptop">`); the glyph class is built at run time, so the scanner never saw it.
+  'laptop',
+  'arrow-u-up-left',
+  'article',
+  'calendar-x',
+  'checks',
+  'hourglass-medium',
+  'lock',
+  'notebook',
+  'number-four',
+  'number-one',
+  'pause-circle',
+  'plugs',
+  'prohibit',
+  'repeat',
+  'tag',
+  'user-check',
 ] as const
 
 export const dsIconWeights = ['regular', 'duotone', 'bold'] as const

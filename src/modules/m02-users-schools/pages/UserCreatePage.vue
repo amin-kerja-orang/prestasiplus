@@ -17,6 +17,7 @@ import { useRouter } from 'vue-router'
 
 import type { Role } from '@/modules/m01-authentication'
 
+import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
@@ -28,12 +29,14 @@ import {
   type CreateAdminUserRequest,
   type StudentSearchItem,
 } from '../api/users'
+import GeneratedCredentials from '../components/GeneratedCredentials.vue'
 import GradeCards from '../components/GradeCards.vue'
 import OfficerSelects from '../components/OfficerSelects.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
 import StudentSchoolPicker from '../components/StudentSchoolPicker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
+import type { CredentialRow } from '../lib/credential-row'
 import { errorLines, USERS_LIST_PATH } from '../lib/user-list'
 import {
   generatedAdminEmail,
@@ -45,6 +48,10 @@ import {
 
 const router = useRouter()
 const flash = useFlash()
+
+/** http mode: no default password exists (D59b); the server generates one per account and returns it once. */
+const http = isHttpMode()
+const credential = ref<CredentialRow | null>(null)
 
 const role = ref<Role | ''>('')
 
@@ -97,6 +104,7 @@ onMounted(() => {
       console.error('JPN load error:', err)
     },
   )
+  if (http) return
   // INFERRED endpoint: the fixture default passwords the generator shows (FR-M02-30).
   fetchAdminDefaults().then(
     (value) => {
@@ -125,7 +133,7 @@ async function generate(): Promise<void> {
   if (!school || school.code === '' || generating.value) return
   generating.value = true
   try {
-    defaults.value ??= await fetchAdminDefaults()
+    if (!http) defaults.value ??= await fetchAdminDefaults()
     genName.value = generatedAdminName(school.name)
     generated.value = true
   } catch (err) {
@@ -158,14 +166,15 @@ function buildRequest(): CreateAdminUserRequest | null {
   if (r === 'school_admin') {
     const school = genSchool.value
     const password = defaults.value?.schoolAdminDefaultPassword
-    if (!school || !generated.value || password === undefined) return null
+    if (!school || !generated.value || (!http && password === undefined)) return null
     return {
       role: r,
       name: genName.value,
       email: generatedAdminEmail(school.code),
       phone: genPhone.value,
-      password,
-      passwordConfirmation: password,
+      ...(http || password === undefined
+        ? {}
+        : { password, passwordConfirmation: password }),
       isActive: true,
       schoolId: school.id,
       ppdState: school.state,
@@ -176,8 +185,7 @@ function buildRequest(): CreateAdminUserRequest | null {
     role: r,
     name: form.name,
     email: form.email,
-    password: form.password,
-    passwordConfirmation: form.passwordConfirmation,
+    ...(http ? {} : { password: form.password, passwordConfirmation: form.passwordConfirmation }),
   }
   if (isOfficerRole(r)) {
     return {
@@ -203,6 +211,16 @@ async function submit(): Promise<void> {
   errors.value = []
   try {
     const result = await createAdminUser(request)
+    if (http && result.data.generatedPassword) {
+      // The page stays on its route to show the one-time password, so the flash shows now.
+      flash.show({ type: 'success', message: result.status })
+      credential.value = {
+        name: result.data.name,
+        email: result.data.email || (result.data as { username?: string | null }).username || '',
+        password: result.data.generatedPassword,
+      }
+      return
+    }
     flash.success(result.status)
     await router.push(USERS_LIST_PATH)
   } catch (err) {
@@ -224,7 +242,20 @@ async function submit(): Promise<void> {
     subtitle="Isi maklumat untuk mendaftarkan pengguna baru"
     data-testid="user-create-page"
   >
+    <template v-if="credential">
+      <GeneratedCredentials :rows="[credential]" />
+      <div>
+        <UButton
+          :to="USERS_LIST_PATH"
+          label="Ke Senarai Pengguna"
+          icon="i-ph-arrow-right"
+          class="min-h-11"
+          data-testid="user-credential-continue"
+        />
+      </div>
+    </template>
     <form
+      v-else
       method="post"
       class="flex w-full min-w-0 flex-col gap-6"
       data-testid="user-form"
@@ -282,6 +313,7 @@ async function submit(): Promise<void> {
             v-model:name="genName"
             v-model:phone="genPhone"
             :password="defaults?.schoolAdminDefaultPassword ?? ''"
+            :show-password="!http"
             :generating="generating"
             @generate="generate"
             @copy="copyText"
@@ -294,7 +326,13 @@ async function submit(): Promise<void> {
         v-if="isStandard || isOfficer"
         title="Maklumat Akaun"
         :description="
-          isOfficer ? 'Maklumat pegawai dan kata laluan.' : 'Maklumat pengguna dan kata laluan.'
+          isOfficer
+            ? http
+              ? 'Maklumat pegawai.'
+              : 'Maklumat pegawai dan kata laluan.'
+            : http
+              ? 'Maklumat pengguna.'
+              : 'Maklumat pengguna dan kata laluan.'
         "
         icon="identification-card"
         data-testid="user-fields"
@@ -389,7 +427,7 @@ async function submit(): Promise<void> {
           :jpns="jpns"
         />
 
-        <DsFormField native for="user-password" label="Kata Laluan" required>
+        <DsFormField v-if="!http" native for="user-password" label="Kata Laluan" required>
           <UInput
             id="user-password"
             v-model="form.password"
@@ -402,7 +440,13 @@ async function submit(): Promise<void> {
           />
         </DsFormField>
 
-        <DsFormField native for="user-password-confirm" label="Sahkan Kata Laluan" required>
+        <DsFormField
+          v-if="!http"
+          native
+          for="user-password-confirm"
+          label="Sahkan Kata Laluan"
+          required
+        >
           <UInput
             id="user-password-confirm"
             v-model="form.passwordConfirmation"

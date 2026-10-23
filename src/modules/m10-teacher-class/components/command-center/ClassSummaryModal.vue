@@ -12,7 +12,7 @@ import { fetchCommandCenterLiveData } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { accuracyTone, classPath } from './copy'
+import { accuracyTone, classPath, levelText } from './copy'
 import type { DrillRow } from './drill-table'
 
 defineEmits<{ close: [] }>()
@@ -34,7 +34,7 @@ const rows = computed<DrillRow[]>(() =>
     cells: [
       { text: String(i + 1) },
       { text: c.name },
-      { text: c.educationLevel },
+      { text: levelText(c.educationLevel) },
       { text: String(c.studentCount), mono: true },
       { text: String(c.active), mono: true },
       { text: `${String(c.accuracy)}%`, tone: accuracyTone(c.accuracy), mono: true },

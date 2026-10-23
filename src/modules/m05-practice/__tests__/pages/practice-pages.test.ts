@@ -91,15 +91,15 @@ const MATH: SubjectConfig = {
 let wrapper: VueWrapper | null = null
 let router: Router
 
-async function render(component: unknown, url: string): Promise<VueWrapper> {
+async function render(component: unknown, url: string, withPricing = true): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/practice', component: PracticeListPage },
       { path: '/practice/:code', component: PracticeConfigPage },
       { path: '/practice/:code/quiz', component: PracticeQuizPage },
-      { path: '/pricing', component: { template: '<div />' } },
-      { path: '/:rest(.*)*', component: { template: '<div />' } },
+      ...(withPricing ? [{ path: '/pricing', component: { template: '<div />' } }] : []),
+      { path: '/:rest(.*)*', name: withPricing ? undefined : 'core.not-found', component: { template: '<div />' } },
     ],
   })
   await router.push(url)
@@ -298,6 +298,17 @@ describe('S3 PracticeConfigPage', () => {
     const link = notice.get('a')
     expect(link.text()).toBe('Langgan untuk akses tanpa had')
     expect(link.attributes('href')).toBe('/pricing')
+  })
+
+  it('hides the subscribe link while /pricing is not routed (D9 dead link)', async () => {
+    api.fetchSubjectConfig.mockResolvedValue({
+      ...MATH,
+      trial: { active: true, used: 50, limit: 50, remaining: 0 },
+    })
+    const w = await render(PracticeConfigPage, '/practice/MATH', false)
+    const notice = t(w, 'config-trial')
+    expect(notice.text()).toContain('Baki percubaan percuma: 0 soalan lagi.')
+    expect(notice.find('a').exists()).toBe(false)
   })
 
   it('shows the subjective link only for a selected level with a count (FR-M05-49)', async () => {

@@ -5,7 +5,7 @@
  * - `/spm/bijak` has `roles: ['student','admin']` + `onForbidden: '403'`, so a teacher gets the
  *   in-place 403 page (URL unchanged, tab title "403 - Akses Ditolak | PRESTASIPLUS"), D43.
  * - `/admin/spm/kertas` has `roles: ['admin']` and no `onForbidden`, so another role is redirected to
- *   its own home (`scopeHomePath`, intentional, fix B2 in #60): murid /spm/bijak, guru /guru, admin sekolah /admin-sekolah.
+ *   its own home (`scopeHomePath`, intentional, fix B2 in #60): murid /dashboard, guru /guru, admin sekolah /admin-sekolah.
  * - The API is the real boundary: `GET /api/admin/papers` is `@Roles('admin')` (apps/api/src/modules/
  *   exam/builder/builder.controller.ts) and `/api/bijak/*` is `@Roles('student')` (attempts + papers
  *   controllers, D43): both answer 403 to the wrong role.

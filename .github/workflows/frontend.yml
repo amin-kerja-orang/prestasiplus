@@ -1,0 +1,219 @@
+# Frontend CI (AZ-21c). The gate for pull requests into `be/integration-frontend`.
+#
+#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> vue-tsc -> unit tests (vitest `unit` project).
+#            The build runs BEFORE vue-tsc on purpose: the Nuxt UI Vite plugin writes the git-ignored
+#            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
+#            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
+#   e2e-api  The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
+#            against a REAL API: Postgres 16 service + the API checked out from `feature/v2-backend`
+#            (`api_ref` input on a manual run), migrated and seeded with the poc profile. No Docker build:
+#            the SPA is built with VITE_API_MODE=http and served by `vite preview`, whose proxy sends /api
+#            to the API on :3000 (vite.config.ts `server.proxy`, inherited by preview), so it is same-origin.
+#            A separate job so it can be made a required check later on its own.
+#
+# No repository secrets are needed. The demo-account password of the throw-away database is random per run:
+# its argon2id hash goes to the seed (SEED_DEMO_PASSWORD_HASH) and the clear text to the specs
+# (E2E_DEMO_PASSWORD); both are masked and live only in this job.
+name: frontend
+
+on:
+  pull_request:
+    branches: [be/integration-frontend]
+  push:
+    branches: [be/integration-frontend]
+  workflow_dispatch:
+    inputs:
+      api_ref:
+        description: Branch, tag or SHA of the API to run the e2e-api job against
+        required: false
+        default: feature/v2-backend
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (build, vue-tsc, unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build (vite build --mode demo; also generates auto-imports.d.ts and components.d.ts)
+        run: npx vite build --mode demo
+
+      - name: Demo bundle check (test hooks, markers, size budget)
+        shell: bash
+        run: |
+          if [ -f scripts/check-demo-bundle.mjs ]; then
+            node scripts/check-demo-bundle.mjs
+          else
+            echo "::notice::scripts/check-demo-bundle.mjs is not in this tree; demo bundle check skipped."
+          fi
+
+      # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
+      # LEAD exception (22 Oct): 6 GB heap for this step only.
+      - name: Type-check (vue-tsc)
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run typecheck
+
+      - name: Unit tests (vitest, project unit)
+        run: npm test
+
+  e2e-api:
+    name: e2e @api (http mode, 375/768/1280)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Throw-away Postgres for this job only. Throw-away credentials, CI-only (same pattern as api.yml).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prestasiplus_e2e
+          POSTGRES_USER: pp
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pp -d prestasiplus_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      API_REF: ${{ inputs.api_ref || 'feature/v2-backend' }}
+      DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_e2e
+      # API settings for a local http stack (mirrors compose.http.yaml): dev mode, demo seed, PoC questions,
+      # plain-http cookie and a login throttle high enough for 3 viewports from one address.
+      NODE_ENV: development
+      PORT: '3000'
+      ALLOW_DEMO_SEED: 'true'
+      BIJAK_POC_QUESTIONS: 'true'
+      COOKIE_SECURE: 'false'
+      THROTTLE_LOGIN_PER_MINUTE: '200'
+      THROTTLE_GLOBAL_PER_MINUTE: '3000'
+      # Run the job worker in this API process so queued intake jobs (extract-start) complete; AI_PROVIDER defaults to mock.
+      JOBS_WORKER_ENABLED: 'true'
+      FRONTEND_PORT: '5192'
+      BASE_URL: http://localhost:5192
+    steps:
+      - name: Checkout the frontend (this PR)
+        uses: actions/checkout@v4.2.2
+        with:
+          path: fe
+          persist-credentials: false
+      - name: Checkout the API (${{ env.API_REF }})
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ env.API_REF }}
+          path: api
+          persist-credentials: false
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: fe/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            fe/package-lock.json
+            api/package-lock.json
+
+      - name: API - install
+        working-directory: api
+        run: npm ci --no-audit --no-fund
+
+      - name: Job-local secrets (random session secret and demo password, masked)
+        working-directory: api/apps/api
+        shell: bash
+        run: |
+          set -euo pipefail
+          session_secret="$(openssl rand -hex 32)"
+          demo_password="$(openssl rand -hex 16)"
+          echo "::add-mask::${session_secret}"
+          echo "::add-mask::${demo_password}"
+          # argon2id with the parameters of prisma/seed/core/demo-password.ts (the PHC string it accepts).
+          demo_hash="$(DEMO_PW="${demo_password}" node -e "require('@node-rs/argon2').hash(process.env.DEMO_PW, { memoryCost: 19456, timeCost: 2, parallelism: 1 }).then((h) => process.stdout.write(h))")"
+          echo "::add-mask::${demo_hash}"
+          {
+            echo "SESSION_SECRET=${session_secret}"
+            echo "E2E_DEMO_PASSWORD=${demo_password}"
+            echo "SEED_DEMO_PASSWORD_HASH=${demo_hash}"
+          } >> "$GITHUB_ENV"
+
+      # be:build first: its prebuild runs `prisma generate`, which the seed imports (src/db/generated).
+      - name: API - build, migrate, seed (poc profile)
+        working-directory: api
+        run: |
+          npm run be:build
+          npm run be:db:migrate
+          npm run be:db:seed
+
+      - name: API - start on :3000 and wait for /api/ready
+        working-directory: api/apps/api
+        shell: bash
+        run: |
+          nohup node dist/main.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/api.pid"
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/api/ready >/dev/null 2>&1; then echo "API ready"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::API did not become ready"; tail -n 100 "$RUNNER_TEMP/api.log"; exit 1
+
+      - name: Frontend - install
+        working-directory: fe
+        run: npm ci --no-audit --no-fund
+
+      - name: Frontend - build in http mode (as compose.http.yaml) and serve with vite preview on :5192
+        working-directory: fe
+        shell: bash
+        env:
+          VITE_API_MODE: http
+          VITE_TEST_HOOKS: 'false'
+          VITE_PROTOTYPE_SCOPE: 'on'
+          VITE_API_BASE_URL: ''
+        run: |
+          npx vite build --mode production --outDir dist-http
+          nohup npx vite preview --outDir dist-http --port "$FRONTEND_PORT" --strictPort > "$RUNNER_TEMP/web.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/api/health" >/dev/null 2>&1 && curl -fsS "$BASE_URL/" >/dev/null 2>&1; then
+              echo "SPA and /api proxy up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::vite preview did not come up"; cat "$RUNNER_TEMP/web.log"; exit 1
+
+      - name: Playwright browser
+        working-directory: fe
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E @api (mobile, tablet, desktop)
+        working-directory: fe
+        run: npm run test:e2e:http
+
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: playwright-report-frontend-e2e-api
+          path: |
+            fe/playwright-report-http
+            fe/test-results-http
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: API and preview logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "--- api.log"; tail -n 200 "$RUNNER_TEMP/api.log" 2>/dev/null || true
+          echo "--- web.log"; tail -n 100 "$RUNNER_TEMP/web.log" 2>/dev/null || true

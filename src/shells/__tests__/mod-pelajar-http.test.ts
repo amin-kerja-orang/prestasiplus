@@ -57,7 +57,7 @@ describe('Mod Pelajar (http mode)', () => {
     expect(session.role).toBe('student')
     expect(session.mode?.kind).toBe('mod_pelajar')
     expect(session.mode?.returnRole).toBe('admin')
-    expect(path).toBe('/spm/bijak')
+    expect(path).toBe('/dashboard')
     // The rotated csrf token is stored, as after login.
     expect(JSON.parse(localStorage.getItem('pp.auth') ?? '{}').csrf).toBe('csrf-mode')
   })

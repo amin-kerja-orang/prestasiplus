@@ -7,6 +7,7 @@
  */
 
 import { api, type ListResult } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 import type { ImportResponse } from './imports'
 
@@ -113,7 +114,11 @@ export function fetchCompStudents(
 
 /** #17 `POST /api/admin/comp-students` (201; 422 with `fields`). */
 export function registerCompStudents(input: RegisterCompStudentsInput): Promise<ImportResponse> {
-  return api.post<ImportResponse>(base, { body: input, raw: true })
+  // http mode: ids are strings on the wire. The response has no credential (the contract returns none).
+  const body = isHttpMode() && input.classroomId !== null
+    ? { ...input, classroomId: String(input.classroomId) }
+    : input
+  return api.post<ImportResponse>(base, { body, raw: true })
 }
 
 /** #18 `GET /api/admin/comp-students/:id` (404 unless the user is a complimentary student). */

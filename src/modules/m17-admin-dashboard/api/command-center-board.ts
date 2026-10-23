@@ -39,7 +39,7 @@ export const fetchCcDailyActivity = (period: CcPeriod, o: Signal = {}) =>
   })
 
 /** #5 `GET /api/command-center/daily-activity/school/{id}?period=` (S3 school drill; admin only). */
-export const fetchCcSchoolDrill = (schoolId: number, period: CcPeriod, o: Signal = {}) =>
+export const fetchCcSchoolDrill = (schoolId: number | string, period: CcPeriod, o: Signal = {}) =>
   api.get<CcSchoolDrill>(`/api/command-center/daily-activity/school/${String(schoolId)}`, {
     ...withSignal(o),
     query: { period },

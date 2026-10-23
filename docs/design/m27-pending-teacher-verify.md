@@ -1,7 +1,7 @@
 # M27 Admin Sekolah: Sahkan guru yang mendaftar sendiri (verify self-registered teachers)
 
 - **Slug:** `m27-pending-teacher-verify`
-- **Status:** Draft for G2, revised 2026-10-21 with the lead's decisions (section 14). Design only; no code written.
+- **Status:** Draft for G2, revised 2026-10-21 with the lead's decisions (section 14). Design only; no code written. Section 15 added 2026-10-22 for issue #191 (delivery check of the built screen).
 - **Date:** 2026-10-21
 - **Owner:** ui-ux-designer
 - **Backlog:** #78 (FE has nothing; backend done in BE-21 AC#13)
@@ -60,7 +60,7 @@ flowchart TD
   C -->|Batal / Esc| T
   C -->|Sahkan| P[POST guru/id/verify, butang dalam keadaan memuat]
   P -->|200| OK[Muat semula senarai + flash 'Guru berjaya disahkan.']
-  P -->|404 / 409| GONE[Flash amaran 'tidak lagi menunggu' + muat semula senarai]
+  P -->|404 / 409| GONE[Flash ralat 'tidak lagi menunggu' + muat semula senarai]
   P -->|429| RL[Flash ralat, baris kekal, boleh cuba lagi]
   P -->|403 CSRF / 5xx / rangkaian| FE[Flash ralat, baris kekal]
   OK --> T
@@ -245,7 +245,7 @@ S7b has no live counterpart, so it is specified for WCAG 2.2 AA directly. The sh
 
 ## 11. Component inventory (existing DS only)
 
-`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/school-admin.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component used on S7. No new DS component and no new token.
+`DsPage`, `DsBackLink`, `DsStatTile`, `DsDataTable` (with `card-title`, `card-fields`, `#card-actions`, `#name-cell`, `#email-cell`, `#phone-cell`, `#requestedAt-cell`, `#actions-cell`), `DsIdentity`, `DsPanel`, `DsEmptyState`, `DsLoadError`, `DsStatusBadge` (`awaiting-review` with a custom label), `useConfirm` / `DsConfirmHost` (already mounted in the shell), `useFlash`, `UButton`, `USkeleton`. New code needed (for the developer, not designed here): API functions `fetchPendingTeachers`, `verifyPendingTeacher` in `api/pending-teachers.ts`; a mock handler pair; route `m27.guru.pending`; page `GuruMenungguPage.vue`; callout component used on S7. No new DS component and no new token.
 
 ## 12. Proposed test ids (e2e)
 
@@ -293,3 +293,45 @@ Closed by the lead: S0 strip later (1); 12 strings approved as provisional (2); 
 | 7 | Never request role accounts for .cloud (D24); copy stays Perlu pengesahan | section 0 |
 
 **Risk R1 (unpaged list):** `GET /admin-sekolah/guru/pending` returns every pending teacher in one response, with no limit. It is expected to be small. If a school ever has hundreds of pending teachers, the page renders all rows (long DOM, long scroll, slow list). Mitigation if it happens: ask backend for paging; the UI then reuses the `DsDataTable` pager and the S7 `page` query. No UI work is needed now.
+
+## 15. #191 delivery check (2026-10-22)
+
+Checked by reading the built code (commit 7571650b) against sections 1 to 14. No browser was used; .cloud/.my not observed. Two spec lines corrected: flowchart node for 404/409 said "amaran" but section 5.5 and the code use an `error` flash (now "ralat"); section 11 named `api/school-admin.ts`, the functions live in `api/pending-teachers.ts`. "Toast" in the brief = the app's `useFlash` region (section 10); no second toast system.
+
+### 15.1 Coverage
+
+| Brief point | Spec section | Built |
+|---|---|---|
+| "Menunggu pengesahan" state/entry on teacher list | 2 (B, D rejected), 6 | Yes (`SchoolUserList.vue:396`; callout badge + count + "Semak"); gap 4 |
+| Sahkan action + confirm dialog | 5.4 | Yes (`GuruMenungguPage.vue:147-159`) |
+| Success toast from API `status` | 5.5, 8 (14) | Yes (`:165`) |
+| Error: 404/409, 429, 403/CSRF, network | 5.5, 8 (15-17) | Yes (`:168-176`, `errorLines`) |
+| Empty / loading / load-error / 403 states | 5.5 | Yes; gap 1 (skeleton height) |
+| Light + dark, tokens only | 10, 11 | Yes (DS components only, no raw colours in the page) |
+| 375 / 768 / 1280 | 5.3, 6 | Partly: gap 4 (callout button), gap 3 (card) |
+| Focus after verify | 10 | Yes, but gap 2 (heading test id) |
+| Testable in mock mode | 12 | No: gap 5 |
+
+### 15.2 Gaps for the frontend developer
+
+1. Minor, `GuruMenungguPage.vue:191`: spec 5.5 says tile skeleton `h-24`; `USkeleton` has no height class (collapses). Add `class="h-24"`.
+2. Minor, `:124-129` and `:184`: spec 10/12 require the `h1` to carry `data-testid="pt-heading"` with `tabindex="-1"`; code queries the shell's first `h1` and sets tabindex at runtime, no test id. Set `data-testid="pt-heading"` on that `h1` (shell header) or have e2e target `h1`.
+3. Minor, `:276-281`: card variant `DsIdentity` lacks the `#name` slot with `data-testid="pt-name"` that the table variant has. Add it so `pt-name` exists at 375.
+4. Minor, `PendingTeacherCallout.vue:36-43`: section 6 says the "Semak" button is full width at 375, row layout from `sm`. Add `class="min-h-11 w-full sm:w-auto justify-center"`.
+5. Major (for acceptance, not for the screen), `mock/handlers/pending-teachers.ts:16-17`: the mock list is always empty and verify always 404, so verify, focus and callout cannot be exercised in mock mode. Acceptance below therefore runs only in `@api` (http) mode and needs the backend test DB to hold at least 3 pending teachers for the school of the school_admin test user, one with null e-mail (backend seed task, not a UI change).
+6. Minor, spec only: confirm with the user that provisional strings (section 8, 13 marks) are final; no code change.
+
+No other spec-vs-code gap found (route, role guard, copy rows 1-22, aria-label, focus rules, 404 mapping, reload-then-flash, no reject/bulk all match).
+
+### 15.3 E2E acceptance (`@api`, each step at 375, 768 and 1280; log in as school_admin of a school with 3 pending teachers; names are fictitious, e.g. "Cikgu Contoh")
+
+1. Open `/admin-sekolah/guru`. Expect `pt-callout` with badge "Menunggu Pengesahan", `pt-callout-count` = "3 guru menunggu pengesahan", link "Semak". At 375 the button is stacked under the text and is at least 44 px high; no horizontal scroll (also check 320).
+2. Press "Semak". URL `/admin-sekolah/guru/menunggu`; heading "Guru Menunggu Pengesahan"; back link "Senarai Guru"; tile "3" + "Menunggu Pengesahan"; `pt-found` "3 guru menunggu pengesahan". 375 shows cards, 768 and 1280 show the table with columns #, Nama, Emel, Telefon, Tarikh Daftar, Tindakan. The null e-mail shows "-". No search, filter or pager.
+3. Each `pt-verify` has accessible name "Sahkan {nama}" and is at least 44 px high.
+4. Press "Batal" in the dialog (and again with Esc): dialog titled "Sahkan Guru", message "Sahkan {nama} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan."; buttons "Sahkan" and "Batal". Cancel makes no POST, list still 3, focus back on the opening button.
+5. Press "Sahkan" in the dialog on row 1: button loading, POST `/api/admin-sekolah/guru/{id}/verify` returns 200; toast "Guru berjaya disahkan."; list 2 rows, found line "2 guru menunggu pengesahan"; focus on the former row 2's `pt-verify`. Verify the last row: focus on the previous row's button. Verify the final row: empty state "Tiada guru menunggu pengesahan" / "Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini."; focus on the `h1`.
+6. Open `/admin-sekolah/guru`: verified teacher is listed as Aktif; callout hidden when 0 pending.
+7. Stale row: verify the same teacher in a second session first, then Sahkan in the first: toast "Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini."; row gone.
+8. 429 (route-intercept the POST with 429 and message "Terlalu banyak percubaan. Sila cuba sebentar lagi."): toast shows that text, row stays, focus on its button. Network failure on POST: toast "Ralat berlaku. Sila cuba lagi.", row stays. Failing GET: error panel (`pt-error`) with "Cuba Semula"; retry loads the list.
+9. Log in as Admin Pusat and open `/admin-sekolah/guru/menunggu`: the 403 page. A school_admin of another school never sees these teachers.
+10. Repeat steps 2 and 5 with the dark theme on; text and badge remain readable, focus ring visible.

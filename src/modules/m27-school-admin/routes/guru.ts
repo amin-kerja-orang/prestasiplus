@@ -33,6 +33,7 @@ const routes: RouteRecordRaw[] = [
       onForbidden: '403',
       title: 'Guru Menunggu Pengesahan - PRESTASIPLUS',
       header: { title: 'Guru Menunggu Pengesahan' },
+      ownsH1: true,
       module: 'M27',
       v2: true,
     },
