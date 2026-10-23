@@ -64,7 +64,8 @@ const { data, error, reload } = useRouteData(
         signal,
       })
     } catch (err) {
-      // Own-school route, viewer without a school (Admin Pusat): 404 → the empty state, not the 404 page.
+      // Own-school route, viewer without a school (not Admin Pusat: the route refuses it, DV-M08-50): 404 → the
+      // empty state, not the 404 page (DV-M08-41).
       if (schoolId.value === undefined && isApiError(err) && err.status === 404)
         return noSchoolAnalysis(tingkatan.value)
       throw err
