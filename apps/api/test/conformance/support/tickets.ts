@@ -17,7 +17,11 @@ export const supportTicketScenarios: Scenario[] = [
       const admin = await ctx.as('admin')
 
       const openBefore = Number(dataOf(await admin.request('GET', '/admin/tiket/open-count')).count)
-      const created = await student.request('POST', '/tiket', { body: { subject: '  Konformans tiket  ', body: 'Butiran ujian', userId: '1' } })
+      // The create body is strict (BE-33 AC1c, #98): a forged owner is a 422 naming it, never bound.
+      const forged = await student.request('POST', '/tiket', { body: { subject: 'Konformans tiket', body: 'Butiran ujian', userId: '1' } })
+      expectError(ctx, forged, 422, 'VALIDATION_ERROR')
+      ctx.check(((errorOf(forged).fields ?? {}) as Record<string, string>).userId === 'The userId field is not allowed.', 'an unknown body key must be named in fields')
+      const created = await student.request('POST', '/tiket', { body: { subject: '  Konformans tiket  ', body: 'Butiran ujian' } })
       ctx.expectStatus(created, 201)
       const ticket = dataOf(created)
       ctx.check(ticket.status === 'dibuka' && ticket.statusLabel === 'Dibuka' && ticket.adminReply === null, 'a new ticket must be dibuka with no reply')

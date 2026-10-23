@@ -47,6 +47,8 @@ export class PerformancePracticeReadAdapter implements PracticeReadPort {
     const c: Prisma.Sql[] = []
     if (q.userIds) c.push(this.inList("u.id", q.userIds))
     if (q.schoolIds) c.push(this.inList("u.school_id", q.schoolIds))
+    // A district name is only unique inside its state: a district without its state matches nothing.
+    if (q.district !== undefined && q.state === undefined) c.push(Prisma.sql`FALSE`)
     if (q.state !== undefined) c.push(Prisma.sql`sc.state = ${q.state}`)
     if (q.district !== undefined) c.push(Prisma.sql`sc.district = ${q.district}`)
     return c

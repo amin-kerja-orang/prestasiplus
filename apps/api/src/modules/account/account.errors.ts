@@ -2,6 +2,7 @@ import { ACCOUNT_AUTH_MESSAGES, AUTH_ERROR_MESSAGES, AUTH_ERROR_STATUS } from '@
 import type { z } from 'zod'
 
 import { ApiError } from '../../common/errors/api-error'
+import { ACCOUNT_REGISTRATION_CLOSED_CODE, ACCOUNT_REGISTRATION_CLOSED_MESSAGE } from './account.constants'
 
 /** Laravel `ValidationException::summarize`, as the mock: the first message plus "(and N more error(s))". */
 export function summarize(fields: Record<string, string>): string {
@@ -39,3 +40,7 @@ export const icMismatch = (): ApiError => invalid({ email: ACCOUNT_AUTH_MESSAGES
 
 export const accountInactive = (): ApiError =>
   new ApiError({ code: 'ACCOUNT_INACTIVE', status: AUTH_ERROR_STATUS.ACCOUNT_INACTIVE, message: ACCOUNT_AUTH_MESSAGES.accountInactive })
+
+/** REG-CLOSE: 403 while `REGISTRATION_OPEN=false`. */
+export const registrationClosed = (): ApiError =>
+  new ApiError({ code: ACCOUNT_REGISTRATION_CLOSED_CODE, status: 403, message: ACCOUNT_REGISTRATION_CLOSED_MESSAGE })
