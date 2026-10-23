@@ -11,6 +11,7 @@ import type { TableColumn } from '@nuxt/ui'
 
 import { DsBreadcrumb, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsPillNav, type PillItem } from '@/ds'
 import { usePrototypeScope } from '@/composables'
+import { isApiError } from '@/api'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchSchoolItemAnalysis } from '../api/performance'
@@ -28,6 +29,7 @@ import {
 } from '../lib/prestasi/format'
 import { sparklineSeries } from '../lib/prestasi/gps-chart'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
+import { noSchoolAnalysis } from '../lib/prestasi/no-school'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
@@ -53,12 +55,20 @@ const tingkatan = computed<'T4' | 'T5' | null>(() => {
 const hasQuery = computed(() => route.query.tingkatan !== undefined)
 
 const { data, error, reload } = useRouteData(
-  (signal) =>
-    fetchSchoolItemAnalysis({
-      ...(schoolId.value === undefined ? {} : { schoolId: schoolId.value }),
-      tingkatan: tingkatan.value,
-      signal,
-    }),
+  async (signal) => {
+    try {
+      return await fetchSchoolItemAnalysis({
+        ...(schoolId.value === undefined ? {} : { schoolId: schoolId.value }),
+        tingkatan: tingkatan.value,
+        signal,
+      })
+    } catch (err) {
+      // Own-school route, viewer without a school (Admin Pusat): 404 → the empty state, not the 404 page.
+      if (schoolId.value === undefined && isApiError(err) && err.status === 404)
+        return noSchoolAnalysis(tingkatan.value)
+      throw err
+    }
+  },
   [() => schoolId.value, () => tingkatan.value],
 )
 const loadFailed = computed(() => isLoadError(error.value))

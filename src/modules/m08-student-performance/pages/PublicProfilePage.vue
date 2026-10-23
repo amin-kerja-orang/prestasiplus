@@ -5,7 +5,7 @@
  * is the standard 404 page. Tab title "{nama} — Pelajar PRESTASIPLUS". (The fade-in of the sections was dropped: style blocks are barred by the strict theme.)
  */
 import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isHttpMode } from '@/api/mode'
 import { usePageMeta } from '@/composables/usePageMeta'
@@ -21,6 +21,7 @@ import { sortPosts } from '../lib/timeline/posts'
 import { absoluteUrl, count, initialOf, percent, tierName } from '../lib/timeline/profile'
 
 const route = useRoute()
+const router = useRouter()
 const pageMeta = usePageMeta()
 const userId = computed(() => routeId(route.params.id))
 
@@ -36,6 +37,15 @@ watch(
     if (d) pageMeta.setTitle(`${d.name} — Pelajar PRESTASIPLUS`)
   },
   { immediate: true },
+)
+
+/**
+ * The sponsor CTA links to M21 S7 `/sponsor/register`. While no such route is registered (M21 S7 is not
+ * built; the catch-all would answer a 404 page, D4 of the 23 Oct sweep) the CTA panel is hidden (D9).
+ */
+const SPONSOR_REGISTER = '/sponsor/register'
+const sponsorAvailable = computed(() =>
+  router.getRoutes().some((r) => r.path === SPONSOR_REGISTER),
 )
 
 const posts = computed(() => sortPosts(data.value?.posts ?? []))
@@ -265,7 +275,7 @@ const share = (): void => {
               />
             </section>
 
-            <DsPanel data-testid="sponsor-cta">
+            <DsPanel v-if="sponsorAvailable" data-testid="sponsor-cta">
               <div class="flex flex-col items-center gap-3 text-center">
                 <DsIconChip icon="hand-heart" accent="friend" size="lg" />
                 <h3 class="text-heading text-highlighted">Ingin menyokong pelajar ini?</h3>

@@ -11,7 +11,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import AuthAlert from '../components/auth/AuthAlert.vue'
+import { isPrototypeRole, isPrototypeScopeOn, MSG_ROLE_OUT_OF_SCOPE } from '@/app/prototype-scope'
 import { resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
 import { DsFormField, DsSticker } from '@/ds'
@@ -19,6 +19,7 @@ import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
 import { getPlatformStats, login } from '../api'
+import AuthAlert from '../components/auth/AuthAlert.vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
@@ -48,6 +49,14 @@ async function submit(): Promise<void> {
       remember: remember.value,
     })
     session.setSession(next)
+    // SWEEP-23OCT O1: the real API does not know the prototype scope. Same refusal as the mock login:
+    // end the server session (POST /api/auth/logout, then the client session is cleared) and say why.
+    if (isPrototypeScopeOn() && !isPrototypeRole(next.user.role)) {
+      await session.logout()
+      errors.value = [MSG_ROLE_OUT_OF_SCOPE]
+      password.value = ''
+      return
+    }
     await router.push(
       resolvePostLoginTarget(router, route.query.redirect, {
         isLoggedIn: true,
