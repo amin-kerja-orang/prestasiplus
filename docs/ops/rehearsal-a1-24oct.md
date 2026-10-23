@@ -46,7 +46,7 @@ mkdir -m 700 <extract dir>
 ( set -o pipefail; gpg --decrypt <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg | tar -xzf - -C <extract dir> ); echo "exit $?"
 ls <extract dir> ; du -sh "$DUMP"
 node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1]+"/manifest.json","utf8"));let n=0,t=0;for(const v of Object.values(m.tables)){t++;n+=v.rows}console.log(t+" tables, "+n+" rows, anonymised="+m.anonymised)' "$DUMP"
-( cd "$DUMP" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS )
+( cd "$DUMP" && if [ -f SHA256SUMS ]; then sha256sum -c --quiet SHA256SUMS && echo "SHA256SUMS: shipped, OK"; else find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS && echo "SHA256SUMS: created"; fi )
 
 # A1.2 up. Expect, in this order: postgres pull (first time) and container lines, "databases ready: pp_rehearsal, pp_rehearsal_staging; read-only role: pp_staging_reader", the image build, prisma lines,
 #   "MIGRATION CHECK PASSED: <n> of <n>" (n = F: GO POINT, else stop), "[time] up: <s>s"; status: "applied: <n> of <F>", no fsync WARNING
@@ -232,13 +232,13 @@ Sources: extraction form = cutover plan section 4.6 B3; manifest shape `{format,
 
 Expect: the two sha256 values are equal (a mismatch: do not decrypt; ask for one new hand-over; a second mismatch is red). Exit 0. The node line prints `<T> tables, <R> rows, anonymised=true`; `T` and `R` equal the dump operator's report (I2). Record `T` and `R` as **N_manifest** (the headline N of P7).
 
-Then add the checksum file that the loader needs. `dump:produce` writes **no** checksum for the ndjson directory (`rehearsal-db.md` section 2), so the receiver adds one, after the `.gpg` checksum matched:
+Then make sure the checksum file that the loader needs is there. `dump:produce` writes **no** checksum for the ndjson directory (`rehearsal-db.md` section 2). The AM-10 procedure fix (`be/AM-10b-procedure-fixes`, M3) has the dump operator create `anon/SHA256SUMS` before the `tar`, so it can arrive inside the `.gpg`: then it is checked (`SHA256SUMS: shipped, OK`; a mismatch is red, ask for a new hand-over); if it is missing, the receiver creates it after the `.gpg` checksum matched (`SHA256SUMS: created`):
 
 ```bash
-( cd "$DUMP" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS )
+( cd "$DUMP" && if [ -f SHA256SUMS ]; then sha256sum -c --quiet SHA256SUMS && echo "SHA256SUMS: shipped, OK"; else find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS && echo "SHA256SUMS: created"; fi )
 ```
 
-(command from `rehearsal-db.md` section 2). This protects the copy from here on only; the chain of trust is the `.gpg` checksum. **Perlu pengesahan (half AZ):** that the receiver, not the LEAD, creates this file.
+(command from `rehearsal-db.md` section 2). This protects the copy from here on only; the chain of trust is the `.gpg` checksum. Who creates it: the dump operator in the AM-10 procedure, the receiver as the fallback (AM1-3, AM-10 dry run on the merged tip).
 
 The received `.gpg` and the passphrase note stay until A1.4 `load-dump` has exited 0 (I8): a failure before that is retried from the same file. Then (default of I8) the receiver deletes them: `shred -u -n 1 -z <restricted dir>/pp-staging-dump-<date>.tar.gz.gpg`, then `gpgconf --kill gpg-agent`; `ls <restricted dir>` shows it empty. If A1.4 fails after this deletion for a reason in the dump, a new sitting with a new key is needed.
 
@@ -666,7 +666,7 @@ Result: GREEN | RED (step <id>, reason <short>); amber items: <list | none>
 | 1 | Who types the commands (half AM operator or the dump operator alone). | LEAD |
 | 2 | Files export at the 24 Oct anonymised sitting (AM-10 section 8.1 against plan P6) and the `.cloud` storage access. | LEAD, dump operator, `.cloud` owner |
 | 3 | How the `dump:cloud` part is timed at the sitting (clock readings; no per-phase output). | Dump operator, half AM |
-| 4 | Who creates `SHA256SUMS` in the extracted dump. | Half AZ |
+| 4 | ~~Who creates `SHA256SUMS` in the extracted dump.~~ Answered: the dump operator (AM-10 procedure fix M3), the receiver as fallback (A1.1). | Half AZ |
 | 5 | `--content-owner` at the night and how its id is found (plan B6 and B7 have none). | LEAD, half AM |
 | 6 | `/usr/bin/time` for peak memory; the `q` helper and `ps` exposure on the host. | Half AZ |
 | 7 | A reject breach that the LEAD accepts for A1 against the night's threshold without a waiver. | LEAD |
