@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createHttpTransport, installTransport } from '@/api'
 
-import { addStudentToClass, createGuruClass } from '../../api/guru'
+import { addStudentToClass, createChapter, createGuruClass, createTopic } from '../../api/guru'
 
 /**
  * DEMO-FIX-1 D-01: `POST /api/guru/classes` sends `subjectId` / `schoolId` as string ids on the wire
@@ -105,5 +105,35 @@ describe('addStudentToClass wire ids', () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
     await addStudentToClass(3001, { classroomId: 15 })
     expect(sent[0]?.body).toEqual({ classroomId: 15 })
+  })
+})
+
+describe('createChapter / createTopic wire ids', () => {
+  it('http mode: subjectId, educationLevelId and chapterId go out as strings', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    await createChapter({ subjectId: 3, educationLevelId: 4, name: 'Bab Baru', chapterNumber: 9 })
+    await createTopic({ chapterId: 12, name: 'Topik Baru' })
+    expect(sent[0]?.url).toBe('/api/guru/chapters')
+    expect(sent[0]?.body).toEqual({
+      subjectId: '3',
+      educationLevelId: '4',
+      name: 'Bab Baru',
+      chapterNumber: 9,
+    })
+    expect(sent[1]?.url).toBe('/api/guru/topics')
+    expect(sent[1]?.body).toEqual({ chapterId: '12', name: 'Topik Baru' })
+  })
+
+  it('mock mode: the numbers are unchanged', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    await createChapter({ subjectId: 3, educationLevelId: 4, name: 'Bab Baru', chapterNumber: 9 })
+    await createTopic({ chapterId: 12, name: 'Topik Baru' })
+    expect(sent[0]?.body).toEqual({
+      subjectId: 3,
+      educationLevelId: 4,
+      name: 'Bab Baru',
+      chapterNumber: 9,
+    })
+    expect(sent[1]?.body).toEqual({ chapterId: 12, name: 'Topik Baru' })
   })
 })

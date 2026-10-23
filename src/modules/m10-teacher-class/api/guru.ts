@@ -137,7 +137,14 @@ export function createChapter(body: {
   name: string
   chapterNumber: number
 }): Promise<ChapterOption | ErrorBodyLive> {
-  return api.post<ChapterOption | ErrorBodyLive>('/api/guru/chapters', { body })
+  // The contract ids are opaque strings (refId): http mode sends them as strings.
+  return api.post<ChapterOption | ErrorBodyLive>('/api/guru/chapters', {
+    body: {
+      ...body,
+      subjectId: wireId(body.subjectId),
+      educationLevelId: wireId(body.educationLevelId),
+    },
+  })
 }
 
 /** #37 `GET /api/guru/topics?chapterId=` (a bare array). */
@@ -153,7 +160,9 @@ export function createTopic(body: {
   chapterId: number
   name: string
 }): Promise<TopicOption | ErrorBodyLive> {
-  return api.post<TopicOption | ErrorBodyLive>('/api/guru/topics', { body })
+  return api.post<TopicOption | ErrorBodyLive>('/api/guru/topics', {
+    body: { ...body, chapterId: wireId(body.chapterId) },
+  })
 }
 
 /** #39 `GET /api/guru/dskp/bidang` (a bare array). */
