@@ -208,7 +208,7 @@ Refusals (exit non-zero, nothing is changed; a rejected pre-set `TEST_DATABASE_U
 - A pre-set `TEST_DATABASE_URL` that does not start with `postgresql://` or `postgres://`, whose host (after the single `@`, before the first `/`) is not `127.0.0.1`/`localhost`, that has more than one `@` in its authority, a non-numeric port, whitespace or a backslash, or any query string (`?`) or fragment (`#`). Queries and fragments are refused outright because libpq percent-decodes query keywords and could be made to connect elsewhere (`host=`, `hostaddr=`, `service=`).
 - User or database names with characters other than letters, digits and underscore; a non-numeric port.
 
-SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin) only after #101 is merged; not committed by this PR.** It runs the reviewed copy of the script from `origin/feature/v2-backend`, never the checked-out branch's copy, and fails visibly (non-zero) if the script is not on the tip yet. The script exits early outside cloud sessions, so the hook is safe locally, and it finds the repo through `$CLAUDE_PROJECT_DIR`, so running it from stdin works:
+SessionStart hook for `.claude/settings.json`. **To be added by the repo owner only after #101 is merged; not committed by this PR.** It runs the reviewed copy of the script from `origin/feature/v2-backend`, never the checked-out branch's copy, and fails visibly (non-zero) if the script is not on the tip yet. The script exits early outside cloud sessions, so the hook is safe locally, and it finds the repo through `$CLAUDE_PROJECT_DIR`, so running it from stdin works:
 
 ```json
 {
@@ -230,7 +230,7 @@ SessionStart hook for `.claude/settings.json`. **To be added by the owner (Amin)
 
 Security: the script runs with the environment's variables and secrets. The hook runs only the reviewed blob pinned as `PINNED_BLOB_SHA` (get it with `git rev-parse origin/feature/v2-backend:scripts/cloud-install.sh` after reading the script); a different blob on the tip prints a mismatch and exits 1. The LEAD bumps the pin in `.claude/settings.json` in a reviewed PR. LEAD review is a convention, not a technical block (this repo has no branch protection and no CODEOWNERS), so the pin is the control. `npm ci` and `npm run db:generate` also run lifecycle scripts from the working tree with the same secrets: changes to `package.json` and the lockfile need a LEAD review, and secret-grade variables stay out of environments used by general lanes. Never put a secret value into the script or the hook.
 
-Checks in a cloud session (Perlu pengesahan until run once in a fresh VM):
+Checks in a cloud session (a first boot in a fresh VM and an idempotent re-run were verified on 2026-10-22, #101):
 
 ```bash
 echo "$TEST_DATABASE_URL"                       # postgresql://test@127.0.0.1:55432/postgres
