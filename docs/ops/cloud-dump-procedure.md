@@ -142,7 +142,7 @@ Work through this list on the operator PC. No data rows are read. The `dump:chec
    - **Binding smoke against the real server (before the first real sitting).** Proof so far is on MariaDB 10.11. `dump:check` must run clean **once** against the real .cloud server (metadata only, no rows), whatever its flavour and version (**Perlu pengesahan:** MySQL 8?). The JSON expression path for MySQL 5.7/8 is otherwise only string-tested. Do not schedule the sitting until this run exits 0; if it fails, post only the exit code and the MySQL error number (for example `ERROR 1045`).
    - For any failure of `dump:check`, `dump:produce` or `dump:cloud`, post on #109 **only the exit code and the MySQL error numbers** (e.g. `ERROR 1045`), never the message text.
    - **Wait for a developer to reply "rules OK" on #109.** The operator posts the aggregates above on #109 and a developer replies "rules OK" to them; the LEAD does not give it. Do not start the export (step 2) before that reply, and do not schedule the sitting before it. **When it runs:** `dump:check` needs the account unlocked (section 11, item 7 plans a short day-before window for it, **Perlu pengesahan**, .cloud owner). If that window is not booked, `dump:check` runs at the start of the sitting instead (as in section 3, row "A"), the operator posts the aggregates, and step 2 waits for the reply; in that case a developer must be on #109 for that time. Section 9 gives the exact command again for 24 Oct and the night, and the list of what the report must show before the operator posts the aggregates.
-9. **Time zone (LEAD decision 21 Oct, DT-1 A).** .cloud DATETIME values are `+08:00`, which is the default of `--datetime-offset`; **do not change the default**. Rule: the export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. The `dump:check` report still lists the server time zones; if they look inconsistent with this, tell the LEAD instead of changing the offset.
+9. **Time zone (DT-1 = UTC; LEAD decision 24 Oct 02:15 MYT, #109 6371548855; this replaces the 21 Oct decision DT-1 A, which assumed `+08:00`).** The .cloud export has no DATETIME columns: every date column is a TIMESTAMP, and the .cloud app time zone and the DB session are both UTC. So the sitting passes `--datetime-offset +00:00` (the tool default in `apps/api/src/migration/dump/cloud.ts` stays `+08:00`; there is no code change, so always pass the flag). `--datetime-offset` only affects DATETIME values (and a DATE column that the spec reads as a timestamp); every TIMESTAMP is written with `Z` whatever the offset is, so with TIMESTAMP-only data the offset changes no value, and the flag mainly makes the export report say `DATETIME offset applied: +00:00.`. The `dump:check` report still lists the server time zones; if they do not look like UTC, or the report shows a DATETIME column, tell the LEAD instead of changing the offset.
 10. **Book the sitting** with the LEAD (about 30 minutes, uninterrupted) and with the receiver of the rehearsal host (so the file can be accepted and confirmed the same day).
 
 ## 3. The sitting (target about 30 minutes)
@@ -210,14 +210,14 @@ Never use `ANON_HMAC_KEY` inline and never print or open the key file. On Window
 ### Step 2. Produce the dump (8 min)
 
 ```powershell
-npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +08:00
+npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +00:00
 ```
 
 ```bash
-npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +08:00
+npm run dump:produce -w @pp/api -- --work "$work" --datetime-offset +00:00
 ```
 
-**Time zone rule (LEAD decision 21 Oct, DT-1 A; also section 2, item 9).** `--datetime-offset` is `+08:00` and must not be changed. The export writes every DATETIME with an explicit `+08:00` and every TIMESTAMP with `Z`, because `staging:load` reads offset-less strings in the session time zone. Leave the flag out, or pass `+08:00` as above.
+**Time zone rule (DT-1 = UTC; LEAD decision 24 Oct 02:15 MYT, #109 6371548855: no DATETIME columns, every date column is a TIMESTAMP; app and DB session UTC; also section 2, item 9).** Pass `--datetime-offset +00:00` as above and do not change it. The export writes every TIMESTAMP with `Z` and any DATETIME with the given offset, because `staging:load` reads offset-less strings in the session time zone. With TIMESTAMP-only data the offset changes no value. Do not leave the flag out: the tool default is still `+08:00`.
 
 What the tool does: checks the key first; exports a consistent read-only snapshot (only the columns in the spec, secrets NULL at source) through `<work>/raw.partial` to `<work>/raw`; anonymises through `<work>/anon.partial` to `<work>/anon`; leak-scans; writes `<work>/schema-report.json` and `<work>/schema-report.md`; and then **always** wipes the raw export, whether the run succeeded or not. It prints row counts, sizes, the sha256 of `anon/manifest.json` and the elapsed time. Keep the terminal open: you need these numbers in steps 3 and 9.
 
@@ -432,7 +432,7 @@ npm run dump:wipe -w @pp/api -- --dir "$work"
 | 130 | Interrupted twice (Ctrl+C, closed terminal, shutdown) | Night sitting: stop, wipe, account locked, morning report. The raw and partial directories were force-deleted, so nothing raw is left, but the run is dead. Destroy the key (step 5), check that `<work>` holds no `raw` and no `.partial`, and start again from step 1 with a new key and a new work dir. A single interrupt exits 1 instead (the tool cleans up by itself; see exit 1). Run through `npm run`, the shell usually shows 130 after any Ctrl+C, so do not rely on the number: read the tool's last line (`Interrupted. The partial output was deleted.` or `Raw data deleted.`), run `dump:wipe --dir "$work"` and destroy the key |
 | Review failed (step 4) | A real name is in a kept column | Do not hand over. Wipe, destroy the key, the LEAD changes the rule, a developer applies it, sit again with a new key |
 
-For the cutover, `dump:cloud` is the normal path and is described in section 8. Outside the cutover, `dump:cloud` (raw export only) is a troubleshooting tool for a failing export. If used: `npm run dump:cloud -w @pp/api -- --out <dir>` writes raw data, so it is real personal data on disk. Then run `anonymise:run` and `anonymise:scan` as in runbook section 8, and `npm run dump:wipe -w @pp/api -- --dir <dir>` on the raw directory straight afterwards, with the same key and wipe rules as above.
+For the cutover, `dump:cloud` is the normal path and is described in section 8. Outside the cutover, `dump:cloud` (raw export only) is a troubleshooting tool for a failing export. If used: `npm run dump:cloud -w @pp/api -- --out <dir> --datetime-offset +00:00` writes raw data, so it is real personal data on disk. Then run `anonymise:run` and `anonymise:scan` as in runbook section 8, and `npm run dump:wipe -w @pp/api -- --dir <dir>` on the raw directory straight afterwards, with the same key and wipe rules as above.
 
 ## 7. Repeat runs (rehearsals)
 
@@ -443,7 +443,7 @@ Every run follows this document from the start of section 3:
 - the same deletion rules, the same #109 report, the same confirmation of deletion;
 - a new `dump:check` when the schema may have changed or after any exit 4, with "rules OK" before the sitting.
 
-Because the key differs, the fakes differ between two dumps: each run is a complete standalone dump, and rehearsals cannot compare pseudonyms across dumps. The `--datetime-offset` stays `+08:00` (LEAD decision 21 Oct, DT-1 A).
+Because the key differs, the fakes differ between two dumps: each run is a complete standalone dump, and rehearsals cannot compare pseudonyms across dumps. The `--datetime-offset` stays `+00:00` (DT-1 = UTC, LEAD decision 24 Oct 02:15 MYT, #109 6371548855).
 
 ## 8. Production raw-data flow (cutover, MIG-08)
 
@@ -472,12 +472,12 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
    mkdir -m 700 "$work"                                     # must not exist yet
    ```
    The work dir is created first with owner-only permissions, because the `.gpg` file of step 7 is written into it.
-4. Run `dump:check` as a last look (section 2, item 8; it reads no rows) into a new directory such as `.migration-out/check-<stamp>` (a reused, non-empty directory gives exit 2), then the raw export. `--datetime-offset` stays at its `+08:00` default (DT-1 A; DATETIME with explicit `+08:00`, TIMESTAMP with `Z`).
+4. Run `dump:check` as a last look (section 2, item 8; it reads no rows) into a new directory such as `.migration-out/check-<stamp>` (a reused, non-empty directory gives exit 2), then the raw export. Pass `--datetime-offset +00:00` (DT-1 = UTC, LEAD decision 24 Oct 02:15 MYT, #109 6371548855: no DATETIME columns, every date column is a TIMESTAMP, written with `Z`; the tool default is still `+08:00`, so do not leave the flag out).
    ```powershell
-   npm run dump:cloud -w @pp/api -- --out "$work/raw"
+   npm run dump:cloud -w @pp/api -- --out "$work/raw" --datetime-offset +00:00
    ```
    ```bash
-   npm run dump:cloud -w @pp/api -- --out "$work/raw"
+   npm run dump:cloud -w @pp/api -- --out "$work/raw" --datetime-offset +00:00
    ```
    Expect exit 0. **Exit 6 means stop: it is a no-go for that sitting** (row-count mismatch or bad stream, or an integer of 2^53 or larger). Do not retry in the same sitting. Stop, wipe (`dump:wipe`), make sure the account is locked, and report on #109 in the morning, aggregates only (exit code, no values). Rehearsal sittings in daytime may tell the LEAD privately instead.
 5. **The account is locked again** by the same pre-arranged arrangement after the export, **also after a failure**. The operator confirms the lock by a refused connection attempt, or reports "lock unconfirmed". Only after that check, **delete the option file that holds the DB credential** (step 9).
@@ -600,7 +600,7 @@ The two report files are created with mode 600 and hold names and aggregates onl
 | 2 | Grants | `schema-report.md`: the line starting `Grants:`; `schema-report.json`: `grants` | `Grants: read-only (accepted). Privileges seen: ...` where the privileges are only from `USAGE`, `SELECT`, `SHOW VIEW`, `SHOW DATABASES` (a column-level account shows `SELECT, USAGE`). In the JSON: `read_only: true`, `refused: []`, `unverifiable: 0`, `roles_active: false`. The line has **no** `Beyond read-only:`, **no** `Unverifiable grant lines:` and **no** `A mandatory or active role is in effect.` |
 | 3 | No active or mandatory role | same line; `grants.roles_active` | `false`. The tool reads `mandatory_roles` and the current role itself and exits 3 before counting rows if either is set |
 | 4 | Server version | `Server: <flavor> <version>.` (line 3 of the `.md`); `server.flavor`, `server.version` | Present. The operator notes flavor and version for the LEAD; it is **not** posted on #109. The first run on the real server is the binding smoke of section 2, item 8 |
-| 5 | Time zone (DT-1) | `Time zone: session <x>, global <y>, system <z>.` and the next line `DATETIME columns have no time zone: --datetime-offset decides the offset at export.`; `time_zone` in the JSON | Both lines present. The check report does **not** carry the offset (the `datetime_offset` key and the line `DATETIME offset applied: +08:00.` appear only in the report of `dump:cloud` / `dump:produce`). DT-1 holds when the export report then says `DATETIME offset applied: +08:00.` (look for it in step 3 of the sitting, or in B2). The export also sets its own session to `+00:00`, so every TIMESTAMP is written with `Z` whatever the server zone is. If the three zones look inconsistent with the data owner's statement that .cloud DATETIME values are Malaysian time, tell the LEAD; do not change the offset (section 2, item 9). **Perlu pengesahan:** the LEAD confirms that this is what cutover plan P8 means by "time-zone line matches DT-1" |
+| 5 | Time zone (DT-1) | `Time zone: session <x>, global <y>, system <z>.` and the next line `DATETIME columns have no time zone: --datetime-offset decides the offset at export.`; `time_zone` in the JSON | Both lines present. The check report does **not** carry the offset (the `datetime_offset` key and the line `DATETIME offset applied: +00:00.` appear only in the report of `dump:cloud` / `dump:produce`). DT-1 = UTC (LEAD decision 24 Oct 02:15 MYT, #109 6371548855) holds when the three zones look like UTC and the export report then says `DATETIME offset applied: +00:00.` (look for it in step 3 of the sitting, or in B2). The export also sets its own session to `+00:00`, so every TIMESTAMP is written with `Z` whatever the server zone is. If the three zones do not look like UTC, tell the LEAD; do not change the offset (section 2, item 9). **Perlu pengesahan:** the LEAD confirms that this is what cutover plan P8 means by "time-zone line matches DT-1" |
 | 6 | Spec tables present | `Tables present: <n> of <m>. Rows: <total>.`; `totals` and `spec_tables_absent_in_source` | `<n>` equals `<m>`, and `spec_tables_absent_in_source` is `[]`. A table shown as `no (absent)` is absent **or not granted**: the data owner explains each one (a spec table that does not exist in .cloud is skipped by the grant script, so it is also absent here). `Rows:` is a number, not `not counted` |
 | 7 | Spec columns | table column "Spec columns missing or not granted" | Empty for every present table, or each name is explained by the data owner |
 | 8 | Source columns not in spec | table column "Source columns not in spec" (`<count>: <names>`); `tables[].source_columns_not_in_spec` | Listed **by name only** (no values). Posted on #109 as table plus column names (section 2, item 8). **Empty by construction for a column-level account**: such an account sees only the columns it was granted (confirmed on the fixture: a source-only column was not listed), so the data owner's `information_schema.columns` query is the real answer |
@@ -687,7 +687,7 @@ The command is not invented here. If the .cloud owner confirms which framework t
 ### 10.1 Freeze (B1)
 
 1. **Run the freeze command:** `<freeze command: Perlu pengesahan (.cloud owner)>`.
-2. **Record `T-freeze`** straight after the command returns, as ISO 8601 with `+08:00`:
+2. **Record `T-freeze`** straight after the command returns, as ISO 8601 with `+08:00` (Malaysian wall time for the night card; unrelated to the export offset):
    ```powershell
    [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8)).ToString("yyyy-MM-ddTHH:mm:sszzz")
    ```
