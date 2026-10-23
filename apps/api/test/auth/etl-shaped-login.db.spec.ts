@@ -11,22 +11,28 @@
  *   B   valid bcrypt (cost 10) equal to a shared default hash, with an e-mail (reason shared_default)
  *   C   roster account: username, no e-mail, valid bcrypt (reason roster_account)
  *   A   non-bcrypt source -> password_hash NULL, flagged
+ *   B+C shared default hash on a roster account (username, no e-mail): both reasons at once
+ *
+ * A NULL-hash account cannot log in and cannot use the e-mailed reset (mail is logging-only here and a roster
+ * account has no e-mail). Its recovery is an admin reset (`PUT /admin/users/{id}` with `resetPassword: true`,
+ * LEAD decision R37 / D59), which stores a generated one-time password and keeps the flag; the A test walks it:
+ * reset -> login -> guarded -> change -> cleared.
  */
 import { randomBytes } from 'node:crypto'
 
 import { hash as argon2Hash } from '@node-rs/argon2'
-import { ErrorBodySchema, SessionSchema, type Session } from '@pp/contract'
-import type TestAgent from 'supertest/lib/agent'
+import { ErrorBodySchema, SessionSchema } from '@pp/contract'
 import type { Response } from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { transformUser } from '../../src/migration/transform/users'
 import { decidePassword, IcHasher, parseDefaultHashes } from '../../src/migration/transform/secrets'
 import { bcryptHashWithSalt } from '../../src/modules/auth/legacy-bcrypt'
-import { type AccountTestApp, bootAccountApp, cookieValue } from '../account/account-helpers'
+import { type AccountTestApp, bootAccountApp, cookieValue, errorOf, get, login, put, type Who } from '../account/account-helpers'
 
 const BCRYPT_ALPHABET = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-const salt22 = (): string => Array.from(randomBytes(22), (b) => BCRYPT_ALPHABET[b % 64]).join('')
+/** 22 salt characters; the last one carries only 2 bits in bcrypt's base64, so it must be one of `.Oeu`. */
+const salt22 = (): string => Array.from(randomBytes(21), (b) => BCRYPT_ALPHABET[b % 64]).join('') + '.Oeu'[randomBytes(1)[0]! % 4]
 const secret = (): string => `Pw-${randomBytes(9).toString('hex')}`
 const bcrypt10 = (plain: string): string => bcryptHashWithSalt(plain, salt22(), 10, '2y')
 
@@ -51,13 +57,6 @@ const staged = (legacyId: string, schoolLegacy: string, over: Record<string, str
   updated_at: '2026-01-02 00:00:00+00',
   ...over,
 })
-
-interface Client {
-  agent: TestAgent
-  csrf: string
-  session: Session
-  token: string
-}
 
 describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', () => {
   let t: AccountTestApp
@@ -97,7 +96,7 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
       ],
     )
     const id = (rows[0] as { id: string }).id
-    await t.db.query(`insert into user_roles (user_id, role) values ($1, $2)`, [id, out.value.role])
+    await t.db.query(`insert into user_roles (user_id, role, legacy_source, legacy_id) values ($1, $2, 'cloud', $3)`, [id, out.value.role, row.id])
     return { id, out }
   }
 
@@ -112,16 +111,13 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
 
   const rawLogin = (body: object): Promise<Response> => t.http().post('/api/auth/login').send({ remember: false, ...body })
 
-  async function loginOk(body: { identifier: string; password: string; schoolId?: string }): Promise<Client> {
+  async function loginOk(body: { identifier: string; password: string; schoolId?: string }): Promise<Who> {
     const agent = t.agent()
     const res = await agent.post('/api/auth/login').send({ remember: false, ...body })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const session = SessionSchema.parse(res.body.data)
     return { agent, csrf: session.csrf, session, token: cookieValue(res) as string }
   }
-
-  const getApi = (c: Client, path: string) => c.agent.get(`/api${path}`)
-  const putApi = (c: Client, path: string, body: object) => c.agent.put(`/api${path}`).set('X-CSRF-Token', c.csrf).send(body)
 
   const refused = (res: Response): void => {
     expect(res.status, JSON.stringify(res.body)).toBe(403)
@@ -131,31 +127,31 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
   }
 
   /** The common path for every flagged shape once the login worked. */
-  async function forcedChange(c: Client, id: string, current: string): Promise<void> {
+  async function forcedChange(c: Who, id: string, current: string): Promise<void> {
     // Logged in, but every ordinary route is refused.
     expect(c.session.mustChangePassword).toBe(true)
-    refused(await getApi(c, '/me'))
-    refused(await getApi(c, '/me/settings'))
-    refused(await putApi(c, '/me', { name: 'Tukar Nama' }))
+    refused(await get(c, '/me'))
+    refused(await get(c, '/me/settings'))
+    refused(await put(c, '/me', { name: 'Tukar Nama' }))
 
     // GET /session is allowed and shows the flag.
-    const seen = await getApi(c, '/session')
+    const seen = await get(c, '/session')
     expect(seen.status).toBe(200)
     const view = SessionSchema.parse(seen.body.data)
     expect(view.mustChangePassword).toBe(true)
 
     // Not what the user already has: a wrong current password is the field error and changes nothing.
     const before = await state(id)
-    const wrong = await putApi(c, '/me/password', { currentPassword: secret(), password: 'Baharu-1234-x', passwordConfirmation: 'Baharu-1234-x' })
-    expect(wrong.status).toBe(422)
+    const wrong = await put(c, '/me/password', { currentPassword: secret(), password: 'Baharu-1234-x', passwordConfirmation: 'Baharu-1234-x' })
+    expect(errorOf(wrong, 422, 'VALIDATION_ERROR').fields).toEqual({ currentPassword: expect.any(String) })
     expect(await state(id)).toEqual(before)
-    refused(await getApi(c, '/me'))
+    refused(await get(c, '/me'))
 
     // TODO(#228): "new password == current password" is a 422. It is not on this branch tip yet (no such rule in
     // ProfileService.changePassword or the contract schema), so the assertion is left out until #228 merges.
 
     const next = `Baharu-${randomBytes(8).toString('hex')}`
-    const ok = await putApi(c, '/me/password', { currentPassword: current, password: next, passwordConfirmation: next })
+    const ok = await put(c, '/me/password', { currentPassword: current, password: next, passwordConfirmation: next })
     expect(ok.status, JSON.stringify(ok.body)).toBe(200)
 
     // Flag cleared and the stored hash is argon2id now.
@@ -166,10 +162,10 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
     expect(after.legacy_source).toBe('cloud')
 
     // The rotated session (kept by the agent) is no longer guarded.
-    const fresh = SessionSchema.parse((await getApi(c, '/session')).body.data)
+    const fresh = SessionSchema.parse((await get(c, '/session')).body.data)
     expect(fresh.mustChangePassword).toBe(false)
-    expect((await getApi(c, '/me')).status).toBe(200)
-    expect((await getApi(c, '/me/settings')).status).toBe(200)
+    expect((await get(c, '/me')).status).toBe(200)
+    expect((await get(c, '/me/settings')).status).toBe(200)
 
     // The old password is dead and the new one works.
     const ident = c.session.user.email ?? (c.session.user.username as string)
@@ -233,7 +229,7 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
       expect(await state(second.id)).toMatchObject({ password_hash: sharedDefaultHash, must_reset_password: true })
       const sib = await loginOk({ identifier: 'b2.etl@contoh.invalid', password: pwB })
       expect(sib.session.mustChangePassword).toBe(true)
-      refused(await getApi(sib, '/me'))
+      refused(await get(sib, '/me'))
     })
   })
 
@@ -266,9 +262,9 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
         ],
       })
       expect(cookieValue(amb)).toBeUndefined()
-      // Nothing was changed by the ambiguous answer.
-      expect((await state(one.id)).must_reset_password).toBe(true)
-      expect((await state(two.id)).must_reset_password).toBe(true)
+      // Nothing was changed by the ambiguous answer: no rehash, flag kept, for both rows.
+      expect(await state(one.id)).toMatchObject({ password_hash: shared, must_reset_password: true })
+      expect(await state(two.id)).toMatchObject({ password_hash: shared, must_reset_password: true })
 
       const c = await loginOk({ identifier: 'murid.kembar', password: pwCShared, schoolId: school2 })
       expect(c.session.user.schoolId).toBe(school2)
@@ -278,7 +274,20 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
       expect(await state(one.id)).toMatchObject({ password_hash: shared, must_reset_password: true })
       const other = await loginOk({ identifier: 'murid.kembar', password: pwCShared, schoolId: school1 })
       expect(other.session.mustChangePassword).toBe(true)
-      refused(await getApi(other, '/me'))
+      refused(await get(other, '/me'))
+    })
+  })
+
+  describe('B+C: shared default hash on a roster account (username only)', () => {
+    it('logs in by username, is guarded, changes password and is cleared', async () => {
+      const { id, out } = await loadLikeEtl(staged(String(nextLegacy++), '1', { username: 'Murid.Lalai', password: sharedDefaultHash }), school1)
+      expect(out.ok && out.value.user.email).toBeNull()
+      expect(out.ok && out.value.notes.resetReasons).toEqual(['shared_default', 'roster_account'])
+      expect(await state(id)).toMatchObject({ password_hash: sharedDefaultHash, must_reset_password: true, legacy_source: 'cloud' })
+
+      const c = await loginOk({ identifier: 'murid.lalai', password: pwB })
+      expect(c.session.user).toMatchObject({ email: null, schoolId: school1 })
+      await forcedChange(c, id, pwB)
     })
   })
 
@@ -305,6 +314,24 @@ describe('ETL-shaped accounts: login, forced password change, argon2id (Q12)', (
       }
       // The row is untouched by the failures.
       expect(await state(withEmail.id)).toMatchObject({ password_hash: null, must_reset_password: true })
+    })
+
+    it('recovers through an admin reset (no mail needed): generated password -> login -> guarded -> change -> cleared', async () => {
+      const { id } = await loadLikeEtl(staged(String(nextLegacy++), '1', { username: 'murid.pulih', password: pwA }), school1)
+      expect(await state(id)).toMatchObject({ password_hash: null, must_reset_password: true })
+      expect((await rawLogin({ identifier: 'murid.pulih', password: pwA, schoolId: school1 })).status).toBe(401)
+
+      const admin = await login(t, 'admin@demo.test')
+      const reset = await put(admin, `/admin/users/${id}`, { roles: ['student'], name: 'Akaun ETL Pulih', grade: 3, resetPassword: true })
+      expect(reset.status, JSON.stringify(reset.body)).toBe(200)
+      const generated = reset.body.data.generatedPassword as string
+      expect(generated).toBeTruthy()
+      expect(reset.body.data.mustChangePassword).toBe(true)
+      expect(await state(id)).toMatchObject({ must_reset_password: true, legacy_source: 'cloud' })
+      expect((await state(id)).password_hash).toMatch(ARGON2ID)
+
+      const c = await loginOk({ identifier: 'murid.pulih', password: generated, schoolId: school1 })
+      await forcedChange(c, id, generated)
     })
   })
 })
