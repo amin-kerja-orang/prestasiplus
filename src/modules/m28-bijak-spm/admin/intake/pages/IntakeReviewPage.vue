@@ -419,14 +419,7 @@ async function submit(): Promise<void> {
         >
           <!-- source (stimuli only for a manual batch) -->
           <aside
-            :class="
-              isManual
-                ? 'block'
-                : [
-                    mobileTab === 'sumber' ? 'block' : 'hidden lg:block',
-                    'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto',
-                  ]
-            "
+            :class="isManual ? 'block' : mobileTab === 'sumber' ? 'block' : 'hidden lg:block'"
             class="flex min-w-0 flex-col gap-3"
             :aria-label="isManual ? 'Rajah dan petikan' : 'Sumber kertas'"
             data-testid="source-panel"
@@ -460,7 +453,7 @@ async function submit(): Promise<void> {
                 />
                 <pre
                   v-else-if="pageText"
-                  class="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
+                  class="wrap-break-word whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
                   data-testid="source-text"
                   >{{ pageText.text }}</pre
                 >
