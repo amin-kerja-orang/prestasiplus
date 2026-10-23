@@ -6,7 +6,8 @@
 #   deploy/vps/migration/slot.sh load --from DIR                      A5 / B4: staging:load of a RAW dump into it
 #   deploy/vps/migration/slot.sh copy                                 A5 / B5: staging_cloud + archive_cloud -> target
 #   deploy/vps/migration/slot.sh throwaway-down                       A5 / B5: destroy the cluster and its data dir
-#   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg]             after a good load: delete the raw dump copies
+#   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg] [--missing-ok]  after a good load: delete the raw dump copies
+#                                                                     (a missing path exits 3; --missing-ok: STOP block only)
 #   deploy/vps/migration/slot.sh etl COMMAND [ARGS...]                A6-A11, B6-B8: staging:profile / migrate:* in the
 #                                                                     migrate image, production guards set per run
 #   deploy/vps/migration/slot.sh gonogo                               evidence lines for the go/no-go (infra part)
@@ -17,9 +18,15 @@
 #     synthetic, or carries a large_integers note (integers >= 2^53 would not survive JSON.parse);
 #   - staging:load runs with NODE_ENV=development and PP_ALLOW_STAGING_RESET=1 against the THROWAWAY cluster only
 #     (its database name ends in _staging; the loader refuses production by design);
-#   - every migrate:* runs with NODE_ENV=production and PP_MIGRATE_TARGET_DB=<the production database>;
-#     PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command line, PP_ALLOW_MIGRATE_ROLLBACK=1 only for
-#     migrate:rollback. Nothing is set permanently in api.env.
+#   - every migrate:* runs with NODE_ENV=production and PP_MIGRATE_TARGET_DB=<the production database>, as the
+#     migration role pp_etl (--env-from-file etl.env, cutover plan P3), with PP_GIT_SHA=<release sha> and
+#     --out-dir on the mounted reports folder; PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command
+#     line (always for migrate:archive-minimise and migrate:rollback, whose dry-runs need it too),
+#     PP_ALLOW_MIGRATE_ROLLBACK=1 only for migrate:rollback. Nothing is set permanently in api.env;
+#   - --files-dir HOST_DIR is mounted read-only at /files; with --apply the api uploads volume is mounted too and
+#     FILE_STORAGE_DIR is set (cutover plan P5);
+#   - copy and the target reads run as the stage-only role pp_stager over the db container's socket; copy runs
+#     deploy/vps/db-roles.sh apply before the drop and after the restore.
 # The throwaway cluster: a postgres container on the compose network, data dir PP_STAGE_DIR/pgdata (an encrypted
 # volume), archive_mode=off, wal_level=minimal, no backups, no replicas, never reached by the API. It exists only
 # between throwaway-up and throwaway-down.
@@ -32,7 +39,7 @@ export PP_SCRIPT=migration-slot
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
-usage() { sed -n '2,32p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,34p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
 case "$cmd" in -h|--help|help|'') usage; exit 0 ;; esac
 
@@ -64,10 +71,11 @@ stage_pw_file() { printf '%s/stage.pw' "$stage_dir"; }
 stage_psql() {
   docker exec -i "$stage_name" sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -At -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "$1"' sh "$1"
 }
-# target_psql SQL -> scalar from the production database
+# target_psql SQL -> scalar from the production database, as the stage-only role pp_stager (cutover plan P3): no
+# password, local socket of the db container only; it owns staging_cloud/archive_cloud and cannot read public.
 target_psql() {
   # shellcheck disable=SC2016  # expands inside the container
-  pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -At -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "$1"' sh "$1"
+  pp_db_exec sh -c 'exec psql -X -At -v ON_ERROR_STOP=1 -U "$1" -d "$POSTGRES_DB" -c "$2"' sh "$PP_DB_ROLE_STAGE" "$1"
 }
 
 schema_tables() { # schema_tables psql_fn -> "staging_cloud:N archive_cloud:M"
@@ -93,7 +101,11 @@ migrate_run() {
   # The folder is made once by the runbook (section 1) for the migrate image's user, not for ppdeploy: ppdeploy may
   # have any uid, so it only checks it here (chmod on a folder it does not own would fail under set -e).
   check_out_dir
-  pp_compose run --rm --no-deps -T -v "$out_dir:/app/apps/api/.migration-out" ${RUN_EXTRA[@]+"${RUN_EXTRA[@]}"} "${envs[@]}" migrate "$@"
+  # migrate:* connect as the migration role pp_etl (etl.env), not as the schema owner of migrate.env (P3, DB-ROLES
+  # #227). A `compose run --env-from-file` value overrides the service's env_file (api.env, migrate.env).
+  [ -r "$PP_ENV_DIR/etl.env" ] || pp_die "$PP_ENV_DIR/etl.env is missing: sudo deploy/vps/db-roles.sh secrets, then deploy/vps/db-roles.sh apply" 3
+  pp_compose run --rm --no-deps -T --env-from-file "$PP_ENV_DIR/etl.env" -v "$out_dir:/app/apps/api/.migration-out" \
+    ${RUN_EXTRA[@]+"${RUN_EXTRA[@]}"} "${envs[@]}" migrate "$@"
 }
 
 cmd_throwaway_up() {
@@ -178,11 +190,13 @@ cmd_copy() {
   a="$(schema_tables stage_psql)"
   case "$a" in *staging_cloud:0*) pp_die "staging_cloud is empty in $staging_db: run load first" 3 ;; esac
   pp_log "replacing staging_cloud and archive_cloud in the target with the copy from $staging_db"
+  "$PP_VPS_DIR/db-roles.sh" apply   # an older copy made by another role becomes pp_stager's, so it can drop it
   target_psql "drop schema if exists staging_cloud cascade" >/dev/null
   target_psql "drop schema if exists archive_cloud cascade" >/dev/null
   # shellcheck disable=SC2016  # both commands expand inside their containers
   docker exec -i "$stage_name" sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -n staging_cloud -n archive_cloud' \
-    | pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl --exit-on-error'
+    | pp_db_exec sh -c 'exec pg_restore -U "$1" -d "$POSTGRES_DB" --no-owner --no-acl --exit-on-error' sh "$PP_DB_ROLE_STAGE"
+  "$PP_VPS_DIR/db-roles.sh" apply   # pp_etl: SELECT on both schemas comes from default privileges, UPDATE on archive_cloud from here
   b="$(schema_tables target_psql)"
   [ "$a" = "$b" ] || pp_die "STAGE COPY FAILED: $a in $staging_db, $b in the target"
   # Cutover plan 4.6 B5: a count other than 83/35 is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
@@ -295,12 +309,17 @@ cmd_etl() {
       envs+=(FILE_STORAGE_DIR=/var/lib/pretasiplus/files)
     fi
   fi
-  # P3: the migration role's DATABASE_URL (mode 600 env file, kept out of api.env). Without it api.env's URL is used.
-  local mig_env; mig_env="$(pp_cfg PP_MIGRATE_ENV_FILE '')"
-  if [ -n "$mig_env" ]; then
-    [ -f "$mig_env" ] && [ "$(stat -c %a "$mig_env")" = 600 ] || pp_die "PP_MIGRATE_ENV_FILE $mig_env must be a file with mode 600" 3
-    pp_assert_outside_repo "$mig_env"
-    RUN_EXTRA+=(--env-from-file "$mig_env")
+  # P3 (F7): the migration role pp_etl comes from etl.env in migrate_run (DB-ROLES #227), so there is no optional file here.
+  # #123 records etl_runs.git_sha; the image has no .git, so the release sha is passed explicitly (F14).
+  if [ "$c" != staging:profile ]; then
+    local sha; sha="$(pp_cfg PP_RELEASE_SHA "$(git -C "$PP_REPO" rev-parse HEAD 2>/dev/null || true)")"
+    if [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then envs+=("PP_GIT_SHA=$sha")
+    else
+      case "$c" in
+        migrate:all|migrate:delta) pp_die "cannot determine the release sha (set PP_RELEASE_SHA to the 40-character sha): etl_runs.git_sha would be NULL" 3 ;;
+        *) pp_warn "no release sha (PP_RELEASE_SHA / git): PP_GIT_SHA not passed" ;;
+      esac
+    fi
   fi
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local t0=$SECONDS rc=0
@@ -313,9 +332,11 @@ cmd_etl() {
 cmd_gonogo() {
   local f age lsn arch failed last ready disk pct
   pp_log "GO/NO-GO EVIDENCE (infrastructure part, cutover plan section 5; counts and names only)"
+  # Cutover plan A5 / criterion 8: each point must hold as many applied migrations as the release has folders.
   for f in pre_etl pre_delta; do
-    if "$PP_VPS_DIR/migration/restore-point.sh" verify "$f" >/dev/null 2>&1; then echo "criterion 8: restore point $f present, sha256 ok"
-    else echo "criterion 8: restore point $f MISSING or damaged  -> NO-GO"; fi
+    if "$PP_VPS_DIR/migration/restore-point.sh" verify "$f" --expect-migrations repo >/dev/null 2>&1; then
+      echo "criterion 8: restore point $f present, sha256 ok, migrations equal the release"
+    else echo "criterion 8: restore point $f MISSING, damaged or older than the release migrations  -> NO-GO"; fi
   done
   arch="$(target_psql "show archive_mode")"
   if [ "$arch" = off ]; then echo "criterion 8: PITR off (archive_mode=off): restore points only  -> NO-GO at night (a written waiver of the LEAD is possible in daylight only)"

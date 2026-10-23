@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Named restore points for the 29-30 Oct production migration slot (MIG08-PREP). Runbook:
-# docs/ops/production-migration-slot.md (section 3) and the cutover plan docs/ops/v2-cutover-plan.md (A4, A12, 6.3).
+# docs/ops/production-migration-slot.md (section 3) and the cutover plan docs/ops/v2-cutover-plan.md (A5, B0, 6.3).
 #
 #   deploy/vps/migration/restore-point.sh take NAME [--operator "<name>"]
 #   deploy/vps/migration/restore-point.sh list
@@ -9,9 +9,10 @@
 #   deploy/vps/migration/restore-point.sh purge-raw --after post_drop [--yes]
 #   deploy/vps/migration/restore-point.sh raw-check
 #
-# NAME is one of: pre_etl (A4, before any .cloud data reaches the server), pre_delta (A12, the verified T-1 state),
-# post_switch (rollback after the switch: v2 writes stopped, kept for analysis), post_drop (after
-# `drop schema staging_cloud`, the clean point the raw-data copies are deleted against).
+# NAME is one of: pre_etl and pre_delta (both at A5 on 28 Oct, after the final schema migrations and before any .cloud
+# data reaches the server: the same state, no raw data; gonogo checks both), post_switch (rollback after the switch:
+# v2 writes stopped, kept for analysis), post_drop (after `drop schema staging_cloud`, the clean point the raw-data
+# copies are deleted against).
 #
 # take    pg_dump -Fc of the WHOLE database (staging_cloud included: a restore of pre_delta must give the delta its
 #         input back), streamed into <PP_BACKUP_DIR>/restore-points/<name>-<UTC>.dump, header and table-of-contents
@@ -19,7 +20,9 @@
 #         created_utc, name, file, sha256, bytes, raw_data (yes when staging_cloud existed at dump time), wal_lsn, operator.
 #         Restore points are NEVER copied off-site and are not touched by backup.sh retention.
 # list    the custody file.
-# verify  sha256 check plus pg_restore --list (table data present) of the newest point with that name.
+# verify  sha256 check plus pg_restore --list (table data present) of the newest point with that name, and the number
+#         of applied Prisma migrations in it; --expect-migrations N|repo exits 3 when it differs (repo = the folders in
+#         apps/api/prisma/migrations of this checkout, cutover plan A5 / criterion 8).
 # restore STOPS api and frontend, drops and recreates the database, pg_restore --exit-on-error of the newest point with
 #         that name, then starts nothing: the operator checks counts and runs rollback.sh / deploy as the cutover plan
 #         says. It asks the operator to type the database name (the LEAD's confirmation) unless --yes.
@@ -29,7 +32,8 @@
 #         still hold raw data: kept raw_data=yes restore points, schema staging_cloud in the production database, and
 #         PITR base backups older than the newest post_drop point (their archived WAL replays the raw copy; all base
 #         backups when there is no post_drop yet). Before PP_RAW_PURGE_BY (default 2026-11-06, cutover plan section 7)
-#         it reports and exits 0; from that day on every remaining copy is a WARN line and it exits 1. backup.sh runs it
+#         it reports and exits 0; from that day on every remaining copy is a WARN line and it exits 1. When a check
+#         could not run (db down, archive folder unreadable) it prints RAW CHECK INCOMPLETE and exits 2. backup.sh runs it
 #         every night and alerts on exit 1; slot.sh gonogo and pitr.sh status print it.
 #
 # Every step holds the shared lock (PP_LOCK_FILE). Output: names, sizes, hashes and counts only, never row data.
@@ -40,7 +44,7 @@ export PP_SCRIPT=restore-point
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
-usage() { sed -n '2,35p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,39p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
 name=""; operator="${PP_OPERATOR:-}"; yes=0; after=""; expect=""
 case "$cmd" in
@@ -180,6 +184,9 @@ cmd_restore() {
   pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -q -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'
   # shellcheck disable=SC2016  # expands inside the container
   pp_db_exec sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' <"$f"
+  # The restored objects belong to the superuser and the new database has the default ACL: give them back to the
+  # P3 roles (pp_owner owns public, the stage schemas go to pp_stager) before the api starts again (DB-ROLES #227).
+  "$PP_VPS_DIR/db-roles.sh" apply
   pp_log "RESTORED: $name ($(basename "$f")) in $((SECONDS - t0)) s. api and frontend stay stopped: check the counts, then follow the cutover plan section 6.3 (rollback.sh / deploy.sh)."
 }
 
@@ -220,7 +227,7 @@ cmd_purge_raw() {
 }
 
 cmd_raw_check() {
-  local by today overdue=0 n=0 anchor="" stamp b schema bases_out raw_ever=0
+  local by today overdue=0 n=0 anchor="" stamp b schema bases_out raw_ever=0 incomplete=0
   by="$(pp_cfg PP_RAW_PURGE_BY 2026-11-06)"
   [[ "$by" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || pp_die "PP_RAW_PURGE_BY must be YYYY-MM-DD" 2
   today="$(date -u +%Y-%m-%d)"
@@ -237,21 +244,27 @@ cmd_raw_check() {
     ! awk -F'\t' 'NR > 1 && $6 == "yes" { f = 1 } END { exit !f }' "$custody" || raw_ever=1
   fi
   schema="$(psql_target "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'" 2>/dev/null || echo '?')"
-  case "$schema" in 0) ;; 1) raw_ever=1; found "schema staging_cloud in the production database (drop it, cutover plan section 7)" ;; *) pp_warn "could not check schema staging_cloud (db down?)" ;; esac
+  case "$schema" in 0) ;; 1) raw_ever=1; found "schema staging_cloud in the production database (drop it, cutover plan section 7)" ;; *) incomplete=1; pp_warn "could not check schema staging_cloud (db down?)" ;; esac
   # PITR: a base backup older than the clean point needs WAL from the slot, so the archive still holds the raw copy.
   stamp="${anchor//[-:]/}"
   # Only once raw data has been on this host (a raw restore point was ever taken, or staging_cloud exists): routine
   # base backups from before the slot hold no .cloud data.
   # shellcheck disable=SC2016  # expands inside the container
-  if [ "$raw_ever" = 1 ] && bases_out="$(pp_compose exec -T -u postgres db sh -c 'ls -1 /walarchive/base 2>/dev/null | grep -E "^20[0-9]{6}T[0-9]{6}Z$"' 2>/dev/null)"; then
-    for b in $bases_out; do
-      if [ -z "$stamp" ] || [[ "$b" < "$stamp" ]]; then
-        found "PITR base backup $b and the archived WAL after it (pitr.sh cleanup --keep-from <a base taken after post_drop>)"
-      fi
-    done
+  # No /walarchive/base (PITR never set up) is "none"; a failed exec (db down) or an unreadable folder is "could not
+  # check", never "none" (checker minor 1).
+  if [ "$raw_ever" = 1 ]; then
+    if bases_out="$(pp_compose exec -T -u postgres db sh -c '[ -d /walarchive/base ] || exit 0; l="$(ls -1 /walarchive/base)" || exit 1; printf "%s\n" "$l" | grep -E "^20[0-9]{6}T[0-9]{6}Z$" || true' 2>/dev/null)"; then
+      for b in $bases_out; do
+        if [ -z "$stamp" ] || [[ "$b" < "$stamp" ]]; then
+          found "PITR base backup $b and the archived WAL after it (pitr.sh cleanup --keep-from <a base taken after post_drop>)"
+        fi
+      done
+    else incomplete=1; pp_warn "could not list the PITR base backups (/walarchive/base; db down?)"; fi
   fi
+  if [ "$overdue" = 1 ] && [ "$n" -gt 0 ]; then pp_log "RAW CHECK OVERDUE: $n copy(ies) past $by$([ "$incomplete" = 0 ] || echo ' (and some checks could not run)')"; return 1; fi
+  # Exit 2 = could not check everything: backup.sh warns, gonogo shows this line instead of a false OK.
+  if [ "$incomplete" = 1 ]; then pp_log "RAW CHECK INCOMPLETE: $n copy(ies) found so far, due by $by; some checks could not run (see the warnings)"; return 2; fi
   if [ "$n" = 0 ]; then pp_log "RAW CHECK OK: no copy of raw .cloud data found (restore points, staging_cloud, PITR base backups)"; return 0; fi
-  if [ "$overdue" = 1 ]; then pp_log "RAW CHECK OVERDUE: $n copy(ies) past $by"; return 1; fi
   pp_log "RAW CHECK: $n copy(ies), due by $by"
 }
 
