@@ -34,6 +34,14 @@ export const EnvSchema = z.object({
   THROTTLE_PUBLIC_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   // BE-06: self-registration attempts per minute per client address (own bucket, tolerant of a school behind one NAT).
   THROTTLE_REGISTER_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  /**
+   * REG-CLOSE: false closes self-registration (POST /auth/register answers 403 REGISTRATION_CLOSED and creates nothing)
+   * until go-live. Default true, so dev, test and staging are unchanged; the production VPS sets false until the 30 Oct switch.
+   */
+  REGISTRATION_OPEN: z
+    .enum(['true', 'false', '1', '0'])
+    .default('true')
+    .transform((v) => v === 'true' || v === '1'),
   THROTTLE_PUBLIC_SEARCH_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
@@ -168,6 +176,8 @@ export const EnvSchema = z.object({
   OCR_WORKER_MEMORY_MB: z.coerce.number().int().min(64).max(4096).optional(),
   /** RSS growth (MB) of the process while one PDF worker runs before the watchdog stops it. Default 2 x OCR_WORKER_MEMORY_MB. */
   OCR_WORKER_RSS_LIMIT_MB: z.coerce.number().int().min(64).max(16_384).optional(),
+  /** AZ-35 (AZ-29 item 7): intake files and workflow routes for the teacher role; off (unset) = Admin Pusat only. */
+  INTAKE_TEACHER_ENABLED: z.enum(['true', 'false']).optional(),
   /** Uploads whose PDFs are inspected at the same time in this process (more wait). Default 2. */
   INTAKE_UPLOAD_CONCURRENCY: z.coerce.number().int().min(1).max(16).optional(),
   INTAKE_MAX_FILES_PER_BATCH: z.coerce.number().int().min(1).max(50).optional(),

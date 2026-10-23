@@ -9,10 +9,13 @@ import { useSessionStore } from '@/stores/session'
 
 import type { ClientSession } from '../../api'
 import RegisterPage from '../../pages/RegisterPage.vue'
-import { PENDING_REF_KEY, clearPendingRef } from '../../lib/pending-ref'
+import { PENDING_REF_KEY, clearPendingRef, setPendingRef } from '../../lib/pending-ref'
 
 const apiMocks = vi.hoisted(() => ({ register: vi.fn() }))
-vi.mock('../../api', () => apiMocks)
+vi.mock('../../api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api')>()),
+  register: apiMocks.register,
+}))
 
 const SESSION: ClientSession = {
   token: 'tok',
@@ -210,6 +213,53 @@ describe('RegisterPage (M01 S2)', () => {
     expect(body.role).toBe('teacher')
     expect('grade' in body).toBe(false)
     expect('icNumber' in body).toBe(false)
+  })
+
+  describe('teacher registration (pending verification, AM2-N1)', () => {
+    const PENDING = {
+      status: 'pending_verification',
+      message:
+        'Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah.',
+    }
+
+    it('shows the server message and a login link, stores no session and does not navigate', async () => {
+      apiMocks.register.mockResolvedValue(PENDING)
+      const w = await render()
+      const setSession = vi.spyOn(useSessionStore(), 'setSession')
+      setPendingRef('4JURJTT')
+      await w.get('[data-testid=role-teacher]').trigger('click')
+      await fillRequired(w)
+      await w.get('form').trigger('submit')
+      await flushPromises()
+
+      expect(setSession).not.toHaveBeenCalled()
+      expect(useSessionStore().user).toBeNull()
+      expect(router.currentRoute.value.fullPath).toBe('/register')
+      expect(localStorage.getItem('pp.auth')).toBeNull()
+      expect(sessionStorage.getItem(PENDING_REF_KEY)).toBeNull()
+
+      expect(w.find('[data-testid=register-name]').exists()).toBe(false)
+      expect(w.find('[data-testid=register-submit]').exists()).toBe(false)
+      expect(w.find('[data-testid=register-alert]').exists()).toBe(false)
+      const message = w.get('[data-testid=register-pending-message]')
+      expect(message.attributes('data-variant')).toBe('success')
+      expect(message.text()).toBe(PENDING.message)
+      expect(w.get('[data-testid=register-login-link]').attributes('href')).toBe('/login')
+    })
+
+    it('labels the school required for a teacher only', async () => {
+      const w = await render()
+      const label = () => w.get('[data-testid=register-school-label]').text()
+      const search = () => w.get('[data-testid=register-school-search]').attributes()
+      expect(label()).toBe('Sekolah (Pilihan)')
+      expect(search().required).toBeUndefined()
+      await w.get('[data-testid=role-teacher]').trigger('click')
+      expect(label()).toBe('Sekolah')
+      expect(search().required).toBeDefined()
+      await w.get('[data-testid=role-parent]').trigger('click')
+      expect(label()).toBe('Sekolah (Pilihan)')
+      expect(search().required).toBeUndefined()
+    })
   })
 
   it('shows the loading label, then the server errors, keeping values but clearing passwords (FR-M01-26)', async () => {

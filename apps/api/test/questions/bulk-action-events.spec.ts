@@ -61,7 +61,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const requestId = 'be33-bulk-review-1'
     const res = await bulk({ action: 'review', ids: [a, b, UNKNOWN_ID] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ affected: 2 })
+    expect(res.body.data).toEqual({ affected: 2, failed: [{ id: UNKNOWN_ID, code: 'NOT_FOUND', message: 'Soalan tidak dijumpai.', fields: {} }] })
 
     const events = await eventsOf([a, b, c])
     expect(events.map((e) => e.question_id)).toEqual([a, b])
@@ -90,7 +90,10 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const requestId = 'be33-bulk-refused-1'
     const res = await bulk({ action: 'approved', ids: [refused, allowed] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ affected: 1 })
+    expect(res.body.data).toEqual({
+      affected: 1,
+      failed: [{ id: refused, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Lulus tidak dibenarkan.', fields: {} }],
+    })
 
     expect(await statusOf(refused)).toBe('draft')
     expect(await statusOf(allowed)).toBe('approved')
@@ -111,7 +114,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const requestId = 'be33-bulk-publish-1'
     const res = await bulk({ action: 'published', ids: [bare, UNKNOWN_ID] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ affected: 0 })
+    expect(res.body.data).toEqual({ affected: 0, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' }), { id: UNKNOWN_ID, code: 'NOT_FOUND', message: 'Soalan tidak dijumpai.', fields: {} }] })
 
     expect(await statusOf(bare)).toBe('approved')
     const after = await eventsOf([bare])
@@ -135,7 +138,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const requestId = 'be33-bulk-publish-ok-1'
     const res = await bulk({ action: 'published', ids: [bare, tagged] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ affected: 1 })
+    expect(res.body.data).toEqual({ affected: 1, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' })] })
 
     expect(await statusOf(tagged)).toBe('published')
     expect(await statusOf(bare)).toBe('approved')
@@ -159,7 +162,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const a = await create()
     const res = await bulk({ action: 'delete', ids: [a] }, 'be33-bulk-delete-1')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ affected: 1 })
+    expect(res.body.data).toEqual({ affected: 1, failed: [] })
     expect(await eventsOf([a])).toEqual([])
     const [row] = await t.db.query<{ n: string }>(`select count(*)::text as n from question_status_events where request_id = 'be33-bulk-delete-1'`)
     expect(row?.n).toBe('0')

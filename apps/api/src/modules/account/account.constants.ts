@@ -20,6 +20,10 @@ export const ACCOUNT_AUDIT = {
   PICTURE_UPDATED: 'account.picture.updated',
 } as const
 
+/** REG-CLOSE: the 403 code and BM message of a closed self-registration (`REGISTRATION_OPEN=false`). */
+export const ACCOUNT_REGISTRATION_CLOSED_CODE = 'REGISTRATION_CLOSED'
+export const ACCOUNT_REGISTRATION_CLOSED_MESSAGE = 'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.'
+
 /** A reset token is 32 random bytes (256 bits, contract minimum 128), base64url. */
 export const RESET_TOKEN_BYTES = 32
 export const RESET_TOKEN_TTL_MS = ACCOUNT_RESET_TOKEN_TTL_MINUTES * 60_000

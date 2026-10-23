@@ -22,6 +22,8 @@ export interface BijakSittingFact {
   status: BijakSittingStatus
   score: number
   maxScore: number
+  /** Questions the pupil answered (a non-blank response). NOT the paper's question count and not `maxScore` (marks). */
+  answeredCount: number
   /** Waiting for a person to mark: counts as a sitting, never in accuracy. */
   provisional: boolean
   pendingReview: number
@@ -34,6 +36,7 @@ export interface BijakSittingQuery {
   userIds?: readonly string[]
   schoolIds?: readonly string[]
   state?: string
+  /** Needs `state` too (a district name is only unique inside its state); a district alone matches nothing. */
   district?: string
   subjectId?: string
   /** Default: both. */
@@ -57,6 +60,8 @@ export interface BijakTotals {
   sittings: number
   score: number
   max: number
+  /** Answered questions (sum of the sittings' `answeredCount`). */
+  answered: number
   seconds: number
   /** Non-provisional sittings only (the accuracy base). */
   gradedScore: number

@@ -1,0 +1,160 @@
+# Rendered by the nginx image entrypoint (envsubst, only PP_* variables) into /etc/nginx/conf.d/pp.conf.
+# Variables: PP_DOMAIN, PP_UPLOAD_FILES_MB, PP_UPLOAD_BIG_MB, PP_CSP_MODE, PP_CSP_IMG_HOSTS, PP_EDGE_AUTH_RATE, PP_EDGE_AUTH_BURST,
+# PP_HSTS (in snippets/hsts.conf.template).
+#
+# Request path:  browser -> edge (this file) -> /api/* -> api:3000     everything else -> frontend:8080 (SPA)
+# The frontend nginx is NOT in the API path (its /api/ block is unreachable from here), so the body limits below
+# are the only ones in front of the API. Upstream names are resolved at request time through Docker DNS, so
+# recreating api or frontend during a deploy never leaves the edge pointing at a dead address.
+
+# Optional flood guard on /api/auth/ per client IP. SECONDARY to the API's own login throttle (which counts per account
+# and per IP in the database): many schools sit behind one NAT address, so the default is generous. Raise the rate
+# (for example 100000r/m) to make it a no-op.
+limit_req_zone $binary_remote_addr zone=pp_auth:10m rate=${PP_EDGE_AUTH_RATE};
+limit_req_status 429;
+
+# ---- 80: ACME challenge, health probe, everything else redirects to https on the configured host ----
+server {
+  listen 80 default_server;
+  server_name _;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+    default_type text/plain;
+  }
+
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  location / {
+    # Fixed host (not $host): a forged Host header cannot make this an open redirect.
+    return 301 https://${PP_DOMAIN}$request_uri;
+  }
+}
+
+# ---- 443: any other host name or a bare IP gets no certificate and no content ----
+server {
+  listen 443 ssl default_server;
+  server_name _;
+  ssl_reject_handshake on;
+}
+
+# ---- 443: the application ----
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ${PP_DOMAIN};
+
+  ssl_certificate     /etc/letsencrypt/live/${PP_DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${PP_DOMAIN}/privkey.pem;
+  include /etc/nginx/pp-snippets/tls.conf;
+
+  resolver 127.0.0.11 valid=10s ipv6=off;
+
+  # Slow-client protection (the API has its own header and request timeouts).
+  client_header_timeout 20s;
+  client_body_timeout 60s;
+  send_timeout 60s;
+  keepalive_timeout 60s;        # the API's KEEP_ALIVE_TIMEOUT_MS (65000) stays above this, as the runbook requires
+
+  # JSON bodies and the 2200 kB import bodies; the API enforces its own 100 kB / 2200 kB limits.
+  client_max_body_size 3m;
+
+  # --- /api/metrics never leaves the host: every spelling, any case, with or without a trailing slash or suffix ---
+  # (the API answers an admin session or an internal peer only; the edge adds nginx-level certainty.)
+  # Regex locations are checked before the /api/ prefix below. nginx matches on the decoded, normalised URI,
+  # so //api//metrics, /api/./metrics and %6d-style encodings are covered.
+  location ~* ^/api/metrics(/.*)?$ {
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # nginx answers here, not the API
+    default_type application/json;
+    return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
+  }
+  location = /api/metrics {
+    include /etc/nginx/conf.d/snippets/hsts.conf;
+    default_type application/json;
+    return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
+  }
+
+  # --- uploads: many-file multipart routes (intake batches 11 x 20 MB, audio KBAT 4 x 20 MB, screenshots 20 x 10 MB,
+  #     perutusan, teacher question papers up to 101 MB). The API enforces each purpose itself; this is the outer fence.
+  #     Value = PP_UPLOAD_BIG_MB. A new many-file route needs a line in this regex.
+  location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers)/?$ {
+    client_max_body_size ${PP_UPLOAD_BIG_MB}m;
+    client_body_timeout 120s;
+    limit_conn pp_big_uploads 2;         # per address
+    limit_conn pp_big_global 4;          # whole server: bounds the disk and worker use of unauthenticated big bodies
+    proxy_request_buffering on;          # the API only sees a complete body (and a half upload costs it nothing)
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+  }
+
+  # --- uploads: single-file or few-file multipart (files, timeline photos, Bijak working photos, profile picture,
+  #     diagram image, SPM walkthrough photo). Value = PP_UPLOAD_FILES_MB (max(MAX_UPLOAD_MB, INTAKE_MAX_FILE_MB) + overhead).
+  location ~ ^/api/(files|timeline|me/picture|spm-walkthrough/solve|bijak/attempts/[^/]+/photos|diagram-audit/[^/]+/[^/]+/image)/?$ {
+    client_max_body_size ${PP_UPLOAD_FILES_MB}m;
+    client_body_timeout 120s;
+    proxy_request_buffering on;
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;             # large downloads and audio range requests share this path family
+  }
+
+  # --- authentication endpoints: same proxying as /api/, plus the per-IP flood guard (PP_EDGE_AUTH_RATE / _BURST).
+  #     ^~ so the regex locations above never take these paths. Only the edge HSTS is added, same as /api/.
+  location ^~ /api/auth/ {
+    limit_req zone=pp_auth burst=${PP_EDGE_AUTH_BURST} nodelay;
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 125s;
+  }
+
+  # --- everything else under /api ---
+  # The only edge header here is HSTS (hsts.conf: the API's own HSTS is hidden and replaced by PP_HSTS, so the
+  # host has one policy). Every other API header (nosniff, DENY, no-referrer, COOP/CORP, CSP default-src 'none',
+  # Cache-Control: no-store on session responses) reaches the browser unchanged: add_header never touches them.
+  # read timeout 125 s sits just above REQUEST_TIMEOUT_MS (120000): the API answers its own timeout first.
+  location /api/ {
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 125s;
+  }
+
+  # An exact "/api" has no meaning; do not hand it to the SPA either.
+  location = /api {
+    include /etc/nginx/conf.d/snippets/hsts.conf;
+    return 404;
+  }
+
+  # --- the SPA (frontend container). Cache-Control comes from the frontend nginx: /assets/* immutable for a year,
+  #     index.html and deep links no-cache. Headers added here: HSTS and the CSP (see spa-headers.conf).
+  location / {
+    include /etc/nginx/pp-snippets/spa-headers.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;
+    include /etc/nginx/conf.d/snippets/csp-${PP_CSP_MODE}.conf;
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    set $spa_upstream http://frontend:8080;
+    proxy_pass $spa_upstream;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 30s;
+  }
+}

@@ -2,6 +2,7 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { CurriculumModule } from '../../curriculum'
+import { GamificationModule, GamificationPorts } from '../../gamification'
 import { PracticeModule } from '../../practice'
 import { PracticeAggregateService } from '../../practice/aggregate'
 import { PracticePorts } from '../../practice/ports'
@@ -17,6 +18,7 @@ import { BijakPapersPorts } from '../papers/ports'
 import { PocQuestionSource } from '../papers/poc-question-source'
 import { Be09BijakQuestionSource, CompositeBijakQuestionSource, CompositePaperQuestionSource } from '../question-bridge'
 import { WalletBijakReward, WalletPracticeReward } from './bindings'
+import { PracticeFactsAdapter } from './practice-facts'
 import { PrismaBijakAggregate } from './performance-bijak-aggregate'
 import { PocBijakQuestionSource } from './poc-question-source'
 
@@ -32,6 +34,8 @@ import { PocBijakQuestionSource } from './poc-question-source'
  * - BE-11 wallet credit (`quiz_spm`)       -> BE-16 `provideReward` (exam only, idempotent per attempt,
  *   nothing under Mod Pelajar: AC-20.3)
  * - BE-11 streak + wallet (source by mode)  -> BE-12 `PracticePorts.provideReward`
+ * - BE-12 `PracticeFactsAdapter` (PracticeRepository reads) -> BE-23 `GamificationPorts.providePracticeFacts`
+ *   (daily challenge progress, mastery, session counts; FIX-3 D-07)
  * - `PrismaBijakAggregate` (attempts + results + BE-09 bank, read only) -> BE-19 `PerformancePorts.provideBijak`
  * - Questions, ALWAYS (#45 C2): `CompositeBijakQuestionSource` -> BE-16 `provideQuestionSource` and
  *   `CompositePaperQuestionSource` -> BE-15 `provideQuestionSource`. Ids in the reserved PoC block go to the
@@ -45,8 +49,8 @@ import { PocBijakQuestionSource } from './poc-question-source'
  *   eligible", `getMany` omits them) and Jana's pool is empty (422 SHORTAGE); BE-09 questions work either way.
  */
 @Module({
-  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule],
-  providers: [WalletBijakReward, WalletPracticeReward, Be09BijakQuestionSource, PrismaBijakAggregate],
+  imports: [BijakPapersModule, BijakAttemptsModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule],
+  providers: [WalletBijakReward, WalletPracticeReward, PracticeFactsAdapter, Be09BijakQuestionSource, PrismaBijakAggregate],
 })
 export class BijakIntegrationModule implements OnModuleInit {
   constructor(
@@ -61,6 +65,8 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(Be09BijakQuestionSource) private readonly bankQuestions: Be09BijakQuestionSource,
     @Inject(PerformancePorts) private readonly performancePorts: PerformancePorts,
     @Inject(PrismaBijakAggregate) private readonly performanceAggregate: PrismaBijakAggregate,
+    @Inject(GamificationPorts) private readonly gamificationPorts: GamificationPorts,
+    @Inject(PracticeFactsAdapter) private readonly practiceFacts: PracticeFactsAdapter,
     @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
@@ -77,6 +83,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     this.attemptPorts.provideAggregate(this.aggregate)
     this.attemptPorts.provideReward(this.bijakReward)
     this.practicePorts.provideReward(this.practiceReward)
+    this.gamificationPorts.providePracticeFacts(this.practiceFacts)
     const poc = this.pocEnabled()
     this.attemptPorts.provideQuestionSource(new CompositeBijakQuestionSource(poc ? new PocBijakQuestionSource() : null, this.bankQuestions))
     this.papersPorts.provideQuestionSource(new CompositePaperQuestionSource(poc ? new PocQuestionSource() : null, this.bankQuestions))
