@@ -584,7 +584,7 @@ Computed from section 7 after A1.11 (a). `s(...)` is the `seconds` column of the
 | `N_manifest` | A1.1 | Headline N (dump manifest = `dump:check` total of the same source) |
 | `rho` | `(N_core + N_act) / N_manifest` | Rows read per manifest row; near 1 |
 
-Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate below it is amber (section 9). **Perlu pengesahan (half AM):** the unit of the 3,611 figure ("1M rows"): rows read per stage or rows in the dump; if it is not rows read, the comparison is only indicative. The budget in the A4 sheet uses the same unit on both sides (measured and projected), so P7 does not depend on it.
+Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate below it is amber (section 9). 3,611 = rows loaded / apply wall time of `migrate:activity` (practice sessions + answers only, 1.1M synthetic rows, fsync off; #122 AC7, R31). Not comparable 1:1 with a `migrate:all` rate; indicative only. The MIG-07 full-apply rate (about 1,250 to 1,390 rows/s, A4 section 9) is the closer reference. The budget in the A4 sheet uses the same unit on both sides (measured and projected), so P7 does not depend on it.
 
 ## 9. Green and red
 
@@ -603,7 +603,7 @@ Compare each rate with the placeholder **3,611 rows/s** (AM-08 AC7). A rate belo
 9. Any personal data in a report, a post, a log or a copy outside the custody list. This is also a PDPA incident (runbook rule 8): tell the LEAD at once, before anything else.
 10. The code changed after the run. The evidence counts only for the sha it ran on (P2). A change to the ETL or the schema after A1 means A1 is repeated.
 
-**Amber (reported; not red):** a rate below 3,611 rows/s; a `WARNING ... fsync` line in `status`; a projected window above the maximum (computed in the A4 sheet); ledger or drift rows to be accepted; content-entity rejects explained by the missing content owner; a step much slower than the MIG-07 synthetic runs. MIG-07 saw a spread of about 1.8 times between identical `migrate:all --apply` runs on one host (527, 718 and 964 s), so one slow run is not a finding by itself.
+**Amber (reported; not red):** a rate below 3,611 rows/s; a `WARNING ... fsync` line in `status`; a projected window above the maximum (computed in the A4 sheet); ledger or drift rows to be accepted; content-entity rejects explained by the missing content owner; once Q10 is in the release, `note rosterDefaultHashesWarning: 1` and the warning line `PP_MIGRATE_ROSTER_DEFAULT_HASHES is unset or empty ...` (expected on the anonymised dump: every non-privileged hash is a dummy, so leave the variable unset and do not try to prove the real list on rehearsal data; R32); a step much slower than the MIG-07 synthetic runs. MIG-07 saw a spread of about 1.8 times between identical `migrate:all --apply` runs on one host (527, 718 and 964 s), so one slow run is not a finding by itself.
 
 **What to do on red:**
 
@@ -671,5 +671,5 @@ Result: GREEN | RED (step <id>, reason <short>); amber items: <list | none>
 | 6 | `/usr/bin/time` for peak memory; the `q` helper and `ps` exposure on the host. | Half AZ |
 | 7 | A reject breach that the LEAD accepts for A1 against the night's threshold without a waiver. | LEAD |
 | 8 | **DECISION NEEDED (LEAD) before A1.0:** delete the extracted dump after A1 (default, runbook rule 4; A4 then needs a second AM-10 sitting on 27 Oct, costs in I8) or keep it until the end of A4 (plan section 7); the exact wipe command on the rehearsal host. | LEAD, half AZ |
-| 9 | The unit of the 3,611 rows/s placeholder. | Half AM |
+| 9 | ~~The unit of the 3,611 rows/s placeholder.~~ Answered (R31): rows loaded per second of `migrate:activity` apply wall time, two entities only; see section 8. | Half AM |
 | 10 | Routing of red reports: #109 for the cutover, #113 for half AZ items. | LEAD |

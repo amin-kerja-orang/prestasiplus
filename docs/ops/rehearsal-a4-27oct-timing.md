@@ -58,6 +58,8 @@ rm -rf <checkout>/apps/api/.migration-out/<fixture>
 `<fixture dir outside the checkout>` is the `<fixture dir>` of section 5.2 and is on the encrypted volume; the data is synthetic, but it is wiped with `S wipe-dump` at the close like a dump.
 **Perlu pengesahan (half AZ, LEAD):** the scratch-only override of `slot.sh load` requested on #166, and the LEAD's acceptance of it on a scratch host.
 
+**Roster default hashes on Track S (optional, R32; only once the override exists and Q10 is in the release).** Put one line `PP_MIGRATE_ROSTER_DEFAULT_HASHES=<the fixture's shared default hash>` in the scratch `etl.env`, never on the command line (`slot.sh etl` logs its env list). Expect `note rosterDefaultHashes: 1` and `note rosterDefaultHashesWarning: 0`; smoke row F10 then reads `ok`. Keep the same value for every later `migrate:delta` / activity run: it is part of the core input hash that the activity preflight recomputes. On Track R (anonymised dump) the variable stays unset and the warning is expected (A1 sheet section 9, amber).
+
 ## 3. Preconditions
 
 | # | Precondition | Evidence |
