@@ -12,7 +12,10 @@ import RegisterPage from '../../pages/RegisterPage.vue'
 import { PENDING_REF_KEY, clearPendingRef, setPendingRef } from '../../lib/pending-ref'
 
 const apiMocks = vi.hoisted(() => ({ register: vi.fn() }))
-vi.mock('../../api', () => apiMocks)
+vi.mock('../../api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api')>()),
+  register: apiMocks.register,
+}))
 
 const SESSION: ClientSession = {
   token: 'tok',

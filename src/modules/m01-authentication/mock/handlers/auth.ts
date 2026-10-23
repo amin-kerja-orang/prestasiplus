@@ -170,6 +170,16 @@ const gradeRule = rule(
   { implicit: true },
 )
 
+/** A teacher needs a school (its scope; real API: "The school id field is required when role is teacher."). */
+const teacherSchoolRule = rule(
+  'teacherSchool',
+  (value, { input }) =>
+    input.role === 'teacher' && intOrNull(value) === null
+      ? 'The :attribute field is required when role is teacher.'
+      : null,
+  { implicit: true },
+)
+
 const schoolRule = exists((value) => {
   const id = intOrNull(value)
   return id !== null && schoolExists(id)
@@ -191,7 +201,7 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
       role: [oneOf(SELF_REGISTER_ROLES)],
       grade: [gradeRule],
       icNumber: [max(14)],
-      schoolId: [schoolRule],
+      schoolId: [teacherSchoolRule, schoolRule],
       password: [required(), min(6), confirmed()],
     },
     { attributes: { icNumber: 'ic number' } },
@@ -219,10 +229,11 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
   const ic = textOrNull(body.icNumber)
   if (isStudent && ic !== null) users.setIcNumber(created_.id, ic)
 
-  notifyRegistered(created_.id, textOrNull(body.referralCode))
+  // A pending (unverified) teacher triggers no referral reward (M14 hook below).
   if (isTeacher) {
     return created({ status: REGISTER_PENDING_STATUS, message: REGISTER_PENDING_MESSAGE })
   }
+  notifyRegistered(created_.id, textOrNull(body.referralCode))
   const user = sessionUser(users.get(created_.id))
   if (!user) throw new Error('register: the created user has no session role')
   return created(startSession(user, false, ctx))

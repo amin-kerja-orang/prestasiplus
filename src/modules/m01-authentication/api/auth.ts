@@ -25,6 +25,14 @@ import type {
   StatusPayload,
 } from './types'
 
+/**
+ * Fallback for a pending notice without a usable message: the contract text
+ * `ACCOUNT_REGISTER_PENDING_MESSAGE` (a test asserts they are equal). It is a local copy because a
+ * runtime import of `@pp/contract` pulls the whole zod contract into the entry bundle (+0.77 MB).
+ */
+export const REGISTER_PENDING_FALLBACK_MESSAGE =
+  'Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah.'
+
 function toClientSession(payload: SessionPayload, remember: boolean): ClientSession {
   // Real API (V2-T31): the body is the contract `Session` (cookie session + csrf), not a bearer payload.
   if (isApiSession(payload)) return toClientSessionFromApi(payload, remember)
@@ -41,6 +49,16 @@ export async function login(request: LoginRequest): Promise<ClientSession> {
   return toClientSession(payload, request.remember)
 }
 
+/** The 201 body of a teacher registration: the pending notice, never a session (AM2-N1). */
+export function isRegisterPending(result: unknown): result is RegisterPending {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'status' in result &&
+    result.status === 'pending_verification'
+  )
+}
+
 /**
  * #2 `POST /api/auth/register` (201). Student and parent: logs the new user in, not remembered
  * (FR-M01-25). Teacher: resolves to the pending notice `{status: 'pending_verification', message}`
@@ -50,8 +68,18 @@ export async function register(request: RegisterRequest): Promise<RegisterResult
   const payload = await api.post<SessionPayload | RegisterPending>('/api/auth/register', {
     body: request,
   })
-  if ('status' in payload && payload.status === 'pending_verification') return payload
-  return toClientSession(payload as SessionPayload, false)
+  if (isRegisterPending(payload)) {
+    // The server copy is shown as is; a missing or blank message falls back to the contract text.
+    const { message } = payload as { message?: unknown }
+    return {
+      status: payload.status,
+      message:
+        typeof message === 'string' && message.trim() !== ''
+          ? message
+          : REGISTER_PENDING_FALLBACK_MESSAGE,
+    }
+  }
+  return toClientSession(payload, false)
 }
 
 /** #3 `POST /api/auth/password/email`. Resolves to the status text (green box, FR-M01-29). */

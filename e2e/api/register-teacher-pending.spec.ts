@@ -10,28 +10,45 @@
  * the school name. No horizontal page scroll at any step (375 / 768 / 1280 via the three projects).
  *
  * Writes data: one teacher (inactive, left pending) and one student per project and run, with
- * `@demo.test` addresses unique per run. The password is the public local seed password
- * (`API_PASSWORD`, see `fixtures/api.ts`). Names are fictitious.
+ * `@demo.test` addresses unique per run. Each account gets a random per-run password that lives only
+ * in memory (the login step reuses it); no seed password is involved. Names are fictitious.
+ *
+ * Isolation from `school-admin-verify-teachers.spec.ts` (which counts the pending teachers of school 1
+ * exactly and cleans up leftovers by the `Cikgu Contoh` name prefix in school 1, with `workers: 1` in
+ * `playwright.http.config.ts` keeping the specs serial): the teacher here uses the `Cikgu Contoh`
+ * prefix too, but registers at the second seed school, "SK Demo Dua" (DEMO002, id 2). It has no seeded
+ * admin and no spec asserts its pending count, so this spec never changes the school-1 counts. The
+ * pending teacher stays there, per project and run; use a fresh DB between runs.
  */
+
+import { randomUUID } from 'node:crypto'
 
 import type { Page } from '@playwright/test'
 
-import { API_PASSWORD, expect, gotoApi, test } from '../fixtures/api'
+import { expect, gotoApi, test } from '../fixtures/api'
 import { expectNoHScroll } from './helpers'
 
 const PENDING_MESSAGE =
   'Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah.'
-const SCHOOL_QUERY = 'Demo Satu'
+const SCHOOL_QUERY = 'Demo Dua'
+
+/** A random password per account (6+ characters), kept in memory only. */
+const newPassword = (): string => `T${randomUUID()}!a1`
 
 function uniqueEmail(prefix: string, project: string): string {
   return `${prefix}.${project}.${String(Date.now())}@demo.test`
 }
 
-async function fillCommon(page: Page, name: string, email: string): Promise<void> {
+async function fillCommon(
+  page: Page,
+  name: string,
+  email: string,
+  password: string,
+): Promise<void> {
   await page.getByTestId('register-name').fill(name)
   await page.getByTestId('register-email').fill(email)
-  await page.getByTestId('register-password').fill(API_PASSWORD)
-  await page.getByTestId('register-password-confirm').fill(API_PASSWORD)
+  await page.getByTestId('register-password').fill(password)
+  await page.getByTestId('register-password-confirm').fill(password)
 }
 
 async function pickSchool(page: Page): Promise<void> {
@@ -45,6 +62,7 @@ test.describe('register: teacher pending verification @api', () => {
 
   test('teacher: pending message, no session, login refused @api', async ({ page }, info) => {
     const email = uniqueEmail('cikgu.n1', info.project.name)
+    const password = newPassword()
     await gotoApi(page, '/register')
     await expectNoHScroll(page)
 
@@ -55,7 +73,7 @@ test.describe('register: teacher pending verification @api', () => {
     await expect(label).toHaveText('Sekolah')
     await expect(page.getByTestId('register-school-search')).toHaveAttribute('required', '')
 
-    await fillCommon(page, 'Cikgu Contoh Pending', email)
+    await fillCommon(page, 'Cikgu Contoh Pending', email, password)
     await pickSchool(page)
 
     // AM2-L2: the clear button is on the same row as the school name, to its right.
@@ -102,7 +120,7 @@ test.describe('register: teacher pending verification @api', () => {
     await expect(page).toHaveURL(/\/login(\?|$)/)
     const form = page.getByTestId('login-form')
     await form.getByLabel('Alamat Email').fill(email)
-    await form.getByLabel('Kata Laluan').fill(API_PASSWORD)
+    await form.getByLabel('Kata Laluan').fill(password)
     await form.getByRole('button', { name: 'Log Masuk' }).click()
     await expect(page.getByTestId('login-alert')).toBeVisible({ timeout: 20_000 })
     await expect(page).toHaveURL(/\/login(\?|$)/)
@@ -115,8 +133,9 @@ test.describe('register: teacher pending verification @api', () => {
     page,
   }, info) => {
     const email = uniqueEmail('murid.n1', info.project.name)
+    const password = newPassword()
     await gotoApi(page, '/register')
-    await fillCommon(page, 'Murid Contoh Baru', email)
+    await fillCommon(page, 'Murid Contoh Baru', email, password)
     await page.getByTestId('grade-3').click()
 
     const response = page.waitForResponse(

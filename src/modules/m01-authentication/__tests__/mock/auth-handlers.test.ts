@@ -15,7 +15,7 @@ import type { UserMe as CoreUserMe } from '@/mock/core-data/me'
 import { bootMock, type MockRuntime } from '@/mock/index'
 import type { ClientSession as StoreSession } from '@/stores/session-types'
 import { PASSWORD_RESET_OUTBOX_TYPE as HOOKS_OUTBOX_TYPE } from '@/mock/testing/hooks'
-import { wallet } from '@/modules/m14-gamification/mock'
+import { referrals, wallet } from '@/modules/m14-gamification/mock'
 
 import type { ClientSession, UserMe, UserSettings } from '../../api/types'
 import { impersonation, loginThrottle, passwordResets, users, userSettings } from '../../mock'
@@ -314,6 +314,50 @@ describe('POST /api/auth/register (#2)', () => {
     })
     expect(login.status).toBe(403)
     expect(login.body.error!.code).toBe('ACCOUNT_INACTIVE')
+  })
+
+  it('refuses a teacher without a school, with the real API field message (AM2-N1)', async () => {
+    for (const schoolId of [undefined, null, '']) {
+      const r = await call('POST', '/api/auth/register', {
+        ...student,
+        role: 'teacher',
+        email: 'guru.tanpa.sekolah@demo.test',
+        schoolId,
+      })
+      expect(r.status).toBe(422)
+      expect(r.body.error?.fields).toEqual({
+        schoolId: 'The school id field is required when role is teacher.',
+      })
+    }
+    expect(users.findByEmail('guru.tanpa.sekolah@demo.test')).toBeUndefined()
+    // A parent still needs no school.
+    const p = await call('POST', '/api/auth/register', {
+      ...student,
+      role: 'parent',
+      email: 'ibu.tanpa.sekolah@demo.test',
+      schoolId: null,
+    })
+    expect(p.status).toBe(201)
+  })
+
+  it('gives no referral reward for a pending teacher, but does for a student (AM2-N1)', async () => {
+    const code = referrals.codeOf(1)
+    const before = referrals.stats(1).referrals
+    const t = await call('POST', '/api/auth/register', {
+      ...student,
+      role: 'teacher',
+      email: 'guru.rujukan@demo.test',
+      referralCode: code,
+    })
+    expect(t.status).toBe(201)
+    expect(referrals.stats(1).referrals).toBe(before)
+    const s = await call('POST', '/api/auth/register', {
+      ...student,
+      email: 'murid.rujukan@demo.test',
+      referralCode: code,
+    })
+    expect(s.status).toBe(201)
+    expect(referrals.stats(1).referrals).toBe(before + 1)
   })
 
   it('needs no grade for teacher or parent, but requires it for a student', async () => {

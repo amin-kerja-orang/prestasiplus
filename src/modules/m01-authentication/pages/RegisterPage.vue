@@ -17,7 +17,7 @@ import { isPrototypeRole, isPrototypeScopeOn } from '@/app/prototype-scope'
 import { DsCluster, DsFormField, DsNativeSelect, DsPanel } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
-import { register, type RegisterRequest, type SchoolSummary } from '../api'
+import { isRegisterPending, register, type RegisterRequest, type SchoolSummary } from '../api'
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import AuthWelcomePanel from '../components/auth/AuthWelcomePanel.vue'
@@ -106,7 +106,7 @@ async function submit(): Promise<void> {
     const next = await register(request)
     clearPendingRef()
     // A teacher waits for a school admin: 201 `{status, message}`, no session (AM2-N1).
-    if ('status' in next) {
+    if (isRegisterPending(next)) {
       pendingMessage.value = next.message
       password.value = ''
       passwordConfirmation.value = ''
