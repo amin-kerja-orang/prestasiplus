@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { ACCOUNT_AUTH_MESSAGES, AccountRegisterRequestSchema, V } from '@pp/contract'
 
 import { AuditService } from '../../common/audit/audit.service'
@@ -13,7 +14,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { setFieldOnce, strictFieldsOf } from '../../common/validation/strict-body'
 import { ACCOUNT_AUDIT, ACCOUNT_TX } from './account.constants'
 import { overloadTo429 } from './helpers'
-import { invalid } from './account.errors'
+import { invalid, registrationClosed } from './account.errors'
 import { SessionIssuer } from './session-issuer.service'
 
 const FIELD_ORDER = ['name', 'email', 'phone', 'role', 'grade', 'icNumber', 'schoolId', 'password', 'passwordConfirmation', 'referralCode']
@@ -37,6 +38,8 @@ const asRecord = (v: unknown): Record<string, unknown> => (typeof v === 'object'
 @Injectable()
 export class RegistrationService {
   private readonly logger = new Logger(RegistrationService.name)
+  /** REG-CLOSE: read once at start (`REGISTRATION_OPEN`, default open; only `false`/`0` close). */
+  private readonly open: boolean
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -47,10 +50,16 @@ export class RegistrationService {
     @Inject(IcService) private readonly ic: IcService,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
     @Inject(AuditService) private readonly audit: AuditService,
-  ) {}
+    @Inject(ConfigService) config: Pick<ConfigService, 'get'>,
+  ) {
+    const flag = String(config.get<unknown>('REGISTRATION_OPEN') ?? 'true').trim().toLowerCase()
+    this.open = flag !== 'false' && flag !== '0'
+  }
 
   /** The rate limit is the `RateLimit` guard of the controller (own bucket, own env key); nothing is shared with the login throttle. */
   async register(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
+    // REG-CLOSE: refused before the body is read or the database touched.
+    if (!this.open) throw registrationClosed()
     return overloadTo429(() => this.create(raw, info))
   }
 
