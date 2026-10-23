@@ -166,6 +166,52 @@ describe('/password/reset#token=... (SW8-07b)', () => {
   })
 })
 
+describe('a token link pasted while the page is already open (B1x4)', () => {
+  const later = `#token=${TOKEN}&email=${encodeURIComponent('murid@demo.test')}`
+
+  it('switches S3 to S4 with the new token and e-mail, then scrubs the hash once', async () => {
+    const w = await open('/password/reset')
+    expect(w.get('h1').text()).toBe('Lupa Kata Laluan?')
+    const replace = vi.spyOn(router, 'replace')
+    await router.push(`/password/reset${later}`)
+    await flushPromises()
+    expect(w.get('h1').text()).toBe('Reset Kata Laluan')
+    expect(emailValue(w)).toBe('murid@demo.test')
+    expect(w.get('input[name=token]').attributes('value')).toBe(TOKEN)
+    expect(router.currentRoute.value.fullPath).toBe('/password/reset')
+    expect(replace).toHaveBeenCalledTimes(1)
+    expect(document.title).toBe('Reset Kata Laluan - PRESTASIPLUS')
+  })
+
+  it('keeps S4 after the scrub (the empty hash does not flip back to S3)', async () => {
+    const w = await open('/password/reset')
+    await router.push(`/password/reset${later}`)
+    await flushPromises()
+    await router.replace({ path: '/password/reset', hash: '' })
+    await flushPromises()
+    expect(w.find('[data-testid=reset-form]').exists()).toBe(true)
+    expect(w.find('[data-testid=forgot-email]').exists()).toBe(false)
+    expect(emailValue(w)).toBe('murid@demo.test')
+  })
+
+  it('takes a second token link over the first one', async () => {
+    const w = await open(`/password/reset#token=${TOKEN}&email=a%40b.my`)
+    await router.push('/password/reset#token=SecondToken_0123456789&email=c%40d.my')
+    await flushPromises()
+    expect(w.get('input[name=token]').attributes('value')).toBe('SecondToken_0123456789')
+    expect(emailValue(w)).toBe('c@d.my')
+    expect(router.currentRoute.value.hash).toBe('')
+  })
+
+  it('scrubs an empty-token hash and leaves S3 as it is', async () => {
+    const w = await open('/password/reset')
+    await router.push('/password/reset#token=&email=a%40b.my')
+    await flushPromises()
+    expect(w.get('h1').text()).toBe('Lupa Kata Laluan?')
+    expect(router.currentRoute.value.hash).toBe('')
+  })
+})
+
 describe('/password/reset without a fragment and the path route (unchanged)', () => {
   it('renders S3 as before and does not navigate', async () => {
     const w = await open('/password/reset')
