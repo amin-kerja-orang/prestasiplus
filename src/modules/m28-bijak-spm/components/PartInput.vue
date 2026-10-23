@@ -6,9 +6,9 @@
  *  - short_text: a text area.
  * Every change emits a whole new answer; the page autosaves it.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, type Directive } from 'vue'
 
-import { latexToPlain } from '../domain/math-expr'
+import { isReadableNumber, latexToPlain } from '../domain/math-expr'
 import type { Leaf } from '../domain/paper-model'
 import type { McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
@@ -29,6 +29,37 @@ const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : 
 const words = computed(() =>
   (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
 )
+/** Numeric leaf: the final answer must be something the marker can read (FB-050). */
+// The hint shows once the field was left, or at once for a stored answer that cannot be read.
+const finalTouched = ref(!isReadableNumber(props.modelValue?.final ?? ''))
+const finalInvalid = computed(
+  () =>
+    props.leaf.kind === 'numeric' &&
+    finalTouched.value &&
+    !isReadableNumber(answer.value.final ?? ''),
+)
+/**
+ * Numeric leaves ask the phone for the decimal keypad. The maths field owns its `inputmode` (it is
+ * `none` while its on-screen keypad is open, `text` otherwise), so this directive turns `text` into
+ * `decimal` on the field inside the wrapper and keeps doing so after every change.
+ */
+type WithObserver = HTMLElement & { __decimalObserver?: MutationObserver }
+const vDecimalInputmode: Directive<WithObserver, boolean> = {
+  mounted(el, { value }) {
+    const input = el.querySelector('input')
+    if (!value || !input) return
+    const apply = (): void => {
+      if (input.getAttribute('inputmode') === 'text') input.setAttribute('inputmode', 'decimal')
+    }
+    apply()
+    el.__decimalObserver = new MutationObserver(apply)
+    el.__decimalObserver.observe(input, { attributes: true, attributeFilter: ['inputmode'] })
+  },
+  unmounted(el) {
+    el.__decimalObserver?.disconnect()
+  },
+}
+
 const photoError = ref('')
 const urls = ref<Record<string, string>>({})
 const fileInput = ref<{ $el: HTMLElement } | null>(null)
@@ -173,13 +204,27 @@ async function dropPhoto(key: string): Promise<void> {
         >
       </fieldset>
 
-      <MathField
-        :model-value="answer.final ?? ''"
-        label="Jawapan akhir"
-        placeholder="cth. 13"
-        :disabled="disabled"
-        @update:model-value="update({ final: $event })"
-      />
+      <div
+        v-decimal-inputmode="leaf.kind === 'numeric'"
+        class="flex flex-col gap-2"
+        @focusout="finalTouched = true"
+      >
+        <MathField
+          :model-value="answer.final ?? ''"
+          label="Jawapan akhir"
+          placeholder="cth. 13"
+          :disabled="disabled"
+          @update:model-value="update({ final: $event })"
+        />
+        <p
+          v-if="finalInvalid"
+          class="text-caption text-error"
+          role="status"
+          data-testid="final-hint"
+        >
+          Masukkan nombor sahaja, cth. 13, 3.5 atau 1/2.
+        </p>
+      </div>
 
       <UFormField v-if="leaf.unit" label="Unit" class="w-full sm:w-1/2">
         <UInput
