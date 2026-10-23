@@ -30,6 +30,15 @@ describe('admin users: parent links (SW2-08)', () => {
   const stored = async (parentId: string): Promise<string[]> =>
     (await t.db.query<{ s: string }>('select student_id::text s from parent_links where parent_id = $1', [parentId])).map((r) => r.s).sort(byNumber)
   const ids = (xs: { id: string }[]): string[] => xs.map((x) => x.id).sort(byNumber)
+  /** `details.linkedStudents` of the audit rows of one user, oldest first; undefined when the row has no such key. */
+  const auditLinks = async (action: string, userId: string): Promise<({ added: string[]; removed: string[] } | undefined)[]> =>
+    (
+      await t.db.query<{ detail: { linkedStudents?: { added: string[]; removed: string[] } } }>(
+        'select detail from audit_events where action = $1 and target_id = $2 order by id',
+        [action, userId],
+      )
+    ).map((r) => r.detail.linkedStudents)
+  const sorted = (xs: string[]): string[] => [...xs].sort(byNumber)
 
   beforeAll(async () => {
     t = await bootUsersApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000', THROTTLE_ADMIN_READ_PER_MINUTE: '100000' } })
@@ -52,6 +61,10 @@ describe('admin users: parent links (SW2-08)', () => {
     expect(await stored(created.id)).toEqual(want)
     const detail = detailOf(await admin.get(`/admin/users/${created.id}`))
     expect(ids(detail.linkedStudents)).toEqual(want)
+    // G4 S1: the audit row carries the student ids added (ids only), nothing removed.
+    const [row] = await auditLinks('users.created', created.id)
+    expect(sorted(row?.added ?? [])).toEqual(want)
+    expect(row?.removed).toEqual([])
   })
 
   it('create without linkedStudentIds, or with an empty list, stores nothing', async () => {
@@ -61,6 +74,9 @@ describe('admin users: parent links (SW2-08)', () => {
     expect(b.linkedStudents).toEqual([])
     expect(await stored(a.id)).toEqual([])
     expect(await stored(b.id)).toEqual([])
+    // No change, no `linkedStudents` key in the audit row.
+    expect(await auditLinks('users.created', a.id)).toEqual([undefined])
+    expect(await auditLinks('users.created', b.id)).toEqual([undefined])
   })
 
   it('a duplicate id in the list is stored once', async () => {
@@ -89,6 +105,37 @@ describe('admin users: parent links (SW2-08)', () => {
     const cleared = await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Baru', linkedStudentIds: [] })
     expect(detailOf(cleared).linkedStudents).toEqual([])
     expect(await stored(pid)).toEqual([])
+
+    // G4 S1: create (added 0,1) -> replace (added 2, removed 0) -> absent list (no key) -> clear (removed 1,2).
+    const audit = await auditLinks('users.updated', pid)
+    expect(audit).toHaveLength(3)
+    expect(audit[0]).toEqual({ added: [own[2]], removed: [own[0]] })
+    expect(audit[1]).toBeUndefined()
+    expect(audit[2] && { added: audit[2].added, removed: sorted(audit[2].removed) }).toEqual({ added: [], removed: want })
+    const [made] = await auditLinks('users.created', pid)
+    expect(made && { added: sorted(made.added), removed: made.removed }).toEqual({ added: [own[0] as string, own[1] as string].sort(byNumber), removed: [] })
+  })
+
+  it('an update that sends the same list changes nothing and writes no `linkedStudents` audit key', async () => {
+    const pid = CreatedUserSchema.parse((await parent({ linkedStudentIds: [own[0]] })).body.data).id
+    const res = await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[0]] })
+    expect(res.status).toBe(200)
+    expect(await auditLinks('users.updated', pid)).toEqual([undefined])
+  })
+
+  it('an admin saving a list replaces every link, also one made by the invite flow that is not in the list', async () => {
+    const pid = CreatedUserSchema.parse((await parent({ linkedStudentIds: [own[0]] })).body.data).id
+    await t.db.query(`insert into parent_links (parent_id, student_id, relationship) values ($1, $2, 'Ibu')`, [pid, own[2]])
+    await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[0]] })
+    expect(await stored(pid)).toEqual([own[0]])
+  })
+
+  it('a kept link retains its relationship', async () => {
+    const pid = CreatedUserSchema.parse((await parent()).body.data).id
+    await t.db.query(`insert into parent_links (parent_id, student_id, relationship) values ($1, $2, 'Ibu')`, [pid, own[0]])
+    await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[0], own[1]] })
+    const rel = await t.db.query<{ r: string | null }>('select relationship r from parent_links where parent_id = $1 and student_id = $2', [pid, own[0]])
+    expect(rel[0]?.r).toBe('Ibu')
   })
 
   it('an unknown id, or a user that is not a student, is still 422 and writes nothing', async () => {
@@ -123,6 +170,25 @@ describe('admin users: parent links (SW2-08)', () => {
       const want = [own[1] as string, own[2] as string].sort(byNumber)
       expect(ids(detailOf(res).linkedStudents)).toEqual(want)
       expect(await stored(pid)).toEqual(want)
+    })
+
+    it('cannot create a parent at all: 403', async () => {
+      const res = await sa.post('/admin/users', { roles: ['parent'], name: 'Ibu Sekolah', email: 'ibu.sekolah@ujian.test', linkedStudentIds: [own[0]] })
+      expect(res.status, JSON.stringify(res.body)).toBe(403)
+      expect((await t.db.query('select 1 from users where email = $1', ['ibu.sekolah@ujian.test'])).length).toBe(0)
+    })
+
+    it('saving [] removes the own-school links; the parent is then hidden from it (404) and only an admin can relink', async () => {
+      const pid = CreatedUserSchema.parse((await parent({ linkedStudentIds: [own[0]] })).body.data).id
+      const res = await sa.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(detailOf(res).linkedStudents).toEqual([])
+      expect(await stored(pid)).toEqual([])
+      expect((await sa.get(`/admin/users/${pid}`)).status).toBe(404)
+      expect((await sa.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[1]] })).status).toBe(404)
+      const relinked = await admin.put(`/admin/users/${pid}`, { roles: ['parent'], name: 'Ibu Ujian', linkedStudentIds: [own[1]] })
+      expect(ids(detailOf(relinked).linkedStudents)).toEqual([own[1]])
+      expect((await sa.get(`/admin/users/${pid}`)).status).toBe(200)
     })
 
     it('cannot link a student of another school: 422 (like an unknown id), nothing changes', async () => {

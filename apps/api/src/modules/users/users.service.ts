@@ -38,6 +38,11 @@ import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.consta
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
 import { UsersRepository, uniqueField, type UserRecord } from './users.repository'
 
+type LinkChange = { added: string[]; removed: string[] }
+/** Audit `details` of a link change: student ids only (no names), and no key at all when nothing changed. */
+const linkDetails = (c: LinkChange | null): { linkedStudents?: LinkChange } =>
+  c !== null && (c.added.length > 0 || c.removed.length > 0) ? { linkedStudents: c } : {}
+
 const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 const SORT_LOCALE = 'ms'
 const byNameThenId = (a: { name: string; id: string }, b: { name: string; id: string }): number =>
@@ -205,11 +210,12 @@ export class UsersService {
       await this.users.setRoles(newId, roles, now)
       await this.users.setAdminScope(newId, roles.includes('admin'), now)
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(newId, ppd, now)
-      if (roles.includes('parent') && body.linkedStudentIds !== undefined) await this.storeLinked(caller, newId, body.linkedStudentIds)
+      const linkChange =
+        roles.includes('parent') && body.linkedStudentIds !== undefined ? await this.storeLinked(caller, newId, body.linkedStudentIds) : null
       await this.audit.record({
         tx,
         ...this.auditBase(caller, USER_AUDIT.CREATED, { id: newId, schoolId }),
-        details: { roles },
+        details: { roles, ...linkDetails(linkChange) },
       })
       return newId
     })
@@ -340,7 +346,8 @@ export class UsersService {
       }
       if (roles.includes('ppd_officer') && ppd) await this.users.setPpdScope(id, ppd, now)
       // BR-10 / BR-11: the set is replaced only for a parent that sent it (absent keeps the stored links).
-      if (roles.includes('parent') && body.linkedStudentIds !== undefined) await this.storeLinked(caller, id, body.linkedStudentIds)
+      const linkChange =
+        roles.includes('parent') && body.linkedStudentIds !== undefined ? await this.storeLinked(caller, id, body.linkedStudentIds) : null
 
       // A role, status, school or password change ends the sessions of the target (BE-NFR-39).
       const deactivated = target.isActive && !nextActive
@@ -352,6 +359,7 @@ export class UsersService {
         ...this.auditBase(caller, USER_AUDIT.UPDATED, { id, schoolId }),
         details: {
           changed: changedFields(body),
+          ...linkDetails(linkChange),
           ...(rolesChanged ? { roles } : {}),
           ...(newHash !== null ? { credentialReset: true } : {}),
         },
@@ -529,8 +537,8 @@ export class UsersService {
    * Stores the checked links of a parent in the user write's transaction: the set is replaced by `ids`
    * (AC-M02-15.4). A school_admin only replaces the links of its own school's children, the ones it can see.
    */
-  private async storeLinked(caller: Caller, parentId: string, ids: readonly string[]): Promise<void> {
-    await this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
+  private async storeLinked(caller: Caller, parentId: string, ids: readonly string[]): Promise<LinkChange> {
+    return this.parentLinks.replaceLinksOfParent(parentId, ids, caller.isAdmin ? null : caller.schoolId)
   }
 
   /**
