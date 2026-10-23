@@ -34,6 +34,14 @@ export const EnvSchema = z.object({
   THROTTLE_PUBLIC_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   // BE-06: self-registration attempts per minute per client address (own bucket, tolerant of a school behind one NAT).
   THROTTLE_REGISTER_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  /**
+   * REG-CLOSE: false closes self-registration (POST /auth/register answers 403 REGISTRATION_CLOSED and creates nothing)
+   * until go-live. Default true, so dev, test and staging are unchanged; the production VPS sets false until the 30 Oct switch.
+   */
+  REGISTRATION_OPEN: z
+    .enum(['true', 'false', '1', '0'])
+    .default('true')
+    .transform((v) => v === 'true' || v === '1'),
   THROTTLE_PUBLIC_SEARCH_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
