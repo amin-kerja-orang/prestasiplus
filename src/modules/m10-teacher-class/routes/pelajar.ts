@@ -12,7 +12,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      roles: ['teacher', 'admin'],
+      roles: ['teacher'],
       title: 'Pelajar Saya - PRESTASIPLUS',
       header: { title: 'Pelajar', subtitle: 'Urus pelajar dalam kelas anda' },
       module: 'M10',

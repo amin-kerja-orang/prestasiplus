@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/analisa-item/kelas/:id',
+    path: '/analisa-item/kelas/:id([0-9]+)',
     name: 'm08.analisa-item.kelas.detail',
     component: () => import('../pages/AnalisaItemKelasPage.vue'),
     meta: {

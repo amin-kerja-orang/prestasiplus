@@ -208,7 +208,7 @@ describe('S1 GuruDashboardPage', () => {
 })
 
 describe('S1 route and header', () => {
-  it('registers /guru for teacher and admin in the user shell', async () => {
+  it('registers /guru for the teacher only in the user shell', async () => {
     const { default: routes } = await import('../../routes/dashboard')
     expect(routes).toHaveLength(1)
     const r = routes[0]!
@@ -216,7 +216,7 @@ describe('S1 route and header', () => {
     expect(r.meta).toMatchObject({
       layout: 'user',
       access: 'auth',
-      roles: ['teacher', 'admin'],
+      roles: ['teacher'],
       title: 'Dashboard Guru - PRESTASIPLUS',
     })
   })
