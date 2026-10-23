@@ -550,7 +550,7 @@ The mandatory listing check of step 7 stays, and its entry count now includes th
 
 ## 9. `dump:check` for the operator: running it and reading "rules OK" (24 Oct and the night)
 
-**Added 23 Oct.** The command and its output paths were run against a synthetic MariaDB 10.11 database on 23 Oct (a local fixture built from `apps/api/src/migration/ddl/spec.ts`, 118 spec tables, an account made with `dump:grants`). **Not verified:** MySQL 5.7 and 8 (section 2, item 8 still asks for one clean run against the real server), and any real .cloud data. Section 2, item 8 stays the place for the preflight rules; this section is the operator's exact command and the reading guide.
+**Added 23 Oct.** The command and its output paths were run against a synthetic MariaDB 10.11 database on 23 Oct (a local fixture built from `apps/api/src/migration/ddl/spec.ts`, 127 spec tables, an account made with `dump:grants`). **Not verified:** MySQL 5.7 and 8 (section 2, item 8 still asks for one clean run against the real server), and any real .cloud data. Section 2, item 8 stays the place for the preflight rules; this section is the operator's exact command and the reading guide.
 
 **When.** On 24 Oct before the anonymised rehearsal sitting (A1), and again as the last look in B2 of the night (section 8, step 4). It reads **no rows**: schema information, grants and `COUNT(*)` per table.
 
@@ -624,7 +624,7 @@ Tables present: <n> of <m>. Rows: <total>.
 
 | Table | Present | Engine | Rows | Selected | Redacted | Spec columns missing or not granted | Source columns not in spec |
 |---|---|---|---:|---:|---|---|---|
-| <one row per spec table, 118 on the fixture> |
+| <one row per spec table, 127 on the fixture> |
 
 ## Type notes            (only if there are notes)
 ## Source tables that ddl/spec.ts does not know (never exported)   (only if the count is above 0)
@@ -646,7 +646,7 @@ Post only the exit code and the `ERROR n` numbers on #109 (section 2, item 8). A
 
 ### 9.4 Timings seen on a synthetic fixture (23 Oct, not production scale)
 
-One run of the commands of sections 3, 8 and 9 against a local MariaDB 10.11 database built from the BE-35 `medium` fixture (seed 7): **118 spec tables, 43 of them with rows, 366,026 rows, 96.2 MB raw**. The client reached the database through a local SSH tunnel; the hand-over was an `scp` to a local sshd. Disk, memory and network are those of a small test machine, and the synthetic text compresses about 13 to 1, so **these figures show the order of magnitude and the shape, not the production time**. They are not a measurement of .cloud (**Perlu pengesahan**: the real time comes from the 24 Oct and 27 Oct sittings).
+One run of the commands of sections 3, 8 and 9 against a local MariaDB 10.11 database built from the BE-35 `medium` fixture (seed 7): **118 spec tables (before the FIT-FIX schema fit; the spec now has 127), 43 of them with rows, 366,026 rows, 96.2 MB raw**. The client reached the database through a local SSH tunnel; the hand-over was an `scp` to a local sshd. Disk, memory and network are those of a small test machine, and the synthetic text compresses about 13 to 1, so **these figures show the order of magnitude and the shape, not the production time**. They are not a measurement of .cloud (**Perlu pengesahan**: the real time comes from the 24 Oct and 27 Oct sittings).
 
 | Step | Wall time | Rows per second |
 |---|---|---|
@@ -799,7 +799,7 @@ The readings and the counter files are aggregates. They live in `apps/api/.migra
   Expected: exactly one row, and the host is the one chosen in section 2, item 5 (not `%`, unless the owner confirms the firewall restriction that item 5 makes a MUST).
 - [ ] **2. The grants equal the `dump:grants` output.**
   `SHOW GRANTS FOR 'pp_dump_ro'@'<host>';`
-  Expected: one `GRANT USAGE ON *.*` line, then one `GRANT SELECT (<columns>) ON <db>.<table>` line per table, with the same tables and column names as the script the operator printed with `npm run -s dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<host>'"` (`-s` keeps the npm banner out of a redirected file). The numbers must be equal: the count of `GRANT SELECT (` lines here equals the count of `GRANT` lines of the script (bash `... | grep -c '^GRANT'`; PowerShell `(... | Select-String '^GRANT').Count`). On the fixture both were 118. Column-level grants are preferred; a table-level `GRANT SELECT, SHOW VIEW ON <db>.*` is the fallback, and whether it is allowed is an **open LEAD item** (section 2, item 5).
+  Expected: one `GRANT USAGE ON *.*` line, then one `GRANT SELECT (<columns>) ON <db>.<table>` line per table, with the same tables and column names as the script the operator printed with `npm run -s dump:grants -w @pp/api -- --database <db> --account "'pp_dump_ro'@'<host>'"` (`-s` keeps the npm banner out of a redirected file). The numbers must be equal: the count of `GRANT SELECT (` lines here equals the count of `GRANT` lines of the script (bash `... | grep -c '^GRANT'`; PowerShell `(... | Select-String '^GRANT').Count`). On the fixture both were 118 (before the FIT-FIX schema fit; 127 with the current spec). Column-level grants are preferred; a table-level `GRANT SELECT, SHOW VIEW ON <db>.*` is the fallback, and whether it is allowed is an **open LEAD item** (section 2, item 5).
 - [ ] **3. No privilege beyond `USAGE`, `SELECT`, `SHOW VIEW`, `SHOW DATABASES`, and no grant option.**
   `SELECT privilege_type, is_grantable FROM information_schema.user_privileges WHERE grantee LIKE '%pp_dump_ro%';`
   Expected: one row, `USAGE`, `NO`.

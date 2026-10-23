@@ -24,11 +24,13 @@ export const EXAM_MODE_MAP = {
 } as const
 
 /**
- * `exam_attempts.status` -> v2 status. `selesai` is the value in the BE-35 fixture. An attempt still in progress
- * has no v2 equivalent without a deadline and is UNKNOWN_ENUM (Perlu pengesahan against the real profile).
+ * `attempt_statuses.slug` (reached through `exam_attempts.status_id`) -> v2 status. The real slugs are `in_progress`,
+ * `submitted` and `marked`; a marked attempt is a submitted one that has been graded. `selesai` is the value in the
+ * BE-35 fixture. An attempt still `in_progress` has no v2 equivalent without a deadline and is UNKNOWN_ENUM.
  */
 export const EXAM_STATUS_MAP = {
   submitted: 'submitted',
+  marked: 'submitted',
   selesai: 'submitted',
   completed: 'submitted',
   auto_submitted: 'auto_submitted',

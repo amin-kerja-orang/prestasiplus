@@ -122,7 +122,6 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect((out.sponsors as Rows)[0]?.officer_name).toBe(users[1]?.name)
     expect((out.foster_applications as Rows)[0]?.applicant_name).toBe(users[0]?.name)
     expect((out.sponsors as Rows)[0]?.organisation).toBe((out.schools as Rows)[0]?.name)
-    expect((out.sponsors as Rows)[0]?.user_id).toBe(2)
     // distinct values: all user e-mails that were distinct stay distinct
     const emails = users.map((u) => u.email).filter((e) => e !== null && e !== '')
     expect(new Set(emails).size).toBe(2)

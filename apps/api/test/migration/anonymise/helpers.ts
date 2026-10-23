@@ -119,7 +119,7 @@ export function piiTables(): Record<string, Rows> {
       { id: 5, name: PII.name3, email: '', phone: '', ic: '', username: 'roster5', password: '', role: 'pelajar', school_id: 99, is_active: '1' },
       { id: 6, name: 'Roster Six', email: null, phone: null, ic: null, username: 'roster6', password: null, role: 'pelajar', school_id: null, is_active: '1' },
     ],
-    sponsors: [{ id: 1, user_id: 2, organisation: PII.schoolName, category: 'korporat', officer_name: PII.name2, status: 'aktif' }],
+    sponsors: [{ id: 1, organisation: PII.schoolName, category: 'korporat', officer_name: PII.name2, status: 'aktif' }],
     foster_applications: [{ id: 1, applicant_name: PII.name1, category: 'a', status: 'baru', reason: `Anak saya ${PII.name3} perlukan bantuan` }],
     support_tickets: [{ id: 1, user_id: 1, subject: PII.ticketSubject, status: 'dibuka', admin_reply: null }],
     student_notes: [{ id: 1, user_id: 1, subject_id: 1, title: 'Nota peribadi', body: PII.noteBody }],

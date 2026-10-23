@@ -86,6 +86,12 @@
     "duta_bookings": 0,
     "exam_attempts": 13,
     "part_responses": 0,
+    "attempt_statuses": 3,
+    "paper_statuses": 4,
+    "question_statuses": 4,
+    "answer_modes": 14,
+    "answer_key_kinds": 6,
+    "stimulus_kinds": 15,
     "questions": 24,
     "question_options": 96,
     "structured_questions": 0,
@@ -120,7 +126,10 @@
     "paper_blueprints": 0,
     "blueprint_sections": 0,
     "teacher_reference_documents": 0,
-    "teacher_reference_papers": 3
+    "teacher_reference_papers": 3,
+    "exam_boards": 1,
+    "exam_types": 1,
+    "selection_rules": 2
   },
   "planted": {
     "duplicateEmail": {
@@ -286,7 +295,7 @@
       "source_papers.updated_at": 3,
       "legacy_canonical_map.created_at": 24,
       "legacy_canonical_map.updated_at": 24,
-      "teacher_reference_papers.teacher_reference_document_id": 3,
+      "teacher_reference_papers.teacher_id": 3,
       "teacher_reference_papers.created_at": 3,
       "teacher_reference_papers.updated_at": 3
     },

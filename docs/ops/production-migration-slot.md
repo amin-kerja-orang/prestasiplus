@@ -99,7 +99,7 @@ The rehearsal "stage" pattern, with production rules:
 - **Copy.** The two schemas go from the throwaway cluster into the target with `pg_dump -Fc -n staging_cloud -n
   archive_cloud | pg_restore`, after the old copies in the target are dropped. The pipe stays on this host
   (container to container), so no network transfer is involved. The table counts must be equal. The cutover plan
-  expects 83 tables in `staging_cloud` and 35 in `archive_cloud`; any other number is a STOP (exit 4,
+  expects 89 tables in `staging_cloud` and 38 in `archive_cloud`; any other number is a STOP (exit 4,
   `STAGE COPY COUNTS DIFFER`), unless the LEAD approved another pair in `PP_STAGE_EXPECT`.
 - **Roles (P3, DB-ROLES #227).** The drop, the restore and every read of the target in `slot.sh` run as the stage-only
   role `pp_stager`, over the db container's local socket (no password). `copy` runs `deploy/vps/db-roles.sh apply`
@@ -284,7 +284,7 @@ Step ids are the cutover plan's section 4.0 (the old ids A4, A12 and B11 to B13 
 | A5 (28 Oct) | after the final schema migrations: `restore-point.sh take pre_etl`, `take pre_delta`, `verify pre_etl --expect-migrations repo` (and `pre_delta`); `pitr.sh base --label pre_etl`; `slot.sh gonogo` | |
 | B0 (29 Oct 00:00) | one manual `backup.sh`; timers stopped (`pp-backup`, `pp-restore-drill`, `pp-cert-renew`); `slot.sh gonogo`; `slot.sh throwaway-up` | (the dump operator runs the card alone) |
 | B3 | receive, check the sha256, decrypt into `PP_STAGE_DIR` | |
-| B4-B5 | `slot.sh load`, `copy` (83/35 or STOP), `throwaway-down`, `wipe-dump` | B4 freeze proof |
+| B4-B5 | `slot.sh load`, `copy` (89/38 or STOP), `throwaway-down`, `wipe-dump` | B4 freeze proof |
 | B6-B8 | watches `docker stats`, disk, `pitr.sh status` | `slot.sh etl staging:profile`, `migrate:all --dry-run`, `--apply` (with `--files-dir`), `migrate:verify` |
 | B9 | `slot.sh gonogo` output pasted (as text); the last line must be `gonogo: complete` | verify counts as text |
 | B10 | timers started again (all three) | morning report |
@@ -356,7 +356,7 @@ replaced by a stand-in that maps `docker compose exec db` and `docker exec <thro
 - **`slot.sh`:**
   - `load` refuses an anonymised, a synthetic, an unmarked, a `large_integers` and a `.partial` dump;
   - `load` builds the `compose run` line (`NODE_ENV=development`, `PP_ALLOW_STAGING_RESET=1`, URL through an env file);
-  - `copy` gives equal table counts and warned when they are not 83/35 (a STOP since round 4);
+  - `copy` gives equal table counts and warned when they are not 89/38 (a STOP since round 4);
   - the `etl` env composition is right (the apply gate only with `--apply`, both gates for rollback, `migrate:core`
     refused);
   - `gonogo` lines, `throwaway-down`, `wipe-dump`;

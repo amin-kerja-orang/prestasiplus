@@ -177,6 +177,8 @@ describe('no personal value in the report (AC3 grep test)', () => {
     for (const spec of TABLES) {
       const file = join(FIXTURE_DIR, `${spec.name}.ndjson`)
       if (!existsSync(file)) continue
+      // Lookup tables (id, slug) hold vocabulary codes such as `published`, not personal values.
+      if (spec.columns.length === 2 && spec.columns[1]?.name === 'slug') continue
       const enumCols = new Set(spec.columns.filter((c) => c.enum).map((c) => c.name))
       for (const line of readFileSync(file, 'utf8').trim().split('\n')) {
         for (const [col, v] of Object.entries(JSON.parse(line) as Record<string, unknown>)) {
