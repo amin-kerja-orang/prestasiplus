@@ -4,6 +4,8 @@
  * AC 13). The school admin verifies teachers who registered themselves: one list (unpaged, oldest first) and one
  * action, "Sahkan", behind a confirm. No reject, search, filter or pager (the contract has none). After a verify the
  * list is reloaded from the server; focus moves to the next row's button, else the previous row's, else the heading.
+ * #208 follow-up (spec section 16): the registrant's e-mail and phone are unchecked, so a notice above the list and the
+ * confirm dialog both say so, and the dialog repeats the details the admin can check before verifying.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -33,6 +35,7 @@ import {
   GONE_MESSAGE,
   PENDING_TITLE,
   PENDING_UNIT,
+  UNCHECKED_NOTICE,
   confirmMessage,
   emailText,
   focusTargetAfter,
@@ -146,7 +149,7 @@ async function verify(row: Item): Promise<void> {
   if (verifyingId.value !== null) return
   const ok = await confirm({
     title: 'Sahkan Guru',
-    message: confirmMessage(row.name),
+    message: confirmMessage(row),
     confirmLabel: 'Sahkan',
     tone: 'primary',
   })
@@ -216,6 +219,15 @@ async function verify(row: Item): Promise<void> {
           <DsText variant="body" tone="muted" data-testid="pt-found">
             <template v-if="data">{{ foundText(formatCount(count)) }}</template>
           </DsText>
+
+          <UAlert
+            v-if="count > 0"
+            color="warning"
+            variant="subtle"
+            icon="i-ph-warning"
+            :description="UNCHECKED_NOTICE"
+            data-testid="pt-notice"
+          />
 
           <DsPanel v-if="!firstLoad && count === 0" data-testid="pt-empty">
             <DsEmptyState
