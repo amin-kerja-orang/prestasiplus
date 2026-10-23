@@ -259,14 +259,20 @@ export class UsersService {
       }
       if (roles.includes('school_admin') && schoolId === null && fields.schoolId === undefined) fields.schoolId = FIELD_MESSAGES.schoolRequired
 
-      // grade: required for a student that would have none.
+      // grade: required for a student that would have none. Not for a request that only resets the
+      // password and/or toggles the status of a student that already is one (a migrated pupil often has
+      // no grade, and the reset is the only way to give such an account a password; Q13, R73).
       let grade: number | null | undefined
       if (isStudent) {
+        const credentialOnly =
+          target.grade === null && this.isCredentialOnlyChange(body, target, schoolId, body.isActive === undefined ? target.isActive : toBool(body.isActive))
         if (body.grade !== undefined) {
           const g = body.grade === null ? null : gradeOf(body.grade)
-          if (g === null) fields.grade = FIELD_MESSAGES.gradeRequired
-          else grade = g
-        } else if (target.grade === null) {
+          if (g === null) {
+            // An explicit null keeps a grade-less pupil grade-less only for a credential-only request.
+            if (!(body.grade === null && credentialOnly)) fields.grade = FIELD_MESSAGES.gradeRequired
+          } else grade = g
+        } else if (target.grade === null && !credentialOnly) {
           fields.grade = FIELD_MESSAGES.gradeRequired
         }
       }
@@ -451,6 +457,30 @@ export class UsersService {
       if (isForeignKeyBlock(err)) throw ApiError.of('CONFLICT')
       throw err
     }
+  }
+
+  /**
+   * True when `body` changes nothing of the profile of `target`: same roles, name and school, and every
+   * other profile key absent or equal to the stored value, and it resets the password or flips the status
+   * (Q13, R73). Such a request on a grade-less student does not need a grade. Deliberately narrow: any
+   * sent IC number (other than a blank on a pupil without one), PPD scope or linked student, and any differing value, makes it a profile edit.
+   */
+  private isCredentialOnlyChange(body: UpdateUserRequest, target: UserRecord, schoolId: string | null, nextActive: boolean): boolean {
+    if (body.resetPassword !== true && nextActive === target.isActive) return false
+    const same = (sent: string | null | undefined, stored: string | null): boolean => sent === undefined || blankToNull(sent) === stored
+    return (
+      body.name === target.name &&
+      body.roles.length === target.roles.length &&
+      body.roles.every((r) => target.roles.includes(r)) &&
+      schoolId === target.schoolId &&
+      same(body.email, target.email) &&
+      same(body.username, target.username) &&
+      same(body.phone, target.phone) &&
+      (body.icNumber === undefined || (blankToNull(body.icNumber) === null && target.icMasked === null)) &&
+      blankToNull(body.ppdState) === null &&
+      blankToNull(body.ppdDistrict) === null &&
+      (body.linkedStudentIds === undefined || body.linkedStudentIds.length === 0)
+    )
   }
 
   private assertAssignable(caller: Caller, roles: readonly RoleCode[]): void {
