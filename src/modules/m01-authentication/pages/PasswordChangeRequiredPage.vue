@@ -7,20 +7,23 @@
  * success, `GET /api/session`: the change rotates the session, so the CSRF token and the flag must be
  * read again. Then it goes to the landing path. Any signed-in role may open it. Native validation
  * only; the server's field errors show in the red alert (`errorLines`). The notice is the API's own
- * `PASSWORD_CHANGE_REQUIRED` text; the rest of the copy is "Perlu pengesahan".
+ * `PASSWORD_CHANGE_REQUIRED` text; the rest of the copy is "Perlu pengesahan". If the password changed
+ * but the new session cannot be read, the stored CSRF token is stale: the page signs out (best effort
+ * on the server, always locally) and goes to `/login`.
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useFlash } from '@/composables'
 import { DsFormField, DsStack } from '@/ds'
+import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 
-import { changePassword, getSession } from '../api'
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import PasswordCard from '../components/auth/PasswordCard.vue'
 import PasswordInput from '../components/auth/PasswordInput.vue'
 import { errorLines } from '../lib/error-lines'
+import { changePasswordAndRefresh } from '../lib/password-change'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -35,9 +38,9 @@ const errors = ref<string[]>([])
 async function submit(): Promise<void> {
   loading.value = true
   errors.value = []
-  let status: string
+  let result: Awaited<ReturnType<typeof changePasswordAndRefresh>>
   try {
-    status = await changePassword({
+    result = await changePasswordAndRefresh({
       currentPassword: currentPassword.value,
       password: password.value,
       passwordConfirmation: confirmation.value,
@@ -49,18 +52,15 @@ async function submit(): Promise<void> {
     loading.value = false
     return
   }
-  try {
-    // The change rotated the session: read the new CSRF token (and the cleared flag) from the server.
-    const fresh = await getSession(session.remember)
-    if (fresh) session.setSession(fresh)
-  } catch {
+  if (!result.refreshed) {
     // The password is changed but the new session could not be read: sign in again.
-    session.clear()
+    await session.logout()
+    useNotificationBadgeStore().reset()
     loading.value = false
     await router.replace('/login')
     return
   }
-  flash.success(status)
+  flash.success(result.status)
   loading.value = false
   await router.push(session.landingPath ?? '/')
 }

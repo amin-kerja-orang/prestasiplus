@@ -7,6 +7,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { api, ApiError } from '@/api'
 import { isPathInScope, PROTOTYPE_ROLES } from '@/app/prototype-scope'
 import { useFlashStore } from '@/stores/flash'
+import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 
 import type { ClientSession } from '../../api'
@@ -160,13 +161,47 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
     expect((w.get('[data-testid=change-new]').element as HTMLInputElement).value).toBe('')
   })
 
-  it('signs in again when the session cannot be read after the change', async () => {
+  it('signs out (server best effort, local always) and goes to /login when the session cannot be read', async () => {
     apiMocks.changePassword.mockResolvedValue('Kata laluan berjaya ditukar.')
     apiMocks.getSession.mockRejectedValue(new Error('offline'))
+    // The server logout answers 403 here (stale CSRF): the local session is cleared anyway.
+    const post = vi.spyOn(api, 'post').mockRejectedValue(new Error('403'))
+    useNotificationBadgeStore().set(5)
     const w = await render()
     await fillAndSubmit(w)
+    expect(post).toHaveBeenCalledWith('/api/auth/logout')
     expect(useSessionStore().isLoggedIn).toBe(false)
+    expect(useNotificationBadgeStore().count).toBe(0)
     expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('keeps the remember flag of the signed-in session when it reads the new one', async () => {
+    useSessionStore().setSession({ ...OLD, remember: true })
+    apiMocks.changePassword.mockResolvedValue('Kata laluan berjaya ditukar.')
+    apiMocks.getSession.mockResolvedValue({ ...FRESH, remember: true })
+    const w = await render()
+    await fillAndSubmit(w)
+    expect(apiMocks.getSession).toHaveBeenCalledWith(true)
+    expect(useSessionStore().remember).toBe(true)
+    expect(useSessionStore().token).toBe('csrf-new')
+  })
+
+  it('shows the server throttle text on a 429 and stays on the page', async () => {
+    apiMocks.changePassword.mockRejectedValue(
+      new ApiError({
+        status: 429,
+        code: 'RATE_LIMITED',
+        message: 'Terlalu banyak percubaan. Sila cuba lagi sebentar.',
+        retryAfter: 60,
+      }),
+    )
+    const w = await render()
+    await fillAndSubmit(w)
+    expect(w.get('[data-testid=change-alert]').text()).toContain(
+      'Terlalu banyak percubaan. Sila cuba lagi sebentar.',
+    )
+    expect(apiMocks.getSession).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/password/change')
   })
 
   it('never calls any other API than the password change and the session read', async () => {

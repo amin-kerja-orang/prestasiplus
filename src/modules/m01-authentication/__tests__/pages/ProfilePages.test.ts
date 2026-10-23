@@ -16,6 +16,7 @@ const apiMocks = vi.hoisted(() => ({
   updateProfile: vi.fn(),
   uploadPicture: vi.fn(),
   changePassword: vi.fn(),
+  getSession: vi.fn(),
 }))
 vi.mock('../../api', () => apiMocks)
 
@@ -447,6 +448,36 @@ describe('S8 password card (FR-M01-45)', () => {
     })
     expect((w.get('[data-testid=password-current]').element as HTMLInputElement).value).toBe('')
     expect((w.get('[data-testid=password-new]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('re-reads the session after the change: the API rotated it, so the CSRF token is new (DV-27)', async () => {
+    apiMocks.changePassword.mockResolvedValue('Kata laluan berjaya dikemaskini.')
+    const fresh = {
+      token: 'csrf-new',
+      csrf: 'csrf-new',
+      remember: false,
+      expiresAt: '2099-01-01T00:00:00+08:00',
+      user: USER,
+    }
+    apiMocks.getSession.mockResolvedValue(fresh)
+    const w = await render(ProfileEditPage)
+    await w.get('[data-testid=password-current]').setValue('Demo1234')
+    await w.get('[data-testid=password-new]').setValue('Baru1234')
+    await w.get('[data-testid=password-confirm]').setValue('Baru1234')
+    await w.get('[data-testid=password-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.getSession).toHaveBeenCalledWith(false)
+    expect(useSessionStore().auth?.csrf).toBe('csrf-new')
+    expect(useFlashStore().current?.type).toBe('success')
+  })
+
+  it('still shows the success flash when the session cannot be re-read (the password changed)', async () => {
+    apiMocks.changePassword.mockResolvedValue('Kata laluan berjaya dikemaskini.')
+    apiMocks.getSession.mockRejectedValue(new Error('offline'))
+    const w = await render(ProfileEditPage)
+    await w.get('[data-testid=password-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current?.type).toBe('success')
   })
 
   it('shows the server error and keeps the typed values', async () => {

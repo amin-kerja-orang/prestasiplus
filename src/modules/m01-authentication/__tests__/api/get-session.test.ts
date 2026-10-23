@@ -5,7 +5,14 @@ import { api } from '@/api'
 import { getSession } from '../../api'
 
 const API_SESSION = {
-  user: { id: '42', name: 'Pelajar Demo', email: null, username: 'pelajar', avatarUrl: null, schoolId: null },
+  user: {
+    id: '42',
+    name: 'Pelajar Demo',
+    email: null,
+    username: 'pelajar',
+    avatarUrl: null,
+    schoolId: null,
+  },
   roles: [{ role: 'student' }],
   active: { role: 'student' },
   mode: null,
@@ -37,9 +44,15 @@ describe('getSession (AM2-A1)', () => {
     expect(get).not.toHaveBeenCalled()
   })
 
-  it('resolves null for a body that is not the API session', async () => {
+  it('throws in http mode for a 200 body that is not the API session (the caller failure path runs)', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     vi.spyOn(api, 'get').mockResolvedValue({ token: 't' })
-    expect(await getSession(false)).toBeNull()
+    await expect(getSession(false)).rejects.toThrow('unexpected response body')
+  })
+
+  it('lets an API error propagate', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    vi.spyOn(api, 'get').mockRejectedValue(new Error('offline'))
+    await expect(getSession(false)).rejects.toThrow('offline')
   })
 })
