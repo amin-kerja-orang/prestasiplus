@@ -8,7 +8,7 @@ import type pg from 'pg'
 
 import { STAGING_SCHEMA } from '../ddl/spec'
 import { ApplyGuardError } from '../kit/apply-guard'
-import { hashInput } from '../kit/sql'
+import { hashInput, tableDigest } from '../kit/sql'
 import { Runner, type AnyEntityStep, type RunReport } from '../kit/runner'
 import type { RunMode } from '../kit/types'
 import { DUMMY_ARGON2_HASH, NOT_A_HASH, dummyBcryptHash } from '../anonymise/passwords'
@@ -85,7 +85,11 @@ export async function assertNotSyntheticInProduction(
   }
 }
 
-/** A fingerprint of the staged input: row count and hash of the loader's row hashes, per table the command reads. */
+/**
+ * A fingerprint of the staged input: row count and a constant-memory digest of the loader's row hashes (`tableDigest`, shared with
+ * BE-29), per table the command reads. Input hashes stored before MIG-07 used `md5(string_agg(...))`; there were no production
+ * runs, so they are not kept valid: runs made before this change must be re-run, dry-run then apply.
+ */
 export async function stagingFingerprint(pool: Pick<pg.Pool, 'query'>): Promise<string[]> {
   const tables = [
     'education_levels', 'subjects', 'chapters', 'topics', 'schools', 'users', 'parent_student',
@@ -93,10 +97,8 @@ export async function stagingFingerprint(pool: Pick<pg.Pool, 'query'>): Promise<
   ]
   const parts: string[] = []
   for (const t of tables) {
-    const res = await pool.query<{ n: string; h: string | null }>(
-      `SELECT count(*)::text AS n, md5(string_agg(coalesce("_row_hash", ''), ',' ORDER BY "_row_hash")) AS h FROM "${STAGING_SCHEMA}"."${t}"`,
-    )
-    parts.push(`${t}=${res.rows[0]?.n}:${res.rows[0]?.h ?? ''}`)
+    const { n, h } = await tableDigest(pool, STAGING_SCHEMA, t)
+    parts.push(`${t}=${n}:${h}`)
   }
   return parts
 }

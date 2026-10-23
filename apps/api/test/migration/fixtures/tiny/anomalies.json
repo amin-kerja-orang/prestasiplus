@@ -176,6 +176,9 @@
     "redactedSecrets": {
       "users.remember_token": 3,
       "users.parent_invite_token": 2
+    },
+    "outOfRange": {
+      "feedback.score": 1
     }
   },
   "scanned": {

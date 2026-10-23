@@ -23,6 +23,11 @@ export const ACCOUNT_AUDIT = {
 /** REG-CLOSE: the 403 code and BM message of a closed self-registration (`REGISTRATION_OPEN=false`). */
 export const ACCOUNT_REGISTRATION_CLOSED_CODE = 'REGISTRATION_CLOSED'
 export const ACCOUNT_REGISTRATION_CLOSED_MESSAGE = 'Pendaftaran akaun baharu ditutup buat sementara waktu. Sila cuba lagi kemudian.'
+/**
+ * Laravel `different:current_password` text, on field `password` of `PUT /me/password` when the new password
+ * equals the current one. Local to the API: the contract is LEAD-owned (AGENT-SYNC rule 3), SRS SEC-M01-21(c).
+ */
+export const PASSWORD_MUST_DIFFER_MESSAGE = 'The password field and current password must be different.'
 
 /**
  * `PUT /me` school change (SW2-12): the student's username already exists in the chosen school (usernames are unique
