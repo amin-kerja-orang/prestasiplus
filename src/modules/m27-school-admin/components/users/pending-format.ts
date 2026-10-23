@@ -1,4 +1,4 @@
-/** Copy and helpers of S7b "Guru Menunggu Pengesahan" (docs/design/m27-pending-teacher-verify.md, sections 5 and 8). */
+/** Copy and helpers of S7b "Guru Menunggu Pengesahan" (docs/design/m27-pending-teacher-verify.md, sections 5, 8 and 16). */
 
 import { isApiError } from '@/api'
 
@@ -13,8 +13,37 @@ export const foundText = (formattedCount: string): string => `${formattedCount} 
 /** Copy 10a: the accessible name of a row button (starts with the visible label). */
 export const verifyLabel = (name: string): string => `Sahkan ${name}`
 
-export const confirmMessage = (name: string): string =>
-  `Sahkan ${name} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan.`
+/**
+ * Copy 24 (#208 follow-up): the e-mail and phone of a pending row are typed in by the registrant and nobody has
+ * checked them, so the page says so above the list and the admin verifies only a person they know works here.
+ */
+export const UNCHECKED_NOTICE =
+  'Emel dan telefon di bawah diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya guru yang anda pasti bertugas di sekolah ini.'
+
+/** The details the dialog repeats: the e-mail and phone already formatted for display ("-" when missing). */
+export interface ConfirmDetails {
+  name: string
+  email: string
+  phone: string
+  requestedAt: string
+}
+
+const shown = (value: string): boolean => value !== '' && value !== '-'
+
+/**
+ * Copy 12 (final, #208 follow-up): the dialog repeats what the admin can check (e-mail, phone, registration date;
+ * a missing value is left out rather than shown as "-") and warns that the registrant typed them in.
+ */
+export function confirmMessage(row: ConfirmDetails): string {
+  const parts = [`Sahkan ${row.name} sebagai guru sekolah ini?`]
+  if (shown(row.email)) parts.push(`Emel: ${row.email}.`)
+  if (shown(row.phone)) parts.push(`Telefon: ${row.phone}.`)
+  parts.push(`Tarikh Daftar: ${row.requestedAt}.`)
+  parts.push('Butiran ini diisi sendiri oleh pendaftar dan belum disemak.')
+  parts.push('Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini.')
+  parts.push('Akaun akan diaktifkan dan guru akan dimaklumkan.')
+  return parts.join(' ')
+}
 
 /** The row is no longer pending (unknown, other school, already verified): contract 404, defensive 409. */
 export const isGone = (err: unknown): boolean => isApiError(err) && (err.status === 404 || err.status === 409)

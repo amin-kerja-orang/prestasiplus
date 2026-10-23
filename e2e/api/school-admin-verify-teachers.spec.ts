@@ -36,8 +36,19 @@ const LIST_PATH = '/admin-sekolah/guru'
 const PENDING_PATH = '/admin-sekolah/guru/menunggu'
 const VERIFIED_FLASH = 'Guru berjaya disahkan.'
 const GONE_FLASH = 'Guru ini tidak lagi menunggu pengesahan. Senarai telah dikemas kini.'
-const CONFIRM_TEXT = (name: string) =>
-  `Sahkan ${name} sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan.`
+const CONFIRM_TAIL =
+  'Butiran ini diisi sendiri oleh pendaftar dan belum disemak. ' +
+  'Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan.'
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** The dialog repeats the registrant's details (a missing one is left out) and warns they are unchecked. */
+const CONFIRM_RE = (name: string, email: string, phone: string | null) =>
+  new RegExp(
+    `^Sahkan ${escapeRe(name)} sebagai guru sekolah ini\\? Emel: ${escapeRe(email)}\\. ` +
+      (phone ? `Telefon: ${escapeRe(phone)}\\. ` : '') +
+      `Tarikh Daftar: \\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}\\. ${escapeRe(CONFIRM_TAIL)}$`,
+  )
+const UNCHECKED_NOTICE =
+  'Emel dan telefon di bawah diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya guru yang anda pasti bertugas di sekolah ini.'
 const EMPTY_TITLE = 'Tiada guru menunggu pengesahan'
 const EMPTY_TEXT = 'Guru yang mendaftar sendiri dan memilih sekolah ini akan muncul di sini.'
 const MD_MIN_WIDTH = 768
@@ -180,6 +191,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
     await expect(page.getByTestId('pt-count-card')).toContainText(String(remaining))
     await expect(page.getByTestId('pt-count-card')).toContainText('Menunggu Pengesahan')
     await expect(page.getByTestId('pt-found')).toHaveText(found(remaining))
+    await expect(page.getByTestId('pt-notice')).toHaveText(UNCHECKED_NOTICE)
     await expect(page.locator('[data-testid="pt-verify"]:visible')).toHaveCount(remaining)
 
     const tableLayout = viewportWidth(page) >= MD_MIN_WIDTH
@@ -233,7 +245,9 @@ test.describe('school admin verifies self-registered teachers @api', () => {
       await verifyButton(page, satu.id).click()
       await expect(dialog).toBeVisible()
       await expect(dialog).toContainText('Sahkan Guru')
-      await expect(dialog).toContainText(CONFIRM_TEXT(names.satu))
+      await expect(dialog.locator('[data-ds="confirm-message"]')).toHaveText(
+        CONFIRM_RE(names.satu, email('satu'), '0123456789'),
+      )
       await expect(dialog.getByRole('button', { name: 'Sahkan', exact: true })).toBeVisible()
       await expect(dialog.getByRole('button', { name: 'Batal' })).toBeVisible()
       if (how === 'Batal') await dialog.getByRole('button', { name: 'Batal' }).click()
@@ -290,6 +304,8 @@ test.describe('school admin verifies self-registered teachers @api', () => {
 
     // --- Step 5c: verify the only row -> empty state, focus on the h1 ----------------------------------------
     await verifyButton(page, dua.id).click()
+    // "Dua" registered without a phone: the dialog leaves the phone out.
+    await expect(dialog.locator('[data-ds="confirm-message"]')).toHaveText(CONFIRM_RE(names.dua, email('dua'), null))
     await dialog.getByRole('button', { name: 'Sahkan', exact: true }).click()
     await expect(flashText(page)).toContainText(VERIFIED_FLASH)
     remaining -= 1
@@ -298,6 +314,7 @@ test.describe('school admin verifies self-registered teachers @api', () => {
       const empty = page.getByTestId('pt-empty')
       await expect(empty).toContainText(EMPTY_TITLE)
       await expect(empty).toContainText(EMPTY_TEXT)
+      await expect(page.getByTestId('pt-notice')).toHaveCount(0)
       await expect(page.getByTestId('pt-heading')).toBeFocused()
     }
     await expectNoHScroll(page)

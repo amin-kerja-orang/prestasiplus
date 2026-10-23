@@ -16,7 +16,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { PendingTeacherRow } from '../../api/pending-teachers'
 import PendingTeacherCallout from '../../components/users/PendingTeacherCallout.vue'
-import { focusTargetAfter } from '../../components/users/pending-format'
+import { UNCHECKED_NOTICE, confirmMessage, focusTargetAfter } from '../../components/users/pending-format'
 import GuruMenungguPage from '../../pages/GuruMenungguPage.vue'
 import guru from '../../routes/guru'
 import { has, mountAt, text } from './helpers'
@@ -119,6 +119,22 @@ describe('S7b list', () => {
     expect(w.findAll('h1')).toHaveLength(1)
   })
 
+  it('warns above the list that the e-mail and phone are unchecked (#208 follow-up)', async () => {
+    const { wrapper: w } = await mountPage()
+    expect(text(w, 'pt-notice')).toBe(UNCHECKED_NOTICE)
+    expect(UNCHECKED_NOTICE).toBe(
+      'Emel dan telefon di bawah diisi sendiri oleh pendaftar dan belum disemak. Sahkan hanya guru yang anda pasti bertugas di sekolah ini.',
+    )
+  })
+
+  it('hides the unchecked-details notice when nothing is pending or the load failed', async () => {
+    const { wrapper: empty } = await mountPage([])
+    expect(has(empty, 'pt-notice')).toBe(false)
+    api.fetchPendingTeachers.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }))
+    const { wrapper: failed } = await mountAt(GuruMenungguPage, '/admin-sekolah/guru/menunggu')
+    expect(has(failed, 'pt-notice')).toBe(false)
+  })
+
   it('shows the empty state with its copy and no table', async () => {
     const { wrapper: w } = await mountPage([])
     expect(has(w, 'pt-empty')).toBe(true)
@@ -161,7 +177,9 @@ describe('S7b verify', () => {
     await verifyButtons(w)[0]!.trigger('click')
     await flushPromises()
     expect(confirm).toHaveBeenCalledWith(
-      'Sahkan Guru Contoh Satu sebagai guru sekolah ini? Akaun akan diaktifkan dan guru akan dimaklumkan.',
+      'Sahkan Guru Contoh Satu sebagai guru sekolah ini? Emel: satu@demo.test. Telefon: 0123456789. ' +
+        'Tarikh Daftar: 20/10/2026 09:14. Butiran ini diisi sendiri oleh pendaftar dan belum disemak. ' +
+        'Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan.',
     )
     expect(api.verifyPendingTeacher).not.toHaveBeenCalled()
   })
@@ -318,5 +336,39 @@ describe('S7b route', () => {
   it('sends a guest to the login and lets a school_admin in', () => {
     expect(decideAccess(to, { isLoggedIn: false, role: null, landingPath: null })).toEqual({ kind: 'redirect', to: '/login' })
     expect(decideAccess(to, { isLoggedIn: true, role: 'school_admin', landingPath: '/admin-sekolah' })).toEqual({ kind: 'allow' })
+  })
+})
+
+describe('confirmMessage (#208 follow-up)', () => {
+  const tail =
+    'Butiran ini diisi sendiri oleh pendaftar dan belum disemak. ' +
+    'Sahkan hanya jika anda pasti guru ini bertugas di sekolah ini. Akaun akan diaktifkan dan guru akan dimaklumkan.'
+
+  it('repeats the e-mail, phone and registration date the admin can check', () => {
+    expect(
+      confirmMessage({ name: 'Guru Contoh', email: 'guru@demo.test', phone: '0123456789', requestedAt: '20/10/2026 09:14' }),
+    ).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Emel: guru@demo.test. Telefon: 0123456789. Tarikh Daftar: 20/10/2026 09:14. ${tail}`,
+    )
+  })
+
+  it('leaves out a missing e-mail or phone instead of printing "-"', () => {
+    expect(confirmMessage({ name: 'Guru Contoh', email: '-', phone: '-', requestedAt: '20/10/2026 11:02' })).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+    expect(confirmMessage({ name: 'Guru Contoh', email: 'guru@demo.test', phone: '', requestedAt: '20/10/2026 11:02' })).toBe(
+      `Sahkan Guru Contoh sebagai guru sekolah ini? Emel: guru@demo.test. Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+  })
+
+  it('the row dialog for a teacher without contact details still names the teacher and the date', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { wrapper: w } = await mountPage()
+    await verifyButtons(w)[1]!.trigger('click')
+    await flushPromises()
+    expect(confirm).toHaveBeenCalledWith(
+      `Sahkan Guru Contoh Dua sebagai guru sekolah ini? Tarikh Daftar: 20/10/2026 11:02. ${tail}`,
+    )
+    expect(api.verifyPendingTeacher).not.toHaveBeenCalled()
   })
 })
