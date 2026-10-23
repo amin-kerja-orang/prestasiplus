@@ -111,7 +111,7 @@ function setAccepted(text: string): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3" :data-testid="testid ?? 'scheme-editor'">
+  <div class="@container flex min-w-0 flex-col gap-3" :data-testid="testid ?? 'scheme-editor'">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <p class="font-medium">Skema pemarkahan</p>
       <div class="flex gap-1" role="group" aria-label="Jenis skema">
@@ -145,8 +145,8 @@ function setAccepted(text: string): void {
           class="rounded-xl border border-default bg-elevated/40 p-3"
           data-testid="scheme-point"
         >
-          <div class="grid grid-cols-[auto_1fr_auto] items-end gap-2 sm:grid-cols-[6rem_5rem_1fr_auto]">
-            <label class="flex flex-col gap-1 text-sm">
+          <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 @lg:grid-cols-[6rem_5rem_minmax(0,1fr)_auto]">
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
               <span class="text-muted">Kod</span>
               <DsNativeSelect
                 :model-value="p.code"
@@ -156,7 +156,7 @@ function setAccepted(text: string): void {
                 <option v-for="c in codes" :key="c" :value="c" :title="CODE_NAMES[c]">{{ c }}</option>
               </DsNativeSelect>
             </label>
-            <label class="flex flex-col gap-1 text-sm">
+            <label class="flex min-w-0 flex-col gap-1 text-sm">
               <span class="text-muted">Markah</span>
               <UInput
                 :model-value="p.marks"
@@ -167,7 +167,7 @@ function setAccepted(text: string): void {
                 @update:model-value="patch(i, { marks: Number($event) || 0 })"
               />
             </label>
-            <label class="col-span-3 flex flex-col gap-1 text-sm sm:col-span-1">
+            <label class="col-span-3 flex min-w-0 flex-col gap-1 text-sm @lg:col-span-1">
               <span class="text-muted">Penerangan ({{ pointTag(points, i) }})</span>
               <UInput
                 :model-value="p.label"

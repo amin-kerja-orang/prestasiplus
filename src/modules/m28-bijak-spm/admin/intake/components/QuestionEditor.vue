@@ -248,8 +248,8 @@ function insertMath(field: 'stem'): void {
         class="rounded-xl border border-default p-3"
         data-testid="q-part"
       >
-        <div class="grid gap-3 sm:grid-cols-[6rem_1fr_6rem_10rem_auto]">
-          <label class="flex flex-col gap-1 text-sm">
+        <div class="grid grid-cols-1 gap-3 @lg:grid-cols-[6rem_minmax(0,1fr)_6rem]">
+          <label class="flex min-w-0 flex-col gap-1 text-sm">
             <span class="text-muted">Label</span>
             <UInput
               :model-value="p.label"
@@ -257,7 +257,7 @@ function insertMath(field: 'stem'): void {
               @update:model-value="setPart(i, { label: String($event) })"
             />
           </label>
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex min-w-0 flex-col gap-1 text-sm">
             <span class="text-muted">Teks bahagian</span>
             <UInput
               :model-value="p.prompt"
@@ -266,7 +266,7 @@ function insertMath(field: 'stem'): void {
               @update:model-value="setPart(i, { prompt: String($event) })"
             />
           </label>
-          <label class="flex flex-col gap-1 text-sm">
+          <label class="flex min-w-0 flex-col gap-1 text-sm">
             <span class="text-muted">Markah</span>
             <UInput
               :model-value="p.marks"
@@ -277,24 +277,26 @@ function insertMath(field: 'stem'): void {
               @update:model-value="setPart(i, { marks: Number($event) || 0 })"
             />
           </label>
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="text-muted">Mod jawapan</span>
-            <DsNativeSelect
-              :model-value="p.mode"
-              :aria-label="`Mod jawapan ${p.label}`"
-              @update:model-value="setPart(i, { mode: String($event) as LeafKind })"
-            >
-              <option v-for="m in MODES" :key="m.value" :value="m.value">{{ m.label }}</option>
-            </DsNativeSelect>
-          </label>
-          <UButton
-            class="self-end"
-            icon="i-ph-trash"
-            color="error"
-            variant="ghost"
-            :aria-label="`Buang bahagian ${p.label}`"
-            @click="removePart(i)"
-          />
+          <div class="flex min-w-0 items-end gap-2 @lg:col-span-3">
+            <label class="flex min-w-0 flex-1 flex-col gap-1 text-sm @lg:max-w-xs">
+              <span class="text-muted">Mod jawapan</span>
+              <DsNativeSelect
+                :model-value="p.mode"
+                :aria-label="`Mod jawapan ${p.label}`"
+                @update:model-value="setPart(i, { mode: String($event) as LeafKind })"
+              >
+                <option v-for="m in MODES" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </DsNativeSelect>
+            </label>
+            <UButton
+              class="shrink-0"
+              icon="i-ph-trash"
+              color="error"
+              variant="ghost"
+              :aria-label="`Buang bahagian ${p.label}`"
+              @click="removePart(i)"
+            />
+          </div>
         </div>
         <DsText v-if="p.lead?.length" variant="caption" tone="muted" data-testid="part-lead">
           Di bawah: <RichText :text="p.lead.map((l) => `${l.label} ${l.prompt}`).join(' ')" />
