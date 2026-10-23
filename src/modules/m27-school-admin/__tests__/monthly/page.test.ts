@@ -334,3 +334,55 @@ describe('states (FR-M27-48)', () => {
     expect(has(w, 'lb-cards')).toBe(false)
   })
 })
+
+describe('month hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
+  const EMPTY = 'Tiada aktiviti direkodkan buat masa ini'
+  const COHORT = 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
+  const HIDDEN = report({
+    cards: {
+      participationPct: 20,
+      active: 2,
+      registered: 10,
+      answers: 30,
+      perPupil: 15,
+      accuracy: null,
+      sessions: 1,
+    },
+    months: [],
+    total: null,
+    subjects: { strongest: null, weakest: null, rows: [] },
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('http mode, answers but no accuracy and no month row: names the 5-pupil rule', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(HIDDEN)
+    expect(text(w, 'lb-table-empty')).toContain('Tiada data')
+    expect(text(w, 'lb-table-empty')).toContain(COHORT)
+    expect(text(w, 'lb-table-empty')).not.toContain(EMPTY)
+  })
+
+  it('http mode, no answers at all: keeps "Tiada aktiviti direkodkan buat masa ini"', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(report({ ...EMPTY_MONTH }))
+    // FR-M27-83: a month without answers renders the cards only, so the table section is absent.
+    expect(has(w, 'lb-table-empty')).toBe(false)
+  })
+
+  it('http mode, a shown month with rows: no hidden-month copy', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    const w = await mountPage(report())
+    expect(has(w, 'lb-table-empty')).toBe(false)
+    expect(w.text()).not.toContain(COHORT)
+  })
+
+  it('mock mode (replicates live): the empty state is unchanged', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    const w = await mountPage(HIDDEN)
+    expect(text(w, 'lb-table-empty')).toContain(EMPTY)
+    expect(text(w, 'lb-table-empty')).not.toContain(COHORT)
+  })
+})
