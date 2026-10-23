@@ -71,7 +71,7 @@ rm -rf <checkout>/apps/api/.migration-out/<fixture>
 | P-6 | Track S host: a scratch VPS or a restored copy of the target, encrypted disk, `db.env`, the compose stack, the `migrate` image at the release sha, `PP_STAGE_DIR`, `PP_MIGRATION_OUT`; free disk at least 5 times the dump size on `PP_STAGE_DIR` (plan B0) and the 3 times database size for restore points (`production-migration-slot.md` section 1). **`S gonogo` must be clean on the scratch copy, so also** (the checks of `slot.sh cmd_gonogo`): PITR on (`archive_mode` not off; base backup taken with `deploy/vps/migration/pitr.sh base --label first`, `pitr.sh status` shows archived above 0 and failed 0), else the line is `PITR off`; at least one backup `pp-backup-*.dump` in the backup folder and younger than 24 h (take one with `deploy/vps/backup/backup.sh --no-offsite`), else `backup: NO dump found  -> NO-GO` (the script prints the age; the plan's reading rule needs under 24 h); more than 30 % free disk on the backup volume; `/api/ready` through the edge returns 200 (the stack is up); the two points `pre_etl` and `pre_delta` verified. **Perlu pengesahan (half AZ):** scratch VPS or the rehearsal box for Track S, and its size against production. | A confirmation line and the first `S gonogo` lines. |
 | P-7 | A3 is done (26 Oct): roles of P3, `IC_HASH_KEY` and the other names of P5 exist (names only). | The P3 and P5 evidence. |
 | P-8 | The maximum night window is set (default 6 hours); the LEAD confirms it on 27 Oct (plan 4.3). | A dated line. |
-| P-9 | The read-only SQL checks of plan 4.5 part 1 exist as a file (half AM prepares them). **Perlu pengesahan (half AM):** the file is a deliverable for A4; without it criterion 9 cannot be shown. | The file's name and a count of statements. |
+| P-9 | The read-only SQL checks of plan 4.5 part 1 exist as a file: [`docs/ops/sql/smoke-readonly.sql`](sql/smoke-readonly.sql) (AM1-3, R25). One `BEGIN TRANSACTION READ ONLY` / one `SELECT` / `ROLLBACK`, so any write fails; it prints rows `check_id \| description \| value \| expected \| ok` with `ok` = `ok`, `FAIL` or `info`, and the last row `Z0` is the FAIL count. Aggregates only. Without `staging_cloud` (after the drop) the staging comparisons (B1, B2, D1, D2) show `info` `n/a`. | The file's sha at the release; the `Z0` value. |
 | P-10 | The e2e smoke command and how it points at the restored copy. It runs on the Track S synthetic copy only. On Track R only read-only SQL counts are allowed, and the API and the frontend are never started on that DB (its accounts share the dummy password). **Perlu pengesahan (QA, half AZ):** the plan names the smoke but not the command; the repo has `npm run test:e2e` (Playwright). | The command line (no values). |
 | P-11 | The Track S host carries **no production secret and no offsite backup**: its own `IC_HASH_KEY`, database secrets and API secrets, all different from production; no S3 or other offsite credentials in its env files; backup timers off, or `backup.sh --no-offsite` only. | Names only: the list of variable names present and a yes/no per item; never a value. |
 
@@ -98,7 +98,7 @@ One row per timed item. Fill every cell; the only blanks allowed are cells marke
 | T15 | `D_apply`: `migrate:all --apply` (includes the verify) | B7 | see section 5 | | | | 0 | `N_core + N_act` | `r_B7` | R (and S) | Four stage runs from `etl_runs`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T15a | of which: core dry-run, core apply, activity dry-run, activity apply | B7 | query (a) of the A1 sheet, A1.11 | | | | | | | R | Seconds per run. |
 | T16 | `D_verify`: `migrate:verify` | B8 | `migrate:verify` | | | | 0 | | | R (and S) | `verify pass`. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
-| T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | the file of P-9, against the restored copy | | | | | checks | | R (read-only SQL counts only) or S | All equal the verify report? **BLOCKED (Track S part) until #166 has a scratch-only override.** |
+| T17 | Read-only SQL checks of plan 4.5 part 1 | B8 | `q "$(cat docs/ops/sql/smoke-readonly.sql)"` (or `psql -X -v ON_ERROR_STOP=1 -f` the file), against the restored copy | | | | 0 | checks | | R (read-only SQL counts only) or S | `Z0` = 0 FAIL; post the count of `ok` / `FAIL` / `info` rows and the check ids of any `FAIL` (no values). Synthetic data shows deliberate fixture FAILs on criteria 2 and 3. **BLOCKED (Track S part) until #166 has a scratch-only override.** |
 | T18 | `slot.sh gonogo` read by the rule | B0, B9 | `S gonogo` | | | | 0 | | | S | No `NO-GO`, `MISSING`, `PITR off`; `api` line `-> 200`. A bare scratch VPS prints `PITR off` and `NO dump found -> NO-GO`: that is a P-6 failure, fix it first. |
 | T19 | Restore point `pre_etl`: take and verify, after the final schema migrations | A5 | `R take pre_etl --operator "<role>"`; `R verify pre_etl` | | | | 0 | bytes | | S | `RESTORE POINT TAKEN`, `RESTORE POINT OK`; migration count (section 7). |
 | T20 | **Restore of a restore point, small (the night's Case 2):** `restore pre_etl` | 4.6 Case 2 | `R restore pre_etl` (typed database name) | | | | 0 | | | S | `RESTORED: pre_etl ... in <N> s`. **BLOCKED until #166 has a scratch-only override** (the Case 2 shape needs the migrated and staged state of T15). |
@@ -555,7 +555,7 @@ Verify: exit <>, verify pass <yes|no>, <n> entities, <m> checks; rejects by reas
 Guards: refusal 1 exit <2>, line <fixed text>, counts unchanged <yes|no>; refusal 2 exit <2>, line <fixed text>, counts unchanged <yes|no>
 Restore: duration small <>, large <>, dump-form <>; migration count n <> of F <>
 Budget: fixed <> min, ETL <> min, sum <>, W <>, margin to 360 <>, to 345 <>, N_night_max <>; per-step fit (advisory) <all|list>
-Smoke: e2e (Track S synthetic copy) <pass|fail>, <counts>; read-only SQL checks <n of n equal>
+Smoke: e2e (Track S synthetic copy) <pass|fail>, <counts>; read-only SQL checks ok <n> / FAIL <n> (ids <list>) / info <n>, Z0 <n>
 Result: GREEN | RED (item <id>, reason <short>); P7: met | LEAD decision needed (widen | move)
 ```
 
@@ -580,7 +580,7 @@ Result: GREEN | RED (item <id>, reason <short>); P7: met | LEAD decision needed 
 | 6 | `migrate:archive-minimise` not in the `slot.sh etl` list (3.1 gap b). | Half AZ |
 | 7 | The migration count of a restore point on the VPS (no output from `restore-point.sh`). | Half AZ |
 | 8 | The freeze-proof one-line form. | Half AZ |
-| 9 | The file of read-only SQL checks (plan 4.5 part 1). | Half AM |
+| 9 | ~~The file of read-only SQL checks (plan 4.5 part 1).~~ Done: `docs/ops/sql/smoke-readonly.sql` (R25). | Half AM |
 | 10 | The e2e smoke command and target. | QA, half AZ |
 | 11 | `D_xfer` source at A4 (host, not the operator PC); a rehearsal MySQL source for an A4 `dump:cloud` repeat. | Dump operator, half AZ, `.cloud` owner |
 | 12 | Which limit applies to `W`: 360 or about 345 min; a row-growth allowance for `N_night`. | LEAD |
