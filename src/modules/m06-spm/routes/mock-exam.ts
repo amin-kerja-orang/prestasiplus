@@ -1,11 +1,16 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { mockIdPattern } from '../lib/wire-id'
+
 /**
  * M06 route fragment "mock-exam" (M06-T4): S11 `/spm-mock`, Q4 `/spm-mock/:id` (provisional, L-8),
  * S12 `/spm-mock/:id/result` and S13 `/pusat-ai/spm`. `layout: 'role'` (DV-07): the admin sees them
  * in the admin shell, every other role in the user shell. Headers follow DV-M06-07 (the page title,
  * no subtitle); S12's header and tab title carry the subject and are set by the page.
  */
+// The mock exam id: digits in the mock, a uuid on the real API (BE-41 open question 4).
+const ID = `:id(${mockIdPattern()})`
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/spm-mock',
@@ -21,7 +26,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/spm-mock/:id(\\d+)',
+    path: `/spm-mock/${ID}`,
     name: 'm06.mock-run',
     component: () => import('../pages/MockRunPage.vue'),
     meta: {
@@ -34,7 +39,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/spm-mock/:id(\\d+)/result',
+    path: `/spm-mock/${ID}/result`,
     name: 'm06.mock-result',
     component: () => import('../pages/MockResultPage.vue'),
     meta: {

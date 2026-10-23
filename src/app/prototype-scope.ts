@@ -16,7 +16,6 @@
  * matrix row number of section B; section A items are `A1`-`A5`.
  */
 
-import { isHttpMode } from '@/api/mode'
 import type { Role } from '@/stores/session-types'
 
 /*
@@ -196,7 +195,14 @@ export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   item(46, 'Statistik Penggunaan', p('/admin-sekolah/statistik-penggunaan')),
   item(47, 'DSKP Heatmap', p('/admin-sekolah/dskp-heatmap')),
   item(48, 'Laporan Aktiviti', p('/admin-sekolah/laporan-aktiviti')),
-  item(49, 'Amaran Awal', p('/amaran/sekolah')),
+  item(
+    49,
+    'Amaran Awal',
+    p('/amaran/sekolah'),
+    // M18 S23 and S21, reached from the two buttons of S4 (design m18-amaran-summary, decision 6).
+    p('/amaran/ringkasan-eksekutif'),
+    p('/amaran/keberkesanan'),
+  ),
   item(50, 'Laporan Bulanan', p('/admin-sekolah/laporan-bulanan')),
   item(51, 'Senarai Pelajar', p('/admin-sekolah/pelajar')),
   item(52, 'Senarai Guru', p('/admin-sekolah/guru')),
@@ -267,24 +273,11 @@ export function isPathAllowed(role: Role | null, path: string): boolean {
 
 /**
  * Home of the user shell's logo link: the role's own dashboard in scope mode (a teacher or school
- * admin has no `/dashboard` in the prototype), `/dashboard` otherwise.
+ * admin has no `/dashboard` in the prototype), `/dashboard` otherwise. A student's home is
+ * `/dashboard` in both API modes (`GET /api/dashboard` is served by the real API).
  */
 export function shellHomePath(role: Role | null): string {
-  if (role === 'student') return studentHomePath()
   return isPrototypeScopeOn() && isPrototypeRole(role) ? scopeHomePath(role) : '/dashboard'
-}
-
-/**
- * Student home: Bijak SPM in http mode (`GET /api/dashboard` is not built yet, so `/dashboard`
- * shows an error), `/dashboard` in mock mode. `/dashboard` itself stays reachable by URL.
- */
-export function studentHomePath(): string {
-  return isHttpMode() ? '/spm/bijak' : '/dashboard'
-}
-
-/** The landing path after login or on `/`: the server one, except a student in http mode. */
-export function effectiveLandingPath(role: Role | null, landingPath: string | null): string | null {
-  return role === 'student' && isHttpMode() ? studentHomePath() : landingPath
 }
 
 /** Where the "back to the dashboard" button of the "not available" page goes. */
@@ -296,6 +289,5 @@ export function scopeHomePath(role: Role | null): string {
   if (role === null) return '/login'
   // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`
   // clears the session and ends on `/login`, so there is no redirect loop.
-  if (role === 'student') return studentHomePath()
   return isPrototypeRole(role) ? '/dashboard' : '/logout'
 }

@@ -14,6 +14,7 @@
 import { nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash } from '@/composables'
 import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
@@ -31,7 +32,9 @@ const router = useRouter()
 const flash = useFlash()
 
 const teachers = useApi((signal) => fetchTeachers({ signal }))
-const defaults = useApi((signal) => fetchAdminDefaults({ signal }))
+/** http mode: no default password exists (D59b), so the defaults route is never called. */
+const http = isHttpMode()
+const defaults = useApi((signal) => (http ? Promise.resolve(null) : fetchAdminDefaults({ signal })))
 watch(teachers.error, (err) => {
   if (err) console.error('[comp-students] load teachers failed', err)
 })
@@ -96,7 +99,11 @@ async function submit(): Promise<void> {
     data-testid="comp-create-page"
   >
     <UAlert color="info" variant="subtle" icon="i-ph-info" data-testid="comp-info">
-      <template #description>
+      <template v-if="http" #description>
+        Setiap pelajar dapat: pakej penuh percuma, dan <strong>syiling dimatikan</strong> (tak boleh
+        kumpul/claim walaupun jawab soalan / main game).
+      </template>
+      <template v-else #description>
         Setiap pelajar dapat: username <strong>6 digit akhir IC</strong>@prestasiplus.my, kata
         laluan
         <strong data-testid="comp-info-password">{{

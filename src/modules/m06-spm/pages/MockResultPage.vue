@@ -18,13 +18,14 @@ import { DsArt3D, DsPage, DsPanel, DsLoadError } from '@/ds'
 import { fetchMockResult } from '../api'
 import DutaBlock from '../components/DutaBlock.vue'
 import { isCorrect, itemHeader, percentLabel, wrongLabel } from '../components/mock-lib'
+import { routeId } from '../lib/wire-id'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 const { data, error, loading, reload } = useApi(
   (signal) => fetchMockResult(id.value, { signal }),
   id,

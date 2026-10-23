@@ -260,7 +260,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
       expect(q.subjectName).not.toBe('')
       expect(q.levelCode).not.toBe('')
       expect(q.difficulty).toBeGreaterThanOrEqual(1)
-      expect(q.id < 600_001 || q.id > 600_065).toBe(true)
+      expect(Number(q.id) < 600_001 || Number(q.id) > 600_065).toBe(true) // numeric in the mock
     }
   })
 })
