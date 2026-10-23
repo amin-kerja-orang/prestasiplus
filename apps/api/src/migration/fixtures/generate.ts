@@ -13,8 +13,13 @@
  * question or session, pivot rows without parents), case-variant and exact duplicate e-mails,
  * duplicate (school_id, username), unknown enum values, non-bcrypt and shared-default password hashes,
  * roster users without e-mail, date-only edges (a stored UTC date that is the day before the Malaysia
- * date), cyclic and self references, secrets that the loader must drop.
+ * date), cyclic and self references, secrets that the loader must drop, one feedback score outside 1 to 5.
+ *
+ * Value sets follow what the ETL accepts or what .cloud is documented to hold (education stage, level names, practice modes, ledger
+ * sources, challenge and banner types), so a rehearsal exercises the real load paths. Every directory also gets a `SHA256SUMS` file.
  */
+import { createHash } from 'node:crypto'
+
 import { TABLES, type TableSpec } from '../ddl/spec'
 import { DUMP_FORMAT } from '../staging/readers'
 import { Rng } from './rng'
@@ -42,6 +47,23 @@ export const UNKNOWN_ROLE = 'penyelia_tidak_dikenali'
 export const UNKNOWN_COIN_TYPE = 'jenis_tidak_dikenali'
 export const UNKNOWN_MODE = 'mod_tidak_dikenali'
 
+/** The practice modes seen in .cloud (docs/architecture/v2-data-migration.md 4.4); `spm` and `battle` are deferred by the ETL (LEAD Q5). */
+const SESSION_MODES = ['latih_tubi', 'chapter', 'spm', 'battle', 'pksk'] as const
+/**
+ * Coin ledger (type, source, sign) combinations from M14 (docs/requirements/urs/M14-gamification.md 8.1 and 8.3). The weights mirror
+ * "mostly quiz credits"; the sources the ETL does not map yet (LEDGER_SOURCE_MAP) are kept so the rehearsal counts them as rejects.
+ */
+const COIN_KINDS: readonly (readonly [type: string, source: string, sign: 1 | -1])[] = [
+  ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1], ['earn', 'quiz_spm', 1],
+  ['earn', 'daily_login', 1], ['earn', 'daily_login', 1], ['earn', 'daily_login', 1],
+  ['convert', 'token_conversion', -1],
+  ['earn', 'spm', 1], ['earn', 'daily_challenge', 1], ['bonus', 'streak_bonus', 1], ['earn', 'mystery_box', 1],
+  ['spend', 'reward_claim', -1], ['spend', 'hadiah_redeem', -1],
+]
+// Perlu pengesahan (OD-2 / OD-25): the real sets of `challenges.type` and `banners.type`. These are values the ETL maps accept.
+const CHALLENGE_TYPES = ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent'] as const
+const BANNER_TYPES = ['hero', 'promo', 'announcement'] as const
+
 const ROLES = ['pelajar', 'guru', 'ibu_bapa', 'penaja', 'admin_sekolah', 'pegawai_ppd', 'admin'] as const
 const BASE_MS = Date.UTC(2026, 0, 1)
 const MIN = 60_000
@@ -64,6 +86,8 @@ export interface PlantedAnomalies {
   referralCycles: { pairs: number; selfReferences: number }
   duplicatePivotRows: Record<string, number>
   redactedSecrets: Record<string, number>
+  /** Values outside the v2 range of their column (the ETL must reject the row, not clamp it). */
+  outOfRange: Record<string, number>
 }
 
 export interface AnomalyManifest {
@@ -114,6 +138,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     referralCycles: { pairs: 0, selfReferences: 0 },
     duplicatePivotRows: {},
     redactedSecrets: {},
+    outOfRange: {},
   }
   const bump = (m: Record<string, number>, k: string, n = 1) => void (m[k] = (m[k] ?? 0) + n)
   const plantEnum = (col: string, value: string, n = 1) => {
@@ -133,7 +158,15 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     id: i + 1, school_id: i + 1, package: i % 2 ? 'asas' : 'premium', quota: 100 + i, starts_at: '2026-01-01', ends_at: '2026-12-31',
   })))
   put('subjects', Array.from({ length: 6 }, (_, i) => ({ id: i + 1, name: `Mata Pelajaran Contoh ${i + 1}`, code: `MP${i + 1}`, is_core: i < 3 ? '1' : '0', color: '#cccccc', sort_order: i + 1 })))
-  put('education_levels', Array.from({ length: 4 }, (_, i) => ({ id: i + 1, name_bm: `Darjah Contoh ${i + 1}`, name_en: `Level Sample ${i + 1}`, sort_order: i + 1, curriculum: 'kssr', stage: i < 2 ? 'primary' : 'secondary' })))
+  // Names follow `levelIdentity` (`Darjah N` -> D<N>, `Tingkatan N` -> T<N>, so a grade is derived and classrooms load); stages are
+  // the three the ETL accepts (STAGE_MAP). The real name set is Perlu pengesahan until the BE-27 profile of the real dump.
+  const LEVELS: readonly { bm: string; en: string; stage: string }[] = [
+    { bm: 'Darjah 1', en: 'Year 1', stage: 'primary' },
+    { bm: 'Darjah 6', en: 'Year 6', stage: 'primary' },
+    { bm: 'Tingkatan 1', en: 'Form 1', stage: 'lower_secondary' },
+    { bm: 'Tingkatan 4', en: 'Form 4', stage: 'upper_secondary' },
+  ]
+  put('education_levels', LEVELS.map((l, i) => ({ id: i + 1, name_bm: l.bm, name_en: l.en, sort_order: i + 1, curriculum: 'kssr', stage: l.stage })))
   const chapters: Row[] = []
   for (let s = 1; s <= 6; s++) for (let c = 1; c <= 3; c++) chapters.push({ id: chapters.length + 1, subject_id: s, education_level_id: ((s + c) % 4) + 1, number: c, title: `Bab Contoh ${s}.${c}`, dskp_code: `D${s}${c}`, strand: c % 2 ? 'a' : 'b' })
   put('chapters', chapters)
@@ -290,8 +323,9 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     bump(planted.orphans, 'parent_student.student_id')
   }
   put('parent_student', links)
-  // The curriculum is fixed at 54 topics whatever the size, so this orphan count grows more slowly.
-  for (let k = 0; k < Math.max(1, Math.round(B / 2)); k++) {
+  // The curriculum is fixed at 54 topics whatever the size, so the planted orphans are capped at a small constant: the anomaly
+  // class stays present while the answers on the other topics still load.
+  for (let k = 0; k < Math.min(2, Math.max(1, Math.round(B / 2))); k++) {
     ;(topics[k] as Row).chapter_id = 920_000 + k
     bump(planted.orphans, 'topics.chapter_id')
   }
@@ -321,7 +355,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     const total = 10
     const correct = rng.int(2, 10)
     return {
-      id: i + 1, user_id: pupils[i % pupils.length], subject_id: (i % 6) + 1, mode: i % 5 === 0 ? 'kuiz' : 'latih_tubi', paper: i % 2 ? 'paper1' : 'paper2',
+      id: i + 1, user_id: pupils[i % pupils.length], subject_id: (i % 6) + 1, mode: SESSION_MODES[i % SESSION_MODES.length], paper: i % 2 ? 'paper1' : 'paper2',
       client_uuid: `00000000-0000-4000-8000-${pad(i + 1, 12)}`, total_questions: total, correct, accuracy: correct * 10, duration_seconds: 120 + (i % 400),
       syiling_earned: correct, started_at: created(i), created_at: created(i), updated_at: created(i),
     }
@@ -369,20 +403,27 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
     bump(planted.dateOnlyEdges, 'mood_checkins', 2)
   }
   put('mood_checkins', moods)
-  put('feedback', pupils.filter((_, i) => i % 10 === 0).map((id, i) => ({ id: i + 1, user_id: id, score: 1 + (i % 10), satisfaction: 1 + (i % 5), usability: 1 + (i % 5), relevance: 1 + (i % 5), comment: `Komen contoh ${i + 1}.`, created_at: created(i), updated_at: created(i) })))
+  const feedback: Row[] = pupils.filter((_, i) => i % 10 === 0).map((id, i) => ({ id: i + 1, user_id: id, score: 1 + (i % 5), satisfaction: 1 + (i % 5), usability: 1 + (i % 5), relevance: 1 + (i % 5), comment: `Komen contoh ${i + 1}.`, created_at: created(i), updated_at: created(i) }))
+  // One row outside the v2 range of 1 to 5 (the old fixture ran 1 to 10): the ETL must reject it as INVALID_VALUE.
+  if (feedback.length > 0) {
+    ;(feedback[feedback.length - 1] as Row).score = 9
+    bump(planted.outOfRange, 'feedback.score')
+  }
+  put('feedback', feedback)
 
   // Gamification
   put('gamification_tiers', Array.from({ length: 4 }, (_, i) => ({ id: i + 1, label_ms: `Peringkat Contoh ${i + 1}`, perks: 'Contoh', sort_order: i + 1 })))
   put('student_wallets', pupils.map((id, i) => ({ id: i + 1, user_id: id, syiling_balance: i % 200, syiling_lifetime: (i % 200) + 50, streak_days: i % 30, gamification_tier_id: (i % 4) + 1, created_at: created(i), updated_at: created(i) })))
-  const coins: Row[] = Array.from({ length: pupils.length * 3 }, (_, i) => ({
-    id: i + 1, user_id: pupils[i % pupils.length], type: ['earn', 'spend', 'bonus'][i % 3], source: ['practice', 'battle', 'gift'][i % 3], amount: 5 + (i % 20), balance_after: 10 + (i % 100), created_at: created(i), updated_at: created(i),
-  }))
+  const coins: Row[] = Array.from({ length: pupils.length * 3 }, (_, i) => {
+    const [type, source, sign] = COIN_KINDS[i % COIN_KINDS.length] as (typeof COIN_KINDS)[number]
+    return { id: i + 1, user_id: pupils[i % pupils.length], type, source, amount: sign * (5 + (i % 20)), balance_after: 10 + (i % 100), created_at: created(i), updated_at: created(i) }
+  })
   for (const c of rng.shuffle(coins).slice(0, 2 * B)) {
     c.type = UNKNOWN_COIN_TYPE
     plantEnum('coin_transactions.type', UNKNOWN_COIN_TYPE)
   }
   put('coin_transactions', coins)
-  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, type: 'harian', title: `Cabaran Contoh ${i + 1}`, criteria: 'Contoh' })))
+  put('challenges', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, created_by: null, classroom_id: null, type: CHALLENGE_TYPES[i % CHALLENGE_TYPES.length], title: `Cabaran Contoh ${i + 1}`, criteria: 'Contoh' })))
   const cu: Row[] = pupils.filter((_, i) => i % 2 === 0).map((id, i) => {
     const ms = BASE_MS + (i % 60) * DAY + 5 * 60 * MIN
     return { challenge_id: (i % 5) + 1, user_id: id, progress: i % 10, completed_at: iso(ms), claimed_on: utcDate(ms), created_at: iso(ms), updated_at: iso(ms) }
@@ -403,7 +444,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   put('game_sessions', pupils.map((id, i) => ({ id: i + 1, game_id: (i % 3) + 1, user_id: id, score: i % 50, result: i % 2 ? 'menang' : 'kalah', created_at: created(i), updated_at: created(i) })))
 
   // Content, support, billing, exams
-  put('banners', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, title: `Sepanduk Contoh ${i + 1}`, type: 'info', target: '/', sort_order: i + 1, is_active: '1' })))
+  put('banners', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, title: `Sepanduk Contoh ${i + 1}`, type: BANNER_TYPES[i % BANNER_TYPES.length], target: '/', sort_order: i + 1, is_active: '1' })))
   put('articles', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, slug: `artikel-contoh-${i + 1}`, category: 'umum', title: `Artikel Contoh ${i + 1}`, views: i * 3, is_published: '1', author_id: 7 })))
   put('support_tickets', pupils.filter((_, i) => i % 10 === 3).map((id, i) => ({ id: i + 1, user_id: id, subject: `Tiket contoh ${i + 1}`, status: i % 2 ? 'ditutup' : 'dibuka', admin_reply: i % 2 ? 'Balasan contoh.' : null, created_at: created(i), updated_at: created(i) })))
   put('settings', Array.from({ length: 5 }, (_, i) => ({ id: i + 1, key: `contoh.tetapan_${i + 1}`, value: `nilai-${i + 1}`, group: 'umum' })))
@@ -509,7 +550,12 @@ export function fixtureFiles(fixture: GeneratedFixture, tableSpecs: readonly Tab
     manifestTables[spec.name] = { rows: rows.length, file }
     files.set(file, `${rows.map((r) => JSON.stringify(r)).join('\n')}\n`)
   }
+  // `synthetic`, not `anonymised`: this is made-up data, not real data that went through the anonymiser.
   files.set('manifest.json', `${JSON.stringify({ format: DUMP_FORMAT, source: 'cloud', synthetic: true, tables: manifestTables }, null, 2)}\n`)
   files.set('anomalies.json', `${JSON.stringify(fixture.anomalies, null, 2)}\n`)
-  return new Map([...files.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+  const byName = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+  // `sha256sum` format (`<hex>  <file>`, bytewise order), the file `deploy/rehearsal/rehearsal-db.sh load-dump` checks inside a directory.
+  const sums = [...files.entries()].sort(([a], [b]) => byName(a, b)).map(([name, content]) => `${createHash('sha256').update(content, 'utf8').digest('hex')}  ${name}\n`)
+  files.set('SHA256SUMS', sums.join(''))
+  return new Map([...files.entries()].sort(([a], [b]) => byName(a, b)))
 }
