@@ -297,7 +297,7 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 - [ ] `npm run be:lint:migration` is green on the release SHA.
 
 ### 3.4 Seeds
-- [ ] **No PoC profile in production.** Run the seed with `ALLOW_DEMO_SEED` unset. Only the `kind:'reference'` modules run: `core-school-packages` and `spm-subject-configs` (`apps/api/prisma/seed/spm-subject-configs.ts`, on the tip since #73).
+- [ ] **No PoC profile in production.** Run the seed with `ALLOW_DEMO_SEED` unset. Only the `kind:'reference'` modules run: `core-school-packages`, `core-wallet-tiers` (P11-B1: the 4 M14 tiers, without which every student dashboard answers 500), `core-marketplace-categories` and `spm-subject-configs` (`apps/api/prisma/seed/spm-subject-configs.ts`, on the tip since #73).
 - [ ] The guard is fail-closed (#80 and #74 merged; `--force-demo` handling is in `apps/api/prisma/seed/index.ts` at the tip): production refuses demo seeding, and `--force-demo` needs `ALLOW_DEMO_SEED=true` as well (two keys). The #90 question pool is PoC-only under the same guard.
 - [ ] `BIJAK_POC_QUESTIONS=false`, so the reserved PoC question ids are not served.
 - [ ] Real papers come from the Admin Pusat intake and builder. Who loads the real launch papers, and when, is **unverified** (D-6).
