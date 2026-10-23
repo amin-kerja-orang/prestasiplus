@@ -33,7 +33,7 @@ import { useCcDialog } from './use-cc-dialog'
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcSessionRow]: CcSessionRow[K] }
 
-const props = defineProps<{ userId: number; source: CcSessionsSource }>()
+const props = defineProps<{ userId: number | string; source: CcSessionsSource }>()
 const emit = defineEmits<{ close: []; 'open-session': [sessionId: string] }>()
 
 const title = computed(() => {

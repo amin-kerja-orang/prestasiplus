@@ -126,6 +126,14 @@ describe('LoginPage (M01 S1)', () => {
     expect(w.text()).toContain('soalan latihan dalam 31 subjek berbeza!')
   })
 
+  it('keeps the stat chips stamp-in inside the viewport on phones (AZ-21a)', async () => {
+    const w = await render()
+    // Below sm the stamp starts at its resting scale/rotation (a fade), so a chip on the right edge never overshoots.
+    const chips = w.findAll('[data-testid=login-stats] [data-ds=sticker]')
+    expect(chips).toHaveLength(3)
+    for (const chip of chips) expect(chip.attributes('data-contained')).toBeDefined()
+  })
+
   it('toggles the password visibility without submitting (FR-M01-04)', async () => {
     const w = await render()
     const input = w.get('[data-testid=login-password]')

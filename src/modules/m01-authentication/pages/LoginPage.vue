@@ -172,13 +172,13 @@ async function submit(): Promise<void> {
         data-testid="login-stats"
       >
         <li>
-          <DsSticker art="books">{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker>
+          <DsSticker contained art="books">{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker>
         </li>
         <li>
-          <DsSticker art="cap">{{ formatNumber(stats.subjectCount) }} Subjek</DsSticker>
+          <DsSticker contained art="cap">{{ formatNumber(stats.subjectCount) }} Subjek</DsSticker>
         </li>
         <li>
-          <DsSticker art="trophy">{{ formatNumber(stats.levelCount) }} Tahap</DsSticker>
+          <DsSticker contained art="trophy">{{ formatNumber(stats.levelCount) }} Tahap</DsSticker>
         </li>
       </ul>
     </template>

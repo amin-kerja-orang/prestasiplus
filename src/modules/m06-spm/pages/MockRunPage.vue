@@ -19,13 +19,14 @@ import { clock } from '@/lib/time'
 
 import { fetchMock, submitMock } from '../api'
 import { elapsedLabel, optionLetter } from '../components/mock-lib'
+import { routeId } from '../lib/wire-id'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const SUBMIT_ERROR = 'Gagal menghantar jawapan. Sila cuba semula.'
 
 const route = useRoute()
 const router = useRouter()
-const id = computed(() => Number(route.params.id))
+const id = computed(() => routeId(route.params.id))
 const { data, error, loading, reload } = useApi((signal) => fetchMock(id.value, { signal }), id)
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)

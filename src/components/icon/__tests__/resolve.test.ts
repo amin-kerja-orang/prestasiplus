@@ -1,3 +1,7 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import * as lucide from '@lucide/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -158,5 +162,46 @@ describe('buildLucideIndex', () => {
     expect(index.has('HouseIcon')).toBe(false)
     expect(index.has('Icon')).toBe(false)
     expect(index.size).toBeGreaterThanOrEqual(Object.keys(lucide.icons).length)
+  })
+})
+
+/**
+ * Partial guard (78-16): it scans only LITERAL names — static `<AppIcon name="…">` attributes and
+ * `fa… fa-xxx` strings in src/. Dynamic `:name` bindings, bare Lucide names kept in data files and
+ * names sent by the server are not covered; those still rely on the full lazy index at runtime, which
+ * is why the index is not subset.
+ */
+describe('every literal icon name used in src still resolves (78-16 guard)', () => {
+  const root = fileURLToPath(new URL('../../../', import.meta.url))
+  const used = new Set<string>()
+
+  function walk(dir: string): void {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === '__tests__' || e.name === 'node_modules') continue
+      const p = join(dir, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (/\.(vue|ts)$/.test(e.name) && !/\.(test|spec)\./.test(e.name)) {
+        const text = readFileSync(p, 'utf8')
+        for (const m of text.matchAll(/<AppIcon[^>]*?\sname="([^"]+)"/g)) used.add(m[1]!)
+        for (const m of text.matchAll(
+          /['"`]((?:fa[srlb]?|fa-solid|fa-regular) fa-[a-z0-9-]+)['"`]/g,
+        ))
+          used.add(m[1]!)
+      }
+    }
+  }
+  // Collected inside the tests (once), so a filesystem error fails a test instead of the collection.
+  const collect = (): Set<string> => {
+    if (used.size === 0) walk(root)
+    return used
+  }
+
+  it('finds literal names to check', () => {
+    expect(collect().size).toBeGreaterThan(0)
+  })
+
+  it('resolves each one to an icon or emoji once the full index is loaded', () => {
+    const unresolved = [...collect()].filter((v) => resolveIcon(v, index).kind === 'none')
+    expect(unresolved).toEqual([])
   })
 })
