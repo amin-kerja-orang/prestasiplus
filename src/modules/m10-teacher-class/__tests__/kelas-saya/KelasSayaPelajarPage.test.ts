@@ -149,6 +149,21 @@ describe('S33 Kelas Saya (student)', () => {
     expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
     expect(api.joinClass).toHaveBeenCalledTimes(1)
   })
+
+  it('drops the outcome of a request still pending when the code is edited (SWP-9)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    let reject!: (e: unknown) => void
+    api.joinClass.mockReturnValueOnce(new Promise((_, rej) => (reject = rej)))
+    const w = await mountPage()
+    await t(w, 'class-code').setValue('DMO102')
+    await t(w, 'join-form').trigger('submit')
+    await t(w, 'class-code').setValue('DMO103')
+    reject(refusal(409, 'Anda sudah menyertai kelas ini.'))
+    await flushPromises()
+    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
+    expect((t(w, 'class-code').element as HTMLInputElement).value).toBe('DMO103')
+    expect(t(w, 'join-submit').attributes('disabled')).toBeUndefined()
+  })
 })
 
 describe('joinErrorMessage', () => {
