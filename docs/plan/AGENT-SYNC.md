@@ -142,7 +142,7 @@ Rules for `contract-only`:
   - **D68 migration ranges** (21 Oct 23:20 MYT): half AZ **0040–0069**; Lead-Amin1 **0070–0089**; Lead-Amin2 **0090–0099**. Claim before creating the folder with `MIGRATION 00NN (<dev>, <item>)` on your half's queue issue (half AM with its `[AmiN]` prefix). The first comment wins. Taken on #113: 0040, 0041, 0042.
   - **D69 strict SEDIA MERGE gate 2** (#67, 22 Oct 01:16 MYT): an open Major from any reviewer blocks SEDIA MERGE. The #105 SEDIA MERGE was voided this way.
   - **D70 AZ-21c CI exception:** the `.github/**` guard-rail has one exception. AZ-DevOps may change workflows only for AZ-21c (#140) and AZ-24 (#141) and their review fixes. `.gitleaks.toml`, branch protection and other `.github` changes stay LEAD-only.
-  - **CI note:** GitHub Actions has created no run since 2026-10-20 00:50 UTC (AZ-34 on #113: most likely the October Actions minutes are used up). Until the LEAD fixes it, a PR's evidence is its local verify output.
+  - **CI note:** GitHub Actions created no run from 2026-10-20 00:50 UTC until the repository was made public on 22 Oct (AZ-34 on #113: most likely the private-repo Actions minutes were used up). Since then the runs use GitHub-hosted runners free of charge (LEAD decision, 23 Oct 00:31 MYT).
 
 - 2026-10-21 ~21:20 **LEAD HANDOVER to `azarulhakim`; two-half split and new team rules (D60-D65).**
   - **LEAD:** from 2026-10-21 21:18 MYT the LEAD is `azarulhakim`. `aminfaudzi` continues as a developer under the LEAD (half AM). The two groups are replaced by two halves (AZ and AM); lanes, ownership and the six rules are in "Halves" at the top of this page. Re-read it now.
