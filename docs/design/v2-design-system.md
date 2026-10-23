@@ -123,7 +123,7 @@ Layers (max 3): **page** `--ui-bg-muted`, **raised** `--ui-bg` (cards, sidebar, 
 | `--ui-bg-accented` (`bg-accented`) | #D5DBE8 | #3A4258 |
 | `--ds-bg-soft` (`bg-soft`, zebra) | #F5F7FB | #1E2437 |
 | `--ds-seg-active` (`bg-seg-active`, active tab chip) | #FFFFFF | #3A4258 |
-| `--ui-bg-inverted` (`bg-inverted`, tooltips) | #171C2D | #262D40 |
+| `--ui-bg-inverted` (`bg-inverted`, tooltips, selected neutral button; pairs with `--ui-text-inverted`) | #171C2D | #EBEEF5 |
 | `--ui-text-highlighted` | #0D1120 | #FFFFFF |
 | `--ui-text` | #262D40 | #EBEEF5 |
 | `--ui-text-toned` | #3A4258 | #D5DBE8 |
