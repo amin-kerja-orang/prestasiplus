@@ -15,6 +15,7 @@
     "prelint": "npm run db:generate",
     "lint:migration": "tsx scripts/check-migratable.ts",
     "migrate:core": "tsx src/migration/load/cli.ts",
+    "migrate:activity": "tsx src/migration/load/activity/cli.ts",
     "admin:bootstrap": "tsx src/ops/admin-bootstrap/cli.ts",
     "staging:ddl": "tsx src/migration/ddl/generate.ts",
     "staging:load": "tsx src/migration/staging/cli.ts staging:load",
