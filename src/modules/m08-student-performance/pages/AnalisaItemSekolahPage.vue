@@ -10,7 +10,7 @@ import { useRoute } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
 import { DsBreadcrumb, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsPillNav, type PillItem } from '@/ds'
-import { usePrototypeScope } from '@/composables'
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { isApiError } from '@/api'
 import { usePageMeta } from '@/composables/usePageMeta'
 
@@ -38,6 +38,7 @@ const route = useRoute()
 const pageMeta = usePageMeta()
 const icon = usePhIcon()
 const { home, allows } = usePrototypeScope()
+const { routeExists } = useRouteExists()
 
 const schoolId = computed(() => {
   const raw = route.params.id
@@ -290,7 +291,7 @@ const cardFields = [
                 data-testid="school-gps-spark"
               />
               <UButton
-                v-if="allows(`/sekolah/${data.school.id}/prestasi`)"
+                v-if="allows(`/sekolah/${data.school.id}/prestasi`) && routeExists(`/sekolah/${data.school.id}/prestasi`)"
                 :to="`/sekolah/${data.school.id}/prestasi`"
                 color="neutral"
                 variant="link"
