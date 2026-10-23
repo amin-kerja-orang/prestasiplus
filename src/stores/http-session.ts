@@ -15,7 +15,7 @@
  */
 
 import { api, ApiError } from '@/api'
-import { scopeHomePath } from '@/app/prototype-scope'
+import { isPrototypeRole, isPrototypeScopeOn, scopeHomePath } from '@/app/prototype-scope'
 
 import { readStoredSession, useSessionStore } from './session'
 import type { ClientSession, Role, UserMe } from './session-types'
@@ -112,7 +112,24 @@ export async function restoreHttpSession(): Promise<void> {
   const store = useSessionStore()
   try {
     const body = await api.get<unknown>('/api/session')
-    if (isApiSession(body)) store.setSession(toClientSessionFromApi(body, store.remember))
+    if (isApiSession(body)) {
+      // Mirror the login-time refusal (D43): a cookie session of a role outside the prototype
+      // scope is ended instead of rebuilt.
+      if (isPrototypeScopeOn() && !isPrototypeRole(body.active.role as Role)) {
+        // Clear first: the transport would otherwise replace the header below with a stale stored
+        // CSRF token (an older session in `pp.auth`), and the logout would be refused.
+        store.clear()
+        try {
+          // Send the token this session just returned, so the server ends the cookie session too.
+          // `/api/auth/*` is outside the 401 policy.
+          await api.post<void>('/api/auth/logout', { headers: { 'x-csrf-token': body.csrf } })
+        } catch {
+          // best effort
+        }
+        return
+      }
+      store.setSession(toClientSessionFromApi(body, store.remember))
+    }
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) store.clear()
   }
