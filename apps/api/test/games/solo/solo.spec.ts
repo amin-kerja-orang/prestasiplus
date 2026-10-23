@@ -527,6 +527,46 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     })
   })
 
+  describe('Kad Memori reveal is idempotent for the open card (AZ-26)', () => {
+    it('re-revealing the open card returns the same face and writes nothing; other refusals are unchanged', async () => {
+      const { sessionId, rows } = await open(student, 'kad-memori')
+      const pairs = Array.from({ length: 6 }, (_, p) => ({
+        q: rows.find((r) => r.pair_key === p && r.face === 'question') as DbItem,
+        a: rows.find((r) => r.pair_key === p && r.face === 'answer') as DbItem,
+      }))
+      const reveal = (card: DbItem) => student.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: card.card_id })
+      const check = (card: DbItem, other: DbItem) => (t.clock.advance(1000), student.post('/api/games/solo/kad-memori/check', { session_id: sessionId, card_id: card.card_id, other_card_id: other.card_id }))
+      const counters = async () => (await t.db.query<{ moves: number; checks: number; fast_moves: number; open_card_id: string | null }>(`select moves, checks, fast_moves, open_card_id from game_sessions where id = $1::uuid`, [sessionId]))[0]
+
+      const first = await reveal(pairs[0]?.q as DbItem)
+      expect(first.status).toBe(200)
+      const before = await counters()
+      const again = await reveal(pairs[0]?.q as DbItem)
+      expect(again.status).toBe(200)
+      expect(again.headers['cache-control']).toBe('no-store')
+      expect(parseData(again, GamesKadMemoriFaceSchema)).toEqual(parseData(first, GamesKadMemoriFaceSchema))
+      expect(await counters()).toEqual(before)
+      expect(before).toMatchObject({ moves: 0, checks: 0, fast_moves: 0, open_card_id: pairs[0]?.q.card_id })
+
+      // a different card while one is open, and a matched card, are still refused
+      expectError(await reveal(pairs[1]?.q as DbItem), 'CONFLICT', M.soloCardOpen)
+      expect(await counters()).toEqual(before)
+
+      // a pair check with the re-revealed card still works: mismatch, then match
+      expect(parseData(await check(pairs[0]?.q as DbItem, pairs[1]?.a as DbItem), GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori']).correct).toBe(false)
+      expect(await counters()).toMatchObject({ moves: 1, checks: 1, fast_moves: 0, open_card_id: null })
+      expect((await reveal(pairs[0]?.q as DbItem)).status).toBe(200)
+      expect((await reveal(pairs[0]?.q as DbItem)).status).toBe(200)
+      expect(parseData(await check(pairs[0]?.q as DbItem, pairs[0]?.a as DbItem), GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori'])).toMatchObject({ correct: true, pair_id: 0 })
+      expect(await counters()).toMatchObject({ moves: 2, checks: 2, fast_moves: 0, open_card_id: null })
+      expectError(await reveal(pairs[0]?.a as DbItem), 'CONFLICT', M.soloCardMatched)
+      expectError(await reveal(pairs[0]?.q as DbItem), 'CONFLICT', M.soloCardMatched)
+
+      // someone else's session stays 404
+      expectError(await student2.post('/api/games/solo/kad-memori/reveal', { session_id: sessionId, card_id: pairs[2]?.q.card_id }), 'NOT_FOUND', M.soloSessionNotFound)
+    })
+  })
+
   describe('one open session per user and game', () => {
     const openCount = async (userId: string, game: string) =>
       Number((await t.db.query<{ n: string }>(`select count(*)::text as n from game_sessions where user_id = $1::bigint and game = $2 and submitted_at is null and closed_at is null`, [userId, game]))[0]?.n)
