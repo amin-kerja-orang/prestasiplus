@@ -77,3 +77,9 @@ deploy/vps/prod.env
 deploy/vps/api.env
 deploy/vps/db.env
 deploy/vps/.env.prod
+
+# Screenshots of live systems (may contain personal data) - never commit
+roles-matrix/**/*.jpeg
+roles-matrix/**/*.jpg
+roles-matrix/**/*.png
+WhatsApp Image *

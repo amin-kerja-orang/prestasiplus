@@ -228,8 +228,13 @@ describe('versions (AC5)', () => {
       admin.post('/api/admin/blueprints/SEJ/8/versions', body({ code: 'C/8A' })),
       admin.post('/api/admin/blueprints/SEJ/8/versions', body({ code: 'C/8B' })),
     ])
-    expect([a.status, b.status].sort()).toEqual([201, 409])
+    // Both outcomes are by design (see the title): the waiter on the row lock gets 409 when it re-reads the retired
+    // row, and 201 (chaining onto the new active row) when the first request committed before its lock. Which one a
+    // run gets depends only on timing, so the test accepts both and pins the invariant: exactly one active row.
+    const statuses = [a.status, b.status].sort()
+    expect([[201, 201], [201, 409]]).toContainEqual(statuses)
     expect(await count(t.db, `select count(*) n from blueprints where code like 'C/8%' and status = 'active'`)).toBe(1)
+    expect(await count(t.db, `select count(*) n from blueprints where code like 'C/8%'`)).toBe(statuses[1] === 201 ? 3 : 2)
   })
 })
 
