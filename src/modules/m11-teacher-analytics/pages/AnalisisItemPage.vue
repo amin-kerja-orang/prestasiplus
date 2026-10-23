@@ -49,14 +49,17 @@ const subjectValue = computed(() =>
 )
 const classValue = computed(() => (selectedClass.value === null ? '' : String(selectedClass.value)))
 
-/** The selects show a value only when it is one of their options (an unknown id reads "Semua …"). */
+/**
+ * The selects show a value only when it is one of their options (an unknown id reads "Semua …"). Ids are
+ * compared as strings: the http API sends option ids as strings (`IdSchema`), the query ids are numbers.
+ */
 const selectedSubject = computed(() =>
-  d.value?.options.subjects.some((s) => s.id === subjectId.value)
+  d.value?.options.subjects.some((s) => String(s.id) === String(subjectId.value))
     ? (subjectId.value ?? null)
     : null,
 )
 const selectedClass = computed(() =>
-  d.value?.options.classes.some((c) => c.id === classroomId.value)
+  d.value?.options.classes.some((c) => String(c.id) === String(classroomId.value))
     ? (classroomId.value ?? null)
     : null,
 )
