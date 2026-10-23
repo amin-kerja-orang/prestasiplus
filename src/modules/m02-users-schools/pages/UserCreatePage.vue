@@ -53,7 +53,7 @@ const flash = useFlash()
 /** http mode: no default password exists (D59b); the server generates one per account and returns it once. */
 const http = isHttpMode()
 const credential = ref<CredentialRow | null>(null)
-/** DV-M02-22: no "Pegawai JPN" in http mode (not a contract role). */
+/** DV-M02-23: no "Pegawai JPN" in http mode (not a contract role). */
 const roleOptions = roleOptionsFor(ROLE_OPTIONS, http)
 
 const role = ref<Role | ''>('')

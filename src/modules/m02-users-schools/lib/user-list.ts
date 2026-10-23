@@ -36,7 +36,7 @@ export const ROLE_FILTER_OPTIONS: readonly { value: AdminUserRole; label: string
   { value: 'admin', label: 'Admin' },
 ]
 
-/** "Peranan" filter options for the mode: no "Pegawai JPN" in http mode (DV-M02-22, not a contract role). */
+/** "Peranan" filter options for the mode: no "Pegawai JPN" in http mode (DV-M02-23, not a contract role). */
 export function roleFilterOptionsFor(
   http: boolean = isHttpMode(),
 ): readonly { value: AdminUserRole; label: string }[] {

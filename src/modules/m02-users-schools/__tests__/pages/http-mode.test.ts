@@ -337,7 +337,7 @@ const roleValues = (w: VueWrapper) =>
     (o) => (o.element as HTMLOptionElement).value,
   )
 
-describe('Peranan select (DV-M02-22)', () => {
+describe('Peranan select (DV-M02-23)', () => {
   it('http: S2 and S3 leave out "Pegawai JPN" (not a contract role)', async () => {
     const create = await mountPage(UserCreatePage, '/admin/users/create')
     expect(roleValues(create.w)).not.toContain('jpn_officer')
@@ -356,7 +356,7 @@ describe('Peranan select (DV-M02-22)', () => {
   })
 })
 
-describe('Pautkan Anak search minimum (DV-M02-23)', () => {
+describe('Pautkan Anak search minimum (DV-M02-24)', () => {
   async function searchFor(term: string) {
     const { w } = await mountPage(UserCreatePage, '/admin/users/create')
     await t(w, 'user-role').setValue('parent')

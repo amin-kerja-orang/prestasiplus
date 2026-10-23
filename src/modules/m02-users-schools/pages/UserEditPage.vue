@@ -65,7 +65,7 @@ const flash = useFlash()
 
 /** http mode: no admin-chosen password (D59b); "reset" asks the server for a random one, shown once. */
 const http = isHttpMode()
-/** DV-M02-22: no "Pegawai JPN" in http mode (not a contract role). */
+/** DV-M02-23: no "Pegawai JPN" in http mode (not a contract role). */
 const roleOptions = roleOptionsFor(ROLE_OPTIONS, http)
 const credential = ref<CredentialRow | null>(null)
 

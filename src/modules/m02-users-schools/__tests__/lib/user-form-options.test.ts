@@ -93,7 +93,7 @@ describe('user-form routes (SRS §2)', () => {
   })
 })
 
-describe('http mode lookups (DV-M02-22, DV-M02-23)', () => {
+describe('http mode lookups (DV-M02-23, DV-M02-24)', () => {
   it('keeps the 8 live roles in mock mode', () => {
     expect(roleOptionsFor(ROLE_OPTIONS, false)).toBe(ROLE_OPTIONS)
     expect(roleOptionsFor(ROLE_OPTIONS, false).map((o) => o.value)).toContain('jpn_officer')

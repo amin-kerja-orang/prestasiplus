@@ -29,7 +29,7 @@ export const ROLE_OPTIONS: readonly { value: Role; label: string }[] = [
 ]
 
 /**
- * http mode (DV-M02-22): `jpn_officer` is not a role of the API contract (a "Pegawai JPN" is a `ppd_officer`
+ * http mode (DV-M02-23): `jpn_officer` is not a role of the API contract (a "Pegawai JPN" is a `ppd_officer`
  * with a JPN scope), so create / update would answer 422. Mock mode keeps the live 8-role select.
  */
 export function roleOptionsFor<T extends { value: string }>(
@@ -107,7 +107,7 @@ export const SECURITY_NOTES: readonly string[] = [
 export const SEARCH_MIN_CHARS = 2
 
 /**
- * http mode (DV-M02-23): `GET /api/admin/students/search` answers `[]` below 3 characters (contract
+ * http mode (DV-M02-24): `GET /api/admin/students/search` answers `[]` below 3 characters (contract
  * `STUDENT_SEARCH_MIN_CHARS`), so the parent-student linker waits for 3. The school endpoints have no minimum.
  */
 export const STUDENT_SEARCH_MIN_CHARS_HTTP = 3

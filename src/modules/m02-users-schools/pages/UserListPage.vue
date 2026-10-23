@@ -57,7 +57,7 @@ const router = useRouter()
 const flash = useFlash()
 const confirm = useConfirm()
 const { store: session, user: me } = useSession()
-/** Login As needs `POST /api/admin/users/:id/impersonate`, which the API does not have (DV-M02-21). */
+/** Login As needs `POST /api/admin/users/:id/impersonate`, which the API does not have (DV-M02-22). */
 const http = isHttpMode()
 const roleFilterOptions = roleFilterOptionsFor(http)
 
@@ -345,7 +345,7 @@ const SKELETON_ROWS = 6
 // eslint-disable-next-line pp/ds-class-allowlist -- an object key, not a class list
 const META_CLASS = 'class'
 /**
- * DV-M02-24: eight columns do not fit the card at 1280 (~1140px in a 973px card) and the actions clip. "Tarikh"
+ * DV-M02-25: eight columns do not fit the card at 1280 (~1140px in a 973px card) and the actions clip. "Tarikh"
  * shows from `2xl`, "Telefon" from `xl`; the table is tight and the name / school cells are capped, so the
  * "Tindakan" column is always inside the card.
  */
