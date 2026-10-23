@@ -31,6 +31,8 @@ const session = useSessionStore()
 const school = ref<SchoolSummary | null>(null)
 /** The teacher's own school, offered to the picker (DV-M10-40); `null` when none or in mock mode. */
 const ownSchool = ref<SchoolSummary | null>(null)
+/** True while that lookup runs: the form is not submitted meanwhile, so it cannot go out without the school. */
+const schoolLookup = ref(false)
 const name = ref('')
 const subjectId = ref('')
 const level = ref<EducationLevelSlug | ''>('')
@@ -45,11 +47,14 @@ const tiles = computed(() => tilesForSchoolType(school.value?.type ?? null))
 onMounted(async () => {
   const schoolId = session.user?.schoolId
   if (!isHttpMode() || schoolId === null || schoolId === undefined) return
+  schoolLookup.value = true
   try {
     // `GET /api/schools/search?id=`: that one active school, `[]` for an inactive or unknown one.
     ownSchool.value = (await searchSchools({ id: schoolId }))[0] ?? null
   } catch {
     // The picker simply stays empty; the teacher can still search.
+  } finally {
+    schoolLookup.value = false
   }
 })
 
@@ -59,7 +64,7 @@ watch(tiles, (next) => {
 })
 
 async function submit(): Promise<void> {
-  if (submitting.value) return
+  if (submitting.value || schoolLookup.value) return
   submitting.value = true
   fields.value = {}
   failure.value = []
@@ -180,7 +185,7 @@ async function submit(): Promise<void> {
         size="xl"
         block
         :loading="submitting"
-        :disabled="submitting"
+        :disabled="submitting || schoolLookup"
         :icon="submitting ? undefined : 'i-ph-plus-circle-duotone'"
         data-testid="kelas-submit"
       >

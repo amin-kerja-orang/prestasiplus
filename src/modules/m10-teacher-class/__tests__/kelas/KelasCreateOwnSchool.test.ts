@@ -90,6 +90,22 @@ describe("S5 KelasCreatePage: the teacher's own school (DV-M10-40)", () => {
     expect(api.createGuruClass.mock.calls[0]?.[0]).toMatchObject({ schoolId: '12' })
   })
 
+  it('does not submit while the school lookup is pending, then sends the school once it settles', async () => {
+    let resolve!: (v: unknown) => void
+    schools.searchSchools.mockReturnValueOnce(new Promise((r) => (resolve = r)))
+    const w = await mountPage()
+    expect(w.get('[data-testid="kelas-submit"]').attributes('disabled')).toBeDefined()
+    await fillAndSubmit(w)
+    expect(api.createGuruClass).not.toHaveBeenCalled()
+    resolve([OWN_SCHOOL])
+    await flushPromises()
+    expect(w.get('[data-testid="kelas-submit"]').attributes('disabled')).toBeUndefined()
+    await w.get('[data-testid="kelas-form"]').trigger('submit')
+    await flushPromises()
+    expect(api.createGuruClass).toHaveBeenCalledTimes(1)
+    expect(api.createGuruClass.mock.calls[0]?.[0]).toMatchObject({ schoolId: '12' })
+  })
+
   it('sends no schoolId and does not look a school up for a teacher without a school', async () => {
     session.user = { schoolId: null }
     const w = await mountPage()
