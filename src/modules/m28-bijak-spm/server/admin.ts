@@ -323,7 +323,10 @@ function reviewQuestion(
   }
 }
 
-/** Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks. */
+/**
+ * Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks, and a DSKP
+ * topic unless the question is tagged T1-T3 (outside DSKP).
+ */
 export function gateErrors(
   qs: readonly QuestionDef[],
   schemeOf: SchemeLookup = getScheme,
@@ -344,7 +347,9 @@ export function gateErrors(
           out.push(`${n} ${l.label}: markah skema ${sc.marks} tidak sama dengan markah ${l.marks}`)
       }
     }
-    if (!q.curriculum.unitLabel) out.push(`${n}: topik DSKP belum dipilih`)
+    // T1-T3 content is outside DSKP and has no unit (same rule as the intake gate, validation.ts).
+    if (!q.curriculum.unitLabel && q.curriculum.formOrigin !== 'T1-T3')
+      out.push(`${n}: topik DSKP belum dipilih`)
   })
   return out
 }
