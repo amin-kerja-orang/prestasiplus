@@ -17,7 +17,8 @@ import {
   transformTopic,
 } from '../../../src/migration/transform/reference'
 import { dateOnly, transformSubscription } from '../../../src/migration/transform/subscriptions'
-import { gradeFromClassLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
+import { ROLE_MAP, ROLES_NOT_MIGRATED } from '../../../src/migration/transform/enums'
+import { gradeFromClassLabel, roleRejectLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
 import { IcHasher } from '../../../src/migration/transform/secrets'
 
 const ic = new IcHasher({ IC_HASH_KEY: 'test-ic-key-0123456789' })
@@ -50,11 +51,15 @@ describe('levels, subjects, chapters, topics', () => {
   })
 
   it('keeps the English name and colour of a seeded subject and falls back otherwise', () => {
-    const seeded = transformSubject({ id: '1', name: 'Matematik', code: 'math', is_core: '1', color: null }, { name_en: 'Mathematics', color: '#EF4444' })
-    expect(seeded).toMatchObject({ ok: true, value: { code: 'MATH', name_en: 'Mathematics', color: '#EF4444', is_core: true } })
-    const fresh = transformSubject({ id: '4', name: 'Sains', code: null, is_core: '0', color: 'not-a-colour' })
-    expect(fresh).toMatchObject({ ok: true, value: { code: 'SUBJ4', name_en: 'Sains', color: '#64748B' } })
-    expect(transformSubject({ id: '5', name: 'X', is_core: 'maybe' })).toMatchObject({ ok: false })
+    const seeded = transformSubject({ id: '1', name_bm: 'Matematik', name_en: 'Maths', code: 'math', is_core: '1', color: null }, { name_en: 'Mathematics', color: '#EF4444' })
+    expect(seeded).toMatchObject({ ok: true, value: { code: 'MATH', name: 'Matematik', name_en: 'Mathematics', color: '#EF4444', is_core: true } })
+    const fresh = transformSubject({ id: '4', name_bm: 'Sains', name_en: ' Science ', code: null, is_core: '0', color: 'not-a-colour' })
+    expect(fresh).toMatchObject({ ok: true, value: { code: 'SUBJ4', name: 'Sains', name_en: 'Science', color: '#64748B' } })
+    // No English name staged: the Malay name stands in, as before.
+    expect(transformSubject({ id: '6', name_bm: 'Sejarah', name_en: null, is_core: '0' })).toMatchObject({ ok: true, value: { name: 'Sejarah', name_en: 'Sejarah' } })
+    // The v2 name comes from name_bm: the old `name` column is not read, and a blank name_bm is rejected naming it.
+    expect(transformSubject({ id: '7', name: 'Lama', name_en: 'Old', is_core: '0' })).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'name_bm' } })
+    expect(transformSubject({ id: '5', name_bm: 'X', is_core: 'maybe' })).toMatchObject({ ok: false })
   })
 
   it('quarantines orphan chapters and topics and marks out-of-tree chapters', () => {
@@ -113,6 +118,43 @@ describe('users', () => {
     expect(transformUser(user({ role: 'super_guru' }), ctx())).toEqual({
       ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'role', enumValue: 'super_guru' }),
     })
+  })
+
+  it('does not migrate the agent role: rejected by name on the role column, labelled for the report', () => {
+    expect(ROLES_NOT_MIGRATED).toEqual(['agent'])
+    expect(Object.keys(ROLE_MAP)).not.toContain('agent')
+    for (const raw of ['agent', ' Agent ']) {
+      expect(transformUser(user({ role: raw }), ctx())).toEqual({
+        ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'role', enumValue: raw }),
+      })
+    }
+    expect(roleRejectLabel('agent')).toBe('agent')
+    expect(roleRejectLabel('AGENT ')).toBe('agent')
+    expect(roleRejectLabel('super_guru')).toBe('other')
+    expect(roleRejectLabel(null)).toBe('other')
+  })
+
+  it('maps jpn_officer to ppd_officer with a STATE scope from the school (v2 has no jpn_officer role, D31a)', () => {
+    expect(ROLE_MAP.jpn_officer).toBe('ppd_officer')
+    expect(Object.values(ROLE_MAP)).not.toContain('jpn_officer')
+    const jpn = transformUser(user({ role: 'jpn_officer' }), ctx())
+    expect(jpn).toMatchObject({
+      ok: true,
+      value: { role: 'ppd_officer', ppdUnscoped: false, scope: { role: 'ppd_officer', level: 'state', state_code: 'Selangor', district_code: null, school_id: null } },
+    })
+    // The state is enough: a school without a district still gives the scope (a PPD officer would be unscoped).
+    expect(transformUser(user({ role: 'jpn_officer' }), ctx({ school: { type: 'SMK', state: 'Selangor', district: null } }))).toMatchObject({
+      ok: true, value: { scope: { level: 'state', state_code: 'Selangor' }, ppdUnscoped: false },
+    })
+    // No school, or a school without a state: loaded as a ppd_officer without a scope and listed by id (like a PPD officer).
+    expect(transformUser(user({ role: 'jpn_officer', school_id: null }), ctx({ schoolId: null, school: null }))).toMatchObject({
+      ok: true, value: { role: 'ppd_officer', scope: null, ppdUnscoped: true },
+    })
+    expect(transformUser(user({ role: 'jpn_officer' }), ctx({ school: { type: 'SMK', state: null, district: null } }))).toMatchObject({
+      ok: true, value: { scope: null, ppdUnscoped: true },
+    })
+    // A pegawai_ppd keeps the district scope.
+    expect(transformUser(user({ role: 'pegawai_ppd' }), ctx())).toMatchObject({ ok: true, value: { scope: { level: 'district', district_code: 'PPD Petaling' } } })
   })
 
   it('rejects an orphan school and keeps a user without a school', () => {

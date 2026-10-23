@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest'
 import { transformExamAttempt, parseScore, parseSectionScores, snapshotTitle, EXAM_FALLBACK_TITLE } from '../../../src/migration/transform/exam'
 import {
   parseClientUuid,
+  SESSION_MODE_MAP,
+  SESSION_MODES_DEFERRED,
   transformAnswer,
   transformSession,
   type AnswerRefs,
@@ -35,6 +37,20 @@ describe('transformSession', () => {
       user_id: '9', subject_id: '5', mode: 'latih_tubi', question_count: 10, correct_count: 4, time_spent_sec: 300,
       coins_earned: 2, points_earned: 0, status: 'completed', legacy_paper: 'paper1', question_set_id: null, completed_at: null,
     })
+  })
+
+  it('maps the real .cloud modes: spm_tahun_lepas and spm_mock to past_year, spm_ramalan to ramalan, the rest by name', () => {
+    const modeOf = (mode: string) => {
+      const out = transformSession(session({ mode }), refs, null)
+      return out.ok ? out.value.mode : `${out.reject.reason}:${out.reject.column}`
+    }
+    expect(modeOf('spm_tahun_lepas')).toBe('past_year')
+    expect(modeOf('spm_mock')).toBe('past_year')
+    expect(modeOf(' SPM-Ramalan ')).toBe('ramalan')
+    for (const [raw, v2] of [['revision', 'revision'], ['chapter', 'chapter'], ['latih_tubi', 'latih_tubi'], ['pksk', 'pksk']]) expect(modeOf(raw as string)).toBe(v2)
+    expect(SESSION_MODES_DEFERRED).toEqual(['spm', 'battle'])
+    expect(Object.keys(SESSION_MODE_MAP)).not.toContain('spm')
+    expect(Object.keys(SESSION_MODE_MAP)).not.toContain('battle')
   })
 
   it('rejects spm and battle as UNKNOWN_ENUM (Q5) and never defaults the mode', () => {
@@ -292,6 +308,11 @@ describe('transformExamAttempt', () => {
   it('maps the status, leaves an abandoned attempt unsubmitted and rejects an unknown one', () => {
     expect(transformExamAttempt(attempt({ status: 'tamat_masa' }), refs)).toMatchObject({ ok: true, value: { attempt: { status: 'auto_submitted' } } })
     expect(transformExamAttempt(attempt({ status: 'ditinggalkan' }), refs)).toMatchObject({ ok: true, value: { attempt: { status: 'abandoned', submitted_at: null } } })
+    // The slugs of `attempt_statuses`: submitted and marked load as submitted; in_progress has no v2 equivalent.
+    expect(transformExamAttempt(attempt({ status: 'submitted' }), refs)).toMatchObject({ ok: true, value: { attempt: { status: 'submitted' } } })
+    expect(transformExamAttempt(attempt({ status: 'marked' }), refs)).toMatchObject({ ok: true, value: { attempt: { status: 'submitted' } } })
+    expect(transformExamAttempt(attempt({ status: 'in_progress' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'status' } })
+    expect(transformExamAttempt(attempt({ status: null }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'status' } })
     expect(transformExamAttempt(attempt({ status: 'sedang_berjalan' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'status' } })
     expect(transformExamAttempt(attempt({ mode: 'misteri' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'mode' } })
   })

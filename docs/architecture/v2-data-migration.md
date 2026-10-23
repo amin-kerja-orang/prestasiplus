@@ -58,7 +58,7 @@ Counts are final tables after all migrations (134). "Business" means the table h
 | Exams (attempts) | `exam_attempts`, `part_responses` (2) | Canonical exam attempts and per-part responses (including AI grading). |
 | Questions, legacy bank | `questions`, `question_options`, `structured_questions`, `structured_sub_questions`, `structured_rubric_points`, `pksk_questions`, `question_reports`, `question_submissions`, `question_imports`, `question_sets`, `question_set_items`, `spm_sets`, `spm_set_question` (13) | Objective, structured and PKSK items; reports; teacher submissions; teacher question sets; SPM tracking sets. |
 | Questions, canonical bank | `exam_papers`, `paper_sections`, `exam_questions`, `exam_paper_questions`, `question_stimulus`, `question_parts`, `part_options`, `part_answer_keys`, `stimuli`, `media_assets`, `question_revisions`, `question_snapshots`, `source_papers`, `import_batches`, `import_items`, `legacy_canonical_map`, `unify_quarantine`, `paper_documents`, `paper_document_pages`, `paper_blueprints`, `blueprint_sections`, `teacher_reference_documents`, `teacher_reference_papers` (23) | Canonical exam model (paper, section, question, part, option, key, stimulus), revisions and snapshots, import pipeline, PDF page images, exam-format blueprints, bridge from legacy ids. |
-| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` (9) | Vocabulary tables of the canonical model. |
+| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` (9) | Vocabulary tables of the canonical model (`id`, `slug`). Copied for id to slug joins: 6 staged (`attempt_statuses`, `paper_statuses`, `question_statuses`, `answer_modes`, `answer_key_kinds`, `stimulus_kinds`), 3 archived (`exam_boards`, `exam_types`, `selection_rules`). Still not migrated as v2 rows. |
 
 Two facts about the two banks that matter later:
 
@@ -118,7 +118,7 @@ Prototype store names are the `defineTable` or dataset names in `src/modules/*/m
 | Gamification | `reward_settings` | M14 `settingsTable` | **Reshape** | Single row (`reward_budget_sen_month`, `flat_quiz_reward`, `current_session_year`, `games_award_syiling`) vs prototype key/value settings. |
 | Battle & games | `battles` | M16 `battlesTable` | **Reshape** | .cloud: `mode` (1v1, quick_match, school_battle), live fields (`total_questions`, `duration_seconds`); prototype: playerA/playerB wide row plus question type, domain, level. |
 | Battle & games | `battle_participants` | M16 `battlesTable` (playerA/B) + `battleAnswersTable` | **Reshape** | Normalised rows (`score`, `accuracy`, `is_bot`, `target_score`, `answered`) vs wide columns. |
-| Battle & games | `battle_queue`, `battle_invites` | M16 `battleQueuesTable`, `battleInvitationsTable` | **Rename** | Transient; `uuid`, `grade`, `status` vocabulary. |
+| Battle & games | `battle_queue`, `battle_invites` | M16 `battleQueuesTable`, `battleInvitationsTable` | **Rename** | Transient; `grade`, `status` vocabulary (`battle_invites` also has a `uuid`; `battle_queue` has none). |
 | Battle & games | `school_battle_rankings` | M16 `storedStandingsTable` / `sekolahBersaingTable` | **Not migrated** | Stored aggregate; recompute from battles. |
 | Battle & games | `games` | none (prototype uses a fixed `GameKey` enum) | **Missing in prototype** | `name`, `type`, JSON `config`. |
 | Battle & games | `game_sessions` | M16 `gameSessionsTable` | **Reshape** | .cloud: `game_id`, `score`, `result`; prototype: string `game` key, darjah, item count, max score. |
@@ -159,7 +159,7 @@ Prototype store names are the `defineTable` or dataset names in `src/modules/*/m
 | Questions (canonical) | `question_revisions`, `question_snapshots`, `source_papers`, `import_batches`, `import_items`, `legacy_canonical_map`, `unify_quarantine` | none | **Not migrated** | Provenance and pipeline; keep only in a read-only archive. |
 | Questions (canonical) | `paper_documents`, `paper_document_pages`, `paper_blueprints`, `blueprint_sections` | none | **Not migrated** | PDF page images and exam-format blueprints; re-derive in the new exam schema. |
 | Questions (canonical) | `teacher_reference_documents`, `teacher_reference_papers` | none | **Not migrated** | Teacher reference uploads (files). |
-| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` | new exam schema | **Not migrated** | Vocabulary tables of the canonical bank. |
+| Lookups | `answer_modes`, `answer_key_kinds`, `stimulus_kinds`, `selection_rules`, `question_statuses`, `paper_statuses`, `attempt_statuses`, `exam_boards`, `exam_types` | new exam schema | **Not migrated** (staged or archived for id to slug joins only) | Vocabulary tables of the canonical bank. The real .cloud rows carry `id` and `slug`; the `*_id` columns of the canonical tables and `exam_attempts.status_id` are joined to the slug in the transforms. |
 
 
 ### 2.1 Counts by match level (134 tables)

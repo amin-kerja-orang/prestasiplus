@@ -11,10 +11,10 @@ import { LoaderError, loadStaging, SourceNotImplementedError, type LoadOptions }
 import { DirReader, DumpFormatError } from '../../../src/migration/staging/readers'
 import { capture, countAll, createStagingDb, FIXTURE_DIR, stagingEnv, tempDir, writeDump, type StagingDb } from './helpers'
 
-/** Two tables are enough for failure paths: each full load re-creates all 118 tables (seconds). */
+/** Two tables are enough for failure paths: each full load re-creates all 127 tables (seconds). */
 const SUBSET = ['users', 'schools'].map((n) => findTable(n) as TableSpec)
 
-// A full load creates 118 tables; under a loaded test host (other files, other containers) it can pass 30 s.
+// A full load creates 127 tables; under a loaded test host (other files, other containers) it can pass 30 s.
 const FULL_LOAD_TIMEOUT = 90_000
 
 let env: StagingDb
@@ -299,7 +299,7 @@ describe('staging:load command', () => {
       err: io.err,
     })
     expect(code).toBe(STAGING_EXIT.ok)
-    expect(io.text()).toMatch(/Staging load finished: 118 tables/)
+    expect(io.text()).toMatch(/Staging load finished: 127 tables/)
   }, FULL_LOAD_TIMEOUT)
 
   it('rejects --tables on staging:load as a usage error, so a partial load can never wipe the other tables', async () => {

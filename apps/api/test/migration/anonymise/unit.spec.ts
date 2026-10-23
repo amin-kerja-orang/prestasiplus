@@ -45,6 +45,30 @@ describe('default deny (AC1)', () => {
     expect(gaps.unknown.sort()).toEqual(['ghost_table.*', 'users.ghost_column'])
   })
 
+  it('every DDL column has an explicit per-table rule and every config column exists in the DDL (no drift either way)', () => {
+    // Only id, created_at and updated_at may rely on the `global` rules; every other column needs its own entry.
+    const globalOk = new Set(['id', 'created_at', 'updated_at'])
+    const missing: string[] = []
+    for (const spec of TABLES) {
+      const rules = DEFAULT_CONFIG.tables[spec.name] ?? {}
+      for (const col of spec.columns) {
+        if (!(col.name in rules) && !globalOk.has(col.name)) missing.push(`${spec.name}.${col.name}`)
+      }
+    }
+    expect(missing, 'spec columns without an explicit rule in anon.config.json').toEqual([])
+    const stale: string[] = []
+    const specByName = new Map(TABLES.map((s) => [s.name, new Set(s.columns.map((c) => c.name))]))
+    for (const [table, rules] of Object.entries(DEFAULT_CONFIG.tables)) {
+      const cols = specByName.get(table)
+      if (!cols) {
+        stale.push(`${table}.*`)
+        continue
+      }
+      for (const col of Object.keys(rules)) if (!cols.has(col)) stale.push(`${table}.${col}`)
+    }
+    expect(stale, 'anon.config.json columns that are not in ddl/spec.ts').toEqual([])
+  })
+
   it('every personal column of the DDL has a rule that is not "keep"', () => {
     const mustChange: [string, string][] = [
       ['users', 'name'], ['users', 'email'], ['users', 'phone'], ['users', 'ic'], ['users', 'username'], ['users', 'password'],
@@ -53,9 +77,15 @@ describe('default deny (AC1)', () => {
       ['foster_applications', 'reason'], ['support_tickets', 'subject'], ['support_tickets', 'admin_reply'], ['student_notes', 'body'],
       ['mood_checkins', 'note'], ['feedback', 'comment'], ['chatbot_messages', 'body'], ['chatbot_conversations', 'visitor_id'],
       ['audit_logs', 'ip'], ['settings', 'value'], ['psychometric_results', 'details'], ['part_responses', 'response'],
-      ['structured_attempt_answers', 'answer_text'], ['schools', 'name'], ['schools', 'join_code'], ['marketplace_sellers', 'organisation'],
+      ['structured_attempt_answers', 'answer'], ['schools', 'name'], ['schools', 'join_code'], ['marketplace_sellers', 'organisation'],
     ]
-    for (const [t, c] of mustChange) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).not.toBe('keep')
+    for (const [t, c] of mustChange) {
+      // Strict: the column must exist in the DDL and have an explicit rule (an undefined rule is not "not keep").
+      expect(findTable(t)?.columns.some((col) => col.name === c), `${t}.${c} is not in the DDL`).toBe(true)
+      const rule = DEFAULT_CONFIG.tables[t]?.[c]
+      expect(rule, `${t}.${c} has no explicit rule`).toBeDefined()
+      expect(rule?.rule, `${t}.${c}`).not.toBe('keep')
+    }
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'password')?.rule).toBe('hash-password-dummy')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'remember_token')?.rule).toBe('null')
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'parent_invite_token')?.rule).toBe('null')
@@ -74,9 +104,9 @@ describe('default deny (AC1)', () => {
 
   it('the shipped config covers the quasi-identifier and upload columns (M4)', () => {
     const expected: [string, string, string][] = [
-      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'], ['challenges', 'criteria', 'scrub-json'],
+      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'], ['challenges', 'target_value', 'keep'], ['challenges', 'title', 'scrub-text'],
       ['notifications', 'title', 'scrub-text'], ['notifications', 'target', 'scrub-text'], ['media_assets', 'path', 'pseudonym'],
-      ['paper_documents', 'path', 'pseudonym'], ['paper_document_pages', 'image_path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
+      ['paper_documents', 'source_file', 'pseudonym'], ['paper_document_pages', 'path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
       ['audio_kbat', 'audio_path', 'pseudonym'],
     ]
     for (const [t, c, r] of expected) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).toBe(r)

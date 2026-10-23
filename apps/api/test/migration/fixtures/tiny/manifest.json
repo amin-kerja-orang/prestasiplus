@@ -289,6 +289,30 @@
     "part_responses": {
       "rows": 0
     },
+    "attempt_statuses": {
+      "rows": 3,
+      "file": "attempt_statuses.ndjson"
+    },
+    "paper_statuses": {
+      "rows": 4,
+      "file": "paper_statuses.ndjson"
+    },
+    "question_statuses": {
+      "rows": 4,
+      "file": "question_statuses.ndjson"
+    },
+    "answer_modes": {
+      "rows": 14,
+      "file": "answer_modes.ndjson"
+    },
+    "answer_key_kinds": {
+      "rows": 6,
+      "file": "answer_key_kinds.ndjson"
+    },
+    "stimulus_kinds": {
+      "rows": 15,
+      "file": "stimulus_kinds.ndjson"
+    },
     "questions": {
       "rows": 24,
       "file": "questions.ndjson"
@@ -399,6 +423,18 @@
     "teacher_reference_papers": {
       "rows": 3,
       "file": "teacher_reference_papers.ndjson"
+    },
+    "exam_boards": {
+      "rows": 1,
+      "file": "exam_boards.ndjson"
+    },
+    "exam_types": {
+      "rows": 1,
+      "file": "exam_types.ndjson"
+    },
+    "selection_rules": {
+      "rows": 2,
+      "file": "selection_rules.ndjson"
     }
   }
 }

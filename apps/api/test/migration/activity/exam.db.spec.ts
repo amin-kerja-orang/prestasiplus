@@ -8,7 +8,9 @@
  *
  * Planted (S1, S2 are migrated pupils of the fixture; fictitious values, surrogate ids from 7001 up):
  *   attempts 7001 (submitted, score 30/40, sections), 7002 (auto-submitted, no score, no paper), 7003 (status still
- *   in progress = rejected), 7004 (abandoned, score 5/40)
+ *   in progress = rejected), 7004 (abandoned, score 5/40), 7005 (marked = submitted, 12/40), 7006 (no status id =
+ *   rejected INVALID_VALUE), 7007 (a status id with no lookup row = INVALID_VALUE), 7008 (a slug outside the map =
+ *   UNKNOWN_ENUM). The status is `exam_attempts.status_id` -> `attempt_statuses.slug`.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -32,15 +34,30 @@ beforeAll(async () => {
   s2 = pupils[1]?.legacy_id ?? ''
   expect(s1 && s2, 'the fixture must give two migrated pupils').toBeTruthy()
 
+  // The status lookup of .cloud: the three real slugs, plus map aliases and one slug the map does not know.
+  await h.q(`delete from staging_cloud.attempt_statuses`)
+  await h.q(
+    `insert into staging_cloud.attempt_statuses (id, slug) values
+       (1, 'in_progress'), (2, 'submitted'), (3, 'marked'), (4, 'auto_submitted'), (5, 'abandoned'), (6, 'slug_tidak_dikenali')`,
+  )
   await h.q(
     `insert into staging_cloud.exam_attempts
-       (id, user_id, exam_paper_id, mode, status, score, max_score, section_scores, section_selections, served_composition, created_at, updated_at)
+       (id, user_id, exam_paper_id, mode, status_id, score, max_score, section_scores, section_selections, served_composition, created_at, updated_at)
      values
-       (7001, $1, 1, 'exam', 'selesai', 30, 40, '{"a":15,"b":15}', '{"note":"${SENTINEL}"}', '[{"stem":"${SENTINEL}"}]', '2026-03-10T01:00:00Z', '2026-03-10T03:00:00Z'),
-       (7002, $2, null, 'latihan', 'tamat_masa', null, null, null, '{"note":"${SENTINEL}"}', null, '2026-03-11T01:00:00Z', '2026-03-11T02:00:00Z'),
-       (7003, $1, 1, 'exam', 'sedang_berjalan', 0, 40, null, null, '[{"stem":"${SENTINEL}"}]', '2026-03-12T01:00:00Z', '2026-03-12T01:00:00Z'),
-       (7004, $2, 1, 'latihan', 'ditinggalkan', 5, 40, '{"a":5}', null, null, '2026-03-13T01:00:00Z', '2026-03-13T02:00:00Z')`,
+       (7001, $1, 1, 'exam', 2, 30, 40, '{"a":15,"b":15}', '{"note":"${SENTINEL}"}', '[{"stem":"${SENTINEL}"}]', '2026-03-10T01:00:00Z', '2026-03-10T03:00:00Z'),
+       (7002, $2, null, 'latihan', 4, null, null, null, '{"note":"${SENTINEL}"}', null, '2026-03-11T01:00:00Z', '2026-03-11T02:00:00Z'),
+       (7003, $1, 1, 'exam', 1, 0, 40, null, null, '[{"stem":"${SENTINEL}"}]', '2026-03-12T01:00:00Z', '2026-03-12T01:00:00Z'),
+       (7004, $2, 1, 'latihan', 5, 5, 40, '{"a":5}', null, null, '2026-03-13T01:00:00Z', '2026-03-13T02:00:00Z'),
+       (7005, $1, 1, 'exam', 3, 12, 40, null, null, null, '2026-03-15T01:00:00Z', '2026-03-15T02:00:00Z'),
+       (7006, $1, 1, 'exam', null, 1, 40, null, null, null, '2026-03-16T01:00:00Z', '2026-03-16T02:00:00Z'),
+       (7007, $1, 1, 'exam', 99, 1, 40, null, null, null, '2026-03-17T01:00:00Z', '2026-03-17T02:00:00Z'),
+       (7008, $1, 1, 'exam', 6, 1, 40, null, null, null, '2026-03-18T01:00:00Z', '2026-03-18T02:00:00Z')`,
     [s1, s2],
+  )
+  // The title year comes from the paper's questions (exam_questions.exam_paper_id -> source_papers); the fixture has none.
+  await h.q(`delete from archive_cloud.exam_questions`)
+  await h.q(
+    `insert into archive_cloud.exam_questions (id, source_paper_id, exam_paper_id, number_label) values (1, 1, 1, '1'), (2, 1, 1, '2')`,
   )
   // The free-text and grading columns of the source: planted, and never to be read.
   await h.q(
@@ -48,11 +65,11 @@ beforeAll(async () => {
      values (8001, 7001, 1, '"${SENTINEL}"'::jsonb, 3, '{"comment":"${SENTINEL}"}', 'graded', '${SENTINEL}')`,
   )
   await h.q(
-    `insert into staging_cloud.structured_attempt_answers (id, structured_attempt_id, structured_sub_question_id, awarded_marks, answer_text)
+    `insert into staging_cloud.structured_attempt_answers (id, structured_attempt_id, structured_sub_question_id, awarded, answer)
      values (8101, 1, 1, 2, '${SENTINEL}')`,
   )
   // An archived question whose stem and options carry the marker, answered in a practice session.
-  await h.q(`insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, question_type, status, body)
+  await h.q(`insert into archive_cloud.questions (id, subject_id, education_level_id, chapter_id, topic_id, difficulty_level, type, status, body)
              values (9501, 1, 1, 1, 1, '2', 'objektif', 'diluluskan', '${SENTINEL} stem')`)
   await h.q(`insert into archive_cloud.question_options (id, question_id, label, body, is_correct)
              values (9601, 9501, 'A', '${SENTINEL} option', '1'), (9602, 9501, 'B', 'lain', '0')`)
@@ -105,19 +122,26 @@ describe('exam attempts (AC2)', () => {
   it('maps the statuses, uses the fixed title without a paper, and writes no result without a score', async () => {
     const rows = await h.q<{ legacy_id: string; status: string; title: string; submitted_at: string | null; has_result: boolean }>(
       `select e.legacy_id, e.status, e.title, e.submitted_at::text, exists (select 1 from attempt_results r where r.attempt_id = e.id) as has_result
-       from exam_attempts e where e.legacy_source = 'cloud' and e.legacy_id in ('7001','7002','7003','7004') order by e.legacy_id`,
+       from exam_attempts e where e.legacy_source = 'cloud' and e.legacy_id in ('7001','7002','7003','7004','7005') order by e.legacy_id`,
     )
     expect(rows.map((r) => [r.legacy_id, r.status, r.has_result])).toEqual([
       ['7001', 'submitted', true],
       ['7002', 'auto_submitted', false],
       ['7004', 'abandoned', true],
+      ['7005', 'submitted', true], // slug `marked`
     ])
     expect(rows[1]?.title).toBe('Percubaan peperiksaan lama')
     expect(rows[2]?.submitted_at).toBeNull()
-    const rejected = await h.q<{ reason: string; column_name: string }>(
-      `select reason, column_name from etl_rejects where run_id = $1 and entity = 'exam_attempts' and legacy_id = '7003'`, [runId],
+    const rejected = await h.q<{ legacy_id: string; reason: string; column_name: string }>(
+      `select legacy_id, reason, column_name from etl_rejects where run_id = $1 and entity = 'exam_attempts' and legacy_id in ('7003','7006','7007','7008') order by legacy_id`,
+      [runId],
     )
-    expect(rejected).toEqual([{ reason: 'UNKNOWN_ENUM', column_name: 'status' }])
+    expect(rejected).toEqual([
+      { legacy_id: '7003', reason: 'UNKNOWN_ENUM', column_name: 'status' }, // slug in_progress
+      { legacy_id: '7006', reason: 'INVALID_VALUE', column_name: 'status' }, // no status_id
+      { legacy_id: '7007', reason: 'INVALID_VALUE', column_name: 'status' }, // status_id without a lookup row
+      { legacy_id: '7008', reason: 'UNKNOWN_ENUM', column_name: 'status' }, // slug the map does not know
+    ])
   })
 
   it('keeps SENTINEL_FREE_TEXT out of every text, varchar, jsonb and array column of every v2 table', async () => {
@@ -170,6 +194,8 @@ describe('exam attempts (AC2)', () => {
     const reads = seen.filter((s) => /staging_cloud"?\."?exam_attempts/.test(s))
     expect(reads.length).toBeGreaterThan(0)
     for (const s of reads) expect(s).not.toMatch(/section_selections|served_composition/)
+    // The status is read through the lookup, not from a column of the attempt.
+    expect(reads.some((s) => /attempt_statuses/.test(s) && /status_id/.test(s))).toBe(true)
     expect(seen.filter((s) => /\b(part_responses|structured_attempt_answers|ai_grade)\b/.test(s))).toEqual([])
   }, 180_000)
 

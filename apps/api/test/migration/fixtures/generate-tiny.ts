@@ -81,7 +81,7 @@ function build(): Map<string, Row[]> {
   put('users', users())
   put('school_subscriptions', [{ id: 1, school_id: 1, package: 'asas', quota: 100, starts_at: '2026-01-01', ends_at: '2026-12-31' }])
   put('parent_student', [{ parent_id: 9, student_id: 1, relationship: 'bapa' }, { parent_id: 9, student_id: 4242, relationship: 'bapa' }])
-  put('subjects', [1, 2, 3].map((n) => ({ id: n, name: `Mata Pelajaran Contoh ${n}`, code: `MP${n}`, is_core: '1', sort_order: n })))
+  put('subjects', [1, 2, 3].map((n) => ({ id: n, name_bm: `Mata Pelajaran Contoh ${n}`, name_en: `Sample Subject ${n}`, code: `MP${n}`, is_core: '1', sort_order: n })))
   put('education_levels', [1, 2].map((n) => ({ id: n, name_bm: `Darjah Contoh ${n}`, name_en: `Level Sample ${n}`, sort_order: n, curriculum: 'kssr', stage: 'primary' })))
   put('chapters', [
     { id: 1, subject_id: 1, education_level_id: 1, number: 1, title: 'Bab Contoh 1', strand: 'A' },
@@ -113,7 +113,7 @@ function build(): Map<string, Row[]> {
   put('coin_transactions', ['earn', 'earn', 'spend', 'bonus', 'earn', 'mystery'].map((type, i) => ({
     id: i + 1, user_id: (i % 4) + 1, type, source: 'practice', amount: 5, balance_after: 5 * (i + 1), created_at: T0,
   })))
-  put('challenges', [{ id: 1, created_by: null, classroom_id: null, type: 'harian', title: 'Cabaran Contoh', criteria: 'Contoh' }])
+  put('challenges', [{ id: 1, created_by: null, classroom_id: null, challenge_type: 'harian', title: 'Cabaran Contoh', target_value: 5 }])
   put('challenge_user', [{ challenge_id: 1, user_id: 1, progress: 3, completed_at: T0, claimed_on: '2026-01-02' }])
   put('achievements', [{ id: 1, name: 'Pencapaian Contoh', criteria: 'Contoh' }])
   put('achievement_user', [{ achievement_id: 1, user_id: 1, unlocked_at: T0 }])
@@ -134,17 +134,23 @@ function build(): Map<string, Row[]> {
   put('packages', [{ id: 1, name: 'Pakej Contoh', tier: 'asas', price: 10.5, duration_days: 30 }])
   put('payments', [{ id: 1, user_id: 1, package_id: 1, amount: 10.5, status: 'berjaya' }])
   put('invoices', [{ id: 1, payment_id: 1, amount: 10.5, status: 'dibayar' }])
-  put('exam_attempts', [{ id: 1, user_id: 1, exam_paper_id: 1, mode: 'latihan', status: 'selesai', score: 20, max_score: 40, section_scores: { a: 10, b: 10 }, section_selections: null, served_composition: null }])
+  put('exam_attempts', [{ id: 1, user_id: 1, exam_paper_id: 1, mode: 'latihan', status_id: 2, score: 20, max_score: 40, section_scores: { a: 10, b: 10 }, section_selections: null, served_composition: null }])
+
+  // Lookups (id, slug): fixed ids as seeded in .cloud (docs/discovery/BIJAK-SPM-cloud.md section 7); only what the rows above point at.
+  put('attempt_statuses', ['in_progress', 'submitted', 'marked'].map((slug, i) => ({ id: i + 1, slug })))
+  put('paper_statuses', ['draft', 'in_review', 'published', 'archived'].map((slug, i) => ({ id: i + 1, slug })))
 
   // Archive (question bank)
   put('questions', [1, 2, 3, 4, 5, 6].map((n) => ({
-    id: n, subject_id: 1, education_level_id: 1, chapter_id: 1, topic_id: 1, difficulty_level: n % 2 ? 'mudah' : 'sukar', question_type: 'objektif', status: n === 6 ? 'diarkib' : 'diluluskan', body: `Soalan contoh ${n}.`,
+    id: n, subject_id: 1, education_level_id: 1, chapter_id: 1, topic_id: 1, difficulty_level: n % 2 ? 'mudah' : 'sukar', type: 'objektif', status: n === 6 ? 'diarkib' : 'diluluskan', body: `Soalan contoh ${n}.`,
   })))
   put('question_options', [1, 2, 3, 4].map((n) => ({ id: n, question_id: n === 4 ? 555 : 1, label: 'ABCD'[n - 1], body: `Pilihan ${n}`, is_correct: n === 1 ? '1' : '0' })))
-  put('source_papers', [{ id: 1, natural_key: 'contoh-2025-1', content_hash: '0'.repeat(64), year: 2025 }])
-  put('exam_papers', [{ id: 1, source_paper_id: 1, status: 'diterbitkan', title: 'Kertas Contoh' }])
-  put('teacher_reference_papers', [{ id: 1, teacher_reference_document_id: null, title: 'Rujukan Contoh' }])
+  put('source_papers', [{ id: 1, natural_key: 'contoh-2025-1', file_hash: '0'.repeat(64), year: 2025, exam_board_id: 1, exam_type_id: 1 }])
+  put('exam_papers', [{ id: 1, status_id: 3, title: 'Kertas Contoh' }])
+  put('teacher_reference_papers', [{ id: 1, teacher_id: null, title: 'Rujukan Contoh' }])
   put('legacy_canonical_map', [{ id: 1, source: 'questions', legacy_id: '1', canonical_type: 'exam_question', canonical_id: 1 }, { id: 2, source: 'spm_set', legacy_id: '9', canonical_type: 'exam_paper', canonical_id: 1 }])
+  put('exam_boards', [{ id: 1, slug: 'contoh_lembaga' }])
+  put('exam_types', [{ id: 1, slug: 'contoh_jenis' }])
   return t
 }
 
