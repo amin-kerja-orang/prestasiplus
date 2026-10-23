@@ -47,15 +47,35 @@ BEGIN
                              THEN 'PASS' ELSE 'FAIL' END, k, 'attributes ' || n, v;
   END LOOP;
 
+  -- ---- authentication: no network rule may skip the password (loopback and the local socket may: they are inside
+  -- the db container) ----
+  SELECT count(*)::text INTO v FROM pg_hba_file_rules h
+   WHERE h.auth_method = 'trust' AND h.type <> 'local' AND h.error IS NULL
+     AND NOT (h.address IN ('127.0.0.1', '::1') AND h.netmask IN ('255.255.255.255', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'));
+  RETURN QUERY SELECT CASE WHEN v = '0' THEN 'PASS' ELSE 'FAIL' END, 'all', 'pg_hba: no trust rule for non-loopback addresses',
+    'trust rules beyond loopback: ' || v;
+
+  -- ---- _prisma_migrations: read-only for app and etl (a forged row would make prisma skip a migration) ----
+  IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
+    FOREACH k IN ARRAY ARRAY['app', 'etl'] LOOP
+      n := names ->> k;
+      v := format('select=%s insert=%s update=%s delete=%s',
+        has_table_privilege(n, 'public._prisma_migrations', 'SELECT'), has_table_privilege(n, 'public._prisma_migrations', 'INSERT'),
+        has_table_privilege(n, 'public._prisma_migrations', 'UPDATE'), has_table_privilege(n, 'public._prisma_migrations', 'DELETE'));
+      RETURN QUERY SELECT CASE WHEN v = 'select=t insert=f update=f delete=f' THEN 'PASS' ELSE 'FAIL' END, k,
+        '_prisma_migrations read-only', v;
+    END LOOP;
+  END IF;
+
   -- ---- privilege coverage over EVERY table and sequence in public (catalogue) ----
   FOREACH k IN ARRAY ARRAY['app', 'etl'] LOOP
     n := names ->> k;
     -- has_table_privilege with a list is true when ANY is held: test each privilege on its own.
     SELECT count(*) FILTER (WHERE NOT (has_table_privilege(n, c.oid, 'SELECT') AND has_table_privilege(n, c.oid, 'INSERT')
                                    AND has_table_privilege(n, c.oid, 'UPDATE') AND has_table_privilege(n, c.oid, 'DELETE'))) || ' of ' || count(*)
-      INTO v FROM pg_class c WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p');
+      INTO v FROM pg_class c WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p') AND c.relname <> '_prisma_migrations';
     RETURN QUERY SELECT CASE WHEN v LIKE '0 of %' AND v <> '0 of 0' THEN 'PASS' ELSE 'FAIL' END, k,
-      'read/write on every public table', 'tables missing SELECT/INSERT/UPDATE/DELETE: ' || v;
+      'read/write on every public table (except _prisma_migrations)', 'tables missing SELECT/INSERT/UPDATE/DELETE: ' || v;
     SELECT count(*) FILTER (WHERE NOT (has_sequence_privilege(n, c.oid, 'USAGE') AND has_sequence_privilege(n, c.oid, 'SELECT')
                                    AND has_sequence_privilege(n, c.oid, 'UPDATE'))) || ' of ' || count(*)
       INTO v FROM pg_class c WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'S';

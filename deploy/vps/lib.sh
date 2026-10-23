@@ -53,13 +53,14 @@ pp_urldecode() {
   printf '%s' "$out"
 }
 
-# pp_parse_db_url URL -> sets PP_URL_USER, PP_URL_PASSWORD (decoded), PP_URL_HOST, PP_URL_DB; fails on another shape.
+# pp_parse_db_url URL -> sets PP_URL_USER, PP_URL_PASSWORD (decoded), PP_URL_HOST, PP_URL_DB, PP_URL_QUERY ('' or
+# '?...'); fails on another shape.
 # Never prints anything.
 # shellcheck disable=SC2034  # output variables, read by the callers
 pp_parse_db_url() {
-  PP_URL_USER=""; PP_URL_PASSWORD=""; PP_URL_HOST=""; PP_URL_DB=""
+  PP_URL_USER=""; PP_URL_PASSWORD=""; PP_URL_HOST=""; PP_URL_DB=""; PP_URL_QUERY=""
   [[ "$1" =~ ^postgres(ql)?://([^:@/]+):([^@]+)@([^:/]+)(:[0-9]+)?/([^?]+)(\?.*)?$ ]] || return 1
-  PP_URL_USER="${BASH_REMATCH[2]}"; PP_URL_HOST="${BASH_REMATCH[4]}"; PP_URL_DB="${BASH_REMATCH[6]}"
+  PP_URL_USER="${BASH_REMATCH[2]}"; PP_URL_HOST="${BASH_REMATCH[4]}"; PP_URL_DB="${BASH_REMATCH[6]}"; PP_URL_QUERY="${BASH_REMATCH[7]}"
   PP_URL_PASSWORD="$(pp_urldecode "${BASH_REMATCH[3]}")"
 }
 

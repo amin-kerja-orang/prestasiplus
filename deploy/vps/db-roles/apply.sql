@@ -8,7 +8,8 @@
 --
 --   owner  schema owner: owns the database, schema public and every object in it. Used ONLY by the one-shot
 --          `migrate` service (prisma migrate deploy, the reference seed). The only role with DDL in public.
---   app    the API: CONNECT, USAGE on public, SELECT/INSERT/UPDATE/DELETE on all tables, USAGE/SELECT/UPDATE on all
+--   app    the API: CONNECT, USAGE on public, SELECT/INSERT/UPDATE/DELETE on all tables (_prisma_migrations: SELECT
+--          only), USAGE/SELECT/UPDATE on all
 --          sequences, and the same on every table or sequence the owner creates later (default privileges).
 --          No DDL, no TEMP, nothing on staging_cloud or archive_cloud.
 --   etl    the migration role of `migrate:*` (slot.sh etl): the app grants plus TEMP (the ETL upsert uses temporary
@@ -42,7 +43,8 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = n) THEN
       EXECUTE format('CREATE ROLE %I', n);
     END IF;
-    EXECUTE format('ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT', n);
+    EXECUTE format('ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT CONNECTION LIMIT -1 VALID UNTIL %L', n, 'infinity');
+    EXECUTE format('ALTER ROLE %I RESET ALL', n);   -- no per-role settings (search_path and the like)
     FOR r IN
       SELECT g.rolname AS grp, m.rolname AS mem, gr.rolname AS grantor
       FROM pg_auth_members am
@@ -110,6 +112,11 @@ BEGIN
   EXECUTE format('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC, %I, %I, %I', a, e, s);
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO %I, %I', a, e);
   EXECUTE format('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO %I, %I', a, e);
+  -- Prisma's migration ledger: read-only for app and etl (/api/ready reads it; a forged row would make
+  -- `prisma migrate deploy` skip a migration). The owner (migrate) keeps full rights as the table owner.
+  IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
+    EXECUTE format('REVOKE INSERT, UPDATE, DELETE ON public._prisma_migrations FROM %I, %I', a, e);
+  END IF;
   -- Tables and sequences of later migrations (created by the owner role) get the same grants automatically.
   EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I, %I', o, a, e);
   EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO %I, %I', o, a, e);

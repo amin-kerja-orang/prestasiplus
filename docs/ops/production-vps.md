@@ -210,10 +210,14 @@ acceptance. `deploy/vps/db-roles.sh` implements cutover plan P3 ([v2-cutover-pla
 | Role | Used by | Env file | Privileges |
 |---|---|---|---|
 | `pp_owner` | the one-shot `migrate` service only: `prisma migrate deploy`, `deploy.sh --seed-reference`, `admin:bootstrap` | `migrate.env` | Owns the database, schema `public` and every object in it: the only role with DDL. Creates `pgcrypto` on a fresh database (trusted extension, database owner) |
-| `pp_app` | the API (`api` service) | `api.env` | `CONNECT`; `USAGE` on `public`; `SELECT, INSERT, UPDATE, DELETE` on every table and `USAGE, SELECT, UPDATE` on every sequence, plus **default privileges** for what `pp_owner` creates later. No DDL, no `TRUNCATE`, no `TEMP`, nothing on `staging_cloud` or `archive_cloud` |
+| `pp_app` | the API (`api` service) | `api.env` | `CONNECT`; `USAGE` on `public`; `SELECT, INSERT, UPDATE, DELETE` on every table (`_prisma_migrations`: `SELECT` only, so a forged ledger row cannot make `prisma migrate deploy` skip a migration) and `USAGE, SELECT, UPDATE` on every sequence, plus **default privileges** for what `pp_owner` creates later. No DDL, no `TRUNCATE`, no `TEMP`, nothing on `staging_cloud` or `archive_cloud` |
 | `pp_etl` | `migrate:*` through `slot.sh etl` (the migration role) | `etl.env` | The `pp_app` grants (see note), plus `TEMP` (the ETL upsert uses temporary tables); `USAGE` + `SELECT` on `staging_cloud` and `archive_cloud`, `UPDATE` on `archive_cloud` (`migrate:archive-minimise`). No DDL in `public` |
 | `pp_stager` | `slot.sh copy` and the section 7 `drop schema ... cascade` (stage-only role) | none | `CONNECT` and `CREATE` on the database: it creates the two stage schemas and, as their owner, drops them. **Nothing on `public`** (a `select` and an `insert` are refused). **No password**: it connects only over the local socket inside the db container (`docker compose exec db psql -U pp_stager`), never over the network |
 | `POSTGRES_USER` of `db.env` | bootstrap superuser of the cluster | `db.env` | Used only by ops scripts, always inside the db container: `db-roles.sh`, `backup/backup.sh` and `backup/restore-drill.sh` (a full dump, and the drill's `CREATE DATABASE <db>_restorecheck`), a manual restore (section 8), and #166's `restore-point.sh` / `pitr.sh` (whole-database dump, base backup). Never in a `DATABASE_URL` |
+
+Trust boundary of `pp_stager`: it owns what it restores into the stage schemas, so it could plant a function or view there that `pp_etl`
+later runs with its own rights; with `CREATE` on the database it can also install a trusted extension into its schemas. That is accepted
+because `pp_stager` is reachable only from inside the db container, which is root-equivalent anyway (the deploy user is in the docker group).
 
 Note on `pp_etl`: P3 says "read and write on the v2 tables the ETL writes and on `etl_*`". The ETL writes tables outside
 `prisma/migratable-models.json` (for example `attempt_results`) and through table names built at run time, so there is no fixed list to grant
@@ -230,7 +234,7 @@ of its file.
 ```
 sudo deploy/vps/db-roles.sh secrets     # root: passwords generated on the server (openssl rand -hex 32), never printed;
                                         # writes the api.env DATABASE_URL (pp_app) and creates migrate.env (pp_owner) and etl.env (pp_etl),
-                                        # root:ppdeploy 640. A file that already holds a valid URL for its role is kept.
+                                        # root:ppdeploy 640. A file that already holds a valid URL for its role is kept; connection parameters (?...) of the old URL are kept.
 deploy/vps/deploy.sh --dry-run          # preflight checks the three URLs
 deploy/vps/deploy.sh                    # step 4 db-roles.sh apply, step 5 migrate as pp_owner + db-roles.sh check
 deploy/vps/db-roles.sh check            # again by hand: the P3 evidence lines (names, privileges, error texts; no values)
@@ -255,7 +259,10 @@ table and sequence; `pp_app` and `pp_etl` hold `SELECT/INSERT/UPDATE/DELETE` on 
 sequence; `pp_app` **cannot** `CREATE TABLE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE SCHEMA` or `CREATE TEMP TABLE`, and cannot read
 `staging_cloud` or `archive_cloud` (when they exist; otherwise no default privilege can give it anything there); `pp_etl` can use `TEMP`,
 read both stage schemas and update `archive_cloud`, but has no DDL in `public`; `pp_stager` is refused `select` and `insert` on `public` and
-can create and drop the stage schemas; the stage role is refused over the network and accepted over the local socket. Output: one
+can create and drop the stage schemas; `_prisma_migrations` is read-only for `pp_app` and `pp_etl`; `pg_hba` has no `trust` rule beyond
+loopback and the local socket; the stage role is refused over the network and accepted over the local socket. The network logins use the
+compose name `db` (override: `PP_DB_ROLES_NET_HOST`), never `127.0.0.1`: the official image trusts loopback (initdb default), so a loopback
+login would accept any password, while the container's network address hits the `scram-sha-256` rule the API also goes through. Output: one
 `PASS | role | probe | detail` line each, then `DB ROLES CHECK PASSED: <n> probes` (exit 0) or `DB ROLES CHECK FAILED` (exit 1).
 The same SQL runs in CI (`apps/api/test/ops/db-roles.spec.ts`).
 
@@ -419,7 +426,7 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
   3. `$PC cp <dump> db:/tmp/restore.dump`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'`, then `$PC exec db rm /tmp/restore.dump`,
-     then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser; section 3.1).
+     then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser, and `pp_app` has no `CONNECT` until `apply`; section 3.1). **Do not start the api (step 4) before `check` ends with `DB ROLES CHECK PASSED`.**
   4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.

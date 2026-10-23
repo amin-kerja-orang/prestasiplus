@@ -99,6 +99,8 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
   })
 
   it('turns a superuser-migrated database into the P3 layout, and check.sql passes every probe', async () => {
+    // The template is migrated from the SQL files; prisma migrate deploy would also have its ledger table.
+    await admin.query(`CREATE TABLE _prisma_migrations (id varchar(36) PRIMARY KEY, migration_name varchar(255) NOT NULL)`)
     await apply()
     const rows = await check()
     expect(failures(rows)).toEqual([])
@@ -126,10 +128,12 @@ describe('db-roles apply.sql + check.sql (P3)', () => {
       await app.query(`UPDATE etl_runs SET status = 'failed' WHERE id = $1::bigint`, [ins.rows[0]!.id])
       await app.query(`DELETE FROM etl_runs WHERE id = $1::bigint`, [ins.rows[0]!.id])
       await app.query('ROLLBACK')
-      expect((await app.query('SELECT count(*) FROM users')).rows).toHaveLength(1)
+      expect((await app.query('SELECT count(*) FROM _prisma_migrations')).rows).toHaveLength(1)
     } finally {
       await app.end()
     }
+    expect(await deniedAs('app', `UPDATE _prisma_migrations SET migration_name = 'x'`)).toMatch(/^denied: permission denied for table _prisma_migrations/)
+    expect(await deniedAs('etl', `DELETE FROM _prisma_migrations`)).toMatch(/^denied: permission denied for table _prisma_migrations/)
     expect(await deniedAs('app', 'CREATE TABLE public.pp_probe (i int)')).toMatch(/^denied: permission denied for schema public/)
     expect(await deniedAs('app', 'DROP TABLE public.users')).toMatch(/^denied: must be owner of table users/)
     expect(await deniedAs('app', 'TRUNCATE public.users')).toMatch(/^denied: permission denied for table users/)

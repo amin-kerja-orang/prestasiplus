@@ -91,7 +91,7 @@ require_db() {
 
 # ------------------------------------------------------------------------------------------------------------
 cmd_secrets() {
-  local rotate="" kind f role db url pw group tmp state
+  local rotate="" kind f role db url pw group tmp state query
   while [ $# -gt 0 ]; do
     case "$1" in
       --rotate) rotate=",${2:?--rotate needs app, owner and/or etl},"; shift 2 ;;
@@ -113,12 +113,17 @@ cmd_secrets() {
       pp_log "$(basename "$f"): DATABASE_URL for $role kept"
       continue
     fi
+    # Keep connection parameters of the current URL (for example ?connection_limit=...); only user and password change.
+    query=""
+    if pp_parse_db_url "$url"; then query="$PP_URL_QUERY"; fi
+    [[ "$query" =~ ^(\?[A-Za-z0-9_.~=\&%-]*)?$ ]] || pp_die "the query string of DATABASE_URL in $f has unexpected characters: fix it by hand first" 3
+    [ -z "$query" ] || pp_log "$(basename "$f"): keeping the connection parameters of the current DATABASE_URL"
     pw="$(openssl rand -hex 32)"
     tmp="$(mktemp "$PP_ENV_DIR/.$(basename "$f").XXXXXX")"
     # Replace the first DATABASE_URL line in place, drop any later one, append when there is none. The URL reaches
     # awk through the environment, never through the command line.
     if [ -e "$f" ]; then
-      PP_NEW_URL="postgresql://$role:$pw@db:5432/$db" awk '
+      PP_NEW_URL="postgresql://$role:$pw@db:5432/$db$query" awk '
         /^DATABASE_URL=/ { if (!done) { print "DATABASE_URL=" ENVIRON["PP_NEW_URL"]; done = 1 } next }
         { print }
         END { if (!done) print "DATABASE_URL=" ENVIRON["PP_NEW_URL"] }' "$f" >"$tmp"
@@ -175,11 +180,15 @@ cmd_check() {
   done <<<"$out"
 
   # Real logins over the network with the env-file passwords (proves files and database agree). The password goes
-  # to psql on stdin, never on a command line or into the container's environment.
+  # to psql on stdin, never on a command line or into the container's environment. The host is the compose service
+  # name `db`, NOT 127.0.0.1: the official image trusts loopback (initdb default), so a loopback login would accept any
+  # password; the container's network address hits the `host all all all scram-sha-256` rule the api uses too.
+  local net_host
+  net_host="$(pp_cfg PP_DB_ROLES_NET_HOST db)"
   for kind in app owner etl; do
     role="$(role_of "$kind")"; pw="$(password_of "$kind")"
     # shellcheck disable=SC2016  # expands inside the container
-    got="$(printf '%s\n' "$pw" | pp_db_exec sh -c 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X -At -h 127.0.0.1 -U "$1" -d "$POSTGRES_DB" -c "select current_user || chr(32) || rolsuper from pg_roles where rolname = current_user"' sh "$role" 2>&1 || true)"
+    got="$(printf '%s\n' "$pw" | pp_db_exec sh -c 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X -At -h "$2" -U "$1" -d "$POSTGRES_DB" -c "select current_user || chr(32) || rolsuper from pg_roles where rolname = current_user"' sh "$role" "$net_host" 2>&1 || true)"
     total=$((total + 1))
     if [ "$got" = "$role false" ]; then echo "PASS | $kind | network login as $role with $(basename "$(file_of "$kind")") | logged in, not a superuser"
     else fails=$((fails + 1)); echo "FAIL | $kind | network login as $role with $(basename "$(file_of "$kind")") | $(head -n1 <<<"$got" | cut -c1-200)"; fi
@@ -187,7 +196,7 @@ cmd_check() {
   # A fresh API session cannot create temporary tables either (no TEMP on the database).
   pw="$(password_of app)"
   # shellcheck disable=SC2016  # expands inside the container
-  got="$(printf '%s\n' "$pw" | pp_db_exec sh -c 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X -At -h 127.0.0.1 -U "$1" -d "$POSTGRES_DB" -c "create temp table pp_role_probe (i int)"' sh "$PP_DB_ROLE_APP" 2>&1 || true)"
+  got="$(printf '%s\n' "$pw" | pp_db_exec sh -c 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X -At -h "$2" -U "$1" -d "$POSTGRES_DB" -c "create temp table pp_role_probe (i int)"' sh "$PP_DB_ROLE_APP" "$net_host" 2>&1 || true)"
   total=$((total + 1))
   case "$got" in
     *"permission denied to create temporary tables"*) echo "PASS | app | CREATE TEMP TABLE in a fresh $PP_DB_ROLE_APP session -> expect denied | denied: $(grep -o 'permission denied to create temporary tables in database "[^"]*"' <<<"$got" | head -n1)" ;;
@@ -196,7 +205,7 @@ cmd_check() {
   unset pw
   # The stage role has no password: the network refuses it, the local socket in the db container accepts it.
   # shellcheck disable=SC2016
-  got="$(pp_db_exec sh -c 'PGPASSWORD=not-the-password psql -X -At -h 127.0.0.1 -U "$1" -d "$POSTGRES_DB" -c "select 1"' sh "$PP_DB_ROLE_STAGE" 2>&1 || true)"
+  got="$(pp_db_exec sh -c 'PGPASSWORD=not-the-password psql -X -At -h "$2" -U "$1" -d "$POSTGRES_DB" -c "select 1"' sh "$PP_DB_ROLE_STAGE" "$net_host" 2>&1 || true)"
   total=$((total + 1))
   case "$got" in
     *"password authentication failed"*) echo "PASS | stage | network login as $PP_DB_ROLE_STAGE | refused (no password)" ;;
