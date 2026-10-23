@@ -50,7 +50,7 @@ export interface InvitePreview {
   valid: true
   student: {
     name: string
-    /** First letter of the first two words, upper case; "?" when the name is empty. */
+    /** First letter of the first two words, upper case; "?" when the name is empty (http: first name only, one letter, DV-L45-07). */
     initials: string
     schoolName: string | null
   }
@@ -152,7 +152,7 @@ export async function fetchInvitePreview(
   )
   // The page reads `name` and `initials`; the contract sends `firstName` only, so derive them here.
   const name = raw.student.name ?? raw.student.firstName ?? ''
-  const initials = raw.student.initials ?? (name.trim().charAt(0).toUpperCase() || '?')
+  const initials = raw.student.initials ?? (Array.from(name.trim())[0]?.toUpperCase() ?? '?')
   return {
     valid: raw.valid,
     student: { name, initials, schoolName: raw.student.schoolName ?? null },
