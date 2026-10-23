@@ -263,12 +263,12 @@ describe('bootstrap / reset against the database', () => {
   })
 
   describe('the CLI process (tsx, as the host runs it)', () => {
-    const cli = (args: string[], stdin?: string) =>
+    const cli = (args: string[], stdin?: string, extraEnv: Record<string, string> = {}) =>
       spawnSync(process.execPath, ['--import', 'tsx', 'src/ops/admin-bootstrap/cli.ts', ...args], {
         cwd: API_DIR,
         input: stdin ?? '',
         encoding: 'utf8',
-        env: { ...process.env, DATABASE_URL: t.db.url },
+        env: { ...process.env, DATABASE_URL: t.db.url, ...extraEnv },
         timeout: 60_000,
       })
 
@@ -293,6 +293,15 @@ describe('bootstrap / reset against the database', () => {
       expect(r.status).toBe(0)
       expect(`${r.stdout}${r.stderr}`).not.toContain('Ketiga-Kuat-2026!z')
       await loginAs(t, 'pusat.baru@demo.test', { password: 'Ketiga-Kuat-2026!z' })
+    }, 120_000)
+
+    it('REG-CLOSE: works with REGISTRATION_OPEN=false in the environment (the command never goes through self-registration)', async () => {
+      const r = cli(['--mode=reset', '--email=pusat.baru@demo.test', '--confirm=pusat.baru@demo.test', '--password-stdin'], 'Keempat-Kuat-2026!w\n', {
+        REGISTRATION_OPEN: 'false',
+      })
+      expect(r.stderr).toMatch(/OK reset/)
+      expect(r.status).toBe(0)
+      await loginAs(t, 'pusat.baru@demo.test', { password: 'Keempat-Kuat-2026!w' })
     }, 120_000)
   })
 })

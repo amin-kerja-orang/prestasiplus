@@ -123,6 +123,8 @@ preflight() {
   v="$(pp_env_value "$api_env" COOKIE_SECURE)"; [ "${v,,}" != false ] || warn "COOKIE_SECURE=false in api.env is ignored (compose.prod.yaml forces true)"
   v="$(pp_env_value "$api_env" NODE_ENV)"; [ -z "$v" ] || [ "$v" = production ] || warn "NODE_ENV=$v in api.env is ignored (forced to production)"
   v="$(pp_env_value "$api_env" TRUST_PROXY_HOPS)"; [ -z "$v" ] || [ "$v" = 1 ] || warn "TRUST_PROXY_HOPS=$v in api.env is ignored (forced to 1: the edge is the only proxy)"
+  # REG-CLOSE: unset means OPEN; before go-live api.env must say REGISTRATION_OPEN=false (production-vps.md section 16).
+  v="$(pp_env_value "$api_env" REGISTRATION_OPEN)"; [ -n "$v" ] || warn "REGISTRATION_OPEN is not set in api.env: self-registration is OPEN (set false until the go-live switch)"
 
   # Required values (mirrors loadEnv in env.schema.ts, with the stricter team policy of 32 characters).
   local ss ic dburl pguser pgdb pgpw
